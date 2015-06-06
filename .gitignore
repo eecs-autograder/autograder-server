@@ -55,5 +55,8 @@ docs/_build/
 
 # PyBuilder
 target/
-django_autograder.sublime-project
-django_autograder.sublime-workspace
+
+*.sublime-project
+*.sublime-workspace
+*~
+*.swp
