@@ -21,11 +21,6 @@ class Project(ModelValidatedOnSave):
                 a given course.
         course -- The Course this project is associated with.
 
-        required_student_files -- A list of filenames
-            that students are required to submit for this project.
-            For example, eecs280's project1 might require the files:
-            ["spam.cpp", "eggs.cpp", "sausage.cpp"].
-
     Overridden methods:
         validate_fields()
 
@@ -82,6 +77,11 @@ class Project(ModelValidatedOnSave):
 #     submit for a given project.
 #     """
 #     pass
+    # required_student_files -- A list of filenames
+    # that students are required to submit for this project.
+    # For example, eecs280's project1 might require the files:
+    # ["spam.cpp", "eggs.cpp", "sausage.cpp"].
+
 
 
 # class ExpectedStudentFilePattern(ModelValidatedOnSave):
