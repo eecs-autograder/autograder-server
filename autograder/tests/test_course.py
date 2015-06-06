@@ -1,8 +1,8 @@
-import django
 from django.test import TestCase
-from autograder.models import Course
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
+
+from autograder.models import Course
 
 
 class CourseTestCase(TestCase):
@@ -14,13 +14,19 @@ class CourseTestCase(TestCase):
 
         self.assertEqual(NAME, loaded.name)
 
+    # -------------------------------------------------------------------------
+
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError):
             Course.objects.create(name='')
 
+    # -------------------------------------------------------------------------
+
     def test_exception_on_null_name(self):
         with self.assertRaises(ValidationError):
             Course.objects.create(name=None)
+
+    # -------------------------------------------------------------------------
 
     def test_exception_on_non_unique_name(self):
         NAME = "eecs280"

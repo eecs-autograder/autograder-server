@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 
 from .model_utils import ModelValidatedOnSave
 from .course import Course
+from .project import Project
 
 from ..shared import global_constants as gc
 
@@ -18,9 +19,18 @@ class Semester(ModelValidatedOnSave):
                 Must be non-empty and non-null.
                 Must be unique among Semesters associated with a given Course.
         course -- The Course that this semester is associated with.
+        projects -- The projects that will be open for submission this
+                    Semester.
+
+    Overridden member functions:
+        validate_fields()
+
+    Static methods:
+        get_by_composite_key()
     """
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     course = models.ForeignKey(Course)
+    projects = models.ManyToManyField(Project)
 
     _composite_primary_key = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)
@@ -54,10 +64,8 @@ class Semester(ModelValidatedOnSave):
                 "Semester name must be non-empty and non-null")
 
         # Foreign key fields raise ValueError if you try to
-        # assign a null value to them, so an extra check here
+        # assign a null value to them, so an extra check for course
         # is not needed.
 
         if not self._composite_primary_key:
             raise Exception("Invalid composite primary key")
-
-    # -------------------------------------------------------------------------

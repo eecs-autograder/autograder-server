@@ -16,6 +16,9 @@ class Course(ModelValidatedOnSave):
     Fields:
         name -- The name of this course.
                 Must be unique, non-empty and non-null.
+
+    Overridden member functions:
+        validate_fields()
     """
     name = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)

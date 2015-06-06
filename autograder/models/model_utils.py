@@ -2,6 +2,17 @@ from django.db import models
 
 
 class ModelValidatedOnSave(models.Model):
+    """
+    Derived from django's Model class, provides an interface
+    for writing Models that are automatically validated
+    when Model.save() is called.
+
+    Overridden member functions:
+        save()
+
+    Abstract methods:
+        validate_fields()
+    """
     def save(self, *args, **kwargs):
         self.validate_fields()
         super().save(*args, **kwargs)
