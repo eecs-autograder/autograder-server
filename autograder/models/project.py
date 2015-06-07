@@ -1,10 +1,10 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from .model_utils import ModelValidatedOnSave
+from autograder.models.model_utils import ModelValidatedOnSave
 from autograder.models import Course
 
-from ..shared import global_constants as gc
+from autograder.shared import global_constants as gc
 
 
 class Project(ModelValidatedOnSave):
@@ -19,6 +19,7 @@ class Project(ModelValidatedOnSave):
                 Must be non-empty and non-null.
                 Must be unique among Projects associated with
                 a given course.
+
         course -- The Course this project is associated with.
 
     Overridden methods:
@@ -30,8 +31,7 @@ class Project(ModelValidatedOnSave):
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     course = models.ForeignKey(Course)
 
-    _composite_primary_key = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)
+    _composite_primary_key = models.TextField(primary_key=True)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------

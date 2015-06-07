@@ -1,11 +1,10 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from .model_utils import ModelValidatedOnSave
-from .course import Course
-from .project import Project
+from autograder.models.model_utils import ModelValidatedOnSave
+from autograder.models import Course, Project
 
-from ..shared import global_constants as gc
+from autograder.shared import global_constants as gc
 
 
 class Semester(ModelValidatedOnSave):
@@ -18,7 +17,9 @@ class Semester(ModelValidatedOnSave):
         name -- The name used to identify this Semester.
                 Must be non-empty and non-null.
                 Must be unique among Semesters associated with a given Course.
+
         course -- The Course that this semester is associated with.
+
         projects -- The projects that will be open for submission this
                     Semester.
 
@@ -32,8 +33,7 @@ class Semester(ModelValidatedOnSave):
     course = models.ForeignKey(Course)
     projects = models.ManyToManyField(Project)
 
-    _composite_primary_key = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)
+    _composite_primary_key = models.TextField(primary_key=True)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
