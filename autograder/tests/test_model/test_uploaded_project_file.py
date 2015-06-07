@@ -13,6 +13,8 @@ from autograder.shared import utilities as ut
 
 class UploadedProjectFileTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
+        super().setUp()
+
         self.course = Course.objects.create(name='eecs280')
         self.project = Project.objects.create(name='p1', course=self.course)
 

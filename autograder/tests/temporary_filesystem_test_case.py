@@ -6,16 +6,14 @@ from django.conf import settings
 
 
 class TemporaryFilesystemTestCase(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.old_media_root = settings.MEDIA_ROOT
-        cls.new_media_root = os.path.join(
+    def setUp(self):
+        self.old_media_root = settings.MEDIA_ROOT
+        self.new_media_root = os.path.join(
             settings.BASE_DIR, 'tmp_filesystem')
-        os.makedirs(cls.new_media_root)
-        settings.MEDIA_ROOT = cls.new_media_root
+        os.makedirs(self.new_media_root)#, ok_exist=True)
+        settings.MEDIA_ROOT = self.new_media_root
 
-    @classmethod
-    def tearDownClass(cls):
-        settings.MEDIA_ROOT = cls.old_media_root
-        print(cls.new_media_root)
-        shutil.rmtree(cls.new_media_root)
+    def tearDown(self):
+        settings.MEDIA_ROOT = self.old_media_root
+        print("Deleting: " + self.new_media_root)
+        shutil.rmtree(self.new_media_root)

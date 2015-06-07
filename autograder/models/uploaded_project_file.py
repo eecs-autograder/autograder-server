@@ -82,9 +82,8 @@ class UploadedProjectFile(ModelValidatedOnSave):
     # -------------------------------------------------------------------------
 
     def validate_fields(self):
-        pass
-        # save_path = _get_upload_path(self.filename, self.project)
-        # if not self.overwrite_on_save and os.path.exists(save_path):
-        #     raise ValidationError(
-        #         "File {0} already exists for project {1}".format(
-        #             self.uploaded_file.name, self.project.name))
+        save_path = _get_upload_path(self.uploaded_file.name, self.project)
+        if not self.overwrite_on_save and os.path.exists(save_path):
+            raise ValidationError(
+                "File {0} already exists for project {1}".format(
+                    self.uploaded_file.name, self.project.name))
