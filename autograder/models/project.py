@@ -22,11 +22,11 @@ class Project(ModelValidatedOnSave):
 
         course -- The Course this project is associated with.
 
-    Overridden methods:
-        validate_fields()
-
     Static methods:
         get_by_composite_key()
+
+    Overridden methods:
+        validate_fields()
     """
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     course = models.ForeignKey(Course)
