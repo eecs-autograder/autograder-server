@@ -41,6 +41,7 @@ class UploadedProjectFile(ModelValidatedOnSave):
 
     Overridden methods:
         validate_fields()
+        save()
 
     Static methods:
         get_project_file()
@@ -50,7 +51,7 @@ class UploadedProjectFile(ModelValidatedOnSave):
         max_length=500,
         upload_to=(lambda instance, filename:
                    _get_upload_path(filename, instance.project)))
-    overwrite_on_save = models.BooleanField(default=False)
+    # overwrite_on_save = models.BooleanField(default=False)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -83,7 +84,8 @@ class UploadedProjectFile(ModelValidatedOnSave):
 
     def validate_fields(self):
         save_path = _get_upload_path(self.uploaded_file.name, self.project)
-        if not self.overwrite_on_save and os.path.exists(save_path):
+        # if not self.overwrite_on_save and os.path.exists(save_path):
+        if os.path.exists(save_path):
             raise ValidationError(
                 "File {0} already exists for project {1}".format(
                     self.uploaded_file.name, self.project.name))
