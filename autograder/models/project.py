@@ -149,3 +149,38 @@ class Project(ModelValidatedOnSave):
 
         if not self._composite_primary_key:
             raise Exception("Invalid composite primary key")
+
+        if self.min_group_size < 1:
+            raise ValidationError("Minimum group size must be at least 1")
+
+        if self.max_group_size < 1:
+            raise ValidationError("Maximum group size must be at least 1")
+
+        if self.max_group_size < self.min_group_size:
+            raise ValidationError(
+                "Maximum group size must be >= minimum group size")
+
+        for filename in self.required_student_files:
+            if not filename:
+                raise ValidationError(
+                    "The empty string is not a valid filename")
+
+        for file_pattern, min_max in self.expected_student_file_patterns.items():
+            if not file_pattern:
+                raise ValidationError(
+                    "The empty string is not a valid file pattern")
+
+            if min_max[0] > min_max[1]:
+                raise ValidationError(
+                    "The minimum for an expected file pattern must be less "
+                    "than the maximum")
+
+            if min_max[0] < 0:
+                raise ValidationError(
+                    "The minimum for an expected file pattern "
+                    "must be non-negative")
+
+            if min_max[1] < 0:
+                raise ValidationError(
+                    "The maximum for an expected file pattern "
+                    "must be non-negative")

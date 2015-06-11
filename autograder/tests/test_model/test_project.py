@@ -3,6 +3,7 @@ import datetime
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
+from django.utils import timezone
 
 from autograder.models import Project, Semester, Course
 
@@ -38,7 +39,7 @@ class ProjectTestCase(TestCase):
     # -------------------------------------------------------------------------
 
     def test_valid_create_non_defaults(self):
-        tomorrow_date = datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        tomorrow_date = timezone.now() + datetime.timedelta(days=1)
         min_group_size = 2
         max_group_size = 5
         required_student_files = ["spam.cpp", "eggs.cpp"]
@@ -115,4 +116,65 @@ class ProjectTestCase(TestCase):
 
     # -------------------------------------------------------------------------
 
+    def test_exception_on_min_group_size_too_small(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                min_group_size=0)
 
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_max_group_size_too_small(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                max_group_size=0)
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_max_group_size_smaller_than_min_group_size(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                min_group_size=3, max_group_size=2)
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_required_filenames_has_empty_string(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                required_student_files=["spam.cpp", ""])
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_negative_min_matches_in_expected_file_pattern(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns={"spam": [-2, 4]})
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_negative_max_matches_in_expected_file_pattern(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns={"spam": [4, -2]})
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_max_less_than_min_in_expected_file_pattern(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns={"spam": [4, 1]})
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_expected_file_patterns_has_empty_string(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns={
+                    "spam.cpp": [1, 2], "": [1, 2]})
