@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
-from autograder.models import Semester, Course, Project
+from autograder.models import Semester, Course  # , Project
 
 
 class SemesterTestCase(TestCase):
@@ -64,26 +64,3 @@ class SemesterTestCase(TestCase):
     def test_exception_on_null_course(self):
         with self.assertRaises(ValueError):
             Semester.objects.create(name=self.SEMESTER_NAME, course=None)
-
-    # -------------------------------------------------------------------------
-
-    def test_valid_semester_with_projects(self):
-        project1_name = "p1"
-        project2_name = "p2"
-        project1 = Project.objects.create(
-            name=project1_name, course=self.course)
-        project2 = Project.objects.create(
-            name=project2_name, course=self.course)
-
-        semester = Semester.objects.create(
-            name=self.SEMESTER_NAME, course=self.course)
-
-        semester.projects.add(project1)
-        semester.projects.add(project2)
-        semester.save()
-
-        loaded_semester = Semester.get_by_composite_key(
-            self.SEMESTER_NAME, self.course)
-
-        self.assertTrue(project1 in loaded_semester.projects.all())
-        self.assertTrue(project2 in loaded_semester.projects.all())

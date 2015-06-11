@@ -9,7 +9,7 @@ from autograder.shared import utilities as ut
 class FileSystemUtilTestCase(TestCase):
     def setUp(self):
         self.course = Course.objects.create(name='eecs280')
-        self.project = Project.objects.create(name='p1', course=self.course)
+        # self.project = Project.objects.create(name='p1', course=self.course)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -21,17 +21,17 @@ class FileSystemUtilTestCase(TestCase):
 
     # -------------------------------------------------------------------------
 
-    def test_get_project_root_dir(self):
-        expected = settings.MEDIA_ROOT + "courses/eecs280/projects/p1"
-        actual = ut.get_project_root_dir(self.project)
-        self.assertEqual(expected, actual)
+    # def test_get_project_root_dir(self):
+    #     expected = settings.MEDIA_ROOT + "courses/eecs280/projects/p1"
+    #     actual = ut.get_project_root_dir(self.project)
+    #     self.assertEqual(expected, actual)
 
-    # -------------------------------------------------------------------------
+    # # -------------------------------------------------------------------------
 
-    def test_get_project_files_dir(self):
-        expected = (
-            settings.MEDIA_ROOT + "courses/eecs280/projects/p1/project_files")
+    # def test_get_project_files_dir(self):
+    #     expected = (
+    #         settings.MEDIA_ROOT + "courses/eecs280/projects/p1/project_files")
 
-        actual = ut.get_project_files_dir(self.project)
-        self.assertEqual(expected, actual)
+    #     actual = ut.get_project_files_dir(self.project)
+    #     self.assertEqual(expected, actual)
 

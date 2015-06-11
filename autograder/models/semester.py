@@ -2,7 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 
 from autograder.models.model_utils import ModelValidatedOnSave
-from autograder.models import Course, Project
+from autograder.models import Course
 
 from autograder.shared import global_constants as gc
 
@@ -20,9 +20,6 @@ class Semester(ModelValidatedOnSave):
 
         course -- The Course that this semester is associated with.
 
-        projects -- The projects that will be open for submission this
-                    Semester.
-
     Overridden member functions:
         validate_fields()
 
@@ -31,7 +28,6 @@ class Semester(ModelValidatedOnSave):
     """
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     course = models.ForeignKey(Course)
-    projects = models.ManyToManyField(Project)
 
     _composite_primary_key = models.TextField(primary_key=True)
 
