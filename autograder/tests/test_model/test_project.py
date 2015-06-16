@@ -7,6 +7,9 @@ from django.utils import timezone
 
 from autograder.models import Project, Semester, Course
 
+from autograder.tests.temporary_filesystem_test_case import (
+    TemporaryFilesystemTestCase)
+
 
 class ProjectTestCase(TestCase):
     def setUp(self):
@@ -116,6 +119,28 @@ class ProjectTestCase(TestCase):
 
     # -------------------------------------------------------------------------
 
+    def test_no_exception_same_semester_and_project_names_different_course(self):
+        new_course_name = 'eecs381'
+        new_course = Course.objects.create(name=new_course_name)
+        new_semester = Semester.objects.create(
+            name=self.semester.name, course=new_course)
+
+        Project.objects.create(name=self.PROJECT_NAME, semester=self.semester)
+        new_project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=new_semester)
+
+        loaded_new_project = Project.get_by_composite_key(
+            self.PROJECT_NAME, new_semester)
+
+        self.assertEqual(loaded_new_project, new_project)
+        self.assertEqual(loaded_new_project.name, new_project.name)
+        self.assertEqual(loaded_new_project.semester, new_project.semester)
+
+        self.assertNotEqual(
+            loaded_new_project.semester.course, self.course)
+
+    # -------------------------------------------------------------------------
+
     def test_exception_on_min_group_size_too_small(self):
         with self.assertRaises(ValidationError):
             Project.objects.create(
@@ -178,3 +203,10 @@ class ProjectTestCase(TestCase):
                 name=self.PROJECT_NAME, semester=self.semester,
                 expected_student_file_patterns={
                     "spam.cpp": [1, 2], "": [1, 2]})
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class ProjectFilesystemTest(TemporaryFilesystemTestCase):
+    pass

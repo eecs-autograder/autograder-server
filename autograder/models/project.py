@@ -14,7 +14,7 @@ class Project(ModelValidatedOnSave):
     Represents a programming project for which students can
     submit solutions and have them evaluated.
 
-    Primary key: composite of the semester name and project name
+    Primary key: composite based on this Project's name and Semester.
 
     Fields:
         name -- The name used to identify this project.
@@ -87,9 +87,9 @@ class Project(ModelValidatedOnSave):
             This value must be >= min_num_matches.
 
     Instance methods:
-        add_project_file()
-        remove_project_file()
-        rename_project_file()
+        add_project_file() TODO
+        remove_project_file() TODO
+        rename_project_file() TODO?
 
     Static methods:
         get_by_composite_key()
@@ -130,7 +130,8 @@ class Project(ModelValidatedOnSave):
 
     @staticmethod
     def _compute_composite_primary_key(project_name, semester):
-        return "{0}_{1}".format(semester.name, project_name)
+        return "{0}_{1}_{2}".format(
+            semester.course.name, semester.name, project_name)
 
     # -------------------------------------------------------------------------
 
