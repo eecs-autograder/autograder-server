@@ -1,12 +1,19 @@
-from django.test import TestCase
+import os
+
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
-from autograder.models import Semester, Course  # , Project
+from autograder.models import Semester, Course
+
+import autograder.shared.utilities as ut
+
+from autograder.tests.temporary_filesystem_test_case import (
+    TemporaryFilesystemTestCase)
 
 
-class SemesterTestCase(TestCase):
+class SemesterTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
+        super().setUp()
         self.course = Course.objects.create(name="eecs280")
         self.SEMESTER_NAME = "fall2015"
 
@@ -64,3 +71,25 @@ class SemesterTestCase(TestCase):
     def test_exception_on_null_course(self):
         with self.assertRaises(ValueError):
             Semester.objects.create(name=self.SEMESTER_NAME, course=None)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class SemesterFilesystemTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+        self.course = Course.objects.create(name="eecs280")
+        self.SEMESTER_NAME = "fall2015"
+
+    # -------------------------------------------------------------------------
+
+    def test_semester_root_dir_created(self):
+        semester = Semester(name=self.SEMESTER_NAME, course=self.course)
+        expected_semester_root_dir = ut.get_semester_root_dir(semester)
+
+        self.assertFalse(os.path.exists(expected_semester_root_dir))
+
+        semester.save()
+
+        self.assertTrue(os.path.isdir(expected_semester_root_dir))

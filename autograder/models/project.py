@@ -1,3 +1,5 @@
+import os
+
 from django.db import models
 from django.core.exceptions import ValidationError
 
@@ -6,7 +8,8 @@ from picklefield.fields import PickledObjectField
 from autograder.models.model_utils import ModelValidatedOnSave
 from autograder.models import Semester
 
-from autograder.shared import global_constants as gc
+import autograder.shared.global_constants as gc
+import autograder.shared.utilities as ut
 
 
 class Project(ModelValidatedOnSave):
@@ -132,6 +135,28 @@ class Project(ModelValidatedOnSave):
     def _compute_composite_primary_key(project_name, semester):
         return "{0}_{1}_{2}".format(
             semester.course.name, semester.name, project_name)
+
+    # -------------------------------------------------------------------------
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        project_root_dir = ut.get_project_root_dir(self)
+        project_files_dir = ut.get_project_files_dir(self)
+        project_submissions_dir = ut.get_project_submissions_by_student_dir(
+            self)
+
+        if not os.path.isdir(project_root_dir):
+            # Since the database is in charge or validating the uniqueness
+            # of this project, we can assume at this point that creating
+            # the project directories will succeed.
+            # If for some reason it fails, this will be considered a
+            # more severe error, and the OSError thrown by os.makedirs
+            # will be handled at a higher level.
+
+            os.makedirs(project_root_dir)
+            os.mkdir(project_files_dir)
+            os.mkdir(project_submissions_dir)
 
     # -------------------------------------------------------------------------
 

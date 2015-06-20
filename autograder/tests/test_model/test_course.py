@@ -1,11 +1,17 @@
-from django.test import TestCase
+import os
+
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
 from autograder.models import Course
 
+import autograder.shared.utilities as ut
 
-class CourseTestCase(TestCase):
+from autograder.tests.temporary_filesystem_test_case import (
+    TemporaryFilesystemTestCase)
+
+
+class CourseTestCase(TemporaryFilesystemTestCase):
     def test_valid_save(self):
         NAME = "eecs280"
         Course.objects.create(name=NAME)
@@ -33,3 +39,24 @@ class CourseTestCase(TestCase):
         Course.objects.create(name=NAME)
         with self.assertRaises(IntegrityError):
             Course.objects.create(name=NAME)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+        self.COURSE_NAME = 'eecs280'
+
+    # -------------------------------------------------------------------------
+
+    def test_course_root_dir_created(self):
+        course = Course(name=self.COURSE_NAME)
+        expected_course_root_dir = ut.get_course_root_dir(course)
+
+        self.assertFalse(os.path.exists(expected_course_root_dir))
+
+        course.save()
+
+        self.assertTrue(os.path.isdir(expected_course_root_dir))

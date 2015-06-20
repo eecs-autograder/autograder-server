@@ -1,18 +1,21 @@
+import os
 import datetime
 
-from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.utils import timezone
 
 from autograder.models import Project, Semester, Course
 
+import autograder.shared.utilities as ut
+
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
 
-class ProjectTestCase(TestCase):
+class ProjectTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
+        super().setUp()
         self.course = Course.objects.create(name='eecs280')
         self.semester = Semester.objects.create(name='f15', course=self.course)
         self.PROJECT_NAME = 'stats_project'
@@ -209,4 +212,47 @@ class ProjectTestCase(TestCase):
 # -----------------------------------------------------------------------------
 
 class ProjectFilesystemTest(TemporaryFilesystemTestCase):
-    pass
+    def setUp(self):
+        super().setUp()
+        self.course = Course.objects.create(name='eecs280')
+        self.semester = Semester.objects.create(name='f15', course=self.course)
+        self.PROJECT_NAME = 'stats_project'
+
+    # -------------------------------------------------------------------------
+
+    def test_project_root_dir_created(self):
+        project = Project(name=self.PROJECT_NAME, semester=self.semester)
+        expected_project_root_dir = ut.get_project_root_dir(project)
+
+        self.assertFalse(os.path.exists(expected_project_root_dir))
+
+        project.save()
+
+        self.assertTrue(os.path.isdir(expected_project_root_dir))
+
+    # -------------------------------------------------------------------------
+
+    def test_project_files_dir_created(self):
+        project = Project(name=self.PROJECT_NAME, semester=self.semester)
+        expected_project_files_dir = ut.get_project_files_dir(project)
+
+        self.assertFalse(os.path.exists(expected_project_files_dir))
+
+        project.save()
+
+        self.assertTrue(os.path.isdir(expected_project_files_dir))
+
+    # -------------------------------------------------------------------------
+
+    def test_project_submissions_dir_created(self):
+        project = Project(name=self.PROJECT_NAME, semester=self.semester)
+        expected_project_submissions_by_student_dir = (
+            ut.get_project_submissions_by_student_dir(project))
+
+        self.assertFalse(
+            os.path.exists(expected_project_submissions_by_student_dir))
+
+        project.save()
+
+        self.assertTrue(
+            os.path.isdir(expected_project_submissions_by_student_dir))

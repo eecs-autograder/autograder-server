@@ -1,10 +1,13 @@
+import os
+
 from django.db import models
 from django.core.exceptions import ValidationError
 
 from autograder.models.model_utils import ModelValidatedOnSave
 from autograder.models import Course
 
-from autograder.shared import global_constants as gc
+import autograder.shared.global_constants as gc
+import autograder.shared.utilities as ut
 
 
 class Semester(ModelValidatedOnSave):
@@ -46,6 +49,21 @@ class Semester(ModelValidatedOnSave):
     @staticmethod
     def _compute_composite_primary_key(semester_name, course):
         return "{0}_{1}".format(course.name, semester_name)
+
+    # -------------------------------------------------------------------------
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        semester_root_dir = ut.get_semester_root_dir(self)
+        if not os.path.isdir(semester_root_dir):
+            # Since the database is in charge or validating the uniqueness
+            # of this semester, we can assume at this point that creating
+            # the semester directory will succeed. If for some reason it fails,
+            # this will be considered a more severe error, and the OSError
+            # thrown by os.makedirs will be handled at a higher level.
+
+            os.makedirs(semester_root_dir)
 
     # -------------------------------------------------------------------------
 
