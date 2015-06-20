@@ -7,9 +7,13 @@ def get_course_root_dir(course):
     return os.path.join(settings.MEDIA_ROOT, 'courses', course.name)
 
 
+def get_semester_root_dir(semester):
+    return os.path.join(get_course_root_dir(semester.course), semester.name)
+
+
 def get_project_root_dir(project):
     return os.path.join(
-        get_course_root_dir(project.course), 'projects', project.name)
+        get_semester_root_dir(project.semester), project.name)
 
 
 def get_project_files_dir(project):

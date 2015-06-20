@@ -73,18 +73,18 @@ class Project(ModelValidatedOnSave):
             }
 
             file_pattern should be a shell-style file pattern suitable for
-            use with Python's fnmatch.fnmatch()
-            function (https://docs.python.org/3.4/library/fnmatch.html).
+                use with Python's fnmatch.fnmatch()
+                function (https://docs.python.org/3.4/library/fnmatch.html).
 
             min_num_matches is the minimum number of files students are
-            required to submit that match file_pattern.
-            This value must be non-negative.
-            This value must be <= max_num_matches.
+                required to submit that match file_pattern.
+                This value must be non-negative.
+                This value must be <= max_num_matches.
 
             max_num_matches is the maximum number of files students are
-            allowed to submit that match file_pattern.
-            This value must be non negative.
-            This value must be >= min_num_matches.
+                allowed to submit that match file_pattern.
+                This value must be non negative.
+                This value must be >= min_num_matches.
 
     Instance methods:
         add_project_file() TODO
