@@ -21,6 +21,7 @@ class Course(ModelValidatedOnSave):
                 Must be unique, non-empty and non-null.
 
     Overridden member functions:
+        save()
         validate_fields()
     """
     name = models.CharField(

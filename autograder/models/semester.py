@@ -23,11 +23,12 @@ class Semester(ModelValidatedOnSave):
 
         course -- The Course that this semester is associated with.
 
-    Overridden member functions:
-        validate_fields()
-
     Static methods:
         get_by_composite_key()
+
+    Overridden member functions:
+        save()
+        validate_fields()
     """
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     course = models.ForeignKey(Course)

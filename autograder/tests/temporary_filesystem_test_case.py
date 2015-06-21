@@ -24,10 +24,12 @@ class TemporaryFilesystemTestCase(TestCase):
         self._old_media_root = settings.MEDIA_ROOT
         self.new_media_root = os.path.join(
             settings.BASE_DIR, 'tmp_filesystem')
+
+        # print("Creating: " + self.new_media_root)
         os.makedirs(self.new_media_root)
         settings.MEDIA_ROOT = self.new_media_root
 
     def tearDown(self):
         settings.MEDIA_ROOT = self._old_media_root
-        print("Deleting: " + self.new_media_root)
+        # print("Deleting: " + self.new_media_root)
         shutil.rmtree(self.new_media_root)

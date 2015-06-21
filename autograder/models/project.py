@@ -1,9 +1,10 @@
 import os
+import re
 
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from picklefield.fields import PickledObjectField
+from jsonfield import JSONField
 
 from autograder.models.model_utils import ModelValidatedOnSave
 from autograder.models import Semester
@@ -89,15 +90,20 @@ class Project(ModelValidatedOnSave):
                 This value must be non negative.
                 This value must be >= min_num_matches.
 
+    Static methods:
+        get_by_composite_key()
+
     Instance methods:
         add_project_file() TODO
         remove_project_file() TODO
         rename_project_file() TODO?
 
-    Static methods:
-        get_by_composite_key()
+        add_test_case() TODO (here or in test case?)
+        update_test_case() TODO (here or in test case?)
+        remove_test_case() TODO (here or in test case?)
 
     Overridden methods:
+        save()
         validate_fields()
     """
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
@@ -112,10 +118,10 @@ class Project(ModelValidatedOnSave):
     disallow_student_submissions = models.BooleanField(default=False)
     min_group_size = models.IntegerField(default=1)
     max_group_size = models.IntegerField(default=1)
-    required_student_files = PickledObjectField(default=[])
-    expected_student_file_patterns = PickledObjectField(default={})
+    required_student_files = JSONField(default=[])
+    expected_student_file_patterns = JSONField(default={})
 
-    _project_files = PickledObjectField(default=[])
+    _project_files = JSONField(default=[])
 
     _composite_primary_key = models.TextField(primary_key=True)
 
@@ -135,6 +141,52 @@ class Project(ModelValidatedOnSave):
     def _compute_composite_primary_key(project_name, semester):
         return "{0}_{1}_{2}".format(
             semester.course.name, semester.name, project_name)
+
+    # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+
+    def add_project_file(self, filename, file_content, overwrite_ok=False):
+        """
+        Adds a file with the specified name and content to this Project.
+
+        Filename must contain only alphanumeric characters, hyphen,
+        underscore, and period, otherwise ValueError is raised.
+
+        Raises ValueError if filename is empty.
+
+        Raises FileExistsError if a file with the given name already exists
+        for this project and overwrite_ok is False.
+
+        Note that atomicity for this operation is handled at the
+        request level.
+        """
+        if not filename:
+            raise ValueError(
+                "The empty string is not a valid filename")
+
+        if not re.fullmatch(gc.PROJECT_FILENAME_WHITELIST_REGEX, filename):
+            raise ValueError(
+                "Filename must contain only alphanumeric characters, hyphen, "
+                "underscore, and period, otherwise ValueError is raised.")
+
+        if filename in self._project_files and not overwrite_ok:
+            raise FileExistsError(
+                "File {0} for {1} {2} project {3} already exists".format(
+                    filename,
+                    self.semester.course.name, self.semester.name,
+                    self.name))
+
+        self._project_files.append(filename)
+        self.save()
+
+        with ut.ChangeDirectory(ut.get_project_files_dir(self)):
+            with open(filename, 'w') as f:
+                f.write(file_content)
+
+    # -------------------------------------------------------------------------
+
+    def remove_project_file(self, filename):
+        pass
 
     # -------------------------------------------------------------------------
 

@@ -10,3 +10,9 @@ PROJECT_SUBMISSIONS_DIRNAME = 'submissions_by_student'
 
 # The subdirectory of settings.MEDIA_ROOT where projects will be placed.
 FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'
+
+# This regular expression provides the whitelist to be used when validating
+# user-uploaded project filenames.
+# Filenames can contain:
+#   alphanumeric characters, hyphen, underscore, and period
+PROJECT_FILENAME_WHITELIST_REGEX = r"[a-zA-Z0-9-_.]*"

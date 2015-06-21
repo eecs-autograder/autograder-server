@@ -23,6 +23,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_valid_create_with_defaults(self):
+        print("test_valid_create_with_defaults")
         new_project = Project.objects.create(
             name=self.PROJECT_NAME, semester=self.semester)
 
@@ -80,7 +81,8 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             loaded_project.required_student_files, required_student_files)
         self.assertEqual(
-            loaded_project.expected_student_file_patterns, expected_student_file_patterns)
+            loaded_project.expected_student_file_patterns,
+            expected_student_file_patterns)
 
     # -------------------------------------------------------------------------
 
@@ -218,6 +220,10 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         self.semester = Semester.objects.create(name='f15', course=self.course)
         self.PROJECT_NAME = 'stats_project'
 
+        self.sample_project_filename = "spam_EGGS-42.txt"
+        self.sample_project_file_contents = "spam egg sausage spam"
+
+    # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
 
     def test_project_root_dir_created(self):
@@ -256,3 +262,87 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
         self.assertTrue(
             os.path.isdir(expected_project_submissions_by_student_dir))
+
+    # -------------------------------------------------------------------------
+
+    def test_valid_add_project_file(self):
+        print("test_valid_add_project_file")
+        project = Project.objects.create(
+            name='schmeeee', semester=self.semester)
+
+        self.assertEqual(project.project_files, [])
+
+        project.add_project_file(
+            self.sample_project_filename, self.sample_project_file_contents)
+
+        self.assertEqual(
+            [self.sample_project_filename], project.project_files)
+
+        with ut.ChangeDirectory(ut.get_project_files_dir(project)):
+            self.assertTrue(os.path.isfile(self.sample_project_filename))
+            with open(self.sample_project_filename) as f:
+                self.assertEqual(self.sample_project_file_contents, f.read())
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_add_file_overwrite_not_ok(self):
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+
+        project.add_project_file(
+            self.sample_project_filename, self.sample_project_file_contents)
+
+        with self.assertRaises(FileExistsError):
+            project.add_project_file(
+                self.sample_project_filename,
+                self.sample_project_file_contents)
+
+    # -------------------------------------------------------------------------
+
+    def test_no_exception_on_add_file_overwrite_ok(self):
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+
+        self.assertEqual(project.project_files, [])
+
+        project.add_project_file(
+            self.sample_project_filename, self.sample_project_file_contents)
+
+        new_contents = "cheeeeeeeeese"
+        project.add_project_file(
+            self.sample_project_filename, new_contents, overwrite_ok=True)
+
+        with ut.ChangeDirectory(ut.get_project_files_dir(project)):
+            self.assertTrue(os.path.isfile(self.sample_project_filename))
+            with open(self.sample_project_filename) as f:
+                self.assertEqual(new_contents, f.read())
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_add_file_filename_that_is_path(self):
+        # This test makes sure that add_project_file() doesn't allow
+        # the user to add files in subdirectories (or worse, somewhere else
+        # in the filesystem).
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValueError):
+            project.add_project_file(
+                '../cheese.txt', "haxorz!", overwrite_ok=True)
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_filename_that_has_shell_characters(self):
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValueError):
+            project.add_project_file(
+                '; echo "haxorz"; # ', "haxorz!", overwrite_ok=True)
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_empty_filename(self):
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValueError):
+            project.add_project_file(
+                "", self.sample_project_file_contents)
