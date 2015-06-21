@@ -186,7 +186,26 @@ class Project(ModelValidatedOnSave):
     # -------------------------------------------------------------------------
 
     def remove_project_file(self, filename):
-        pass
+        """
+        Removes the specified file from the database and filesystem.
+
+        Raises FileNotFoundError if no such file exists for this Project.
+
+        Note that atomicity for this operation is handled at the
+        request level.
+        """
+        if filename not in self._project_files:
+            raise FileNotFoundError(
+                "File {0} for {1} {2} project {3} does not exist".format(
+                    filename,
+                    self.semester.course.name, self.semester.name,
+                    self.name))
+
+        self._project_files.remove(filename)
+        self.save()
+
+        with ut.ChangeDirectory(ut.get_project_files_dir(self)):
+            os.remove(filename)
 
     # -------------------------------------------------------------------------
 

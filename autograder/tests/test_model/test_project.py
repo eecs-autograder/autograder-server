@@ -21,9 +21,9 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.PROJECT_NAME = 'stats_project'
 
     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
     def test_valid_create_with_defaults(self):
-        print("test_valid_create_with_defaults")
         new_project = Project.objects.create(
             name=self.PROJECT_NAME, semester=self.semester)
 
@@ -266,9 +266,8 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_valid_add_project_file(self):
-        print("test_valid_add_project_file")
         project = Project.objects.create(
-            name='schmeeee', semester=self.semester)
+            name=self.PROJECT_NAME, semester=self.semester)
 
         self.assertEqual(project.project_files, [])
 
@@ -346,3 +345,26 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         with self.assertRaises(ValueError):
             project.add_project_file(
                 "", self.sample_project_file_contents)
+
+    # -------------------------------------------------------------------------
+
+    def test_valid_remove_project_file(self):
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        project.add_project_file(
+            self.sample_project_filename, self.sample_project_file_contents)
+
+        with ut.ChangeDirectory(ut.get_project_files_dir(project)):
+            self.assertTrue(os.path.isfile(self.sample_project_filename))
+
+        project.remove_project_file(self.sample_project_filename)
+        with ut.ChangeDirectory(ut.get_project_files_dir(project)):
+            self.assertFalse(os.path.isfile(self.sample_project_filename))
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_remove_nonexistant_project_file(self):
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(FileNotFoundError):
+            project.remove_project_file(self.sample_project_filename)
