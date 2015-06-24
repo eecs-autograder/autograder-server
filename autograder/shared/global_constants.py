@@ -1,3 +1,5 @@
+import re
+
 MAX_CHAR_FIELD_LEN = 255
 
 # For a given project, the name of the directory that
@@ -12,7 +14,17 @@ PROJECT_SUBMISSIONS_DIRNAME = 'submissions_by_student'
 FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'
 
 # This regular expression provides the whitelist to be used when validating
-# user-uploaded project filenames.
+# the names of user-uploaded files.
 # Filenames can contain:
 #   alphanumeric characters, hyphen, underscore, and period
-PROJECT_FILENAME_WHITELIST_REGEX = r"[a-zA-Z0-9-_.]*"
+PROJECT_FILENAME_WHITELIST_REGEX = re.compile(
+    r"[a-zA-Z0-9-_.]*")
+
+# This regular expression provides the whitelist to be used
+# when validating shell-style file patterns.
+# File patterns can contain:
+#   alphanumeric characters, hyphen, underscore, period, * ? [ ] and !
+# Note that submitted files that are meant to match shell patterns
+# are still restricted to the same charset as other user-uploaded files.
+PROJECT_FILE_PATTERN_WHITELIST_REGEX = re.compile(
+    r"[a-zA-Z0-9-_.\*\[\]\?\!]*")

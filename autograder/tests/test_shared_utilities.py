@@ -1,11 +1,28 @@
 from django.test import TestCase
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 from autograder.models import Project, Course, Semester
 
 import autograder.shared.utilities as ut
 import autograder.shared.global_constants as gc
 
+
+class CheckUserProvidedFilenameTest(TestCase):
+    def test_valid_filename(self):
+        ut.check_user_provided_filename('spAM-eggs_42.cpp')
+
+    def test_exception_on_file_path_given(self):
+        with self.assertRaises(ValidationError):
+            ut.check_user_provided_filename('../spam.txt')
+
+    def test_exception_on_filename_with_shell_chars(self):
+        with self.assertRaises(ValidationError):
+            ut.check_user_provided_filename('; echo "haxorz"; # ')
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 class FileSystemUtilTestCase(TestCase):
     def setUp(self):

@@ -1,5 +1,4 @@
 import os
-import re
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -34,6 +33,8 @@ class Project(ModelValidatedOnSave):
             for this Project. For example, these files might include
             C++ header files, libraries that are provided to students,
             autograder test cases, input files, etc.
+            See autograder.shared.utilities.check_user_provided_filename
+            for restrictions on filenames.
             Default value: empty list
 
         visible_to_students -- Whether information about this Project can
@@ -64,6 +65,8 @@ class Project(ModelValidatedOnSave):
 
         required_student_files -- A list of files that students
             are required to submit for this project.
+            See autograder.shared.utilities.check_user_provided_filename
+            for restrictions on filenames.
             Default value: empty list
 
         expected_student_file_patterns -- A dictionary of Unix shell-style
@@ -79,6 +82,7 @@ class Project(ModelValidatedOnSave):
             file_pattern should be a shell-style file pattern suitable for
                 use with Python's fnmatch.fnmatch()
                 function (https://docs.python.org/3.4/library/fnmatch.html).
+                TODO pattern whitelist
 
             min_num_matches is the minimum number of files students are
                 required to submit that match file_pattern.
@@ -94,8 +98,8 @@ class Project(ModelValidatedOnSave):
         get_by_composite_key()
 
     Instance methods:
-        add_project_file() TODO
-        remove_project_file() TODO
+        add_project_file()
+        remove_project_file()
         rename_project_file() TODO?
 
         add_test_case() TODO (here or in test case?)
@@ -160,14 +164,7 @@ class Project(ModelValidatedOnSave):
         Note that atomicity for this operation is handled at the
         request level.
         """
-        if not filename:
-            raise ValueError(
-                "The empty string is not a valid filename")
-
-        if not re.fullmatch(gc.PROJECT_FILENAME_WHITELIST_REGEX, filename):
-            raise ValueError(
-                "Filename must contain only alphanumeric characters, hyphen, "
-                "underscore, and period, otherwise ValueError is raised.")
+        ut.check_user_provided_filename(filename)
 
         if filename in self._project_files and not overwrite_ok:
             raise FileExistsError(
@@ -258,14 +255,10 @@ class Project(ModelValidatedOnSave):
                 "Maximum group size must be >= minimum group size")
 
         for filename in self.required_student_files:
-            if not filename:
-                raise ValidationError(
-                    "The empty string is not a valid filename")
+            ut.check_user_provided_filename(filename)
 
         for file_pattern, min_max in self.expected_student_file_patterns.items():
-            if not file_pattern:
-                raise ValidationError(
-                    "The empty string is not a valid file pattern")
+            ut.check_shell_style_file_pattern(file_pattern)
 
             if min_max[0] > min_max[1]:
                 raise ValidationError(
