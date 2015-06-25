@@ -1,9 +1,8 @@
 import os
 
 from django.db import models
-from django.core.exceptions import ValidationError
 
-from autograder.models.model_utils import ModelValidatedOnSave
+from autograder.models.model_validated_on_save import ModelValidatedOnSave
 from autograder.models import Course
 
 import autograder.shared.global_constants as gc
@@ -75,7 +74,7 @@ class Semester(ModelValidatedOnSave):
                     self.name, self.course))
 
         if not self.name:
-            raise ValidationError(
+            raise ValueError(
                 "Semester name must be non-empty and non-null")
 
         # Foreign key fields raise ValueError if you try to

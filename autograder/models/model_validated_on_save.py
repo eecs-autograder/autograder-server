@@ -20,7 +20,6 @@ class ModelValidatedOnSave(models.Model):
     def validate_fields(self):
         """
         Checks the state of this Model object and raises
-        django.core.exceptions.ValidationError if any fields
-        are invalid.
+        ValueError if any fields are invalid.
         """
         raise NotImplementedError("Derived classes must override this method.")

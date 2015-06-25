@@ -1,6 +1,5 @@
 import os
 
-from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
 from autograder.models import Course
@@ -23,13 +22,13 @@ class CourseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_empty_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Course.objects.create(name='')
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Course.objects.create(name=None)
 
     # -------------------------------------------------------------------------

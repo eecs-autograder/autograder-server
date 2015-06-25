@@ -1,6 +1,5 @@
 from django.test import TestCase
 from django.conf import settings
-from django.core.exceptions import ValidationError
 
 from autograder.models import Project, Course, Semester
 
@@ -13,12 +12,19 @@ class CheckUserProvidedFilenameTest(TestCase):
         ut.check_user_provided_filename('spAM-eggs_42.cpp')
 
     def test_exception_on_file_path_given(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             ut.check_user_provided_filename('../spam.txt')
 
+        with self.assertRaises(ValueError):
+            ut.check_user_provided_filename('..')
+
     def test_exception_on_filename_with_shell_chars(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             ut.check_user_provided_filename('; echo "haxorz"; # ')
+
+    def test_exception_on_filename_starts_with_dot(self):
+        with self.assertRaises(ValueError):
+            ut.check_user_provided_filename('.spameggs')
 
 
 # -----------------------------------------------------------------------------

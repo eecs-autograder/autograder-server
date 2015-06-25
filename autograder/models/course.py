@@ -1,9 +1,8 @@
 import os
 
 from django.db import models
-from django.core.exceptions import ValidationError
 
-from autograder.models.model_utils import ModelValidatedOnSave
+from autograder.models.model_validated_on_save import ModelValidatedOnSave
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
@@ -48,5 +47,5 @@ class Course(ModelValidatedOnSave):
 
     def validate_fields(self):
         if not self.name:
-            raise ValidationError(
+            raise ValueError(
                 "Course name must be non-null and non-empty.")

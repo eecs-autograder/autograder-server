@@ -1,8 +1,6 @@
 import os
-import re
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
 
 import autograder.shared.global_constants as gc
 
@@ -14,16 +12,24 @@ def check_user_provided_filename(filename):
         - Filenames must be non-empty and non-null
         - Filenames must only contain the characters specified in
           autograder.shared.global_constants.PROJECT_FILENAME_WHITELIST_REGEX
+        - Filenames cannot be the string ".."
+        - Filenames cannot start with '.'
 
-    If the given filename does not meet these requirements, ValidationError
+    If the given filename does not meet these requirements, ValueError
     is raised. These restrictions are placed on filenames for security
     purposes.
     """
     if not filename:
-        raise ValidationError("Filenames must be non-empty and non-null")
+        raise ValueError("Filenames must be non-empty and non-null")
+
+    if filename.startswith('.'):
+        raise ValueError("Filenames cannot start with '.'")
+
+    if filename == "..":
+        raise ValueError("'..' is not a valid filename")
 
     if not gc.PROJECT_FILENAME_WHITELIST_REGEX.fullmatch(filename):
-        raise ValidationError(
+        raise ValueError(
             "Invalid filename: {0} \n"
             "Filenames must contain only alphanumeric characters, hyphen, "
             "underscore, and period.".format(filename))
@@ -39,15 +45,15 @@ def check_shell_style_file_pattern(pattern):
         - Filenames myst only contain characters specified in
           autograder.shared.global_constants.PROJECT_FILE_PATTERN_WHITELIST_REGEX
 
-    If the given pattern does not meet these requirements, ValidationError
+    If the given pattern does not meet these requirements, ValueError
     is raised. These restrictions are placed on file patterns for security
     purposes.
     """
     if not pattern:
-        raise ValidationError("File patterns must be non-empty and non-null")
+        raise ValueError("File patterns must be non-empty and non-null")
 
     if not gc.PROJECT_FILE_PATTERN_WHITELIST_REGEX.fullmatch(pattern):
-        raise ValidationError(
+        raise ValueError(
             "Invalid file pattern: {0} \n"
             "Shell-style patterns must only contain "
             "alphanumeric characters, hyphen, underscore, "

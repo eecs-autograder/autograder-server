@@ -1,11 +1,10 @@
 import os
 
 from django.db import models
-from django.core.exceptions import ValidationError
 
 from jsonfield import JSONField
 
-from autograder.models.model_utils import ModelValidatedOnSave
+from autograder.models.model_validated_on_save import ModelValidatedOnSave
 from autograder.models import Semester
 
 import autograder.shared.global_constants as gc
@@ -117,6 +116,7 @@ class Project(ModelValidatedOnSave):
     def project_files(self):
         return self._project_files
 
+    _project_files = JSONField(default=[])
     visible_to_students = models.BooleanField(default=False)
     closing_time = models.DateTimeField(default=None, null=True)
     disallow_student_submissions = models.BooleanField(default=False)
@@ -124,8 +124,6 @@ class Project(ModelValidatedOnSave):
     max_group_size = models.IntegerField(default=1)
     required_student_files = JSONField(default=[])
     expected_student_file_patterns = JSONField(default={})
-
-    _project_files = JSONField(default=[])
 
     _composite_primary_key = models.TextField(primary_key=True)
 
@@ -234,7 +232,7 @@ class Project(ModelValidatedOnSave):
                 self.name, self.semester)
 
         if not self.name:
-            raise ValidationError(
+            raise ValueError(
                 "Project names must be non-null and non-empty")
 
         # Foreign key fields raise ValueError if you try to
@@ -245,13 +243,13 @@ class Project(ModelValidatedOnSave):
             raise Exception("Invalid composite primary key")
 
         if self.min_group_size < 1:
-            raise ValidationError("Minimum group size must be at least 1")
+            raise ValueError("Minimum group size must be at least 1")
 
         if self.max_group_size < 1:
-            raise ValidationError("Maximum group size must be at least 1")
+            raise ValueError("Maximum group size must be at least 1")
 
         if self.max_group_size < self.min_group_size:
-            raise ValidationError(
+            raise ValueError(
                 "Maximum group size must be >= minimum group size")
 
         for filename in self.required_student_files:
@@ -261,16 +259,16 @@ class Project(ModelValidatedOnSave):
             ut.check_shell_style_file_pattern(file_pattern)
 
             if min_max[0] > min_max[1]:
-                raise ValidationError(
+                raise ValueError(
                     "The minimum for an expected file pattern must be less "
                     "than the maximum")
 
             if min_max[0] < 0:
-                raise ValidationError(
+                raise ValueError(
                     "The minimum for an expected file pattern "
                     "must be non-negative")
 
             if min_max[1] < 0:
-                raise ValidationError(
+                raise ValueError(
                     "The maximum for an expected file pattern "
                     "must be non-negative")

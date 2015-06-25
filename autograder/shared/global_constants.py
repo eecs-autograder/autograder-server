@@ -28,3 +28,5 @@ PROJECT_FILENAME_WHITELIST_REGEX = re.compile(
 # are still restricted to the same charset as other user-uploaded files.
 PROJECT_FILE_PATTERN_WHITELIST_REGEX = re.compile(
     r"[a-zA-Z0-9-_.\*\[\]\?\!]*")
+
+DEFAULT_VALGRIND_FLAGS_WHEN_USED = ['--leak-check=full', '--error-exitcode=1']

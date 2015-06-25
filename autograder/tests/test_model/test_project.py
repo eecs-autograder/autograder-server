@@ -1,7 +1,6 @@
 import os
 import datetime
 
-from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.utils import timezone
 
@@ -91,13 +90,13 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_empty_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(name='', semester=self.semester)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(name=None, semester=self.semester)
 
     # -------------------------------------------------------------------------
@@ -151,7 +150,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_min_group_size_too_small(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 min_group_size=0)
@@ -159,7 +158,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_max_group_size_too_small(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 max_group_size=0)
@@ -167,7 +166,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_max_group_size_smaller_than_min_group_size(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 min_group_size=3, max_group_size=2)
@@ -175,7 +174,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_required_filenames_has_empty_string(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 required_student_files=["spam.cpp", ""])
@@ -183,15 +182,20 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_required_filename_has_illegal_path_chars(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 required_student_files=["spam.cpp", "../spam.txt"])
 
+        with self.assertRaises(ValueError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                required_student_files=["spam.cpp", ".."])
+
     # -------------------------------------------------------------------------
 
     def test_exception_on_required_filename_has_illegal_shell_chars(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 required_student_files=[
@@ -199,8 +203,16 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
+    def test_exception_on_required_filename_starts_with_dot(self):
+        with self.assertRaises(ValueError):
+            Project.objects.create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                required_student_files=["spam.cpp", ".spamspam"])
+
+    # -------------------------------------------------------------------------
+
     def test_exception_on_negative_min_matches_in_expected_file_pattern(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 expected_student_file_patterns={"spam": [-2, 4]})
@@ -208,7 +220,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_negative_max_matches_in_expected_file_pattern(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 expected_student_file_patterns={"spam": [4, -2]})
@@ -216,7 +228,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_max_less_than_min_in_expected_file_pattern(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 expected_student_file_patterns={"spam": [4, 1]})
@@ -224,7 +236,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_expected_file_patterns_has_empty_string(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 expected_student_file_patterns={
@@ -233,7 +245,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_expected_file_patterns_has_illegal_path_chars(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 expected_student_file_patterns={
@@ -242,7 +254,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_expected_file_patterns_has_illegal_shell_chars(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             Project.objects.create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 expected_student_file_patterns={
@@ -363,25 +375,38 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         # in the filesystem).
         project = Project.objects.create(
             name=self.PROJECT_NAME, semester=self.semester)
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             project.add_project_file(
                 '../cheese.txt', "haxorz!", overwrite_ok=True)
+
+        with self.assertRaises(ValueError):
+            project.add_project_file(
+                '..', "haxorz!", overwrite_ok=True)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_filename_that_has_shell_characters(self):
         project = Project.objects.create(
             name=self.PROJECT_NAME, semester=self.semester)
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             project.add_project_file(
                 _FILENAME_WITH_SHELL_CHARS, "haxorz!", overwrite_ok=True)
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_filename_that_starts_with_dot(self):
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValueError):
+            project.add_project_file(
+                '.cheese.txt', "whoa!", overwrite_ok=True)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_empty_filename(self):
         project = Project.objects.create(
             name=self.PROJECT_NAME, semester=self.semester)
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             project.add_project_file(
                 "", self.sample_project_file_contents)
 
