@@ -109,6 +109,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
         run()
 
     Overridden methods:
+        __init__()
         validate_fields()
     """
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
@@ -139,6 +140,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
     expected_program_standard_error_stream_content = models.TextField()
 
     use_valgrind = models.BooleanField(default=False)
+
     valgrind_flags = JSONField(null=True, default=None)
 
     _composite_primary_key = models.TextField(primary_key=True)
@@ -159,6 +161,13 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
             project.name, test_name)
 
     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.use_valgrind and self.valgrind_flags is None:
+            self.valgrind_flags = gc.DEFAULT_VALGRIND_FLAGS_WHEN_USED
+
     # -------------------------------------------------------------------------
 
     def run(self):
