@@ -1,9 +1,29 @@
 import os
+import re
 
 from django.conf import settings
 
 import autograder.shared.global_constants as gc
 
+
+def check_values_against_whitelist(values, whitelist):
+    """
+    values -- An iterable object.
+    whitelist -- A regular expression (can be compiled or a string).
+
+    Raises ValueError if any value in values does not fully match the
+    whitelist regex (as per regex.fullmatch
+    https://docs.python.org/3.4/library/re.html#re.regex.fullmatch)
+    """
+    for value in values:
+        if not re.fullmatch(whitelist, value):
+            raise ValueError(
+                "Value {0} contains illegal characters "
+                "as per the expression {1}".format(
+                    value, whitelist))
+
+
+# -----------------------------------------------------------------------------
 
 def check_user_provided_filename(filename):
     """

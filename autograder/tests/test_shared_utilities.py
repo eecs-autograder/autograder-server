@@ -1,3 +1,5 @@
+import re
+
 from django.test import TestCase
 from django.conf import settings
 
@@ -6,6 +8,26 @@ from autograder.models import Project, Course, Semester
 import autograder.shared.utilities as ut
 import autograder.shared.global_constants as gc
 
+
+class CheckValuesAgainstWhitelistTestCase(TestCase):
+    def setUp(self):
+        self.regex = r'spam.*'
+
+    def test_valid_values(self):
+        ut.check_values_against_whitelist(
+            ['spam', 'spam1', 'spam2'], self.regex)
+
+        ut.check_values_against_whitelist(
+            ['spam', 'spam1', 'spam2'], re.compile(self.regex))
+
+    def test_invalid_values(self):
+        with self.assertRaises(ValueError):
+            ut.check_values_against_whitelist(
+                ['spam', 'spam1', 'badspam', 'spam2'], self.regex)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 class CheckUserProvidedFilenameTest(TestCase):
     def test_valid_filename(self):

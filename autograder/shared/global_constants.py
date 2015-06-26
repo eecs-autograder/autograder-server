@@ -30,3 +30,10 @@ PROJECT_FILE_PATTERN_WHITELIST_REGEX = re.compile(
     r"[a-zA-Z0-9-_.\*\[\]\?\!]*")
 
 DEFAULT_VALGRIND_FLAGS_WHEN_USED = ['--leak-check=full', '--error-exitcode=1']
+
+# This regular expression provides the whitelist to be used when validating
+# command line arguments used in an autograder test case.
+# Command line arguments can contain:
+#   alphanumeric characters, hyphen, underscore, equals
+COMMAND_LINE_ARG_WHITELIST_REGEX = re.compile(
+    r"[a-zA-Z0-9-_=]*")

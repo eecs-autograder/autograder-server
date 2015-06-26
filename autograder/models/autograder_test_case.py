@@ -59,11 +59,18 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
         expected_program_return_code -- The return code that the
             program being tested should exit with in order to pass
             this test case.
-            A value of None indicates that this test case should not
+            When expect_any_nonzero_return_code is False, a value of
+                None indicates that this test case should not
                 check the program's return code.
-            The string "NONZERO" indicates that any non-zero return
-                code should be accepted by this test case.
             Default value: None
+
+        expect_any_nonzero_return_code -- Indicates that rather than
+            checking for a specific return code, this test case should
+            evaluate whether the program being tested exited with
+            any return code other than zero.
+            If this field is True, the value of expected_program_return_code
+                is ignored
+            Default value: False
 
         expected_program_standard_output_stream_content -- A string
             whose contents should be compared to the standard output
@@ -120,20 +127,8 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
     test_resource_files = JSONField(default=[])
     time_limit = models.IntegerField(default=30)
 
-    @property
-    def expected_program_return_code(self):
-        try:
-            return int(self._expected_program_return_code)
-        except ValueError:
-            return (None if not self._expected_program_return_code
-                    else self._expected_program_return_code)
-
-    _expected_program_return_code = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN)
-
-    @expected_program_return_code.setter
-    def expected_program_return_code(self, value):
-        self._expected_program_return_code = str(value)
+    expected_program_return_code = models.IntegerField(null=True, default=None)
+    expect_any_nonzero_return_code = models.BooleanField(default=False)
 
     expected_program_standard_output_stream_content = models.TextField()
 
@@ -188,6 +183,31 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
             self._composite_primary_key = self._compute_composite_primary_key(
                 self.name, self.project)
 
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
+        if not self.name:
+            raise ValueError("Test case names must be non-empty and non-null")
 
+        if self.command_line_arguments is None:
+            raise ValueError("command_line_arguments cannot be None")
+
+        ut.check_values_against_whitelist(
+            self.command_line_arguments, gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
+
+        if self.test_resource_files is None:
+            raise ValueError("test_resource_files cannot be None")
+
+        for filename in self.test_resource_files:
+            if filename not in self.project.project_files:
+                raise ValueError(
+                    "File {0} does not exist in project {1}".format(
+                        filename, self.project.name))
+
+        if self.time_limit <= 0:
+            raise ValueError("time_limit must be positive")
+
+        if self.use_valgrind:
+            if self.valgrind_flags is None:
+                raise ValueError(
+                    "When using valgrind, valgrind_flags cannot be None")
+
+            ut.check_values_against_whitelist(
+                self.valgrind_flags, gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
