@@ -1,13 +1,65 @@
+import os
 import re
 
 from django.test import TestCase
 from django.conf import settings
 
 from autograder.models import Project, Course, Semester
+from .temporary_filesystem_test_case import TemporaryFilesystemTestCase
 
 import autograder.shared.utilities as ut
 import autograder.shared.global_constants as gc
 
+
+class TestFileSystemNavigationUtils(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.original_dir = os.getcwd()
+        os.chdir(settings.MEDIA_ROOT)
+
+    def tearDown(self):
+        super().tearDown()
+
+        os.chdir(self.original_dir)
+
+    def test_change_directory(self):
+        new_dirname = 'my_dir'
+        os.mkdir('my_dir')
+
+        self.assertEqual(os.getcwd(), settings.MEDIA_ROOT)
+
+        with ut.ChangeDirectory(new_dirname):
+            self.assertEqual(
+                os.path.join(settings.MEDIA_ROOT, new_dirname),
+                os.getcwd())
+
+        self.assertEqual(os.getcwd(), settings.MEDIA_ROOT)
+
+    def test_temporary_file(self):
+        filename = 'spam_file'
+        contents = "alsdkjflasjdfla;sdjf"
+        self.assertFalse(os.path.exists(filename))
+
+        with ut.TemporaryFile(filename, contents):
+            self.assertTrue(os.path.isfile(filename))
+            with open(filename) as f:
+                self.assertEqual(f.read(), contents)
+
+        self.assertFalse(os.path.exists(filename))
+
+    def test_temporary_directory(self):
+        dirname = 'eggs_dir'
+        self.assertFalse(os.path.exists(dirname))
+
+        with ut.TemporaryDirectory(dirname):
+            self.assertTrue(os.path.isdir(dirname))
+
+        self.assertFalse(os.path.exists(dirname))
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 class CheckValuesAgainstWhitelistTestCase(TestCase):
     def setUp(self):

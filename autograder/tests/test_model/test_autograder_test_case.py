@@ -53,6 +53,12 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertFalse(loaded_test_case.use_valgrind)
         self.assertIsNone(loaded_test_case.valgrind_flags)
 
+        # Fat interface fields
+        self.assertEqual(loaded_test_case.compiler, "")
+        self.assertEqual(loaded_test_case.compiler_flags, [])
+        self.assertEqual(loaded_test_case.files_to_compile_together, [])
+        self.assertEqual(loaded_test_case.executable_name, "")
+
     # -------------------------------------------------------------------------
 
     def test_valid_initialization_custom_values(self):

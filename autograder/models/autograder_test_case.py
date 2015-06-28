@@ -109,6 +109,42 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
             Default value: ['--leak-check=full', '--error-exitcode=1'] if
                 use_valgrind is true, None if use_valgrind is False.
 
+    Fat interface fields:
+        NOTE: These fields all default to a "Falsy" value and should be
+            used by derived classes to specifically define how types of
+            autograder tests should run, i.e. A compiled program, an
+            interpreted program, a compilation-only program, a compiled
+            and interpreted program, etc.
+
+        compiler -- The program that will be used to compile the program.
+            Currently supported values: g++
+            Default value: empty string
+
+        compiler_flags -- A list of option flags to be passed to the compiler.
+            These flags are limited to the same character set as
+            the command_line_arguments field.
+            NOTE: This list should NOT include the names of files that
+                need to be compiled and should not include flags that affect
+                the name of the resulting executable program.
+            Default value: empty list
+
+        files_to_compile_together -- A list of files that need to be
+            compiled together. These filenames are restricted to those
+            in project.required_student_filenames and project.project files,
+            and may also include patterns from
+            project.expected_student_file_patterns.
+            NOTE: When a pattern is part of this list, all student-submitted
+                files matching the pattern will be compiled together.
+            Default value: empty list
+
+        executable_name -- The name of the executable program that should be
+            produced by the compiler. This is the program that will be
+            Default value: empty string
+
+        interpreter -- TODO
+        interpreter_flags -- TODO
+        entry_point_file -- TODOs
+
     Static methods:
         get_by_composite_key()
 
@@ -139,6 +175,12 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
     valgrind_flags = JSONField(null=True, default=None)
 
     _composite_primary_key = models.TextField(primary_key=True)
+
+    # Fat interface fields
+    compiler = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
+    compiler_flags = JSONField(default=[])
+    files_to_compile_together = JSONField(default=[])
+    executable_name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------

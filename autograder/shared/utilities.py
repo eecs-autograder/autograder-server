@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 
 from django.conf import settings
 
@@ -172,3 +173,39 @@ class ChangeDirectory(object):
 
     def __exit__(self, *args):
         os.chdir(self._original_dir)
+
+
+# -----------------------------------------------------------------------------
+
+class TemporaryFile(object):
+    """
+    Enables creating and destroying a temporary file using "with" statements.
+    """
+    def __init__(self, filename, file_contents):
+        self.filename = filename
+        self.file_contents = file_contents
+
+    def __enter__(self):
+        with open(self.filename, 'w') as f:
+            f.write(self.file_contents)
+
+    def __exit__(self, *args):
+        os.remove(self.filename)
+
+
+# -----------------------------------------------------------------------------
+
+class TemporaryDirectory(object):
+    """
+    Enables creating and destroying a temporary directory using "with" statements.
+    Note that when the directory is destroyed, any files inside it
+    will be destroyed as well.
+    """
+    def __init__(self, dirname):
+        self.dirname = dirname
+
+    def __enter__(self):
+        os.mkdir(self.dirname)
+
+    def __exit__(self, *args):
+        shutil.rmtree(self.dirname)
