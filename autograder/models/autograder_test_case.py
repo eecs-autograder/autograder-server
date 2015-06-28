@@ -1,3 +1,10 @@
+"""
+Classes:
+    AutograderTestCaseBase -- A fat interface for autograder test cases.
+    CompiledAutograderTestCase -- Defines a structure for testing compiled
+        programs.
+"""
+
 from django.db import models
 
 from jsonfield import JSONField
@@ -253,3 +260,24 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
 
             ut.check_values_against_whitelist(
                 self.valgrind_flags, gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class CompiledAutograderTestCase(AutograderTestCaseBase):
+    """
+    This class allows evaluating a program that will be compiled
+    from student-submitted code.
+
+    This class does not define any new fields.
+    Instead, the following fields inherited from the base class
+    are now REQUIRED:
+        compiler
+        compiler_flags (This field is allowed to be empty)
+        files_to_compile_together
+        executable_name
+    """
+    pass
+

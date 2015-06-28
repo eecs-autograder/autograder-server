@@ -1,8 +1,9 @@
+from django.test import TestCase
 from django.db.utils import IntegrityError
 
 from autograder.models import Project, Semester, Course, AutograderTestCaseBase
 
-import autograder.shared.utilities as ut
+# import autograder.shared.utilities as ut
 import autograder.shared.global_constants as gc
 
 from autograder.tests.temporary_filesystem_test_case import (
@@ -11,6 +12,14 @@ from autograder.tests.temporary_filesystem_test_case import (
 
 class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
     """
+    Note that because TemporaryFilesystemTestCase inherits from object
+    rather than django.test.TestCase, these test cases should be run
+    as part of the test suites for concrete classes derived from this one.
+
+    Test fixtures for derived classes of AutograderTestCaseBase should
+    FIRST inherit from this class, and then inherit from django.test.TestCase.
+        (see CompiledAutograderTestCaseTestCase for an example of this).
+
     To the reader: I apologize for the strangeness of writing test cases
     for a class that is another type of test case. You can distinguish
     between them by the packages in which they are kept.
@@ -275,3 +284,37 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
                 name=self.TEST_NAME, project=self.project,
                 use_valgrind=True,
                 valgrind_flags=['--leak-check=full', "; echo 'haxorz!'"])
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class CompiledAutograderTestCaseTestCase(AutograderTestCaseBaseTestCase, TestCase):
+    def test_exception_on_null_or_empty_compiler(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_unsupported_compiler(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_invalid_chars_in_compiler_flags(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_null_or_empty_files_to_compile_together(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_nonexistant_files_to_compile_together(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_null_or_empty_executable_name(self):
+        self.fail()

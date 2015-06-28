@@ -1,14 +1,19 @@
 import os
 import shutil
 
-from django.test import TestCase
+# from django.test import TestCase
 from django.conf import settings
 
 
-class TemporaryFilesystemTestCase(TestCase):
+class TemporaryFilesystemTestCase(object):
     """
-    Base class for test cases that test code that performs
+    Mixin class for test cases that test code that performs
     filesystem operations.
+
+    IMPORTANT: In order to use the setUp and tearDown methods
+        form this class, you must inherit this class FIRST,
+        FOLLWED BY django.test.TestCase.
+
     The setUp() method does the following:
         - Creates a temporary directory for the test to use.
         - Saves the current settings.MEDIA_ROOT,

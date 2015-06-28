@@ -11,7 +11,7 @@ import autograder.shared.utilities as ut
 import autograder.shared.global_constants as gc
 
 
-class TestFileSystemNavigationUtils(TemporaryFilesystemTestCase):
+class TestFileSystemNavigationUtils(TemporaryFilesystemTestCase, TestCase):
     def setUp(self):
         super().setUp()
 

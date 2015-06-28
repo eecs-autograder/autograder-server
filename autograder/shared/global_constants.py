@@ -10,7 +10,7 @@ PROJECT_FILES_DIRNAME = 'project_files'
 # student submissions should be placed in.
 PROJECT_SUBMISSIONS_DIRNAME = 'submissions_by_student'
 
-# The subdirectory of settings.MEDIA_ROOT where projects will be placed.
+# The subdirectory of settings.MEDIA_ROOT where courses will be placed.
 FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'
 
 # This regular expression provides the whitelist to be used when validating
