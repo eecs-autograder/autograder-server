@@ -1,3 +1,6 @@
+import os
+
+from django.conf import settings
 from django.db.utils import IntegrityError
 
 from autograder.models import (
@@ -47,7 +50,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_test_case.command_line_arguments, [])
         self.assertEqual(loaded_test_case.standard_input_stream_contents, "")
         self.assertEqual(loaded_test_case.test_resource_files, [])
-        self.assertEqual(loaded_test_case.time_limit, 30)
+        self.assertEqual(loaded_test_case.time_limit, 10)
         self.assertIsNone(loaded_test_case.expected_program_return_code)
         self.assertFalse(loaded_test_case.expect_any_nonzero_return_code)
         self.assertEqual(
@@ -442,3 +445,314 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             CompiledAutograderTestCase.objects.create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_invalid_chars_in_executable_name(self):
+        self.compiled_test_kwargs['executable_name'] = "../haxorz"
+
+        with self.assertRaises(ValueError):
+            CompiledAutograderTestCase.objects.create(
+                name=self.TEST_NAME, project=self.project,
+                **self.compiled_test_kwargs)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.original_dir = os.getcwd()
+        self.new_dir = os.path.join(settings.MEDIA_ROOT, 'working_dir')
+        os.mkdir(self.new_dir)
+        os.chdir(self.new_dir)
+
+        self.course = Course.objects.create(name='eecs280')
+        self.semester = Semester.objects.create(name='f15', course=self.course)
+
+        self.project = Project.objects.create(
+            name='my_project', semester=self.semester)
+
+        self.cpp_filename = 'main.cpp'
+        self.executable_name = 'program.exe'
+
+        self.test_case_starter = CompiledAutograderTestCase(
+            name='test1', project=self.project,
+            compiler='g++',
+            compiler_flags=['-Wall', '-pedantic'],
+            files_to_compile_together=[self.cpp_filename],
+            executable_name=self.executable_name
+        )
+
+    # -------------------------------------------------------------------------
+
+    def tearDown(self):
+        super().tearDown()
+
+        os.chdir(self.original_dir)
+
+    # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+
+    # def test_run_correct_output_correct_zero_return_code(self):
+    #     with ut.ChangeDirectory(settings.MEDIA_ROOT)
+    #     expected_stdout = "hello world\n"
+    #     expected_stderr = "ZOMGWTFBBQ\n"
+    #     expected_return_code = 0
+
+    #     main_filename = 'main.cpp'
+    #     main_file_contents = _CPP_PROGRAM_PRINT_AND_RETURN_TEMPLATE.format(
+    #         error=expected_stderr, message=expected_stdout,
+    #         return_code=expected_return_code)
+
+    #     self.project.add_project_file(main_filename, main_file_contents)
+
+    #     test = CompiledAutograderTestCase.objects.create(
+    #         name=self.TEST_NAME, project=self.project,
+    #         standard_input_stream_contents="spam egg sausage spam",
+
+    #         compiler=)
+
+    #     test_result = test.run()
+
+    #     self.assertEqual(test_result.return_code)
+
+    # -------------------------------------------------------------------------
+
+    def test_run_correct_standard_output(self):
+        stdout_content = "hello world"
+        cpp_file_content = _CPP_PROGRAM_PRINT_TO_STDOUT_TEMPLATE.format(
+            stdout_content)
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
+
+        print(cpp_file_content)
+        self.project.add_project_file(self.cpp_filename, cpp_file_content)
+
+        self.test_case_starter.expected_program_standard_output_stream_content = (
+            stdout_content)
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertEqual(result.standard_output, stdout_content)
+
+    # -------------------------------------------------------------------------
+
+    def test_run_incorrect_standard_output(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_correct_standard_error_output(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_incorrect_standard_error_output(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_correct_exact_return_code(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_incorrect_exact_return_code(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_correct_nonzero_return_code(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_incorrect_nonzero_return_code(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_with_cmd_line_args(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_with_stdin_contents(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_with_program_that_reads_from_file(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_with_timeout(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_with_valgrind_no_errors(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_with_valgrind_with_errors(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_compile_error(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_everything_correct(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_run_everything_incorrect(self):
+        self.fail()
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+_CPP_PROGRAM_PRINT_TO_STDOUT_TEMPLATE = r"""#include <iostream>
+
+using namespace std;
+
+int main()
+{{
+    cout << "{}" << flush;
+    return 0;
+}}
+"""
+
+_CPP_PROGRAM_PRINT_TO_STDERR_TEMPLATE = """#include <iostream>
+
+using namespace std;
+
+int main()
+{
+    cerr << "{}" << flush;
+    return 0;
+}
+"""
+
+_CPP_PROGRAM_RETURN_ONLY_TEMPLATE = """
+int main()
+{
+    return {};
+}
+"""
+
+_CPP_PROGRAM_PRINT_CMD_ARGS = """#include <iostream>
+
+using namespace std;
+
+int main(int argc, char** argv)
+{
+    for (int i = 0; i < argc - 1; ++i)
+    {
+        cout << argv[i] << " ";
+    }
+    cout << argv[argc - 1] << flush;
+
+    return 0;
+}
+"""
+
+_CPP_PROGRAM_PRINT_STDIN_CONTENT = """#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main()
+{
+    string spam;
+    while (cin >> spam)
+    {
+        cout << spam << ' ' << flush;
+    }
+
+    return 0;
+}
+"""
+
+_CPP_PROGRAM_PRINT_FILE_CONTENT = """#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+int main()
+{
+    string spam;
+    ifstream ifs('input.in');
+    while (ifs >> spam)
+    {
+        cout << spam << ' ' << flush;
+    }
+
+    return 0;
+}
+"""
+
+_CPP_INFINITE_LOOP_PROGRAM = """int main()
+{
+    while (true);
+    return 0;
+}
+"""
+
+_CPP_MEMORY_LEAK_PROGRAM = """int main()
+{
+    new int(42);
+    return 0;
+}
+"""
+
+_CPP_COMPILE_ERROR_PROGRAM = """int main()
+{
+    spameggsausagespam
+}
+"""
+
+_CPP_PROGRAM_DO_EVERYTHING = """#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+int main()
+{
+    for (int i = 0; i < argc - 1; ++i)
+    {
+        cout << argv[i] << " ";
+    }
+    cout << argv[argc - 1] << flush;
+
+    string spam;
+    ifstream ifs('input.in');
+    while (ifs >> spam)
+    {
+        cout << spam << ' ' << flush;
+    }
+
+    while (cin >> spam)
+    {
+        cout << spam << ' ' << flush;
+    }
+
+    cout << "{stdout_str}" << flush;
+    cerr << "{stderr_str}" << flush;
+
+    return {return_code};
+}
+"""

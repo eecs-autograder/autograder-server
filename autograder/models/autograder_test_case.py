@@ -5,12 +5,15 @@ Classes:
         programs.
 """
 
+import subprocess
+import io
+
 from django.db import models
 
 from jsonfield import JSONField
 
 from autograder.models.model_validated_on_save import ModelValidatedOnSave
-from autograder.models import Project
+from autograder.models import Project, CompiledAutograderTestCaseResult
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
@@ -24,6 +27,8 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
     Primary key: Composite based on this test case's name and Project.
 
     Fields:
+        TODO: feedback levels
+
         name -- The name used to identify this test case.
                 Must be non-empty and non-null.
                 Must be unique among test cases associated with a given
@@ -61,7 +66,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
         time_limit -- The time limit in seconds to be placed on the
             program being tested.
             This value must be positive (and nonzero).
-            Default value: 30 seconds
+            Default value: 10 seconds
 
         expected_program_return_code -- The return code that the
             program being tested should exit with in order to pass
@@ -145,7 +150,9 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
             Default value: empty list
 
         executable_name -- The name of the executable program that should be
-            produced by the compiler. This is the program that will be
+            produced by the compiler. This is the program that will be tested.
+            This field is restricted to the same charset as uploaded
+            project files.
             Default value: empty string
 
         interpreter -- TODO
@@ -168,7 +175,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
     command_line_arguments = JSONField(default=[])
     standard_input_stream_contents = models.TextField()
     test_resource_files = JSONField(default=[])
-    time_limit = models.IntegerField(default=30)
+    time_limit = models.IntegerField(default=gc.DEFAULT_SUBPROCESS_TIMEOUT)
 
     expected_program_return_code = models.IntegerField(null=True, default=None)
     expect_any_nonzero_return_code = models.BooleanField(default=False)
@@ -217,7 +224,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
     def run(self):
         """
         Runs this autograder test case and returns an
-            AutograderTestCaseResult object.
+            AutograderTestCaseResultBase object.
         Note that this method does NOT save the result object to the
             database.
 
@@ -311,3 +318,122 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
         if not self.executable_name:
             raise ValueError('executable name cannot be null or empty')
+
+        ut.check_user_provided_filename(self.executable_name)
+
+    # -------------------------------------------------------------------------
+
+    def run(self):
+        result = CompiledAutograderTestCaseResult(test_case=self)
+
+        compilation_command = (
+            [self.compiler] + self.compiler_flags +
+            self.files_to_compile_together + ['-o', self.executable_name]
+        )
+
+        print("compiling")
+        runner = _SubprocessRunner(compilation_command)
+        result._compilation_standard_output = runner.stdout
+        result._compilation_standard_error_output = runner.stderr
+        result._compilation_return_code = runner.return_code
+
+        if result._compilation_return_code != 0 or result.timed_out:
+            print(result._compilation_return_code)
+            print(runner.stderr)
+            return result
+
+        run_program_cmd = (
+            ['./' + self.executable_name] + self.command_line_arguments
+        )
+
+        print('running')
+        runner = _SubprocessRunner(
+            run_program_cmd, timeout=self.time_limit,
+            stdin_content=self.standard_input_stream_contents)
+
+        result._return_code = runner.return_code
+        result._standard_output = runner.stdout
+        result._standard_error_output = runner.stderr
+
+        if not self.use_valgrind:
+            return result
+
+        valgrind_run_cmd = ['valgrind'] + self.valgrind_flags + run_program_cmd
+
+        print('valgrinding')
+        # Note the increased time limit. This is because using valgrind
+        # causes the program to run drastically slower.
+        runner = _SubprocessRunner(
+            valgrind_run_cmd, timeout=self.time_limit * 2,
+            stdin_content=self.standard_input_stream_contents)
+
+        result._valgrind_return_code = runner.return_code
+        result._standard_output = runner.stdout
+
+        return result
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class _SubprocessRunner(object):
+    """
+    Convenience wrapper for calling Popen and retrieving the data
+    we usually need.
+    """
+    def __init__(self, program_args, **kwargs):
+        self._args = program_args
+        self._timeout = kwargs.get('timeout', gc.DEFAULT_SUBPROCESS_TIMEOUT)
+        self._stdin_content = kwargs.get('stdin_content', '')
+        self._merge_stdout_and_stderr = kwargs.get(
+            'merge_stdout_and_stderr', False)
+
+        self._timed_out = False
+        self._return_code = None
+        self._stdout = None
+        self._stderr = None
+
+        self._process = None
+
+        self._run()
+
+    @property
+    def timed_out(self):
+        return self._timed_out
+
+    @property
+    def return_code(self):
+        return self._return_code
+
+    @property
+    def stdout(self):
+        return self._stdout
+
+    @property
+    def stderr(self):
+        return self._stderr
+
+    @property
+    def process(self):
+        return self._process
+
+    def _run(self):
+        self._process = subprocess.Popen(
+            self._args,
+            universal_newlines=True,
+            stdout=subprocess.PIPE,
+            stderr=(subprocess.STDOUT if self._merge_stdout_and_stderr
+                    else subprocess.PIPE)
+        )
+
+        try:
+            self._stdout, self._stderr = self._process.communicate(
+                input=self._stdin_content,
+                timeout=self._timeout)
+
+            self._return_code = self._process.returncode
+        except subprocess.TimeoutExpired:
+            self._process.kill()
+            self._stdout, self._stderr = self._process.communicate()
+            self._return_code = self._process .returncode
