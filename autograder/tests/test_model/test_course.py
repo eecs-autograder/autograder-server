@@ -1,7 +1,6 @@
 import os
 
 from django.db.utils import IntegrityError
-from django.test import TestCase
 
 from autograder.models import Course
 
@@ -11,7 +10,7 @@ from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
 
-class CourseTestCase(TemporaryFilesystemTestCase, TestCase):
+class CourseTestCase(TemporaryFilesystemTestCase):
     def test_valid_save(self):
         NAME = "eecs280"
         Course.objects.create(name=NAME)
@@ -44,7 +43,7 @@ class CourseTestCase(TemporaryFilesystemTestCase, TestCase):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-class CourseFilesystemTestCase(TemporaryFilesystemTestCase, TestCase):
+class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.COURSE_NAME = 'eecs280'

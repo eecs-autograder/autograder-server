@@ -11,7 +11,7 @@ from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
 
-class SemesterTestCase(TemporaryFilesystemTestCase, TestCase):
+class SemesterTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.course = Course.objects.create(name="eecs280")
@@ -76,7 +76,7 @@ class SemesterTestCase(TemporaryFilesystemTestCase, TestCase):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-class SemesterFilesystemTestCase(TemporaryFilesystemTestCase, TestCase):
+class SemesterFilesystemTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.course = Course.objects.create(name="eecs280")

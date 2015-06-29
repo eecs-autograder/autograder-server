@@ -1,4 +1,3 @@
-from django.test import TestCase
 from django.db.utils import IntegrityError
 
 from autograder.models import (
@@ -14,18 +13,6 @@ from autograder.tests.temporary_filesystem_test_case import (
 
 class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
     """
-    Note that because TemporaryFilesystemTestCase inherits from object
-    rather than django.test.TestCase, these test cases should be run
-    as part of the test suites for concrete classes derived from this one.
-
-    The test fixture AutograderBaseOnlyTestCase fixture is used
-    to run these tests without worrying about additional derived class
-    functionality.
-
-    Test fixtures for derived classes of AutograderTestCaseBase should
-    FIRST inherit from this class, and then inherit from django.test.TestCase.
-        (see CompiledAutograderTestCaseTestCase for an example of this).
-
     To the reader: I apologize for the strangeness of writing test cases
     for a class that is another type of test case. You can distinguish
     between them by the packages in which they are kept.
@@ -35,22 +22,12 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.course = Course.objects.create(name='eecs280')
         self.semester = Semester.objects.create(name='f15', course=self.course)
 
-        self.required_student_files = ['file1.cpp', 'file2.cpp']
-        self.expected_student_file_patterns = {'test_*.cpp': (1, 2)}
-
         self.project = Project.objects.create(
             name='my_project', semester=self.semester,
-            required_student_files=self.required_student_files,
-            expected_student_file_patterns=self.expected_student_file_patterns)
+            required_student_files=['file1.cpp', 'file2.cpp'],
+            expected_student_file_patterns={'test_*.cpp': (1, 2)})
 
-        self.project_files = (
-            ('spam.txt', 'hello there!'),
-            ('eggs.cpp', 'egg bacon spam and sausage'),
-            ('sausage.cpp', 'spam egg sausage and spam')
-        )
-
-        for name, content in self.project_files:
-            self.project.add_project_file(name, content)
+        self.project.add_project_file('spam.txt', 'hello there!')
 
         self.TEST_NAME = 'my_test'
 
@@ -320,19 +297,28 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-# This fixture will run all the AutograderTestCaseBase test cases.
-class AutograderBaseOnlyTestCase(AutograderTestCaseBaseTestCase, TestCase):
-    pass
-
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-class CompiledAutograderTestCaseTestCase(AutograderTestCaseBaseTestCase,
-                                         TestCase):
+class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
+
+        course = Course.objects.create(name='eecs280')
+        semester = Semester.objects.create(name='f15', course=course)
+
+        self.project = Project.objects.create(
+            name='my_project', semester=semester,
+            required_student_files=['file1.cpp', 'file2.cpp'],
+            expected_student_file_patterns={'test_*.cpp': (1, 2)})
+
+        self.project_files = (
+            ('spam.txt', 'hello there!'),
+            ('eggs.cpp', 'egg bacon spam and sausage'),
+            ('sausage.cpp', 'spam egg sausage and spam')
+        )
+
+        for name, content in self.project_files:
+            self.project.add_project_file(name, content)
+
+        self.TEST_NAME = 'my_test'
 
         self.compiler = 'g++'
         self.compiler_flags = ['--foo_arg=bar', '-s']
@@ -340,10 +326,8 @@ class CompiledAutograderTestCaseTestCase(AutograderTestCaseBaseTestCase,
         self.files_to_compile_together = [
             filename for filename, content in self.project_files
         ]
-        self.files_to_compile_together.append(
-            self.required_student_files[0])
-        self.files_to_compile_together.append(
-            list(self.expected_student_file_patterns.keys())[0])
+        self.files_to_compile_together.append('file1.cpp')
+        self.files_to_compile_together.append('test_*.cpp')
 
         self.executable_name = "sausage.exe"
 

@@ -2,7 +2,6 @@ import os
 import datetime
 
 from django.db.utils import IntegrityError
-from django.test import TestCase
 from django.utils import timezone
 
 from autograder.models import Project, Semester, Course
@@ -16,7 +15,7 @@ from autograder.tests.temporary_filesystem_test_case import (
 _FILENAME_WITH_SHELL_CHARS = '; echo "haxorz"; # '
 
 
-class ProjectTestCase(TemporaryFilesystemTestCase, TestCase):
+class ProjectTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.course = Course.objects.create(name='eecs280')
@@ -265,7 +264,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase, TestCase):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-class ProjectFilesystemTest(TemporaryFilesystemTestCase, TestCase):
+class ProjectFilesystemTest(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.course = Course.objects.create(name='eecs280')
