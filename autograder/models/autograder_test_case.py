@@ -38,7 +38,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
             This list is allowed to be empty.
             This value may NOT be None.
             Individual arguments may contain alphanumeric characters,
-                hyphen, underscore, and the equals sign.
+                hyphen, underscore, period, and the equals sign.
             Default value: empty list
 
         standard_input_stream_contents -- A string whose contents
@@ -137,7 +137,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
 
         files_to_compile_together -- A list of files that need to be
             compiled together. These filenames are restricted to those
-            in project.required_student_filenames and project.project files,
+            in project.required_student_files and project.project files,
             and may also include patterns from
             project.expected_student_file_patterns.
             NOTE: When a pattern is part of this list, all student-submitted
@@ -278,6 +278,36 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         compiler_flags (This field is allowed to be empty)
         files_to_compile_together
         executable_name
-    """
-    pass
 
+    Overridden methods:
+        validate_fields()
+        run()
+    """
+    def validate_fields(self):
+        super().validate_fields()
+
+        if not self.compiler:
+            raise ValueError('compiler cannot be null or empty')
+
+        if self.compiler not in gc.SUPPORTED_COMPILERS:
+            raise ValueError('Unsupported compiler: ' + self.compiler)
+
+        ut.check_values_against_whitelist(
+            self.compiler_flags, gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
+
+        if not self.files_to_compile_together:
+            raise ValueError(
+                'at least one file must be specified for compilation')
+
+        for filename in self.files_to_compile_together:
+            valid_filename = (
+                filename in self.project.project_files or
+                filename in self.project.required_student_files or
+                filename in self.project.expected_student_file_patterns)
+
+            if not valid_filename:
+                raise ValueError('File {0} not found for project {1}'.format(
+                    filename, self.project.name))
+
+        if not self.executable_name:
+            raise ValueError('executable name cannot be null or empty')

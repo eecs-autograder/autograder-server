@@ -31,6 +31,7 @@ class TemporaryFilesystemTestCase(object):
             settings.BASE_DIR, 'tmp_filesystem')
 
         # print("Creating: " + self.new_media_root)
+
         os.makedirs(self.new_media_root)
         settings.MEDIA_ROOT = self.new_media_root
 
