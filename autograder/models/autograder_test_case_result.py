@@ -7,7 +7,7 @@ class AutograderTestCaseResultBase(models.Model):
     and provides an interface for summarizing the data in various
     formats (JSON, human-readable, etc.).
 
-    Fields:
+    Instance variables:
         test_case -- The test case whose results this object is storing.
 
         submission -- TODO The submission the test case was run for.
@@ -15,20 +15,34 @@ class AutograderTestCaseResultBase(models.Model):
         return_code -- The return code of the program that was tested.
             Default value: None
 
+        return_code_correct -- Whether the program
+            exited with the correct return code.
+
         standard_output -- The contents of the standard output stream
             of the program that was tested.
             Default value: empty string
+
+        standard_output_correct -- Whether the program produced the
+            correct standard output.
 
         standard_error_output -- The contents of the standard error stream
             of the program that was tested.
             Default value: empty string
 
+        standard_error_output_correct -- Whether the program produced the
+            correct standard error output.
+
         time_elapsed -- The amount of time it took to run the program
             being tested. TODO
+
+        timed_out -- Whether the program exceeded the time limit.
 
         valgrind_return_code -- The return code of the program valgrind
             when run against the program being tested.
             Default value: None
+
+        valgrind_errors_present -- Whether valgrind exited with nonzero
+            status.
 
         valgrind_output -- The output (standard out and standard error)
             of the program valgrind when run against the program being
@@ -61,12 +75,28 @@ class AutograderTestCaseResultBase(models.Model):
         return self._return_code
 
     @property
+    def return_code_correct(self):
+        if self.test_case.expect_any_nonzero_return_code:
+            return self.return_code != 0
+
+        return self.return_code == self.test_case.expected_return_code
+
+    @property
     def standard_output(self):
         return self._standard_output
 
     @property
+    def standard_output_correct(self):
+        return self.standard_output == self.test_case.expected_standard_output
+
+    @property
     def standard_error_output(self):
         return self._standard_error_output
+
+    @property
+    def standard_error_output_correct(self):
+        return (self.standard_error_output ==
+                self.test_case.expected_standard_error_output)
 
     @property
     def timed_out(self):
@@ -79,6 +109,10 @@ class AutograderTestCaseResultBase(models.Model):
     @property
     def valgrind_return_code(self):
         return self._valgrind_return_code
+
+    @property
+    def valgrind_errors_present(self):
+        return self.valgrind_return_code != 0
 
     @property
     def valgrind_output(self):
@@ -151,16 +185,13 @@ class CompiledAutograderTestCaseResult(AutograderTestCaseResultBase):
     """
     Stores the results from a compiled autograder test case.
 
-    Instance methods:
-        compilation_succeeded()
+    Instance variables:
+        compilation_succeeded
 
     Overidden methods:
         json_summary() TODO
         human_readable_summary() TODO
     """
+    @property
     def compilation_succeeded(self):
-        """
-        Returns True if the program being tested was compiled successfully,
-        False otherwise.
-        """
         return self.compilation_return_code == 0

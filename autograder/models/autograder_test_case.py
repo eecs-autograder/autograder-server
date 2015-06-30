@@ -46,7 +46,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
                 hyphen, underscore, period, and the equals sign.
             Default value: empty list
 
-        standard_input_stream_contents -- A string whose contents
+        standard_input -- A string whose contents
             should be sent to the standard input stream of the program
             being tested.
             Default value: empty string
@@ -68,7 +68,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
             This value must be positive (and nonzero).
             Default value: 10 seconds
 
-        expected_program_return_code -- The return code that the
+        expected_return_code -- The return code that the
             program being tested should exit with in order to pass
             this test case.
             When expect_any_nonzero_return_code is False, a value of
@@ -80,11 +80,11 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
             checking for a specific return code, this test case should
             evaluate whether the program being tested exited with
             any return code other than zero.
-            If this field is True, the value of expected_program_return_code
+            If this field is True, the value of expected_return_code
                 is ignored
             Default value: False
 
-        expected_program_standard_output_stream_content -- A string
+        expected_standard_output -- A string
             whose contents should be compared to the standard output
             of the program being tested.
             A value of the empty string indicates that this
@@ -92,7 +92,7 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
                 program being tested.
             Default value: empty string
 
-        expected_program_standard_error_stream_content -- A string
+        expected_standard_error_output -- A string
             whose contents should be compared to the standard error
             output of the program being tested.
             A value of the empty string indicates that this
@@ -173,18 +173,29 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
     project = models.ForeignKey(Project)
 
     command_line_arguments = JSONField(default=[])
-    standard_input_stream_contents = models.TextField()
+    standard_input = models.TextField()
     test_resource_files = JSONField(default=[])
     time_limit = models.IntegerField(default=gc.DEFAULT_SUBPROCESS_TIMEOUT)
 
-    expected_program_return_code = models.IntegerField(null=True, default=None)
+    expected_return_code = models.IntegerField(null=True, default=None)
     expect_any_nonzero_return_code = models.BooleanField(default=False)
 
-    expected_program_standard_output_stream_content = models.TextField()
+    expected_standard_output = models.TextField()
 
-    expected_program_standard_error_stream_content = models.TextField()
+    expected_standard_error_output = models.TextField()
 
-    use_valgrind = models.BooleanField(default=False)
+    @property
+    def use_valgrind(self):
+        return self._use_valgrind
+
+    @use_valgrind.setter
+    def use_valgrind(self, value):
+        if value and self.valgrind_flags is None:
+            self.valgrind_flags = gc.DEFAULT_VALGRIND_FLAGS_WHEN_USED
+
+        self._use_valgrind = value
+
+    _use_valgrind = models.BooleanField(default=False)
 
     valgrind_flags = JSONField(null=True, default=None)
 
@@ -331,7 +342,6 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
             self.files_to_compile_together + ['-o', self.executable_name]
         )
 
-        print("compiling")
         runner = _SubprocessRunner(compilation_command)
         result._compilation_standard_output = runner.stdout
         result._compilation_standard_error_output = runner.stderr
@@ -346,29 +356,28 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
             ['./' + self.executable_name] + self.command_line_arguments
         )
 
-        print('running')
         runner = _SubprocessRunner(
             run_program_cmd, timeout=self.time_limit,
-            stdin_content=self.standard_input_stream_contents)
+            stdin_content=self.standard_input)
 
         result._return_code = runner.return_code
         result._standard_output = runner.stdout
         result._standard_error_output = runner.stderr
+        result._timed_out = runner.timed_out
 
         if not self.use_valgrind:
             return result
 
         valgrind_run_cmd = ['valgrind'] + self.valgrind_flags + run_program_cmd
 
-        print('valgrinding')
         # Note the increased time limit. This is because using valgrind
         # causes the program to run drastically slower.
         runner = _SubprocessRunner(
             valgrind_run_cmd, timeout=self.time_limit * 2,
-            stdin_content=self.standard_input_stream_contents)
+            stdin_content=self.standard_input, merge_stdout_and_stderr=True)
 
         result._valgrind_return_code = runner.return_code
-        result._standard_output = runner.stdout
+        result._valgrind_output = runner.stdout
 
         return result
 
@@ -422,6 +431,7 @@ class _SubprocessRunner(object):
         self._process = subprocess.Popen(
             self._args,
             universal_newlines=True,
+            stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=(subprocess.STDOUT if self._merge_stdout_and_stderr
                     else subprocess.PIPE)
@@ -432,8 +442,11 @@ class _SubprocessRunner(object):
                 input=self._stdin_content,
                 timeout=self._timeout)
 
+            self._process.stdin.close()
+
             self._return_code = self._process.returncode
         except subprocess.TimeoutExpired:
             self._process.kill()
             self._stdout, self._stderr = self._process.communicate()
-            self._return_code = self._process .returncode
+            self._return_code = self._process.returncode
+            self._timed_out = True

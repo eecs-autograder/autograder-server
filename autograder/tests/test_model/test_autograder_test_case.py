@@ -48,16 +48,16 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(self.project, loaded_test_case.project)
 
         self.assertEqual(loaded_test_case.command_line_arguments, [])
-        self.assertEqual(loaded_test_case.standard_input_stream_contents, "")
+        self.assertEqual(loaded_test_case.standard_input, "")
         self.assertEqual(loaded_test_case.test_resource_files, [])
         self.assertEqual(loaded_test_case.time_limit, 10)
-        self.assertIsNone(loaded_test_case.expected_program_return_code)
+        self.assertIsNone(loaded_test_case.expected_return_code)
         self.assertFalse(loaded_test_case.expect_any_nonzero_return_code)
         self.assertEqual(
-            loaded_test_case.expected_program_standard_output_stream_content,
+            loaded_test_case.expected_standard_output,
             "")
         self.assertEqual(
-            loaded_test_case.expected_program_standard_error_stream_content,
+            loaded_test_case.expected_standard_error_output,
             "")
         self.assertFalse(loaded_test_case.use_valgrind)
         self.assertIsNone(loaded_test_case.valgrind_flags)
@@ -83,12 +83,12 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         new_test_case = AutograderTestCaseBase.objects.create(
             name=self.TEST_NAME, project=self.project,
             command_line_arguments=cmd_args,
-            standard_input_stream_contents=input_stream_content,
+            standard_input=input_stream_content,
             test_resource_files=resource_files,
             time_limit=time,
-            expected_program_return_code=ret_code,
-            expected_program_standard_output_stream_content=out_stream_content,
-            expected_program_standard_error_stream_content=err_stream_content,
+            expected_return_code=ret_code,
+            expected_standard_output=out_stream_content,
+            expected_standard_error_output=err_stream_content,
             use_valgrind=True,
             valgrind_flags=valgrind_flags,
         )
@@ -104,7 +104,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             loaded_test_case.command_line_arguments, cmd_args)
 
         self.assertEqual(
-            loaded_test_case.standard_input_stream_contents,
+            loaded_test_case.standard_input,
             input_stream_content)
 
         self.assertEqual(
@@ -113,14 +113,14 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_test_case.time_limit, time)
 
         self.assertEqual(
-            loaded_test_case.expected_program_return_code, ret_code)
+            loaded_test_case.expected_return_code, ret_code)
 
         self.assertEqual(
-            loaded_test_case.expected_program_standard_output_stream_content,
+            loaded_test_case.expected_standard_output,
             out_stream_content)
 
         self.assertEqual(
-            loaded_test_case.expected_program_standard_error_stream_content,
+            loaded_test_case.expected_standard_error_output,
             err_stream_content)
 
         self.assertTrue(loaded_test_case.use_valgrind)
@@ -478,6 +478,10 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.cpp_filename = 'main.cpp'
         self.executable_name = 'program.exe'
 
+        # We'll be writing the file manually for these tests, so the
+        # "real" file in the project directory doesn't really matter.
+        self.project.add_project_file(self.cpp_filename, '')
+
         self.test_case_starter = CompiledAutograderTestCase(
             name='test1', project=self.project,
             compiler='g++',
@@ -496,31 +500,6 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
 
-    # def test_run_correct_output_correct_zero_return_code(self):
-    #     with ut.ChangeDirectory(settings.MEDIA_ROOT)
-    #     expected_stdout = "hello world\n"
-    #     expected_stderr = "ZOMGWTFBBQ\n"
-    #     expected_return_code = 0
-
-    #     main_filename = 'main.cpp'
-    #     main_file_contents = _CPP_PROGRAM_PRINT_AND_RETURN_TEMPLATE.format(
-    #         error=expected_stderr, message=expected_stdout,
-    #         return_code=expected_return_code)
-
-    #     self.project.add_project_file(main_filename, main_file_contents)
-
-    #     test = CompiledAutograderTestCase.objects.create(
-    #         name=self.TEST_NAME, project=self.project,
-    #         standard_input_stream_contents="spam egg sausage spam",
-
-    #         compiler=)
-
-    #     test_result = test.run()
-
-    #     self.assertEqual(test_result.return_code)
-
-    # -------------------------------------------------------------------------
-
     def test_run_correct_standard_output(self):
         stdout_content = "hello world"
         cpp_file_content = _CPP_PROGRAM_PRINT_TO_STDOUT_TEMPLATE.format(
@@ -528,96 +507,260 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
-        print(cpp_file_content)
-        self.project.add_project_file(self.cpp_filename, cpp_file_content)
-
-        self.test_case_starter.expected_program_standard_output_stream_content = (
+        self.test_case_starter.expected_standard_output = (
             stdout_content)
         self.test_case_starter.save()
 
         result = self.test_case_starter.run()
 
         self.assertEqual(result.standard_output, stdout_content)
+        self.assertTrue(result.standard_output_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_incorrect_standard_output(self):
-        self.fail()
+        cpp_file_content = _CPP_PROGRAM_PRINT_TO_STDOUT_TEMPLATE.format(
+            "wrong message")
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
+
+        expected_stdout_content = "hello world"
+        self.test_case_starter.expected_standard_output = (
+            expected_stdout_content)
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertNotEqual(result.standard_output, expected_stdout_content)
+        self.assertFalse(result.standard_output_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_correct_standard_error_output(self):
-        self.fail()
+        stderr_content = "hello world"
+        cpp_file_content = _CPP_PROGRAM_PRINT_TO_STDERR_TEMPLATE.format(
+            stderr_content)
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
+
+        self.test_case_starter.expected_standard_error_output = (
+            stderr_content)
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertEqual(result.standard_error_output, stderr_content)
+        self.assertTrue(result.standard_error_output_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_incorrect_standard_error_output(self):
-        self.fail()
+        cpp_file_content = _CPP_PROGRAM_PRINT_TO_STDERR_TEMPLATE.format(
+            "wrong output")
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
+
+        expected_stderr_content = "hello world"
+        self.test_case_starter.expected_standard_error_output = (
+            expected_stderr_content)
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertNotEqual(
+            result.standard_error_output, expected_stderr_content)
+        self.assertFalse(result.standard_error_output_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_correct_exact_return_code(self):
-        self.fail()
+        expected_return_code = 0
+        cpp_file_content = _CPP_PROGRAM_RETURN_ONLY_TEMPLATE.format(
+            expected_return_code)
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
+
+        self.test_case_starter.expected_return_code = expected_return_code
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertEqual(expected_return_code, result.return_code)
+        self.assertTrue(result.return_code_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_incorrect_exact_return_code(self):
-        self.fail()
+        cpp_file_content = _CPP_PROGRAM_RETURN_ONLY_TEMPLATE.format(42)
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
+
+        expected_return_code = 0
+        self.test_case_starter.expected_return_code = expected_return_code
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertNotEqual(expected_return_code, result.return_code)
+        self.assertFalse(result.return_code_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_correct_nonzero_return_code(self):
-        self.fail()
+        cpp_file_content = _CPP_PROGRAM_RETURN_ONLY_TEMPLATE.format(42)
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
+
+        self.test_case_starter.expect_any_nonzero_return_code = True
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertNotEqual(0, result.return_code)
+        self.assertTrue(result.return_code_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_incorrect_nonzero_return_code(self):
-        self.fail()
+        cpp_file_content = _CPP_PROGRAM_RETURN_ONLY_TEMPLATE.format(0)
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
+
+        self.test_case_starter.expect_any_nonzero_return_code = True
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertEqual(0, result.return_code)
+        self.assertFalse(result.return_code_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_with_cmd_line_args(self):
-        self.fail()
+        cmd_args = ['spam', 'egg', 'sausage']
+        with open(self.cpp_filename, 'w') as f:
+            f.write(_CPP_PROGRAM_PRINT_CMD_ARGS)
+
+        expected_output = ' '.join(cmd_args)
+
+        self.test_case_starter.command_line_arguments = cmd_args
+        self.test_case_starter.expected_standard_output = expected_output
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertEqual(expected_output, result.standard_output)
+        self.assertTrue(result.standard_output_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_with_stdin_contents(self):
-        self.fail()
+        with open(self.cpp_filename, 'w') as f:
+            f.write(_CPP_PROGRAM_PRINT_STDIN_CONTENT)
+
+        expected_output = "egg bacon spam and sausage "
+
+        self.test_case_starter.standard_input = expected_output
+        self.test_case_starter.expected_standard_output = expected_output
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertEqual(expected_output, result.standard_output)
+        self.assertTrue(result.standard_output_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_with_program_that_reads_from_file(self):
-        self.fail()
+        expected_output = 'spam baked beans lobster sauce '
+
+        input_filename = 'input.in'
+        self.project.add_project_file(input_filename, '')
+        with open(input_filename, 'w') as f:
+            f.write(expected_output)
+
+        with open(self.cpp_filename, 'w') as f:
+            f.write(_CPP_PROGRAM_PRINT_FILE_CONTENT)
+
+        self.test_case_starter.expected_standard_output = expected_output
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertEqual(expected_output, result.standard_output)
+        self.assertTrue(result.standard_output_correct)
 
     # -------------------------------------------------------------------------
 
     def test_run_with_timeout(self):
-        self.fail()
+        with open(self.cpp_filename, 'w') as f:
+            f.write(_CPP_INFINITE_LOOP_PROGRAM)
+
+        self.test_case_starter.time_limit = 1
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertTrue(result.timed_out)
+        self.assertNotEqual(result.return_code, 0)
 
     # -------------------------------------------------------------------------
 
     def test_run_with_valgrind_no_errors(self):
-        self.fail()
+        with open(self.cpp_filename, 'w') as f:
+            f.write(_CPP_PROGRAM_RETURN_ONLY_TEMPLATE.format(0))
+
+        self.test_case_starter.use_valgrind = True
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertEqual(result.valgrind_return_code, 0)
+
+        # We won't be checking exact valgrind output, but we want
+        # to make sure that the output was still recorded.
+        self.assertNotEqual(result.valgrind_output, '')
+        self.assertFalse(result.valgrind_errors_present)
 
     # -------------------------------------------------------------------------
 
     def test_run_with_valgrind_with_errors(self):
-        self.fail()
+        with open(self.cpp_filename, 'w') as f:
+            f.write(_CPP_MEMORY_LEAK_PROGRAM)
+
+        self.test_case_starter.use_valgrind = True
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertNotEqual(result.valgrind_return_code, 0)
+
+        self.assertNotEqual(result.valgrind_output, '')
+        self.assertTrue(result.valgrind_errors_present)
 
     # -------------------------------------------------------------------------
 
     def test_run_compile_error(self):
-        self.fail()
+        with open(self.cpp_filename, 'w') as f:
+            f.write(_CPP_COMPILE_ERROR_PROGRAM)
+
+        self.test_case_starter.save()
+
+        result = self.test_case_starter.run()
+
+        self.assertNotEqual(result.compilation_return_code, 0)
+        self.assertNotEqual(result.compilation_standard_error_output, '')
+        self.assertFalse(result.compilation_succeeded)
 
     # -------------------------------------------------------------------------
 
-    def test_run_everything_correct(self):
-        self.fail()
+    # def test_run_everything_correct(self):
+    #     self.fail()
 
-    # -------------------------------------------------------------------------
+    # # -------------------------------------------------------------------------
 
-    def test_run_everything_incorrect(self):
-        self.fail()
+    # def test_run_everything_incorrect(self):
+    #     self.fail()
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -639,17 +782,17 @@ _CPP_PROGRAM_PRINT_TO_STDERR_TEMPLATE = """#include <iostream>
 using namespace std;
 
 int main()
-{
+{{
     cerr << "{}" << flush;
     return 0;
-}
+}}
 """
 
 _CPP_PROGRAM_RETURN_ONLY_TEMPLATE = """
 int main()
-{
+{{
     return {};
-}
+}}
 """
 
 _CPP_PROGRAM_PRINT_CMD_ARGS = """#include <iostream>
@@ -657,15 +800,15 @@ _CPP_PROGRAM_PRINT_CMD_ARGS = """#include <iostream>
 using namespace std;
 
 int main(int argc, char** argv)
-{
-    for (int i = 0; i < argc - 1; ++i)
-    {
+{{
+    for (int i = 1; i < argc - 1; ++i)
+    {{
         cout << argv[i] << " ";
-    }
+    }}
     cout << argv[argc - 1] << flush;
 
     return 0;
-}
+}}
 """
 
 _CPP_PROGRAM_PRINT_STDIN_CONTENT = """#include <iostream>
@@ -674,15 +817,15 @@ _CPP_PROGRAM_PRINT_STDIN_CONTENT = """#include <iostream>
 using namespace std;
 
 int main()
-{
+{{
     string spam;
     while (cin >> spam)
-    {
+    {{
         cout << spam << ' ' << flush;
-    }
+    }}
 
     return 0;
-}
+}}
 """
 
 _CPP_PROGRAM_PRINT_FILE_CONTENT = """#include <iostream>
@@ -692,36 +835,36 @@ _CPP_PROGRAM_PRINT_FILE_CONTENT = """#include <iostream>
 using namespace std;
 
 int main()
-{
+{{
     string spam;
-    ifstream ifs('input.in');
+    ifstream ifs("input.in");
     while (ifs >> spam)
-    {
+    {{
         cout << spam << ' ' << flush;
-    }
+    }}
 
     return 0;
-}
+}}
 """
 
 _CPP_INFINITE_LOOP_PROGRAM = """int main()
-{
+{{
     while (true);
     return 0;
-}
+}}
 """
 
 _CPP_MEMORY_LEAK_PROGRAM = """int main()
-{
+{{
     new int(42);
     return 0;
-}
+}}
 """
 
 _CPP_COMPILE_ERROR_PROGRAM = """int main()
-{
+{{
     spameggsausagespam
-}
+}}
 """
 
 _CPP_PROGRAM_DO_EVERYTHING = """#include <iostream>
@@ -731,28 +874,28 @@ _CPP_PROGRAM_DO_EVERYTHING = """#include <iostream>
 using namespace std;
 
 int main()
-{
-    for (int i = 0; i < argc - 1; ++i)
-    {
+{{
+    for (int i = 1; i < argc - 1; ++i)
+    {{
         cout << argv[i] << " ";
-    }
+    }}
     cout << argv[argc - 1] << flush;
 
     string spam;
-    ifstream ifs('input.in');
+    ifstream ifs("input.in");
     while (ifs >> spam)
-    {
+    {{
         cout << spam << ' ' << flush;
-    }
+    }}
 
     while (cin >> spam)
-    {
+    {{
         cout << spam << ' ' << flush;
-    }
+    }}
 
     cout << "{stdout_str}" << flush;
     cerr << "{stderr_str}" << flush;
 
     return {return_code};
-}
+}}
 """
