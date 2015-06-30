@@ -100,10 +100,11 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
                 of the program being tested.
             Default value: empty string
 
-        ignore_whitespace_in_output -- Whether this test case should
+        ignore_whitespace_in_output -- TODO
+            Whether this test case should
             ignore whitespace when checking the output (standard output
             and standard error) of the program being tested.
-            TODO: This field has not yet been implemented
+            THIS FIELD HAS NOT YET BEEN IMPLEMENTED
 
         use_valgrind -- Whether this test case should perform a second
             run of the program being tested using the program Valgrind:
@@ -348,8 +349,8 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         result._compilation_return_code = runner.return_code
 
         if result._compilation_return_code != 0 or result.timed_out:
-            print(result._compilation_return_code)
-            print(runner.stderr)
+            # print(result._compilation_return_code)
+            # print(runner.stderr)
             return result
 
         run_program_cmd = (

@@ -754,13 +754,93 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
-    # def test_run_everything_correct(self):
-    #     self.fail()
+    def test_run_everything_correct(self):
+        stdout_msg = 'standard spam output'
+        stderr_msg = 'standard llama error output'
+        cpp_file_content = _CPP_PROGRAM_DO_EVERYTHING.format(
+            stdout_str=stdout_msg, stderr_str=stderr_msg, return_code=0)
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
 
-    # # -------------------------------------------------------------------------
+        file_content = 'stuff to read from file '
+        input_filename = 'input.in'
+        self.project.add_project_file(input_filename, '')
+        with open(input_filename, 'w') as f:
+            f.write(file_content)
 
-    # def test_run_everything_incorrect(self):
-    #     self.fail()
+        stdin_content = 'some content for stdin '
+
+        cmd_args = ['zomg', 'wtf', 'bbq']
+
+        expected_stdout = (
+            ' '.join(cmd_args) + file_content + stdin_content +
+            stdout_msg
+        )
+
+        self.test_case_starter.command_line_arguments = cmd_args
+        self.test_case_starter.expected_standard_output = expected_stdout
+        self.test_case_starter.expected_standard_error_output = stderr_msg
+        self.test_case_starter.standard_input = stdin_content
+        self.test_case_starter.expected_return_code = 0
+        self.test_case_starter.use_valgrind = True
+
+        self.test_case_starter.save()
+        result = self.test_case_starter.run()
+
+        self.assertEqual(expected_stdout, result.standard_output)
+        self.assertTrue(result.standard_output_correct)
+
+        self.assertEqual(stderr_msg, result.standard_error_output)
+        self.assertTrue(result.standard_error_output_correct)
+
+        self.assertEqual(0, result.return_code)
+        self.assertTrue(result.return_code_correct)
+
+        self.assertEqual(0, result.valgrind_return_code)
+        self.assertFalse(result.valgrind_errors_present)
+
+    # -------------------------------------------------------------------------
+
+    def test_run_everything_incorrect(self):
+        stdout_msg = '" << new int(42) << "'
+        cpp_file_content = _CPP_PROGRAM_DO_EVERYTHING.format(
+            stdout_str=stdout_msg, stderr_str='', return_code=1)
+        with open(self.cpp_filename, 'w') as f:
+            f.write(cpp_file_content)
+
+        file_content = 'stuff to read from file '
+        input_filename = 'input.in'
+        self.project.add_project_file(input_filename, '')
+        with open(input_filename, 'w') as f:
+            f.write(file_content)
+
+        stdin_content = 'some content for stdin '
+
+        cmd_args = ['zomg', 'wtf', 'bbq']
+
+        expected_stdout = 'spaaaaaaaaaam'
+
+        self.test_case_starter.command_line_arguments = cmd_args
+        self.test_case_starter.expected_standard_output = expected_stdout
+        self.test_case_starter.expected_standard_error_output = 'stderr_msg'
+        self.test_case_starter.standard_input = stdin_content
+        self.test_case_starter.expected_return_code = 0
+        self.test_case_starter.use_valgrind = True
+
+        self.test_case_starter.save()
+        result = self.test_case_starter.run()
+
+        self.assertNotEqual(expected_stdout, result.standard_output)
+        self.assertFalse(result.standard_output_correct)
+
+        self.assertNotEqual('stderr_msg', result.standard_error_output)
+        self.assertFalse(result.standard_error_output_correct)
+
+        self.assertNotEqual(0, result.return_code)
+        self.assertFalse(result.return_code_correct)
+
+        self.assertNotEqual(0, result.valgrind_return_code)
+        self.assertTrue(result.valgrind_errors_present)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -873,7 +953,7 @@ _CPP_PROGRAM_DO_EVERYTHING = """#include <iostream>
 
 using namespace std;
 
-int main()
+int main(int argc, char** argv)
 {{
     for (int i = 1; i < argc - 1; ++i)
     {{
