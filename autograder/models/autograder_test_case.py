@@ -6,7 +6,6 @@ Classes:
 """
 
 import subprocess
-import io
 
 from django.db import models
 
@@ -429,6 +428,11 @@ class _SubprocessRunner(object):
         return self._process
 
     def _run(self):
+        # Note: It is not possible to use string streams
+        # (io.StringIO) with subprocess.call() because they do not
+        # have a fileno attribute. This is not a huge issue, as using
+        # Popen and subprocess.PIPE is the preferred approach to
+        # redirecting input and output from strings.
         self._process = subprocess.Popen(
             self._args,
             universal_newlines=True,
