@@ -1,6 +1,7 @@
 import os
 
 from django.db.utils import IntegrityError
+from django.core.exceptions import ValidationError
 
 from autograder.models import Course
 
@@ -22,22 +23,22 @@ class CourseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_empty_name(self):
-        with self.assertRaises(ValueError):
-            Course.objects.create(name='')
+        with self.assertRaises(ValidationError):
+            Course(name='').validate_and_save()
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_name(self):
-        with self.assertRaises(ValueError):
-            Course.objects.create(name=None)
+        with self.assertRaises(ValidationError):
+            Course(name=None).validate_and_save()
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_non_unique_name(self):
         NAME = "eecs280"
-        Course.objects.create(name=NAME)
-        with self.assertRaises(IntegrityError):
-            Course.objects.create(name=NAME)
+        Course(name=NAME).validate_and_save()
+        with self.assertRaises(ValidationError):
+            Course(name=NAME).validate_and_save()
 
 
 # -----------------------------------------------------------------------------
@@ -56,6 +57,6 @@ class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
 
         self.assertFalse(os.path.exists(expected_course_root_dir))
 
-        course.save()
+        course.validate_and_save()
 
         self.assertTrue(os.path.isdir(expected_course_root_dir))

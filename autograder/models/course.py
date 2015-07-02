@@ -1,14 +1,15 @@
 import os
 
 from django.db import models
+from django.core import validators
 
-from autograder.models.model_validated_on_save import ModelValidatedOnSave
+from autograder.models.model_validatable_on_save import ModelValidatableOnSave
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
 
 
-class Course(ModelValidatedOnSave):
+class Course(ModelValidatableOnSave):
     """
     Represents a programming course for which students will be submitting
     code to an autograder.
@@ -21,10 +22,14 @@ class Course(ModelValidatedOnSave):
 
     Overridden member functions:
         save()
-        validate_fields()
     """
+    # unique_together = ('name')
+
     name = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)
+        max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True,
+        validators=[
+            validators.MinLengthValidator(
+                1, "Course names must be non-empty")])
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -45,7 +50,7 @@ class Course(ModelValidatedOnSave):
 
     # -------------------------------------------------------------------------
 
-    def validate_fields(self):
-        if not self.name:
-            raise ValueError(
-                "Course name must be non-null and non-empty.")
+    # def validate_fields(self):
+    #     if not self.name:
+    #         raise ValueError(
+    #             "Course name must be non-null and non-empty.")
