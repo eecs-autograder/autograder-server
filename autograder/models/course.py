@@ -1,7 +1,7 @@
 import os
 
 from django.db import models
-from django.core import validators
+from django.core.validators import MinLengthValidator
 
 from autograder.models.model_validatable_on_save import ModelValidatableOnSave
 
@@ -23,13 +23,9 @@ class Course(ModelValidatableOnSave):
     Overridden member functions:
         save()
     """
-    # unique_together = ('name')
-
     name = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True,
-        validators=[
-            validators.MinLengthValidator(
-                1, "Course names must be non-empty")])
+        validators=[MinLengthValidator(1, "Name can't be empty")])
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -47,10 +43,3 @@ class Course(ModelValidatableOnSave):
 
             # print('creating: ' + course_root_dir)
             os.makedirs(course_root_dir)
-
-    # -------------------------------------------------------------------------
-
-    # def validate_fields(self):
-    #     if not self.name:
-    #         raise ValueError(
-    #             "Course name must be non-null and non-empty.")

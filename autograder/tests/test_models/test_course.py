@@ -1,6 +1,5 @@
 import os
 
-from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
 
 from autograder.models import Course

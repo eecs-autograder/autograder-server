@@ -1,7 +1,7 @@
 # Import all Model classes here.
 
 from .course import Course
-# from .semester import Semester
+from .semester import Semester
 # from .project import Project
 
 # from .submission_group import SubmissionGroup
