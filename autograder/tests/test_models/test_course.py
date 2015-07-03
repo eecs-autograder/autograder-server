@@ -13,7 +13,7 @@ from autograder.tests.temporary_filesystem_test_case import (
 class CourseTestCase(TemporaryFilesystemTestCase):
     def test_valid_save(self):
         NAME = "eecs280"
-        Course.objects.create(name=NAME)
+        Course.objects.validate_and_create(name=NAME)
 
         loaded = Course.objects.get(pk=NAME)
 
@@ -23,21 +23,21 @@ class CourseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError):
-            Course(name='').validate_and_save()
+            Course.objects.validate_and_create(name='')
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_name(self):
         with self.assertRaises(ValidationError):
-            Course(name=None).validate_and_save()
+            Course.objects.validate_and_create(name=None)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_non_unique_name(self):
         NAME = "eecs280"
-        Course(name=NAME).validate_and_save()
+        Course.objects.validate_and_create(name=NAME)
         with self.assertRaises(ValidationError):
-            Course(name=NAME).validate_and_save()
+            Course.objects.validate_and_create(name=NAME)
 
 
 # -----------------------------------------------------------------------------

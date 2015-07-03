@@ -1,17 +1,26 @@
 import os
+import collections
 
 from django.db import models
+from django.core.validators import MinValueValidator, RegexValidator
+from django.core.exceptions import ValidationError
 
-from jsonfield import JSONField
+# from jsonfield import JSONField
 
-from autograder.models.model_validated_on_save import ModelValidatedOnSave
+from autograder.models.model_utils import (
+    ModelValidatableOnSave, ManagerWithValidateOnCreate)
 from autograder.models import Semester
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
 
 
-class Project(ModelValidatedOnSave):
+ExpectedStudentFilePatternTuple = collections.namedtuple(
+    'ExpectedStudentFile',
+    ['pattern', 'min_num_matches', 'max_num_matches'])
+
+
+class Project(ModelValidatableOnSave):
     """
     Represents a programming project for which students can
     submit solutions and have them evaluated.
@@ -68,38 +77,35 @@ class Project(ModelValidatedOnSave):
             for restrictions on filenames.
             Default value: empty list
 
-        expected_student_file_patterns -- A dictionary of Unix shell-style
-            patterns that files students submit can match.
-            Default value: empty dictionary
+        expected_student_file_patterns -- A list of objects encapsulating
+            Unix shell-style patterns that student-submitted files can match.
+            Default value: empty list
 
-            The key, value pairs are as follows:
+            The pattern objects have the following fields:
+                pattern -- A string containing the actual pattern.
+                    This should be a shell-style file pattern suitable for
+                    use with Python's fnmatch.fnmatch()
+                    function (https://docs.python.org/3.4/library/fnmatch.html)
 
-            {
-                file_pattern: [min_num_matches, max_num_matches]
-            }
+                min_num_matches -- The minimum number of files students are
+                    required to submit that match file_pattern.
+                    This value must be non-negative.
+                    This value must be <= max_num_matches.
 
-            file_pattern should be a shell-style file pattern suitable for
-                use with Python's fnmatch.fnmatch()
-                function (https://docs.python.org/3.4/library/fnmatch.html).
-                TODO pattern whitelist
-
-            min_num_matches is the minimum number of files students are
-                required to submit that match file_pattern.
-                This value must be non-negative.
-                This value must be <= max_num_matches.
-
-            max_num_matches is the maximum number of files students are
-                allowed to submit that match file_pattern.
-                This value must be non negative.
-                This value must be >= min_num_matches.
-
-    Static methods:
-        get_by_composite_key()
+                max_num_matches -- The maximum number of files students are
+                    allowed to submit that match file_pattern.
+                    This value must be non negative.
+                    This value must be >= min_num_matches.
 
     Instance methods:
         add_project_file()
         remove_project_file()
         rename_project_file() TODO?
+
+        add_required_student_file()
+        get_required_student_filenames()
+
+        add_expected_student_file_pattern()
 
         add_test_case() TODO (here or in test case?)
         update_test_case() TODO (here or in test case?)
@@ -107,42 +113,35 @@ class Project(ModelValidatedOnSave):
 
     Overridden methods:
         save()
-        validate_fields()
+        clean()
     """
+    class Meta:
+        unique_together = ('name', 'semester')
+
+    objects = ManagerWithValidateOnCreate()
+
+    # -------------------------------------------------------------------------
+
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     semester = models.ForeignKey(Semester)
 
-    @property
-    def project_files(self):
-        return self._project_files
+    # @property
+    # def project_files(self):
+    #     return self._project_files
 
-    _project_files = JSONField(default=[])
+    # _project_files = JSONField(default=[])
     visible_to_students = models.BooleanField(default=False)
-    closing_time = models.DateTimeField(default=None, null=True)
+    closing_time = models.DateTimeField(default=None, null=True, blank=True)
     disallow_student_submissions = models.BooleanField(default=False)
-    min_group_size = models.IntegerField(default=1)
-    max_group_size = models.IntegerField(default=1)
-    required_student_files = JSONField(default=[])
-    expected_student_file_patterns = JSONField(default={})
+    min_group_size = models.IntegerField(
+        default=1, validators=[MinValueValidator(1)])
+    max_group_size = models.IntegerField(
+        default=1, validators=[MinValueValidator(1)])
 
-    _composite_primary_key = models.TextField(primary_key=True)
+    # required_student_files = JSONField(default=[])
+    # expected_student_file_patterns = JSONField(default={})
 
-    # -------------------------------------------------------------------------
-    # -------------------------------------------------------------------------
-
-    @staticmethod
-    def get_by_composite_key(project_name, semester):
-        """
-        Does a key lookup for and returns the Project with the given
-        name and that belongs to the specified semester.
-        """
-        return Project.objects.get(
-            pk=Project._compute_composite_primary_key(project_name, semester))
-
-    @staticmethod
-    def _compute_composite_primary_key(project_name, semester):
-        return "{0}_{1}_{2}".format(
-            semester.course.name, semester.name, project_name)
+    # _composite_primary_key = models.TextField(primary_key=True)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -204,6 +203,60 @@ class Project(ModelValidatedOnSave):
 
     # -------------------------------------------------------------------------
 
+    def add_required_student_file(self, filename):
+        """
+        Adds the given filename to the list of files that students
+        are required to submit for this project.
+        """
+        self.required_student_files.add(
+            _RequiredStudentFile.objects.validate_and_create(
+                filename=filename,
+                project=self))
+
+    # -------------------------------------------------------------------------
+
+    def get_required_student_filenames(self):
+        """
+        Returns a list of filenames that students are required to submit
+        for this project.
+        """
+        return [obj.filename for obj in self.required_student_files.all()]
+
+    # -------------------------------------------------------------------------
+
+    def add_expected_student_file_pattern(self, pattern,
+                                          min_matches, max_matches):
+        """
+        Adds the given pattern with the specified min and max to the
+        list of patterns that student-submitted files can match.
+        """
+        self.expected_student_file_patterns.add(
+            _ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern=pattern,
+                min_num_matches=min_matches,
+                max_num_matches=max_matches,
+                project=self))
+
+    # -------------------------------------------------------------------------
+
+    def get_expected_student_file_patterns(self):
+        """
+        Returns a list of named tuples representing patterns that
+        student-submitted files can match.
+        The tuples contain the following fields:
+            pattern
+            min_num_matches
+            max_num_matches
+        See Project.expected_student_file_patterns for more information
+        on these fields.
+        """
+        return [
+            ExpectedStudentFilePatternTuple(
+                obj.pattern, obj.min_num_matches, obj.max_num_matches)
+            for obj in self.expected_student_file_patterns.all()]
+
+    # -------------------------------------------------------------------------
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
@@ -226,49 +279,119 @@ class Project(ModelValidatedOnSave):
 
     # -------------------------------------------------------------------------
 
-    def validate_fields(self):
-        if not self.pk:
-            self._composite_primary_key = self._compute_composite_primary_key(
-                self.name, self.semester)
-
-        if not self.name:
-            raise ValueError(
-                "Project names must be non-null and non-empty")
-
-        # Foreign key fields raise ValueError if you try to
-        # assign a null value to them, so an extra check for semester
-        # is not needed.
-
-        if not self._composite_primary_key:
-            raise Exception("Invalid composite primary key")
-
-        if self.min_group_size < 1:
-            raise ValueError("Minimum group size must be at least 1")
-
-        if self.max_group_size < 1:
-            raise ValueError("Maximum group size must be at least 1")
-
+    def clean(self):
         if self.max_group_size < self.min_group_size:
-            raise ValueError(
-                "Maximum group size must be >= minimum group size")
+            raise ValidationError(
+                {'max_group_size': ['Maximum group size must be greater than '
+                                    'or equal to minimum group size']})
 
-        for filename in self.required_student_files:
-            ut.check_user_provided_filename(filename)
+    # -------------------------------------------------------------------------
 
-        for file_pattern, min_max in self.expected_student_file_patterns.items():
-            ut.check_shell_style_file_pattern(file_pattern)
+    # def validate_fields(self):
+    #     if not self.pk:
+    #         self._composite_primary_key = self._compute_composite_primary_key(
+    #             self.name, self.semester)
 
-            if min_max[0] > min_max[1]:
-                raise ValueError(
-                    "The minimum for an expected file pattern must be less "
-                    "than the maximum")
+    #     if not self.name:
+    #         raise ValueError(
+    #             "Project names must be non-null and non-empty")
 
-            if min_max[0] < 0:
-                raise ValueError(
-                    "The minimum for an expected file pattern "
-                    "must be non-negative")
+    #     # Foreign key fields raise ValueError if you try to
+    #     # assign a null value to them, so an extra check for semester
+    #     # is not needed.
 
-            if min_max[1] < 0:
-                raise ValueError(
-                    "The maximum for an expected file pattern "
-                    "must be non-negative")
+    #     if not self._composite_primary_key:
+    #         raise Exception("Invalid composite primary key")
+
+    #     if self.min_group_size < 1:
+    #         raise ValueError("Minimum group size must be at least 1")
+
+    #     if self.max_group_size < 1:
+    #         raise ValueError("Maximum group size must be at least 1")
+
+    #     if self.max_group_size < self.min_group_size:
+    #         raise ValueError(
+    #             "Maximum group size must be >= minimum group size")
+
+    #     for filename in self.required_student_files:
+    #         ut.check_user_provided_filename(filename)
+
+    #     for file_pattern, min_max in self.expected_student_file_patterns.items():
+    #         ut.check_shell_style_file_pattern(file_pattern)
+
+    #         if min_max[0] > min_max[1]:
+    #             raise ValueError(
+    #                 "The minimum for an expected file pattern must be less "
+    #                 "than the maximum")
+
+    #         if min_max[0] < 0:
+    #             raise ValueError(
+    #                 "The minimum for an expected file pattern "
+    #                 "must be non-negative")
+
+    #         if min_max[1] < 0:
+    #             raise ValueError(
+    #                 "The maximum for an expected file pattern "
+    #                 "must be non-negative")
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+def _get_project_file_upload_to_dir(instance, filename):
+    return os.path.join(
+        ut.get_project_files_relative_dir(instance), filename)
+
+
+class _UploadedProjectFile(ModelValidatableOnSave):
+    class Meta:
+        unique_together = ('project', 'uploaded_file')
+
+    objects = ManagerWithValidateOnCreate()
+
+    project = models.ForeignKey(Project, related_name='project_files')
+    uploaded_file = models.FileField(
+        upload_to=_get_project_file_upload_to_dir,
+        validators=[RegexValidator(regex=gc.PROJECT_FILENAME_WHITELIST_REGEX)])
+
+
+# -----------------------------------------------------------------------------
+
+class _RequiredStudentFile(ModelValidatableOnSave):
+    class Meta:
+        unique_together = ('project', 'filename')
+
+    objects = ManagerWithValidateOnCreate()
+
+    project = models.ForeignKey(Project, related_name='required_student_files')
+    filename = models.CharField(
+        max_length=gc.MAX_CHAR_FIELD_LEN,
+        validators=[ut.check_user_provided_filename])
+
+
+# -----------------------------------------------------------------------------
+
+class _ExpectedStudentFilePattern(ModelValidatableOnSave):
+    class Meta:
+        unique_together = ('project', 'pattern')
+
+    objects = ManagerWithValidateOnCreate()
+
+    project = models.ForeignKey(
+        Project, related_name='expected_student_file_patterns')
+
+    pattern = models.CharField(
+        max_length=gc.MAX_CHAR_FIELD_LEN,
+        validators=[ut.check_shell_style_file_pattern])
+    min_num_matches = models.IntegerField(validators=[MinValueValidator(0)])
+    max_num_matches = models.IntegerField(validators=[MinValueValidator(0)])
+
+    def clean(self):
+        super().clean()
+
+        if self.min_num_matches > self.max_num_matches:
+            raise ValidationError(
+                {'min_num_matches':
+                 ['Minimum number of matches must be less than or equal '
+                  'to maximum number of matches']})

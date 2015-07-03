@@ -3,10 +3,12 @@ import re
 import shutil
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 import autograder.shared.global_constants as gc
 
 
+# TODO: phase out
 def check_values_against_whitelist(values, whitelist):
     """
     values -- An iterable object.
@@ -36,21 +38,21 @@ def check_user_provided_filename(filename):
         - Filenames cannot be the string ".."
         - Filenames cannot start with '.'
 
-    If the given filename does not meet these requirements, ValueError
+    If the given filename does not meet these requirements, ValidationError
     is raised. These restrictions are placed on filenames for security
     purposes.
     """
     if not filename:
-        raise ValueError("Filenames must be non-empty and non-null")
+        raise ValidationError("Filenames must be non-empty and non-null")
 
     if filename.startswith('.'):
-        raise ValueError("Filenames cannot start with '.'")
+        raise ValidationError("Filenames cannot start with '.'")
 
     if filename == "..":
-        raise ValueError("'..' is not a valid filename")
+        raise ValidationError("'..' is not a valid filename")
 
     if not gc.PROJECT_FILENAME_WHITELIST_REGEX.fullmatch(filename):
-        raise ValueError(
+        raise ValidationError(
             "Invalid filename: {0} \n"
             "Filenames must contain only alphanumeric characters, hyphen, "
             "underscore, and period.".format(filename))
@@ -66,15 +68,15 @@ def check_shell_style_file_pattern(pattern):
         - Filenames myst only contain characters specified in
           autograder.shared.global_constants.PROJECT_FILE_PATTERN_WHITELIST_REGEX
 
-    If the given pattern does not meet these requirements, ValueError
+    If the given pattern does not meet these requirements, ValidationError
     is raised. These restrictions are placed on file patterns for security
     purposes.
     """
     if not pattern:
-        raise ValueError("File patterns must be non-empty and non-null")
+        raise ValidationError("File patterns must be non-empty and non-null")
 
     if not gc.PROJECT_FILE_PATTERN_WHITELIST_REGEX.fullmatch(pattern):
-        raise ValueError(
+        raise ValidationError(
             "Invalid file pattern: {0} \n"
             "Shell-style patterns must only contain "
             "alphanumeric characters, hyphen, underscore, "
@@ -93,7 +95,18 @@ def get_course_root_dir(course):
           This will allow for the filesystem layout to be easily
           modified if necessary.
     """
-    return os.path.join(settings.MEDIA_ROOT, 'courses', course.name)
+    return os.path.join(
+        settings.MEDIA_ROOT, get_course_relative_root_dir(course))
+
+
+# -----------------------------------------------------------------------------
+
+def get_course_relative_root_dir(course):
+    """
+    Same as get_course_root_dir() but returns a path that is
+    relative to MEDIA_ROOT.
+    """
+    return os.path.join('courses', course.name)
 
 
 # -----------------------------------------------------------------------------
@@ -108,7 +121,19 @@ def get_semester_root_dir(semester):
           This will allow for the filesystem layout to be easily
           modified if necessary.
     """
-    return os.path.join(get_course_root_dir(semester.course), semester.name)
+    return os.path.join(
+        settings.MEDIA_ROOT, get_semester_relative_root_dir(semester))
+
+
+# -----------------------------------------------------------------------------
+
+def get_semester_relative_root_dir(semester):
+    """
+    Same as get_semester_root_dir() but returns a path that is
+    relative to MEDIA_ROOT.
+    """
+    return os.path.join(
+        get_course_relative_root_dir(semester.course), semester.name)
 
 
 # -----------------------------------------------------------------------------
@@ -124,7 +149,18 @@ def get_project_root_dir(project):
           modified if necessary.
     """
     return os.path.join(
-        get_semester_root_dir(project.semester), project.name)
+        settings.MEDIA_ROOT, get_project_relative_root_dir(project))
+
+
+# -----------------------------------------------------------------------------
+
+def get_project_relative_root_dir(project):
+    """
+    Same as get_project_root_dir() but returns a path that is
+    relative to MEDIA_ROOT.
+    """
+    return os.path.join(
+        get_semester_relative_root_dir(project.semester), project.name)
 
 
 # -----------------------------------------------------------------------------
@@ -141,7 +177,18 @@ def get_project_files_dir(project):
           modified if necessary.
     """
     return os.path.join(
-        get_project_root_dir(project), gc.PROJECT_FILES_DIRNAME)
+        settings.MEDIA_ROOT, get_project_files_relative_dir(project))
+
+
+# -----------------------------------------------------------------------------
+
+def get_project_files_relative_dir(project):
+    """
+    Same as get_project_files_dir() but returns a path that is
+    relative to MEDIA_ROOT.
+    """
+    return os.path.join(
+        get_project_relative_root_dir(project), gc.PROJECT_FILES_DIRNAME)
 
 
 # -----------------------------------------------------------------------------
@@ -154,7 +201,19 @@ def get_project_submissions_by_student_dir(project):
         {MEDIA_ROOT}/courses/eecs280/fall2015/project3/submissions_by_student
     """
     return os.path.join(
-        get_project_root_dir(project), gc.PROJECT_SUBMISSIONS_DIRNAME)
+        settings.MEDIA_ROOT,
+        get_project_submissions_by_student_relative_dir(project))
+
+
+# -----------------------------------------------------------------------------
+
+def get_project_submissions_by_student_relative_dir(project):
+    """
+    Same as get_project_submissions_by_student_dir() but returns a path
+    that is relative to MEDIA_ROOT.
+    """
+    return os.path.join(
+        get_project_relative_root_dir(project), gc.PROJECT_SUBMISSIONS_DIRNAME)
 
 
 # -----------------------------------------------------------------------------

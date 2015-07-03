@@ -1,9 +1,9 @@
 import os
 
 from django.db import models
-from django.core.validators import MinLengthValidator
 
-from autograder.models.model_validatable_on_save import ModelValidatableOnSave
+from autograder.models.model_utils import (
+    ModelValidatableOnSave, ManagerWithValidateOnCreate)
 from autograder.models import Course
 
 import autograder.shared.global_constants as gc
@@ -28,9 +28,12 @@ class Semester(ModelValidatableOnSave):
     class Meta:
         unique_together = ('name', 'course')
 
+    objects = ManagerWithValidateOnCreate()
+
+    # -------------------------------------------------------------------------
+
     name = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN,
-        validators=[MinLengthValidator(1, "Name can't be empty")])
+        max_length=gc.MAX_CHAR_FIELD_LEN)
     course = models.ForeignKey(Course)
 
     # -------------------------------------------------------------------------

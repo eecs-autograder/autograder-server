@@ -1,10 +1,9 @@
 import os
 
 from django.db import models
-from django.core.validators import MinLengthValidator
 
-from autograder.models.model_validatable_on_save import ModelValidatableOnSave
-
+from autograder.models.model_utils import (
+    ModelValidatableOnSave, ManagerWithValidateOnCreate)
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
 
@@ -23,9 +22,10 @@ class Course(ModelValidatableOnSave):
     Overridden member functions:
         save()
     """
+    objects = ManagerWithValidateOnCreate()
+
     name = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True,
-        validators=[MinLengthValidator(1, "Name can't be empty")])
+        max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------

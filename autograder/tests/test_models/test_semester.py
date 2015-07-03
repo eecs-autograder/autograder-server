@@ -1,6 +1,5 @@
 import os
 
-from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
 
 from autograder.models import Semester, Course
@@ -14,16 +13,15 @@ from autograder.tests.temporary_filesystem_test_case import (
 class SemesterTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
-        self.course = Course(name="eecs280")
-        self.course.validate_and_save()
+        self.course = Course.objects.validate_and_create(name="eecs280")
         self.SEMESTER_NAME = "fall2015"
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
 
     def test_valid_initialization(self):
-        new_semester = Semester(name=self.SEMESTER_NAME, course=self.course)
-        new_semester.validate_and_save()
+        new_semester = Semester.objects.validate_and_create(
+            name=self.SEMESTER_NAME, course=self.course)
 
         loaded_semester = Semester.objects.get(
             name=self.SEMESTER_NAME, course=self.course)
@@ -35,26 +33,23 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError):
-            s = Semester(name='', course=self.course)
-            s.validate_and_save()
+            Semester.objects.validate_and_create(name='', course=self.course)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_name(self):
         with self.assertRaises(ValidationError):
-            s = Semester(name=None, course=self.course)
-            s.validate_and_save()
+            Semester.objects.validate_and_create(name=None, course=self.course)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_non_unique_name(self):
-        s = Semester(name=self.SEMESTER_NAME, course=self.course)
-        s.validate_and_save()
+        Semester.objects.validate_and_create(
+            name=self.SEMESTER_NAME, course=self.course)
 
         with self.assertRaises(ValidationError):
-            duplicate_sem = Semester(
+            Semester.objects.validate_and_create(
                 name=self.SEMESTER_NAME, course=self.course)
-            duplicate_sem.validate_and_save()
 
     # -------------------------------------------------------------------------
 
@@ -63,11 +58,11 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
         new_course = Course(name=new_course_name)
         new_course.validate_and_save()
 
-        first = Semester(name=self.SEMESTER_NAME, course=self.course)
-        first.validate_and_save()
+        Semester.objects.validate_and_create(
+            name=self.SEMESTER_NAME, course=self.course)
 
-        new_semester = Semester(name=self.SEMESTER_NAME, course=new_course)
-        new_semester.validate_and_save()
+        new_semester = Semester.objects.validate_and_create(
+            name=self.SEMESTER_NAME, course=new_course)
 
         loaded_new_semester = Semester.objects.get(
             name=self.SEMESTER_NAME, course=new_course)

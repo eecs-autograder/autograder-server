@@ -1,10 +1,10 @@
 import os
 import re
+import collections
 
 from django.test import TestCase
 from django.conf import settings
 
-from autograder.models import Project, Course, Semester
 from .temporary_filesystem_test_case import TemporaryFilesystemTestCase
 
 import autograder.shared.utilities as ut
@@ -104,57 +104,97 @@ class CheckUserProvidedFilenameTest(TestCase):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
+MockCourse = collections.namedtuple('MockCourse', ['name'])
+MockSemester = collections.namedtuple('MockSemester', ['name', 'course'])
+MockProject = collections.namedtuple('MockProject', ['name', 'semester'])
+
+
 class FileSystemUtilTestCase(TestCase):
     def setUp(self):
         self.COURSE_NAME = 'eecs280'
         self.SEMESTER_NAME = 'fall2015'
         self.PROJECT_NAME = 'p1'
-        self.course = Course(name='eecs280')
-        self.semester = Semester(name='fall2015', course=self.course)
-        self.project = Project(name='p1', semester=self.semester)
+        self.course = MockCourse(name='eecs280')
+        self.semester = MockSemester(name='fall2015', course=self.course)
+        self.project = MockProject(name='p1', semester=self.semester)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
 
     def test_get_course_root_dir(self):
-        expected = settings.MEDIA_ROOT + "{0}/{1}".format(
+        expected_relative = "{0}/{1}".format(
             gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME)
-        actual = ut.get_course_root_dir(self.course)
-        self.assertEqual(expected, actual)
+
+        actual_relative = ut.get_course_relative_root_dir(self.course)
+        self.assertEqual(expected_relative, actual_relative)
+
+        expected_absolute = settings.MEDIA_ROOT + expected_relative
+
+        actual_absolute = ut.get_course_root_dir(self.course)
+        self.assertEqual(expected_absolute, actual_absolute)
 
     # -------------------------------------------------------------------------
 
     def test_get_semester_root_dir(self):
-        expected = settings.MEDIA_ROOT + "{0}/{1}/{2}".format(
+        expected_relative = "{0}/{1}/{2}".format(
             gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
             self.SEMESTER_NAME)
-        actual = ut.get_semester_root_dir(self.semester)
-        self.assertEqual(expected, actual)
+
+        actual_relative = ut.get_semester_relative_root_dir(self.semester)
+        self.assertEqual(expected_relative, actual_relative)
+
+        expected_absolute = settings.MEDIA_ROOT + expected_relative
+
+        actual_absolute = ut.get_semester_root_dir(self.semester)
+        self.assertEqual(expected_absolute, actual_absolute)
 
     # -------------------------------------------------------------------------
 
     def test_get_project_root_dir(self):
-        expected = settings.MEDIA_ROOT + "{0}/{1}/{2}/{3}".format(
+        expected_relative = "{0}/{1}/{2}/{3}".format(
             gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
             self.SEMESTER_NAME, self.PROJECT_NAME)
-        actual = ut.get_project_root_dir(self.project)
-        self.assertEqual(expected, actual)
+
+        actual_relative = ut.get_project_relative_root_dir(self.project)
+        self.assertEqual(expected_relative, actual_relative)
+
+        expected_absolute = settings.MEDIA_ROOT + expected_relative
+
+        actual_absolute = ut.get_project_root_dir(self.project)
+        self.assertEqual(expected_absolute, actual_absolute)
 
     # -------------------------------------------------------------------------
 
     def test_get_project_files_dir(self):
-        expected = settings.MEDIA_ROOT + "{0}/{1}/{2}/{3}/{4}".format(
+        expected_relative = "{0}/{1}/{2}/{3}/{4}".format(
             gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
             self.SEMESTER_NAME, self.PROJECT_NAME, gc.PROJECT_FILES_DIRNAME)
-        actual = ut.get_project_files_dir(self.project)
-        self.assertEqual(expected, actual)
+
+        actual_relative = ut.get_project_files_relative_dir(self.project)
+        self.assertEqual(expected_relative, actual_relative)
+
+        expected_absolute = settings.MEDIA_ROOT + "{0}/{1}/{2}/{3}/{4}".format(
+            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
+            self.SEMESTER_NAME, self.PROJECT_NAME, gc.PROJECT_FILES_DIRNAME)
+
+        actual_absolute = ut.get_project_files_dir(self.project)
+        self.assertEqual(expected_absolute, actual_absolute)
 
     # -------------------------------------------------------------------------
 
     def test_get_project_submissions_by_student_dir(self):
-        expected = settings.MEDIA_ROOT + "{0}/{1}/{2}/{3}/{4}".format(
+        expected_relative = "{0}/{1}/{2}/{3}/{4}".format(
             gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
             self.SEMESTER_NAME, self.PROJECT_NAME,
             gc.PROJECT_SUBMISSIONS_DIRNAME)
-        actual = ut.get_project_submissions_by_student_dir(self.project)
-        self.assertEqual(expected, actual)
+        actual_relative = ut.get_project_submissions_by_student_relative_dir(
+            self.project)
+        self.assertEqual(expected_relative, actual_relative)
+
+        expected_absolute = settings.MEDIA_ROOT + "{0}/{1}/{2}/{3}/{4}".format(
+            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
+            self.SEMESTER_NAME, self.PROJECT_NAME,
+            gc.PROJECT_SUBMISSIONS_DIRNAME)
+        actual_absolute = ut.get_project_submissions_by_student_dir(
+            self.project)
+        self.assertEqual(expected_absolute, actual_absolute)
