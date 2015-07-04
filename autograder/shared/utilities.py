@@ -8,19 +8,18 @@ from django.core.exceptions import ValidationError
 import autograder.shared.global_constants as gc
 
 
-# TODO: phase out
 def check_values_against_whitelist(values, whitelist):
     """
     values -- An iterable object.
     whitelist -- A regular expression (can be compiled or a string).
 
-    Raises ValueError if any value in values does not fully match the
+    Raises ValidationError if any value in values does not fully match the
     whitelist regex (as per regex.fullmatch
     https://docs.python.org/3.4/library/re.html#re.regex.fullmatch)
     """
     for value in values:
         if not re.fullmatch(whitelist, value):
-            raise ValueError(
+            raise ValidationError(
                 "Value {0} contains illegal characters "
                 "as per the expression {1}".format(
                     value, whitelist))
@@ -256,7 +255,8 @@ class TemporaryFile(object):
 
 class TemporaryDirectory(object):
     """
-    Enables creating and destroying a temporary directory using "with" statements.
+    Enables creating and destroying a temporary directory using
+    "with" statements.
     Note that when the directory is destroyed, any files inside it
     will be destroyed as well.
     """

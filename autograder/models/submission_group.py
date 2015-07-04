@@ -1,9 +1,10 @@
 from django.db import models, transaction
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 from autograder.models import Project
 
-from autograder.models.model_validated_on_save import ModelValidatedOnSave
+from autograder.models.model_utils import ModelValidatableOnSave
 
 
 class _SubmissionGroupManager(models.Manager):
@@ -13,12 +14,12 @@ class _SubmissionGroupManager(models.Manager):
             project=project, extended_due_date=extended_due_date)
         group.members.add(*members)
 
-        group.validate_fields(_first_save=True)
+        group.clean(_first_save=True)
 
         return group
 
 
-class SubmissionGroup(ModelValidatedOnSave):
+class SubmissionGroup(ModelValidatableOnSave):
     """
     This class represents a group of students that can submit
     to a particular project.
@@ -47,7 +48,7 @@ class SubmissionGroup(ModelValidatedOnSave):
         num_submissions_with_full_feedback -- TODO
 
     Overridden methods:
-        validate_fields()
+        clean()
     """
     # Custom manager so that we can pass a list of Users to the create()
     # method.
@@ -57,7 +58,8 @@ class SubmissionGroup(ModelValidatedOnSave):
 
     members = models.ManyToManyField(User, related_name='submission_groups')
     project = models.ForeignKey(Project)
-    extended_due_date = models.DateTimeField(null=True, default=None)
+    extended_due_date = models.DateTimeField(
+        null=True, default=None, blank=True)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -65,16 +67,17 @@ class SubmissionGroup(ModelValidatedOnSave):
     # The extra field _first_save is used by the custom manager object
     # so that this function only does certain checks once object is ready
     # to be saved to the database.
-    def validate_fields(self, _first_save=False):
+    def clean(self, _first_save=False):
         if not self.pk and not _first_save:
             return
 
         num_members = self.members.count()
         if num_members < 1:
-            raise ValueError("SubmissionGroups must have at least one member")
+            raise ValidationError(
+                "SubmissionGroups must have at least one member")
 
         if num_members > self.project.max_group_size:
-            raise ValueError(
+            raise ValidationError(
                 "Tried to add {} members, but the max "
                 "for project {} is {}".format(
                     num_members, self.project.name,
@@ -93,7 +96,7 @@ class SubmissionGroup(ModelValidatedOnSave):
             current_memberships = member.submission_groups.filter(
                 project=self.project)
             if current_memberships.count() > 1:
-                raise ValueError(
+                raise ValidationError(
                     "User {} is already part of a submission "
                     "group for project {}".format(
                         member.username, self.project.name))

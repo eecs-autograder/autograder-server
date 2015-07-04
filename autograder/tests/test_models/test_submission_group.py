@@ -1,6 +1,7 @@
 import datetime
 
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 from django.contrib.auth.models import User
 
@@ -95,7 +96,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_too_few_group_members(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             SubmissionGroup.objects.create_group([], project=self.project)
 
         self.assertEqual([], list(SubmissionGroup.objects.all()))
@@ -106,7 +107,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         self.project.save()
 
         self.group_members.append(_make_dummy_user('fred', 'sausage'))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             SubmissionGroup.objects.create_group(
                 self.group_members, project=self.project)
 
@@ -118,7 +119,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         group = SubmissionGroup.objects.create_group(
             self.group_members[0:1], project=self.project)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             SubmissionGroup.objects.create_group(
                 self.group_members, project=self.project)
 

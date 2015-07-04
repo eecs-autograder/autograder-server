@@ -4,6 +4,7 @@ import collections
 
 from django.test import TestCase
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 from .temporary_filesystem_test_case import TemporaryFilesystemTestCase
 
@@ -73,7 +74,7 @@ class CheckValuesAgainstWhitelistTestCase(TestCase):
             ['spam', 'spam1', 'spam2'], re.compile(self.regex))
 
     def test_invalid_values(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             ut.check_values_against_whitelist(
                 ['spam', 'spam1', 'badspam', 'spam2'], self.regex)
 
@@ -86,18 +87,18 @@ class CheckUserProvidedFilenameTest(TestCase):
         ut.check_user_provided_filename('spAM-eggs_42.cpp')
 
     def test_exception_on_file_path_given(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             ut.check_user_provided_filename('../spam.txt')
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             ut.check_user_provided_filename('..')
 
     def test_exception_on_filename_with_shell_chars(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             ut.check_user_provided_filename('; echo "haxorz"; # ')
 
     def test_exception_on_filename_starts_with_dot(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             ut.check_user_provided_filename('.spameggs')
 
 
