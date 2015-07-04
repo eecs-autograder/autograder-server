@@ -146,36 +146,32 @@ class Project(ModelValidatableOnSave):
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
 
-    def add_project_file(self, filename, file_content, overwrite_ok=False):
+    def add_project_file(self, uploaded_file):
         """
-        Adds a file with the specified name and content to this Project.
+        Adds the given file to this Project.
 
-        Filename must contain only alphanumeric characters, hyphen,
-        underscore, and period, otherwise ValueError is raised.
-
-        Raises ValueError if filename is empty.
-
-        Raises FileExistsError if a file with the given name already exists
-        for this project and overwrite_ok is False.
-
-        Note that atomicity for this operation is handled at the
-        request level.
+        If a file with the same name already exists, the new file is
+        renamed by adding a short, random string to the filename. (This
+        is the default behavior in django.)
         """
-        ut.check_user_provided_filename(filename)
+        self.project_files.add(
+            _UploadedProjectFile.objects.validate_and_create(
+                uploaded_file=uploaded_file, project=self.project))
+        # ut.check_user_provided_filename(filename)
 
-        if filename in self._project_files and not overwrite_ok:
-            raise FileExistsError(
-                "File {0} for {1} {2} project {3} already exists".format(
-                    filename,
-                    self.semester.course.name, self.semester.name,
-                    self.name))
+        # if filename in self._project_files and not overwrite_ok:
+        #     raise FileExistsError(
+        #         "File {0} for {1} {2} project {3} already exists".format(
+        #             filename,
+        #             self.semester.course.name, self.semester.name,
+        #             self.name))
 
-        self._project_files.append(filename)
-        self.save()
+        # self._project_files.append(filename)
+        # self.save()
 
-        with ut.ChangeDirectory(ut.get_project_files_dir(self)):
-            with open(filename, 'w') as f:
-                f.write(file_content)
+        # with ut.ChangeDirectory(ut.get_project_files_dir(self)):
+        #     with open(filename, 'w') as f:
+        #         f.write(file_content)
 
     # -------------------------------------------------------------------------
 
@@ -200,6 +196,15 @@ class Project(ModelValidatableOnSave):
 
         with ut.ChangeDirectory(ut.get_project_files_dir(self)):
             os.remove(filename)
+
+    # -------------------------------------------------------------------------
+
+    def get_project_files(self):
+        """
+        Returns a list of this project's uploaded files
+        (as django-style file-like objects).
+        """
+        return [obj.uploaded_file for obj in self.project_files.all()]
 
     # -------------------------------------------------------------------------
 
@@ -341,19 +346,20 @@ class Project(ModelValidatableOnSave):
 
 def _get_project_file_upload_to_dir(instance, filename):
     return os.path.join(
-        ut.get_project_files_relative_dir(instance), filename)
+        ut.get_project_files_relative_dir(instance.project), filename)
+
+
+def _validate_filename(file_obj):
+    ut.check_user_provided_filename(file_obj.name)
 
 
 class _UploadedProjectFile(ModelValidatableOnSave):
-    class Meta:
-        unique_together = ('project', 'uploaded_file')
-
     objects = ManagerWithValidateOnCreate()
 
     project = models.ForeignKey(Project, related_name='project_files')
     uploaded_file = models.FileField(
         upload_to=_get_project_file_upload_to_dir,
-        validators=[RegexValidator(regex=gc.PROJECT_FILENAME_WHITELIST_REGEX)])
+        validators=[_validate_filename])
 
 
 # -----------------------------------------------------------------------------

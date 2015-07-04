@@ -1,6 +1,5 @@
 import os
 import datetime
-import collections
 
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -12,8 +11,9 @@ import autograder.shared.utilities as ut
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
-# note to self: ctor for SimpleUploadedFile takes filename contents. contents must be binary data
-# from django.core.files.uploadedfile import SimpleUploadedFile
+# note to self: ctor for SimpleUploadedFile takes (filename, contents).
+#               contents must be binary data
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 _FILENAME_WITH_SHELL_CHARS = '; echo "haxorz"; # '
@@ -295,91 +295,97 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-# class ProjectFilesystemTest(TemporaryFilesystemTestCase):
-#     def setUp(self):
-#         super().setUp()
-#         self.course = Course.objects.create(name='eecs280')
-#         self.semester = Semester.objects.create(name='f15', course=self.course)
-#         self.PROJECT_NAME = 'stats_project'
+class ProjectFilesystemTest(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+        self.course = Course.objects.create(name='eecs280')
+        self.semester = Semester.objects.create(name='f15', course=self.course)
+        self.PROJECT_NAME = 'stats_project'
 
-#         self.sample_project_filename = "spam_EGGS-42.txt"
-#         self.sample_project_file_contents = "spam egg sausage spam"
+        self.sample_project_filename = "spam_EGGS-42.txt"
+        self.sample_project_file_contents = b"spam egg sausage spam"
+        self.sample_project_file = SimpleUploadedFile(
+            self.sample_project_filename, self.sample_project_file_contents)
 
-#     # -------------------------------------------------------------------------
-#     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
-#     def test_project_root_dir_created(self):
-#         project = Project(name=self.PROJECT_NAME, semester=self.semester)
-#         expected_project_root_dir = ut.get_project_root_dir(project)
+    def test_project_root_dir_created(self):
+        project = Project(name=self.PROJECT_NAME, semester=self.semester)
+        expected_project_root_dir = ut.get_project_root_dir(project)
 
-#         self.assertFalse(os.path.exists(expected_project_root_dir))
+        self.assertFalse(os.path.exists(expected_project_root_dir))
 
-#         project.save()
+        project.save()
 
-#         self.assertTrue(os.path.isdir(expected_project_root_dir))
+        self.assertTrue(os.path.isdir(expected_project_root_dir))
 
-#     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
-#     def test_project_files_dir_created(self):
-#         project = Project(name=self.PROJECT_NAME, semester=self.semester)
-#         expected_project_files_dir = ut.get_project_files_dir(project)
+    def test_project_files_dir_created(self):
+        project = Project(name=self.PROJECT_NAME, semester=self.semester)
+        expected_project_files_dir = ut.get_project_files_dir(project)
 
-#         self.assertFalse(os.path.exists(expected_project_files_dir))
+        self.assertFalse(os.path.exists(expected_project_files_dir))
 
-#         project.save()
+        project.save()
 
-#         self.assertTrue(os.path.isdir(expected_project_files_dir))
+        self.assertTrue(os.path.isdir(expected_project_files_dir))
 
-#     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
-#     def test_project_submissions_dir_created(self):
-#         project = Project(name=self.PROJECT_NAME, semester=self.semester)
-#         expected_project_submissions_by_student_dir = (
-#             ut.get_project_submissions_by_student_dir(project))
+    def test_project_submissions_dir_created(self):
+        project = Project(name=self.PROJECT_NAME, semester=self.semester)
+        expected_project_submissions_by_student_dir = (
+            ut.get_project_submissions_by_student_dir(project))
 
-#         self.assertFalse(
-#             os.path.exists(expected_project_submissions_by_student_dir))
+        self.assertFalse(
+            os.path.exists(expected_project_submissions_by_student_dir))
 
-#         project.save()
+        project.save()
 
-#         self.assertTrue(
-#             os.path.isdir(expected_project_submissions_by_student_dir))
+        self.assertTrue(
+            os.path.isdir(expected_project_submissions_by_student_dir))
 
-#     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
-#     def test_valid_add_project_file(self):
-#         project = Project.objects.create(
-#             name=self.PROJECT_NAME, semester=self.semester)
+    def test_valid_add_project_file(self):
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
 
-#         self.assertEqual(project.project_files, [])
+        self.assertEqual(project.get_project_files(), [])
 
-#         project.add_project_file(
-#             self.sample_project_filename, self.sample_project_file_contents)
+        project.add_project_file(self.sample_project_file)
 
-#         self.assertEqual(
-#             [self.sample_project_filename], project.project_files)
+        self.assertEqual(1, len(project.get_project_files()))
+        uploaded_file = project.get_project_files()[0]
 
-#         with ut.ChangeDirectory(ut.get_project_files_dir(project)):
-#             self.assertTrue(os.path.isfile(self.sample_project_filename))
-#             with open(self.sample_project_filename) as f:
-#                 self.assertEqual(self.sample_project_file_contents, f.read())
+        self.assertEqual(
+            os.path.basename(uploaded_file.name), self.sample_project_filename)
+        self.assertEqual(
+            uploaded_file.read(), self.sample_project_file_contents)
 
-#     # -------------------------------------------------------------------------
+        with ut.ChangeDirectory(ut.get_project_files_dir(project)):
+            self.assertTrue(os.path.isfile(self.sample_project_filename))
 
-#     def test_exception_on_add_file_overwrite_not_ok(self):
-#         project = Project.objects.create(
-#             name=self.PROJECT_NAME, semester=self.semester)
+    # -------------------------------------------------------------------------
 
-#         project.add_project_file(
-#             self.sample_project_filename, self.sample_project_file_contents)
+    # This test can probably be phased out.
+    # def test_exception_on_add_file_overwrite_not_ok(self):
+    #     project = Project.objects.create(
+    #         name=self.PROJECT_NAME, semester=self.semester)
 
-#         with self.assertRaises(FileExistsError):
-#             project.add_project_file(
-#                 self.sample_project_filename,
-#                 self.sample_project_file_contents)
+    #     project.add_project_file(
+    #         self.sample_project_filename, self.sample_project_file_contents)
 
-#     # -------------------------------------------------------------------------
+    #     with self.assertRaises(FileExistsError):
+    #         project.add_project_file(
+    #             self.sample_project_filename,
+    #             self.sample_project_file_contents)
 
+    # -------------------------------------------------------------------------
+
+    # This test can probably be phased out.
 #     def test_no_exception_on_add_file_overwrite_ok(self):
 #         project = Project.objects.create(
 #             name=self.PROJECT_NAME, semester=self.semester)
@@ -400,49 +406,53 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
 
 #     # -------------------------------------------------------------------------
 
-#     def test_exception_on_add_file_filename_that_is_path(self):
-#         # This test makes sure that add_project_file() doesn't allow
-#         # the user to add files in subdirectories (or worse, somewhere else
-#         # in the filesystem).
-#         project = Project.objects.create(
-#             name=self.PROJECT_NAME, semester=self.semester)
-#         with self.assertRaises(ValueError):
-#             project.add_project_file(
-#                 '../cheese.txt', "haxorz!", overwrite_ok=True)
+    # This test can probably be phased out.
+    # NOTE: Django's default storage system strips path information from
+    # uploaded files
+    # def test_exception_on_add_file_filename_that_is_path(self):
+    #     # This test makes sure that add_project_file() doesn't allow
+    #     # the user to add files in subdirectories (or worse, somewhere else
+    #     # in the filesystem).
+    #     project = Project.objects.validate_and_create(
+    #         name=self.PROJECT_NAME, semester=self.semester)
+    #     with self.assertRaises(ValidationError):
+    #         project.add_project_file(
+    #             SimpleUploadedFile('../spam/egg/cheese.txt', b"haxorz!"))
 
-#         with self.assertRaises(ValueError):
-#             project.add_project_file(
-#                 '..', "haxorz!", overwrite_ok=True)
+    #     with self.assertRaises(ValueError):
+    #         project.add_project_file(
+    #             SimpleUploadedFile('..', "haxorz!"))
 
-#     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
-#     def test_exception_on_filename_that_has_shell_characters(self):
-#         project = Project.objects.create(
-#             name=self.PROJECT_NAME, semester=self.semester)
-#         with self.assertRaises(ValueError):
-#             project.add_project_file(
-#                 _FILENAME_WITH_SHELL_CHARS, "haxorz!", overwrite_ok=True)
+    def test_exception_on_filename_that_has_shell_characters(self):
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValidationError):
+            project.add_project_file(
+                SimpleUploadedFile(_FILENAME_WITH_SHELL_CHARS, b"haxorz!"))
 
-#     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
-#     def test_exception_on_filename_that_starts_with_dot(self):
-#         project = Project.objects.create(
-#             name=self.PROJECT_NAME, semester=self.semester)
-#         with self.assertRaises(ValueError):
-#             project.add_project_file(
-#                 '.cheese.txt', "whoa!", overwrite_ok=True)
+    def test_exception_on_filename_that_starts_with_dot(self):
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValidationError):
+            project.add_project_file(
+                SimpleUploadedFile('.cheese.txt', b"whoa!"))
 
-#     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
-#     def test_exception_on_empty_filename(self):
-#         project = Project.objects.create(
-#             name=self.PROJECT_NAME, semester=self.semester)
-#         with self.assertRaises(ValueError):
-#             project.add_project_file(
-#                 "", self.sample_project_file_contents)
+    def test_exception_on_empty_filename(self):
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValidationError):
+            project.add_project_file(
+                SimpleUploadedFile("", self.sample_project_file_contents))
 
-#     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
+    # This test can probably be phased out.
 #     def test_valid_remove_project_file(self):
 #         project = Project.objects.create(
 #             name=self.PROJECT_NAME, semester=self.semester)
@@ -458,6 +468,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
 
 #     # -------------------------------------------------------------------------
 
+    # This test can probably be phased out.
 #     def test_exception_on_remove_nonexistant_project_file(self):
 #         project = Project.objects.create(
 #             name=self.PROJECT_NAME, semester=self.semester)
