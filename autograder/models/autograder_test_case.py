@@ -8,17 +8,38 @@ Classes:
 import subprocess
 
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 
-from jsonfield import JSONField
+from autograder.models.model_utils import (
+    ModelValidatableOnSave, ManagerWithValidateOnCreate)
 
-from autograder.models.model_validated_on_save import ModelValidatedOnSave
 from autograder.models import Project, CompiledAutograderTestCaseResult
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
 
 
-class AutograderTestCaseBase(ModelValidatedOnSave):
+# A list of compilers that may be used in autograder test cases that
+# require compilation.
+SUPPORTED_COMPILERS = ["g++"]
+
+
+def _validate_cmd_line_arg(arg):
+    if not arg:
+        raise ValidationError("Command line arguments can't be empty or null")
+
+    ut.check_values_against_whitelist(
+        [arg], gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
+
+
+# def _validate_not_null(value):
+#     print('merp')
+#     if value is None:
+#         raise ValidationError("This field can't be null")
+
+
+class AutograderTestCaseBase(ModelValidatableOnSave):
     """
     This base class provides a fat interface for
     test cases used to evaluate student-submitted code.
@@ -167,22 +188,36 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
 
     Overridden methods:
         __init__()
-        validate_fields()
     """
+    class Meta:
+        unique_together = ('name', 'project')
+
+    objects = ManagerWithValidateOnCreate()
+
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     project = models.ForeignKey(Project)
 
-    command_line_arguments = JSONField(default=[])
-    standard_input = models.TextField()
-    test_resource_files = JSONField(default=[])
+    command_line_arguments = ArrayField(
+        models.CharField(
+            max_length=gc.MAX_CHAR_FIELD_LEN,
+            validators=[_validate_cmd_line_arg]),
+        blank=True, default=[])
+
+    standard_input = models.TextField(blank=True)
+
+    test_resource_files = ArrayField(
+        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
+        default=[], blank=True)
+
     time_limit = models.IntegerField(default=gc.DEFAULT_SUBPROCESS_TIMEOUT)
 
-    expected_return_code = models.IntegerField(null=True, default=None)
+    expected_return_code = models.IntegerField(
+        null=True, default=None, blank=True)
     expect_any_nonzero_return_code = models.BooleanField(default=False)
 
-    expected_standard_output = models.TextField()
+    expected_standard_output = models.TextField(blank=True)
 
-    expected_standard_error_output = models.TextField()
+    expected_standard_error_output = models.TextField(blank=True)
 
     @property
     def use_valgrind(self):
@@ -197,30 +232,29 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
 
     _use_valgrind = models.BooleanField(default=False)
 
-    valgrind_flags = JSONField(null=True, default=None)
-
-    _composite_primary_key = models.TextField(primary_key=True)
+    valgrind_flags = ArrayField(
+        models.CharField(
+            max_length=gc.MAX_CHAR_FIELD_LEN,
+            validators=[_validate_cmd_line_arg]),
+        null=True, default=None, blank=True)
 
     # Fat interface fields
-    compiler = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
-    compiler_flags = JSONField(default=[])
-    files_to_compile_together = JSONField(default=[])
-    executable_name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
+    compiler = models.CharField(
+        max_length=gc.MAX_CHAR_FIELD_LEN, blank=True)
 
-    # -------------------------------------------------------------------------
-    # -------------------------------------------------------------------------
+    compiler_flags = ArrayField(
+        models.CharField(
+            max_length=gc.MAX_CHAR_FIELD_LEN,
+            validators=[_validate_cmd_line_arg]),
+        default=[], blank=True)
 
-    @staticmethod
-    def get_by_composite_key(name, project):
-        return AutograderTestCaseBase.objects.get(
-            pk=AutograderTestCaseBase._compute_composite_primary_key(
-                name, project))
+    files_to_compile_together = ArrayField(
+        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
+        default=[], blank=True)
 
-    @staticmethod
-    def _compute_composite_primary_key(test_name, project):
-        return "{0}_{1}_{2}_{3}".format(
-            project.semester.course.name, project.semester.name,
-            project.name, test_name)
+    executable_name = models.CharField(
+        max_length=gc.MAX_CHAR_FIELD_LEN, blank=True,
+        validators=[ut.check_user_provided_filename])
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -245,39 +279,40 @@ class AutograderTestCaseBase(ModelValidatedOnSave):
 
     # -------------------------------------------------------------------------
 
-    def validate_fields(self):
-        if not self.pk:
-            self._composite_primary_key = self._compute_composite_primary_key(
-                self.name, self.project)
-
-        if not self.name:
-            raise ValueError("Test case names must be non-empty and non-null")
-
+    def clean(self):
+        super().clean()
+        # For some reason, passing the _validate_not_null function
+        # to certain array fields as a validator resulted in that
+        # function not being called if blank=True.
+        # As a workaround, such checks have been moved into this function.
+        errors = []
         if self.command_line_arguments is None:
-            raise ValueError("command_line_arguments cannot be None")
-
-        ut.check_values_against_whitelist(
-            self.command_line_arguments, gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
-
-        if self.test_resource_files is None:
-            raise ValueError("test_resource_files cannot be None")
-
-        for filename in self.test_resource_files:
-            if filename not in self.project.project_files:
-                raise ValueError(
-                    "File {0} does not exist in project {1}".format(
-                        filename, self.project.name))
+            errors.append(ValidationError(
+                {'command_line_arguments': "This field can't be null"}))
 
         if self.time_limit <= 0:
-            raise ValueError("time_limit must be positive")
+            errors.append(ValidationError(
+                {'time_limit': 'This field must be greater than zero'}))
 
-        if self.use_valgrind:
-            if self.valgrind_flags is None:
-                raise ValueError(
-                    "When using valgrind, valgrind_flags cannot be None")
+        if self.use_valgrind and self.valgrind_flags is None:
+                errors.append(ValidationError(
+                    {'valgrind_flags':
+                     "When using valgrind, valgrind_flags cannot be None"}))
 
-            ut.check_values_against_whitelist(
-                self.valgrind_flags, gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
+        if self.test_resource_files is None:
+            errors.append(ValidationError(
+                {'test_resource_files': "This field can't be null"}))
+            raise ValidationError(errors)
+
+        for filename in self.test_resource_files:
+            if not self.project.has_file(filename):
+                errors.append(ValidationError(
+                    {'test_resource_files':
+                     "File {0} does not exist in project {1}".format(
+                         filename, self.project.name)}))
+
+        if errors:
+            raise ValidationError(errors)
 
 
 # -----------------------------------------------------------------------------
@@ -298,39 +333,53 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         executable_name
 
     Overridden methods:
-        validate_fields()
+        clean()
         run()
     """
-    def validate_fields(self):
-        super().validate_fields()
+    objects = ManagerWithValidateOnCreate()
 
-        if not self.compiler:
-            raise ValueError('compiler cannot be null or empty')
+    def clean(self):
+        super().clean()
 
-        if self.compiler not in gc.SUPPORTED_COMPILERS:
-            raise ValueError('Unsupported compiler: ' + self.compiler)
+        errors = []
+        # if not self.compiler:
+        #     raise ValueError('compiler cannot be null or empty')
 
-        ut.check_values_against_whitelist(
-            self.compiler_flags, gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
+        if self.compiler not in SUPPORTED_COMPILERS:
+            errors.append(ValidationError(
+                {'compiler': 'Unsupported compiler'}))
+
+        # ut.check_values_against_whitelist(
+        #     self.compiler_flags, gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
 
         if not self.files_to_compile_together:
-            raise ValueError(
-                'at least one file must be specified for compilation')
+            errors.append(ValidationError(
+                {'files_to_compile_together':
+                 'at least one file must be specified for compilation'}))
+            raise ValidationError(errors)
+
+        # if not self.executable_name:
+        #     raise ValidationError('executable name cannot be null or empty')
+
+        # ut.check_user_provided_filename(self.executable_name)
 
         for filename in self.files_to_compile_together:
+            patterns = (pattern_obj.pattern for pattern_obj in
+                        self.project.get_expected_student_file_patterns())
             valid_filename = (
-                filename in self.project.project_files or
-                filename in self.project.required_student_files or
-                filename in self.project.expected_student_file_patterns)
+                filename in self.project.project_files.all() or
+                filename in self.project.get_required_student_files() or
+                filename in patterns
+            )
 
             if not valid_filename:
-                raise ValueError('File {0} not found for project {1}'.format(
-                    filename, self.project.name))
+                errors.append(
+                    ValidationError(
+                        {'files_to_compile_together':
+                         'File not found for project'}))
 
-        if not self.executable_name:
-            raise ValueError('executable name cannot be null or empty')
-
-        ut.check_user_provided_filename(self.executable_name)
+        if errors:
+            raise ValidationError(errors)
 
     # -------------------------------------------------------------------------
 

@@ -20,8 +20,7 @@ def check_values_against_whitelist(values, whitelist):
     for value in values:
         if not re.fullmatch(whitelist, value):
             raise ValidationError(
-                "Value {0} contains illegal characters "
-                "as per the expression {1}".format(
+                "Value {0} contains illegal characters.".format(
                     value, whitelist))
 
 

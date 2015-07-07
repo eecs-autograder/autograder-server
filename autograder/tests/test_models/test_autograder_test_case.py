@@ -1,7 +1,8 @@
 import os
 
 from django.conf import settings
-from django.db.utils import IntegrityError
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.exceptions import ValidationError
 
 from autograder.models import (
     Project, Semester, Course, AutograderTestCaseBase,
@@ -15,33 +16,35 @@ from autograder.tests.temporary_filesystem_test_case import (
 
 
 class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
-    """
-    To the reader: I apologize for the strangeness of writing test cases
-    for a class that is another type of test case. You can distinguish
-    between them by the packages in which they are kept.
-    """
     def setUp(self):
         super().setUp()
-        self.course = Course.objects.create(name='eecs280')
-        self.semester = Semester.objects.create(name='f15', course=self.course)
+        self.course = Course.objects.validate_and_create(name='eecs280')
+        self.semester = Semester.objects.validate_and_create(
+            name='f15', course=self.course)
 
-        self.project = Project.objects.create(
-            name='my_project', semester=self.semester,
-            required_student_files=['file1.cpp', 'file2.cpp'],
-            expected_student_file_patterns={'test_*.cpp': (1, 2)})
+        self.project = Project.objects.validate_and_create(
+            name='my_project', semester=self.semester)
+        self.project.add_required_student_file(
+            'file1.cpp')
+        self.project.add_required_student_file('file2.cpp')
 
-        self.project.add_project_file('spam.txt', 'hello there!')
+        self.project.add_expected_student_file_pattern('test_*.cpp', 1, 2)
+
+        self.project.add_project_file(
+            SimpleUploadedFile('spam.txt', b'hello there!'))
+
+        self.assertTrue(self.project.has_file('spam.txt'))
 
         self.TEST_NAME = 'my_test'
 
     # -------------------------------------------------------------------------
 
     def test_valid_initialization_with_defaults(self):
-        new_test_case = AutograderTestCaseBase.objects.create(
+        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project)
 
-        loaded_test_case = AutograderTestCaseBase.get_by_composite_key(
-            self.TEST_NAME, self.project)
+        loaded_test_case = AutograderTestCaseBase.objects.get(
+            name=self.TEST_NAME, project=self.project)
 
         self.assertEqual(new_test_case, loaded_test_case)
         self.assertEqual(self.TEST_NAME, loaded_test_case.name)
@@ -80,7 +83,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         ret_code = 0
         valgrind_flags = ['--leak-check=yes', '--error-exitcode=9000']
 
-        new_test_case = AutograderTestCaseBase.objects.create(
+        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             command_line_arguments=cmd_args,
             standard_input=input_stream_content,
@@ -93,8 +96,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             valgrind_flags=valgrind_flags,
         )
 
-        loaded_test_case = AutograderTestCaseBase.get_by_composite_key(
-            self.TEST_NAME, self.project)
+        loaded_test_case = AutograderTestCaseBase.objects.get(
+            name=self.TEST_NAME, project=self.project)
 
         self.assertEqual(new_test_case, loaded_test_case)
         self.assertEqual(self.TEST_NAME, loaded_test_case.name)
@@ -130,156 +133,190 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_non_unique_name_within_project(self):
-        AutograderTestCaseBase.objects.create(
+        AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project)
 
-        with self.assertRaises(IntegrityError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project)
 
     # -------------------------------------------------------------------------
 
     def test_no_exception_same_name_different_project(self):
-        other_project = Project.objects.create(
+        other_project = Project.objects.validate_and_create(
             name='other_project', semester=self.semester)
 
-        new_test_case = AutograderTestCaseBase.objects.create(
+        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=other_project)
 
-        loaded_test_case = AutograderTestCaseBase.get_by_composite_key(
-            self.TEST_NAME, other_project)
+        loaded_test_case = AutograderTestCaseBase.objects.get(
+            name=self.TEST_NAME, project=other_project)
 
         self.assertEqual(new_test_case, loaded_test_case)
 
     # -------------------------------------------------------------------------
 
     def test_no_exception_same_name_and_project_name_different_semester(self):
-        other_semester = Semester.objects.create(
+        other_semester = Semester.objects.validate_and_create(
             name='other_semester', course=self.course)
 
-        other_project = Project.objects.create(
+        other_project = Project.objects.validate_and_create(
             name=self.project.name, semester=other_semester)
 
-        new_test_case = AutograderTestCaseBase.objects.create(
+        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=other_project)
 
-        loaded_test_case = AutograderTestCaseBase.get_by_composite_key(
-            self.TEST_NAME, other_project)
+        loaded_test_case = AutograderTestCaseBase.objects.get(
+            name=self.TEST_NAME, project=other_project)
 
         self.assertEqual(new_test_case, loaded_test_case)
 
     # -------------------------------------------------------------------------
 
     def test_no_exception_same_name_project_name_and_semester_name_different_course(self):
-        other_course = Course.objects.create(
+        other_course = Course.objects.validate_and_create(
             name='other_course')
 
-        other_semester = Semester.objects.create(
+        other_semester = Semester.objects.validate_and_create(
             name=self.semester.name, course=other_course)
 
-        other_project = Project.objects.create(
+        other_project = Project.objects.validate_and_create(
             name=self.project.name, semester=other_semester)
 
-        new_test_case = AutograderTestCaseBase.objects.create(
+        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=other_project)
 
-        loaded_test_case = AutograderTestCaseBase.get_by_composite_key(
-            self.TEST_NAME, other_project)
+        loaded_test_case = AutograderTestCaseBase.objects.get(
+            name=self.TEST_NAME, project=other_project)
 
         self.assertEqual(new_test_case, loaded_test_case)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_empty_name(self):
-        with self.assertRaises(ValueError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name='', project=self.project)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_name(self):
-        with self.assertRaises(ValueError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name=None, project=self.project)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_command_line_args(self):
-        with self.assertRaises(ValueError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 command_line_arguments=None)
 
     # -------------------------------------------------------------------------
 
+    def test_exception_on_null_value_in_cmd_args(self):
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                command_line_arguments=["spam", None])
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_empty_value_in_cmd_args(self):
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                command_line_arguments=["spam", ''])
+
+    # -------------------------------------------------------------------------
+
     def test_exception_on_invalid_chars_in_command_line_args(self):
-        with self.assertRaises(ValueError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 command_line_arguments=["spam", "; echo 'haxorz!'"])
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_test_resource_files_list(self):
-        with self.assertRaises(ValueError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 test_resource_files=None)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_test_resource_files_has_nonexistant_file(self):
-        with self.assertRaises(ValueError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 test_resource_files=['no_file.txt'])
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_zero_and_negative_time_limit(self):
-        with self.assertRaises(ValueError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=0)
 
-        with self.assertRaises(ValueError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=-1)
 
     # -------------------------------------------------------------------------
 
     def test_nonzero_expected_return_code(self):
-        AutograderTestCaseBase.objects.create(
+        AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             expect_any_nonzero_return_code=True)
 
-        loaded_test_case = AutograderTestCaseBase.get_by_composite_key(
-            self.TEST_NAME, self.project)
+        loaded_test_case = AutograderTestCaseBase.objects.get(
+            name=self.TEST_NAME, project=self.project)
 
         self.assertTrue(loaded_test_case.expect_any_nonzero_return_code)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_use_valgrind_with_null_flags(self):
-        ag_test = AutograderTestCaseBase.objects.create(
+        ag_test = AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             use_valgrind=True)
 
         ag_test.valgrind_flags = None
 
-        with self.assertRaises(ValueError):
-            ag_test.save()
+        with self.assertRaises(ValidationError):
+            ag_test.validate_and_save()
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_null_value_in_valgrind_args(self):
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                use_valgrind=True,
+                valgrind_flags=["spam", None])
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_empty_value_in_valgrind_args(self):
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                use_valgrind=True,
+                valgrind_flags=["spam", ''])
 
     # -------------------------------------------------------------------------
 
     def test_use_valgrind_default_flags(self):
-        AutograderTestCaseBase.objects.create(
+        AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             use_valgrind=True)
 
-        loaded_test_case = AutograderTestCaseBase.get_by_composite_key(
-            self.TEST_NAME, self.project)
+        loaded_test_case = AutograderTestCaseBase.objects.get(
+            name=self.TEST_NAME, project=self.project)
 
         self.assertTrue(loaded_test_case.use_valgrind)
         self.assertEqual(
@@ -289,8 +326,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_invalid_chars_in_valgrind_flags(self):
-        with self.assertRaises(ValueError):
-            AutograderTestCaseBase.objects.create(
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 use_valgrind=True,
                 valgrind_flags=['--leak-check=full', "; echo 'haxorz!'"])
@@ -304,22 +341,23 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        course = Course.objects.create(name='eecs280')
-        semester = Semester.objects.create(name='f15', course=course)
+        course = Course.objects.validate_and_create(name='eecs280')
+        semester = Semester.objects.validate_and_create(
+            name='f15', course=course)
 
-        self.project = Project.objects.create(
-            name='my_project', semester=semester,
-            required_student_files=['file1.cpp', 'file2.cpp'],
-            expected_student_file_patterns={'test_*.cpp': (1, 2)})
+        self.project = Project.objects.validate_and_create(
+            name='my_project', semester=semester)
+        self.project.add_required_student_file
+        self.project.add_required_student_files('file1.cpp', 'file2.cpp')
+        self.project.add_expected_student_file_pattern('test_*.cpp', 1, 2)
 
-        self.project_files = (
-            ('spam.txt', 'hello there!'),
-            ('eggs.cpp', 'egg bacon spam and sausage'),
-            ('sausage.cpp', 'spam egg sausage and spam')
-        )
+        self.project_files = [
+            SimpleUploadedFile('spam.txt', b'hello there!'),
+            SimpleUploadedFile('eggs.cpp', b'egg bacon spam and sausage'),
+            SimpleUploadedFile('sausage.cpp', b'spam egg sausage and spam')
+        ]
 
-        for name, content in self.project_files:
-            self.project.add_project_file(name, content)
+        self.project.add_project_files(*self.project_files)
 
         self.TEST_NAME = 'my_test'
 
@@ -327,10 +365,10 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiler_flags = ['--foo_arg=bar', '-s']
 
         self.files_to_compile_together = [
-            filename for filename, content in self.project_files
+            file_obj.name for file_obj in self.project_files
         ]
-        self.files_to_compile_together.append('file1.cpp')
-        self.files_to_compile_together.append('test_*.cpp')
+        self.files_to_compile_together.append('file1.cpp')  # required file
+        self.files_to_compile_together.append('test_*.cpp')  # expected pattern
 
         self.executable_name = "sausage.exe"
 
@@ -346,8 +384,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_empty_compiler(self):
         self.compiled_test_kwargs['compiler'] = ''
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -356,8 +394,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_null_compiler(self):
         self.compiled_test_kwargs['compiler'] = None
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -366,8 +404,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_unsupported_compiler(self):
         self.compiled_test_kwargs['compiler'] = 'spamcompiler++'
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -376,8 +414,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_invalid_chars_in_compiler_flags(self):
         self.compiled_test_kwargs['compiler_flags'] = ['; echo "haxorz!#']
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -386,8 +424,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_empty_files_to_compile_together(self):
         self.compiled_test_kwargs['files_to_compile_together'] = []
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -396,8 +434,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_null_files_to_compile_together(self):
         self.compiled_test_kwargs['files_to_compile_together'] = None
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -406,23 +444,23 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_nonexistant_files_to_compile_together(self):
         self.compiled_test_kwargs['files_to_compile_together'].append('')
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
         self.compiled_test_kwargs['files_to_compile_together'][-1] = None
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
         self.compiled_test_kwargs['files_to_compile_together'][-1] = (
             'nonexistant_file.txt')
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -431,8 +469,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_empty_executable_name(self):
         self.compiled_test_kwargs['executable_name'] = ''
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -441,8 +479,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_null_executable_name(self):
         self.compiled_test_kwargs['executable_name'] = None
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -451,12 +489,13 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_exception_on_invalid_chars_in_executable_name(self):
         self.compiled_test_kwargs['executable_name'] = "../haxorz"
 
-        with self.assertRaises(ValueError):
-            CompiledAutograderTestCase.objects.create(
+        with self.assertRaises(ValidationError):
+            CompiledAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
 
+# -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
@@ -469,10 +508,11 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         os.mkdir(self.new_dir)
         os.chdir(self.new_dir)
 
-        self.course = Course.objects.create(name='eecs280')
-        self.semester = Semester.objects.create(name='f15', course=self.course)
+        self.course = Course.objects.validate_and_create(name='eecs280')
+        self.semester = Semester.objects.validate_and_create(
+            name='f15', course=self.course)
 
-        self.project = Project.objects.create(
+        self.project = Project.objects.validate_and_create(
             name='my_project', semester=self.semester)
 
         self.cpp_filename = 'main.cpp'
@@ -480,7 +520,8 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
 
         # We'll be writing the file manually for these tests, so the
         # "real" file in the project directory doesn't really matter.
-        self.project.add_project_file(self.cpp_filename, '')
+        self.project.add_project_file(
+            SimpleUploadedFile(self.cpp_filename, b''))
 
         self.test_case_starter = CompiledAutograderTestCase(
             name='test1', project=self.project,
@@ -675,7 +716,8 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         expected_output = 'spam baked beans lobster sauce '
 
         input_filename = 'input.in'
-        self.project.add_project_file(input_filename, '')
+        self.project.add_project_file(
+            SimpleUploadedFile(input_filename, b''))
         with open(input_filename, 'w') as f:
             f.write(expected_output)
 
@@ -764,7 +806,8 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
 
         file_content = 'stuff to read from file '
         input_filename = 'input.in'
-        self.project.add_project_file(input_filename, '')
+        self.project.add_project_file(
+            SimpleUploadedFile(input_filename, b''))
         with open(input_filename, 'w') as f:
             f.write(file_content)
 
@@ -810,7 +853,8 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
 
         file_content = 'stuff to read from file '
         input_filename = 'input.in'
-        self.project.add_project_file(input_filename, '')
+        self.project.add_project_file(
+            SimpleUploadedFile(input_filename, b''))
         with open(input_filename, 'w') as f:
             f.write(file_content)
 

@@ -103,7 +103,7 @@ class Project(ModelValidatableOnSave):
         rename_project_file() TODO?
 
         add_required_student_file()
-        get_required_student_filenames()
+        get_required_student_files()
 
         add_expected_student_file_pattern()
 
@@ -175,6 +175,12 @@ class Project(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
+    def add_project_files(self, *uploaded_files):
+        for uploaded_file in uploaded_files:
+            self.add_project_file(uploaded_file)
+
+    # -------------------------------------------------------------------------
+
     def remove_project_file(self, filename):
         """
         Removes the specified file from the database and filesystem.
@@ -208,6 +214,15 @@ class Project(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
+    def has_file(self, filename):
+        for proj_file in self.project_files.all():
+            if filename == os.path.basename(proj_file.uploaded_file.name):
+                return True
+
+        return False
+
+    # -------------------------------------------------------------------------
+
     def add_required_student_file(self, filename):
         """
         Adds the given filename to the list of files that students
@@ -220,7 +235,13 @@ class Project(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    def get_required_student_filenames(self):
+    def add_required_student_files(self, *filenames):
+        for filename in filenames:
+            self.add_required_student_file(filename)
+
+    # -------------------------------------------------------------------------
+
+    def get_required_student_files(self):
         """
         Returns a list of filenames that students are required to submit
         for this project.
@@ -241,6 +262,13 @@ class Project(ModelValidatableOnSave):
                 min_num_matches=min_matches,
                 max_num_matches=max_matches,
                 project=self))
+
+    # -------------------------------------------------------------------------
+
+    def add_expected_student_file_patterns(self, *pattern_tuples):
+        for pattern, min_matches, max_matches in pattern_tuples:
+            self.add_expected_student_file_pattern(
+                pattern, min_matches, max_matches)
 
     # -------------------------------------------------------------------------
 
@@ -285,6 +313,8 @@ class Project(ModelValidatableOnSave):
     # -------------------------------------------------------------------------
 
     def clean(self):
+        super().clean()
+
         if self.max_group_size < self.min_group_size:
             raise ValidationError(
                 {'max_group_size': ['Maximum group size must be greater than '

@@ -1,3 +1,5 @@
+from django.core.files.uploadedfile import SimpleUploadedFile
+
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
@@ -14,11 +16,12 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
         self.semester = Semester.objects.create(name='f15', course=self.course)
 
         self.project = Project.objects.create(
-            name='my_project', semester=self.semester,
-            required_student_files=['file1.cpp', 'file2.cpp'],
-            expected_student_file_patterns={'test_*.cpp': (1, 2)})
+            name='my_project', semester=self.semester)
+        self.project.add_required_student_files('file1.cpp', 'file2.cpp')
+        self.project.add_expected_student_file_pattern('test_*.cpp', 1, 2)
 
-        self.project.add_project_file('spam.txt', 'hello there!')
+        self.project.add_project_file(
+            SimpleUploadedFile('spam.txt', b'hello there!'))
 
         self.TEST_NAME = 'my_test'
 

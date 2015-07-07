@@ -97,7 +97,8 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.max_group_size, max_group_size)
 
         self.assertEqual(
-            loaded_project.get_required_student_filenames(), required_student_files)
+            sorted(loaded_project.get_required_student_files()),
+            required_student_files)
 
         iterable = zip(
             expected_student_file_patterns,

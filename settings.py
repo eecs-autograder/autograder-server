@@ -74,20 +74,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wsgi.application'
 
-AUTHENTICATION_BACKENDS = (
-    # TODO: uncomment once set up on server
-    # 'django.contrib.auth.backends.RemoteUserBackend',
-    # TODO: comment out set up on server
-    'django.contrib.auth.backends.ModelBackend',
-)
+# AUTHENTICATION_BACKENDS = (
+#     # TODO: uncomment once set up on server
+#     # 'django.contrib.auth.backends.RemoteUserBackend',
+#     # TODO: comment out set up on server
+#     'django.contrib.auth.backends.ModelBackend',
+# )
 
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'autograder-test-db',
     }
 }
 

@@ -28,6 +28,11 @@ class TemporaryFilesystemTestCase(TestCase):
 
         # print("Creating: " + self.new_media_root)
 
+        if os.path.isdir(self.new_media_root):
+            choice = input('Temp filesystem already exists. Delete it? [y/n] ')
+            if choice.strip().lower() == 'y':
+                shutil.rmtree(self.new_media_root)
+
         os.makedirs(self.new_media_root)
         settings.MEDIA_ROOT = self.new_media_root
 
