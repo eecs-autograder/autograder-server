@@ -180,14 +180,12 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
         interpreter_flags -- TODO
         entry_point_file -- TODOs
 
-    Static methods:
-        get_by_composite_key()
-
     Abstract methods:
         run()
 
     Overridden methods:
         __init__()
+        clean()
     """
     class Meta:
         unique_together = ('name', 'project')
@@ -342,26 +340,16 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         super().clean()
 
         errors = []
-        # if not self.compiler:
-        #     raise ValueError('compiler cannot be null or empty')
 
         if self.compiler not in SUPPORTED_COMPILERS:
             errors.append(ValidationError(
                 {'compiler': 'Unsupported compiler'}))
-
-        # ut.check_values_against_whitelist(
-        #     self.compiler_flags, gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
 
         if not self.files_to_compile_together:
             errors.append(ValidationError(
                 {'files_to_compile_together':
                  'at least one file must be specified for compilation'}))
             raise ValidationError(errors)
-
-        # if not self.executable_name:
-        #     raise ValidationError('executable name cannot be null or empty')
-
-        # ut.check_user_provided_filename(self.executable_name)
 
         for filename in self.files_to_compile_together:
             patterns = (pattern_obj.pattern for pattern_obj in

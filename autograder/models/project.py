@@ -125,14 +125,10 @@ class Project(ModelValidatableOnSave):
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     semester = models.ForeignKey(Semester)
 
-    # @property
-    # def project_files(self):
-    #     return self._project_files
-
-    # _project_files = JSONField(default=[])
     visible_to_students = models.BooleanField(default=False)
     closing_time = models.DateTimeField(default=None, null=True, blank=True)
     disallow_student_submissions = models.BooleanField(default=False)
+
     min_group_size = models.IntegerField(
         default=1, validators=[MinValueValidator(1)])
     max_group_size = models.IntegerField(
@@ -140,8 +136,6 @@ class Project(ModelValidatableOnSave):
 
     # required_student_files = JSONField(default=[])
     # expected_student_file_patterns = JSONField(default={})
-
-    # _composite_primary_key = models.TextField(primary_key=True)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -157,21 +151,6 @@ class Project(ModelValidatableOnSave):
         self.project_files.add(
             _UploadedProjectFile.objects.validate_and_create(
                 uploaded_file=uploaded_file, project=self.project))
-        # ut.check_user_provided_filename(filename)
-
-        # if filename in self._project_files and not overwrite_ok:
-        #     raise FileExistsError(
-        #         "File {0} for {1} {2} project {3} already exists".format(
-        #             filename,
-        #             self.semester.course.name, self.semester.name,
-        #             self.name))
-
-        # self._project_files.append(filename)
-        # self.save()
-
-        # with ut.ChangeDirectory(ut.get_project_files_dir(self)):
-        #     with open(filename, 'w') as f:
-        #         f.write(file_content)
 
     # -------------------------------------------------------------------------
 
@@ -319,55 +298,6 @@ class Project(ModelValidatableOnSave):
             raise ValidationError(
                 {'max_group_size': ['Maximum group size must be greater than '
                                     'or equal to minimum group size']})
-
-    # -------------------------------------------------------------------------
-
-    # def validate_fields(self):
-    #     if not self.pk:
-    #         self._composite_primary_key = self._compute_composite_primary_key(
-    #             self.name, self.semester)
-
-    #     if not self.name:
-    #         raise ValueError(
-    #             "Project names must be non-null and non-empty")
-
-    #     # Foreign key fields raise ValueError if you try to
-    #     # assign a null value to them, so an extra check for semester
-    #     # is not needed.
-
-    #     if not self._composite_primary_key:
-    #         raise Exception("Invalid composite primary key")
-
-    #     if self.min_group_size < 1:
-    #         raise ValueError("Minimum group size must be at least 1")
-
-    #     if self.max_group_size < 1:
-    #         raise ValueError("Maximum group size must be at least 1")
-
-    #     if self.max_group_size < self.min_group_size:
-    #         raise ValueError(
-    #             "Maximum group size must be >= minimum group size")
-
-    #     for filename in self.required_student_files:
-    #         ut.check_user_provided_filename(filename)
-
-    #     for file_pattern, min_max in self.expected_student_file_patterns.items():
-    #         ut.check_shell_style_file_pattern(file_pattern)
-
-    #         if min_max[0] > min_max[1]:
-    #             raise ValueError(
-    #                 "The minimum for an expected file pattern must be less "
-    #                 "than the maximum")
-
-    #         if min_max[0] < 0:
-    #             raise ValueError(
-    #                 "The minimum for an expected file pattern "
-    #                 "must be non-negative")
-
-    #         if min_max[1] < 0:
-    #             raise ValueError(
-    #                 "The maximum for an expected file pattern "
-    #                 "must be non-negative")
 
 
 # -----------------------------------------------------------------------------
