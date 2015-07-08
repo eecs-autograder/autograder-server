@@ -423,6 +423,8 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
+# TODO: Once upgraded to Python 3.5 and Django 1.9, replace Popen with the
+# new subprocess.run() method.
 class _SubprocessRunner(object):
     """
     Convenience wrapper for calling Popen and retrieving the data

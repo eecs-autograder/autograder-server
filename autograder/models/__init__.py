@@ -5,6 +5,7 @@ from .semester import Semester
 from .project import Project
 
 from .submission_group import SubmissionGroup
+from .submission import Submission
 
 # These next two imports need to be in this order to get around
 # circular dependency.
