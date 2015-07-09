@@ -97,12 +97,13 @@ DATABASES = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'EST'
+TIME_ZONE = 'America/Detroit'
 
 USE_I18N = True
 
 USE_L10N = True
 
+# TODO: Be sure to test submission deadlines across timezones.
 USE_TZ = True
 
 

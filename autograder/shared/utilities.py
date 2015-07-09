@@ -24,8 +24,6 @@ def check_values_against_whitelist(values, whitelist):
                     value, whitelist))
 
 
-# -----------------------------------------------------------------------------
-
 def check_user_provided_filename(filename):
     """
     Verifies whether the given filename is valid according to the
@@ -56,8 +54,6 @@ def check_user_provided_filename(filename):
             "underscore, and period.".format(filename))
 
 
-# -----------------------------------------------------------------------------
-
 def check_shell_style_file_pattern(pattern):
     """
     Verified whether the given file pattern is valid according to the
@@ -82,6 +78,8 @@ def check_shell_style_file_pattern(pattern):
 
 
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 def get_course_root_dir(course):
     """
@@ -96,8 +94,6 @@ def get_course_root_dir(course):
     return os.path.join(
         settings.MEDIA_ROOT, get_course_relative_root_dir(course))
 
-
-# -----------------------------------------------------------------------------
 
 def get_course_relative_root_dir(course):
     """
@@ -123,8 +119,6 @@ def get_semester_root_dir(semester):
         settings.MEDIA_ROOT, get_semester_relative_root_dir(semester))
 
 
-# -----------------------------------------------------------------------------
-
 def get_semester_relative_root_dir(semester):
     """
     Same as get_semester_root_dir() but returns a path that is
@@ -149,8 +143,6 @@ def get_project_root_dir(project):
     return os.path.join(
         settings.MEDIA_ROOT, get_project_relative_root_dir(project))
 
-
-# -----------------------------------------------------------------------------
 
 def get_project_relative_root_dir(project):
     """
@@ -178,8 +170,6 @@ def get_project_files_dir(project):
         settings.MEDIA_ROOT, get_project_files_relative_dir(project))
 
 
-# -----------------------------------------------------------------------------
-
 def get_project_files_relative_dir(project):
     """
     Same as get_project_files_dir() but returns a path that is
@@ -203,8 +193,6 @@ def get_project_submissions_by_student_dir(project):
         get_project_submissions_by_student_relative_dir(project))
 
 
-# -----------------------------------------------------------------------------
-
 def get_project_submissions_by_student_relative_dir(project):
     """
     Same as get_project_submissions_by_student_dir() but returns a path
@@ -214,6 +202,59 @@ def get_project_submissions_by_student_relative_dir(project):
         get_project_relative_root_dir(project), gc.PROJECT_SUBMISSIONS_DIRNAME)
 
 
+# -----------------------------------------------------------------------------
+
+def get_student_submission_group_dir(submission_group):
+    """
+    Computes the absolute path of the directory where submissions for the
+    given group should be stored.
+    For example:
+        {MEDIA_ROOT}/courses/eecs280/fall2015/project3/submissions_by_student/{group_names}
+    """
+    return os.path.join(
+        settings.MEDIA_ROOT,
+        get_student_submission_group_relative_dir(submission_group))
+
+
+def get_student_submission_group_relative_dir(submission_group):
+    """
+    Same as get_student_submission_group_dir() but returns a path that is
+    relative to MEDIA_ROOT.
+    """
+    # Sort and concatenate the usernames in the group. Use the result
+    # as the basename of the submission directory.
+    directory_basename = '_'.join(
+        sorted((member.username for member in submission_group.members.all())))
+    return os.path.join(
+        get_project_submissions_by_student_relative_dir(
+            submission_group.project), directory_basename)
+
+
+# -----------------------------------------------------------------------------
+
+def get_submission_dir(submission):
+    """
+    Computes the absolute path of the directory where files included
+    in the given submission should be stored.
+    For example:
+        {MEDIA_ROOT}/courses/eecs280/fall2015/project3/submissions_by_student/{group_names}/{submission_timestamp}
+    """
+    return os.path.join(
+        settings.MEDIA_ROOT,
+        get_submission_relative_dir(submission))
+
+
+def get_submission_relative_dir(submission):
+    """
+    Same as get_submission_dir() but returns a path that is relative to
+    MEDIA_ROOT.
+    """
+    return os.path.join(
+        get_student_submission_group_relative_dir(submission.submission_group),
+        str(submission.timestamp))
+
+
+# -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
@@ -232,8 +273,6 @@ class ChangeDirectory(object):
         os.chdir(self._original_dir)
 
 
-# -----------------------------------------------------------------------------
-
 class TemporaryFile(object):
     """
     Enables creating and destroying a temporary file using "with" statements.
@@ -249,8 +288,6 @@ class TemporaryFile(object):
     def __exit__(self, *args):
         os.remove(self.filename)
 
-
-# -----------------------------------------------------------------------------
 
 class TemporaryDirectory(object):
     """

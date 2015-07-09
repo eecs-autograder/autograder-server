@@ -5,7 +5,7 @@ from django.core.files.storage import FileSystemStorage
 class ManagerWithValidateOnCreate(models.Manager):
     """
     This manager provides a shortcut for creating and validating
-    model objecs.
+    model objects.
 
     <Model class>.objects.validate_and_create is a shortcut for
         constructing a model object, calling full_clean(), and

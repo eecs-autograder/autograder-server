@@ -138,7 +138,6 @@ class Project(ModelValidatableOnSave):
     # expected_student_file_patterns = JSONField(default={})
 
     # -------------------------------------------------------------------------
-    # -------------------------------------------------------------------------
 
     def add_project_file(self, uploaded_file):
         """
@@ -152,13 +151,9 @@ class Project(ModelValidatableOnSave):
             _UploadedProjectFile.objects.validate_and_create(
                 uploaded_file=uploaded_file, project=self.project))
 
-    # -------------------------------------------------------------------------
-
     def add_project_files(self, *uploaded_files):
         for uploaded_file in uploaded_files:
             self.add_project_file(uploaded_file)
-
-    # -------------------------------------------------------------------------
 
     def remove_project_file(self, filename):
         """
@@ -182,8 +177,6 @@ class Project(ModelValidatableOnSave):
         with ut.ChangeDirectory(ut.get_project_files_dir(self)):
             os.remove(filename)
 
-    # -------------------------------------------------------------------------
-
     def get_project_files(self):
         """
         Returns a list of this project's uploaded files
@@ -191,16 +184,12 @@ class Project(ModelValidatableOnSave):
         """
         return [obj.uploaded_file for obj in self.project_files.all()]
 
-    # -------------------------------------------------------------------------
-
     def has_file(self, filename):
         for proj_file in self.project_files.all():
             if filename == os.path.basename(proj_file.uploaded_file.name):
                 return True
 
         return False
-
-    # -------------------------------------------------------------------------
 
     def add_required_student_file(self, filename):
         """
@@ -212,13 +201,9 @@ class Project(ModelValidatableOnSave):
                 filename=filename,
                 project=self))
 
-    # -------------------------------------------------------------------------
-
     def add_required_student_files(self, *filenames):
         for filename in filenames:
             self.add_required_student_file(filename)
-
-    # -------------------------------------------------------------------------
 
     def get_required_student_files(self):
         """
@@ -226,8 +211,6 @@ class Project(ModelValidatableOnSave):
         for this project.
         """
         return [obj.filename for obj in self.required_student_files.all()]
-
-    # -------------------------------------------------------------------------
 
     def add_expected_student_file_pattern(self, pattern,
                                           min_matches, max_matches):
@@ -242,14 +225,10 @@ class Project(ModelValidatableOnSave):
                 max_num_matches=max_matches,
                 project=self))
 
-    # -------------------------------------------------------------------------
-
     def add_expected_student_file_patterns(self, *pattern_tuples):
         for pattern, min_matches, max_matches in pattern_tuples:
             self.add_expected_student_file_pattern(
                 pattern, min_matches, max_matches)
-
-    # -------------------------------------------------------------------------
 
     def get_expected_student_file_patterns(self):
         """
@@ -267,8 +246,6 @@ class Project(ModelValidatableOnSave):
                 obj.pattern, obj.min_num_matches, obj.max_num_matches)
             for obj in self.expected_student_file_patterns.all()]
 
-    # -------------------------------------------------------------------------
-
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
@@ -278,7 +255,7 @@ class Project(ModelValidatableOnSave):
             self)
 
         if not os.path.isdir(project_root_dir):
-            # Since the database is in charge or validating the uniqueness
+            # Since the database is in charge of validating the uniqueness
             # of this project, we can assume at this point that creating
             # the project directories will succeed.
             # If for some reason it fails, this will be considered a
@@ -288,8 +265,6 @@ class Project(ModelValidatableOnSave):
             os.makedirs(project_root_dir)
             os.mkdir(project_files_dir)
             os.mkdir(project_submissions_dir)
-
-    # -------------------------------------------------------------------------
 
     def clean(self):
         super().clean()
@@ -322,8 +297,6 @@ class _UploadedProjectFile(ModelValidatableOnSave):
         validators=[_validate_filename])
 
 
-# -----------------------------------------------------------------------------
-
 class _RequiredStudentFile(ModelValidatableOnSave):
     class Meta:
         unique_together = ('project', 'filename')
@@ -335,8 +308,6 @@ class _RequiredStudentFile(ModelValidatableOnSave):
         max_length=gc.MAX_CHAR_FIELD_LEN,
         validators=[ut.check_user_provided_filename])
 
-
-# -----------------------------------------------------------------------------
 
 class _ExpectedStudentFilePattern(ModelValidatableOnSave):
     class Meta:

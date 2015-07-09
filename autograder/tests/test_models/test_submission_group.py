@@ -1,3 +1,4 @@
+import os
 import datetime
 
 from django.utils import timezone
@@ -10,6 +11,8 @@ from autograder.tests.temporary_filesystem_test_case import (
 
 from autograder.models import (
     Project, Semester, Course, SubmissionGroup)
+
+import autograder.shared.utilities as ut
 
 
 def _make_dummy_user(username, password):
@@ -47,7 +50,8 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(self.group_members, list(loaded_group.members.all()))
         self.assertEqual(self.project, loaded_group.project)
 
-    # -------------------------------------------------------------------------
+        self.assertTrue(
+            os.path.isdir(ut.get_student_submission_group_dir(loaded_group)))
 
     def test_valid_initialization_no_defaults(self):
         extended_due_date = timezone.now() + datetime.timedelta(days=1)
@@ -62,8 +66,6 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_group.extended_due_date, extended_due_date)
         self.assertEqual(self.group_members, list(loaded_group.members.all()))
         self.assertEqual(self.project, loaded_group.project)
-
-    # -------------------------------------------------------------------------
 
     def test_valid_member_of_multiple_groups_for_different_projects(self):
         other_project = Project.objects.create(
@@ -93,15 +95,20 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
             [first_group, second_group],
             list(repeated_user.submission_groups.all()))
 
-    # -------------------------------------------------------------------------
+    def test_exception_on_normal_create_method(self):
+        with self.assertRaises(NotImplementedError):
+            SubmissionGroup.objects.create(project=self.project)
+
+    # def test_exception_on_first_time_save(self):
+    #     group = SubmissionGroup(project=self.project)
+    #     with self.assertRaises(NotImplementedError):
+    #         group.save()
 
     def test_exception_on_too_few_group_members(self):
         with self.assertRaises(ValidationError):
             SubmissionGroup.objects.create_group([], project=self.project)
 
         self.assertEqual([], list(SubmissionGroup.objects.all()))
-
-    # -------------------------------------------------------------------------
 
     def test_exception_on_too_many_group_members(self):
         self.project.save()
@@ -112,8 +119,6 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
                 self.group_members, project=self.project)
 
         self.assertEqual([], list(SubmissionGroup.objects.all()))
-
-    # -------------------------------------------------------------------------
 
     def test_exception_on_group_member_already_in_another_group(self):
         group = SubmissionGroup.objects.create_group(

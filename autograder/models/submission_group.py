@@ -1,22 +1,31 @@
+import os
+
 from django.db import models, transaction
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
 from autograder.models import Project
-
 from autograder.models.model_utils import ModelValidatableOnSave
+
+import autograder.shared.utilities as ut
 
 
 class _SubmissionGroupManager(models.Manager):
     @transaction.atomic
     def create_group(self, members, project, extended_due_date=None):
-        group = self.create(
+        group = super().create(
             project=project, extended_due_date=extended_due_date)
         group.members.add(*members)
 
         group.clean(_first_save=True)
+        group.save()
 
         return group
+
+    def create(self, **kwargs):
+        raise NotImplementedError(
+            "The create() method is not supported for SubmissionGroup. "
+            "Please use create_group() instead.")
 
 
 class SubmissionGroup(ModelValidatableOnSave):
@@ -24,10 +33,16 @@ class SubmissionGroup(ModelValidatableOnSave):
     This class represents a group of students that can submit
     to a particular project.
 
-    IMPORTANT: Do NOT use SubmissionGroup.objects.create() to create
-        new groups. Always use SubmissionGroup.objects.create_group(). This
+    IMPORTANT:
+        - Do NOT use SubmissionGroup.objects.create() to create
+        new groups.
+        - Do NOT use a normal constructor followed by a call to save()
+        to create new groups.
+
+        Always use SubmissionGroup.objects.create_group(). This
         function properly handles initialization and validation of the
         members field.
+
 
     Fields:
         members -- The Users that belong to this submission group.
@@ -49,6 +64,7 @@ class SubmissionGroup(ModelValidatableOnSave):
 
     Overridden methods:
         clean()
+        save()
     """
     # Custom manager so that we can pass a list of Users to the create()
     # method.
@@ -62,12 +78,26 @@ class SubmissionGroup(ModelValidatableOnSave):
         null=True, default=None, blank=True)
 
     # -------------------------------------------------------------------------
-    # -------------------------------------------------------------------------
 
-    # The extra field _first_save is used by the custom manager object
-    # so that this function only does certain checks once object is ready
-    # to be saved to the database.
+    def save(self, *args, **kwargs):
+        # if not self.pk:
+        #     raise NotImplementedError(
+        #         'Do not use the save() method when saving a '
+        #         'submission_group for the first time. '
+        #         'Please use SubmissionGroup.objects.create_group to '
+        #         'create new submission groups.')
+
+        super().save(*args, **kwargs)
+
+        submission_group_dir = ut.get_student_submission_group_dir(self)
+
+        if not os.path.isdir(submission_group_dir):
+            os.makedirs(submission_group_dir)
+
     def clean(self, _first_save=False):
+        # Note: The extra field _first_save is used by the custom
+        # manager object so that this function does certain checks
+        # only when object is ready to be saved to the database.
         if not self.pk and not _first_save:
             return
 
@@ -90,6 +120,7 @@ class SubmissionGroup(ModelValidatableOnSave):
         # the object has been fully written to the database.
         # That means that when we query for duplicate submission groups,
         # *this submission group* is already recorded.
+        #
         # Therefore, we need to ignore this submission group when
         # checking to see if a user is already part of a group.
         for member in self.members.all():
