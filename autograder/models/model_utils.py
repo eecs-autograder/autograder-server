@@ -38,11 +38,11 @@ class ModelValidatableOnSave(models.Model):
 
 # -----------------------------------------------------------------------------
 
-class UploadedFileStorage(FileSystemStorage):
-    """
-    Provides the following customized storage behaviors:
-        - If a file already exists, ValidationError is raised rather
-          than renaming the file.
-        - If a filename contains illegal characters, ValidationError is
-          raised rather than stripping out the illegal characters.
-    """
+# class UploadedFileStorage(FileSystemStorage):
+#     """
+#     Provides the following customized storage behaviors:
+#         - If a file already exists, ValidationError is raised rather
+#           than renaming the file.
+#         - If a filename contains illegal characters, ValidationError is
+#           raised rather than stripping out the illegal characters.
+#     """

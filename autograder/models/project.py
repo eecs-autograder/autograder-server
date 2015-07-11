@@ -106,6 +106,7 @@ class Project(ModelValidatableOnSave):
         get_required_student_files()
 
         add_expected_student_file_pattern()
+        get_expected_student_file_patterns()
 
         add_test_case() TODO (here or in test case?)
         update_test_case() TODO (here or in test case?)

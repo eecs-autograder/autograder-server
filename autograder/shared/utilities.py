@@ -8,6 +8,14 @@ from django.core.exceptions import ValidationError
 import autograder.shared.global_constants as gc
 
 
+def count_if(iterable, unary_predicate):
+    """
+    Returns the number of items in iterable for which unary_predicate
+    returns True.
+    """
+    return sum(1 for item in iterable if unary_predicate(item))
+
+
 def check_values_against_whitelist(values, whitelist):
     """
     values -- An iterable object.
