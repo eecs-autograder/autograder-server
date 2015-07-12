@@ -2,7 +2,6 @@ import os
 import fnmatch
 
 from django.db import models, transaction
-from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 
 from autograder.models.model_utils import (
@@ -24,8 +23,8 @@ def _validate_filename(file_obj):
 
 
 class _SubmissionManager(models.Manager):
-    # TODO: Option to log the submission and flag it as invalid
-    # versus reject it entirely and keep no record of it.
+    # TODO: Log the submission and flag it as invalid
+    # rather than reject it entirely and keep no record of it.
     @transaction.atomic
     def validate_and_create(self, **kwargs):
         files = kwargs.pop('submitted_files')
@@ -70,8 +69,11 @@ class Submission(ModelValidatableOnSave):
 
         feedback_level_configuration -- TODO
 
+        status -- TODO (queued, evaluating, finished, invalid)
+
     Methods:
         get_submitted_files()
+        get_submitted_file_names() TODO (convenience method for getting basenames only)
 
     Overridden methods:
         save()

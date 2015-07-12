@@ -16,6 +16,10 @@ def count_if(iterable, unary_predicate):
     return sum(1 for item in iterable if unary_predicate(item))
 
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 def check_values_against_whitelist(values, whitelist):
     """
     values -- An iterable object.
@@ -111,8 +115,6 @@ def get_course_relative_root_dir(course):
     return os.path.join('courses', course.name)
 
 
-# -----------------------------------------------------------------------------
-
 def get_semester_root_dir(semester):
     """
     Computes the absolute path of the root directory for the given semester.
@@ -136,8 +138,6 @@ def get_semester_relative_root_dir(semester):
         get_course_relative_root_dir(semester.course), semester.name)
 
 
-# -----------------------------------------------------------------------------
-
 def get_project_root_dir(project):
     """
     Computes the absolute path of the root directory for the given project.
@@ -160,8 +160,6 @@ def get_project_relative_root_dir(project):
     return os.path.join(
         get_semester_relative_root_dir(project.semester), project.name)
 
-
-# -----------------------------------------------------------------------------
 
 def get_project_files_dir(project):
     """
@@ -187,8 +185,6 @@ def get_project_files_relative_dir(project):
         get_project_relative_root_dir(project), gc.PROJECT_FILES_DIRNAME)
 
 
-# -----------------------------------------------------------------------------
-
 def get_project_submissions_by_student_dir(project):
     """
     Computes the absolute path of the directory where student submissions
@@ -209,8 +205,6 @@ def get_project_submissions_by_student_relative_dir(project):
     return os.path.join(
         get_project_relative_root_dir(project), gc.PROJECT_SUBMISSIONS_DIRNAME)
 
-
-# -----------------------------------------------------------------------------
 
 def get_student_submission_group_dir(submission_group):
     """
@@ -237,8 +231,6 @@ def get_student_submission_group_relative_dir(submission_group):
         get_project_submissions_by_student_relative_dir(
             submission_group.project), directory_basename)
 
-
-# -----------------------------------------------------------------------------
 
 def get_submission_dir(submission):
     """

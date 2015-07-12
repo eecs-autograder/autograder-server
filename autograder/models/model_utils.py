@@ -19,8 +19,6 @@ class ManagerWithValidateOnCreate(models.Manager):
         return model
 
 
-# -----------------------------------------------------------------------------
-
 class ModelValidatableOnSave(models.Model):
     """
     This base class provides shortcut for validating and saving
@@ -34,15 +32,3 @@ class ModelValidatableOnSave(models.Model):
     def validate_and_save(self):
         self.full_clean()
         self.save()
-
-
-# -----------------------------------------------------------------------------
-
-# class UploadedFileStorage(FileSystemStorage):
-#     """
-#     Provides the following customized storage behaviors:
-#         - If a file already exists, ValidationError is raised rather
-#           than renaming the file.
-#         - If a filename contains illegal characters, ValidationError is
-#           raised rather than stripping out the illegal characters.
-#     """

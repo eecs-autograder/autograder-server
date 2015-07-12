@@ -99,11 +99,6 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         with self.assertRaises(NotImplementedError):
             SubmissionGroup.objects.create(project=self.project)
 
-    # def test_exception_on_first_time_save(self):
-    #     group = SubmissionGroup(project=self.project)
-    #     with self.assertRaises(NotImplementedError):
-    #         group.save()
-
     def test_exception_on_too_few_group_members(self):
         with self.assertRaises(ValidationError):
             SubmissionGroup.objects.create_group([], project=self.project)
