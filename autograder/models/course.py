@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from django.db import models
 
@@ -19,15 +20,20 @@ class Course(ModelValidatableOnSave):
         name -- The name of this course.
                 Must be unique, non-empty and non-null.
 
+        semesters -- A django manager object that can be used to query
+            Semesters that belong to this Course.
+
     Overridden member functions:
         save()
+        delete()
     """
     objects = ManagerWithValidateOnCreate()
+
+    # -------------------------------------------------------------------------
 
     name = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)
 
-    # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
 
     def save(self, *args, **kwargs):
@@ -43,3 +49,9 @@ class Course(ModelValidatableOnSave):
 
             # print('creating: ' + course_root_dir)
             os.makedirs(course_root_dir)
+
+    def delete(self, *args, **kwargs):
+        course_root_dir = ut.get_course_root_dir(self)
+        super().delete(*args, **kwargs)
+
+        shutil.rmtree(course_root_dir)

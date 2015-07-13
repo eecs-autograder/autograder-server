@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ course.name }}</title>
+</head>
+<body>
+
+<b>{{ course.name }}</b>
+
+<div>Available semesters: </div>
+{% for semester in semesters %}
+    <li>{{ semester.name }} <a href="{% url 'delete-semester' course.name semester.name %}">delete</a></li>
+    {# <li><a href="{% url 'semester-detail' semester.name %}">{{ semester.name }}</a></li> #}
+{% endfor %}
+
+<form action="{% url 'course-detail' course.name %}" method="post">
+    {% csrf_token %}
+    <div>Add a new semester:</div>
+    <ul>
+        {% for error in non_field_errors %}
+        <li>{{ error }} </li>
+        {% endfor %}
+        <li>Semester name: <input type='text', name='semester_name', value='{{ request.semester_name }}'></input>{{ errors.name.0 }}</li>
+    </ul>
+    <input type="submit" value="Create" />
+</form>
+
+</body>
+</html>

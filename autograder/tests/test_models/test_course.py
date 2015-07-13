@@ -22,22 +22,25 @@ class CourseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_empty_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name='')
+        self.assertTrue('name' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name=None)
+        self.assertTrue('name' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_non_unique_name(self):
         NAME = "eecs280"
         Course.objects.validate_and_create(name=NAME)
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name=NAME)
+        self.assertTrue('name' in cm.exception.message_dict)
 
 
 # -----------------------------------------------------------------------------
@@ -50,7 +53,7 @@ class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
-    def test_course_root_dir_created(self):
+    def test_course_root_dir_created_and_removed(self):
         course = Course(name=self.COURSE_NAME)
         expected_course_root_dir = ut.get_course_root_dir(course)
 
@@ -59,3 +62,6 @@ class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
         course.validate_and_save()
 
         self.assertTrue(os.path.isdir(expected_course_root_dir))
+
+        course.delete()
+        self.assertFalse(os.path.exists(expected_course_root_dir))

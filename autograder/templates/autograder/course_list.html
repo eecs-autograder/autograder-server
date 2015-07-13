@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Courses</title>
+</head>
+<body>
+<ul>
+{% for course in courses.all %}
+    <li>
+        <a href="{% url 'course-detail' course.name %}">{{ course.name }}</a>
+        <a href="{% url 'delete-course' course.name %}">delete</a>
+    </li>
+{% endfor %}
+
+<form action="{% url 'course-list' %}" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Create" />
+</form>
+</ul>
+</body>
+</html>

@@ -124,7 +124,7 @@ class Project(ModelValidatableOnSave):
     # -------------------------------------------------------------------------
 
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
-    semester = models.ForeignKey(Semester)
+    semester = models.ForeignKey(Semester, related_name='projects')
 
     visible_to_students = models.BooleanField(default=False)
     closing_time = models.DateTimeField(default=None, null=True, blank=True)

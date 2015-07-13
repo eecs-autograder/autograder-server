@@ -15,7 +15,23 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from autograder.views import course_views
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
+
+    url(r'^courses/(?P<course_name>.+)/$',
+        course_views.ShowCourseDetail.as_view(),
+        name='course-detail'),
+
+    url(r'^courses/', course_views.ShowCourseList.as_view(),
+        name='course-list'),
+
+    url(r'^delete-course/(?P<pk>.+)/$',
+        course_views.DeleteCourse.as_view(),
+        name='delete-course'),
+
+    url(r'^delete-semester/(?P<course_name>.+)/(?P<semester_name>.+)/$',
+        course_views.DeleteSemester.as_view(),
+        name='delete-semester')
 ]

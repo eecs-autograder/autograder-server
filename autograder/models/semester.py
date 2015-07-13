@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from django.db import models
 
@@ -22,8 +23,12 @@ class Semester(ModelValidatableOnSave):
 
         course -- The Course that this semester is associated with.
 
+        projects -- A django manager object that can be used to query
+            Projects that belong to this Semester.
+
     Overridden member functions:
         save()
+        delete()
     """
     class Meta:
         unique_together = ('name', 'course')
@@ -34,7 +39,7 @@ class Semester(ModelValidatableOnSave):
 
     name = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN)
-    course = models.ForeignKey(Course)
+    course = models.ForeignKey(Course, related_name='semesters')
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -51,3 +56,9 @@ class Semester(ModelValidatableOnSave):
             # thrown by os.makedirs will be handled at a higher level.
 
             os.makedirs(semester_root_dir)
+
+    def delete(self, *args, **kwargs):
+        semester_root_dir = ut.get_semester_root_dir(self)
+        super().delete(*args, **kwargs)
+
+        shutil.rmtree(semester_root_dir)
