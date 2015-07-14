@@ -9,7 +9,10 @@
 
 <div>Available semesters: </div>
 {% for semester in semesters %}
-    <li>{{ semester.name }} <a href="{% url 'delete-semester' course.name semester.name %}">delete</a></li>
+    <li>
+        <a href="{% url 'semester-detail' course.name semester.name %}">{{ semester.name }}</a>
+        <a href="{% url 'delete-semester' course.name semester.name %}">delete</a>
+    </li>
     {# <li><a href="{% url 'semester-detail' semester.name %}">{{ semester.name }}</a></li> #}
 {% endfor %}
 
@@ -20,7 +23,10 @@
         {% for error in non_field_errors %}
         <li>{{ error }} </li>
         {% endfor %}
-        <li>Semester name: <input type='text', name='semester_name', value='{{ request.semester_name }}'></input>{{ errors.name.0 }}</li>
+        <li>
+            Semester name: <input type='text', name='semester_name', value='{{ request.semester_name }}'></input>
+            {{ errors.name.0 }}
+        </li>
     </ul>
     <input type="submit" value="Create" />
 </form>

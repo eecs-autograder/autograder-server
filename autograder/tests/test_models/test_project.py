@@ -311,15 +311,17 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
 
-    def test_project_root_dir_created(self):
+    def test_project_root_dir_created_and_removed(self):
         project = Project(name=self.PROJECT_NAME, semester=self.semester)
         expected_project_root_dir = ut.get_project_root_dir(project)
 
         self.assertFalse(os.path.exists(expected_project_root_dir))
 
         project.save()
-
         self.assertTrue(os.path.isdir(expected_project_root_dir))
+
+        project.delete()
+        self.assertFalse(os.path.exists(expected_project_root_dir))
 
     # -------------------------------------------------------------------------
 

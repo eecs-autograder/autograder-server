@@ -193,7 +193,7 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
     objects = ManagerWithValidateOnCreate()
 
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
-    project = models.ForeignKey(Project)
+    project = models.ForeignKey(Project, related_name='autograder_test_cases')
 
     command_line_arguments = ArrayField(
         models.CharField(

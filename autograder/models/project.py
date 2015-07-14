@@ -1,4 +1,5 @@
 import os
+import shutil
 import collections
 
 from django.db import models
@@ -115,6 +116,7 @@ class Project(ModelValidatableOnSave):
     Overridden methods:
         save()
         clean()
+        delete()
     """
     class Meta:
         unique_together = ('name', 'semester')
@@ -274,6 +276,12 @@ class Project(ModelValidatableOnSave):
             raise ValidationError(
                 {'max_group_size': ['Maximum group size must be greater than '
                                     'or equal to minimum group size']})
+
+    def delete(self, *args, **kwargs):
+        project_root_dir = ut.get_project_root_dir(self)
+        super().delete(*args, **kwargs)
+
+        shutil.rmtree(project_root_dir)
 
 
 # -----------------------------------------------------------------------------

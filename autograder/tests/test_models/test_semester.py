@@ -92,5 +92,4 @@ class SemesterFilesystemTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(os.path.isdir(expected_semester_root_dir))
 
         semester.delete()
-
         self.assertFalse(os.path.exists(expected_semester_root_dir))

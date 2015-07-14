@@ -20,12 +20,12 @@ from autograder.views import course_views
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
 
-    url(r'^courses/(?P<course_name>.+)/$',
-        course_views.ShowCourseDetail.as_view(),
-        name='course-detail'),
-
-    url(r'^courses/', course_views.ShowCourseList.as_view(),
+    url(r'^courses/$', course_views.AllCoursesView.as_view(),
         name='course-list'),
+
+    url(r'^courses/(?P<course_name>.+)/$',
+        course_views.SingleCourseView.as_view(),
+        name='course-detail'),
 
     url(r'^delete-course/(?P<pk>.+)/$',
         course_views.DeleteCourse.as_view(),
@@ -33,5 +33,13 @@ urlpatterns = [
 
     url(r'^delete-semester/(?P<course_name>.+)/(?P<semester_name>.+)/$',
         course_views.DeleteSemester.as_view(),
-        name='delete-semester')
+        name='delete-semester'),
+
+    url(r'^semester/(?P<course_name>.+)/(?P<semester_name>.+)/$',
+        course_views.SemesterView.as_view(),
+        name='semester-detail'),
+
+    url(r'^delete-project/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)$',
+        course_views.DeleteProject.as_view(),
+        name='delete-project')
 ]
