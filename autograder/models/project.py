@@ -5,8 +5,7 @@ import collections
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
-
-# from jsonfield import JSONField
+from django.contrib.postgres.fields import ArrayField  # , JSONField
 
 from autograder.models.model_utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
@@ -137,8 +136,69 @@ class Project(ModelValidatableOnSave):
     max_group_size = models.IntegerField(
         default=1, validators=[MinValueValidator(1)])
 
-    # required_student_files = JSONField(default=[])
+    required_student_files = ArrayField(
+        models.CharField(
+            max_length=gc.MAX_CHAR_FIELD_LEN,
+            blank=True  # We are setting this here so that the clean method
+                        # can check for emptiness. This lets us send errors
+                        # to the GUI side in a more convenient format.
+            ),
+            # validators=[]),
+        default=[], blank=True)
     # expected_student_file_patterns = JSONField(default={})
+
+    # -------------------------------------------------------------------------
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        project_root_dir = ut.get_project_root_dir(self)
+        project_files_dir = ut.get_project_files_dir(self)
+        project_submissions_dir = ut.get_project_submissions_by_student_dir(
+            self)
+
+        if not os.path.isdir(project_root_dir):
+            # Since the database is in charge of validating the uniqueness
+            # of this project, we can assume at this point that creating
+            # the project directories will succeed.
+            # If for some reason it fails, this will be considered a
+            # more severe error, and the OSError thrown by os.makedirs
+            # will be handled at a higher level.
+
+            os.makedirs(project_root_dir)
+            os.mkdir(project_files_dir)
+            os.mkdir(project_submissions_dir)
+
+    def clean(self):
+        super().clean()
+
+        errors = {}
+        if self.max_group_size < self.min_group_size:
+            errors['max_group_size'] = [
+                'Maximum group size must be greater than '
+                'or equal to minimum group size']
+
+        required_files_errors = []
+        req_files_error_found = False
+        for filename in self.required_student_files:
+            try:
+                ut.check_user_provided_filename(filename)
+                required_files_errors.append('')
+            except ValidationError as e:
+                required_files_errors.append(e.message)
+                req_files_error_found = True
+
+        if req_files_error_found:
+            errors['required_student_files'] = required_files_errors
+
+        if errors:
+            raise ValidationError(errors)
+
+    def delete(self, *args, **kwargs):
+        project_root_dir = ut.get_project_root_dir(self)
+        super().delete(*args, **kwargs)
+
+        shutil.rmtree(project_root_dir)
 
     # -------------------------------------------------------------------------
 
@@ -194,26 +254,26 @@ class Project(ModelValidatableOnSave):
 
         return False
 
-    def add_required_student_file(self, filename):
-        """
-        Adds the given filename to the list of files that students
-        are required to submit for this project.
-        """
-        self.required_student_files.add(
-            _RequiredStudentFile.objects.validate_and_create(
-                filename=filename,
-                project=self))
+    # def add_required_student_file(self, filename):
+    #     """
+    #     Adds the given filename to the list of files that students
+    #     are required to submit for this project.
+    #     """
+    #     self.required_student_files.add(
+    #         _RequiredStudentFile.objects.validate_and_create(
+    #             filename=filename,
+    #             project=self))
 
-    def add_required_student_files(self, *filenames):
-        for filename in filenames:
-            self.add_required_student_file(filename)
+    # def add_required_student_files(self, *filenames):
+    #     for filename in filenames:
+    #         self.add_required_student_file(filename)
 
-    def get_required_student_files(self):
-        """
-        Returns a list of filenames that students are required to submit
-        for this project.
-        """
-        return [obj.filename for obj in self.required_student_files.all()]
+    # def get_required_student_files(self):
+    #     """
+    #     Returns a list of filenames that students are required to submit
+    #     for this project.
+    #     """
+    #     return [obj.filename for obj in self.required_student_files.all()]
 
     def add_expected_student_file_pattern(self, pattern,
                                           min_matches, max_matches):
@@ -249,40 +309,6 @@ class Project(ModelValidatableOnSave):
                 obj.pattern, obj.min_num_matches, obj.max_num_matches)
             for obj in self.expected_student_file_patterns.all()]
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        project_root_dir = ut.get_project_root_dir(self)
-        project_files_dir = ut.get_project_files_dir(self)
-        project_submissions_dir = ut.get_project_submissions_by_student_dir(
-            self)
-
-        if not os.path.isdir(project_root_dir):
-            # Since the database is in charge of validating the uniqueness
-            # of this project, we can assume at this point that creating
-            # the project directories will succeed.
-            # If for some reason it fails, this will be considered a
-            # more severe error, and the OSError thrown by os.makedirs
-            # will be handled at a higher level.
-
-            os.makedirs(project_root_dir)
-            os.mkdir(project_files_dir)
-            os.mkdir(project_submissions_dir)
-
-    def clean(self):
-        super().clean()
-
-        if self.max_group_size < self.min_group_size:
-            raise ValidationError(
-                {'max_group_size': ['Maximum group size must be greater than '
-                                    'or equal to minimum group size']})
-
-    def delete(self, *args, **kwargs):
-        project_root_dir = ut.get_project_root_dir(self)
-        super().delete(*args, **kwargs)
-
-        shutil.rmtree(project_root_dir)
-
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -306,18 +332,20 @@ class _UploadedProjectFile(ModelValidatableOnSave):
         validators=[_validate_filename])
 
 
-class _RequiredStudentFile(ModelValidatableOnSave):
-    class Meta:
-        unique_together = ('project', 'filename')
+# # TODO: ArrayField
+# class _RequiredStudentFile(ModelValidatableOnSave):
+#     class Meta:
+#         unique_together = ('project', 'filename')
 
-    objects = ManagerWithValidateOnCreate()
+#     objects = ManagerWithValidateOnCreate()
 
-    project = models.ForeignKey(Project, related_name='required_student_files')
-    filename = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN,
-        validators=[ut.check_user_provided_filename])
+#     project = models.ForeignKey(Project, related_name='required_student_files')
+#     filename = models.CharField(
+#         max_length=gc.MAX_CHAR_FIELD_LEN,
+#         validators=[ut.check_user_provided_filename])
 
 
+# TODO: JSONField?
 class _ExpectedStudentFilePattern(ModelValidatableOnSave):
     class Meta:
         unique_together = ('project', 'pattern')

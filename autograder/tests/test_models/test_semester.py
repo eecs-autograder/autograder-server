@@ -32,14 +32,16 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_empty_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Semester.objects.validate_and_create(name='', course=self.course)
+        self.assertTrue('name' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Semester.objects.validate_and_create(name=None, course=self.course)
+        self.assertTrue('name' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
@@ -47,7 +49,7 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
         Semester.objects.validate_and_create(
             name=self.SEMESTER_NAME, course=self.course)
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Semester.objects.validate_and_create(
                 name=self.SEMESTER_NAME, course=self.course)
 

@@ -62,7 +62,11 @@ class SingleCourseView(View):
             context = self.get_context_starter(course_name)
             context['request'] = request.POST
             context['errors'] = e.message_dict
-            context['non_field_errors'] = e.message_dict[NON_FIELD_ERRORS]
+            print(context['errors'])
+            context['non_field_errors'] = e.message_dict.get(
+                NON_FIELD_ERRORS, {})
+
+            context = RequestContext(self.request, context)
             return render(request, SingleCourseView.TEMPLATE_NAME, context)
 
     def get_course(self, course_name):
@@ -75,30 +79,34 @@ class SingleCourseView(View):
 
     def get_context_starter(self, course_name):
         course = self.get_course(course_name)
-        return RequestContext(self.request, {
+        return {
             'course': course,
             'semesters': self.get_semesters_to_display(course),
             'errors': {},
             'non_field_errors': {}
-        })
+        }
 
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
+
+def _get_semester(course_name, semester_name):
+    return get_object_or_404(
+        Semester, name=semester_name, course__name=course_name)
+
 
 class DeleteSemester(View):
     TEMPLATE_NAME = 'autograder/delete_semester.html'
 
     def get(self, request, course_name, semester_name):
-        semester = get_object_or_404(
-            Semester, name=semester_name, course__name=course_name)
+        semester = _get_semester(course_name, semester_name)
         return render(
-            request, DeleteSemester.TEMPLATE_NAME, {'semester': semester})
+            request, DeleteSemester.TEMPLATE_NAME,
+            RequestContext(request, {'semester': semester}))
 
     def post(self, request, course_name, semester_name):
         # TODO: csrf check
-        semester = get_object_or_404(
-            Semester, name=semester_name, course__name=course_name)
+        semester = _get_semester(course_name, semester_name)
         semester.delete()
         return HttpResponseRedirect(
             reverse_lazy('course-detail', args=[course_name]))
@@ -119,7 +127,7 @@ class SemesterView(View):
             # TODO: csrf
             Project.objects.validate_and_create(
                 name=request.POST['project_name'],
-                semester=self.get_semester(course_name, semester_name))
+                semester=_get_semester(course_name, semester_name))
 
             success_url = reverse_lazy(
                 'semester-detail', args=[course_name, semester_name])
@@ -128,49 +136,67 @@ class SemesterView(View):
             context = self.get_context_starter(course_name, semester_name)
             context['request'] = request.POST
             context['errors'] = e.message_dict
-            context['non_field_errors'] = e.message_dict[NON_FIELD_ERRORS]
+            context['non_field_errors'] = e.message_dict.get(
+                NON_FIELD_ERRORS, {})
+            context = RequestContext(self.request, context)
             return render(request, SemesterView.TEMPLATE_NAME, context)
 
     def get_context_starter(self, course_name, semester_name):
-        semester = self.get_semester(course_name, semester_name)
-        return RequestContext(self.request, {
+        semester = _get_semester(course_name, semester_name)
+        return {
             'course': semester.course,
             'semester': semester,
             'projects': semester.projects.all(),
             'errors': {},
             'non_field_errors': {}
-        })
-
-    def get_semester(self, course_name, semester_name):
-        return get_object_or_404(
-            Semester, name=semester_name, course__name=course_name)
+        }
 
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
+
+def _get_project(course_name, semester_name, project_name):
+    semester = _get_semester(course_name, semester_name)
+    return get_object_or_404(
+        Project, name=project_name, semester=semester)
+
 
 class DeleteProject(View):
     TEMPLATE_NAME = 'autograder/delete_project.html'
 
     def get(self, request, course_name, semester_name, project_name):
-        project = self.get_project(course_name, semester_name, project_name)
+        project = _get_project(course_name, semester_name, project_name)
         return render(
-            request, DeleteProject.TEMPLATE_NAME, {'project': project})
+            request, DeleteProject.TEMPLATE_NAME,
+            RequestContext(request, {'project': project}))
 
     def post(self, request, course_name, semester_name, project_name):
         # TODO: csrf
-        project = self.get_project(course_name, semester_name, project_name)
+        project = _get_project(course_name, semester_name, project_name)
         print(project.name)
         project.delete()
         return HttpResponseRedirect(
             reverse_lazy('semester-detail', args=[course_name, semester_name]))
 
-    def get_project(self, course_name, semester_name, project_name):
-        semester = get_object_or_404(
-            Semester, name=semester_name, course__name=course_name)
-        return get_object_or_404(
-            Project, name=project_name, semester=semester)
-
 
 class ProjectView(View):
-    pass
+    TEMPLATE_NAME = 'autograder/project_detail.html'
+
+    def get(self, request, course_name, semester_name, project_name):
+        return render(
+            request, ProjectView.TEMPLATE_NAME,
+            self.get_context_starter(course_name, semester_name, project_name))
+
+    # def post(self, request, course_name, semester_name, project_name):
+    #     pass
+
+    def get_context_starter(self, course_name, semester_name, project_name):
+        project = _get_project(course_name, semester_name, project_name)
+        return {
+            'course': project.semester.course,
+            'semester': project.semester,
+            'project': project,
+            'autograder_test_cases': project.autograder_test_cases.all(),
+            'errors': {},
+            'non_field_errors': {}
+        }

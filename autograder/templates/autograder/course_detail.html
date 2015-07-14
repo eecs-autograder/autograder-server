@@ -13,7 +13,6 @@
         <a href="{% url 'semester-detail' course.name semester.name %}">{{ semester.name }}</a>
         <a href="{% url 'delete-semester' course.name semester.name %}">delete</a>
     </li>
-    {# <li><a href="{% url 'semester-detail' semester.name %}">{{ semester.name }}</a></li> #}
 {% endfor %}
 
 <form action="{% url 'course-detail' course.name %}" method="post">

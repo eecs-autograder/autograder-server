@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ project.name }}</title>
+</head>
+<body>
+
+<h1>{{ course.name }} - {{ semester.name }} - {{ project.name }}</h1>
+
+<div>Autograder Test Cases: </div>
+{% for test_case in test_cases %}
+    <li>{{ test_case.name }} {# <a href="{% url 'delete-test_case' course.name semester.name project.name test_case.name %}">delete</a> #}</li>
+{% endfor %}
+
+</body>
+</html>

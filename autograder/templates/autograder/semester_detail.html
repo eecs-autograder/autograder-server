@@ -9,8 +9,10 @@
 
 <div>Projects: </div>
 {% for project in projects %}
-    <li>{{ project.name }} <a href="{% url 'delete-project' course.name semester.name project.name %}">delete</a></li>
-    {# <li><a href="{% url 'project-detail' course.name semester.name project.name %}">{{ project.name }}</a></li> #}
+    <li>
+        <a href="{% url 'project-detail' course.name semester.name project.name %}">{{ project.name }}</a>
+        <a href="{% url 'delete-project' course.name semester.name project.name %}"> delete</a>
+    </li>
 {% endfor %}
 
 <form action="{% url 'semester-detail' course.name semester.name %}" method="post">

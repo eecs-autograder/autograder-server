@@ -46,7 +46,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.disallow_student_submissions, False)
         self.assertEqual(loaded_project.min_group_size, 1)
         self.assertEqual(loaded_project.max_group_size, 1)
-        self.assertEqual(list(loaded_project.required_student_files.all()), [])
+        self.assertEqual(loaded_project.required_student_files, [])
         self.assertEqual(
             list(loaded_project.expected_student_file_patterns.all()), [])
 
@@ -56,14 +56,14 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         tomorrow_date = timezone.now() + datetime.timedelta(days=1)
         min_group_size = 2
         max_group_size = 5
-        required_student_files = sorted(["spam.cpp", "eggs.cpp"])
+        required_student_files = ["spam.cpp", "eggs.cpp"]
         expected_student_file_patterns = sorted((
             ("test_*.cpp", 1, 10),
             ("test[0-9].cpp", 2, 2),
             ("test[!0-9]?.cpp", 3, 5)
         ))
 
-        new_project = Project.objects.create(
+        new_project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME,
             semester=self.semester,
             visible_to_students=True,
@@ -71,11 +71,9 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             disallow_student_submissions=True,
             min_group_size=min_group_size,
             max_group_size=max_group_size,
-            # required_student_files=required_student_files,
+            required_student_files=required_student_files,
             # expected_student_file_patterns=expected_student_file_patterns
         )
-        for filename in required_student_files:
-            new_project.add_required_student_file(filename)
 
         for pattern, min_matches, max_matches in expected_student_file_patterns:
             new_project.add_expected_student_file_pattern(
@@ -97,8 +95,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.max_group_size, max_group_size)
 
         self.assertEqual(
-            sorted(loaded_project.get_required_student_files()),
-            required_student_files)
+            loaded_project.required_student_files, required_student_files)
 
         iterable = zip(
             expected_student_file_patterns,
@@ -112,16 +109,18 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_empty_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
                 name='', semester=self.semester)
+        self.assertTrue('name' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_null_name(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
                 name=None, semester=self.semester)
+        self.assertTrue('name' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
@@ -178,64 +177,72 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_min_group_size_too_small(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 min_group_size=0)
+        self.assertTrue('min_group_size' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_max_group_size_too_small(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 max_group_size=0)
+        self.assertTrue('max_group_size' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_max_group_size_smaller_than_min_group_size(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 min_group_size=3, max_group_size=2)
+        self.assertTrue('max_group_size' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_required_filename_is_empty_string(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
-        with self.assertRaises(ValidationError):
-            p.add_required_student_file('')
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                required_student_files=['spam.cpp', ''])
+
+        self.assertTrue('required_student_files' in cm.exception.message_dict)
+
+        # Make sure that there is an error message only in the correct spot.
+        self.assertEqual(
+            '', cm.exception.message_dict['required_student_files'][0])
+        self.assertTrue(cm.exception.message_dict['required_student_files'][1])
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_required_filename_has_illegal_path_chars(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
-
-        with self.assertRaises(ValidationError):
-            p.add_required_student_file("../spam.txt")
-
-        with self.assertRaises(ValidationError):
-            p.add_required_student_file('..')
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                required_student_files=['..', '../spam.txt'])
+        self.assertTrue(cm.exception.message_dict['required_student_files'][0])
+        self.assertTrue(cm.exception.message_dict['required_student_files'][1])
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_required_filename_has_illegal_shell_chars(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
-
-        with self.assertRaises(ValidationError):
-            p.add_required_student_file(_FILENAME_WITH_SHELL_CHARS)
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                required_student_files=[_FILENAME_WITH_SHELL_CHARS])
+        self.assertTrue(cm.exception.message_dict['required_student_files'][0])
 
     # -------------------------------------------------------------------------
 
     def test_exception_on_required_filename_starts_with_dot(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
-
-        with self.assertRaises(ValidationError):
-            p.add_required_student_file(".spamspam")
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                required_student_files=['.spamspam'])
+        self.assertTrue(cm.exception.message_dict['required_student_files'][0])
 
     # -------------------------------------------------------------------------
 

@@ -51,7 +51,7 @@ def check_user_provided_filename(filename):
     purposes.
     """
     if not filename:
-        raise ValidationError("Filenames must be non-empty and non-null")
+        raise ValidationError("Filenames must be non-empty")
 
     if filename.startswith('.'):
         raise ValidationError("Filenames cannot start with '.'")
@@ -79,7 +79,7 @@ def check_shell_style_file_pattern(pattern):
     purposes.
     """
     if not pattern:
-        raise ValidationError("File patterns must be non-empty and non-null")
+        raise ValidationError("File patterns must be non-empty")
 
     if not gc.PROJECT_FILE_PATTERN_WHITELIST_REGEX.fullmatch(pattern):
         raise ValidationError(
