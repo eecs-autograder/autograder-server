@@ -17,9 +17,9 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
 
         self.project = Project.objects.create(
             name='my_project', semester=self.semester,
-            required_student_files=['file1.cpp', 'file2.cpp'])
-
-        self.project.add_expected_student_file_pattern('test_*.cpp', 1, 2)
+            required_student_files=['file1.cpp', 'file2.cpp'],
+            expected_student_file_patterns=[
+                Project.FilePatternTuple('test_*.cpp', 1, 2)])
 
         self.project.add_project_file(
             SimpleUploadedFile('spam.txt', b'hello there!'))

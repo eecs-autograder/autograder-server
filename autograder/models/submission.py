@@ -105,16 +105,6 @@ class Submission(ModelValidatableOnSave):
         if not os.path.isdir(submission_dir):
             os.makedirs(submission_dir)
 
-        # # WORKAROUND: It seems that using a postgres ArrayField of FileFields
-        # # doesn't actually save the files. For now, we'll manually
-        # # save the files here until ArrayField support improves or we
-        # # implement some sort of FileArrayField.
-        # with ut.ChangeDirectory(submission_dir):
-        #     for file_obj in self.submitted_files:
-        #         with open(file_obj.name, 'w') as f:
-        #             file_obj.open()
-        #             f.write(file_obj.read().decode('utf-8'))
-
     def clean(self):
         super().clean()
 
@@ -126,7 +116,7 @@ class Submission(ModelValidatableOnSave):
 
         project = self.submission_group.project
         required_filenames = project.required_student_files
-        expected_patterns = project.get_expected_student_file_patterns()
+        expected_patterns = project.expected_student_file_patterns
         for req_file in required_filenames:
             found = ut.count_if(
                 submitted_filenames, lambda name: name == req_file)

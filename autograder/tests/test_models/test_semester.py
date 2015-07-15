@@ -58,7 +58,7 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
         Semester.objects.validate_and_create(
             name=self.SEMESTER_NAME, course=self.course)
 
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(ValidationError):
             Semester.objects.validate_and_create(
                 name=self.SEMESTER_NAME, course=self.course)
 

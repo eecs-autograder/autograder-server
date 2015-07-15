@@ -1,5 +1,6 @@
 import os
 import datetime
+import json
 
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -47,8 +48,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.min_group_size, 1)
         self.assertEqual(loaded_project.max_group_size, 1)
         self.assertEqual(loaded_project.required_student_files, [])
-        self.assertEqual(
-            list(loaded_project.expected_student_file_patterns.all()), [])
+        self.assertEqual(loaded_project.expected_student_file_patterns, [])
 
     # -------------------------------------------------------------------------
 
@@ -57,11 +57,11 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         min_group_size = 2
         max_group_size = 5
         required_student_files = ["spam.cpp", "eggs.cpp"]
-        expected_student_file_patterns = sorted((
-            ("test_*.cpp", 1, 10),
-            ("test[0-9].cpp", 2, 2),
-            ("test[!0-9]?.cpp", 3, 5)
-        ))
+        expected_student_file_patterns = [
+            Project.FilePatternTuple("test_*.cpp", 1, 10),
+            Project.FilePatternTuple("test[0-9].cpp", 2, 2),
+            Project.FilePatternTuple("test[!0-9]?.cpp", 3, 5)
+        ]
 
         new_project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME,
@@ -72,12 +72,8 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             min_group_size=min_group_size,
             max_group_size=max_group_size,
             required_student_files=required_student_files,
-            # expected_student_file_patterns=expected_student_file_patterns
+            expected_student_file_patterns=expected_student_file_patterns
         )
-
-        for pattern, min_matches, max_matches in expected_student_file_patterns:
-            new_project.add_expected_student_file_pattern(
-                pattern, min_matches, max_matches)
 
         new_project.validate_and_save()
 
@@ -97,14 +93,17 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             loaded_project.required_student_files, required_student_files)
 
-        iterable = zip(
-            expected_student_file_patterns,
-            sorted(loaded_project.get_expected_student_file_patterns()))
+        self.assertEqual(
+            loaded_project.expected_student_file_patterns,
+            expected_student_file_patterns)
+        # iterable = zip(
+        #     expected_student_file_patterns,
+        #     sorted(loaded_project.get_expected_student_file_patterns()))
 
-        for expected, actual in iterable:
-            self.assertEqual(expected[0], actual.pattern)
-            self.assertEqual(expected[1], actual.min_num_matches)
-            self.assertEqual(expected[2], actual.max_num_matches)
+        # for expected, actual in iterable:
+        #     self.assertEqual(expected[0], actual.pattern)
+        #     self.assertEqual(expected[1], actual.min_num_matches)
+        #     self.assertEqual(expected[2], actual.max_num_matches)
 
     # -------------------------------------------------------------------------
 
@@ -268,64 +267,204 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             Project.objects.validate_and_create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 required_student_files=['spam.cpp', 'spam.cpp', 'eggs.cpp'])
+
         self.assertTrue(cm.exception.message_dict['required_student_files'][0])
         self.assertTrue(cm.exception.message_dict['required_student_files'][1])
-        self.assertFalse(cm.exception.message_dict['required_student_files'][2])
+        self.assertFalse(
+            cm.exception.message_dict['required_student_files'][2])
 
     # -------------------------------------------------------------------------
+
+    def test_no_exception_min_and_max_matches_are_parseable_ints(self):
+        patterns = [Project.FilePatternTuple("eggs_*.txt", '1', '2')]
+
+        Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester,
+            expected_student_file_patterns=patterns)
+
+        loaded_project = Project.objects.get(
+            name=self.PROJECT_NAME, semester=self.semester)
+        self.assertEqual(
+            loaded_project.expected_student_file_patterns,
+            [Project.FilePatternTuple("eggs_*.txt", 1, 2)])
+
+    def test_exception_on_min_matches_not_integer(self):
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                    Project.FilePatternTuple("eggs_*.txt", 'spam', 2)])
+
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
+        error_dict = json.loads(cm.exception.message_dict.get(
+            'expected_student_file_patterns')[0])
+        self.assertFalse(error_dict['pattern'])
+        self.assertTrue(error_dict['min_num_matches'])
+        self.assertFalse(error_dict['max_num_matches'])
+
+    def test_exception_on_max_matches_not_integer(self):
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                    Project.FilePatternTuple("eggs_*.txt", 1, 'spam')])
+
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
+        error_dict = json.loads(cm.exception.message_dict.get(
+            'expected_student_file_patterns')[0])
+        self.assertFalse(error_dict['pattern'])
+        self.assertFalse(error_dict['min_num_matches'])
+        self.assertTrue(error_dict['max_num_matches'])
+
+    def test_exception_on_duplicate_expected_file_pattern(self):
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                    Project.FilePatternTuple("eggs_*.txt", 1, 2),
+                    Project.FilePatternTuple("eggs_*.txt", 1, 2),
+                    Project.FilePatternTuple("spam_*.txt", 1, 2)])
+
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
+        error_dicts = [
+            json.loads(string) for string in
+            cm.exception.message_dict['expected_student_file_patterns']]
+
+        self.assertTrue(error_dicts[0])
+
+        self.assertTrue(error_dicts[0]['pattern'])
+        self.assertFalse(error_dicts[0]['min_num_matches'])
+        self.assertFalse(error_dicts[0]['max_num_matches'])
+
+        self.assertTrue(error_dicts[1])
+        self.assertTrue(error_dicts[1]['pattern'])
+        self.assertFalse(error_dicts[1]['min_num_matches'])
+        self.assertFalse(error_dicts[1]['max_num_matches'])
+
+        self.assertFalse(error_dicts[2])
 
     def test_exception_on_negative_min_matches_in_expected_file_pattern(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                    Project.FilePatternTuple("eggs_*.txt", 1, 2),
+                    Project.FilePatternTuple("spam_*.txt", -2, 4)])
 
-        with self.assertRaises(ValidationError):
-            p.add_expected_student_file_pattern("spam_*.txt", -2, 4)
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
+        error_dicts = [
+            json.loads(string) for string in
+            cm.exception.message_dict['expected_student_file_patterns']]
 
-    # -------------------------------------------------------------------------
+        self.assertFalse(error_dicts[0])
+
+        self.assertTrue(error_dicts[1])
+        self.assertFalse(error_dicts[1]['pattern'])
+        self.assertTrue(error_dicts[1]['min_num_matches'])
+        self.assertFalse(error_dicts[1]['max_num_matches'])
 
     def test_exception_on_negative_max_matches_in_expected_file_pattern(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                    Project.FilePatternTuple("spam_*.txt", 4, -2),
+                    Project.FilePatternTuple("eggs_*.txt", 1, 2)])
 
-        with self.assertRaises(ValidationError):
-            p.add_expected_student_file_pattern("spam_*.txt", 4, -2)
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
 
-    # -------------------------------------------------------------------------
+        error_dicts = [
+            json.loads(string) for string in
+            cm.exception.message_dict['expected_student_file_patterns']]
+
+        self.assertTrue(error_dicts[0])
+        self.assertFalse(error_dicts[0]['pattern'])
+        self.assertFalse(error_dicts[0]['min_num_matches'])
+        self.assertTrue(error_dicts[0]['max_num_matches'])
+
+        self.assertFalse(error_dicts[1])
 
     def test_exception_on_max_less_than_min_in_expected_file_pattern(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                    Project.FilePatternTuple("spam_*.txt", 4, 1)])
 
-        with self.assertRaises(ValidationError):
-            p.add_expected_student_file_pattern("spam_*.txt", 4, 1)
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
 
-    # -------------------------------------------------------------------------
+        error_dicts = [
+            json.loads(string) for string in
+            cm.exception.message_dict['expected_student_file_patterns']]
+
+        self.assertTrue(error_dicts[0])
+        self.assertFalse(error_dicts[0]['pattern'])
+        self.assertFalse(error_dicts[0]['min_num_matches'])
+        self.assertTrue(error_dicts[0]['max_num_matches'])
 
     def test_exception_on_expected_file_patterns_has_empty_string(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                 Project.FilePatternTuple("", 1, 2)])
 
-        with self.assertRaises(ValidationError):
-            p.add_expected_student_file_pattern("", 1, 2)
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
 
-    # -------------------------------------------------------------------------
+        error_dicts = [
+            json.loads(string) for string in
+            cm.exception.message_dict['expected_student_file_patterns']]
+
+        self.assertTrue(error_dicts[0])
+        self.assertTrue(error_dicts[0]['pattern'])
+        self.assertFalse(error_dicts[0]['min_num_matches'])
+        self.assertFalse(error_dicts[0]['max_num_matches'])
 
     def test_exception_on_expected_file_patterns_has_illegal_path_chars(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                    Project.FilePatternTuple("../test_*.cpp", 1, 2)])
 
-        with self.assertRaises(ValidationError):
-            p.add_expected_student_file_pattern("../test_*.cpp", 1, 2)
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
 
-    # -------------------------------------------------------------------------
+        error_dicts = [
+            json.loads(string) for string in
+            cm.exception.message_dict['expected_student_file_patterns']]
+
+        self.assertTrue(error_dicts[0])
+        self.assertTrue(error_dicts[0]['pattern'])
+        self.assertFalse(error_dicts[0]['min_num_matches'])
+        self.assertFalse(error_dicts[0]['max_num_matches'])
 
     def test_exception_on_expected_file_patterns_has_illegal_shell_chars(self):
-        p = Project.objects.validate_and_create(
-            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                    Project.FilePatternTuple(
+                        "spam[0-9]_; echo 'blah';", 1, 2)])
 
-        with self.assertRaises(ValidationError):
-            p.add_expected_student_file_pattern(
-                "spam[0-9]_; echo 'blah';", 1, 2)
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
+
+        error_dicts = [
+            json.loads(string) for string in
+            cm.exception.message_dict['expected_student_file_patterns']]
+
+        self.assertTrue(error_dicts[0])
+        self.assertTrue(error_dicts[0]['pattern'])
+        self.assertFalse(error_dicts[0]['min_num_matches'])
+        self.assertFalse(error_dicts[0]['max_num_matches'])
 
 
 # -----------------------------------------------------------------------------

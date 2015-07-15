@@ -353,7 +353,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
         for filename in self.files_to_compile_together:
             patterns = (pattern_obj.pattern for pattern_obj in
-                        self.project.get_expected_student_file_patterns())
+                        self.project.expected_student_file_patterns)
             valid_filename = (
                 filename in self.project.project_files.all() or
                 filename in self.project.required_student_files or

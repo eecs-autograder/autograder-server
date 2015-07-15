@@ -30,9 +30,9 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         self.project = Project.objects.create(
             name='my_project', semester=self.semester, max_group_size=2,
-            required_student_files=['spam.cpp', 'eggs.cpp'])
-
-        self.project.add_expected_student_file_pattern('test_*.cpp', 1, 2)
+            required_student_files=['spam.cpp', 'eggs.cpp'],
+            expected_student_file_patterns=[
+                Project.FilePatternTuple('test_*.cpp', 1, 2)])
 
         self.group_members = [
             _make_dummy_user('steve', 'spam'),

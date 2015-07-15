@@ -1,6 +1,7 @@
 import os
 import shutil
 import collections
+import json
 
 from django.db import models
 from django.core.validators import MinValueValidator
@@ -15,11 +16,6 @@ from autograder.models import Semester
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
-
-
-ExpectedStudentFilePatternTuple = collections.namedtuple(
-    'ExpectedStudentFile',
-    ['pattern', 'min_num_matches', 'max_num_matches'])
 
 
 class Project(ModelValidatableOnSave):
@@ -75,12 +71,25 @@ class Project(ModelValidatableOnSave):
 
         required_student_files -- A list of files that students
             are required to submit for this project.
+
             See autograder.shared.utilities.check_user_provided_filename
             for restrictions on filenames.
+
             Default value: empty list
 
-        expected_student_file_patterns -- A list of objects encapsulating
+            When ValidationError is raised for this field, the error message
+            will be a list containing a string corresponding (in order) to
+            each filename in this field. The strings will contain an error
+            message for their corresponding filename or be empty if their
+            corresponding filename did not cause an error.
+            For example: a value for this field of ['spam', ''] would
+            result in an error message along the lines of:
+                ['', 'Filenames cannot be empty']
+
+        expected_student_file_patterns -- A list of
+            Project.FilePatternTuple objects describing
             Unix shell-style patterns that student-submitted files can match.
+
             Default value: empty list
 
             The pattern objects have the following fields:
@@ -99,26 +108,45 @@ class Project(ModelValidatableOnSave):
                     This value must be non negative.
                     This value must be >= min_num_matches.
 
+            When ValidationError is raised for this field, the error message
+            will be a list containing dictionaries *serialized as JSON strings*
+            corresponding (in order) to each file pattern object in this field.
+            If a given pattern did not cause any errors, its corresponding
+            dictionary will be empty.
+            Otherwise, the dictionary's key-value
+            pairs will consist of <attribute>, <message> for each attribute
+            in the pattern object. The <message> value will be an error
+            message string if the attribute caused an error, otherwise
+            <message> will be an empty string.
+            For example, a value for this field of
+                [('eggs*.txt', 1, 2), ('spam*.txt', 1, -1)]
+            would result in an error message along the lines of:
+                ['{}',
+                 {'"pattern": "",
+                  "min_num_matches": "",
+                  "max_num_matches": "This value cannot be negative"''}]
+            These dictionaries are serialized in order to get around
+            the limitations of using ValidaitonError.
+
     Instance methods:
         add_project_file()
         remove_project_file()
         rename_project_file() TODO?
-
-        add_required_student_file()
-        get_required_student_files()
-
-        add_expected_student_file_pattern()
-        get_expected_student_file_patterns()
 
         add_test_case() TODO (here or in test case?)
         update_test_case() TODO (here or in test case?)
         remove_test_case() TODO (here or in test case?)
 
     Overridden methods:
+        __init__()
         save()
         clean()
         delete()
     """
+    FilePatternTuple = collections.namedtuple(
+        'ExpectedStudentFile',
+        ['pattern', 'min_num_matches', 'max_num_matches'])
+
     class Meta:
         unique_together = ('name', 'semester')
 
@@ -147,9 +175,25 @@ class Project(ModelValidatableOnSave):
                         # to the GUI side in a more convenient format.
             ),
         default=[], blank=True)
-    # expected_student_file_patterns = JSONField(default={})
+
+    @property
+    def expected_student_file_patterns(self):
+        return [
+            Project.FilePatternTuple(obj[0], obj[1], obj[2])
+            for obj in self._expected_student_file_patterns]
+
+    @expected_student_file_patterns.setter
+    def expected_student_file_patterns(self, value):
+        self._expected_student_file_patterns = value
+
+    _expected_student_file_patterns = JSONField(default=[], blank=True)
 
     # -------------------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+        patterns = kwargs.pop('expected_student_file_patterns', [])
+        super().__init__(
+            *args, _expected_student_file_patterns=patterns, **kwargs)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -170,6 +214,8 @@ class Project(ModelValidatableOnSave):
             os.makedirs(project_root_dir)
             os.mkdir(project_files_dir)
             os.mkdir(project_submissions_dir)
+
+    # -------------------------------------------------------------------------
 
     def clean(self):
         super().clean()
@@ -208,8 +254,78 @@ class Project(ModelValidatableOnSave):
         if req_files_error_found:
             errors['required_student_files'] = required_files_errors
 
+        file_pattern_errors = self._clean_expected_student_file_patterns()
+        if file_pattern_errors:
+            errors['expected_student_file_patterns'] = file_pattern_errors
+
         if errors:
             raise ValidationError(errors)
+
+    def _clean_expected_student_file_patterns(self):
+        """
+        Cleans self.expected_student_file_patterns and returns a
+        dictionary of errors, if any. Returns None if no errors
+        were found.
+        """
+        cleaned_patterns = []
+        pattern_obj_errors = []
+        pat_obj_err_found = False
+        for pattern_obj in self.expected_student_file_patterns:
+            pattern_error = ''
+            try:
+                ut.check_shell_style_file_pattern(pattern_obj.pattern)
+                num_occurrences = ut.count_if(
+                    self.expected_student_file_patterns,
+                    lambda pat_tup: pat_tup.pattern == pattern_obj.pattern)
+                if num_occurrences > 1:
+                    raise ValidationError('Duplicate patterns are not allowed')
+            except ValidationError as e:
+                pattern_error = e.message
+
+            cleaned_min = pattern_obj.min_num_matches
+            min_error = ''
+            try:
+                cleaned_min = int(pattern_obj.min_num_matches)
+
+                if cleaned_min < 0:
+                    min_error = 'This value cannot be negative'
+            except ValueError as e:
+                min_error = 'This value must be an integer'
+
+            cleaned_max = pattern_obj.max_num_matches
+            max_error = ''
+            try:
+                cleaned_max = int(pattern_obj.max_num_matches)
+
+                if cleaned_max < 0:
+                    max_error = 'This value cannot be negative'
+
+                if not min_error and cleaned_max < cleaned_min:
+                    max_error = (
+                        'Maximum number of matches must be less than or '
+                        'equal to minimum number of matches')
+            except ValueError as e:
+                max_error = 'This value must be an integer'
+
+            cleaned_patterns.append(
+                [pattern_obj.pattern, cleaned_min, cleaned_max])
+            if pattern_error or min_error or max_error:
+                pat_obj_err_found = True
+                pattern_obj_errors.append(
+                    json.dumps(
+                        {'pattern': pattern_error,
+                         'min_num_matches': min_error,
+                         'max_num_matches': max_error}))
+            else:
+                pattern_obj_errors.append(json.dumps({}))
+
+        self._expected_student_file_patterns = cleaned_patterns
+        if pat_obj_err_found:
+            return pattern_obj_errors
+
+        return None
+
+    # -------------------------------------------------------------------------
 
     def delete(self, *args, **kwargs):
         project_root_dir = ut.get_project_root_dir(self)
@@ -271,39 +387,39 @@ class Project(ModelValidatableOnSave):
 
         return False
 
-    def add_expected_student_file_pattern(self, pattern,
-                                          min_matches, max_matches):
-        """
-        Adds the given pattern with the specified min and max to the
-        list of patterns that student-submitted files can match.
-        """
-        self.expected_student_file_patterns.add(
-            _ExpectedStudentFilePattern.objects.validate_and_create(
-                pattern=pattern,
-                min_num_matches=min_matches,
-                max_num_matches=max_matches,
-                project=self))
+    # def add_expected_student_file_pattern(self, pattern,
+    #                                       min_matches, max_matches):
+    #     """
+    #     Adds the given pattern with the specified min and max to the
+    #     list of patterns that student-submitted files can match.
+    #     """
+    #     self.expected_student_file_patterns.add(
+    #         _ExpectedStudentFilePattern.objects.validate_and_create(
+    #             pattern=pattern,
+    #             min_num_matches=min_matches,
+    #             max_num_matches=max_matches,
+    #             project=self))
 
-    def add_expected_student_file_patterns(self, *pattern_tuples):
-        for pattern, min_matches, max_matches in pattern_tuples:
-            self.add_expected_student_file_pattern(
-                pattern, min_matches, max_matches)
+    # def add_expected_student_file_patterns(self, *pattern_tuples):
+    #     for pattern, min_matches, max_matches in pattern_tuples:
+    #         self.add_expected_student_file_pattern(
+    #             pattern, min_matches, max_matches)
 
-    def get_expected_student_file_patterns(self):
-        """
-        Returns a list of named tuples representing patterns that
-        student-submitted files can match.
-        The tuples contain the following fields:
-            pattern
-            min_num_matches
-            max_num_matches
-        See Project.expected_student_file_patterns for more information
-        on these fields.
-        """
-        return [
-            ExpectedStudentFilePatternTuple(
-                obj.pattern, obj.min_num_matches, obj.max_num_matches)
-            for obj in self.expected_student_file_patterns.all()]
+    # def get_expected_student_file_patterns(self):
+    #     """
+    #     Returns a list of named tuples representing patterns that
+    #     student-submitted files can match.
+    #     The tuples contain the following fields:
+    #         pattern
+    #         min_num_matches
+    #         max_num_matches
+    #     See Project.expected_student_file_patterns for more information
+    #     on these fields.
+    #     """
+    #     return [
+    #         Project.FilePatternTuple(
+    #             obj.pattern, obj.min_num_matches, obj.max_num_matches)
+    #         for obj in self.expected_student_file_patterns.all()]
 
 
 # -----------------------------------------------------------------------------
@@ -328,27 +444,27 @@ class _UploadedProjectFile(ModelValidatableOnSave):
         validators=[_validate_filename])
 
 
-# TODO: JSONField?
-class _ExpectedStudentFilePattern(ModelValidatableOnSave):
-    class Meta:
-        unique_together = ('project', 'pattern')
+# # TODO: JSONField?
+# class _ExpectedStudentFilePattern(ModelValidatableOnSave):
+#     class Meta:
+#         unique_together = ('project', 'pattern')
 
-    objects = ManagerWithValidateOnCreate()
+#     objects = ManagerWithValidateOnCreate()
 
-    project = models.ForeignKey(
-        Project, related_name='expected_student_file_patterns')
+#     project = models.ForeignKey(
+#         Project, related_name='expected_student_file_patterns')
 
-    pattern = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN,
-        validators=[ut.check_shell_style_file_pattern])
-    min_num_matches = models.IntegerField(validators=[MinValueValidator(0)])
-    max_num_matches = models.IntegerField(validators=[MinValueValidator(0)])
+#     pattern = models.CharField(
+#         max_length=gc.MAX_CHAR_FIELD_LEN,
+#         validators=[ut.check_shell_style_file_pattern])
+#     min_num_matches = models.IntegerField(validators=[MinValueValidator(0)])
+#     max_num_matches = models.IntegerField(validators=[MinValueValidator(0)])
 
-    def clean(self):
-        super().clean()
+#     def clean(self):
+#         super().clean()
 
-        if self.min_num_matches > self.max_num_matches:
-            raise ValidationError(
-                {'min_num_matches':
-                 ['Minimum number of matches must be less than or equal '
-                  'to maximum number of matches']})
+#         if self.min_num_matches > self.max_num_matches:
+#             raise ValidationError(
+#                 {'min_num_matches':
+#                  ['Minimum number of matches must be less than or equal '
+#                   'to maximum number of matches']})
