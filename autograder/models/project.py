@@ -7,6 +7,8 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField  # , JSONField
 
+from jsonfield import JSONField
+
 from autograder.models.model_utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
 from autograder.models import Semester
@@ -140,10 +142,10 @@ class Project(ModelValidatableOnSave):
         models.CharField(
             max_length=gc.MAX_CHAR_FIELD_LEN,
             blank=True  # We are setting this here so that the clean method
-                        # can check for emptiness. This lets us send errors
+                        # can check for emptiness and throw a more specific
+                        # error. This lets us send ValidationErrors
                         # to the GUI side in a more convenient format.
             ),
-            # validators=[]),
         default=[], blank=True)
     # expected_student_file_patterns = JSONField(default={})
 
@@ -172,17 +174,32 @@ class Project(ModelValidatableOnSave):
     def clean(self):
         super().clean()
 
+        if self.name:
+            self.name = self.name.strip()
+
         errors = {}
+        if not self.name:
+            errors['name'] = "Name can't be empty"
+
         if self.max_group_size < self.min_group_size:
             errors['max_group_size'] = [
                 'Maximum group size must be greater than '
                 'or equal to minimum group size']
+
+        self.required_student_files = [
+            filename.strip() for filename in self.required_student_files]
 
         required_files_errors = []
         req_files_error_found = False
         for filename in self.required_student_files:
             try:
                 ut.check_user_provided_filename(filename)
+
+                num_occurrences = ut.count_if(
+                    self.required_student_files, lambda f: f == filename)
+                if num_occurrences > 1:
+                    raise ValidationError('Duplicates are not allowed')
+
                 required_files_errors.append('')
             except ValidationError as e:
                 required_files_errors.append(e.message)
@@ -254,27 +271,6 @@ class Project(ModelValidatableOnSave):
 
         return False
 
-    # def add_required_student_file(self, filename):
-    #     """
-    #     Adds the given filename to the list of files that students
-    #     are required to submit for this project.
-    #     """
-    #     self.required_student_files.add(
-    #         _RequiredStudentFile.objects.validate_and_create(
-    #             filename=filename,
-    #             project=self))
-
-    # def add_required_student_files(self, *filenames):
-    #     for filename in filenames:
-    #         self.add_required_student_file(filename)
-
-    # def get_required_student_files(self):
-    #     """
-    #     Returns a list of filenames that students are required to submit
-    #     for this project.
-    #     """
-    #     return [obj.filename for obj in self.required_student_files.all()]
-
     def add_expected_student_file_pattern(self, pattern,
                                           min_matches, max_matches):
         """
@@ -330,19 +326,6 @@ class _UploadedProjectFile(ModelValidatableOnSave):
     uploaded_file = models.FileField(
         upload_to=_get_project_file_upload_to_dir,
         validators=[_validate_filename])
-
-
-# # TODO: ArrayField
-# class _RequiredStudentFile(ModelValidatableOnSave):
-#     class Meta:
-#         unique_together = ('project', 'filename')
-
-#     objects = ManagerWithValidateOnCreate()
-
-#     project = models.ForeignKey(Project, related_name='required_student_files')
-#     filename = models.CharField(
-#         max_length=gc.MAX_CHAR_FIELD_LEN,
-#         validators=[ut.check_user_provided_filename])
 
 
 # TODO: JSONField?

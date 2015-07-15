@@ -16,8 +16,9 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
         self.semester = Semester.objects.create(name='f15', course=self.course)
 
         self.project = Project.objects.create(
-            name='my_project', semester=self.semester)
-        self.project.add_required_student_files('file1.cpp', 'file2.cpp')
+            name='my_project', semester=self.semester,
+            required_student_files=['file1.cpp', 'file2.cpp'])
+
         self.project.add_expected_student_file_pattern('test_*.cpp', 1, 2)
 
         self.project.add_project_file(

@@ -29,21 +29,30 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_semester.course, self.course)
         self.assertEqual(new_semester, loaded_semester)
 
-    # -------------------------------------------------------------------------
+    def test_name_whitespace_stripped(self):
+        Semester.objects.validate_and_create(
+            name='    ' + self.SEMESTER_NAME + '   ',
+            course=self.course)
+
+        loaded_semester = Semester.objects.get(
+            name=self.SEMESTER_NAME, course=self.course)
+        self.assertEqual(loaded_semester.name, self.SEMESTER_NAME)
+
+    def test_exception_on_name_is_only_whitespace(self):
+        with self.assertRaises(ValidationError) as cm:
+            Semester.objects.validate_and_create(
+                name='    ', course=self.course)
+        self.assertTrue('name' in cm.exception.message_dict)
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError) as cm:
             Semester.objects.validate_and_create(name='', course=self.course)
         self.assertTrue('name' in cm.exception.message_dict)
 
-    # -------------------------------------------------------------------------
-
     def test_exception_on_null_name(self):
         with self.assertRaises(ValidationError) as cm:
             Semester.objects.validate_and_create(name=None, course=self.course)
         self.assertTrue('name' in cm.exception.message_dict)
-
-    # -------------------------------------------------------------------------
 
     def test_exception_on_non_unique_name(self):
         Semester.objects.validate_and_create(
@@ -52,8 +61,6 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
         with self.assertRaises(ValidationError) as cm:
             Semester.objects.validate_and_create(
                 name=self.SEMESTER_NAME, course=self.course)
-
-    # -------------------------------------------------------------------------
 
     def test_no_exception_same_name_different_course(self):
         new_course_name = "eecs381"

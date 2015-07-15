@@ -125,7 +125,7 @@ class Submission(ModelValidatableOnSave):
         ]
 
         project = self.submission_group.project
-        required_filenames = project.get_required_student_files()
+        required_filenames = project.required_student_files
         expected_patterns = project.get_expected_student_file_patterns()
         for req_file in required_filenames:
             found = ut.count_if(

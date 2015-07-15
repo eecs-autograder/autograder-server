@@ -23,10 +23,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             name='f15', course=self.course)
 
         self.project = Project.objects.validate_and_create(
-            name='my_project', semester=self.semester)
-        self.project.add_required_student_file(
-            'file1.cpp')
-        self.project.add_required_student_file('file2.cpp')
+            name='my_project', semester=self.semester,
+            required_student_files=['file1.cpp', 'file2.cpp'])
 
         self.project.add_expected_student_file_pattern('test_*.cpp', 1, 2)
 
@@ -346,9 +344,9 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             name='f15', course=course)
 
         self.project = Project.objects.validate_and_create(
-            name='my_project', semester=semester)
-        self.project.add_required_student_file
-        self.project.add_required_student_files('file1.cpp', 'file2.cpp')
+            name='my_project', semester=semester,
+            required_student_files=['file1.cpp', 'file2.cpp'])
+
         self.project.add_expected_student_file_pattern('test_*.cpp', 1, 2)
 
         self.project_files = [

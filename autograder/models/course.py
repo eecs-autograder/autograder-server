@@ -2,6 +2,7 @@ import os
 import shutil
 
 from django.db import models
+from django.core.exceptions import ValidationError
 
 from autograder.models.model_utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
@@ -25,6 +26,7 @@ class Course(ModelValidatableOnSave):
 
     Overridden member functions:
         save()
+        clean()
         delete()
     """
     objects = ManagerWithValidateOnCreate()
@@ -49,6 +51,17 @@ class Course(ModelValidatableOnSave):
 
             # print('creating: ' + course_root_dir)
             os.makedirs(course_root_dir)
+
+    def clean(self):
+        if self.name:
+            self.name = self.name.strip()
+
+        errors = {}
+        if not self.name:
+            errors['name'] = "Name can't be empty"
+
+        if errors:
+            raise ValidationError(errors)
 
     def delete(self, *args, **kwargs):
         course_root_dir = ut.get_course_root_dir(self)

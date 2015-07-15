@@ -37,8 +37,8 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             name=self.PROJECT_NAME, semester=self.semester)
 
         self.assertEqual(loaded_project, new_project)
-        self.assertEqual(loaded_project.name, new_project.name)
-        self.assertEqual(loaded_project.semester, new_project.semester)
+        self.assertEqual(loaded_project.name, self.PROJECT_NAME)
+        self.assertEqual(loaded_project.semester, self.semester)
 
         self.assertEqual(list(loaded_project.project_files.all()), [])
         self.assertEqual(loaded_project.visible_to_students, False)
@@ -85,8 +85,8 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             name=self.PROJECT_NAME, semester=self.semester)
 
         self.assertEqual(loaded_project, new_project)
-        self.assertEqual(loaded_project.name, new_project.name)
-        self.assertEqual(loaded_project.semester, new_project.semester)
+        self.assertEqual(loaded_project.name, self.PROJECT_NAME)
+        self.assertEqual(loaded_project.semester, self.semester)
 
         self.assertEqual(loaded_project.visible_to_students, True)
         self.assertEqual(loaded_project.closing_time, tomorrow_date)
@@ -108,21 +108,32 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
+    def test_name_whitespace_stripped(self):
+        Project.objects.validate_and_create(
+            name='    ' + self.PROJECT_NAME + '    ', semester=self.semester)
+
+        loaded_project = Project.objects.get(
+            name=self.PROJECT_NAME, semester=self.semester)
+
+        self.assertEqual(loaded_project.name, self.PROJECT_NAME)
+
+    def test_exception_on_name_only_whitespace(self):
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name='     ', semester=self.semester)
+        self.assertTrue('name' in cm.exception.message_dict)
+
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
                 name='', semester=self.semester)
         self.assertTrue('name' in cm.exception.message_dict)
 
-    # -------------------------------------------------------------------------
-
     def test_exception_on_null_name(self):
         with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
                 name=None, semester=self.semester)
         self.assertTrue('name' in cm.exception.message_dict)
-
-    # -------------------------------------------------------------------------
 
     def test_exception_on_non_unique_name(self):
         Project.objects.validate_and_create(
@@ -150,8 +161,6 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_new_project, new_project)
         self.assertEqual(loaded_new_project.name, new_project.name)
         self.assertEqual(loaded_new_project.semester, new_project.semester)
-
-    # -------------------------------------------------------------------------
 
     def test_no_exception_same_semester_and_project_names_different_course(self):
         new_course_name = 'eecs381'
@@ -183,16 +192,12 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
                 min_group_size=0)
         self.assertTrue('min_group_size' in cm.exception.message_dict)
 
-    # -------------------------------------------------------------------------
-
     def test_exception_on_max_group_size_too_small(self):
         with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 max_group_size=0)
         self.assertTrue('max_group_size' in cm.exception.message_dict)
-
-    # -------------------------------------------------------------------------
 
     def test_exception_on_max_group_size_smaller_than_min_group_size(self):
         with self.assertRaises(ValidationError) as cm:
@@ -202,6 +207,26 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertTrue('max_group_size' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
+
+    def test_required_filename_whitespace_stripped(self):
+        Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester,
+            required_student_files=['   spam.cpp  ', 'eggs.cpp'])
+
+        loaded_project = Project.objects.get(
+            name=self.PROJECT_NAME, semester=self.semester)
+
+        self.assertEqual(
+            ['spam.cpp', 'eggs.cpp'], loaded_project.required_student_files)
+
+    def test_exception_on_required_filename_is_only_whitespace(self):
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                required_student_files=['spam.cpp', '     '])
+
+        self.assertTrue('required_student_files' in cm.exception.message_dict)
+        self.assertTrue(cm.exception.message_dict['required_student_files'][1])
 
     def test_exception_on_required_filename_is_empty_string(self):
         with self.assertRaises(ValidationError) as cm:
@@ -216,8 +241,6 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             '', cm.exception.message_dict['required_student_files'][0])
         self.assertTrue(cm.exception.message_dict['required_student_files'][1])
 
-    # -------------------------------------------------------------------------
-
     def test_exception_on_required_filename_has_illegal_path_chars(self):
         with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
@@ -226,8 +249,6 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(cm.exception.message_dict['required_student_files'][0])
         self.assertTrue(cm.exception.message_dict['required_student_files'][1])
 
-    # -------------------------------------------------------------------------
-
     def test_exception_on_required_filename_has_illegal_shell_chars(self):
         with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
@@ -235,14 +256,21 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
                 required_student_files=[_FILENAME_WITH_SHELL_CHARS])
         self.assertTrue(cm.exception.message_dict['required_student_files'][0])
 
-    # -------------------------------------------------------------------------
-
     def test_exception_on_required_filename_starts_with_dot(self):
         with self.assertRaises(ValidationError) as cm:
             Project.objects.validate_and_create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 required_student_files=['.spamspam'])
         self.assertTrue(cm.exception.message_dict['required_student_files'][0])
+
+    def test_exception_on_duplicate_required_filename(self):
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                required_student_files=['spam.cpp', 'spam.cpp', 'eggs.cpp'])
+        self.assertTrue(cm.exception.message_dict['required_student_files'][0])
+        self.assertTrue(cm.exception.message_dict['required_student_files'][1])
+        self.assertFalse(cm.exception.message_dict['required_student_files'][2])
 
     # -------------------------------------------------------------------------
 

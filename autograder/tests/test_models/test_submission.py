@@ -29,8 +29,9 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.semester = Semester.objects.create(name='f15', course=self.course)
 
         self.project = Project.objects.create(
-            name='my_project', semester=self.semester, max_group_size=2)
-        self.project.add_required_student_files('spam.cpp', 'eggs.cpp')
+            name='my_project', semester=self.semester, max_group_size=2,
+            required_student_files=['spam.cpp', 'eggs.cpp'])
+
         self.project.add_expected_student_file_pattern('test_*.cpp', 1, 2)
 
         self.group_members = [

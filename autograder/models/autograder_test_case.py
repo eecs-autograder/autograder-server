@@ -356,7 +356,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
                         self.project.get_expected_student_file_patterns())
             valid_filename = (
                 filename in self.project.project_files.all() or
-                filename in self.project.get_required_student_files() or
+                filename in self.project.required_student_files or
                 filename in patterns
             )
 
