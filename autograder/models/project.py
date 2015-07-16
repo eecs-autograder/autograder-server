@@ -23,8 +23,6 @@ class Project(ModelValidatableOnSave):
     Represents a programming project for which students can
     submit solutions and have them evaluated.
 
-    Primary key: composite based on this Project's name and Semester.
-
     Fields:
         name -- The name used to identify this project.
                 Must be non-empty and non-null.
@@ -78,7 +76,7 @@ class Project(ModelValidatableOnSave):
             Default value: empty list
 
             When ValidationError is raised for this field, the error message
-            will be a list containing a string corresponding (in order) to
+            will be a list containing strings corresponding (in order) to
             each filename in this field. The strings will contain an error
             message for their corresponding filename or be empty if their
             corresponding filename did not cause an error.
@@ -271,12 +269,13 @@ class Project(ModelValidatableOnSave):
         pattern_obj_errors = []
         pat_obj_err_found = False
         for pattern_obj in self.expected_student_file_patterns:
+            cleaned_pattern = pattern_obj.pattern.strip()
             pattern_error = ''
             try:
-                ut.check_shell_style_file_pattern(pattern_obj.pattern)
+                ut.check_shell_style_file_pattern(cleaned_pattern)
                 num_occurrences = ut.count_if(
                     self.expected_student_file_patterns,
-                    lambda pat_tup: pat_tup.pattern == pattern_obj.pattern)
+                    lambda pat_tup: pat_tup.pattern == cleaned_pattern)
                 if num_occurrences > 1:
                     raise ValidationError('Duplicate patterns are not allowed')
             except ValidationError as e:
@@ -308,7 +307,7 @@ class Project(ModelValidatableOnSave):
                 max_error = 'This value must be an integer'
 
             cleaned_patterns.append(
-                [pattern_obj.pattern, cleaned_min, cleaned_max])
+                [cleaned_pattern, cleaned_min, cleaned_max])
             if pattern_error or min_error or max_error:
                 pat_obj_err_found = True
                 pattern_obj_errors.append(

@@ -16,7 +16,6 @@ class Semester(ModelValidatableOnSave):
     """
     Represents a semester or term in which a course takes place.
 
-
     Fields:
         name -- The name used to identify this Semester.
                 Must be non-empty and non-null.

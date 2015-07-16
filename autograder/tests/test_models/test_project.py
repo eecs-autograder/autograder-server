@@ -205,6 +205,24 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
                 min_group_size=3, max_group_size=2)
         self.assertTrue('max_group_size' in cm.exception.message_dict)
 
+    def test_exception_on_min_and_max_size_not_parseable_ints(self):
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                min_group_size='spam', max_group_size='eggs')
+        self.assertTrue('min_group_size' in cm.exception.message_dict)
+        self.assertTrue('max_group_size' in cm.exception.message_dict)
+
+    def test_no_exception_min_and_max_size_parseable_ints(self):
+        Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester,
+            min_group_size='1', max_group_size='2')
+
+        loaded_project = Project.objects.get(
+            name=self.PROJECT_NAME, semester=self.semester)
+        self.assertEqual(loaded_project.min_group_size, 1)
+        self.assertEqual(loaded_project.max_group_size, 2)
+
     # -------------------------------------------------------------------------
 
     def test_required_filename_whitespace_stripped(self):
@@ -274,6 +292,37 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             cm.exception.message_dict['required_student_files'][2])
 
     # -------------------------------------------------------------------------
+
+    def test_pattern_whitespace_stripped(self):
+        Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester,
+            expected_student_file_patterns=[
+                Project.FilePatternTuple("   eggs_*.txt    ", 1, 2)])
+
+        loaded_project = Project.objects.get(
+            name=self.PROJECT_NAME, semester=self.semester)
+        self.assertEqual(
+            [Project.FilePatternTuple("eggs_*.txt", 1, 2)],
+            loaded_project.expected_student_file_patterns)
+
+    def test_exception_on_pattern_is_only_whitespace(self):
+        with self.assertRaises(ValidationError) as cm:
+            Project.objects.validate_and_create(
+                name=self.PROJECT_NAME, semester=self.semester,
+                expected_student_file_patterns=[
+                    Project.FilePatternTuple("       ", 1, 2)])
+
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
+
+        error_dicts = [
+            json.loads(string) for string in
+            cm.exception.message_dict['expected_student_file_patterns']]
+
+        self.assertTrue(error_dicts[0])
+        self.assertTrue(error_dicts[0]['pattern'])
+        self.assertFalse(error_dicts[0]['min_num_matches'])
+        self.assertFalse(error_dicts[0]['max_num_matches'])
 
     def test_no_exception_min_and_max_matches_are_parseable_ints(self):
         patterns = [Project.FilePatternTuple("eggs_*.txt", '1', '2')]
@@ -413,7 +462,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             Project.objects.validate_and_create(
                 name=self.PROJECT_NAME, semester=self.semester,
                 expected_student_file_patterns=[
-                 Project.FilePatternTuple("", 1, 2)])
+                    Project.FilePatternTuple("", 1, 2)])
 
         self.assertTrue(
             'expected_student_file_patterns' in cm.exception.message_dict)

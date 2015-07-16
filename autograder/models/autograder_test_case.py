@@ -10,6 +10,7 @@ import subprocess
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 
 from autograder.models.model_utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
@@ -27,24 +28,16 @@ SUPPORTED_COMPILERS = ["g++"]
 
 def _validate_cmd_line_arg(arg):
     if not arg:
-        raise ValidationError("Command line arguments can't be empty or null")
+        raise ValidationError("This value can't be empty")
 
     ut.check_values_against_whitelist(
         [arg], gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
-
-
-# def _validate_not_null(value):
-#     print('merp')
-#     if value is None:
-#         raise ValidationError("This field can't be null")
 
 
 class AutograderTestCaseBase(ModelValidatableOnSave):
     """
     This base class provides a fat interface for
     test cases used to evaluate student-submitted code.
-
-    Primary key: Composite based on this test case's name and Project.
 
     Fields:
         TODO: feedback levels
@@ -64,7 +57,14 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
             This value may NOT be None.
             Individual arguments may contain alphanumeric characters,
                 hyphen, underscore, period, and the equals sign.
+
             Default value: empty list
+
+            When ValidationError is raised for this field, the error message
+            will be a list containing strings corresponding (in order) to
+            each argument in this field. The strings will contain an error
+            message for their corresponding argument or be empty if their
+            corresponding argument did not cause an error.
 
         standard_input -- A string whose contents
             should be sent to the standard input stream of the program
@@ -81,6 +81,7 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
                 cause ValueError to be raised.
             As such, these filenames are restricted to the same charset
                 as uploaded project files.
+
             Default value: empty list
 
         time_limit -- The time limit in seconds to be placed on the
@@ -139,8 +140,15 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
             For example: ['--leak-check=full', '--error-exitcode=42']
             This list can be empty.
             This list can only be None if use_valgrind is False.
+
             Default value: ['--leak-check=full', '--error-exitcode=1'] if
                 use_valgrind is true, None if use_valgrind is False.
+
+            When ValidationError is raised for this field, the error message
+            will be a list containing strings corresponding (in order) to
+            each flag in this field. The strings will contain an error
+            message for their corresponding flag or be empty if their
+            corresponding flag did not cause an error.
 
     Fat interface fields:
         NOTE: These fields all default to a "Falsy" value and should be
@@ -159,7 +167,14 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
             NOTE: This list should NOT include the names of files that
                 need to be compiled and should not include flags that affect
                 the name of the resulting executable program.
+
             Default value: empty list
+
+            When ValidationError is raised for this field, the error message
+            will be a list containing strings corresponding (in order) to
+            each flag in this field. The strings will contain an error
+            message for their corresponding flag or be empty if their
+            corresponding flag did not cause an error.
 
         files_to_compile_together -- A list of files that need to be
             compiled together. These filenames are restricted to those
@@ -168,6 +183,7 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
             project.expected_student_file_patterns.
             NOTE: When a pattern is part of this list, all student-submitted
                 files matching the pattern will be compiled together.
+
             Default value: empty list
 
         executable_name -- The name of the executable program that should be
@@ -198,7 +214,13 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
     command_line_arguments = ArrayField(
         models.CharField(
             max_length=gc.MAX_CHAR_FIELD_LEN,
-            validators=[_validate_cmd_line_arg]),
+            blank=True  # We are setting this here so that the clean method
+                        # can check for emptiness and throw a more specific
+                        # error. This lets us send ValidationErrors
+                        # to the GUI side in a more convenient format.
+                        # This comment also applies to valgrind_flags and
+                        # compiler_flags.
+            ),
         blank=True, default=[])
 
     standard_input = models.TextField(blank=True)
@@ -207,7 +229,9 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
         default=[], blank=True)
 
-    time_limit = models.IntegerField(default=gc.DEFAULT_SUBPROCESS_TIMEOUT)
+    time_limit = models.IntegerField(
+        default=gc.DEFAULT_SUBPROCESS_TIMEOUT,
+        validators=[MinValueValidator(1)])
 
     expected_return_code = models.IntegerField(
         null=True, default=None, blank=True)
@@ -233,7 +257,8 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
     valgrind_flags = ArrayField(
         models.CharField(
             max_length=gc.MAX_CHAR_FIELD_LEN,
-            validators=[_validate_cmd_line_arg]),
+            blank=True  # See comment for command_line_arguments
+            ),
         null=True, default=None, blank=True)
 
     # Fat interface fields
@@ -279,38 +304,84 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
 
     def clean(self):
         super().clean()
-        # For some reason, passing the _validate_not_null function
-        # to certain array fields as a validator resulted in that
-        # function not being called if blank=True.
-        # As a workaround, such checks have been moved into this function.
-        errors = []
-        if self.command_line_arguments is None:
-            errors.append(ValidationError(
-                {'command_line_arguments': "This field can't be null"}))
 
-        if self.time_limit <= 0:
-            errors.append(ValidationError(
-                {'time_limit': 'This field must be greater than zero'}))
+        errors = {}
 
-        if self.use_valgrind and self.valgrind_flags is None:
-                errors.append(ValidationError(
-                    {'valgrind_flags':
-                     "When using valgrind, valgrind_flags cannot be None"}))
+        if self.name:
+            self.name = self.name.strip()
+
+        if not self.name:
+            errors['name'] = "This field can't be empty"
+
+        cmd_arg_errors = self._clean_cmd_args()
+        if cmd_arg_errors:
+            errors['command_line_arguments'] = cmd_arg_errors
+
+        try:
+            self.time_limit = int(self.time_limit)
+            # if self.time_limit <= 0:
+            #     errors.append(ValidationError(
+            #         {'time_limit': 'This field must be greater than zero'}))
+        except ValueError:
+            errors['time_limit'] = 'This value must be an integer'
+
+        valgrind_flag_errors = self._clean_valgrind_flags()
+        if valgrind_flag_errors:
+            errors['valgrind_flags'] = valgrind_flag_errors
 
         if self.test_resource_files is None:
-            errors.append(ValidationError(
-                {'test_resource_files': "This field can't be null"}))
+            errors['test_resource_files'] = "This field can't be null"
             raise ValidationError(errors)
 
+        resource_file_errors = []
         for filename in self.test_resource_files:
             if not self.project.has_file(filename):
-                errors.append(ValidationError(
-                    {'test_resource_files':
-                     "File {0} does not exist in project {1}".format(
-                         filename, self.project.name)}))
+                resource_file_errors.append(
+                    "File {0} does not exist in project {1}".format(
+                        filename, self.project.name))
+
+        if resource_file_errors:
+            errors['test_resource_files'] = resource_file_errors
 
         if errors:
             raise ValidationError(errors)
+
+    def _clean_cmd_args(self):
+        if self.command_line_arguments is None:
+            return ["This field can't be null"]
+
+        self.command_line_arguments = [
+            arg.strip() for arg in self.command_line_arguments]
+
+        return self._clean_arg_list(self.command_line_arguments)
+
+    def _clean_valgrind_flags(self):
+        if not self.use_valgrind:
+            return None
+
+        if self.valgrind_flags is None:
+            return ["When using valgrind, valgrind_flags cannot be None"]
+
+        self.valgrind_flags = [
+            arg.strip() for arg in self.valgrind_flags]
+
+        return self._clean_arg_list(self.valgrind_flags)
+
+    def _clean_arg_list(self, arg_list):
+        errors = []
+        error_found = False
+        for arg in arg_list:
+            try:
+                _validate_cmd_line_arg(arg)
+                errors.append('')
+            except ValidationError as e:
+                error_found = True
+                errors.append(e.message)
+
+        if error_found:
+            return errors
+
+        return None
 
 
 # -----------------------------------------------------------------------------
