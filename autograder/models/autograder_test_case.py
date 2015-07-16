@@ -268,7 +268,8 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
     compiler_flags = ArrayField(
         models.CharField(
             max_length=gc.MAX_CHAR_FIELD_LEN,
-            validators=[_validate_cmd_line_arg]),
+            blank=True  # See comment for command_line_arguments
+            ),
         default=[], blank=True)
 
     files_to_compile_together = ArrayField(
@@ -276,8 +277,7 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
         default=[], blank=True)
 
     executable_name = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, blank=True,
-        validators=[ut.check_user_provided_filename])
+        max_length=gc.MAX_CHAR_FIELD_LEN, blank=True)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -313,15 +313,12 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
         if not self.name:
             errors['name'] = "This field can't be empty"
 
-        cmd_arg_errors = self._clean_cmd_args()
+        cmd_arg_errors = self._clean_command_line_arguments()
         if cmd_arg_errors:
             errors['command_line_arguments'] = cmd_arg_errors
 
         try:
             self.time_limit = int(self.time_limit)
-            # if self.time_limit <= 0:
-            #     errors.append(ValidationError(
-            #         {'time_limit': 'This field must be greater than zero'}))
         except ValueError:
             errors['time_limit'] = 'This value must be an integer'
 
@@ -329,24 +326,14 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
         if valgrind_flag_errors:
             errors['valgrind_flags'] = valgrind_flag_errors
 
-        if self.test_resource_files is None:
-            errors['test_resource_files'] = "This field can't be null"
-            raise ValidationError(errors)
-
-        resource_file_errors = []
-        for filename in self.test_resource_files:
-            if not self.project.has_file(filename):
-                resource_file_errors.append(
-                    "File {0} does not exist in project {1}".format(
-                        filename, self.project.name))
-
+        resource_file_errors = self._clean_test_resouce_files()
         if resource_file_errors:
             errors['test_resource_files'] = resource_file_errors
 
         if errors:
             raise ValidationError(errors)
 
-    def _clean_cmd_args(self):
+    def _clean_command_line_arguments(self):
         if self.command_line_arguments is None:
             return ["This field can't be null"]
 
@@ -366,6 +353,19 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
             arg.strip() for arg in self.valgrind_flags]
 
         return self._clean_arg_list(self.valgrind_flags)
+
+    def _clean_test_resouce_files(self):
+        if self.test_resource_files is None:
+            return ["This field can't be null"]
+
+        resource_file_errors = []
+        for filename in self.test_resource_files:
+            if not self.project.has_file(filename):
+                resource_file_errors.append(
+                    "File {0} does not exist in project {1}".format(
+                        filename, self.project.name))
+
+        return resource_file_errors
 
     def _clean_arg_list(self, arg_list):
         errors = []
@@ -408,37 +408,62 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     objects = ManagerWithValidateOnCreate()
 
     def clean(self):
-        super().clean()
+        errors = {}
 
-        errors = []
+        try:
+            super().clean()
+        except ValidationError as e:
+            errors = e.message_dict
 
         if self.compiler not in SUPPORTED_COMPILERS:
-            errors.append(ValidationError(
-                {'compiler': 'Unsupported compiler'}))
+            errors['compiler'] = 'Unsupported compiler'
 
-        if not self.files_to_compile_together:
-            errors.append(ValidationError(
-                {'files_to_compile_together':
-                 'at least one file must be specified for compilation'}))
+        compiler_flag_errors = self._clean_compiler_flags()
+        if compiler_flag_errors:
+            errors['compiler_flags'] = compiler_flag_errors
+
+        files_to_compile_errors = self._clean_files_to_compile_together()
+        if files_to_compile_errors:
+            errors['files_to_compile_together'] = files_to_compile_errors
+
+        try:
+            if self.executable_name:
+                self.executable_name = self.executable_name.strip()
+
+            ut.check_user_provided_filename(self.executable_name)
+        except ValidationError as e:
+            errors['executable_name'] = e.message
+
+        if errors:
             raise ValidationError(errors)
 
+    def _clean_compiler_flags(self):
+        if self.compiler_flags is None:
+            return ['This value cannot be null']
+
+        self.compiler_flags = [arg.strip() for arg in self.compiler_flags]
+
+        return self._clean_arg_list(self.compiler_flags)
+
+    def _clean_files_to_compile_together(self):
+        if not self.files_to_compile_together:
+            return ['At least one file must be specified for compilation']
+
+        errors = []
+        patterns = [pattern_obj.pattern for pattern_obj in
+                    self.project.expected_student_file_patterns]
         for filename in self.files_to_compile_together:
-            patterns = (pattern_obj.pattern for pattern_obj in
-                        self.project.expected_student_file_patterns)
             valid_filename = (
-                filename in self.project.project_files.all() or
+                filename in self.project.get_project_file_basenames() or
                 filename in self.project.required_student_files or
                 filename in patterns
             )
 
             if not valid_filename:
-                errors.append(
-                    ValidationError(
-                        {'files_to_compile_together':
-                         'File not found for project'}))
+                errors.append('File {0} not found for project {1}'.format(
+                    filename, self.project.name))
 
-        if errors:
-            raise ValidationError(errors)
+        return errors
 
     # -------------------------------------------------------------------------
 

@@ -379,46 +379,19 @@ class Project(ModelValidatableOnSave):
         """
         return [obj.uploaded_file for obj in self.project_files.all()]
 
+    def get_project_file_basenames(self):
+        """
+        Returns a list of this project's uploaded file basenames.
+        """
+        return [os.path.basename(obj.uploaded_file.name)
+                for obj in self.project_files.all()]
+
     def has_file(self, filename):
         for proj_file in self.project_files.all():
             if filename == os.path.basename(proj_file.uploaded_file.name):
                 return True
 
         return False
-
-    # def add_expected_student_file_pattern(self, pattern,
-    #                                       min_matches, max_matches):
-    #     """
-    #     Adds the given pattern with the specified min and max to the
-    #     list of patterns that student-submitted files can match.
-    #     """
-    #     self.expected_student_file_patterns.add(
-    #         _ExpectedStudentFilePattern.objects.validate_and_create(
-    #             pattern=pattern,
-    #             min_num_matches=min_matches,
-    #             max_num_matches=max_matches,
-    #             project=self))
-
-    # def add_expected_student_file_patterns(self, *pattern_tuples):
-    #     for pattern, min_matches, max_matches in pattern_tuples:
-    #         self.add_expected_student_file_pattern(
-    #             pattern, min_matches, max_matches)
-
-    # def get_expected_student_file_patterns(self):
-    #     """
-    #     Returns a list of named tuples representing patterns that
-    #     student-submitted files can match.
-    #     The tuples contain the following fields:
-    #         pattern
-    #         min_num_matches
-    #         max_num_matches
-    #     See Project.expected_student_file_patterns for more information
-    #     on these fields.
-    #     """
-    #     return [
-    #         Project.FilePatternTuple(
-    #             obj.pattern, obj.min_num_matches, obj.max_num_matches)
-    #         for obj in self.expected_student_file_patterns.all()]
 
 
 # -----------------------------------------------------------------------------
@@ -441,29 +414,3 @@ class _UploadedProjectFile(ModelValidatableOnSave):
     uploaded_file = models.FileField(
         upload_to=_get_project_file_upload_to_dir,
         validators=[_validate_filename])
-
-
-# # TODO: JSONField?
-# class _ExpectedStudentFilePattern(ModelValidatableOnSave):
-#     class Meta:
-#         unique_together = ('project', 'pattern')
-
-#     objects = ManagerWithValidateOnCreate()
-
-#     project = models.ForeignKey(
-#         Project, related_name='expected_student_file_patterns')
-
-#     pattern = models.CharField(
-#         max_length=gc.MAX_CHAR_FIELD_LEN,
-#         validators=[ut.check_shell_style_file_pattern])
-#     min_num_matches = models.IntegerField(validators=[MinValueValidator(0)])
-#     max_num_matches = models.IntegerField(validators=[MinValueValidator(0)])
-
-#     def clean(self):
-#         super().clean()
-
-#         if self.min_num_matches > self.max_num_matches:
-#             raise ValidationError(
-#                 {'min_num_matches':
-#                  ['Minimum number of matches must be less than or equal '
-#                   'to maximum number of matches']})

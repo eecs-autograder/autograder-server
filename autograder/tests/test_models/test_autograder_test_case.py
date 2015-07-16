@@ -437,6 +437,21 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
+    def test_valid_create_custom_values(self):
+        CompiledAutograderTestCase.objects.validate_and_create(
+            name=self.TEST_NAME, project=self.project,
+            **self.compiled_test_kwargs)
+
+        loaded_test = CompiledAutograderTestCase.objects.get(
+            name=self.TEST_NAME, project=self.project)
+
+        self.assertEqual(self.compiler, loaded_test.compiler)
+        self.assertEqual(self.compiler_flags, loaded_test.compiler_flags)
+        self.assertEqual(
+            self.files_to_compile_together,
+            loaded_test.files_to_compile_together)
+        self.assertEqual(self.executable_name, loaded_test.executable_name)
+
     def test_exception_on_empty_compiler(self):
         self.compiled_test_kwargs['compiler'] = ''
 
@@ -478,10 +493,21 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertTrue('compiler_flags' in cm.exception.message_dict)
         error_list = cm.exception.message_dict['compiler_flags']
-        self.assertFalse(error_list[0])
-        self.assertTrue(error_list[-1])
-        self.assertTrue(error_list[-2])
-        self.assertTrue(error_list[-3])
+        self.assertTrue(error_list[0])
+        self.assertTrue(error_list[1])
+        self.assertTrue(error_list[2])
+
+    def test_compiler_flag_whitespace_stripped(self):
+        self.compiled_test_kwargs['compiler_flags'] = [
+            '     spam    ', '   egg  ']
+
+        CompiledAutograderTestCase.objects.validate_and_create(
+            name=self.TEST_NAME, project=self.project,
+            **self.compiled_test_kwargs)
+
+        loaded_test = CompiledAutograderTestCase.objects.get(
+            name=self.TEST_NAME, project=self.project)
+        self.assertEqual(loaded_test.compiler_flags, ['spam', 'egg'])
 
     # -------------------------------------------------------------------------
 
@@ -569,6 +595,41 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
+        self.assertTrue('executable_name' in cm.exception.message_dict)
+
+    def test_executable_name_whitespace_stripped(self):
+        self.compiled_test_kwargs['executable_name'] = "   spam.exe   "
+
+        CompiledAutograderTestCase.objects.validate_and_create(
+            name=self.TEST_NAME, project=self.project,
+            **self.compiled_test_kwargs)
+
+        loaded_test = CompiledAutograderTestCase.objects.get(
+            name=self.TEST_NAME, project=self.project)
+        self.assertEqual(loaded_test.executable_name, 'spam.exe')
+
+    def test_exception_on_executable_name_only_whitespace(self):
+        self.compiled_test_kwargs['executable_name'] = "     "
+
+        with self.assertRaises(ValidationError) as cm:
+            CompiledAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                **self.compiled_test_kwargs)
+
+        self.assertTrue('executable_name' in cm.exception.message_dict)
+
+    # -------------------------------------------------------------------------
+
+    def test_validation_error_contains_base_and_derived_error_messages(self):
+        self.compiled_test_kwargs['executable_name'] = ''
+
+        with self.assertRaises(ValidationError) as cm:
+            CompiledAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                time_limit='spam',
+                **self.compiled_test_kwargs)
+
+        self.assertTrue('time_limit' in cm.exception.message_dict)
         self.assertTrue('executable_name' in cm.exception.message_dict)
 
 
