@@ -2,15 +2,58 @@
 <html>
 <head>
     <title>{{ project.name }}</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="/path/to/jquery.cookie.js"></script>
+
+    <script type="text/javascript">
+    edit_mode = false;
+    function toggle_edit_mode()
+    {
+        console.log($('.edit_mode'));
+        if (edit_mode)
+        {
+            console.log('hide');
+            $(".edit_mode").hide();
+        }
+        else
+        {
+            console.log('show');
+            $(".edit_mode").show();
+        }
+        edit_mode = !edit_mode;
+    }
+
+    $(document).ready(
+        function() { $(".edit_mode").hide(); }
+    );
+    </script>
 </head>
 <body>
 
 <h1>{{ course.name }} - {{ semester.name }} - {{ project.name }}</h1>
 
+<button onclick="toggle_edit_mode();">Edit mode</button>
+
+<span id='eggs' class='edit_mode'>spam</span>
+
+<div>Project files:</div>
+<ul>
+{% for filename in project.get_project_file_basenames %}
+    <li>{{ filename }}</li>
+{% endfor %}
+</ul>
+<form>
+    {% csrf_token %}
+
+</form>
+
 <div>Autograder Test Cases: </div>
+<ul>
 {% for test_case in test_cases %}
     <li>{{ test_case.name }} {# <a href="{% url 'delete-test_case' course.name semester.name project.name test_case.name %}">delete</a> #}</li>
 {% endfor %}
+</ul>
 
+<div>Other settings:</div>
 </body>
 </html>

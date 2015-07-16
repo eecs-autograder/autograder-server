@@ -14,8 +14,6 @@ import autograder.shared.global_constants as gc
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
-# TODO: error lists
-
 
 class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
@@ -56,12 +54,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_test_case.time_limit, 10)
         self.assertIsNone(loaded_test_case.expected_return_code)
         self.assertFalse(loaded_test_case.expect_any_nonzero_return_code)
-        self.assertEqual(
-            loaded_test_case.expected_standard_output,
-            "")
-        self.assertEqual(
-            loaded_test_case.expected_standard_error_output,
-            "")
+        self.assertEqual("", loaded_test_case.expected_standard_output)
+        self.assertEqual("", loaded_test_case.expected_standard_error_output)
         self.assertFalse(loaded_test_case.use_valgrind)
         self.assertIsNone(loaded_test_case.valgrind_flags)
 

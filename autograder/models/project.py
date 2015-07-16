@@ -131,6 +131,10 @@ class Project(ModelValidatableOnSave):
         remove_project_file()
         rename_project_file() TODO?
 
+        get_project_file_basenames()
+        get_project_files()
+        has_file()
+
         add_test_case() TODO (here or in test case?)
         update_test_case() TODO (here or in test case?)
         remove_test_case() TODO (here or in test case?)
@@ -355,22 +359,17 @@ class Project(ModelValidatableOnSave):
         Removes the specified file from the database and filesystem.
 
         Raises FileNotFoundError if no such file exists for this Project.
-
-        Note that atomicity for this operation is handled at the
-        request level.
         """
-        if filename not in self._project_files:
-            raise FileNotFoundError(
-                "File {0} for {1} {2} project {3} does not exist".format(
-                    filename,
-                    self.semester.course.name, self.semester.name,
-                    self.name))
+        for file_obj in self.project_files.all():
+            if file_obj.basename == filename:
+                file_obj.delete()
+                return
 
-        self._project_files.remove(filename)
-        self.save()
-
-        with ut.ChangeDirectory(ut.get_project_files_dir(self)):
-            os.remove(filename)
+        raise FileNotFoundError(
+            "File {0} for {1} {2} project {3} does not exist".format(
+                filename,
+                self.semester.course.name, self.semester.name,
+                self.name))
 
     def get_project_files(self):
         """
@@ -414,3 +413,14 @@ class _UploadedProjectFile(ModelValidatableOnSave):
     uploaded_file = models.FileField(
         upload_to=_get_project_file_upload_to_dir,
         validators=[_validate_filename])
+
+    @property
+    def basename(self):
+        return os.path.basename(self.uploaded_file.name)
+
+    # For whatever reason, the file doesn't get deleted when delete()
+    # is called on one of these instances.
+    def delete(self, *args, **kwargs):
+        self.uploaded_file.delete()
+
+        super().delete(*args, **kwargs)

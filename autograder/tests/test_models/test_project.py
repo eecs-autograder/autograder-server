@@ -632,24 +632,29 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
 #     # -------------------------------------------------------------------------
 
-    # This test can probably be phased out.
     # NOTE: Django's default storage system strips path information from
     # uploaded files
-    # def test_exception_on_add_file_filename_that_is_path(self):
-    #     # This test makes sure that add_project_file() doesn't allow
-    #     # the user to add files in subdirectories (or worse, somewhere else
-    #     # in the filesystem).
-    #     project = Project.objects.validate_and_create(
-    #         name=self.PROJECT_NAME, semester=self.semester)
-    #     with self.assertRaises(ValidationError):
-    #         project.add_project_file(
-    #             SimpleUploadedFile('../spam/egg/cheese.txt', b"haxorz!"))
+    def test_path_info_stripped_from_uploaded_filenames(self):
+        # This test makes sure that add_project_file() doesn't allow
+        # the user to add files in subdirectories (or worse, somewhere else
+        # in the filesystem).
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
 
-    #     with self.assertRaises(ValueError):
-    #         project.add_project_file(
-    #             SimpleUploadedFile('..', "haxorz!"))
+        project.add_project_file(
+            SimpleUploadedFile('../spam/egg/cheese.txt', b"haxorz!"))
 
-    # -------------------------------------------------------------------------
+        expected_name = os.path.join(
+            ut.get_project_files_relative_dir(project), "cheese.txt")
+        self.assertEqual(expected_name, project.get_project_files()[0].name)
+
+    def test_exception_on_add_file_filename_is_dot_dot(self):
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
+
+        with self.assertRaises(ValidationError):
+            project.add_project_file(
+                SimpleUploadedFile('..', b"haxorz!"))
 
     def test_exception_on_filename_that_has_shell_characters(self):
         project = Project.objects.validate_and_create(
@@ -658,16 +663,12 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
             project.add_project_file(
                 SimpleUploadedFile(_FILENAME_WITH_SHELL_CHARS, b"haxorz!"))
 
-    # -------------------------------------------------------------------------
-
     def test_exception_on_filename_that_starts_with_dot(self):
         project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME, semester=self.semester)
         with self.assertRaises(ValidationError):
             project.add_project_file(
                 SimpleUploadedFile('.cheese.txt', b"whoa!"))
-
-    # -------------------------------------------------------------------------
 
     def test_exception_on_empty_filename(self):
         project = Project.objects.validate_and_create(
@@ -678,25 +679,22 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
-    # This test can probably be phased out.
-#     def test_valid_remove_project_file(self):
-#         project = Project.objects.create(
-#             name=self.PROJECT_NAME, semester=self.semester)
-#         project.add_project_file(
-#             self.sample_project_filename, self.sample_project_file_contents)
+    def test_valid_remove_project_file(self):
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        project.add_project_file(self.sample_project_file)
 
-#         with ut.ChangeDirectory(ut.get_project_files_dir(project)):
-#             self.assertTrue(os.path.isfile(self.sample_project_filename))
+        with ut.ChangeDirectory(ut.get_project_files_dir(project)):
+            self.assertTrue(os.path.isfile(self.sample_project_filename))
 
-#         project.remove_project_file(self.sample_project_filename)
-#         with ut.ChangeDirectory(ut.get_project_files_dir(project)):
-#             self.assertFalse(os.path.isfile(self.sample_project_filename))
+        project.remove_project_file(self.sample_project_filename)
+        with ut.ChangeDirectory(ut.get_project_files_dir(project)):
+            self.assertFalse(os.path.isfile(self.sample_project_filename))
 
-#     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
-    # This test can probably be phased out.
-#     def test_exception_on_remove_nonexistant_project_file(self):
-#         project = Project.objects.create(
-#             name=self.PROJECT_NAME, semester=self.semester)
-#         with self.assertRaises(FileNotFoundError):
-#             project.remove_project_file(self.sample_project_filename)
+    def test_exception_on_remove_nonexistant_project_file(self):
+        project = Project.objects.create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(FileNotFoundError):
+            project.remove_project_file(self.sample_project_filename)

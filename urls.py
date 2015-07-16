@@ -45,5 +45,6 @@ urlpatterns = [
 
     url(r'^project/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
         course_views.ProjectView.as_view(),
-        name='project-detail')
+        name='project-detail'),
+
 ]
