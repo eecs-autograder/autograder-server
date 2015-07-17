@@ -8,6 +8,8 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField  # , JSONField
 
+from django.shortcuts import get_object_or_404
+
 from jsonfield import JSONField
 
 from autograder.models.model_utils import (
@@ -133,6 +135,7 @@ class Project(ModelValidatableOnSave):
 
         get_project_file_basenames()
         get_project_files()
+        get_file()
         has_file()
 
         add_test_case() TODO (here or in test case?)
@@ -371,6 +374,14 @@ class Project(ModelValidatableOnSave):
                 self.semester.course.name, self.semester.name,
                 self.name))
 
+    def get_file(self, filename):
+        full_path = os.path.join(
+            ut.get_project_files_relative_dir(self), filename)
+        print(full_path)
+        file_obj = get_object_or_404(
+            _UploadedProjectFile, project=self, uploaded_file=full_path)
+        return file_obj.uploaded_file
+
     def get_project_files(self):
         """
         Returns a list of this project's uploaded files
@@ -421,6 +432,5 @@ class _UploadedProjectFile(ModelValidatableOnSave):
     # For whatever reason, the file doesn't get deleted when delete()
     # is called on one of these instances.
     def delete(self, *args, **kwargs):
-        self.uploaded_file.delete()
-
         super().delete(*args, **kwargs)
+        self.uploaded_file.delete()

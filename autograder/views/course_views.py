@@ -1,3 +1,7 @@
+import os
+import json
+import traceback
+
 from django.views.generic.base import View
 from django.views.generic.edit import CreateView, DeleteView
 
@@ -7,8 +11,8 @@ from django.forms.forms import NON_FIELD_ERRORS
 from django.shortcuts import get_object_or_404, render
 
 from django.template import RequestContext
-from django.core.urlresolvers import reverse_lazy
-from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse_lazy, reverse
+from django.http import HttpResponse, HttpResponseRedirect
 
 from autograder.models import Course, Semester, Project
 
@@ -200,3 +204,92 @@ class ProjectView(View):
             'errors': {},
             'non_field_errors': {}
         }
+
+
+class AddProjectFile(View):
+    def get(self, request, course_name, semester_name, project_name):
+        """
+        Returns a list of available files.
+        """
+        project = _get_project(course_name, semester_name, project_name)
+        files = project.get_project_files()
+
+        response = {'files': []}
+        for field_file in files:
+            name = os.path.basename(field_file.name)
+            response['files'].append({
+                'name': name,
+                'size': field_file.size,
+                'url': reverse('view-project-file',
+                               args=[course_name, semester_name,
+                                     project_name, name]),
+                'deleteUrl': reverse('delete-project-file',
+                                     args=[course_name, semester_name,
+                                           project_name, name]),
+                'deleteType': 'DELETE'
+            })
+
+        return HttpResponse(json.dumps(response), content_type='text/json')
+
+    def post(self, request, course_name, semester_name, project_name):
+        print('hello')
+
+        project = _get_project(course_name, semester_name, project_name)
+        files = dict(request.FILES).get('files')
+
+        print(dict(request.FILES))
+
+        print(type(files))
+        print(files)
+
+        print(type(request.FILES))
+        print(request.FILES)
+
+        response = {'files': []}
+
+        for file_obj in files:
+            print(type(file_obj))
+            print(file_obj)
+            data = {
+                'name': file_obj.name,
+                'size': file_obj.size
+            }
+            try:
+                project.add_project_file(file_obj)
+                url_args = [
+                    course_name, semester_name, project_name, file_obj.name]
+                data['url'] = reverse('view-project-file', args=url_args)
+                data['deleteUrl'] = reverse(
+                    'delete-project-file', args=url_args)
+                data['deleteType'] = 'DELETE'
+            except ValidationError as e:
+                data['error'] = e.message
+
+            response['files'].append(data)
+
+        return HttpResponse(json.dumps(response), content_type='text/json')
+
+
+class ViewProjectFile(View):
+    def get(self, request, course_name, semester_name, project_name, filename):
+        print('hey')
+        print(filename)
+        project = _get_project(course_name, semester_name, project_name)
+        file_obj = project.get_file(filename)
+        file_obj.open()
+
+        # TODO: handle large files
+        return HttpResponse(
+            file_obj.read().decode('utf-8'), content_type='text/plain')
+
+
+class DeleteProjectFile(View):
+    def post(self, request, course_name, semester_name,
+             project_name, filename):
+        print('boo')
+        try:
+            project = _get_project(course_name, semester_name, project_name)
+            project.remove_project_file(filename)
+            return {'files': [{filename: True}]}
+        except Exception:
+            return {'files': [{filename: False}]}

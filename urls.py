@@ -47,4 +47,15 @@ urlpatterns = [
         course_views.ProjectView.as_view(),
         name='project-detail'),
 
+    url(r'^add-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
+        course_views.AddProjectFile.as_view(),
+        name='add-project-file'),
+
+    url(r'^view-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/(?P<filename>.+)/$',
+        course_views.ViewProjectFile.as_view(),
+        name='view-project-file'),
+
+    url(r'^delete-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/(?P<filename>.+)/$',
+        course_views.DeleteProjectFile.as_view(),
+        name='delete-project-file')
 ]

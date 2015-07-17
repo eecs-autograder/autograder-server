@@ -594,6 +594,14 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         with ut.ChangeDirectory(ut.get_project_files_dir(project)):
             self.assertTrue(os.path.isfile(self.sample_project_filename))
 
+        file_retrieved_by_name = project.get_file(self.sample_project_filename)
+        self.assertEqual(
+            file_retrieved_by_name.read(), self.sample_project_file_contents)
+
+        self.assertEqual(
+            project.get_project_file_basenames(),
+            [self.sample_project_filename])
+
     # -------------------------------------------------------------------------
 
     # This test can probably be phased out.
