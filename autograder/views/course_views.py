@@ -14,7 +14,23 @@ from django.template import RequestContext
 from django.core.urlresolvers import reverse_lazy, reverse
 from django.http import HttpResponse, HttpResponseRedirect
 
+# from django.views.decorators.csrf import ensure_csrf_cookie
+# from django.utils.decorators import method_decorator
+
 from autograder.models import Course, Semester, Project
+
+
+class ExceptionLoggingView(View):
+    """
+    View base class that catches any exceptions thrown from dispatch(),
+    prints them to the console, and then rethrows.
+    """
+    def dispatch(self, *args, **kwargs):
+        try:
+            return super().dispatch(*args, **kwargs)
+        except Exception:
+            traceback.print_exc()
+            raise
 
 
 class AllCoursesView(CreateView):
@@ -40,7 +56,7 @@ class DeleteCourse(DeleteView):
     template_name = 'autograder/delete_course.html'
 
 
-class SingleCourseView(View):
+class SingleCourseView(ExceptionLoggingView):
     TEMPLATE_NAME = 'autograder/course_detail.html'
 
     def get(self, request, course_name):
@@ -99,7 +115,7 @@ def _get_semester(course_name, semester_name):
         Semester, name=semester_name, course__name=course_name)
 
 
-class DeleteSemester(View):
+class DeleteSemester(ExceptionLoggingView):
     TEMPLATE_NAME = 'autograder/delete_semester.html'
 
     def get(self, request, course_name, semester_name):
@@ -116,7 +132,7 @@ class DeleteSemester(View):
             reverse_lazy('course-detail', args=[course_name]))
 
 
-class SemesterView(View):
+class SemesterView(ExceptionLoggingView):
     TEMPLATE_NAME = 'autograder/semester_detail.html'
 
     def get(self, request, course_name, semester_name):
@@ -165,7 +181,7 @@ def _get_project(course_name, semester_name, project_name):
         Project, name=project_name, semester=semester)
 
 
-class DeleteProject(View):
+class DeleteProject(ExceptionLoggingView):
     TEMPLATE_NAME = 'autograder/delete_project.html'
 
     def get(self, request, course_name, semester_name, project_name):
@@ -183,7 +199,7 @@ class DeleteProject(View):
             reverse_lazy('semester-detail', args=[course_name, semester_name]))
 
 
-class ProjectView(View):
+class ProjectView(ExceptionLoggingView):
     TEMPLATE_NAME = 'autograder/project_detail.html'
 
     def get(self, request, course_name, semester_name, project_name):
@@ -206,7 +222,11 @@ class ProjectView(View):
         }
 
 
-class AddProjectFile(View):
+class AddProjectFile(ExceptionLoggingView):
+    # @method_decorator(ensure_csrf_cookie)
+    # def dispatch(self, *args, **kwargs):
+    #     return super().dispatch(*args, **kwargs)
+
     def get(self, request, course_name, semester_name, project_name):
         """
         Returns a list of available files.
@@ -226,30 +246,23 @@ class AddProjectFile(View):
                 'deleteUrl': reverse('delete-project-file',
                                      args=[course_name, semester_name,
                                            project_name, name]),
-                'deleteType': 'DELETE'
+                'deleteType': 'POST'
             })
 
         return HttpResponse(json.dumps(response), content_type='text/json')
 
     def post(self, request, course_name, semester_name, project_name):
-        print('hello')
-
         project = _get_project(course_name, semester_name, project_name)
+        # The request.FILES container is a dictionary-like data structure
+        # that is part of django and undocumented. As a workaround until
+        # we figure out how to accomplish the same iteration with that
+        # structure, we can construct a regular dictionary out of it
+        # and then proceed normally.
         files = dict(request.FILES).get('files')
-
-        print(dict(request.FILES))
-
-        print(type(files))
-        print(files)
-
-        print(type(request.FILES))
-        print(request.FILES)
 
         response = {'files': []}
 
         for file_obj in files:
-            print(type(file_obj))
-            print(file_obj)
             data = {
                 'name': file_obj.name,
                 'size': file_obj.size
@@ -261,35 +274,38 @@ class AddProjectFile(View):
                 data['url'] = reverse('view-project-file', args=url_args)
                 data['deleteUrl'] = reverse(
                     'delete-project-file', args=url_args)
-                data['deleteType'] = 'DELETE'
+                data['deleteType'] = 'POST'
             except ValidationError as e:
-                data['error'] = e.message
+                data['error'] = e.message_dict['uploaded_file'][0]
 
             response['files'].append(data)
 
         return HttpResponse(json.dumps(response), content_type='text/json')
 
 
-class ViewProjectFile(View):
+class ViewProjectFile(ExceptionLoggingView):
     def get(self, request, course_name, semester_name, project_name, filename):
-        print('hey')
-        print(filename)
         project = _get_project(course_name, semester_name, project_name)
         file_obj = project.get_file(filename)
         file_obj.open()
 
-        # TODO: handle large files
+        # TODO: send large files in chunks
         return HttpResponse(
             file_obj.read().decode('utf-8'), content_type='text/plain')
 
 
-class DeleteProjectFile(View):
+class DeleteProjectFile(ExceptionLoggingView):
     def post(self, request, course_name, semester_name,
              project_name, filename):
         print('boo')
         try:
             project = _get_project(course_name, semester_name, project_name)
             project.remove_project_file(filename)
-            return {'files': [{filename: True}]}
+            return HttpResponse(
+                json.dumps({'files': [{filename: True}]}),
+                content_type='text/json')
+
         except Exception:
-            return {'files': [{filename: False}]}
+            return HttpResponse(
+                json.dumps({'files': [{filename: False}]}),
+                content_type='text/json')

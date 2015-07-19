@@ -366,6 +366,9 @@ class Project(ModelValidatableOnSave):
         for file_obj in self.project_files.all():
             if file_obj.basename == filename:
                 file_obj.delete()
+
+                with ut.ChangeDirectory(ut.get_project_files_dir(self)):
+                    os.remove(filename)
                 return
 
         raise FileNotFoundError(
@@ -428,9 +431,3 @@ class _UploadedProjectFile(ModelValidatableOnSave):
     @property
     def basename(self):
         return os.path.basename(self.uploaded_file.name)
-
-    # For whatever reason, the file doesn't get deleted when delete()
-    # is called on one of these instances.
-    def delete(self, *args, **kwargs):
-        super().delete(*args, **kwargs)
-        self.uploaded_file.delete()
