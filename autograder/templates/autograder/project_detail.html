@@ -26,6 +26,11 @@
 <noscript><link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-noscript.css' %}"></noscript>
 <noscript><link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-ui-noscript.css' %}"></noscript>
 
+<!-- Datetime input field -->
+<link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css" media="screen"
+      href="http://tarruda.github.com/bootstrap-datetimepicker/assets/css/bootstrap-datetimepicker.min.css">
+
 
     <script type="text/javascript">
         // source: https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/#ajax
@@ -54,11 +59,13 @@
             {
                 console.log('hide');
                 $(".edit_mode").hide();
+                $("#edit_button").html('Edit project settings')
             }
             else
             {
                 console.log('show');
                 $(".edit_mode").show();
+                $("#edit_button").html('Cancel editing')
             }
             edit_mode = !edit_mode;
         }
@@ -70,12 +77,9 @@
 </head>
 <body>
 
-<h1>{{ course.name }} - {{ semester.name }} - {{ project.name }}</h1>
-
-<button onclick="toggle_edit_mode();">Edit mode</button>
-
-<span id='eggs' class='edit_mode'>spam</span>
-
+<div class='container'>
+    <h1>{{ course.name }} - {{ semester.name }} - {{ project.name }}</h1>
+</div>
 
 
 
@@ -243,6 +247,15 @@
 <!-- The main application script -->
 <!--<script src="{% static 'autograder/file-upload/js/main.js' %}"></script>-->
 
+<!--<script src="{% static 'autograder/datetime-widget/js/bootstrap-datetimepicker.min.js' %}"></script>-->
+
+    <script type="text/javascript"
+     src="http://tarruda.github.com/bootstrap-datetimepicker/assets/js/bootstrap-datetimepicker.min.js">
+    </script>
+    <script type="text/javascript"
+     src="http://tarruda.github.com/bootstrap-datetimepicker/assets/js/bootstrap-datetimepicker.pt-BR.js">
+    </script>
+
 <script type="text/javascript">
 $(function () {
     'use strict';
@@ -299,16 +312,72 @@ $(function () {
 
 
 
+<div class='container'>
+    <div>Autograder Test Cases: </div>
+    <ul>
+    {% for test_case in test_cases %}
+        <li>{{ test_case.name }} {# <a href="{% url 'delete-test_case' course.name semester.name project.name test_case.name %}">delete</a> #}</li>
+    {% endfor %}
+    </ul>
+</div>
 
-<div>Autograder Test Cases: </div>
-<ul>
-{% for test_case in test_cases %}
-    <li>{{ test_case.name }} {# <a href="{% url 'delete-test_case' course.name semester.name project.name test_case.name %}">delete</a> #}</li>
-{% endfor %}
-</ul>
+<div class='container'>
+    <div>Other settings:</div>
+    <button id='edit_button' onclick="toggle_edit_mode();">Edit project settings</button>
 
-<div>Other settings:</div>
+    <span id='eggs' class='edit_mode'>spam</span>
 
+    <form method='post' action="{% url 'project-detail' course.name semester.name project.name %}">
+        {% csrf_token %}
+        <span>Visible to students: {{ project.visible_to_students }}</span>
+            <input type="checkbox" name="visible_to_students" value="true" {% if project.visible_to_students %}checked{% endif %}><br>
+        <span>Closing time: {{ project.closing_time }}</span>
+        <span id="datetimepicker" class="input-append">
+            <input data-format="MM/dd/yyyy HH:mm:ss PP" type="text" name='closing_time'></input>
+            <span class="add-on">
+              <i data-time-icon="icon-time" data-date-icon="icon-calendar">
+              </i>
+            </span>
+        </span><br>
 
+        <script type="text/javascript">
+          $(function() {
+            $('#datetimepicker').datetimepicker({
+              language: 'en',
+              pick12HourFormat: true
+            });
+          });
+        </script>
+
+        <span>Disallow student submissions (hard override): {{ project.disallow_student_submissions }} </span>
+            <input type="checkbox" name="disallow_student_submissions" value="true" {% if project.disallow_student_submissions %}checked{% endif %}><br>
+        <span>Minimum group size: {{ project.min_group_size }}</span>
+            <input type='text' name='minimum_group_size' value='{{ project.min_group_size }}'><br>
+        <span>Maximum group size: {{ project.max_group_size }}</span>
+            <input type='text' name='maximum_group_size' value='{{ project.max_group_size }}'><br>
+        <div id='req_stud_files'><div>Required student files:</div>
+            {% for filename in project.required_student_files %}
+            <div>{{ filename }}</div><input type='text' name='required_student_files' value='{{ filename }}'><br>
+            {% endfor %}
+        </div>
+        <button type='button' onclick="$('#req_stud_files').append('<input type=\'text\' name=\'required_student_files\' value=\'\'><br>')">Add</button><br>
+
+        <div id='expected_patterns'><div>Expected student file patterns:</div>
+            {% for pat_obj in project.expected_student_file_patterns %}
+            <span>Pattern: {{ pat_obj.pattern}}</span><input type='text' name='patterns' value='{{ pat_obj.pattern }}'><br>
+            <span>Minimum number of matches: {{ pat_obj.min_num_matches }}</span><input type='text' name='pattern_mins' value='{{ pat_obj.min_num_matches }}'><br>
+            <span>Maximum number of matches: {{ pat_obj.max_num_matches }}</span><input type='text' name='pattern_maxes' value='{{ pat_obj.max_num_matches }}'><br>
+            <br>
+            {% endfor %}
+        </div>
+        <button type='button' onclick="$('#expected_patterns').append('<span>Pattern: </span><input type=\'text\' name=\'patterns\' value=\'\'><br><span>Minimum number of matches: </spam><input type=\'text\' name=\'pattern_mins\' value=\'\'><br><span>Maximum number of matches: </span><input type=\'text\' name=\'pattern_maxes\' value=\'\'><br>')">Add</button><br>
+
+        <input type='submit' value='Save changes'>
+    </form>
+</div>
+
+<!--{#         {% for filename in project.get_project_file_basenames %} #}
+{# <input type='checkbox' name='required_student_files' value='{{ filename }}'> {{ filename }}</input><br> #}
+        {# {% endfor %} #}-->
 </body>
 </html>

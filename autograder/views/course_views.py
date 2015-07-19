@@ -1,6 +1,9 @@
 import os
 import json
 import traceback
+# import datetime
+
+from django.utils import timezone
 
 from django.views.generic.base import View
 from django.views.generic.edit import CreateView, DeleteView
@@ -191,7 +194,6 @@ class DeleteProject(ExceptionLoggingView):
             RequestContext(request, {'project': project}))
 
     def post(self, request, course_name, semester_name, project_name):
-        # TODO: csrf
         project = _get_project(course_name, semester_name, project_name)
         print(project.name)
         project.delete()
@@ -207,11 +209,56 @@ class ProjectView(ExceptionLoggingView):
             request, ProjectView.TEMPLATE_NAME,
             self.get_context_starter(course_name, semester_name, project_name))
 
-    # def post(self, request, course_name, semester_name, project_name):
-    #     pass
+    def post(self, request, course_name, semester_name, project_name):
+        print('blech')
+        print(request.POST)
+        project = _get_project(course_name, semester_name, project_name)
+
+        project.visible_to_students = 'visible_to_students' in request.POST
+
+        if request.POST['closing_time']:
+            project.closing_time = timezone.datetime.strptime(
+                request.POST['closing_time'], '%m/%d/%Y %I:%M:%S %p')
+
+        project.disallow_student_submissions = (
+            'disallow_student_submissions' in request.POST)
+
+        project.minimum_group_size = request.POST['minimum_group_size']
+        project.maximum_group_size = request.POST['maximum_group_size']
+
+        req_files = request.POST.getlist('required_student_files', [])
+        # Filter out empty strings
+        req_files = [item for item in req_files if item]
+        project.required_student_files = req_files
+
+        patterns = list(zip(
+            request.POST.getlist('patterns', []),
+            request.POST.getlist('pattern_mins', []),
+            request.POST.getlist('pattern_maxes', [])))
+        # Filter out empty patterns
+        patterns = [pat for pat in patterns if pat[0]]
+        project.expected_student_file_patterns = patterns
+
+        try:
+            project.validate_and_save()
+            success_url = reverse_lazy(
+                'project-detail',
+                args=[course_name, semester_name, project_name])
+            return HttpResponseRedirect(success_url)
+        except ValidationError as e:
+            print(e.message_dict)
+            context = self.get_context_starter(
+                course_name, semester_name, project_name)
+            context['errors'] = e.message_dict
+            context['non_field_errors'] = e.message_dict.get(
+                NON_FIELD_ERRORS, {})
+            return render(request,
+                          ProjectView.TEMPLATE_NAME,
+                          RequestContext(request, context))
 
     def get_context_starter(self, course_name, semester_name, project_name):
         project = _get_project(course_name, semester_name, project_name)
+        print(project.closing_time)
         return {
             'course': project.semester.course,
             'semester': project.semester,
@@ -258,7 +305,7 @@ class AddProjectFile(ExceptionLoggingView):
         # we figure out how to accomplish the same iteration with that
         # structure, we can construct a regular dictionary out of it
         # and then proceed normally.
-        files = dict(request.FILES).get('files')
+        files = request.FILES.getlist('files')
 
         response = {'files': []}
 

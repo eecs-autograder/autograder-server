@@ -54,6 +54,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
 
     def test_valid_create_non_defaults(self):
         tomorrow_date = timezone.now() + datetime.timedelta(days=1)
+        print(tomorrow_date)
         min_group_size = 2
         max_group_size = 5
         required_student_files = ["spam.cpp", "eggs.cpp"]
