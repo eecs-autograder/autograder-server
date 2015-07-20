@@ -314,11 +314,83 @@ $(function () {
 
 <div class='container'>
     <div>Autograder Test Cases: </div>
-    <ul>
-    {% for test_case in test_cases %}
-        <li>{{ test_case.name }} {# <a href="{% url 'delete-test_case' course.name semester.name project.name test_case.name %}">delete</a> #}</li>
+    <ul id='current_tests'>
+    {% for test_case in autograder_test_cases %}
+        <li>
+            <div>Test name: {{ test_case.name }}</div> {# <a href="{% url 'delete-test_case' course.name semester.name project.name test_case.name %}">delete</a> #}
+            <div>Command line arguments: {% for arg in test_case.command_line_arguments %}<span>{{ arg }} </span>{% endfor %}</div>
+            <div>Standard input stream content: {{ test_case.standard_input }}</div>
+            <div>Test resource files: {{ test_case.test_resource_files }}</div>
+            <div>Time limit: {{ test_case.time_limit }}</div>
+            <div>Expected return code: {{ test_case.expected_return_code }}</div>
+            <div>Expect any nonzero return code: {{ test_case.expect_any_nonzero_return_code }}</div>
+            <div>Expected standard output stream content: {{ test_case.expected_standard_output }}</div>
+            <div>Expected standard error stream content: {{ expected_standard_error_output }}</div>
+            <div>Use valgrind: {{ test_case.use_valgrind }}</div>
+            <div>Valgrind flags: {% for flag in test_case.valgrind_flags %}<span>{{ flag }}</span>{% endfor %}</div>
+            <div>Compiler: {{ test_case.compiler }}</div>
+            <div>Compiler flags: {% for flag in test_case.compiler_flags %}<span>{{ flag }}</span>{% endfor %}</div>
+            <div>Files to compile together: {% for file in test_case.files_to_compile_together %}<span>{{ file }}</span>{% endfor %}</div>
+            <div>Executable name: {{ test_case.executable_name }}</div>
+        </li>
     {% endfor %}
     </ul>
+
+    <button type='button'>Add an autograder test</button>
+
+    <form id='add-or-update-test-form' method='post' action='{% url "add-or-update-test" course.name semester.name project.name %}'>
+        {% csrf_token %}
+        <div>Test case name: <input type='text' name='test_name'></input></div>
+
+        <div>Command line arguments: <input type='text' name='command_line_arguments'></div>
+        <div>Standard input stream content: <textarea name='standard_input'></textarea></div>
+        <div>
+            Test resource files: <br>
+            {% for filename in project.get_project_file_basenames %}
+            <input type='checkbox' name='test_resource_files' value='{{ filename }}'> {{ filename }}</input><br>
+            {% endfor %}        </div>
+        <div>Time limit: <input type='text' name='time_limit'></div>
+        <div>Expected return code: <input type='text' name='expected_return_code'></div>
+        <div>Expect any nonzero return code: <input type='checkbox' name='expect_any_nonzero_return_code' value='true'></div>
+        <div>Expected standard output stream content: <textarea name='expected_standard_output'></textarea></div>
+        <div>Expected standard error stream content: <textarea name='expected_standard_error_output'></textarea></div>
+        <div>Use valgrind: <input type='checkbox' name='valgrind_flags' value='true'></div>
+        <div>Valgrind flags: <input type='text' name='valgrind_flags'></div>
+        <div>Use default valgrind flags: <input type='checkbox' name='use_default_valgrind_flags' value='true' checked></input></div>
+        <div>Compiler: <input type='text' name='compiler'></div>
+        <div>Compiler flags: <input type='text' name='compiler_flags'></div>
+        <div>
+            Files to compile together: <br>
+            {% for filename in project.get_project_file_basenames %}
+            <input type='checkbox' name='files_to_compile_together' value='{{ filename }}'> {{ filename }}</input><br>
+            {% endfor %}
+            {% for filename in project.required_student_files %}
+            <input type='checkbox' name='files_to_compile_together' value='{{ filename }}'> {{ filename }}</input><br>
+            {% endfor %}
+            {% for pattern_obj in project.expected_student_file_patterns %}
+            <input type='checkbox' name='files_to_compile_together' value='{{ pattern_obj.pattern }}'> {{ pattern_obj.pattern }}</input><br>
+            {% endfor %}
+        </div>
+        <div>Executable name: <input type='text' name='executable_name'></div>
+        <input type='submit' value='Save'>
+    </form>
+
+    <!--<script type="text/javascript">
+    $('#add-or-update-test-form').submit(function(event) {
+        event.preventDefault();
+        // var form_data = {
+        //     'test_name': $('input[name=test_name]').val()
+        // };
+        $.post(
+            '{% url "add-or-update-test" course.name semester.name project.name %}',
+            $('#add-or-update-test-form').serialize()
+        ).done(function(data) {
+            data = $.parseJSON(data)
+            var list_item = $('<li></li>').text(data['test_name']);
+            $('#current_tests').append(list_item);
+        });
+    });
+    </script>-->
 </div>
 
 <div class='container'>
@@ -352,9 +424,9 @@ $(function () {
         <span>Disallow student submissions (hard override): {{ project.disallow_student_submissions }} </span>
             <input type="checkbox" name="disallow_student_submissions" value="true" {% if project.disallow_student_submissions %}checked{% endif %}><br>
         <span>Minimum group size: {{ project.min_group_size }}</span>
-            <input type='text' name='minimum_group_size' value='{{ project.min_group_size }}'><br>
+            <input type='text' name='min_group_size' value='{{ project.min_group_size }}'><br>
         <span>Maximum group size: {{ project.max_group_size }}</span>
-            <input type='text' name='maximum_group_size' value='{{ project.max_group_size }}'><br>
+            <input type='text' name='max_group_size' value='{{ project.max_group_size }}'><br>
         <div id='req_stud_files'><div>Required student files:</div>
             {% for filename in project.required_student_files %}
             <div>{{ filename }}</div><input type='text' name='required_student_files' value='{{ filename }}'><br>

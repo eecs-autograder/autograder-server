@@ -261,30 +261,40 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
                 test_resource_files=None)
 
     def test_exception_on_test_resource_files_has_nonexistant_file(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 test_resource_files=['no_file.txt'])
 
+        self.assertTrue('test_resource_files' in cm.exception.message_dict)
+        error_list = cm.exception.message_dict['test_resource_files']
+        self.assertTrue(error_list[0])
+
     # -------------------------------------------------------------------------
 
     def test_exception_on_zero_time_limit(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=0)
 
+        self.assertTrue('time_limit' in cm.exception.message_dict)
+
     def test_exception_on_negative_time_limit(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=-1)
 
+        self.assertTrue('time_limit' in cm.exception.message_dict)
+
     def test_exception_on_time_limit_not_integer(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit='spam')
+
+        self.assertTrue('time_limit' in cm.exception.message_dict)
 
     def test_no_exception_on_time_limit_is_parseable_int(self):
         AutograderTestCaseBase.objects.validate_and_create(
@@ -308,10 +318,12 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(loaded_test_case.expect_any_nonzero_return_code)
 
     def test_exception_on_expected_return_code_not_integer(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 expected_return_code='spam')
+
+        self.assertTrue('expected_return_code' in cm.exception.message_dict)
 
     def test_no_exception_on_expected_return_code_is_parseable_int(self):
         AutograderTestCaseBase.objects.validate_and_create(

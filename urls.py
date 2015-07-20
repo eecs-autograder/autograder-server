@@ -59,5 +59,9 @@ urlpatterns = [
 
     url(r'^delete-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/(?P<filename>.+)/$',
         course_views.DeleteProjectFile.as_view(),
-        name='delete-project-file')
+        name='delete-project-file'),
+
+    url(r'^add-or-update-test/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
+        course_views.AddOrUpdateAutograderTest.as_view(),
+        name='add-or-update-test')
 ]

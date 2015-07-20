@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.views.generic.base import View
 from django.views.generic.edit import CreateView, DeleteView
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.forms.forms import NON_FIELD_ERRORS
 
 from django.shortcuts import get_object_or_404, render
@@ -20,7 +20,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 # from django.views.decorators.csrf import ensure_csrf_cookie
 # from django.utils.decorators import method_decorator
 
-from autograder.models import Course, Semester, Project
+from autograder.models import (
+    Course, Semester, Project, CompiledAutograderTestCase)
 
 
 class ExceptionLoggingView(View):
@@ -223,8 +224,8 @@ class ProjectView(ExceptionLoggingView):
         project.disallow_student_submissions = (
             'disallow_student_submissions' in request.POST)
 
-        project.minimum_group_size = request.POST['minimum_group_size']
-        project.maximum_group_size = request.POST['maximum_group_size']
+        project.min_group_size = request.POST['min_group_size']
+        project.max_group_size = request.POST['max_group_size']
 
         req_files = request.POST.getlist('required_student_files', [])
         # Filter out empty strings
@@ -356,3 +357,105 @@ class DeleteProjectFile(ExceptionLoggingView):
             return HttpResponse(
                 json.dumps({'files': [{filename: False}]}),
                 content_type='text/json')
+
+# -----------------------------------------------------------------------------
+
+
+class AddOrUpdateAutograderTest(ExceptionLoggingView):
+    def post(self, request, course_name, semester_name, project_name):
+        print(request.POST)
+
+        project = _get_project(course_name, semester_name, project_name)
+
+        name = request.POST['test_name']
+
+        test_case = None
+        try:
+            test_case = CompiledAutograderTestCase.objects.get(
+                name=name, project=project)
+        except ObjectDoesNotExist:
+            test_case = CompiledAutograderTestCase(
+                name=name, project=project)
+
+        cmd_args = request.POST.getlist('command_line_arguments', [])
+        cmd_args = [arg for arg in cmd_args if arg]
+        test_case.command_line_arguments = cmd_args
+
+        test_case.standard_input = request.POST['standard_input']
+        test_case.test_resource_files = request.POST.getlist(
+            'test_resource_files', [])
+
+        time_limit = request.POST['time_limit']
+        if time_limit:
+            test_case.time_limit = time_limit
+
+        expected_ret_code = request.POST['expected_return_code']
+        if expected_ret_code:
+            test_case.expected_return_code = expected_ret_code
+
+        test_case.expect_any_nonzero_return_code = (
+            'expect_any_nonzero_return_code' in request.POST)
+        test_case.expected_standard_output = (
+            request.POST['expected_standard_output'])
+        test_case.expected_standard_error_output = (
+            request.POST['expected_standard_error_output'])
+
+        test_case.use_valgrind = 'use_valgrind' in request.POST
+        use_valgrind_defaults = 'use_default_valgrind_flags' in request.POST
+
+        if use_valgrind_defaults:
+            test_case.valgrind_flags = None
+        else:
+            flags = request.POST.getlist('valgrind_flags')
+            test_case.valgrind_flags = [flag for flag in flags if flag]
+
+        test_case.compiler = request.POST['compiler']
+
+        compiler_flags = request.POST.getlist('compiler_flags')
+        test_case.compiler_flags = [flag for flag in compiler_flags if flag]
+
+        test_case.files_to_compile_together = request.POST.getlist(
+            'files_to_compile_together')
+        test_case.executable_name = request.POST['executable_name']
+
+        try:
+            test_case.validate_and_save()
+            success_url = reverse_lazy(
+                'project-detail',
+                args=[course_name, semester_name, project_name])
+            return HttpResponseRedirect(success_url)
+        except ValidationError as e:
+            print(e.message_dict)
+
+            context = self.get_context_starter(
+                course_name, semester_name, project_name)
+            context['errors'] = e.message_dict
+            context['non_field_errors'] = e.message_dict.get(
+                NON_FIELD_ERRORS, {})
+            return render(request,
+                          ProjectView.TEMPLATE_NAME,
+                          RequestContext(request, context))
+
+    def get_context_starter(self, course_name, semester_name, project_name):
+        project = _get_project(course_name, semester_name, project_name)
+        print(project.closing_time)
+        return {
+            'course': project.semester.course,
+            'semester': project.semester,
+            'project': project,
+            'autograder_test_cases': project.autograder_test_cases.all(),
+            'errors': {},
+            'non_field_errors': {}
+        }
+
+
+
+
+
+
+
+
+
+
+
+

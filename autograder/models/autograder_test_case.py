@@ -194,7 +194,7 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
 
         interpreter -- TODO
         interpreter_flags -- TODO
-        entry_point_file -- TODOs
+        entry_point_file -- TODO
 
     Abstract methods:
         run()
@@ -316,11 +316,6 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
         cmd_arg_errors = self._clean_command_line_arguments()
         if cmd_arg_errors:
             errors['command_line_arguments'] = cmd_arg_errors
-
-        try:
-            self.time_limit = int(self.time_limit)
-        except ValueError:
-            errors['time_limit'] = 'This value must be an integer'
 
         valgrind_flag_errors = self._clean_valgrind_flags()
         if valgrind_flag_errors:
