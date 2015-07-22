@@ -448,7 +448,10 @@ class AddOrUpdateAutograderTest(ExceptionLoggingView):
             'non_field_errors': {}
         }
 
+# -----------------------------------------------------------------------------
 
+
+class SubmissionList(ExceptionLoggingView):
 
 
 

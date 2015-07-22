@@ -55,13 +55,6 @@ class Submission(ModelValidatableOnSave):
             conform to the requirements of the Project that submission_group
             belongs to.
 
-        ignore_extra_files -- When this field is true, any extra files
-            submitted that aren't required or expected will be ignored
-            and the submission will be processed normally.
-            When this field is true, the presence of such files will
-            be treated as an error.
-            Default value: True
-
         timestamp -- The timestamp at which this Submission was
             recorded.
             This field is given a value automatically and cannot be
@@ -91,7 +84,7 @@ class Submission(ModelValidatableOnSave):
     def timestamp(self):
         return self._timestamp
 
-    _timestamp = models.DateTimeField(auto_now_add=True)
+    _timestamp = models.DateTimeField(auto_now_add=True, editable=False)
 
     # -------------------------------------------------------------------------
 
@@ -108,7 +101,7 @@ class Submission(ModelValidatableOnSave):
     def clean(self):
         super().clean()
 
-        errors = []
+        errors = {}
         submitted_filenames = [
             os.path.basename(file_obj.name) for
             file_obj in self.get_submitted_files()
@@ -121,27 +114,23 @@ class Submission(ModelValidatableOnSave):
             found = ut.count_if(
                 submitted_filenames, lambda name: name == req_file)
             if not found:
-                errors.append(ValidationError(
-                    {'submitted_files': 'Missing file: {}'.format(req_file)}))
+                errors['submitted_files'] = 'Missing file: {}'.format(req_file)
 
         for pattern, min_num, max_num in expected_patterns:
             count = len(fnmatch.filter(submitted_filenames, pattern))
             if count < min_num:
-                errors.append(ValidationError(
-                    {'submitted_files':
-                     'Not enough files matching the pattern: ' + pattern}))
+                errors['submitted_files'] = (
+                    'Not enough files matching the pattern: ' + pattern)
 
             if count > max_num:
-                errors.append(ValidationError(
-                    {'submitted_files':
-                     'Too many files matching the pattern: ' + pattern}))
+                errors['submitted_files'] = (
+                    'Too many files matching the pattern: ' + pattern)
 
         for filename in submitted_filenames:
             duplicated = ut.count_if(
                 submitted_filenames, lambda name: name == filename) > 1
             if duplicated:
-                errors.append(ValidationError(
-                    {'submitted_files': 'Duplicate file: ' + filename}))
+                errors['submitted_files'] = 'Duplicate file: ' + filename
 
             matches_any_pattern = ut.count_if(
                 expected_patterns,
@@ -150,10 +139,8 @@ class Submission(ModelValidatableOnSave):
             is_extra_file = (
                 filename not in required_filenames and
                 not matches_any_pattern)
-            if is_extra_file and not self.ignore_extra_files:
-                errors.append(ValidationError(
-                    {'submitted_files':
-                     'Extra file submitted: ' + filename}))
+            if is_extra_file:
+                errors['submitted_files'] = 'Extra file submitted: ' + filename
 
         if errors:
             raise ValidationError(errors)

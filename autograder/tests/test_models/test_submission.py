@@ -82,21 +82,25 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(submit_file_data[index].content, value.read())
 
     def test_exception_on_submission_missing_files(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as cm:
             Submission.objects.validate_and_create(
                 submission_group=self.submission_group,
                 submitted_files=[
                     SimpleUploadedFile('eggs.cpp', b'merp'),
                     SimpleUploadedFile('test_spam.cpp', b'cheeese')])
 
-        with self.assertRaises(ValidationError):
+        self.assertTrue('submitted_files' in cm.exception.message_dict)
+
+        with self.assertRaises(ValidationError) as cm:
             Submission.objects.validate_and_create(
                 submission_group=self.submission_group,
                 submitted_files=[
                     SimpleUploadedFile('spam.cpp', b'blah'),
                     SimpleUploadedFile('eggs.cpp', b'merp')])
 
-    def test_exception_on_extra_file_no_ignore(self):
+        self.assertTrue('submitted_files' in cm.exception.message_dict)
+
+    def test_exception_on_extra_file(self):
         with self.assertRaises(ValidationError):
             Submission.objects.validate_and_create(
                 submission_group=self.submission_group,
@@ -106,15 +110,6 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
                     SimpleUploadedFile('eggs.cpp', b'merp'),
                     SimpleUploadedFile('test_spam.cpp', b'cheeese'),
                     SimpleUploadedFile('extra.cpp', b'toomuch')])
-
-    def test_no_exception_on_extra_file_with_ignore(self):
-        Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
-            submitted_files=[
-                SimpleUploadedFile('spam.cpp', b'blah'),
-                SimpleUploadedFile('eggs.cpp', b'merp'),
-                SimpleUploadedFile('test_spam.cpp', b'cheeese'),
-                SimpleUploadedFile('extra.cpp', b'toomuch')])
 
     def test_exception_on_submit_same_file_twice(self):
         with self.assertRaises(ValidationError):

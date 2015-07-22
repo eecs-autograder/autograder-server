@@ -16,52 +16,56 @@ Including another URLconf
 from django.conf.urls import include, url
 from django.contrib import admin
 
-from autograder.views import course_views
+from autograder import views
 
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
 
-    url(r'^courses/$', course_views.AllCoursesView.as_view(),
+    url(r'^courses/$', views.AllCoursesView.as_view(),
         name='course-list'),
 
     url(r'^courses/(?P<course_name>.+)/$',
-        course_views.SingleCourseView.as_view(),
+        views.SingleCourseView.as_view(),
         name='course-detail'),
 
     url(r'^delete-course/(?P<pk>.+)/$',
-        course_views.DeleteCourse.as_view(),
+        views.DeleteCourse.as_view(),
         name='delete-course'),
 
     url(r'^delete-semester/(?P<course_name>.+)/(?P<semester_name>.+)/$',
-        course_views.DeleteSemester.as_view(),
+        views.DeleteSemester.as_view(),
         name='delete-semester'),
 
     url(r'^semester/(?P<course_name>.+)/(?P<semester_name>.+)/$',
-        course_views.SemesterView.as_view(),
+        views.SemesterView.as_view(),
         name='semester-detail'),
 
     url(r'^delete-project/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
-        course_views.DeleteProject.as_view(),
+        views.DeleteProject.as_view(),
         name='delete-project'),
 
     url(r'^project/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
-        course_views.ProjectView.as_view(),
+        views.ProjectView.as_view(),
         name='project-detail'),
 
     url(r'^add-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
-        course_views.AddProjectFile.as_view(),
+        views.AddProjectFile.as_view(),
         name='add-project-file'),
 
     url(r'^view-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/(?P<filename>.+)/$',
-        course_views.ViewProjectFile.as_view(),
+        views.ViewProjectFile.as_view(),
         name='view-project-file'),
 
     url(r'^delete-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/(?P<filename>.+)/$',
-        course_views.DeleteProjectFile.as_view(),
+        views.DeleteProjectFile.as_view(),
         name='delete-project-file'),
 
     url(r'^add-or-update-test/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
-        course_views.AddOrUpdateAutograderTest.as_view(),
-        name='add-or-update-test')
+        views.AddOrUpdateAutograderTest.as_view(),
+        name='add-or-update-test'),
+
+    url(r'^view-submissions/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
+        views.SubmissionList.as_view(),
+        name='view-submissions')
 ]

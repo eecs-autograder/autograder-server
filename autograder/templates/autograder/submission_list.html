@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Project</title>
+</head>
+<body>
+
+<div>
+    Submissions:
+    <ul>
+    {% for submission in submissions %}
+        <li>submission.timestamp</li>
+    {% endfor %}
+    </ul>
+
+</div>
+
+<form id='submit_project_form' method='post'>
+
+</form>
+
+</body>
+</html>

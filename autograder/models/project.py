@@ -353,10 +353,6 @@ class Project(ModelValidatableOnSave):
             _UploadedProjectFile.objects.validate_and_create(
                 uploaded_file=uploaded_file, project=self.project))
 
-    def add_project_files(self, *uploaded_files):
-        for uploaded_file in uploaded_files:
-            self.add_project_file(uploaded_file)
-
     def remove_project_file(self, filename):
         """
         Removes the specified file from the database and filesystem.

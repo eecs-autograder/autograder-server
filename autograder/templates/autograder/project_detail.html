@@ -348,7 +348,8 @@ $(function () {
             Test resource files: <br>
             {% for filename in project.get_project_file_basenames %}
             <input type='checkbox' name='test_resource_files' value='{{ filename }}'> {{ filename }}</input><br>
-            {% endfor %}        </div>
+            {% endfor %}
+        </div>
         <div>Time limit: <input type='text' name='time_limit'></div>
         <div>Expected return code: <input type='text' name='expected_return_code'></div>
         <div>Expect any nonzero return code: <input type='checkbox' name='expect_any_nonzero_return_code' value='true'></div>

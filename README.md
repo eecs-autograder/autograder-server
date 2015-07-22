@@ -6,4 +6,4 @@ Dependencies and requirements:
 - postgres 9.4.0
 # Installed with pip:
 - pytz
-- django-jsonfield (will be removed once django 1.9 becomes stable)
+- django-jsonfield # (will be removed once django 1.9 becomes stable)

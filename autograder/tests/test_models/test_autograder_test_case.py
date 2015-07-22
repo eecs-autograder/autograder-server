@@ -419,7 +419,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             SimpleUploadedFile('sausage.cpp', b'spam egg sausage and spam')
         ]
 
-        self.project.add_project_files(*self.project_files)
+        for file_obj in self.project_files:
+            self.project.add_project_file(file_obj)
 
         self.TEST_NAME = 'my_test'
 
