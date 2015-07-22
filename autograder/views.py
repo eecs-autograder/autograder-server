@@ -452,6 +452,13 @@ class AddOrUpdateAutograderTest(ExceptionLoggingView):
 
 
 class SubmissionList(ExceptionLoggingView):
+    def get(self, request, course_name, semester_name, project_name):
+        """
+        For students, shows a list of submissions for the given project.
+        Staff members can view such a list for any student.
+        """
+        project = _get_project(course_name, semester_name, project_name)
+
 
 
 
