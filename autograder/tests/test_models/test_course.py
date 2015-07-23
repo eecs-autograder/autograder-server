@@ -64,7 +64,8 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
     def test_valid_add_course_admin(self):
         self.course.add_course_admin(self.user)
 
-        self.assertTrue(self.course.is_course_admin(self.user))
+        loaded = Course.objects.get(name=self.course.name)
+        self.assertTrue(loaded.is_course_admin(self.user))
 
     def test_exception_on_duplicate_add_course_admin(self):
         self.course.add_course_admin(self.user)
@@ -74,9 +75,12 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
 
     def test_valid_remove_course_admin(self):
         self.course.add_course_admin(self.user)
+        self.assertTrue(self.course.is_course_admin(self.user))
+
         self.course.remove_course_admin(self.user)
 
-        self.assertFalse(self.course.is_course_admin(self.user))
+        loaded = Course.objects.get(name=self.course.name)
+        self.assertFalse(loaded.is_course_admin(self.user))
 
     def test_exception_on_remove_non_course_admin_user(self):
         with self.assertRaises(ValidationError):
@@ -85,7 +89,6 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
     def test_is_course_admin(self):
         self.assertFalse(self.course.is_course_admin(self.user))
         self.course.add_course_admin(self.user)
-
         self.assertTrue(self.course.is_course_admin(self.user))
 
     def test_get_courses_for_user(self):

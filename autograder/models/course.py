@@ -1,5 +1,6 @@
 import os
 import shutil
+import copy
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -64,8 +65,8 @@ class Course(ModelValidatableOnSave):
 
     def add_course_admin(self, user):
         """
-        Adds the given user to this Course's list of administrators.
-        Raises ValidationError if the user is already an administrator
+        Adds the given User to this Course's list of administrators.
+        Raises ValidationError if the User is already an administrator
         for this course.
         """
         if self.is_course_admin(user):
@@ -77,8 +78,8 @@ class Course(ModelValidatableOnSave):
 
     def remove_course_admin(self, user):
         """
-        Removes the given user from this Course's list of administrators.
-        Raises ValidationError if the user is not an administrator
+        Removes the given User from this Course's list of administrators.
+        Raises ValidationError if the User is not an administrator
         for this course.
         """
         if not self.is_course_admin(user):
@@ -90,7 +91,7 @@ class Course(ModelValidatableOnSave):
 
     def is_course_admin(self, user):
         """
-        Returns True if user is an administrator for this Course,
+        Returns True if the given User is an administrator for this Course,
         False otherwise.
         """
         return user.username in self._course_admins

@@ -51,7 +51,7 @@ def create_dummy_semesters(course, num_semesters=1):
             name='semester{}'.format(i), course=course)
         if num_semesters == 1:
             return semester
-        semester.append(semester)
+        semesters.append(semester)
     return semesters
 
 

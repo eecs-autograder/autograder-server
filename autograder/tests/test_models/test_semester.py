@@ -9,6 +9,8 @@ import autograder.shared.utilities as ut
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
+import autograder.tests.dummy_object_utils as obj_ut
+
 
 class SemesterTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
@@ -77,6 +79,101 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
             name=self.SEMESTER_NAME, course=new_course)
 
         self.assertEqual(loaded_new_semester, new_semester)
+
+
+# -----------------------------------------------------------------------------
+
+class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.course = obj_ut.create_dummy_courses()
+        self.semester = obj_ut.create_dummy_semesters(self.course)
+        self.user = obj_ut.create_dummy_users()
+
+    def test_valid_add_semester_staff(self):
+        self.semester.add_semester_staff(self.user)
+
+        loaded = Semester.objects.get(pk=self.semester.pk)
+        self.assertTrue(loaded.is_semester_staff(self.user))
+
+    def test_exception_on_user_already_staff(self):
+        self.semester.add_semester_staff(self.user)
+        with self.assertRaises(ValidationError):
+            self.semester.add_semester_staff(self.user)
+
+    def test_valid_remove_semester_staff(self):
+        self.semester.add_semester_staff(self.user)
+        self.assertTrue(self.semester.is_semester_staff(self.user))
+
+        self.semester.remove_semester_staff(self.user)
+        loaded = Semester.objects.get(pk=self.semester.pk)
+        self.assertFalse(loaded.is_semester_staff(self.user))
+
+    def test_exception_remove_user_not_semester_staff(self):
+        with self.assertRaises(ValidationError):
+            self.semester.remove_semester_staff(self.user)
+
+    def test_is_semester_staff(self):
+        self.assertFalse(self.semester.is_semester_staff(self.user))
+        self.semester.add_semester_staff(self.user)
+        self.assertTrue(self.semester.is_semester_staff(self.user))
+
+    def test_valid_add_enrolled_student(self):
+        self.semester.add_enrolled_student(self.user)
+
+        loaded = Semester.objects.get(pk=self.semester.pk)
+        self.assertTrue(loaded.is_enrolled_student(self.user))
+
+    def test_exception_on_user_already_enrolled_student(self):
+        self.semester.add_enrolled_student(self.user)
+        with self.assertRaises(ValidationError):
+            self.semester.add_enrolled_student(self.user)
+
+    def test_valid_remove_enrolled_student(self):
+        self.semester.add_enrolled_student(self.user)
+        self.assertTrue(self.semester.is_enrolled_student(self.user))
+
+        self.semester.remove_enrolled_student(self.user)
+
+        loaded = Semester.objects.get(pk=self.semester.pk)
+        self.assertFalse(loaded.is_enrolled_student(self.user))
+
+    def test_exception_on_remove_user_not_enrolled_student(self):
+        with self.assertRaises(ValidationError):
+            self.semester.remove_enrolled_student(self.user)
+
+    def test_is_enrolled_student(self):
+        self.assertFalse(self.semester.is_enrolled_student(self.user))
+        self.semester.add_enrolled_student(self.user)
+        self.assertTrue(self.semester.is_enrolled_student(self.user))
+
+    def test_get_staff_semesters_for_user(self):
+        self.semester.delete()
+        semesters = obj_ut.create_dummy_semesters(self.course, 10)
+        subset = [semesters[1], semesters[6]]
+        for semester in subset:
+            semester.add_semester_staff(self.user)
+
+        semesters_queryset = Semester.get_staff_semesters_for_user(self.user)
+        sort_key = lambda semester: semester.name
+        self.assertEqual(
+            sorted(semesters_queryset, key=sort_key),
+            sorted(subset, key=sort_key))
+
+    def test_get_enrolled_semesters_for_user(self):
+        self.semester.delete()
+        semesters = obj_ut.create_dummy_semesters(self.course, 10)
+        subset = [semesters[3], semesters[8]]
+        for semester in subset:
+            semester.add_enrolled_student(self.user)
+
+        semesters_queryset = Semester.get_enrolled_semesters_for_user(
+            self.user)
+        sort_key = lambda semester: semester.name
+        self.assertEqual(
+            sorted(semesters_queryset, key=sort_key),
+            sorted(subset, key=sort_key))
 
 
 # -----------------------------------------------------------------------------

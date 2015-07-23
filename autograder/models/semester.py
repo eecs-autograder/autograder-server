@@ -1,8 +1,11 @@
 import os
 import shutil
+import copy
 
 from django.db import models
 from django.core.exceptions import ValidationError
+
+from django.contrib.postgres.fields import ArrayField
 
 from autograder.models.model_utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
@@ -26,6 +29,19 @@ class Semester(ModelValidatableOnSave):
         projects -- A django manager object that can be used to query
             Projects that belong to this Semester.
 
+    Static methods:
+        get_staff_semesters_for_user()
+        get_enrolled_semesters_for_user()
+
+    Instance methods:
+        add_semester_staff()
+        remove_semester_staff()
+        is_semester_staff()
+
+        add_enrolled_student()
+        remove_enrolled_student()
+        is_enrolled_student()
+
     Overridden member functions:
         save()
         clean()
@@ -42,7 +58,87 @@ class Semester(ModelValidatableOnSave):
         max_length=gc.MAX_CHAR_FIELD_LEN)
     course = models.ForeignKey(Course, related_name='semesters')
 
+    _semester_staff = ArrayField(
+        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
+        blank=True, default=list)
+
+    _enrolled_students = ArrayField(
+        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
+        blank=True, default=list)
+
     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def get_staff_semesters_for_user(user):
+        return Semester.objects.filter(
+            _semester_staff__contains=[user.username])
+
+    @staticmethod
+    def get_enrolled_semesters_for_user(user):
+        return Semester.objects.filter(
+            _enrolled_students__contains=[user.username])
+
+    # -------------------------------------------------------------------------
+
+    def add_semester_staff(self, user):
+        """
+        Adds the given User to this Semester's list of staff members.
+        Raises ValidationError if the User is already a staff member.
+        """
+        if self.is_semester_staff(user):
+            raise ValidationError("User is already staff for this semester")
+
+        self._semester_staff.append(user.username)
+        self.save()
+
+    def remove_semester_staff(self, user):
+        """
+        Removes the given User from this Semester's list of staff members.
+        Raises ValidationError if the User is not a staff member.
+        """
+        if not self.is_semester_staff(user):
+            raise ValidationError("User is not staff for this semester")
+
+        self._semester_staff.remove(user.username)
+        self.save()
+
+    def is_semester_staff(self, user):
+        """
+        Returns True if the given User is a staff member for this Semester.
+        Returns False otherwise.
+        """
+        return user.username in self._semester_staff
+
+    def add_enrolled_student(self, user):
+        """
+        Adds the given User to this Semester's list of enrolled students.
+        Raises ValidationError if the User is already enrolled.
+        """
+        if self.is_enrolled_student(user):
+            raise ValidationError("User is already enrolled in this semester")
+
+        self._enrolled_students.append(user.username)
+        self.save()
+
+    def remove_enrolled_student(self, user):
+        """
+        Removes the given User from this Semester's list of enrolled students.
+        Raises ValidationError if the User is not enrolled.
+        """
+        if not self.is_enrolled_student(user):
+            raise ValidationError("User is not enrolled in this semester")
+
+        self._enrolled_students.remove(user.username)
+        self.save()
+
+    def is_enrolled_student(self, user):
+        """
+        Returns True if the given User is an enrolled student for
+        this Semester. Returns False otherwise.
+        """
+        return user.username in self._enrolled_students
+
     # -------------------------------------------------------------------------
 
     def save(self, *args, **kwargs):

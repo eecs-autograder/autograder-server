@@ -15,13 +15,14 @@ from django.shortcuts import get_object_or_404, render
 
 from django.template import RequestContext
 from django.core.urlresolvers import reverse_lazy, reverse
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
 
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 
 # from django.views.decorators.csrf import ensure_csrf_cookie
 # from django.utils.decorators import method_decorator
+from autograder.models import Course, Semester
 
 
 class ExceptionLoggingView(View):
@@ -45,185 +46,193 @@ class LoginRequiredView(ExceptionLoggingView):
 
 class ListCourses(LoginRequiredView):
     """
-    Permissions required: Course admin or Superuser
+    Reponse list content determinied by user permissions.
     """
     def post(self, request):
-        pass
+        courses = Course.get_courses_for_user(request.user)
+        data = [
+            {'name': course.name,
+             'admins': course.course_admins}
+            for course in courses
+        ]
+        return JsonResponse(data, safe=False)
 
 
-class AddCourse(ExceptionLoggingView):
+# Move superuser things to Django Admin page
+# class AddCourse(ExceptionLoggingView):
+#     """
+#     Permissions required: Superuser
+#     """
+#     pass
+
+
+# class AddCourseAdmin(ExceptionLoggingView):
+#     """
+#     Permissions required: Superuser
+#     """
+#     pass
+
+
+# class RemoveCourseAdmin(ExceptionLoggingView):
+#     """
+#     Permissions required: Superuser
+#     """
+#     pass
+
+
+# -----------------------------------------------------------------------------
+
+class ListSemesters(LoginRequiredView):
     """
-    Permissions required: Superuser
+    Reponse list content determinied by user permissions.
+    """
+    def post(self, request):
+        semesters = Semester.get_semesters_for_user(request.user)
+
+class AddSemester(LoginRequiredView):
+    """
+    Permissions required: Course admin
     """
     pass
 
 
-class AddCourseAdmin(ExceptionLoggingView):
+class ListSemesterStaff(LoginRequiredView):
     """
-    Permissions required: Superuser
+    Permissions required: Course admin or Semester staff
     """
     pass
 
 
-class RemoveCourseAdmin(ExceptionLoggingView):
+class AddSemesterStaff(LoginRequiredView):
     """
-    Permissions required: Superuser
+    Permissions required: Course admin
+    """
+    pass
+
+
+class RemoveSemesterStaff(LoginRequiredView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class ListEnrolledStudents(LoginRequiredView):
+    """
+    Permissions required: Course admin or Semester staff
+    """
+    pass
+
+
+class AddEnrolledStudents(LoginRequiredView):
+    """
+    Permissions required: Course admin or Semester staff
+    """
+    pass
+
+
+class RemoveEnrolledStudents(LoginRequiredView):
+    """
+    Permissions required: Course admin
     """
     pass
 
 
 # -----------------------------------------------------------------------------
 
-class ListSemesters(ExceptionLoggingView):
+class ListProjects(LoginRequiredView):
+    """
+    Reponse list content determinied by choice of Semester
+    and user permissions.
+    """
+    pass
+
+
+class AddProject(LoginRequiredView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class EditProject(LoginRequiredView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class DeleteProject(LoginRequiredView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class AddTestCase(LoginRequiredView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class EditTestCase(LoginRequiredView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class DeleteTestCase(LoginRequiredView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class CopyTestCase(LoginRequiredView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class CopyProjectForNewSemester(LoginRequiredView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class SubmitProject(LoginRequiredView):
+    """
+
+    """
+    pass
+
+
+class ListSubmissions(LoginRequiredView):
     """
     Reponse list content determinied by user permissions.
     """
     pass
 
 
-class AddSemester(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class ListSemesterStaff(ExceptionLoggingView):
-    """
-    Permissions required: Course admin or Semester staff
-    """
-    pass
-
-
-class AddSemesterStaff(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class RemoveSemesterStaff(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class ListEnrolledStudents(ExceptionLoggingView):
-    """
-    Permissions required: Course admin or Semester staff
-    """
-    pass
-
-
-class AddEnrolledStudents(ExceptionLoggingView):
-    """
-    Permissions required: Course admin or Semester staff
-    """
-    pass
-
-
-class RemoveEnrolledStudents(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-# -----------------------------------------------------------------------------
-
-class ListProjects(ExceptionLoggingView):
+class ListSubmissionGroups(LoginRequiredView):
     """
     Reponse list content determinied by user permissions.
     """
     pass
 
 
-class AddProject(ExceptionLoggingView):
+class AddSubmissionGroup(LoginRequiredView):
     """
     Permissions required: Course admin
     """
     pass
 
 
-class EditProject(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class DeleteProject(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class AddTestCase(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class EditTestCase(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class DeleteTestCase(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class CopyTestCase(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class CopyProjectForNewSemester(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class SubmitProject(ExceptionLoggingView):
-    """
-
-    """
-    pass
-
-
-class ListSubmissions(ExceptionLoggingView):
-    """
-    Reponse list content determinied by user permissions.
-    """
-    pass
-
-
-class ListSubmissionGroups(ExceptionLoggingView):
-    """
-    Reponse list content determinied by user permissions.
-    """
-    pass
-
-
-class AddSubmissionGroup(ExceptionLoggingView):
-    """
-    Permissions required: Course admin
-    """
-    pass
-
-
-class RemoveSubmissionGroup(ExceptionLoggingView):
+class RemoveSubmissionGroup(LoginRequiredView):
     """
     Permissions required: Course admin
     """
