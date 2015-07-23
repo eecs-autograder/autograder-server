@@ -3,6 +3,7 @@ import json
 from django.contrib.auth.models import User
 from django.test import RequestFactory
 from django.core.urlresolvers import reverse_lazy, reverse
+from django.core.exceptions import ObjectDoesNotExist
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -10,6 +11,8 @@ from autograder.tests.temporary_filesystem_test_case import (
 from autograder import ajax_request_handlers
 
 import autograder.tests.dummy_object_utils as obj_ut
+
+from autograder.models import Semester
 
 
 def _bytes_to_json(data):
@@ -211,3 +214,93 @@ class RequestHandlerTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(200, response.status_code)
         self.assertEqual([], _bytes_to_json(response.content))
+
+    # -------------------------------------------------------------------------
+
+    def test_valid_add_semester(self):
+        user = obj_ut.create_dummy_users()
+        course = obj_ut.create_dummy_courses()
+
+        course.add_course_admin(user)
+
+        semester_name = 'fall2015'
+        request = self.rf.post(
+            reverse('add-semester'),
+            {"semester_name": semester_name, "course_name": course.name})
+        request.user = user
+        response = ajax_request_handlers.AddSemester.as_view()(request)
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {"semester_name": semester_name, "course_name": course.name},
+            _bytes_to_json(response.content))
+
+        loaded_semester = Semester.objects.get(
+            name=semester_name, course=course)
+        self.assertEqual(loaded_semester.name, semester_name)
+        self.assertEqual(loaded_semester.course, course)
+
+    def test_add_semester_permission_denied(self):
+        user = obj_ut.create_dummy_users()
+        course = obj_ut.create_dummy_courses()
+
+        semester_name = 'spam'
+        request = self.rf.post(
+            reverse('add-semester'),
+            {'semester_name': semester_name, 'course_name': course.name})
+        request.user = user
+        response = ajax_request_handlers.AddSemester.as_view()(request)
+
+        self.assertEqual(403, response.status_code)
+
+        with self.assertRaises(ObjectDoesNotExist):
+            Semester.objects.get(name=semester_name, course=course)
+
+    def test_add_duplicate_semester(self):
+        user = obj_ut.create_dummy_users()
+        course = obj_ut.create_dummy_courses()
+        course.add_course_admin(user)
+        semester = obj_ut.create_dummy_semesters(course)
+
+        request = self.rf.post(
+            reverse('add-semester'),
+            {'semester_name': semester.name, 'course_name': course.name})
+        request.user = user
+        response = ajax_request_handlers.AddSemester.as_view()(request)
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue('errors' in _bytes_to_json(response.content))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

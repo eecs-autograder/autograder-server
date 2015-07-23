@@ -26,7 +26,11 @@ urlpatterns = [
 
     url(r'^list-semesters/$',
         ajax_request_handlers.ListSemesters.as_view(),
-        name='list-semesters')
+        name='list-semesters'),
+
+    url(r'^add-semester/$',
+        ajax_request_handlers.AddSemester.as_view(),
+        name='add-semester')
 
     # LANDING PAGE
     # All:

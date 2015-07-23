@@ -114,7 +114,21 @@ class AddSemester(LoginRequiredView):
     """
     Permissions required: Course admin
     """
-    pass
+    def post(self, request):
+        course = Course.objects.get(name=request.POST['course_name'])
+        if not course.is_course_admin(self.request.user):
+            return HttpResponseForbidden()
+
+        try:
+            new_semester = Semester.objects.validate_and_create(
+                name=self.request.POST['semester_name'],
+                course=course)
+            return JsonResponse({
+                'semester_name': new_semester.name,
+                'course_name': course.name
+            })
+        except ValidationError as e:
+            return JsonResponse({'errors': e.message_dict}, safe=False)
 
 
 class ListSemesterStaff(LoginRequiredView):
