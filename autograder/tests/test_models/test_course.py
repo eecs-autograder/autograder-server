@@ -9,6 +9,8 @@ import autograder.shared.utilities as ut
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
+import autograder.tests.dummy_object_utils as obj_ut
+
 
 class CourseTestCase(TemporaryFilesystemTestCase):
     def test_valid_save(self):
@@ -48,6 +50,56 @@ class CourseTestCase(TemporaryFilesystemTestCase):
         with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name=NAME)
         self.assertTrue('name' in cm.exception.message_dict)
+
+
+# -----------------------------------------------------------------------------
+
+class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.course = obj_ut.create_dummy_courses()
+        self.user = obj_ut.create_dummy_users()
+
+    def test_valid_add_course_admin(self):
+        self.course.add_course_admin(self.user)
+
+        self.assertTrue(self.course.is_course_admin(self.user))
+
+    def test_exception_on_duplicate_add_course_admin(self):
+        self.course.add_course_admin(self.user)
+
+        with self.assertRaises(ValidationError):
+            self.course.add_course_admin(self.user)
+
+    def test_valid_remove_course_admin(self):
+        self.course.add_course_admin(self.user)
+        self.course.remove_course_admin(self.user)
+
+        self.assertFalse(self.course.is_course_admin(self.user))
+
+    def test_exception_on_remove_non_course_admin_user(self):
+        with self.assertRaises(ValidationError):
+            self.course.remove_course_admin(self.user)
+
+    def test_is_course_admin(self):
+        self.assertFalse(self.course.is_course_admin(self.user))
+        self.course.add_course_admin(self.user)
+
+        self.assertTrue(self.course.is_course_admin(self.user))
+
+    def test_get_courses_for_user(self):
+        self.course.delete()
+        courses = obj_ut.create_dummy_courses(10)
+        subset = [courses[2], courses[5], courses[7]]
+        for course in subset:
+            course.add_course_admin(self.user)
+
+        courses_queryset = Course.get_courses_for_user(self.user)
+        sort_key = lambda course: course.name
+        self.assertEqual(
+            sorted(courses_queryset, key=sort_key),
+            sorted(subset, key=sort_key))
 
 
 # -----------------------------------------------------------------------------

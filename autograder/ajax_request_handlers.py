@@ -17,6 +17,9 @@ from django.template import RequestContext
 from django.core.urlresolvers import reverse_lazy, reverse
 from django.http import HttpResponse, HttpResponseRedirect
 
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+
 # from django.views.decorators.csrf import ensure_csrf_cookie
 # from django.utils.decorators import method_decorator
 
@@ -34,11 +37,18 @@ class ExceptionLoggingView(View):
             raise
 
 
-class ListCourses(ExceptionLoggingView):
+class LoginRequiredView(ExceptionLoggingView):
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+
+class ListCourses(LoginRequiredView):
     """
     Permissions required: Course admin or Superuser
     """
-    pass
+    def post(self, request):
+        pass
 
 
 class AddCourse(ExceptionLoggingView):
@@ -144,6 +154,34 @@ class EditProject(ExceptionLoggingView):
 
 
 class DeleteProject(ExceptionLoggingView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class AddTestCase(ExceptionLoggingView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class EditTestCase(ExceptionLoggingView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class DeleteTestCase(ExceptionLoggingView):
+    """
+    Permissions required: Course admin
+    """
+    pass
+
+
+class CopyTestCase(ExceptionLoggingView):
     """
     Permissions required: Course admin
     """

@@ -179,7 +179,7 @@ class Project(ModelValidatableOnSave):
                         # error. This lets us send ValidationErrors
                         # to the GUI side in a more convenient format.
             ),
-        default=[], blank=True)
+        default=list, blank=True)
 
     @property
     def expected_student_file_patterns(self):
@@ -191,7 +191,8 @@ class Project(ModelValidatableOnSave):
     def expected_student_file_patterns(self, value):
         self._expected_student_file_patterns = value
 
-    _expected_student_file_patterns = JSONField(default=[], blank=True)
+    _expected_student_file_patterns = JSONField(
+        default=list, blank=True)
 
     # -------------------------------------------------------------------------
 

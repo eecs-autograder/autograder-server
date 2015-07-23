@@ -221,13 +221,13 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
                         # This comment also applies to valgrind_flags and
                         # compiler_flags.
             ),
-        blank=True, default=[])
+        blank=True, default=list)
 
     standard_input = models.TextField(blank=True)
 
     test_resource_files = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
-        default=[], blank=True)
+        default=list, blank=True)
 
     time_limit = models.IntegerField(
         default=gc.DEFAULT_SUBPROCESS_TIMEOUT,
@@ -270,11 +270,11 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
             max_length=gc.MAX_CHAR_FIELD_LEN,
             blank=True  # See comment for command_line_arguments
             ),
-        default=[], blank=True)
+        default=list, blank=True)
 
     files_to_compile_together = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
-        default=[], blank=True)
+        default=list, blank=True)
 
     executable_name = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, blank=True)

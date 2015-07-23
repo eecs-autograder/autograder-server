@@ -3,9 +3,11 @@ import shutil
 
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.contrib.postgres.fields import ArrayField
 
 from autograder.models.model_utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
+
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
 
@@ -24,6 +26,14 @@ class Course(ModelValidatableOnSave):
         semesters -- A django manager object that can be used to query
             Semesters that belong to this Course.
 
+    Static methods:
+        get_courses_for_user()
+
+    Instance methods:
+        add_course_admin()
+        remove_course_admin()
+        is_course_admin()
+
     Overridden member functions:
         save()
         clean()
@@ -35,6 +45,55 @@ class Course(ModelValidatableOnSave):
 
     name = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)
+
+    _course_admins = ArrayField(
+        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
+        blank=True, default=list)
+
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def get_courses_for_user(user):
+        """
+        Returns a QuerySet of Courses for which the given user is an
+        administrator.
+        """
+        return Course.objects.filter(_course_admins__contains=[user.username])
+
+    # -------------------------------------------------------------------------
+
+    def add_course_admin(self, user):
+        """
+        Adds the given user to this Course's list of administrators.
+        Raises ValidationError if the user is already an administrator
+        for this course.
+        """
+        if self.is_course_admin(user):
+            raise ValidationError(
+                "This User is already an administrator for this Course")
+
+        self._course_admins.append(user.username)
+        self.save()
+
+    def remove_course_admin(self, user):
+        """
+        Removes the given user from this Course's list of administrators.
+        Raises ValidationError if the user is not an administrator
+        for this course.
+        """
+        if not self.is_course_admin(user):
+            raise ValidationError(
+                "This User is not an administrator for this Course")
+
+        self._course_admins.remove(user.username)
+        self.save()
+
+    def is_course_admin(self, user):
+        """
+        Returns True if user is an administrator for this Course,
+        False otherwise.
+        """
+        return user.username in self._course_admins
 
     # -------------------------------------------------------------------------
 

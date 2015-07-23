@@ -16,10 +16,14 @@ Including another URLconf
 from django.conf.urls import include, url
 from django.contrib import admin
 
-from autograder import views
+from autograder import views, ajax_request_handlers
 
 
 urlpatterns = [
+    url(r'^list-courses/$',
+        ajax_request_handlers.ListCourses.as_view(),
+        name='list-courses')
+
     # LANDING PAGE
     # All:
     #   list active/enrolled course-semesters
@@ -69,6 +73,9 @@ urlpatterns = [
     #   add submission group
     #   remove submission group
     #
+    #   add test case
+    #   edit test case
+    #   delete test case
     #
     #
     # STUDENT VIEW

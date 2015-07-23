@@ -4,6 +4,8 @@ import shutil
 from django.test import TestCase
 from django.conf import settings
 
+# from django.core.cache import cache
+
 
 class TemporaryFilesystemTestCase(TestCase):
     """
@@ -40,3 +42,7 @@ class TemporaryFilesystemTestCase(TestCase):
         settings.MEDIA_ROOT = self._old_media_root
         # print("Deleting: " + self.new_media_root)
         shutil.rmtree(self.new_media_root)
+
+        # Remove when Django issue # is fixed
+        # assert settings.CACHE_BACKEND == 'locmem:///'
+        # [cache.delete(key) for key in cache._cache.keys()]
