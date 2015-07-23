@@ -156,10 +156,9 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
             semester.add_semester_staff(self.user)
 
         semesters_queryset = Semester.get_staff_semesters_for_user(self.user)
-        sort_key = lambda semester: semester.name
         self.assertEqual(
-            sorted(semesters_queryset, key=sort_key),
-            sorted(subset, key=sort_key))
+            list(semesters_queryset),
+            sorted(subset, key=lambda semester: semester.name))
 
     def test_get_enrolled_semesters_for_user(self):
         self.semester.delete()
@@ -170,10 +169,9 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
 
         semesters_queryset = Semester.get_enrolled_semesters_for_user(
             self.user)
-        sort_key = lambda semester: semester.name
         self.assertEqual(
-            sorted(semesters_queryset, key=sort_key),
-            sorted(subset, key=sort_key))
+            list(semesters_queryset),
+            sorted(subset, key=lambda semester: semester.name))
 
 
 # -----------------------------------------------------------------------------

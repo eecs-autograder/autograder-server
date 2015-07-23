@@ -22,7 +22,11 @@ from autograder import views, ajax_request_handlers
 urlpatterns = [
     url(r'^list-courses/$',
         ajax_request_handlers.ListCourses.as_view(),
-        name='list-courses')
+        name='list-courses'),
+
+    url(r'^list-semesters/$',
+        ajax_request_handlers.ListSemesters.as_view(),
+        name='list-semesters')
 
     # LANDING PAGE
     # All:

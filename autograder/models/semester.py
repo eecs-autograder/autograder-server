@@ -4,6 +4,7 @@ import copy
 
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 from django.contrib.postgres.fields import ArrayField
 
@@ -28,6 +29,14 @@ class Semester(ModelValidatableOnSave):
 
         projects -- A django manager object that can be used to query
             Projects that belong to this Semester.
+
+        staff_members -- A list of usernames that are staff members for
+            this Semester.
+            This field is READ ONLY.
+
+        enrolled_students -- A list of usernames that are enrolled students
+            for this Semester.
+            This field is READ ONLY.
 
     Static methods:
         get_staff_semesters_for_user()
@@ -58,9 +67,17 @@ class Semester(ModelValidatableOnSave):
         max_length=gc.MAX_CHAR_FIELD_LEN)
     course = models.ForeignKey(Course, related_name='semesters')
 
+    @property
+    def staff_members(self):
+        return copy.deepcopy(self._semester_staff)
+
     _semester_staff = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
         blank=True, default=list)
+
+    @property
+    def enrolled_students(self):
+        return copy.deepcopy(self._enrolled_students)
 
     _enrolled_students = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
@@ -71,13 +88,25 @@ class Semester(ModelValidatableOnSave):
 
     @staticmethod
     def get_staff_semesters_for_user(user):
+        """
+        Returns a QuerySet of Semesters for which the given user is
+        a staff member, sorted by Semester name.
+        Note that if user is an administrator for this Semester's Course,
+        all Semesters for that Course will be returned.
+        """
         return Semester.objects.filter(
-            _semester_staff__contains=[user.username])
+            Q(_semester_staff__contains=[user.username]) |
+            Q(course___course_admins__contains=[user.username])
+        ).order_by('name')
 
     @staticmethod
     def get_enrolled_semesters_for_user(user):
+        """
+        Returns a QuerySet of Semesters for which the given user
+        is an enrolled student, sorted by Semester name.
+        """
         return Semester.objects.filter(
-            _enrolled_students__contains=[user.username])
+            _enrolled_students__contains=[user.username]).order_by('name')
 
     # -------------------------------------------------------------------------
 

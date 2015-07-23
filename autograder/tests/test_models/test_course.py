@@ -99,10 +99,9 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
             course.add_course_admin(self.user)
 
         courses_queryset = Course.get_courses_for_user(self.user)
-        sort_key = lambda course: course.name
         self.assertEqual(
-            sorted(courses_queryset, key=sort_key),
-            sorted(subset, key=sort_key))
+            list(courses_queryset),
+            sorted(subset, key=lambda course: course.name))
 
 
 # -----------------------------------------------------------------------------

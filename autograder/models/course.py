@@ -27,6 +27,10 @@ class Course(ModelValidatableOnSave):
         semesters -- A django manager object that can be used to query
             Semesters that belong to this Course.
 
+        course_admins -- A list of usernames that are administrators for
+            this Course.
+            This field is READ ONLY.
+
     Static methods:
         get_courses_for_user()
 
@@ -47,6 +51,10 @@ class Course(ModelValidatableOnSave):
     name = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)
 
+    @property
+    def course_admins(self):
+        return copy.deepcopy(self._course_admins)
+
     _course_admins = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
         blank=True, default=list)
@@ -57,9 +65,10 @@ class Course(ModelValidatableOnSave):
     def get_courses_for_user(user):
         """
         Returns a QuerySet of Courses for which the given user is an
-        administrator.
+        administrator, sorted by Course name.
         """
-        return Course.objects.filter(_course_admins__contains=[user.username])
+        return Course.objects.filter(
+            _course_admins__contains=[user.username]).order_by('name')
 
     # -------------------------------------------------------------------------
 

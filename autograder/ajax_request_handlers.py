@@ -87,7 +87,28 @@ class ListSemesters(LoginRequiredView):
     Reponse list content determinied by user permissions.
     """
     def post(self, request):
-        semesters = Semester.get_semesters_for_user(request.user)
+        staff_semesters = Semester.get_staff_semesters_for_user(request.user)
+        enrolled_semesters = Semester.get_enrolled_semesters_for_user(
+            request.user)
+
+        data = [
+            {
+                'name': semester.name,
+                'course_name': semester.course.name,
+                'semester_staff': semester.staff_members,
+                'is_staff': True
+            }
+            for semester in staff_semesters
+        ]
+        data += [
+            {
+                'name': semester.name,
+                'course_name': semester.course.name
+            }
+            for semester in enrolled_semesters
+        ]
+        return JsonResponse(data, safe=False)
+
 
 class AddSemester(LoginRequiredView):
     """

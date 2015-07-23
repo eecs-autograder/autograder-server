@@ -16,7 +16,7 @@ def _bytes_to_json(data):
     return json.loads(data.decode('utf-8'))
 
 
-class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
+class RequestHandlerTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
@@ -97,14 +97,15 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
         courses[0].add_course_admin(user)
         courses[3].add_course_admin(user)
 
-        expected = [
+        expected = sorted([
             {
                 "name": semester.name,
                 "course_name": semester.course.name,
-                "semester_staff": semester.staff_members
+                "semester_staff": semester.staff_members,
+                "is_staff": True
             }
             for semester in semesters
-        ]
+        ], key=lambda item: item['name'])
 
         request = self.rf.post(reverse('list-semesters'))
         request.user = user
@@ -120,17 +121,19 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
         semesters = (obj_ut.create_dummy_semesters(courses[0], 2) +
                      obj_ut.create_dummy_semesters(courses[3], 3))
 
-        semesters[1].add_semester_staff(user)
-        semesters[-1].add_semester_staff(user)
+        subset = [semesters[1], semesters[-1]]
+        for semester in subset:
+            semester.add_semester_staff(user)
 
-        expected = [
+        expected = sorted([
             {
                 "name": semester.name,
                 "course_name": semester.course.name,
-                "semester_staff": semester.staff_members
+                "semester_staff": semester.staff_members,
+                "is_staff": True
             }
-            for semester in semesters
-        ]
+            for semester in subset
+        ], key=lambda item: item['name'])
 
         request = self.rf.post(reverse('list-semesters'))
         request.user = user
@@ -146,17 +149,17 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
         semesters = (obj_ut.create_dummy_semesters(courses[0], 2) +
                      obj_ut.create_dummy_semesters(courses[3], 3))
 
-        semesters[0].add_enrolled_student(user)
-        semesters[-2].add_enrolled_student(user)
+        subset = [semesters[0], semesters[-2]]
+        for semester in subset:
+            semester.add_enrolled_student(user)
 
-        expected = [
+        expected = sorted([
             {
                 "name": semester.name,
                 "course_name": semester.course.name,
-                "semester_staff": semester.staff_members
             }
-            for semester in semesters
-        ]
+            for semester in subset
+        ], key=lambda item: item['name'])
 
         request = self.rf.post(reverse('list-semesters'))
         request.user = user
@@ -175,14 +178,18 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
         semesters[0].add_semester_staff(user)
         semesters[-2].add_enrolled_student(user)
 
-        expected = [
+        expected = sorted([
             {
-                "name": semester.name,
-                "course_name": semester.course.name,
-                "semester_staff": semester.staff_members
+                "name": semesters[0].name,
+                "course_name": semesters[0].course.name,
+                "semester_staff": semesters[0].staff_members,
+                "is_staff": True
+            },
+            {
+                "name": semesters[-2].name,
+                "course_name": semesters[-2].course.name,
             }
-            for semester in semesters
-        ]
+        ], key=lambda item: item['name'])
 
         request = self.rf.post(reverse('list-semesters'))
         request.user = user
