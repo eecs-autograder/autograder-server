@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 
 
@@ -31,3 +33,11 @@ class ModelValidatableOnSave(models.Model):
     def validate_and_save(self):
         self.full_clean()
         self.save()
+
+
+# class UUIDModelMixin(object):
+#     """
+#     Mixin class that adds a UUID field called "unique_id" to models.
+#     """
+#     unique_id = models.UUIDField(
+#         primary_key=True, default=uuid.uuid4, editable=False)

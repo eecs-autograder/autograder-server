@@ -15,7 +15,7 @@ from django.shortcuts import get_object_or_404, render
 
 from django.template import RequestContext
 from django.core.urlresolvers import reverse_lazy, reverse
-from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden, HttpResponseNotFound
 
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -44,17 +44,56 @@ class LoginRequiredView(ExceptionLoggingView):
         return super().dispatch(*args, **kwargs)
 
 
+class GetCourse(LoginRequiredView):
+    def get(self, request, course_id):
+        try:
+            course = Course.objects.get(pk=course_id)
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+
+        if not course.is_course_admin(self.request.user):
+            return HttpResponseForbidden()
+
+        response_content = {
+            'data': {
+                'type': 'course',
+                'id': course.pk,
+                'attributes': {
+                    'name': course.name,
+                    'course_admin_names': course.course_admin_names
+                },
+                'links': {
+                    'self': reverse('get-course', args=[course.pk])
+                }
+            },
+            'included': []
+        }
+
+        return JsonResponse(response_content, safe=False)
+
+
 class ListCourses(LoginRequiredView):
     """
     Reponse list content determinied by user permissions.
     """
-    def post(self, request):
+    def get(self, request):
         courses = Course.get_courses_for_user(request.user)
-        data = [
-            {'name': course.name,
-             'admins': course.course_admin_names}
-            for course in courses
-        ]
+        data = {
+            'data': [
+                {
+                    'type': 'course',
+                    'id': course.pk,
+                    'attributes': {
+                        'name': course.name,
+                        'course_admin_names': course.course_admin_names
+                    },
+                    'links': {
+                        'self': reverse('get-course', args=[course.pk])
+                    }
+                } for course in courses
+            ]
+        }
+
         return JsonResponse(data, safe=False)
 
 

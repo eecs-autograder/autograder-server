@@ -20,7 +20,11 @@ from autograder import views, ajax_request_handlers
 
 
 urlpatterns = [
-    url(r'^list-courses/$',
+    url(r'^courses/course/(?P<course_id>\d+)/$',
+        ajax_request_handlers.GetCourse.as_view(),
+        name='get-course'),
+
+    url(r'^courses/$',
         ajax_request_handlers.ListCourses.as_view(),
         name='list-courses'),
 
@@ -45,7 +49,7 @@ urlpatterns = [
     #   {
     #       'data': {
     #           'type': 'course',
-    #           'id': <id>
+    #           'id': <id>,
     #           'attributes': {
     #               'name': <name>,
     #               'course_admin_names': [<admin username>, ...]
