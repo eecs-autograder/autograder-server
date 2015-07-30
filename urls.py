@@ -30,7 +30,219 @@ urlpatterns = [
 
     url(r'^add-semester/$',
         ajax_request_handlers.AddSemester.as_view(),
-        name='add-semester')
+        name='add-semester'),
+
+    url(r'^list-semester-staff/$',
+        ajax_request_handlers.ListSemesterStaff.as_view(),
+        name='list-semester-staff'),
+
+    url(r'^add-semester-staff/$',
+        ajax_request_handlers.AddSemesterStaff.as_view(),
+        name='add-semester-staff')
+
+    # --- COURSES ---
+    #   json format:
+    #   {
+    #       'data': {
+    #           'type': 'course',
+    #           'id': <id>
+    #           'attributes': {
+    #               'name': <name>,
+    #               'course_admin_names': [<admin username>, ...]
+    #           },
+    #           'links': {
+    #               'self': <self link>
+    #           }
+    #       },
+    #       'included': [
+    #           {
+    #               'type': 'semester',
+    #               'id': <semester-id>,
+    #               'links': {
+    #                   'self': <link to semester>
+    #               }
+    #           },
+    #           ...
+    #       ],
+    #
+    #       'errors': {
+    #           'meta': <json error data from database api>
+    #       }
+    #   }
+    #
+    # GET                       /courses
+    # POST                      /courses/course
+    # GET PATCH (DELETE)        /courses/course/<course-id>
+    #
+    # --- SEMESTERS ---
+    #   json format:
+    #   {
+    #       'data': {
+    #           'type': 'semester',
+    #           'id': <id>
+    #           'attributes': {
+    #               'name': <name>,
+    #               'semester_staff_names': [<staff username>, ...],
+    #               'enrolled_student_names': [<student username>, ...]
+    #           },
+    #           'relationships': {
+    #               'course': {
+    #                   'links': {
+    #                       'self': <course url>,
+    #                   }
+    #                   'data': {'type': 'course', 'id': <course-id>}
+    #               }
+    #           },
+    #           'links': {
+    #               'self': <self link>
+    #           }
+    #       },
+    #       included: [
+    #           {
+    #               'type': 'project',
+    #               'id': <project-id>,
+    #               'links': {
+    #                   'self': <link to project>
+    #               }
+    #           },
+    #           ...
+    #       ],
+    #
+    #       'errors': {
+    #           'meta': <json error data from database api>
+    #       }
+    #   }
+    #
+    # GET                       /semesters?course=<course-id>
+    # POST                      /semesters/semester
+    # GET PATCH (DELETE)        /semesters/semester/<semester-id>
+    #
+    # --- PROJECTS ---
+    #   json format:
+    #   {
+    #       'data': {
+    #           'type': 'project',
+    #           'id': <id>,
+    #           'links': {
+    #               'self': <self link>
+    #           },
+    #           'attributes': {
+    #               <project attributes>
+    #               ...
+    #               'project_files': [
+    #                   {
+    #                       'filename': <filename>,
+    #                       'file_url': <file url>
+    #                   },
+    #                   ...
+    #               ]
+    #           },
+    #           'relationships': {
+    #               'semester': {
+    #                   'links': {
+    #                       'self': <semester url>,
+    #                   }
+    #                   'data': {'type': 'semester', 'id': <semester-id}
+    #               }
+    #           }
+    #       },
+    #       'included': [
+    #           {
+    #               'type': 'autograder-test-case',
+    #               'id': <id>,
+    #               'links': {
+    #                   'self': <link for test case>
+    #               }
+    #           },
+    #           ...
+    #       ],
+    #
+    #       'errors': {
+    #           'meta': <json error data from database api>
+    #       }
+    #   }
+    #
+    # GET                       /projects?semester=<semester-id>
+    # POST                      /projects/project
+    # POST                      /projects/project/<project-id>/copy-to-semester/<semester-id>
+    # GET PATCH DELETE          /projects/project/<project-id>
+    # POST                      /projects/project/<project-id>/add-files
+    # GET DELETE                /projects/project/<project-id>/filename
+    #
+    # --- AUTOGRADER TEST CASES ---
+    # GET                       /ag-test-cases?project=<project-id>
+    # POST                      /ag-test-cases/ag-test-case
+    # POST                      /ag-test-cases/ag-test-case/<ag-test-case-id>/copy
+    # GET PATCH DELETE          /ag-test-cases/ag-test-case/<ag-test-case-id>
+    #
+    # --- SUBMISSIONS ---
+    #   json format:
+    #   {
+    #       'data': {
+    #           'type': 'submission',
+    #           'id': <id>,
+    #           'attributes': {
+    #               'status': <status>
+    #           },
+    #           'relationships': {
+    #               'submission_group': {
+    #                   'links': {
+    #                       'self': <self link>
+    #                   },
+    #                   'data': {'type': 'submission_group', 'id': <id>}
+    #               },
+    #               'project': {
+    #                   'links': {
+    #                       'self': <self link>
+    #                   },
+    #                   'data': {'type': 'project', 'id': <id>}
+    #               }
+    #           }
+    #       }
+    #   }
+    #
+    # GET                       /submissions?project=<project-id>, user=<user-id>, submission-group=<submission-group-id>
+    # POST                      /submissions/submission
+    # GET                       /submissions/submission/<submission-id>
+    # GET                       /submissions/submission/<submission-id>/<filename>
+    #
+    # --- SUBMISSION GROUPS ---
+    #   json format:
+    #   {
+    #       'data': {
+    #           'type': 'submission_group',
+    #           'id': <id>,
+    #           'attributes': {
+    #               'extended_due_date': <date>
+    #           },
+    #           'relationships': {
+    #               'project': {
+    #                   'links': {
+    #                       'self': <self link>
+    #                   },
+    #                   'data': {'type': 'project', 'id': <id>}
+    #               },
+    #               'members': [
+    #                   {
+    #                       'links': {
+    #                           'self': <self link>
+    #                       },
+    #                       'data': {'type': 'user', 'id': <id>}
+    #                   },
+    #                   ...
+    #               ]
+    #           }
+    #       }
+    #   }
+    #
+    # GET                       /submission-groups?project=<project-id>, users=*<user-id>
+    # POST                      /submission-groups/submission-group
+    # GET PATCH DELETE          /submission-groups/submission-group/<submission-group-id>
+    #
+    #
+    #
+    #
+
 
     # LANDING PAGE
     # All:

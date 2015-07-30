@@ -18,8 +18,6 @@ class Course(ModelValidatableOnSave):
     Represents a programming course for which students will be submitting
     code to an autograder.
 
-    Primary key: name
-
     Fields:
         name -- The name of this course.
                 Must be unique, non-empty and non-null.
@@ -27,7 +25,7 @@ class Course(ModelValidatableOnSave):
         semesters -- A django manager object that can be used to query
             Semesters that belong to this Course.
 
-        course_admins -- A list of usernames that are administrators for
+        course_admin_names -- A list of usernames that are administrators for
             this Course.
             This field is READ ONLY.
 
@@ -49,13 +47,13 @@ class Course(ModelValidatableOnSave):
     # -------------------------------------------------------------------------
 
     name = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, primary_key=True)
+        max_length=gc.MAX_CHAR_FIELD_LEN, unique=True)
 
     @property
-    def course_admins(self):
-        return copy.deepcopy(self._course_admins)
+    def course_admin_names(self):
+        return copy.deepcopy(self._course_admin_names)
 
-    _course_admins = ArrayField(
+    _course_admin_names = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
         blank=True, default=list)
 
@@ -68,21 +66,18 @@ class Course(ModelValidatableOnSave):
         administrator, sorted by Course name.
         """
         return Course.objects.filter(
-            _course_admins__contains=[user.username]).order_by('name')
+            _course_admin_names__contains=[user.username]).order_by('name')
 
     # -------------------------------------------------------------------------
 
-    def add_course_admin(self, user):
+    def add_course_admins(self, *users):
         """
-        Adds the given User to this Course's list of administrators.
-        Raises ValidationError if the User is already an administrator
-        for this course.
+        Adds the given Users to this Course's list of administrators.
+        Users that are already in this list are ignored.
         """
-        if self.is_course_admin(user):
-            raise ValidationError(
-                "This User is already an administrator for this Course")
-
-        self._course_admins.append(user.username)
+        for user in users:
+            if not self.is_course_admin(user):
+                self._course_admin_names.append(user.username)
         self.save()
 
     def remove_course_admin(self, user):
@@ -95,7 +90,7 @@ class Course(ModelValidatableOnSave):
             raise ValidationError(
                 "This User is not an administrator for this Course")
 
-        self._course_admins.remove(user.username)
+        self._course_admin_names.remove(user.username)
         self.save()
 
     def is_course_admin(self, user):
@@ -103,7 +98,7 @@ class Course(ModelValidatableOnSave):
         Returns True if the given User is an administrator for this Course,
         False otherwise.
         """
-        return user.username in self._course_admins
+        return user.username in self._course_admin_names
 
     # -------------------------------------------------------------------------
 

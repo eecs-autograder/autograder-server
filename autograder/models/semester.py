@@ -30,7 +30,7 @@ class Semester(ModelValidatableOnSave):
         projects -- A django manager object that can be used to query
             Projects that belong to this Semester.
 
-        staff_members -- A list of usernames that are staff members for
+        semester_staff_names -- A list of usernames that are staff members for
             this Semester.
             This field is READ ONLY.
 
@@ -68,10 +68,10 @@ class Semester(ModelValidatableOnSave):
     course = models.ForeignKey(Course, related_name='semesters')
 
     @property
-    def staff_members(self):
-        return copy.deepcopy(self._semester_staff)
+    def semester_staff_names(self):
+        return copy.deepcopy(self._semester_staff_names)
 
-    _semester_staff = ArrayField(
+    _semester_staff_names = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
         blank=True, default=list)
 
@@ -95,8 +95,8 @@ class Semester(ModelValidatableOnSave):
         all Semesters for that Course will be returned.
         """
         return Semester.objects.filter(
-            Q(_semester_staff__contains=[user.username]) |
-            Q(course___course_admins__contains=[user.username])
+            Q(_semester_staff_names__contains=[user.username]) |
+            Q(course___course_admin_names__contains=[user.username])
         ).order_by('name')
 
     @staticmethod
@@ -110,15 +110,14 @@ class Semester(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    def add_semester_staff(self, user):
+    def add_semester_staff(self, *users):
         """
         Adds the given User to this Semester's list of staff members.
         Raises ValidationError if the User is already a staff member.
         """
-        if self.is_semester_staff(user):
-            raise ValidationError("User is already staff for this semester")
-
-        self._semester_staff.append(user.username)
+        for user in users:
+            if not self.is_semester_staff(user):
+                self._semester_staff_names.append(user.username)
         self.save()
 
     def remove_semester_staff(self, user):
@@ -129,7 +128,7 @@ class Semester(ModelValidatableOnSave):
         if not self.is_semester_staff(user):
             raise ValidationError("User is not staff for this semester")
 
-        self._semester_staff.remove(user.username)
+        self._semester_staff_names.remove(user.username)
         self.save()
 
     def is_semester_staff(self, user):
@@ -137,17 +136,16 @@ class Semester(ModelValidatableOnSave):
         Returns True if the given User is a staff member for this Semester.
         Returns False otherwise.
         """
-        return user.username in self._semester_staff
+        return user.username in self._semester_staff_names
 
-    def add_enrolled_student(self, user):
+    def add_enrolled_students(self, *users):
         """
         Adds the given User to this Semester's list of enrolled students.
         Raises ValidationError if the User is already enrolled.
         """
-        if self.is_enrolled_student(user):
-            raise ValidationError("User is already enrolled in this semester")
-
-        self._enrolled_students.append(user.username)
+        for user in users:
+            if not self.is_enrolled_student(user):
+                self._enrolled_students.append(user.username)
         self.save()
 
     def remove_enrolled_student(self, user):

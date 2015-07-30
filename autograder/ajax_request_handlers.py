@@ -52,7 +52,7 @@ class ListCourses(LoginRequiredView):
         courses = Course.get_courses_for_user(request.user)
         data = [
             {'name': course.name,
-             'admins': course.course_admins}
+             'admins': course.course_admin_names}
             for course in courses
         ]
         return JsonResponse(data, safe=False)
@@ -95,7 +95,7 @@ class ListSemesters(LoginRequiredView):
             {
                 'name': semester.name,
                 'course_name': semester.course.name,
-                'semester_staff': semester.staff_members,
+                'semester_staff': semester.semester_staff_names,
                 'is_staff': True
             }
             for semester in staff_semesters
@@ -107,6 +107,7 @@ class ListSemesters(LoginRequiredView):
             }
             for semester in enrolled_semesters
         ]
+        data.sort(key=lambda item: item['name'])
         return JsonResponse(data, safe=False)
 
 
@@ -116,12 +117,12 @@ class AddSemester(LoginRequiredView):
     """
     def post(self, request):
         course = Course.objects.get(name=request.POST['course_name'])
-        if not course.is_course_admin(self.request.user):
+        if not course.is_course_admin(request.user):
             return HttpResponseForbidden()
 
         try:
             new_semester = Semester.objects.validate_and_create(
-                name=self.request.POST['semester_name'],
+                name=request.POST['semester_name'],
                 course=course)
             return JsonResponse({
                 'semester_name': new_semester.name,
@@ -135,14 +136,33 @@ class ListSemesterStaff(LoginRequiredView):
     """
     Permissions required: Course admin or Semester staff
     """
-    pass
+    def post(self, request):
+        course = Course.objects.get(name=request.POST['course_name'])
+        semester = Semester.objects.get(
+            name=request.POST['semester_name'], course=course)
+
+        can_view_staff = (
+            semester.is_semester_staff(request.user) or
+            course.is_course_admin(request.user))
+        if not can_view_staff:
+            return HttpResponseForbidden()
+
+        data = {
+            'semester_name': semester.name,
+            'course_name': course.name,
+            'semester_staff': semester.semester_staff_names,
+            'course_admins': course.course_admin_names
+        }
+
+        return JsonResponse(data, safe=False)
 
 
 class AddSemesterStaff(LoginRequiredView):
     """
     Permissions required: Course admin
     """
-    pass
+    def post(self, request):
+        pass
 
 
 class RemoveSemesterStaff(LoginRequiredView):

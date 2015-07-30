@@ -17,7 +17,7 @@ class CourseTestCase(TemporaryFilesystemTestCase):
         name = "eecs280"
         Course.objects.validate_and_create(name=name)
 
-        loaded = Course.objects.get(pk=name)
+        loaded = Course.objects.get(name=name)
 
         self.assertEqual(name, loaded.name)
 
@@ -26,7 +26,7 @@ class CourseTestCase(TemporaryFilesystemTestCase):
         Course.objects.validate_and_create(name=name)
 
         stripped_name = 'eecs280'
-        loaded = Course.objects.get(pk=stripped_name)
+        loaded = Course.objects.get(name=stripped_name)
         self.assertEqual(stripped_name, loaded.name)
 
     def test_exception_on_name_is_only_whitespace(self):
@@ -61,20 +61,24 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
         self.course = obj_ut.create_dummy_courses()
         self.user = obj_ut.create_dummy_users()
 
-    def test_valid_add_course_admin(self):
-        self.course.add_course_admin(self.user)
+    def test_valid_add_course_admins(self):
+        self.course.add_course_admins(self.user)
 
         loaded = Course.objects.get(name=self.course.name)
         self.assertTrue(loaded.is_course_admin(self.user))
 
-    def test_exception_on_duplicate_add_course_admin(self):
-        self.course.add_course_admin(self.user)
+    def test_add_course_admins_merge_duplicates(self):
+        self.course.add_course_admins(self.user)
 
-        with self.assertRaises(ValidationError):
-            self.course.add_course_admin(self.user)
+        user2 = obj_ut.create_dummy_users()
+        self.course.add_course_admins(self.user, user2)
+
+        loaded = Course.objects.get(name=self.course.name)
+        self.assertEqual(
+            [self.user.username, user2.username], loaded.course_admin_names)
 
     def test_valid_remove_course_admin(self):
-        self.course.add_course_admin(self.user)
+        self.course.add_course_admins(self.user)
         self.assertTrue(self.course.is_course_admin(self.user))
 
         self.course.remove_course_admin(self.user)
@@ -88,7 +92,7 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
 
     def test_is_course_admin(self):
         self.assertFalse(self.course.is_course_admin(self.user))
-        self.course.add_course_admin(self.user)
+        self.course.add_course_admins(self.user)
         self.assertTrue(self.course.is_course_admin(self.user))
 
     def test_get_courses_for_user(self):
@@ -96,7 +100,7 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
         courses = obj_ut.create_dummy_courses(10)
         subset = [courses[2], courses[5], courses[7]]
         for course in subset:
-            course.add_course_admin(self.user)
+            course.add_course_admins(self.user)
 
         courses_queryset = Course.get_courses_for_user(self.user)
         self.assertEqual(

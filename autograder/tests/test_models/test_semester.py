@@ -97,10 +97,15 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
         loaded = Semester.objects.get(pk=self.semester.pk)
         self.assertTrue(loaded.is_semester_staff(self.user))
 
-    def test_exception_on_user_already_staff(self):
+    def test_add_semester_staff_ignore_duplicates(self):
         self.semester.add_semester_staff(self.user)
-        with self.assertRaises(ValidationError):
-            self.semester.add_semester_staff(self.user)
+
+        user2 = obj_ut.create_dummy_users()
+        self.semester.add_semester_staff(self.user, user2)
+
+        loaded = Semester.objects.get(pk=self.semester.pk)
+        self.assertEqual(
+            [self.user.username, user2.username], loaded.semester_staff_names)
 
     def test_valid_remove_semester_staff(self):
         self.semester.add_semester_staff(self.user)
@@ -119,19 +124,24 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
         self.semester.add_semester_staff(self.user)
         self.assertTrue(self.semester.is_semester_staff(self.user))
 
-    def test_valid_add_enrolled_student(self):
-        self.semester.add_enrolled_student(self.user)
+    def test_valid_add_enrolled_students(self):
+        self.semester.add_enrolled_students(self.user)
 
         loaded = Semester.objects.get(pk=self.semester.pk)
         self.assertTrue(loaded.is_enrolled_student(self.user))
 
-    def test_exception_on_user_already_enrolled_student(self):
-        self.semester.add_enrolled_student(self.user)
-        with self.assertRaises(ValidationError):
-            self.semester.add_enrolled_student(self.user)
+    def test_add_enrolled_students_ignore_duplicates(self):
+        self.semester.add_enrolled_students(self.user)
+
+        user2 = obj_ut.create_dummy_users()
+        self.semester.add_enrolled_students(self.user, user2)
+
+        loaded = Semester.objects.get(pk=self.semester.pk)
+        self.assertEqual(
+            [self.user.username, user2.username], loaded.enrolled_students)
 
     def test_valid_remove_enrolled_student(self):
-        self.semester.add_enrolled_student(self.user)
+        self.semester.add_enrolled_students(self.user)
         self.assertTrue(self.semester.is_enrolled_student(self.user))
 
         self.semester.remove_enrolled_student(self.user)
@@ -145,11 +155,10 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
 
     def test_is_enrolled_student(self):
         self.assertFalse(self.semester.is_enrolled_student(self.user))
-        self.semester.add_enrolled_student(self.user)
+        self.semester.add_enrolled_students(self.user)
         self.assertTrue(self.semester.is_enrolled_student(self.user))
 
     def test_get_staff_semesters_for_user(self):
-        self.semester.delete()
         semesters = obj_ut.create_dummy_semesters(self.course, 10)
         subset = [semesters[1], semesters[6]]
         for semester in subset:
@@ -161,11 +170,10 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
             sorted(subset, key=lambda semester: semester.name))
 
     def test_get_enrolled_semesters_for_user(self):
-        self.semester.delete()
         semesters = obj_ut.create_dummy_semesters(self.course, 10)
         subset = [semesters[3], semesters[8]]
         for semester in subset:
-            semester.add_enrolled_student(self.user)
+            semester.add_enrolled_students(self.user)
 
         semesters_queryset = Semester.get_enrolled_semesters_for_user(
             self.user)
