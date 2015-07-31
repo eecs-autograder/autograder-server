@@ -34,8 +34,8 @@ class Semester(ModelValidatableOnSave):
             this Semester.
             This field is READ ONLY.
 
-        enrolled_students -- A list of usernames that are enrolled students
-            for this Semester.
+        enrolled_student_names -- A list of usernames that are enrolled
+            students for this Semester.
             This field is READ ONLY.
 
     Static methods:
@@ -47,7 +47,7 @@ class Semester(ModelValidatableOnSave):
         remove_semester_staff()
         is_semester_staff()
 
-        add_enrolled_student()
+        add_enrolled_students()
         remove_enrolled_student()
         is_enrolled_student()
 
@@ -76,10 +76,10 @@ class Semester(ModelValidatableOnSave):
         blank=True, default=list)
 
     @property
-    def enrolled_students(self):
-        return copy.deepcopy(self._enrolled_students)
+    def enrolled_student_names(self):
+        return copy.deepcopy(self._enrolled_student_names)
 
-    _enrolled_students = ArrayField(
+    _enrolled_student_names = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
         blank=True, default=list)
 
@@ -106,7 +106,7 @@ class Semester(ModelValidatableOnSave):
         is an enrolled student, sorted by Semester name.
         """
         return Semester.objects.filter(
-            _enrolled_students__contains=[user.username]).order_by('name')
+            _enrolled_student_names__contains=[user.username]).order_by('name')
 
     # -------------------------------------------------------------------------
 
@@ -145,7 +145,7 @@ class Semester(ModelValidatableOnSave):
         """
         for user in users:
             if not self.is_enrolled_student(user):
-                self._enrolled_students.append(user.username)
+                self._enrolled_student_names.append(user.username)
         self.save()
 
     def remove_enrolled_student(self, user):
@@ -156,7 +156,7 @@ class Semester(ModelValidatableOnSave):
         if not self.is_enrolled_student(user):
             raise ValidationError("User is not enrolled in this semester")
 
-        self._enrolled_students.remove(user.username)
+        self._enrolled_student_names.remove(user.username)
         self.save()
 
     def is_enrolled_student(self, user):
@@ -164,7 +164,7 @@ class Semester(ModelValidatableOnSave):
         Returns True if the given User is an enrolled student for
         this Semester. Returns False otherwise.
         """
-        return user.username in self._enrolled_students
+        return user.username in self._enrolled_student_names
 
     # -------------------------------------------------------------------------
 

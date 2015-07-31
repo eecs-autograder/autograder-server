@@ -138,7 +138,8 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
 
         loaded = Semester.objects.get(pk=self.semester.pk)
         self.assertEqual(
-            [self.user.username, user2.username], loaded.enrolled_students)
+            [self.user.username, user2.username],
+            loaded.enrolled_student_names)
 
     def test_valid_remove_enrolled_student(self):
         self.semester.add_enrolled_students(self.user)

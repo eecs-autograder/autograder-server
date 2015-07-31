@@ -14,7 +14,7 @@ from django.forms.forms import NON_FIELD_ERRORS
 from django.shortcuts import get_object_or_404, render
 
 from django.template import RequestContext
-from django.core.urlresolvers import reverse_lazy, reverse
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse, JsonResponse, HttpResponseForbidden, HttpResponseNotFound
 
 from django.contrib.auth.decorators import login_required
@@ -66,7 +66,18 @@ class GetCourse(LoginRequiredView):
                     'self': reverse('get-course', args=[course.pk])
                 }
             },
-            'included': []
+            'included': [
+                {
+                    'data': {
+                        'type': 'semester',
+                        'id': semester.pk,
+                        'links': {
+                            'self': reverse('get-semester', args=[semester.pk])
+                        }
+                    }
+                }
+                for semester in course.semesters.all().order_by('pk')
+            ]
         }
 
         return JsonResponse(response_content, safe=False)
@@ -121,32 +132,51 @@ class ListCourses(LoginRequiredView):
 
 # -----------------------------------------------------------------------------
 
+class GetSemester(LoginRequiredView):
+    pass
+    # def get(self, request, semester_id):
+    #     pass
+
 class ListSemesters(LoginRequiredView):
     """
     Reponse list content determinied by user permissions.
     """
-    def post(self, request):
+    def get(self, request):
         staff_semesters = Semester.get_staff_semesters_for_user(request.user)
         enrolled_semesters = Semester.get_enrolled_semesters_for_user(
             request.user)
 
-        data = [
-            {
-                'name': semester.name,
-                'course_name': semester.course.name,
-                'semester_staff': semester.semester_staff_names,
-                'is_staff': True
-            }
-            for semester in staff_semesters
-        ]
-        data += [
-            {
-                'name': semester.name,
-                'course_name': semester.course.name
-            }
-            for semester in enrolled_semesters
-        ]
-        data.sort(key=lambda item: item['name'])
+        data = {
+            'data': [
+                {
+                    'type': 'semester',
+                    'id': semester.pk,
+                    'attributes': {
+                        'name': semester.name,
+                        # ('semester_staff_names': semester.semester_staff_names,
+                        #  'enrolled_student_names': semester.enrolled_student_names
+                        #  if semester in staff_semesters)
+                    },
+                    'relationships': {
+                        'course': {
+                            'data': {
+                                'type': 'course',
+                                'id': semester.course.id
+                            },
+                            'links': {
+                                'self': reverse(
+                                    'get-course', args=[semester.course.id])
+                            }
+                        }
+                    },
+                    'meta': {
+                        'is_staff': (semester in staff_semesters)
+                    }
+                }
+                for semester in sorted(list(staff_semesters.all()) + list(enrolled_semesters.all()), key=lambda obj: obj.pk)
+            ]
+        }
+
         return JsonResponse(data, safe=False)
 
 
@@ -233,6 +263,14 @@ class RemoveEnrolledStudents(LoginRequiredView):
 
 
 # -----------------------------------------------------------------------------
+
+class ProjectRequestHandler(LoginRequiredView):
+    pass
+
+
+class GetProjectFile(LoginRequiredView):
+    pass
+
 
 class ListProjects(LoginRequiredView):
     """

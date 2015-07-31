@@ -423,7 +423,8 @@ class _UploadedProjectFile(ModelValidatableOnSave):
     project = models.ForeignKey(Project, related_name='project_files')
     uploaded_file = models.FileField(
         upload_to=_get_project_file_upload_to_dir,
-        validators=[_validate_filename])
+        validators=[_validate_filename],
+        max_length=gc.MAX_CHAR_FIELD_LEN * 2)
 
     @property
     def basename(self):

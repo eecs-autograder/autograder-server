@@ -7,7 +7,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .temporary_filesystem_test_case import TemporaryFilesystemTestCase
+from autograder.tests.temporary_filesystem_test_case import (
+    TemporaryFilesystemTestCase)
 
 import autograder.shared.utilities as ut
 import autograder.shared.global_constants as gc

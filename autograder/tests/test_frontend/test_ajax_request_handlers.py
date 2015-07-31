@@ -29,6 +29,9 @@ def _process_get_request(url, user):
     return resolved.func(request, *resolved.args, **resolved.kwargs)
 
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 def _get_course_request(course_id, user):
     url = '/courses/course/{}/'.format(course_id)
     return _process_get_request(url, user)
@@ -39,9 +42,67 @@ def _list_courses_request(user):
     return _process_get_request(url, user)
 
 
+def _get_semester_request(semester_id, user):
+    url = '/semesters/semester/{}/'.format(semester_id)
+    return _process_get_request(url, user)
+
+
+def _list_semesters_request(user):
+    url = '/semesters/'
+    return _process_get_request(url, user)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+def _course_to_json(course, with_fields=True):
+    data = {
+        'type': 'course',
+        'id': course.pk,
+        'links': {
+            'self': reverse('get-course', args=[course.pk])
+        }
+    }
+
+    if with_fields:
+        data['attributes'] = {
+            'name': course.name,
+            'course_admin_names': course.course_admin_names
+        }
+
+    return data
+
+
+def _semester_to_json(semester, with_fields=True, meta={}):
+    data = {
+        'type': 'semester',
+        'id': semester.pk,
+        'links': {
+            'self': reverse('get-semester', args=[semester.pk])
+        }
+    }
+
+    if with_fields:
+        data['attributes'] = {
+            'name': semester.name,
+            'semester_staff_names': semester.semester_staff_names,
+            'enrolled_student_names': semester.enrolled_student_names
+        }
+        data['relationships'] = {
+            'course': _course_to_json(semester.course, with_fields=False)
+        }
+
+    if meta:
+        data['meta'] = meta
+
+    return data
+
+
 class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
+
+        self.maxDiff = None
 
         self.rf = RequestFactory()
 
@@ -61,18 +122,32 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             content,
             {
-                'data': {
-                    'type': 'course',
-                    'id': course.pk,
-                    'attributes': {
-                        'name': course.name,
-                        'course_admin_names': course.course_admin_names
-                    },
-                    'links': {
-                        'self': reverse('get-course', args=[course.pk])
-                    }
-                },
+                'data': _course_to_json(course),
                 'included': []
+            })
+
+    def test_get_course_that_has_semesters(self):
+        course_admin = obj_ut.create_dummy_users()
+        course = self.courses[0]
+        course.add_course_admins(course_admin)
+
+        semesters = obj_ut.create_dummy_semesters(course, 9)
+
+        response = _get_course_request(course.pk, course_admin)
+
+        self.assertEqual(200, response.status_code)
+
+        content = _bytes_to_json(response.content)
+        self.assertEqual(
+            content,
+            {
+                'data': _course_to_json(course),
+                'included': [
+                    {
+                        'data': _semester_to_json(semester, with_fields=False)
+                    }
+                    for semester in semesters
+                ]
             })
 
     def test_get_course_permission_denied(self):
@@ -97,17 +172,7 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
 
         expected = {
             'data': [
-                {
-                    'type': 'course',
-                    'id': course.pk,
-                    'attributes': {
-                        'name': course.name,
-                        'course_admin_names': [course_admin.username]
-                    },
-                    'links': {
-                        'self': reverse('get-course', args=[course.pk])
-                    }
-                } for course in subset
+                _course_to_json(course) for course in subset
             ]
         }
 
@@ -155,109 +220,146 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
-class ListSemestersTestCase(TemporaryFilesystemTestCase):
+
+class SemesterRequestTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.rf = RequestFactory()
+        self.maxDiff = None
 
         self.user = obj_ut.create_dummy_users()
-        self.courses = obj_ut.create_dummy_courses(5)
 
-        self.semesters = (obj_ut.create_dummy_semesters(self.courses[0], 2) +
-                          obj_ut.create_dummy_semesters(self.courses[3], 3))
+        self.course1 = obj_ut.create_dummy_courses()
+        self.semesters1 = obj_ut.create_dummy_semesters(self.course1, 2)
+
+        self.course2 = obj_ut.create_dummy_courses()
+        self.semesters2 = obj_ut.create_dummy_semesters(self.course2, 3)
+
+        self.semesters = self.semesters1 + self.semesters2
+
+    def test_get_semester_as_course_admin(self):
+        self.course1.add_course_admins(self.user)
+
+        semester = self.semesters1[0]
+
+        response = _get_semester_request(semester.pk, self.user)
+        self.assertEqual(200, response.status_code)
+
+        expected = {
+            'data': _semester_to_json(semester, meta={'is_staff': True})
+        }
+
+        self.assertEqual(expected, _bytes_to_json(response.content))
+
+    def test_get_semester_as_staff(self):
+        semester = self.semesters1[0]
+
+        semester.add_semester_staff(self.user)
+
+        response = _get_semester_request(semester.pk, self.user)
+        self.assertEqual(200, response.status_code)
+
+        expected = {
+            'data': _semester_to_json(semester, meta={'is_staff': True})
+        }
+
+        self.assertEqual(expected, _bytes_to_json(response.content))
+
+    def test_get_semester_as_enrolled_student(self):
+        semester = self.semesters1[0]
+
+        semester.add_enrolled_students(self.user)
+
+        response = _get_semester_request(semester.pk, self.user)
+        self.assertEqual(200, response.status_code)
+
+        expected = {
+            'data': _semester_to_json(semester, meta={'is_staff': False})
+        }
+
+        self.assertEqual(expected, _bytes_to_json(response.content))
+
+    def test_get_semester_permission_denied(self):
+        semester = self.semesters1[0]
+
+        response = _get_semester_request(semester.pk, self.user)
+        self.assertEqual(403, response.status_code)
+
+    # -------------------------------------------------------------------------
 
     def test_list_semesters_course_admin(self):
-        self.courses[0].add_course_admins(self.user)
-        self.courses[3].add_course_admins(self.user)
+        self.course1.add_course_admins(self.user)
+        self.course2.add_course_admins(self.user)
 
-        expected = sorted([
-            {
-                "name": semester.name,
-                "course_name": semester.course.name,
-                "semester_staff": semester.semester_staff_names,
-                "is_staff": True
-            }
-            for semester in self.semesters
-        ], key=lambda item: item['name'])
+        expected = {
+            'data': [
+                _semester_to_json(semester, meta={'is_staff': True})
+                for semester in self.semesters
+            ]
+        }
 
-        request = self.rf.post(reverse('list-semesters'))
-        request.user = self.user
-        response = ajax_request_handlers.ListSemesters.as_view()(request)
+        response = _list_semesters_request(self.user)
 
         self.assertEqual(200, response.status_code)
+        print(json.dumps(expected, sort_keys=True, indent=4))
+        print(json.dumps(_bytes_to_json(response.content), sort_keys=True, indent=4))
         self.assertEqual(expected, _bytes_to_json(response.content))
 
     def test_list_semesters_staff_member(self):
-        subset = [self.semesters[1], self.semesters[-1]]
+        subset = [self.semesters1[1], self.semesters2[-1]]
         for semester in subset:
             semester.add_semester_staff(self.user)
 
-        expected = sorted([
-            {
-                "name": semester.name,
-                "course_name": semester.course.name,
-                "semester_staff": semester.semester_staff_names,
-                "is_staff": True
-            }
-            for semester in subset
-        ], key=lambda item: item['name'])
+        expected = {
+            'data': [
+                _semester_to_json(semester, meta={'is_staff': True})
+                for semester in self.semesters
+            ]
+        }
 
-        request = self.rf.post(reverse('list-semesters'))
-        request.user = self.user
-        response = ajax_request_handlers.ListSemesters.as_view()(request)
+        response = _list_semesters_request(self.user)
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(expected, _bytes_to_json(response.content))
 
     def test_list_semesters_enrolled_student(self):
-        subset = [self.semesters[0], self.semesters[-2]]
+        subset = [self.semesters1[0], self.semesters2[-2]]
         for semester in subset:
             semester.add_enrolled_students(self.user)
 
-        expected = sorted([
-            {
-                "name": semester.name,
-                "course_name": semester.course.name,
-            }
-            for semester in subset
-        ], key=lambda item: item['name'])
+        expected = {
+            'data': [
+                _semester_to_json(semester, meta={'is_staff': False})
+                for semester in self.semesters
+            ]
+        }
 
-        request = self.rf.post(reverse('list-semesters'))
-        request.user = self.user
-        response = ajax_request_handlers.ListSemesters.as_view()(request)
+        response = _list_semesters_request(self.user)
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(expected, _bytes_to_json(response.content))
 
     def test_list_semesters_enrolled_student_and_semester_staff(self):
-        self.semesters[0].add_semester_staff(self.user)
-        self.semesters[-2].add_enrolled_students(self.user)
+        self.semesters1[0].add_semester_staff(self.user)
+        self.semesters2[-2].add_enrolled_students(self.user)
 
-        expected = sorted([
-            {
-                "name": self.semesters[0].name,
-                "course_name": self.semesters[0].course.name,
-                "semester_staff": self.semesters[0].semester_staff_names,
-                "is_staff": True
-            },
-            {
-                "name": self.semesters[-2].name,
-                "course_name": self.semesters[-2].course.name,
-            }
-        ], key=lambda item: item['name'])
+        expected = {
+            'data': list(sorted([
+                _semester_to_json(self.semesters1[0], meta={'is_staff': True}),
+                _semester_to_json(
+                    self.semesters2[-2], meta={'is_staff': False})
+            ], key=lambda obj: obj['id']))
+        }
 
-        request = self.rf.post(reverse('list-semesters'))
-        request.user = self.user
-        response = ajax_request_handlers.ListSemesters.as_view()(request)
+        response = _list_semesters_request(self.user)
 
         self.assertEqual(200, response.status_code)
+        print(json.dumps(expected, sort_keys=True, indent=4))
+        print(json.dumps(_bytes_to_json(response.content), sort_keys=True, indent=4))
         self.assertEqual(expected, _bytes_to_json(response.content))
 
     def test_list_semesters_nobody_user(self):
-        request = self.rf.post(reverse('list-semesters'))
-        request.user = self.user
-        response = ajax_request_handlers.ListSemesters.as_view()(request)
+        response = _list_semesters_request(self.user)
 
         self.assertEqual(200, response.status_code)
         self.assertEqual([], _bytes_to_json(response.content))

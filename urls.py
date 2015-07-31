@@ -16,7 +16,9 @@ Including another URLconf
 from django.conf.urls import include, url
 from django.contrib import admin
 
-from autograder import views, ajax_request_handlers
+from autograder.frontend import views, ajax_request_handlers
+
+import autograder.shared.global_constants as gc
 
 
 urlpatterns = [
@@ -28,9 +30,22 @@ urlpatterns = [
         ajax_request_handlers.ListCourses.as_view(),
         name='list-courses'),
 
-    url(r'^list-semesters/$',
+    url(r'^semesters/semester/(?P<semester_id>\d+)/$',
+        ajax_request_handlers.GetSemester.as_view(),
+        name='get-semester'),
+
+    url(r'^semesters/$',
         ajax_request_handlers.ListSemesters.as_view(),
         name='list-semesters'),
+
+    url(r'^/projects/project/(?P<project_id>\d+)/$',
+        ajax_request_handlers.ProjectRequestHandler.as_view(),
+        name='project-handler'),
+
+    url(r'^/projects/project/(?P<project_id>\d+)/(?P<filename>{})/$'.format(
+        gc.PROJECT_FILENAME_WHITELIST_REGEX.pattern),
+        ajax_request_handlers.GetProjectFile.as_view(),
+        name='get-project-file'),
 
     url(r'^add-semester/$',
         ajax_request_handlers.AddSemester.as_view(),
@@ -91,14 +106,20 @@ urlpatterns = [
     #           },
     #           'relationships': {
     #               'course': {
-    #                   'links': {
-    #                       'self': <course url>,
+    #                   'data': {
+    #                       'type': 'course',
+    #                       'id': <course-id>,
+    #                       'links': {
+    #                           'self': <course url>
+    #                       }
     #                   }
-    #                   'data': {'type': 'course', 'id': <course-id>}
     #               }
     #           },
     #           'links': {
     #               'self': <self link>
+    #           },
+    #           'meta': {
+    #               'is_staff': <true> | <false
     #           }
     #       },
     #       included: [
@@ -117,7 +138,7 @@ urlpatterns = [
     #       }
     #   }
     #
-    # GET                       /semesters?course=<course-id>
+    # GET                       /semesters
     # POST                      /semesters/semester
     # GET PATCH (DELETE)        /semesters/semester/<semester-id>
     #
@@ -166,12 +187,11 @@ urlpatterns = [
     #       }
     #   }
     #
-    # GET                       /projects?semester=<semester-id>
     # POST                      /projects/project
     # POST                      /projects/project/<project-id>/copy-to-semester/<semester-id>
     # GET PATCH DELETE          /projects/project/<project-id>
     # POST                      /projects/project/<project-id>/add-files
-    # GET DELETE                /projects/project/<project-id>/filename
+    # GET DELETE                /projects/project/<project-id>/<filename>
     #
     # --- AUTOGRADER TEST CASES ---
     # GET                       /ag-test-cases?project=<project-id>
