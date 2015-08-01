@@ -144,6 +144,32 @@ class SemesterRequestHandler(LoginRequiredView):
 
         return JsonResponse(data, safe=False)
 
+    def post(self, request):
+        request_json = json.loads(request.body.decode('utf-8'))
+
+        course = Course.objects.get(
+            pk=request_json['data']['relationships']['course']['data']['id'])
+        if not course.is_course_admin(request.user):
+            return HttpResponseForbidden()
+
+        try:
+            new_semester = Semester.objects.validate_and_create(
+                name=request_json['data']['attributes']['name'],
+                course=course)
+
+            response_json = {
+                'data': semester_to_json(
+                    new_semester, user_is_semester_staff=True)
+            }
+            return JsonResponse(response_json, safe=False, status=201)
+        except ValidationError as e:
+            response_json = {
+                'errors': {
+                    'meta': e.message_dict
+                }
+            }
+            return JsonResponse(response_json, safe=False, status=409)
+
     def patch(self, request, semester_id):
         try:
             semester = Semester.objects.get(pk=semester_id)
@@ -223,86 +249,65 @@ class ListSemesters(LoginRequiredView):
         return JsonResponse(data, safe=False)
 
 
-class AddSemester(LoginRequiredView):
-    """
-    Permissions required: Course admin
-    """
-    def post(self, request):
-        course = Course.objects.get(name=request.POST['course_name'])
-        if not course.is_course_admin(request.user):
-            return HttpResponseForbidden()
+# class ListSemesterStaff(LoginRequiredView):
+#     """
+#     Permissions required: Course admin or Semester staff
+#     """
+#     def post(self, request):
+#         course = Course.objects.get(name=request.POST['course_name'])
+#         semester = Semester.objects.get(
+#             name=request.POST['semester_name'], course=course)
 
-        try:
-            new_semester = Semester.objects.validate_and_create(
-                name=request.POST['semester_name'],
-                course=course)
-            return JsonResponse({
-                'semester_name': new_semester.name,
-                'course_name': course.name
-            })
-        except ValidationError as e:
-            return JsonResponse({'errors': e.message_dict}, safe=False)
+#         can_view_staff = (
+#             semester.is_semester_staff(request.user) or
+#             course.is_course_admin(request.user))
+#         if not can_view_staff:
+#             return HttpResponseForbidden()
 
+#         data = {
+#             'semester_name': semester.name,
+#             'course_name': course.name,
+#             'semester_staff': semester.semester_staff_names,
+#             'course_admins': course.course_admin_names
+#         }
 
-class ListSemesterStaff(LoginRequiredView):
-    """
-    Permissions required: Course admin or Semester staff
-    """
-    def post(self, request):
-        course = Course.objects.get(name=request.POST['course_name'])
-        semester = Semester.objects.get(
-            name=request.POST['semester_name'], course=course)
-
-        can_view_staff = (
-            semester.is_semester_staff(request.user) or
-            course.is_course_admin(request.user))
-        if not can_view_staff:
-            return HttpResponseForbidden()
-
-        data = {
-            'semester_name': semester.name,
-            'course_name': course.name,
-            'semester_staff': semester.semester_staff_names,
-            'course_admins': course.course_admin_names
-        }
-
-        return JsonResponse(data, safe=False)
+#         return JsonResponse(data, safe=False)
 
 
-class AddSemesterStaff(LoginRequiredView):
-    """
-    Permissions required: Course admin
-    """
-    def post(self, request):
-        pass
+# class AddSemesterStaff(LoginRequiredView):
+#     """
+#     Permissions required: Course admin
+#     """
+#     def post(self, request):
+#         pass
 
 
-class RemoveSemesterStaff(LoginRequiredView):
-    """
-    Permissions required: Course admin
-    """
-    pass
+# class RemoveSemesterStaff(LoginRequiredView):
+#     """
+#     Permissions required: Course admin
+#     """
+#     pass
 
 
-class ListEnrolledStudents(LoginRequiredView):
-    """
-    Permissions required: Course admin or Semester staff
-    """
-    pass
+# class ListEnrolledStudents(LoginRequiredView):
+#     """
+#     Permissions required: Course admin or Semester staff
+#     """
+#     pass
 
 
-class AddEnrolledStudents(LoginRequiredView):
-    """
-    Permissions required: Course admin or Semester staff
-    """
-    pass
+# class AddEnrolledStudents(LoginRequiredView):
+#     """
+#     Permissions required: Course admin or Semester staff
+#     """
+#     pass
 
 
-class RemoveEnrolledStudents(LoginRequiredView):
-    """
-    Permissions required: Course admin
-    """
-    pass
+# class RemoveEnrolledStudents(LoginRequiredView):
+#     """
+#     Permissions required: Course admin
+#     """
+#     pass
 
 
 # -----------------------------------------------------------------------------

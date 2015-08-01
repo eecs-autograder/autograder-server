@@ -34,10 +34,20 @@ def _process_get_request(url, user):
     return resolved.func(request, *resolved.args, **resolved.kwargs)
 
 
+def _process_post_request(url, data, user):
+    rf = RequestFactory()
+
+    request = rf.post(url, json.dumps(data), content_type='application/json')
+    request.user = user
+
+    resolved = resolve(request.path)
+    return resolved.func(request, *resolved.args, **resolved.kwargs)
+
+
 def _process_patch_request(url, data, user):
     rf = RequestFactory()
 
-    request = rf.patch(url, data)
+    request = rf.patch(url, json.dumps(data))
     request.user = user
 
     resolved = resolve(request.path)
@@ -65,6 +75,28 @@ def _get_semester_request(semester_id, user):
 def _list_semesters_request(user):
     url = '/semesters/'
     return _process_get_request(url, user)
+
+
+def _add_semester_request(course_id, semester_name, user):
+    url = '/semesters/semester/'
+    data = {
+        'data': {
+            'type': 'semester',
+            'attributes': {
+                'name': semester_name,
+            },
+            'relationships': {
+                'course': {
+                    'data': {
+                        'type':  'course',
+                        'id': course_id
+                    }
+                }
+            }
+        }
+    }
+
+    return _process_post_request(url, data, user)
 
 
 def _patch_semester_request(semester_id, user,
@@ -100,7 +132,7 @@ def _patch_semester_request(semester_id, user,
             user_obj.username for user_obj in students_to_remove
         ]
 
-    return _process_patch_request(url, json.dumps(data), user)
+    return _process_patch_request(url, data, user)
 
 
 # -----------------------------------------------------------------------------
@@ -598,62 +630,81 @@ class PatchSemesterTestCase(TemporaryFilesystemTestCase):
 
 
 # -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
 
-# class AddSemesterTestCase(TemporaryFilesystemTestCase):
-#     def setUp(self):
-#         super().setUp()
+class AddSemesterTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
 
-#         self.rf = RequestFactory()
+        self.admin = obj_ut.create_dummy_users()
+        self.course = obj_ut.create_dummy_courses()
+        self.course.add_course_admins(self.admin)
 
-#         self.user = obj_ut.create_dummy_users()
-#         self.course = obj_ut.create_dummy_courses()
+    def test_valid_add_semester(self):
+        semester_name = 'fall2015'
+        response = _add_semester_request(
+            self.course.pk, semester_name, self.admin)
 
-#     def test_valid_add_semester(self):
-#         self.course.add_course_admins(self.user)
+        self.assertEqual(201, response.status_code)
 
-#         semester_name = 'fall2015'
-#         request = self.rf.post(
-#             reverse('add-semester'),
-#             {"semester_name": semester_name, "course_name": self.course.name})
-#         request.user = self.user
-#         response = ajax_request_handlers.AddSemester.as_view()(request)
+        loaded_semester = Semester.objects.get(
+            name=semester_name, course=self.course)
 
-#         self.assertEqual(200, response.status_code)
-#         self.assertEqual(
-#             {"semester_name": semester_name, "course_name": self.course.name},
-#             _bytes_to_json(response.content))
+        expected = {
+            'data': semester_to_json(loaded_semester,
+                                     user_is_semester_staff=True)
+        }
 
-#         loaded_semester = Semester.objects.get(
-#             name=semester_name, course=self.course)
-#         self.assertEqual(loaded_semester.name, semester_name)
-#         self.assertEqual(loaded_semester.course, self.course)
+        self.assertEqual(expected, _bytes_to_json(response.content))
 
-#     def test_add_semester_permission_denied(self):
-#         semester_name = 'spam'
-#         request = self.rf.post(
-#             reverse('add-semester'),
-#             {'semester_name': semester_name, 'course_name': self.course.name})
-#         request.user = self.user
-#         response = ajax_request_handlers.AddSemester.as_view()(request)
+        self.assertEqual(loaded_semester.name, semester_name)
+        self.assertEqual(loaded_semester.course, self.course)
+        self.assertEqual(
+            loaded_semester.semester_staff_names, [self.admin.username])
+        self.assertEqual(loaded_semester.enrolled_student_names, [])
 
-#         self.assertEqual(403, response.status_code)
+    def test_add_semester_permission_denied(self):
+        semester_name = 'spam'
 
-#         with self.assertRaises(ObjectDoesNotExist):
-#             Semester.objects.get(name=semester_name, course=self.course)
+        # Staff member (non-admin)
+        staff = obj_ut.create_dummy_users()
+        new_sem = obj_ut.create_dummy_semesters(self.course)
+        new_sem.add_semester_staff(staff)
 
-#     def test_add_duplicate_semester(self):
-#         self.course.add_course_admins(self.user)
-#         semester = obj_ut.create_dummy_semesters(self.course)
+        response = _add_semester_request(
+            self.course.pk, semester_name, staff)
 
-#         request = self.rf.post(
-#             reverse('add-semester'),
-#             {'semester_name': semester.name, 'course_name': self.course.name})
-#         request.user = self.user
-#         response = ajax_request_handlers.AddSemester.as_view()(request)
+        self.assertEqual(403, response.status_code)
+        with self.assertRaises(ObjectDoesNotExist):
+            Semester.objects.get(name=semester_name, course=self.course)
 
-#         self.assertEqual(200, response.status_code)
-#         self.assertTrue('errors' in _bytes_to_json(response.content))
+        # Enrolled student
+        student = obj_ut.create_dummy_users()
+        new_sem.add_enrolled_students(student)
+
+        response = _add_semester_request(
+            self.course.pk, semester_name, student)
+
+        self.assertEqual(403, response.status_code)
+        with self.assertRaises(ObjectDoesNotExist):
+            Semester.objects.get(name=semester_name, course=self.course)
+
+        # Nobody user
+        nobody = obj_ut.create_dummy_users()
+        response = _add_semester_request(
+            self.course.pk, semester_name, nobody)
+
+        self.assertEqual(403, response.status_code)
+        with self.assertRaises(ObjectDoesNotExist):
+            Semester.objects.get(name=semester_name, course=self.course)
+
+    def test_add_duplicate_semester(self):
+        semester = obj_ut.create_dummy_semesters(self.course)
+
+        response = _add_semester_request(
+            self.course.pk, semester.name, self.admin)
+
+        self.assertEqual(409, response.status_code)
+        self.assertTrue('errors' in _bytes_to_json(response.content))
 
 
 # -----------------------------------------------------------------------------

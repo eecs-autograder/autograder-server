@@ -35,7 +35,7 @@ urlpatterns = [
         name='semester-handler'),
 
     url(r'^semesters/semester/$',
-        ajax_request_handlers.AddSemester.as_view(),
+        ajax_request_handlers.SemesterRequestHandler.as_view(),
         name='add-semester'),
 
     url(r'^semesters/$',
