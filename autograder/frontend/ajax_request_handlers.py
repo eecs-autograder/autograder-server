@@ -5,6 +5,8 @@ import traceback
 
 from django.utils import timezone
 
+from django.contrib.auth.models import User
+
 from django.views.generic.base import View
 from django.views.generic.edit import CreateView, DeleteView
 
@@ -15,7 +17,9 @@ from django.shortcuts import get_object_or_404, render
 
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse, JsonResponse, HttpResponseForbidden, HttpResponseNotFound
+from django.http import (
+    HttpResponse, JsonResponse, HttpResponseForbidden, HttpResponseNotFound,
+    HttpResponseBadRequest)
 
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -23,6 +27,8 @@ from django.utils.decorators import method_decorator
 # from django.views.decorators.csrf import ensure_csrf_cookie
 # from django.utils.decorators import method_decorator
 from autograder.models import Course, Semester
+from autograder.frontend.json_api_serializers import (
+    course_to_json, semester_to_json, project_to_json)
 
 
 class ExceptionLoggingView(View):
@@ -55,26 +61,12 @@ class GetCourse(LoginRequiredView):
             return HttpResponseForbidden()
 
         response_content = {
-            'data': {
-                'type': 'course',
-                'id': course.pk,
-                'attributes': {
-                    'name': course.name,
-                    'course_admin_names': course.course_admin_names
-                },
-                'links': {
-                    'self': reverse('get-course', args=[course.pk])
-                }
-            },
+            'data': course_to_json(course),
             'included': [
                 {
-                    'data': {
-                        'type': 'semester',
-                        'id': semester.pk,
-                        'links': {
-                            'self': reverse('get-semester', args=[semester.pk])
-                        }
-                    }
+                    'data': semester_to_json(
+                        semester, with_fields=False,
+                        user_is_semester_staff=True)
                 }
                 for semester in course.semesters.all().order_by('pk')
             ]
@@ -91,17 +83,7 @@ class ListCourses(LoginRequiredView):
         courses = Course.get_courses_for_user(request.user)
         data = {
             'data': [
-                {
-                    'type': 'course',
-                    'id': course.pk,
-                    'attributes': {
-                        'name': course.name,
-                        'course_admin_names': course.course_admin_names
-                    },
-                    'links': {
-                        'self': reverse('get-course', args=[course.pk])
-                    }
-                } for course in courses
+                course_to_json(course) for course in courses
             ]
         }
 
@@ -132,10 +114,91 @@ class ListCourses(LoginRequiredView):
 
 # -----------------------------------------------------------------------------
 
-class GetSemester(LoginRequiredView):
-    pass
-    # def get(self, request, semester_id):
-    #     pass
+class SemesterRequestHandler(LoginRequiredView):
+    def get(self, request, semester_id):
+        try:
+            semester = Semester.objects.get(pk=semester_id)
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+
+        is_staff = semester.is_semester_staff(request.user)
+
+        if semester.is_enrolled_student(request.user):
+            included = [
+                project_to_json(project, with_fields=False) for project in
+                semester.projects.filter(visible_to_students=True)
+            ]
+        elif is_staff:
+            included = [
+                project_to_json(project, with_fields=False) for project in
+                semester.projects.all()
+            ]
+        else:
+            return HttpResponseForbidden()
+
+        data = {
+            'data': semester_to_json(
+                semester, user_is_semester_staff=is_staff),
+            'included': included
+        }
+
+        return JsonResponse(data, safe=False)
+
+    def patch(self, request, semester_id):
+        try:
+            semester = Semester.objects.get(pk=semester_id)
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+
+        if not semester.course.is_course_admin(request.user):
+            return HttpResponseForbidden()
+
+        body = json.loads(request.body.decode('utf-8'))
+        try:
+            patch_instructions = body['meta']
+        except KeyError:
+            return HttpResponseBadRequest('No metadata included')
+
+        staff_to_add = patch_instructions.get('add_semester_staff', None)
+        staff_to_remove = patch_instructions.get('remove_semester_staff', None)
+
+        if staff_to_add and staff_to_remove:
+            return HttpResponseBadRequest(
+                "Can't add and remove staff in the same PATCH request")
+
+        students_to_add = patch_instructions.get('add_enrolled_students', None)
+        students_to_remove = patch_instructions.get(
+            'remove_enrolled_students', None)
+
+        if students_to_add and students_to_remove:
+            return HttpResponseBadRequest(
+                "Can't add and remove students in the same PATCH request")
+
+        if not (staff_to_add or staff_to_remove or
+                students_to_add or students_to_remove):
+            return HttpResponseBadRequest(
+                "No PATCH operations included")
+
+        if staff_to_add:
+            users = [User.objects.get_or_create(username=username)[0]
+                     for username in staff_to_add]
+            semester.add_semester_staff(*users)
+        elif staff_to_remove:
+            users = [User.objects.get_or_create(username=username)[0]
+                     for username in staff_to_remove]
+            semester.remove_semester_staff(*users)
+
+        if students_to_add:
+            users = [User.objects.get_or_create(username=username)[0]
+                     for username in students_to_add]
+            semester.add_enrolled_students(*users)
+        elif students_to_remove:
+            users = [User.objects.get_or_create(username=username)[0]
+                     for username in students_to_remove]
+            semester.remove_enrolled_students(*users)
+
+        return HttpResponse(status=204)
+
 
 class ListSemesters(LoginRequiredView):
     """
@@ -148,34 +211,14 @@ class ListSemesters(LoginRequiredView):
 
         data = {
             'data': [
-                {
-                    'type': 'semester',
-                    'id': semester.pk,
-                    'attributes': {
-                        'name': semester.name,
-                        # ('semester_staff_names': semester.semester_staff_names,
-                        #  'enrolled_student_names': semester.enrolled_student_names
-                        #  if semester in staff_semesters)
-                    },
-                    'relationships': {
-                        'course': {
-                            'data': {
-                                'type': 'course',
-                                'id': semester.course.id
-                            },
-                            'links': {
-                                'self': reverse(
-                                    'get-course', args=[semester.course.id])
-                            }
-                        }
-                    },
-                    'meta': {
-                        'is_staff': (semester in staff_semesters)
-                    }
-                }
-                for semester in sorted(list(staff_semesters.all()) + list(enrolled_semesters.all()), key=lambda obj: obj.pk)
+                semester_to_json(semester, user_is_semester_staff=True)
+                for semester in staff_semesters.all()
             ]
         }
+
+        data['data'] += [
+            semester_to_json(semester) for semester in enrolled_semesters.all()
+        ]
 
         return JsonResponse(data, safe=False)
 

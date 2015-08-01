@@ -84,7 +84,7 @@ def semester_to_json(semester, with_fields=True, user_is_semester_staff=False):
         'type': 'semester',
         'id': semester.pk,
         'links': {
-            'self': reverse('get-semester', args=[semester.pk])
+            'self': reverse('semester-handler', args=[semester.pk])
         },
         'meta': {
             'is_staff': user_is_semester_staff

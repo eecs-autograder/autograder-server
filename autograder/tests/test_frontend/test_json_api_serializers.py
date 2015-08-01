@@ -102,7 +102,7 @@ class SemesterSerializerTestCase(TemporaryFilesystemTestCase):
                 }
             },
             'links': {
-                'self': reverse('get-semester', args=[self.semester.pk])
+                'self': reverse('semester-handler', args=[self.semester.pk])
             },
             'meta': {
                 'is_staff': True,
@@ -134,7 +134,7 @@ class SemesterSerializerTestCase(TemporaryFilesystemTestCase):
                 }
             },
             'links': {
-                'self': reverse('get-semester', args=[self.semester.pk])
+                'self': reverse('semester-handler', args=[self.semester.pk])
             },
             'meta': {
                 'is_staff': False
@@ -150,7 +150,7 @@ class SemesterSerializerTestCase(TemporaryFilesystemTestCase):
             'type': 'semester',
             'id': self.semester.pk,
             'links': {
-                'self': reverse('get-semester', args=[self.semester.pk])
+                'self': reverse('semester-handler', args=[self.semester.pk])
             },
             'meta': {
                 'is_staff': True
@@ -167,7 +167,7 @@ class SemesterSerializerTestCase(TemporaryFilesystemTestCase):
             'type': 'semester',
             'id': self.semester.pk,
             'links': {
-                'self': reverse('get-semester', args=[self.semester.pk])
+                'self': reverse('semester-handler', args=[self.semester.pk])
             },
             'meta': {
                 'is_staff': False

@@ -31,33 +31,25 @@ urlpatterns = [
         name='list-courses'),
 
     url(r'^semesters/semester/(?P<semester_id>\d+)/$',
-        ajax_request_handlers.GetSemester.as_view(),
-        name='get-semester'),
+        ajax_request_handlers.SemesterRequestHandler.as_view(),
+        name='semester-handler'),
+
+    url(r'^semesters/semester/$',
+        ajax_request_handlers.AddSemester.as_view(),
+        name='add-semester'),
 
     url(r'^semesters/$',
         ajax_request_handlers.ListSemesters.as_view(),
         name='list-semesters'),
 
-    url(r'^/projects/project/(?P<project_id>\d+)/$',
+    url(r'^projects/project/(?P<project_id>\d+)/$',
         ajax_request_handlers.ProjectRequestHandler.as_view(),
         name='project-handler'),
 
-    url(r'^/projects/project/(?P<project_id>\d+)/(?P<filename>{})/$'.format(
+    url(r'^projects/project/(?P<project_id>\d+)/(?P<filename>{})/$'.format(
         gc.PROJECT_FILENAME_WHITELIST_REGEX.pattern),
         ajax_request_handlers.GetProjectFile.as_view(),
         name='get-project-file'),
-
-    url(r'^add-semester/$',
-        ajax_request_handlers.AddSemester.as_view(),
-        name='add-semester'),
-
-    url(r'^list-semester-staff/$',
-        ajax_request_handlers.ListSemesterStaff.as_view(),
-        name='list-semester-staff'),
-
-    url(r'^add-semester-staff/$',
-        ajax_request_handlers.AddSemesterStaff.as_view(),
-        name='add-semester-staff')
 
     # --- COURSES ---
     #   json format:
@@ -135,6 +127,11 @@ urlpatterns = [
     #
     #       'errors': {
     #           'meta': <json error data from database api>
+    #       },
+    #
+    #       'meta': { // for PATCH requests
+    #           'add_semester_staff': [<name to add>, ...],
+    #           'remove_semester_staff': [<name to add>, ...]
     #       }
     #   }
     #

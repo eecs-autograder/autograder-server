@@ -69,7 +69,8 @@ class Semester(ModelValidatableOnSave):
 
     @property
     def semester_staff_names(self):
-        return copy.deepcopy(self._semester_staff_names)
+        return (copy.deepcopy(self._semester_staff_names) +
+                self.course.course_admin_names)
 
     _semester_staff_names = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
@@ -90,73 +91,75 @@ class Semester(ModelValidatableOnSave):
     def get_staff_semesters_for_user(user):
         """
         Returns a QuerySet of Semesters for which the given user is
-        a staff member, sorted by Semester name.
+        a staff member.
         Note that if user is an administrator for this Semester's Course,
         all Semesters for that Course will be returned.
         """
         return Semester.objects.filter(
             Q(_semester_staff_names__contains=[user.username]) |
             Q(course___course_admin_names__contains=[user.username])
-        ).order_by('name')
+        )
 
     @staticmethod
     def get_enrolled_semesters_for_user(user):
         """
         Returns a QuerySet of Semesters for which the given user
-        is an enrolled student, sorted by Semester name.
+        is an enrolled student.
         """
         return Semester.objects.filter(
-            _enrolled_student_names__contains=[user.username]).order_by('name')
+            _enrolled_student_names__contains=[user.username])
 
     # -------------------------------------------------------------------------
 
     def add_semester_staff(self, *users):
         """
-        Adds the given User to this Semester's list of staff members.
-        Raises ValidationError if the User is already a staff member.
+        Adds the given Users to this Semester's list of staff members.
+        Raises ValidationError if any of the Users are already staff members.
         """
         for user in users:
             if not self.is_semester_staff(user):
                 self._semester_staff_names.append(user.username)
         self.save()
 
-    def remove_semester_staff(self, user):
+    def remove_semester_staff(self, *users):
         """
-        Removes the given User from this Semester's list of staff members.
-        Raises ValidationError if the User is not a staff member.
+        Removes the given Users from this Semester's list of staff members.
+        Raises ValidationError if any of the Users are not staff members.
         """
-        if not self.is_semester_staff(user):
-            raise ValidationError("User is not staff for this semester")
-
-        self._semester_staff_names.remove(user.username)
+        for user in users:
+            if not self.is_semester_staff(user):
+                raise ValidationError("User is not staff for this semester")
+            self._semester_staff_names.remove(user.username)
         self.save()
 
     def is_semester_staff(self, user):
         """
-        Returns True if the given User is a staff member for this Semester.
+        Returns True if the given User is a staff member for this Semester
+        or a course admin for this Semester's course.
         Returns False otherwise.
         """
-        return user.username in self._semester_staff_names
+        return (user.username in self._semester_staff_names or
+                self.course.is_course_admin(user))
 
     def add_enrolled_students(self, *users):
         """
         Adds the given User to this Semester's list of enrolled students.
-        Raises ValidationError if the User is already enrolled.
+        Raises ValidationError if any of the Users are already enrolled.
         """
         for user in users:
             if not self.is_enrolled_student(user):
                 self._enrolled_student_names.append(user.username)
         self.save()
 
-    def remove_enrolled_student(self, user):
+    def remove_enrolled_students(self, *users):
         """
-        Removes the given User from this Semester's list of enrolled students.
-        Raises ValidationError if the User is not enrolled.
+        Removes the given Users from this Semester's list of enrolled students.
+        Raises ValidationError if any or the Users are not enrolled.
         """
-        if not self.is_enrolled_student(user):
-            raise ValidationError("User is not enrolled in this semester")
-
-        self._enrolled_student_names.remove(user.username)
+        for user in users:
+            if not self.is_enrolled_student(user):
+                raise ValidationError("User is not enrolled in this semester")
+            self._enrolled_student_names.remove(user.username)
         self.save()
 
     def is_enrolled_student(self, user):

@@ -377,7 +377,6 @@ class Project(ModelValidatableOnSave):
     def get_file(self, filename):
         full_path = os.path.join(
             ut.get_project_files_relative_dir(self), filename)
-        print(full_path)
         file_obj = get_object_or_404(
             _UploadedProjectFile, project=self, uploaded_file=full_path)
         return file_obj.uploaded_file
