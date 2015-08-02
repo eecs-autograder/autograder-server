@@ -8,10 +8,11 @@ def json_load_bytes(data):
     return json.loads(data.decode('utf-8'))
 
 
-def process_get_request(url, user):
-    rf = RequestFactory()
+_REQUEST_FACTORY = RequestFactory()
 
-    request = rf.get(url)
+
+def process_get_request(url, user):
+    request = _REQUEST_FACTORY.get(url)
     request.user = user
 
     resolved = resolve(request.path)
@@ -19,9 +20,8 @@ def process_get_request(url, user):
 
 
 def process_post_request(url, data, user):
-    rf = RequestFactory()
-
-    request = rf.post(url, json.dumps(data), content_type='application/json')
+    request = _REQUEST_FACTORY.post(
+        url, json.dumps(data), content_type='application/json')
     request.user = user
 
     resolved = resolve(request.path)
@@ -29,9 +29,15 @@ def process_post_request(url, data, user):
 
 
 def process_patch_request(url, data, user):
-    rf = RequestFactory()
+    request = _REQUEST_FACTORY.patch(url, json.dumps(data))
+    request.user = user
 
-    request = rf.patch(url, json.dumps(data))
+    resolved = resolve(request.path)
+    return resolved.func(request, *resolved.args, **resolved.kwargs)
+
+
+def process_delete_request(url, user):
+    request = _REQUEST_FACTORY.delete(url)
     request.user = user
 
     resolved = resolve(request.path)

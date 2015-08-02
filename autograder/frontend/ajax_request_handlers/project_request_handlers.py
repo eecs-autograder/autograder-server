@@ -12,15 +12,29 @@ from autograder.models import Semester, Project
 
 
 class ProjectRequestHandler(LoginRequiredView):
-    # def get(self, request, project_id):
-    #     pass
+    def get(self, request, project_id):
+        try:
+            project = Project.objects.get(pk=project_id)
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+
+        is_staff = project.semester.is_semester_staff(request.user)
+        is_enrolled = project.semester.is_enrolled_student(request.user)
+        can_view_project = (
+            is_staff or
+            is_enrolled and project.visible_to_students)
+
+        if not can_view_project:
+            return HttpResponseForbidden()
+
+        return JsonResponse({'data': project_to_json(project)})
 
     def post(self, request):
         request_content = json.loads(request.body.decode('utf-8'))
         try:
-            semester = Semester.objects.get(
-                pk=request_content['data']['relationships']['semester']['data']['id']
-            )
+            semester_json = (
+                request_content['data']['relationships']['semester'])
+            semester = Semester.objects.get(pk=semester_json['data']['id'])
         except ObjectDoesNotExist:
             return HttpResponseNotFound()
 
@@ -47,8 +61,18 @@ class ProjectRequestHandler(LoginRequiredView):
     # def patch(self, request, project_id):
     #     pass
 
-    # def delete(self, request, project_id):
-    #     pass
+    def delete(self, request, project_id):
+        try:
+            project = Project.objects.get(pk=project_id)
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+
+        can_delete = project.semester.course.is_course_admin(request.user)
+        if not can_delete:
+            return HttpResponseForbidden()
+
+        project.delete()
+        return HttpResponse(status=204)
 
 
 class GetProjectFile(LoginRequiredView):

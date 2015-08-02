@@ -41,7 +41,7 @@ class SemesterRequestHandler(LoginRequiredView):
             'included': included
         }
 
-        return JsonResponse(data, safe=False)
+        return JsonResponse(data)
 
     def post(self, request):
         request_json = json.loads(request.body.decode('utf-8'))
@@ -60,14 +60,14 @@ class SemesterRequestHandler(LoginRequiredView):
                 'data': semester_to_json(
                     new_semester, user_is_semester_staff=True)
             }
-            return JsonResponse(response_json, safe=False, status=201)
+            return JsonResponse(response_json, status=201)
         except ValidationError as e:
             response_json = {
                 'errors': {
                     'meta': e.message_dict
                 }
             }
-            return JsonResponse(response_json, safe=False, status=409)
+            return JsonResponse(response_json, status=409)
 
     def patch(self, request, semester_id):
         try:
@@ -145,4 +145,4 @@ class ListSemesters(LoginRequiredView):
             semester_to_json(semester) for semester in enrolled_semesters.all()
         ]
 
-        return JsonResponse(data, safe=False)
+        return JsonResponse(data)

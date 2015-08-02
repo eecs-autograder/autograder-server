@@ -31,7 +31,7 @@ class GetCourse(LoginRequiredView):
             ]
         }
 
-        return JsonResponse(response_content, safe=False)
+        return JsonResponse(response_content)
 
 
 class ListCourses(LoginRequiredView):
@@ -46,7 +46,7 @@ class ListCourses(LoginRequiredView):
             ]
         }
 
-        return JsonResponse(data, safe=False)
+        return JsonResponse(data)
 
 
 # Move superuser things to Django Admin page
