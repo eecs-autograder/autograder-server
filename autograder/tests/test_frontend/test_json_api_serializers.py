@@ -1,5 +1,3 @@
-import json
-
 from django.utils import timezone
 from django.core.urlresolvers import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -8,10 +6,6 @@ from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
 import autograder.tests.dummy_object_utils as obj_ut
-
-from autograder.models import (
-    Course, Semester, Project, AutograderTestCaseBase,
-    Submission, SubmissionGroup)
 
 from autograder.frontend.json_api_serializers import (
     course_to_json, semester_to_json, project_to_json)

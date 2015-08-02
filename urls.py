@@ -46,7 +46,11 @@ urlpatterns = [
         ajax_request_handlers.ProjectRequestHandler.as_view(),
         name='project-handler'),
 
-    url(r'^projects/project/(?P<project_id>\d+)/(?P<filename>{})/$'.format(
+    url(r'^projects/project/$',
+        ajax_request_handlers.ProjectRequestHandler.as_view(),
+        name='add-project'),
+
+    url(r'^projects/project/(?P<project_id>\d+)/file/(?P<filename>{})/$'.format(
         gc.PROJECT_FILENAME_WHITELIST_REGEX.pattern),
         ajax_request_handlers.GetProjectFile.as_view(),
         name='get-project-file'),
@@ -161,10 +165,13 @@ urlpatterns = [
     #           },
     #           'relationships': {
     #               'semester': {
-    #                   'links': {
-    #                       'self': <semester url>,
+    #                   'data': {
+    #                       'type': 'semester',
+    #                       'id': <semester-id,
+    #                       'links': {
+    #                           'self': <semester url>,
+    #                       }
     #                   }
-    #                   'data': {'type': 'semester', 'id': <semester-id}
     #               }
     #           }
     #       },
@@ -188,7 +195,7 @@ urlpatterns = [
     # POST                      /projects/project/<project-id>/copy-to-semester/<semester-id>
     # GET PATCH DELETE          /projects/project/<project-id>
     # POST                      /projects/project/<project-id>/add-files
-    # GET DELETE                /projects/project/<project-id>/<filename>
+    # GET DELETE                /projects/project/<project-id>/file/<filename>
     #
     # --- AUTOGRADER TEST CASES ---
     # GET                       /ag-test-cases?project=<project-id>

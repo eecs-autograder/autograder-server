@@ -35,14 +35,6 @@ class Project(ModelValidatableOnSave):
         semester -- The Semester this project belongs to.
             This field is REQUIRED.
 
-        project_files -- A list of names of files that have been uploaded
-            for this Project. For example, these files might include
-            C++ header files, libraries that are provided to students,
-            autograder test cases, input files, etc.
-            See autograder.shared.utilities.check_user_provided_filename
-            for restrictions on filenames.
-            Default value: empty list
-
         visible_to_students -- Whether information about this Project can
             be viewed by students.
             Default value: False
@@ -350,7 +342,7 @@ class Project(ModelValidatableOnSave):
         renamed by adding a short, random string to the filename. (This
         is the default behavior in django.)
         """
-        self.project_files.add(
+        self._project_files.add(
             _UploadedProjectFile.objects.validate_and_create(
                 uploaded_file=uploaded_file, project=self.project))
 
@@ -360,7 +352,7 @@ class Project(ModelValidatableOnSave):
 
         Raises FileNotFoundError if no such file exists for this Project.
         """
-        for file_obj in self.project_files.all():
+        for file_obj in self._project_files.all():
             if file_obj.basename == filename:
                 file_obj.delete()
 
@@ -386,17 +378,17 @@ class Project(ModelValidatableOnSave):
         Returns a list of this project's uploaded files
         (as django-style file-like objects).
         """
-        return [obj.uploaded_file for obj in self.project_files.all()]
+        return [obj.uploaded_file for obj in self._project_files.all()]
 
     def get_project_file_basenames(self):
         """
         Returns a list of this project's uploaded file basenames.
         """
         return [os.path.basename(obj.uploaded_file.name)
-                for obj in self.project_files.all()]
+                for obj in self._project_files.all()]
 
     def has_file(self, filename):
-        for proj_file in self.project_files.all():
+        for proj_file in self._project_files.all():
             if filename == os.path.basename(proj_file.uploaded_file.name):
                 return True
 
@@ -419,7 +411,7 @@ def _validate_filename(file_obj):
 class _UploadedProjectFile(ModelValidatableOnSave):
     objects = ManagerWithValidateOnCreate()
 
-    project = models.ForeignKey(Project, related_name='project_files')
+    project = models.ForeignKey(Project, related_name='_project_files')
     uploaded_file = models.FileField(
         upload_to=_get_project_file_upload_to_dir,
         validators=[_validate_filename],

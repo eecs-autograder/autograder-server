@@ -1,266 +1,17 @@
-import json
-
-from django.contrib.auth.models import User
-from django.test import RequestFactory
-from django.core.urlresolvers import reverse, resolve
 from django.core.exceptions import ObjectDoesNotExist
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
-from autograder.frontend import ajax_request_handlers
-from autograder.frontend.json_api_serializers import (
-    course_to_json, semester_to_json, project_to_json)
-from autograder.models import Semester, SubmissionGroup
-
 import autograder.tests.dummy_object_utils as obj_ut
 
-
-# print(json.dumps(expected, sort_keys=True, indent=4))
-# print(json.dumps(actual, sort_keys=True, indent=4))
-
-
-def _bytes_to_json(data):
-    return json.loads(data.decode('utf-8'))
-
-
-def _process_get_request(url, user):
-    rf = RequestFactory()
-
-    request = rf.get(url)
-    request.user = user
-
-    resolved = resolve(request.path)
-    return resolved.func(request, *resolved.args, **resolved.kwargs)
-
-
-def _process_post_request(url, data, user):
-    rf = RequestFactory()
-
-    request = rf.post(url, json.dumps(data), content_type='application/json')
-    request.user = user
-
-    resolved = resolve(request.path)
-    return resolved.func(request, *resolved.args, **resolved.kwargs)
-
-
-def _process_patch_request(url, data, user):
-    rf = RequestFactory()
-
-    request = rf.patch(url, json.dumps(data))
-    request.user = user
-
-    resolved = resolve(request.path)
-    return resolved.func(request, *resolved.args, **resolved.kwargs)
-
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-def _get_course_request(course_id, user):
-    url = '/courses/course/{}/'.format(course_id)
-    return _process_get_request(url, user)
-
-
-def _list_courses_request(user):
-    url = '/courses/'
-    return _process_get_request(url, user)
-
-
-def _get_semester_request(semester_id, user):
-    url = '/semesters/semester/{}/'.format(semester_id)
-    return _process_get_request(url, user)
-
-
-def _list_semesters_request(user):
-    url = '/semesters/'
-    return _process_get_request(url, user)
-
-
-def _add_semester_request(course_id, semester_name, user):
-    url = '/semesters/semester/'
-    data = {
-        'data': {
-            'type': 'semester',
-            'attributes': {
-                'name': semester_name,
-            },
-            'relationships': {
-                'course': {
-                    'data': {
-                        'type':  'course',
-                        'id': course_id
-                    }
-                }
-            }
-        }
-    }
-
-    return _process_post_request(url, data, user)
-
-
-def _patch_semester_request(semester_id, user,
-                            staff_to_add=None, staff_to_remove=None,
-                            students_to_add=None, students_to_remove=None):
-    url = '/semesters/semester/{}/'.format(semester_id)
-    data = {
-        'data': {
-            'type': 'semester',
-            'id': semester_id
-        },
-        'meta': {
-        }
-    }
-
-    if staff_to_add is not None:
-        data['meta']['add_semester_staff'] = [
-            user_obj.username for user_obj in staff_to_add
-        ]
-
-    if staff_to_remove is not None:
-        data['meta']['remove_semester_staff'] = [
-            user_obj.username for user_obj in staff_to_remove
-        ]
-
-    if students_to_add is not None:
-        data['meta']['add_enrolled_students'] = [
-            user_obj.username for user_obj in students_to_add
-        ]
-
-    if students_to_remove is not None:
-        data['meta']['remove_enrolled_students'] = [
-            user_obj.username for user_obj in students_to_remove
-        ]
-
-    return _process_patch_request(url, data, user)
-
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
-    def setUp(self):
-        super().setUp()
-
-        self.maxDiff = None
-
-        self.rf = RequestFactory()
-
-        self.courses = obj_ut.create_dummy_courses(5)
-
-    def test_get_course_as_admin(self):
-        course_admin = obj_ut.create_dummy_users()
-        course = self.courses[2]
-
-        course.add_course_admins(course_admin)
-
-        response = _get_course_request(course.pk, course_admin)
-
-        self.assertEqual(200, response.status_code)
-
-        content = _bytes_to_json(response.content)
-        self.assertEqual(
-            content,
-            {
-                'data': course_to_json(course),
-                'included': []
-            })
-
-    def test_get_course_that_has_semesters(self):
-        course_admin = obj_ut.create_dummy_users()
-        course = self.courses[0]
-        course.add_course_admins(course_admin)
-
-        semesters = obj_ut.create_dummy_semesters(course, 9)
-
-        response = _get_course_request(course.pk, course_admin)
-
-        self.assertEqual(200, response.status_code)
-
-        content = _bytes_to_json(response.content)
-        self.assertEqual(
-            content,
-            {
-                'data': course_to_json(course),
-                'included': [
-                    {
-                        'data': semester_to_json(
-                            semester, with_fields=False,
-                            user_is_semester_staff=True)
-                    }
-                    for semester in semesters
-                ]
-            })
-
-    def test_get_course_permission_denied(self):
-        user = obj_ut.create_dummy_users()
-        response = _get_course_request(self.courses[0].pk, user)
-
-        self.assertEqual(403, response.status_code)
-
-    def test_get_course_not_found(self):
-        user = obj_ut.create_dummy_users()
-        response = _get_course_request(42, user)
-
-        self.assertEqual(404, response.status_code)
-
-    def test_list_courses_course_admin(self):
-        course_admin = obj_ut.create_dummy_users()
-
-        subset = sorted(
-            (self.courses[1], self.courses[4]), key=lambda obj: obj.name)
-        self.courses[1].add_course_admins(course_admin)
-        self.courses[4].add_course_admins(course_admin)
-
-        expected = {
-            'data': [
-                course_to_json(course) for course in subset
-            ]
-        }
-
-        response = _list_courses_request(course_admin)
-
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(expected, _bytes_to_json(response.content))
-
-    def test_list_courses_empty_list_non_admin(self):
-        user = obj_ut.create_dummy_users()
-
-        response = _list_courses_request(user)
-
-        expected = {'data': []}
-
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(expected, _bytes_to_json(response.content))
-
-    # -------------------------------------------------------------------------
-
-    # Move to Django Admin page
-
-    # def test_add_course_success(self):
-    #     self.fail()
-
-    # def test_add_course_permission_denied(self):
-    #     self.fail()
-
-
-    # def test_add_course_admin_success(self):
-    #     self.fail()
-
-    # def test_add_course_admin_permission_denied(self):
-    #     self.fail()
-
-
-    # def test_remove_course_admin_success(self):
-    #     self.fail()
-
-    # def test_remove_course_admin_does_not_exist(self):
-    #     self.fail()
-
-    # def test_remove_course_admin_permission_denied(self):
-    #     self.fail()
-
-    # -------------------------------------------------------------------------
+from .utils import (
+    process_get_request, process_post_request,
+    process_patch_request, json_load_bytes)
+
+from autograder.frontend.json_api_serializers import (
+    semester_to_json, project_to_json)
+from autograder.models import Semester
 
 
 class GetSemesterRequestTestCase(TemporaryFilesystemTestCase):
@@ -294,7 +45,7 @@ class GetSemesterRequestTestCase(TemporaryFilesystemTestCase):
             ], key=sort_key)
         }
 
-        actual = _bytes_to_json(response.content)
+        actual = json_load_bytes(response.content)
         actual['included'] = sorted(actual['included'], key=sort_key)
 
         self.assertEqual(expected, actual)
@@ -315,7 +66,7 @@ class GetSemesterRequestTestCase(TemporaryFilesystemTestCase):
             ], key=sort_key)
         }
 
-        actual = _bytes_to_json(response.content)
+        actual = json_load_bytes(response.content)
         actual['included'] = sorted(actual['included'], key=sort_key)
 
         self.assertEqual(expected, actual)
@@ -335,7 +86,7 @@ class GetSemesterRequestTestCase(TemporaryFilesystemTestCase):
             ], key=sort_key)
         }
 
-        actual = _bytes_to_json(response.content)
+        actual = json_load_bytes(response.content)
         actual['included'] = sorted(actual['included'], key=sort_key)
 
         self.assertEqual(expected, actual)
@@ -378,7 +129,7 @@ class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
             ], key=sort_key)
         }
 
-        actual = _bytes_to_json(response.content)
+        actual = json_load_bytes(response.content)
         actual['data'] = sorted(actual['data'], key=sort_key)
 
         self.assertEqual(expected, actual)
@@ -399,7 +150,7 @@ class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
             ], key=sort_key)
         }
 
-        actual = _bytes_to_json(response.content)
+        actual = json_load_bytes(response.content)
         actual['data'] = sorted(actual['data'], key=sort_key)
 
         self.assertEqual(expected, actual)
@@ -420,7 +171,7 @@ class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
             ], key=sort_key)
         }
 
-        actual = _bytes_to_json(response.content)
+        actual = json_load_bytes(response.content)
         actual['data'] = sorted(actual['data'], key=sort_key)
 
         self.assertEqual(expected, actual)
@@ -441,13 +192,13 @@ class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
         response = _list_semesters_request(self.user)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual(expected, _bytes_to_json(response.content))
+        self.assertEqual(expected, json_load_bytes(response.content))
 
     def test_list_semesters_nobody_user(self):
         response = _list_semesters_request(self.user)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual({'data': []}, _bytes_to_json(response.content))
+        self.assertEqual({'data': []}, json_load_bytes(response.content))
 
 
 # -----------------------------------------------------------------------------
@@ -654,7 +405,7 @@ class AddSemesterTestCase(TemporaryFilesystemTestCase):
                                      user_is_semester_staff=True)
         }
 
-        self.assertEqual(expected, _bytes_to_json(response.content))
+        self.assertEqual(expected, json_load_bytes(response.content))
 
         self.assertEqual(loaded_semester.name, semester_name)
         self.assertEqual(loaded_semester.course, self.course)
@@ -704,58 +455,74 @@ class AddSemesterTestCase(TemporaryFilesystemTestCase):
             self.course.pk, semester.name, self.admin)
 
         self.assertEqual(409, response.status_code)
-        self.assertTrue('errors' in _bytes_to_json(response.content))
+        self.assertTrue('errors' in json_load_bytes(response.content))
 
 
 # -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
 
-# class SubmissionRequestTestCase(TemporaryFilesystemTestCase):
-#     def setUp(self):
-#         self.course = obj_ut.create_dummy_courses()
-#         self.semester = obj_ut.create_dummy_semesters(self.course)
-#         self.project = obj_ut.create_dummy_projects(self.semester)
-#         self.project.max_group_size = 2
-
-#         self.users = obj_ut.create_dummy_users(2)
-#         self.submission_group = SubmissionGroup.objects.create_group(
-#             members=self.users, project=self.project)
-
-#     def test_submission_requests(self):
-#         # create a submission
-#         request = self.rf.post(reverse('submission'))
-#         request.user = self.users[0]
-#         response = ajax_request_handlers.SubmissionHandler.as_view()(request)
-#         self.assertEqual(201, response.status_code)
-#         content = _bytes_to_json(response.content)
-
-#         # request that submission
-#         request = self.rf.get(content['data']['links']['self'])
-
-#         # query for submissions from the same submission group
+def _get_semester_request(semester_id, user):
+    url = '/semesters/semester/{}/'.format(semester_id)
+    return process_get_request(url, user)
 
 
+def _list_semesters_request(user):
+    url = '/semesters/'
+    return process_get_request(url, user)
 
 
+def _add_semester_request(course_id, semester_name, user):
+    url = '/semesters/semester/'
+    data = {
+        'data': {
+            'type': 'semester',
+            'attributes': {
+                'name': semester_name,
+            },
+            'relationships': {
+                'course': {
+                    'data': {
+                        'type':  'course',
+                        'id': course_id
+                    }
+                }
+            }
+        }
+    }
+
+    return process_post_request(url, data, user)
 
 
+def _patch_semester_request(semester_id, user,
+                            staff_to_add=None, staff_to_remove=None,
+                            students_to_add=None, students_to_remove=None):
+    url = '/semesters/semester/{}/'.format(semester_id)
+    data = {
+        'data': {
+            'type': 'semester',
+            'id': semester_id
+        },
+        'meta': {
+        }
+    }
 
+    if staff_to_add is not None:
+        data['meta']['add_semester_staff'] = [
+            user_obj.username for user_obj in staff_to_add
+        ]
 
+    if staff_to_remove is not None:
+        data['meta']['remove_semester_staff'] = [
+            user_obj.username for user_obj in staff_to_remove
+        ]
 
+    if students_to_add is not None:
+        data['meta']['add_enrolled_students'] = [
+            user_obj.username for user_obj in students_to_add
+        ]
 
+    if students_to_remove is not None:
+        data['meta']['remove_enrolled_students'] = [
+            user_obj.username for user_obj in students_to_remove
+        ]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return process_patch_request(url, data, user)

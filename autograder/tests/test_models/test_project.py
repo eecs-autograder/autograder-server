@@ -41,7 +41,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.name, self.PROJECT_NAME)
         self.assertEqual(loaded_project.semester, self.semester)
 
-        self.assertEqual(list(loaded_project.project_files.all()), [])
+        self.assertEqual(loaded_project.get_project_files(), [])
         self.assertEqual(loaded_project.visible_to_students, False)
         self.assertEqual(loaded_project.closing_time, None)
         self.assertEqual(loaded_project.disallow_student_submissions, False)
