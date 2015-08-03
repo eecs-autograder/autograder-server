@@ -1,4 +1,7 @@
+import datetime
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -141,17 +144,126 @@ class GetProjectRequestTestCase(TemporaryFilesystemTestCase):
 # -----------------------------------------------------------------------------
 
 class PatchProjectRequestTestCase(TemporaryFilesystemTestCase):
-    def test_valid_patch_project(self):
-        self.fail()
+    def setUp(self):
+        super().setUp()
+
+        self.admin = obj_ut.create_dummy_users()
+        self.user = obj_ut.create_dummy_users()
+
+        self.course = obj_ut.create_dummy_courses()
+        self.semester = obj_ut.create_dummy_semesters(self.course)
+        self.project = obj_ut.create_dummy_projects(self.semester)
+
+        self.course.add_course_admins(self.admin)
+
+    def test_valid_patch_project_all_attributes(self):
+        closing_time = (timezone.now() + datetime.timedelta(days=1)).replace(
+            hour=23, minute=55, second=0, microsecond=0)
+
+        request_content = {
+            'data': {
+                'type': 'project',
+                'id': self.project.pk,
+                'attributes': {
+                    'visible_to_students': True,
+                    'closing_time': closing_time,
+                    'disallow_student_submissions': True,
+                    'min_group_size': 2,
+                    'max_group_size': 3,
+                    'required_student_files': ['spam.cpp', 'eggs.cpp'],
+                    'expected_student_file_patterns': [
+                        ['test_*.cpp', 1, 5], ['cheese[0-9].txt', 0, 2]]
+                }
+            }
+        }
+
+        response = _patch_project_request(
+            self.project.pk, request_content, self.admin)
+
+        self.assertEqual(204, response.status_code)
+
+        loaded_project = project_to_json(
+            Project.objects.get(pk=self.project.pk))
+
+        attributes = request_content['data']['attributes']
+        attributes['expected_student_file_patterns'] = [
+            Project.FilePatternTuple(*list_) for list_ in
+            attributes['expected_student_file_patterns']
+        ]
+
+        for attribute, value in request_content['data']['attributes'].items():
+            self.assertEqual(
+                loaded_project['attributes'][attribute],
+                value)
+
+    def test_valid_patch_project_some_attributes(self):
+        request_content = {
+            'data': {
+                'type': 'project',
+                'id': self.project.pk,
+                'attributes': {
+                    'visible_to_students': True
+                }
+            }
+        }
+
+        response = _patch_project_request(
+            self.project.pk, request_content, self.admin)
+
+        self.assertEqual(204, response.status_code)
+
+        loaded_project = Project.objects.get(pk=self.project.pk)
+        self.assertTrue(loaded_project.visible_to_students)
 
     def test_patch_project_permission_denied(self):
-        self.fail()
+        request_content = {
+            'data': {
+                'type': 'project',
+                'id': self.project.pk,
+                'attributes': {
+                    'visible_to_students': True
+                }
+            }
+        }
+
+        response = _patch_project_request(
+            self.project.pk, request_content, self.user)
+
+        self.assertEqual(403, response.status_code)
 
     def test_patch_project_field_errors(self):
-        self.fail()
+        request_content = {
+            'data': {
+                'type': 'project',
+                'id': self.project.pk,
+                'attributes': {
+                    'min_group_size': 2,
+                    'max_group_size': '1'
+                }
+            }
+        }
+
+        response = _patch_project_request(
+            self.project.pk, request_content, self.admin)
+
+        self.assertEqual(409, response.status_code)
+        self.assertTrue('errors' in json_load_bytes(response.content))
 
     def test_patch_project_not_found(self):
-        self.fail()
+        request_content = {
+            'data': {
+                'type': 'project',
+                'id': 42,
+                'attributes': {
+                    'visible_to_students': True
+                }
+            }
+        }
+
+        response = _patch_project_request(
+            42, request_content, self.admin)
+
+        self.assertEqual(404, response.status_code)
 
 
 # -----------------------------------------------------------------------------
@@ -214,6 +326,11 @@ def _add_project_request(semester, project_name, user):
 def _get_project_request(project_id, user):
     url = '/projects/project/{}/'.format(project_id)
     return process_get_request(url, user)
+
+
+def _patch_project_request(project_id, data, user):
+    url = '/projects/project/{}/'.format(project_id)
+    return process_patch_request(url, data, user)
 
 
 def _delete_project_request(project_id, user):

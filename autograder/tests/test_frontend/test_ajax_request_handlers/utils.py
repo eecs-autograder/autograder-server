@@ -1,5 +1,6 @@
 import json
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.test import RequestFactory
 from django.core.urlresolvers import resolve
 
@@ -21,7 +22,8 @@ def process_get_request(url, user):
 
 def process_post_request(url, data, user):
     request = _REQUEST_FACTORY.post(
-        url, json.dumps(data), content_type='application/json')
+        url, json.dumps(data, cls=DjangoJSONEncoder),
+        content_type='application/json')
     request.user = user
 
     resolved = resolve(request.path)
@@ -29,7 +31,8 @@ def process_post_request(url, data, user):
 
 
 def process_patch_request(url, data, user):
-    request = _REQUEST_FACTORY.patch(url, json.dumps(data))
+    request = _REQUEST_FACTORY.patch(
+        url, json.dumps(data, cls=DjangoJSONEncoder))
     request.user = user
 
     resolved = resolve(request.path)
