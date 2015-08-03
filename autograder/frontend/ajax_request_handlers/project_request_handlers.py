@@ -1,9 +1,10 @@
 import json
 
+from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.http import (
     HttpResponse, JsonResponse, HttpResponseForbidden, HttpResponseNotFound,
-    HttpResponseBadRequest)
+    HttpResponseBadRequest, FileResponse)
 
 from autograder.frontend.frontend_utils import LoginRequiredView
 from autograder.frontend.json_api_serializers import project_to_json
@@ -117,5 +118,50 @@ class ProjectRequestHandler(LoginRequiredView):
 
 # -----------------------------------------------------------------------------
 
-class GetProjectFile(LoginRequiredView):
-    pass
+class ProjectFileRequestHandler(LoginRequiredView):
+    def get(self, request, project_id, filename):
+        try:
+            project = Project.objects.get(pk=project_id)
+            if not project.semester.is_semester_staff(request.user):
+                return HttpResponseForbidden()
+
+            file_ = project.get_file(filename)
+            return FileResponse(file_)
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+
+    def post(self, request, project_id):
+        try:
+            project = Project.objects.get(pk=project_id)
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+
+        if not project.semester.course.is_course_admin(request.user):
+            return HttpResponseForbidden()
+
+        try:
+            to_add = request.FILES['file']
+            project.add_project_file(to_add)
+
+            response_content = {
+                'filename': to_add.name,
+                'size': to_add.size,
+                'file_url': reverse(
+                    'project-file-handler', args=[project.pk, to_add.name])
+            }
+            return JsonResponse(response_content, status=201)
+        except ValidationError as e:
+            return JsonResponse(
+                {'error': e.message_dict['uploaded_file'][0]}, status=409)
+
+    def delete(self, request, project_id, filename):
+        try:
+            project = Project.objects.get(pk=project_id)
+            if not project.semester.course.is_course_admin(request.user):
+                return HttpResponseForbidden()
+
+            project.remove_project_file(filename)
+
+            return HttpResponse(status=204)
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()

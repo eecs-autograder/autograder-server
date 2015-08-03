@@ -5,10 +5,8 @@ import json
 
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.contrib.postgres.fields import ArrayField  # , JSONField
-
-from django.shortcuts import get_object_or_404
 
 from jsonfield import JSONField
 
@@ -350,7 +348,7 @@ class Project(ModelValidatableOnSave):
         """
         Removes the specified file from the database and filesystem.
 
-        Raises FileNotFoundError if no such file exists for this Project.
+        Raises ObjectDoesNotExist if no such file exists for this Project.
         """
         for file_obj in self._project_files.all():
             if file_obj.basename == filename:
@@ -360,7 +358,7 @@ class Project(ModelValidatableOnSave):
                     os.remove(filename)
                 return
 
-        raise FileNotFoundError(
+        raise ObjectDoesNotExist(
             "File {0} for {1} {2} project {3} does not exist".format(
                 filename,
                 self.semester.course.name, self.semester.name,
@@ -369,8 +367,8 @@ class Project(ModelValidatableOnSave):
     def get_file(self, filename):
         full_path = os.path.join(
             ut.get_project_files_relative_dir(self), filename)
-        file_obj = get_object_or_404(
-            _UploadedProjectFile, project=self, uploaded_file=full_path)
+        file_obj = _UploadedProjectFile.objects.get(
+            project=self, uploaded_file=full_path)
         return file_obj.uploaded_file
 
     def get_project_files(self):

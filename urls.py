@@ -52,8 +52,12 @@ urlpatterns = [
 
     url(r'^projects/project/(?P<project_id>\d+)/file/(?P<filename>{})/$'.format(
         gc.PROJECT_FILENAME_WHITELIST_REGEX.pattern),
-        ajax_request_handlers.GetProjectFile.as_view(),
-        name='get-project-file'),
+        ajax_request_handlers.ProjectFileRequestHandler.as_view(),
+        name='project-file-handler'),
+
+    url(r'^projects/project/(?P<project_id>\d+)/add-file/$',
+        ajax_request_handlers.ProjectFileRequestHandler.as_view(),
+        name='add-project-file')
 
     # --- COURSES ---
     #   json format:

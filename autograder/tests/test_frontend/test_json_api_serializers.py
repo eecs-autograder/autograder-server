@@ -205,7 +205,8 @@ class ProjectSerializerTestCase(TemporaryFilesystemTestCase):
                 'project_files': [
                     {
                         'filename': filename,
-                        'file_url': reverse('get-project-file',
+                        'size': self.project.get_file(filename).size,
+                        'file_url': reverse('project-file-handler',
                                             args=[self.project.pk, filename])
                     }
                     for filename in self.project.get_project_file_basenames()

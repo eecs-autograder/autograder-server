@@ -1,7 +1,11 @@
 import datetime
+# import tempfile
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.urlresolvers import reverse, resolve
 from django.utils import timezone
+from django.test import RequestFactory
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -12,8 +16,7 @@ from .utils import (
     process_get_request, process_post_request,
     process_patch_request, process_delete_request, json_load_bytes)
 
-from autograder.frontend.json_api_serializers import (
-    semester_to_json, project_to_json)
+from autograder.frontend.json_api_serializers import project_to_json
 from autograder.models import Project
 
 
@@ -335,4 +338,147 @@ def _patch_project_request(project_id, data, user):
 
 def _delete_project_request(project_id, user):
     url = '/projects/project/{}/'.format(project_id)
+    return process_delete_request(url, user)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class ProjectFileTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.admin = obj_ut.create_dummy_users()
+
+        self.course = obj_ut.create_dummy_courses()
+        self.semester = obj_ut.create_dummy_semesters(self.course)
+        self.project = obj_ut.create_dummy_projects(self.semester)
+
+        self.course.add_course_admins(self.admin)
+
+        self.file = SimpleUploadedFile('spam.txt', b'spam egg sausage spam')
+        self.project.add_project_file(self.file)
+
+        # Staff member (non-admin)
+        self.staff = obj_ut.create_dummy_users()
+        self.project.semester.add_semester_staff(self.staff)
+        # Enrolled student
+        self.enrolled = obj_ut.create_dummy_users()
+        self.project.semester.add_enrolled_students(self.enrolled)
+        # Nobody user
+        self.nobody = obj_ut.create_dummy_users()
+
+    def test_valid_add_project_file(self):
+        new_file = SimpleUploadedFile('new_file', b"I'm a new file!")
+        response = _add_project_file_request(
+            self.project.pk, new_file, self.admin)
+
+        self.assertEqual(201, response.status_code)
+
+        loaded_project = Project.objects.get(pk=self.project.pk)
+        self.assertTrue(loaded_project.has_file('new_file'))
+        file_ = loaded_project.get_file('new_file')
+        self.assertEqual(file_.read(), b"I'm a new file!")
+
+        expected = {
+            'filename': new_file.name,
+            'size': new_file.size,
+            'file_url': reverse(
+                'project-file-handler', args=[self.project.pk, new_file.name])
+        }
+
+        self.assertEqual(expected, json_load_bytes(response.content))
+
+    # def test_error_add_file_already_exists(self):
+    #     response = _add_project_file_request(
+    #         self.project.pk, self.file, self.admin)
+
+    #     self.assertEqual
+
+    def test_add_file_permission_denied(self):
+        new_file = SimpleUploadedFile('new_file', b"Fiiiile")
+
+        for user in (self.staff, self.enrolled, self.nobody):
+            response = _add_project_file_request(
+                self.project.pk, new_file, user)
+            self.assertEqual(403, response.status_code)
+
+            loaded_project = Project.objects.get(pk=self.project.pk)
+            self.assertFalse(loaded_project.has_file('new_file'))
+
+    def test_add_file_error(self):
+        new_file = SimpleUploadedFile(
+            '../very bad filename; echo "haxorz!"; #', b"bwa ha ha")
+        response = _add_project_file_request(
+            self.project.pk, new_file, self.admin)
+        self.assertEqual(409, response.status_code)
+
+        self.assertTrue('error' in json_load_bytes(response.content))
+
+        self.assertFalse(self.project.has_file(new_file.name))
+
+    def test_valid_get_project_file(self):
+        for user in (self.admin, self.staff):
+            response = _get_project_file_request(
+                self.project.pk, self.file.name, user)
+
+            self.assertEqual(200, response.status_code)
+            self.file.seek(0)
+            self.assertEqual(
+                self.file.read(), b''.join(response.streaming_content))
+
+    def test_get_project_file_permission_denied(self):
+        for user in (self.enrolled, self.nobody):
+            response = _get_project_file_request(
+                self.project.pk, self.file.name, user)
+            self.assertEqual(403, response.status_code)
+            self.assertEqual(b'', response.content)
+
+    def test_get_project_file_not_found(self):
+        response = _get_project_file_request(
+            self.project.pk, 'not_a_file', self.admin)
+        self.assertEqual(404, response.status_code)
+
+    def test_valid_delete_project_file(self):
+        response = _delete_project_file_request(
+            self.project.pk, self.file.name, self.admin)
+        self.assertEqual(204, response.status_code)
+
+        loaded_project = Project.objects.get(pk=self.project.pk)
+        self.assertFalse(loaded_project.has_file(self.file.name))
+
+    def test_delete_project_file_permission_denied(self):
+        for user in (self.staff, self.enrolled, self.nobody):
+            response = _delete_project_file_request(
+                self.project.pk, self.file.name, user)
+            self.assertEqual(403, response.status_code)
+
+        self.assertTrue(self.project.has_file(self.file.name))
+
+    def test_delete_project_file_not_found(self):
+        response = _delete_project_file_request(
+            self.project.pk, 'not_a_file', self.admin)
+        self.assertEqual(404, response.status_code)
+
+
+# -----------------------------------------------------------------------------
+
+def _get_project_file_request(project_id, filename, user):
+    url = '/projects/project/{}/file/{}/'.format(project_id, filename)
+    return process_get_request(url, user)
+
+
+def _add_project_file_request(project_id, file_, user):
+    url = '/projects/project/{}/add-file/'.format(project_id)
+    data = {'file': file_}
+
+    request = RequestFactory().post(url, data)
+    request.user = user
+
+    resolved = resolve(request.path)
+    return resolved.func(request, *resolved.args, **resolved.kwargs)
+
+
+def _delete_project_file_request(project_id, filename, user):
+    url = '/projects/project/{}/file/{}/'.format(project_id, filename)
     return process_delete_request(url, user)

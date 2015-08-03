@@ -1,3 +1,5 @@
+import os
+
 from django.core.urlresolvers import reverse
 
 # The json data produced by functions in this module should
@@ -126,7 +128,8 @@ def project_to_json(project, with_fields=True):
             'project_files': [
                 {
                     'filename': <filename>,
-                    'file_url': <file url>
+                    'file_url': <file url>,
+                    'size': <file size>
                 },
                 ...
             ],
@@ -164,19 +167,23 @@ def project_to_json(project, with_fields=True):
             'name': project.name,
             'project_files': [
                 {
-                    'filename': filename,
+                    'filename': os.path.basename(file_.name),
+                    'size': file_.size,
                     'file_url': reverse(
-                        'get-project-file', args=[project.pk, filename])
+                        'project-file-handler',
+                        args=[project.pk, os.path.basename(file_.name)])
                 }
-                for filename in project.get_project_file_basenames()
+                for file_ in project.get_project_files()
             ],
             'visible_to_students': project.visible_to_students,
             'closing_time': project.closing_time,
-            'disallow_student_submissions': project.disallow_student_submissions,
+            'disallow_student_submissions': (
+                project.disallow_student_submissions),
             'min_group_size': project.min_group_size,
             'max_group_size': project.max_group_size,
             'required_student_files': project.required_student_files,
-            'expected_student_file_patterns': project.expected_student_file_patterns,
+            'expected_student_file_patterns': (
+                project.expected_student_file_patterns)
         }
 
         data['relationships'] = {

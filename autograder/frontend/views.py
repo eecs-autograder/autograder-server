@@ -301,11 +301,6 @@ class AddProjectFile(ExceptionLoggingView):
 
     def post(self, request, course_name, semester_name, project_name):
         project = _get_project(course_name, semester_name, project_name)
-        # The request.FILES container is a dictionary-like data structure
-        # that is part of django and undocumented. As a workaround until
-        # we figure out how to accomplish the same iteration with that
-        # structure, we can construct a regular dictionary out of it
-        # and then proceed normally.
         files = request.FILES.getlist('files')
 
         response = {'files': []}

@@ -39,27 +39,6 @@ class TestFileSystemNavigationUtils(TemporaryFilesystemTestCase):
 
         self.assertEqual(os.getcwd(), settings.MEDIA_ROOT)
 
-    def test_temporary_file(self):
-        filename = 'spam_file'
-        contents = "alsdkjflasjdfla;sdjf"
-        self.assertFalse(os.path.exists(filename))
-
-        with ut.TemporaryFile(filename, contents):
-            self.assertTrue(os.path.isfile(filename))
-            with open(filename) as f:
-                self.assertEqual(f.read(), contents)
-
-        self.assertFalse(os.path.exists(filename))
-
-    def test_temporary_directory(self):
-        dirname = 'eggs_dir'
-        self.assertFalse(os.path.exists(dirname))
-
-        with ut.TemporaryDirectory(dirname):
-            self.assertTrue(os.path.isdir(dirname))
-
-        self.assertFalse(os.path.exists(dirname))
-
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------

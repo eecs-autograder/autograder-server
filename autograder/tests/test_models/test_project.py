@@ -2,7 +2,7 @@ import os
 import datetime
 import json
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
 
 from autograder.models import Project, Semester, Course
@@ -705,5 +705,5 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
     def test_exception_on_remove_nonexistant_project_file(self):
         project = Project.objects.create(
             name=self.PROJECT_NAME, semester=self.semester)
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(ObjectDoesNotExist):
             project.remove_project_file(self.sample_project_filename)
