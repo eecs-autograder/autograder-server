@@ -2,6 +2,8 @@ import uuid
 
 from django.db import models
 
+from polymorphic import PolymorphicManager, PolymorphicModel
+
 
 class ManagerWithValidateOnCreate(models.Manager):
     """
@@ -20,6 +22,18 @@ class ManagerWithValidateOnCreate(models.Manager):
         return model
 
 
+class PolymorphicManagerWithValidateOnCreate(PolymorphicManager):
+    """
+    Same as ManagerWithValidateOnCreate, but to be used with
+    PolymorphicModels.
+    """
+    def validate_and_create(self, **kwargs):
+        model = self.model(**kwargs)
+        model.full_clean()
+        model.save()
+        return model
+
+
 class ModelValidatableOnSave(models.Model):
     """
     This base class provides shortcut for validating and saving
@@ -29,6 +43,15 @@ class ModelValidatableOnSave(models.Model):
 
     Methods:
         validate_and_save()
+    """
+    def validate_and_save(self):
+        self.full_clean()
+        self.save()
+
+
+class PolymorphicModelValidatableOnSave(PolymorphicModel):
+    """
+    Same as ModelValidatableOnSave, but to be used with polymorphic models.
     """
     def validate_and_save(self):
         self.full_clean()

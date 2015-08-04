@@ -2,6 +2,8 @@ import os
 
 from django.core.urlresolvers import reverse
 
+from autograder.models import CompiledAutograderTestCase
+
 # The json data produced by functions in this module should
 # adhere to the JSON API standard: http://jsonapi.org/format/
 #
@@ -189,6 +191,102 @@ def project_to_json(project, with_fields=True):
         data['relationships'] = {
             'semester': {
                 'data': semester_to_json(project.semester, with_fields=False)
+            }
+        }
+
+    return data
+
+
+def autograder_test_case_to_json(autograder_test_case, with_fields=True):
+    """
+    Returns a JSON representation fo the given test case of the
+    following form:
+    {
+        'type': <type>,
+        'id': <id>,
+        'links': {
+            'self': <self link>
+        },
+        'attributes': {
+            // Present for all types
+            'name': <value>,
+            'command_line_arguments': <value>,
+            'standard_input': <value>,
+            'test_resource_files': <value>,
+            'time_limit': <value>,
+            'expected_return_code': <value>,
+            'expect_any_nonzero_return_code': <value>,
+            'expected_standard_output': <value>,
+            'expected_standard_error_output': <value>,
+            'use_valgrind': <value>,
+            'valgrind_flags': <value>,
+
+            // Present depending on type
+            'compiler': <value>,
+            'compiler_flags': <value>,
+            'files_to_compile_together': <value>,
+            'executable_name': <value>
+        },
+        'relationships': {
+            'project': <project>
+        }
+    }
+
+    The 'type' field corresponds to the type of the given test case
+    as follows:
+        CompiledAutograderTestCase: 'compiled_test_case'
+        (support for more test cases will be added in the future)
+
+    Raises TypeError if the type of autograder_test_case is not
+    listed in the above type mapping.
+    """
+    if isinstance(autograder_test_case, CompiledAutograderTestCase):
+        type_ = 'compiled_test_case'
+    else:
+        raise TypeError()
+
+    data = {
+        'type': type_,
+        'id': autograder_test_case.pk,
+        'links': {
+            'self': reverse('ag-test-handler', args=[autograder_test_case.pk])
+        }
+    }
+
+    if with_fields:
+        data['attributes'] = {
+            'name': autograder_test_case.name,
+            'command_line_arguments': (
+                autograder_test_case.command_line_arguments),
+            'standard_input': autograder_test_case.standard_input,
+            'test_resource_files': autograder_test_case.test_resource_files,
+            'time_limit': autograder_test_case.time_limit,
+            'expected_return_code': autograder_test_case.expected_return_code,
+            'expect_any_nonzero_return_code': (
+                autograder_test_case.expect_any_nonzero_return_code),
+            'expected_standard_output': (
+                autograder_test_case.expected_standard_output),
+            'expected_standard_error_output': (
+                autograder_test_case.expected_standard_error_output),
+            'use_valgrind': autograder_test_case.use_valgrind,
+            'valgrind_flags': autograder_test_case.valgrind_flags,
+        }
+
+        if type_ == 'compiled_test_case':
+            data['attributes'].update(
+                {
+                    'compiler': autograder_test_case.compiler,
+                    'compiler_flags': autograder_test_case.compiler_flags,
+                    'files_to_compile_together': (
+                        autograder_test_case.files_to_compile_together),
+                    'executable_name': autograder_test_case.executable_name
+                }
+            )
+
+        data['relationships'] = {
+            'project': {
+                'data': project_to_json(
+                    autograder_test_case.project, with_fields=False)
             }
         }
 

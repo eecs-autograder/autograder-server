@@ -8,8 +8,10 @@ from autograder.tests.temporary_filesystem_test_case import (
 import autograder.tests.dummy_object_utils as obj_ut
 
 from autograder.frontend.json_api_serializers import (
-    course_to_json, semester_to_json, project_to_json)
+    course_to_json, semester_to_json, project_to_json,
+    autograder_test_case_to_json)
 
+from autograder.models import CompiledAutograderTestCase
 
 # print(json.dumps(expected, sort_keys=True, indent=4))
 # print(json.dumps(actual, sort_keys=True, indent=4))
@@ -240,5 +242,88 @@ class ProjectSerializerTestCase(TemporaryFilesystemTestCase):
         }
 
         actual = project_to_json(self.project, with_fields=False)
+
+        self.assertEqual(expected, actual)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class AutograderTestCaseSerializerTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.course = obj_ut.create_dummy_courses()
+        self.semester = obj_ut.create_dummy_semesters(self.course)
+
+        self.project = obj_ut.create_dummy_projects(self.semester)
+
+        self.project.required_student_files = ['spam.cpp', 'egg.cpp']
+        self.project.add_project_file(
+            SimpleUploadedFile('cheese.txt', b'cheeeese'))
+
+        self.ag_test = CompiledAutograderTestCase.objects.validate_and_create(
+            name='test',
+            project=self.project,
+            command_line_arguments=['argy', 'argy2'],
+            standard_input='iiiin',
+            test_resource_files=['cheese.txt'],
+            time_limit=5,
+            expected_return_code=0,
+            expect_any_nonzero_return_code=False,
+            expected_standard_output='stdouuuut',
+            expected_standard_error_output='stderrrr',
+            use_valgrind=True,
+            valgrind_flags=['--leak-check=full', '--error-exitcode=42'],
+            compiler='g++',
+            compiler_flags=['-Wall'],
+            files_to_compile_together=['spam.cpp', 'egg.cpp'],
+            executable_name='prog')
+
+    def test_serialize_test_case_with_fields(self):
+        expected = {
+            'type': 'compiled_test_case',
+            'id': self.ag_test.pk,
+            'links': {
+                'self': reverse('ag-test-handler', args=[self.ag_test.pk])
+            },
+            'attributes': {
+                'name': 'test',
+                'command_line_arguments': ['argy', 'argy2'],
+                'standard_input': 'iiiin',
+                'test_resource_files': ['cheese.txt'],
+                'time_limit': 5,
+                'expected_return_code': 0,
+                'expect_any_nonzero_return_code': False,
+                'expected_standard_output': 'stdouuuut',
+                'expected_standard_error_output': 'stderrrr',
+                'use_valgrind': True,
+                'valgrind_flags': ['--leak-check=full', '--error-exitcode=42'],
+                'compiler': 'g++',
+                'compiler_flags': ['-Wall'],
+                'files_to_compile_together': ['spam.cpp', 'egg.cpp'],
+                'executable_name': 'prog'
+            },
+            'relationships': {
+                'project': {
+                    'data': project_to_json(self.project, with_fields=False)
+                }
+            }
+        }
+
+        actual = autograder_test_case_to_json(self.ag_test)
+
+        self.assertEqual(expected, actual)
+
+    def test_serialize_test_case_without_fields(self):
+        expected = {
+            'type': 'compiled_test_case',
+            'id': self.ag_test.pk,
+            'links': {
+                'self': reverse('ag-test-handler', args=[self.ag_test.pk])
+            }
+        }
+
+        actual = autograder_test_case_to_json(self.ag_test, with_fields=False)
 
         self.assertEqual(expected, actual)

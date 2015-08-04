@@ -57,7 +57,15 @@ urlpatterns = [
 
     url(r'^projects/project/(?P<project_id>\d+)/add-file/$',
         ajax_request_handlers.ProjectFileRequestHandler.as_view(),
-        name='add-project-file')
+        name='add-project-file'),
+
+    url(r'^ag-test-cases/ag-test-case/(?P<test_id>\d+)/$',
+        ajax_request_handlers.AutograderTestCaseRequestHandler.as_view(),
+        name='ag-test-handler'),
+
+    url(r'^ag-test-cases/ag-test-case/$',
+        ajax_request_handlers.AutograderTestCaseRequestHandler.as_view(),
+        name='add-ag-test-case')
 
     # --- COURSES ---
     #   json format:
@@ -198,11 +206,10 @@ urlpatterns = [
     # POST                      /projects/project
     # POST                      /projects/project/<project-id>/copy-to-semester/<semester-id>
     # GET PATCH DELETE          /projects/project/<project-id>
-    # POST                      /projects/project/<project-id>/add-files
+    # POST                      /projects/project/<project-id>/add-file
     # GET DELETE                /projects/project/<project-id>/file/<filename>
     #
     # --- AUTOGRADER TEST CASES ---
-    # GET                       /ag-test-cases?project=<project-id>
     # POST                      /ag-test-cases/ag-test-case
     # POST                      /ag-test-cases/ag-test-case/<ag-test-case-id>/copy
     # GET PATCH DELETE          /ag-test-cases/ag-test-case/<ag-test-case-id>

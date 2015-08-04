@@ -1,7 +1,9 @@
 from django.db import models
 
+from polymorphic import PolymorphicModel
 
-class AutograderTestCaseResultBase(models.Model):
+
+class AutograderTestCaseResultBase(PolymorphicModel):
     """
     This read-only class stores the data from an autograder test case
     and provides an interface for summarizing the data in various

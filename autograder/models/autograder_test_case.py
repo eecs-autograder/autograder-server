@@ -12,8 +12,10 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 
+from polymorphic import PolymorphicModel
+
 from autograder.models.model_utils import (
-    ModelValidatableOnSave, ManagerWithValidateOnCreate)
+    PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
 from autograder.models import Project, CompiledAutograderTestCaseResult
 
@@ -34,7 +36,7 @@ def _validate_cmd_line_arg(arg):
         [arg], gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
 
 
-class AutograderTestCaseBase(ModelValidatableOnSave):
+class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     """
     This base class provides a fat interface for
     test cases used to evaluate student-submitted code.
@@ -206,7 +208,7 @@ class AutograderTestCaseBase(ModelValidatableOnSave):
     class Meta:
         unique_together = ('name', 'project')
 
-    objects = ManagerWithValidateOnCreate()
+    objects = PolymorphicManagerWithValidateOnCreate()
 
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     project = models.ForeignKey(Project, related_name='autograder_test_cases')
@@ -400,7 +402,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         clean()
         run()
     """
-    objects = ManagerWithValidateOnCreate()
+    objects = PolymorphicManagerWithValidateOnCreate()
 
     def clean(self):
         errors = {}

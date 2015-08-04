@@ -20,7 +20,7 @@ from autograder.frontend.json_api_serializers import project_to_json
 from autograder.models import Project
 
 
-class AddProjectRequestTestCase(TemporaryFilesystemTestCase):
+class _SetUpBase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
@@ -28,8 +28,22 @@ class AddProjectRequestTestCase(TemporaryFilesystemTestCase):
 
         self.course = obj_ut.create_dummy_courses()
         self.semester = obj_ut.create_dummy_semesters(self.course)
+        self.project = obj_ut.create_dummy_projects(self.semester)
 
         self.course.add_course_admins(self.admin)
+
+        self.staff = obj_ut.create_dummy_users()
+        self.project.semester.add_semester_staff(self.staff)
+
+        self.enrolled = obj_ut.create_dummy_users()
+        self.project.semester.add_enrolled_students(self.enrolled)
+
+        self.nobody = obj_ut.create_dummy_users()
+
+
+class AddProjectRequestTestCase(_SetUpBase):
+    def setUp(self):
+        super().setUp()
 
         self.new_project_name = 'project42'
 
@@ -48,33 +62,14 @@ class AddProjectRequestTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(expected, json_load_bytes(response.content))
 
     def test_add_project_permission_denied(self):
-        # Staff member (non-admin)
-        staff = obj_ut.create_dummy_users()
-        response = _add_project_request(
-            self.semester, self.new_project_name, staff)
-        self.assertEqual(403, response.status_code)
+        for user in (self.staff, self.enrolled, self.nobody):
+            response = _add_project_request(
+                self.semester, self.new_project_name, user)
+            self.assertEqual(403, response.status_code)
 
-        with self.assertRaises(ObjectDoesNotExist):
-            Project.objects.get(
-                name=self.new_project_name, semester=self.semester)
-
-        # Enrolled student
-        enrolled = obj_ut.create_dummy_users()
-        response = _add_project_request(self.semester, 'haxorz', enrolled)
-        self.assertEqual(403, response.status_code)
-
-        with self.assertRaises(ObjectDoesNotExist):
-            Project.objects.get(
-                name=self.new_project_name, semester=self.semester)
-
-        # Nobody user
-        nobody = obj_ut.create_dummy_users()
-        response = _add_project_request(self.semester, 'haxorz', nobody)
-        self.assertEqual(403, response.status_code)
-
-        with self.assertRaises(ObjectDoesNotExist):
-            Project.objects.get(
-                name=self.new_project_name, semester=self.semester)
+            with self.assertRaises(ObjectDoesNotExist):
+                Project.objects.get(
+                    name=self.new_project_name, semester=self.semester)
 
     def test_error_add_duplicate_project(self):
         Project.objects.validate_and_create(
@@ -87,16 +82,32 @@ class AddProjectRequestTestCase(TemporaryFilesystemTestCase):
         self.assertTrue('errors' in json_load_bytes(response.content))
 
 
+def _add_project_request(semester, project_name, user):
+    url = '/projects/project/'
+    data = {
+        'data': {
+            'type': 'project',
+            'attributes': {
+                'name': project_name
+            },
+            'relationships': {
+                'semester': {
+                    'data': {
+                        'type': 'semester',
+                        'id': semester.pk
+                    }
+                }
+            }
+        }
+    }
+    return process_post_request(url, data, user)
+
+
 # -----------------------------------------------------------------------------
 
-class GetProjectRequestTestCase(TemporaryFilesystemTestCase):
+class GetProjectRequestTestCase(_SetUpBase):
     def setUp(self):
         super().setUp()
-
-        self.user = obj_ut.create_dummy_users()
-
-        self.course = obj_ut.create_dummy_courses()
-        self.semester = obj_ut.create_dummy_semesters(self.course)
 
         self.visible_project = obj_ut.create_dummy_projects(self.semester)
         self.visible_project.visible_to_students = True
@@ -105,59 +116,48 @@ class GetProjectRequestTestCase(TemporaryFilesystemTestCase):
         self.hidden_project = obj_ut.create_dummy_projects(self.semester)
 
     def test_course_admin_or_staff_get_project(self):
-        self.course.add_course_admins(self.user)
-
-        response = _get_project_request(self.visible_project.pk, self.user)
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(
-            {'data': project_to_json(self.visible_project)},
-            json_load_bytes(response.content))
-
-        response = _get_project_request(self.hidden_project.pk, self.user)
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(
-            {'data': project_to_json(self.hidden_project)},
-            json_load_bytes(response.content))
+        # TODO: 'included' test cases
+        for project in (self.visible_project, self.hidden_project):
+            response = _get_project_request(
+                project.pk, self.admin)
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                {'data': project_to_json(project)},
+                json_load_bytes(response.content))
 
     def test_enrolled_student_get_project(self):
-        self.semester.add_enrolled_students(self.user)
-
-        response = _get_project_request(self.visible_project.pk, self.user)
+        # TODO: 'included' test cases
+        response = _get_project_request(self.visible_project.pk, self.enrolled)
         self.assertEqual(200, response.status_code)
         self.assertEqual(
             {'data': project_to_json(self.visible_project)},
             json_load_bytes(response.content))
 
-        response = _get_project_request(self.hidden_project.pk, self.user)
+        response = _get_project_request(self.hidden_project.pk, self.enrolled)
         self.assertEqual(403, response.status_code)
 
     def test_get_project_not_found(self):
-        response = _get_project_request(42, self.user)
+        response = _get_project_request(42, self.admin)
         self.assertEqual(404, response.status_code)
 
     def test_nobody_user_get_project(self):
         # TODO: visible_to_non_enrolled_students field for project
-        response = _get_project_request(self.visible_project.pk, self.user)
-        self.assertEqual(403, response.status_code)
+        for project in (self.visible_project, self.hidden_project):
+            response = _get_project_request(
+                project.pk, self.nobody)
+            self.assertEqual(403, response.status_code)
 
-        response = _get_project_request(self.hidden_project.pk, self.user)
-        self.assertEqual(403, response.status_code)
+
+def _get_project_request(project_id, user):
+    url = '/projects/project/{}/'.format(project_id)
+    return process_get_request(url, user)
 
 
 # -----------------------------------------------------------------------------
 
-class PatchProjectRequestTestCase(TemporaryFilesystemTestCase):
-    def setUp(self):
-        super().setUp()
-
-        self.admin = obj_ut.create_dummy_users()
-        self.user = obj_ut.create_dummy_users()
-
-        self.course = obj_ut.create_dummy_courses()
-        self.semester = obj_ut.create_dummy_semesters(self.course)
-        self.project = obj_ut.create_dummy_projects(self.semester)
-
-        self.course.add_course_admins(self.admin)
+class PatchProjectRequestTestCase(_SetUpBase):
+    # def setUp(self):
+    #     super().setUp()
 
     def test_valid_patch_project_all_attributes(self):
         closing_time = (timezone.now() + datetime.timedelta(days=1)).replace(
@@ -194,10 +194,8 @@ class PatchProjectRequestTestCase(TemporaryFilesystemTestCase):
             attributes['expected_student_file_patterns']
         ]
 
-        for attribute, value in request_content['data']['attributes'].items():
-            self.assertEqual(
-                loaded_project['attributes'][attribute],
-                value)
+        for attribute, value in attributes.items():
+            self.assertEqual(loaded_project['attributes'][attribute], value)
 
     def test_valid_patch_project_some_attributes(self):
         request_content = {
@@ -229,10 +227,14 @@ class PatchProjectRequestTestCase(TemporaryFilesystemTestCase):
             }
         }
 
-        response = _patch_project_request(
-            self.project.pk, request_content, self.user)
+        for user in (self.staff, self.enrolled, self.nobody):
+            response = _patch_project_request(
+                self.project.pk, request_content, user)
+            self.assertEqual(403, response.status_code)
 
-        self.assertEqual(403, response.status_code)
+            loaded_project = Project.objects.get(pk=self.project.pk)
+            self.assertEqual(
+                project_to_json(loaded_project), project_to_json(self.project))
 
     def test_patch_project_field_errors(self):
         request_content = {
@@ -252,6 +254,10 @@ class PatchProjectRequestTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(409, response.status_code)
         self.assertTrue('errors' in json_load_bytes(response.content))
 
+        loaded_project = Project.objects.get(pk=self.project.pk)
+        self.assertEqual(
+            project_to_json(loaded_project), project_to_json(self.project))
+
     def test_patch_project_not_found(self):
         request_content = {
             'data': {
@@ -269,71 +275,42 @@ class PatchProjectRequestTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(404, response.status_code)
 
 
+def _patch_project_request(project_id, data, user):
+    url = '/projects/project/{}/'.format(project_id)
+    return process_patch_request(url, data, user)
+
+
 # -----------------------------------------------------------------------------
 
-class DeleteProjectRequestTestCase(TemporaryFilesystemTestCase):
-    def setUp(self):
-        super().setUp()
-
-        self.user = obj_ut.create_dummy_users()
-
-        self.course = obj_ut.create_dummy_courses()
-        self.semester = obj_ut.create_dummy_semesters(self.course)
-        self.project = obj_ut.create_dummy_projects(self.semester)
+class DeleteProjectRequestTestCase(_SetUpBase):
+    # def setUp(self):
+    #     super().setUp()
 
     def test_valid_delete_project(self):
-        self.course.add_course_admins(self.user)
+        self.course.add_course_admins(self.admin)
 
         self.assertIsNotNone(self.project.pk)
 
-        response = _delete_project_request(self.project.pk, self.user)
+        response = _delete_project_request(self.project.pk, self.admin)
         self.assertEqual(204, response.status_code)
 
         with self.assertRaises(ObjectDoesNotExist):
             Project.objects.get(pk=self.project.pk)
 
     def test_delete_project_permission_denied(self):
-        self.assertIsNotNone(self.project.pk)
+        for user in (self.staff, self.enrolled, self.nobody):
+            self.assertIsNotNone(self.project.pk)
 
-        response = _delete_project_request(self.project.pk, self.user)
-        self.assertEqual(403, response.status_code)
+            response = _delete_project_request(self.project.pk, user)
+            self.assertEqual(403, response.status_code)
+
+            loaded_project = Project.objects.get(pk=self.project.pk)
+            self.assertEqual(
+                project_to_json(loaded_project), project_to_json(self.project))
 
     def test_delete_project_not_found(self):
-        response = _delete_project_request(42, self.user)
+        response = _delete_project_request(42, self.admin)
         self.assertEqual(404, response.status_code)
-
-
-# -----------------------------------------------------------------------------
-
-def _add_project_request(semester, project_name, user):
-    url = '/projects/project/'
-    data = {
-        'data': {
-            'type': 'project',
-            'attributes': {
-                'name': project_name
-            },
-            'relationships': {
-                'semester': {
-                    'data': {
-                        'type': 'semester',
-                        'id': semester.pk
-                    }
-                }
-            }
-        }
-    }
-    return process_post_request(url, data, user)
-
-
-def _get_project_request(project_id, user):
-    url = '/projects/project/{}/'.format(project_id)
-    return process_get_request(url, user)
-
-
-def _patch_project_request(project_id, data, user):
-    url = '/projects/project/{}/'.format(project_id)
-    return process_patch_request(url, data, user)
 
 
 def _delete_project_request(project_id, user):
@@ -344,29 +321,12 @@ def _delete_project_request(project_id, user):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-class ProjectFileTestCase(TemporaryFilesystemTestCase):
+class ProjectFileTestCase(_SetUpBase):
     def setUp(self):
         super().setUp()
 
-        self.admin = obj_ut.create_dummy_users()
-
-        self.course = obj_ut.create_dummy_courses()
-        self.semester = obj_ut.create_dummy_semesters(self.course)
-        self.project = obj_ut.create_dummy_projects(self.semester)
-
-        self.course.add_course_admins(self.admin)
-
         self.file = SimpleUploadedFile('spam.txt', b'spam egg sausage spam')
         self.project.add_project_file(self.file)
-
-        # Staff member (non-admin)
-        self.staff = obj_ut.create_dummy_users()
-        self.project.semester.add_semester_staff(self.staff)
-        # Enrolled student
-        self.enrolled = obj_ut.create_dummy_users()
-        self.project.semester.add_enrolled_students(self.enrolled)
-        # Nobody user
-        self.nobody = obj_ut.create_dummy_users()
 
     def test_valid_add_project_file(self):
         new_file = SimpleUploadedFile('new_file', b"I'm a new file!")

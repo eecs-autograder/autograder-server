@@ -96,6 +96,11 @@ class GetSemesterRequestTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(403, response.status_code)
 
 
+def _get_semester_request(semester_id, user):
+    url = '/semesters/semester/{}/'.format(semester_id)
+    return process_get_request(url, user)
+
+
 # -----------------------------------------------------------------------------
 
 class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
@@ -199,6 +204,11 @@ class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(200, response.status_code)
         self.assertEqual({'data': []}, json_load_bytes(response.content))
+
+
+def _list_semesters_request(user):
+    url = '/semesters/'
+    return process_get_request(url, user)
 
 
 # -----------------------------------------------------------------------------
@@ -380,6 +390,42 @@ class PatchSemesterTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(404, response.status_code)
 
 
+def _patch_semester_request(semester_id, user,
+                            staff_to_add=None, staff_to_remove=None,
+                            students_to_add=None, students_to_remove=None):
+    url = '/semesters/semester/{}/'.format(semester_id)
+    data = {
+        'data': {
+            'type': 'semester',
+            'id': semester_id
+        },
+        'meta': {
+        }
+    }
+
+    if staff_to_add is not None:
+        data['meta']['add_semester_staff'] = [
+            user_obj.username for user_obj in staff_to_add
+        ]
+
+    if staff_to_remove is not None:
+        data['meta']['remove_semester_staff'] = [
+            user_obj.username for user_obj in staff_to_remove
+        ]
+
+    if students_to_add is not None:
+        data['meta']['add_enrolled_students'] = [
+            user_obj.username for user_obj in students_to_add
+        ]
+
+    if students_to_remove is not None:
+        data['meta']['remove_enrolled_students'] = [
+            user_obj.username for user_obj in students_to_remove
+        ]
+
+    return process_patch_request(url, data, user)
+
+
 # -----------------------------------------------------------------------------
 
 class AddSemesterTestCase(TemporaryFilesystemTestCase):
@@ -458,18 +504,6 @@ class AddSemesterTestCase(TemporaryFilesystemTestCase):
         self.assertTrue('errors' in json_load_bytes(response.content))
 
 
-# -----------------------------------------------------------------------------
-
-def _get_semester_request(semester_id, user):
-    url = '/semesters/semester/{}/'.format(semester_id)
-    return process_get_request(url, user)
-
-
-def _list_semesters_request(user):
-    url = '/semesters/'
-    return process_get_request(url, user)
-
-
 def _add_semester_request(course_id, semester_name, user):
     url = '/semesters/semester/'
     data = {
@@ -490,39 +524,3 @@ def _add_semester_request(course_id, semester_name, user):
     }
 
     return process_post_request(url, data, user)
-
-
-def _patch_semester_request(semester_id, user,
-                            staff_to_add=None, staff_to_remove=None,
-                            students_to_add=None, students_to_remove=None):
-    url = '/semesters/semester/{}/'.format(semester_id)
-    data = {
-        'data': {
-            'type': 'semester',
-            'id': semester_id
-        },
-        'meta': {
-        }
-    }
-
-    if staff_to_add is not None:
-        data['meta']['add_semester_staff'] = [
-            user_obj.username for user_obj in staff_to_add
-        ]
-
-    if staff_to_remove is not None:
-        data['meta']['remove_semester_staff'] = [
-            user_obj.username for user_obj in staff_to_remove
-        ]
-
-    if students_to_add is not None:
-        data['meta']['add_enrolled_students'] = [
-            user_obj.username for user_obj in students_to_add
-        ]
-
-    if students_to_remove is not None:
-        data['meta']['remove_enrolled_students'] = [
-            user_obj.username for user_obj in students_to_remove
-        ]
-
-    return process_patch_request(url, data, user)

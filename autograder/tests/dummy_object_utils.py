@@ -42,9 +42,9 @@ def create_dummy_courses(num_courses=1):
     """
     courses = []
     for i in range(num_courses):
-        user_id = _get_unique_id()
+        id_ = _get_unique_id()
         course = Course.objects.validate_and_create(
-            name='course{}'.format(user_id))
+            name='course{}'.format(id_))
         if num_courses == 1:
             return course
         courses.append(course)
@@ -59,9 +59,9 @@ def create_dummy_semesters(course, num_semesters=1):
     """
     semesters = []
     for i in range(num_semesters):
-        user_id = _get_unique_id()
+        id_ = _get_unique_id()
         semester = Semester.objects.validate_and_create(
-            name='semester{}'.format(user_id), course=course)
+            name='semester{}'.format(id_), course=course)
         if num_semesters == 1:
             return semester
         semesters.append(semester)
@@ -76,10 +76,28 @@ def create_dummy_projects(semester, num_projects=1):
     """
     projects = []
     for i in range(num_projects):
-        user_id = _get_unique_id()
+        id_ = _get_unique_id()
         project = Project.objects.validate_and_create(
-            name='project{}'.format(user_id), semester=semester)
+            name='project{}'.format(id_), semester=semester)
         if num_projects == 1:
             return project
         projects.append(project)
     return projects
+
+
+# def create_dummy_compiled_autograder_tests(project, num_tests=1):
+#     """
+#     Returns a list containing the specified number of dummy
+#     compiled autograder test cases.
+#     If num_tests is 1, the test case is returned on its own rather
+#     than as a list.
+#     """
+#     tests = []
+#     for i in range(num_tests):
+#         id_ = _get_unique_id()
+#         test = CompiledAutograderTestCase.objects.validate_and_create(
+#             name='test{}'.format(id_), project=project)
+#         if num_tests == 1:
+#             return test
+#         tests.append(test)
+#     return tests

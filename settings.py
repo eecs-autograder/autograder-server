@@ -37,7 +37,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'autograder'
+    'autograder',
+    'polymorphic'
 )
 
 MIDDLEWARE_CLASSES = (

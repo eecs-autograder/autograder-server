@@ -24,6 +24,7 @@ class TemporaryFilesystemTestCase(TestCase):
     you won't have to worry about tests interfering with each other.
     """
     def setUp(self):
+        # super().setUp()
         self._old_media_root = settings.MEDIA_ROOT
         self.new_media_root = os.path.join(
             settings.BASE_DIR, 'tmp_filesystem')
