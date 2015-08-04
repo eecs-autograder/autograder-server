@@ -4,7 +4,7 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.http import (
     HttpResponse, JsonResponse, HttpResponseForbidden, HttpResponseNotFound,
-    HttpResponseBadRequest, FileResponse)
+    FileResponse)
 
 from autograder.frontend.frontend_utils import LoginRequiredView
 from autograder.frontend.json_api_serializers import project_to_json

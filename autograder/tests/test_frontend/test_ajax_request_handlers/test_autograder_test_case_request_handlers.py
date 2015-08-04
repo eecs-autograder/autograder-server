@@ -1,11 +1,5 @@
-import datetime
-# import tempfile
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.urlresolvers import reverse, resolve
-from django.utils import timezone
-from django.test import RequestFactory
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -16,8 +10,9 @@ from .utils import (
     process_get_request, process_post_request,
     process_patch_request, process_delete_request, json_load_bytes)
 
-from autograder.frontend.json_api_serializers import project_to_json, autograder_test_case_to_json
-from autograder.models import Project, CompiledAutograderTestCase, AutograderTestCaseBase
+from autograder.frontend.json_api_serializers import (
+    project_to_json, autograder_test_case_to_json)
+from autograder.models import CompiledAutograderTestCase
 
 
 class _SetUpBase(TemporaryFilesystemTestCase):
