@@ -19,6 +19,7 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
 
     _editable_fields = [
         'name',
+        'hide_from_students',
         'command_line_arguments',
         'standard_input',
         'test_resource_files',

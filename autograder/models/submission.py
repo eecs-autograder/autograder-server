@@ -4,7 +4,7 @@ import fnmatch
 from django.db import models, transaction
 from django.core.exceptions import ValidationError
 
-from autograder.models.model_utils import (
+from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
 from autograder.models import SubmissionGroup
 

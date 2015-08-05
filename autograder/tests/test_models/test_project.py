@@ -45,6 +45,9 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.visible_to_students, False)
         self.assertEqual(loaded_project.closing_time, None)
         self.assertEqual(loaded_project.disallow_student_submissions, False)
+        self.assertEqual(
+            loaded_project.allow_submissions_from_non_enrolled_students,
+            False)
         self.assertEqual(loaded_project.min_group_size, 1)
         self.assertEqual(loaded_project.max_group_size, 1)
         self.assertEqual(loaded_project.required_student_files, [])
@@ -70,6 +73,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             visible_to_students=True,
             closing_time=tomorrow_date,
             disallow_student_submissions=True,
+            allow_submissions_from_non_enrolled_students=True,
             min_group_size=min_group_size,
             max_group_size=max_group_size,
             required_student_files=required_student_files,
@@ -88,6 +92,9 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.visible_to_students, True)
         self.assertEqual(loaded_project.closing_time, tomorrow_date)
         self.assertEqual(loaded_project.disallow_student_submissions, True)
+        self.assertEqual(
+            loaded_project.allow_submissions_from_non_enrolled_students,
+            True)
         self.assertEqual(loaded_project.min_group_size, min_group_size)
         self.assertEqual(loaded_project.max_group_size, max_group_size)
 

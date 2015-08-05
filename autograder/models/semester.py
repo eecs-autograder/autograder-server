@@ -8,7 +8,7 @@ from django.db.models import Q
 
 from django.contrib.postgres.fields import ArrayField
 
-from autograder.models.model_utils import (
+from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
 from autograder.models import Course
 

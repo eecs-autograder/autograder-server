@@ -12,7 +12,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 
-from autograder.models.model_utils import (
+from autograder.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
 from autograder.models import Project, CompiledAutograderTestCaseResult
@@ -210,6 +210,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     project = models.ForeignKey(Project, related_name='autograder_test_cases')
+
+    hide_from_students = models.BooleanField(default=True)
 
     command_line_arguments = ArrayField(
         models.CharField(

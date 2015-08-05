@@ -9,9 +9,9 @@ import autograder.tests.dummy_object_utils as obj_ut
 
 from autograder.frontend.json_api_serializers import (
     course_to_json, semester_to_json, project_to_json,
-    autograder_test_case_to_json)
+    autograder_test_case_to_json, submission_group_to_json)
 
-from autograder.models import CompiledAutograderTestCase
+from autograder.models import CompiledAutograderTestCase, SubmissionGroup
 
 # print(json.dumps(expected, sort_keys=True, indent=4))
 # print(json.dumps(actual, sort_keys=True, indent=4))
@@ -216,6 +216,8 @@ class ProjectSerializerTestCase(TemporaryFilesystemTestCase):
                 'visible_to_students': self.project.visible_to_students,
                 'closing_time': self.project.closing_time,
                 'disallow_student_submissions': self.project.disallow_student_submissions,
+                'allow_submissions_from_non_enrolled_students': (
+                    self.project.allow_submissions_from_non_enrolled_students),
                 'min_group_size': self.project.min_group_size,
                 'max_group_size': self.project.max_group_size,
                 'required_student_files': self.project.required_student_files,
@@ -265,6 +267,7 @@ class AutograderTestCaseSerializerTestCase(TemporaryFilesystemTestCase):
         self.ag_test = CompiledAutograderTestCase.objects.validate_and_create(
             name='test',
             project=self.project,
+            hide_from_students=False,
             command_line_arguments=['argy', 'argy2'],
             standard_input='iiiin',
             test_resource_files=['cheese.txt'],
@@ -289,6 +292,7 @@ class AutograderTestCaseSerializerTestCase(TemporaryFilesystemTestCase):
             },
             'attributes': {
                 'name': 'test',
+                'hide_from_students': False,
                 'command_line_arguments': ['argy', 'argy2'],
                 'standard_input': 'iiiin',
                 'test_resource_files': ['cheese.txt'],
@@ -325,5 +329,58 @@ class AutograderTestCaseSerializerTestCase(TemporaryFilesystemTestCase):
         }
 
         actual = autograder_test_case_to_json(self.ag_test, with_fields=False)
+
+        self.assertEqual(expected, actual)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class SubmissionGroupSerializerTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.course = obj_ut.create_dummy_courses()
+        self.semester = obj_ut.create_dummy_semesters(self.course)
+
+        self.project = obj_ut.create_dummy_projects(self.semester)
+        self.project.max_group_size = 2
+        self.project.save()
+
+        self.members = obj_ut.create_dummy_users(2)
+        self.semester.add_enrolled_students(*self.members)
+        self.member_names = [user.username for user in self.members]
+        self.due_date = timezone.now()
+        self.submission_group = SubmissionGroup.objects.create_group(
+            self.members, self.project, extended_due_date=self.due_date)
+
+    def test_serialize_submission_group_with_fields(self):
+        expected = {
+            'type': 'submission_group',
+            'id': self.submission_group.pk,
+            'attributes': {
+                'members': sorted(self.member_names),
+                'extended_due_date': self.due_date
+            },
+            'relationships': {
+                'project': {
+                    'data': project_to_json(self.project, with_fields=False)
+                }
+            }
+        }
+
+        actual = submission_group_to_json(self.submission_group)
+        actual['attributes']['members'].sort()
+
+        self.assertEqual(expected, actual)
+
+    def test_serialize_submission_group_without_fields(self):
+        expected = {
+            'type': 'submission_group',
+            'id': self.submission_group.pk
+        }
+
+        actual = submission_group_to_json(
+            self.submission_group, with_fields=False)
 
         self.assertEqual(expected, actual)

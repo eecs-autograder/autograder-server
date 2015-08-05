@@ -207,7 +207,7 @@ urlpatterns = [
     # POST                      /projects/project/<project-id>/copy-to-semester/<semester-id>
     # GET PATCH DELETE          /projects/project/<project-id>
     # POST                      /projects/project/<project-id>/add-file
-    # GET DELETE                /projects/project/<project-id>/file/<filename>
+    # GET PATCH DELETE          /projects/project/<project-id>/file/<filename>
     #
     # --- AUTOGRADER TEST CASES ---
     # POST                      /ag-test-cases/ag-test-case
@@ -252,6 +252,7 @@ urlpatterns = [
     #           'type': 'submission_group',
     #           'id': <id>,
     #           'attributes': {
+    #               'members': [<username>, ...],
     #               'extended_due_date': <date>
     #           },
     #           'relationships': {
@@ -261,22 +262,13 @@ urlpatterns = [
     #                   },
     #                   'data': {'type': 'project', 'id': <id>}
     #               },
-    #               'members': [
-    #                   {
-    #                       'links': {
-    #                           'self': <self link>
-    #                       },
-    #                       'data': {'type': 'user', 'id': <id>}
-    #                   },
-    #                   ...
-    #               ]
     #           }
     #       }
     #   }
     #
     # GET                       /submission-groups?project=<project-id>, users=*<user-id>
     # POST                      /submission-groups/submission-group
-    # GET PATCH DELETE          /submission-groups/submission-group/<submission-group-id>
+    # GET DELETE                /submission-groups/submission-group/<submission-group-id>
     #
     #
     #

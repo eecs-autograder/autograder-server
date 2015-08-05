@@ -6,7 +6,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
 
-from autograder.models.model_utils import (
+from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
 
 import autograder.shared.global_constants as gc

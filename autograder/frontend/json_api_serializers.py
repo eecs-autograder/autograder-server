@@ -38,14 +38,18 @@ def course_to_json(course, with_fields=True):
         }
     }
 
-    if with_fields:
-        data['attributes'] = {
-            'name': course.name,
-            'course_admin_names': course.course_admin_names
-        }
+    if not with_fields:
+        return data
+
+    data['attributes'] = {
+        'name': course.name,
+        'course_admin_names': course.course_admin_names
+    }
 
     return data
 
+
+# -----------------------------------------------------------------------------
 
 def semester_to_json(semester, with_fields=True, user_is_semester_staff=False):
     """
@@ -95,25 +99,32 @@ def semester_to_json(semester, with_fields=True, user_is_semester_staff=False):
         }
     }
 
-    if with_fields:
-        data['attributes'] = {
-            'name': semester.name
+    if not with_fields:
+        return data
+
+    data['attributes'] = {
+        'name': semester.name
+    }
+
+    if user_is_semester_staff:
+        data['attributes']['semester_staff_names'] = (
+            semester.semester_staff_names)
+        data['attributes']['enrolled_student_names'] = (
+            semester.enrolled_student_names)
+
+        data['meta']['course_admin_names'] = (
+            semester.course.course_admin_names)
+
+    data['relationships'] = {
+        'course': {
+            'data': course_to_json(semester.course, with_fields=False)
         }
-
-        if user_is_semester_staff:
-            data['attributes']['semester_staff_names'] = semester.semester_staff_names
-            data['attributes']['enrolled_student_names'] = semester.enrolled_student_names
-
-            data['meta']['course_admin_names'] = semester.course.course_admin_names
-
-        data['relationships'] = {
-            'course': {
-                'data': course_to_json(semester.course, with_fields=False)
-            }
-        }
+    }
 
     return data
 
+
+# -----------------------------------------------------------------------------
 
 def project_to_json(project, with_fields=True):
     """
@@ -138,6 +149,7 @@ def project_to_json(project, with_fields=True):
             'visible_to_students': ...,
             'closing_time': ...,
             'disallow_student_submissions': ...,
+            'allow_submissions_from_non_enrolled_students': <True | False>
             'min_group_size': ...,
             'max_group_size': ...,
             'required_student_files': [...],
@@ -164,38 +176,44 @@ def project_to_json(project, with_fields=True):
         }
     }
 
-    if with_fields:
-        data['attributes'] = {
-            'name': project.name,
-            'project_files': [
-                {
-                    'filename': os.path.basename(file_.name),
-                    'size': file_.size,
-                    'file_url': reverse(
-                        'project-file-handler',
-                        args=[project.pk, os.path.basename(file_.name)])
-                }
-                for file_ in project.get_project_files()
-            ],
-            'visible_to_students': project.visible_to_students,
-            'closing_time': project.closing_time,
-            'disallow_student_submissions': (
-                project.disallow_student_submissions),
-            'min_group_size': project.min_group_size,
-            'max_group_size': project.max_group_size,
-            'required_student_files': project.required_student_files,
-            'expected_student_file_patterns': (
-                project.expected_student_file_patterns)
-        }
+    if not with_fields:
+        return data
 
-        data['relationships'] = {
-            'semester': {
-                'data': semester_to_json(project.semester, with_fields=False)
+    data['attributes'] = {
+        'name': project.name,
+        'project_files': [
+            {
+                'filename': os.path.basename(file_.name),
+                'size': file_.size,
+                'file_url': reverse(
+                    'project-file-handler',
+                    args=[project.pk, os.path.basename(file_.name)])
             }
+            for file_ in project.get_project_files()
+        ],
+        'visible_to_students': project.visible_to_students,
+        'closing_time': project.closing_time,
+        'disallow_student_submissions': (
+            project.disallow_student_submissions),
+        'allow_submissions_from_non_enrolled_students': (
+            project.allow_submissions_from_non_enrolled_students),
+        'min_group_size': project.min_group_size,
+        'max_group_size': project.max_group_size,
+        'required_student_files': project.required_student_files,
+        'expected_student_file_patterns': (
+            project.expected_student_file_patterns)
+    }
+
+    data['relationships'] = {
+        'semester': {
+            'data': semester_to_json(project.semester, with_fields=False)
         }
+    }
 
     return data
 
+
+# -----------------------------------------------------------------------------
 
 def autograder_test_case_to_json(autograder_test_case, with_fields=True):
     """
@@ -210,6 +228,7 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
         'attributes': {
             // Present for all types
             'name': <value>,
+            'hide_from_students': <value>
             'command_line_arguments': <value>,
             'standard_input': <value>,
             'test_resource_files': <value>,
@@ -253,41 +272,69 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
         }
     }
 
-    if with_fields:
-        data['attributes'] = {
-            'name': autograder_test_case.name,
-            'command_line_arguments': (
-                autograder_test_case.command_line_arguments),
-            'standard_input': autograder_test_case.standard_input,
-            'test_resource_files': autograder_test_case.test_resource_files,
-            'time_limit': autograder_test_case.time_limit,
-            'expected_return_code': autograder_test_case.expected_return_code,
-            'expect_any_nonzero_return_code': (
-                autograder_test_case.expect_any_nonzero_return_code),
-            'expected_standard_output': (
-                autograder_test_case.expected_standard_output),
-            'expected_standard_error_output': (
-                autograder_test_case.expected_standard_error_output),
-            'use_valgrind': autograder_test_case.use_valgrind,
-            'valgrind_flags': autograder_test_case.valgrind_flags,
-        }
+    if not with_fields:
+        return data
 
-        if type_ == 'compiled_test_case':
-            data['attributes'].update(
-                {
-                    'compiler': autograder_test_case.compiler,
-                    'compiler_flags': autograder_test_case.compiler_flags,
-                    'files_to_compile_together': (
-                        autograder_test_case.files_to_compile_together),
-                    'executable_name': autograder_test_case.executable_name
-                }
-            )
+    data['attributes'] = {
+        'name': autograder_test_case.name,
+        'hide_from_students': autograder_test_case.hide_from_students,
+        'command_line_arguments': (
+            autograder_test_case.command_line_arguments),
+        'standard_input': autograder_test_case.standard_input,
+        'test_resource_files': autograder_test_case.test_resource_files,
+        'time_limit': autograder_test_case.time_limit,
+        'expected_return_code': autograder_test_case.expected_return_code,
+        'expect_any_nonzero_return_code': (
+            autograder_test_case.expect_any_nonzero_return_code),
+        'expected_standard_output': (
+            autograder_test_case.expected_standard_output),
+        'expected_standard_error_output': (
+            autograder_test_case.expected_standard_error_output),
+        'use_valgrind': autograder_test_case.use_valgrind,
+        'valgrind_flags': autograder_test_case.valgrind_flags,
+    }
 
-        data['relationships'] = {
-            'project': {
-                'data': project_to_json(
-                    autograder_test_case.project, with_fields=False)
+    if type_ == 'compiled_test_case':
+        data['attributes'].update(
+            {
+                'compiler': autograder_test_case.compiler,
+                'compiler_flags': autograder_test_case.compiler_flags,
+                'files_to_compile_together': (
+                    autograder_test_case.files_to_compile_together),
+                'executable_name': autograder_test_case.executable_name
             }
+        )
+
+    data['relationships'] = {
+        'project': {
+            'data': project_to_json(
+                autograder_test_case.project, with_fields=False)
         }
+    }
+
+    return data
+
+
+# -----------------------------------------------------------------------------
+
+def submission_group_to_json(submission_group, with_fields=True):
+    data = {
+        'type': 'submission_group',
+        'id': submission_group.pk
+    }
+
+    if not with_fields:
+        return data
+
+    data['attributes'] = {
+        'members': [user.username for user in submission_group.members.all()],
+        'extended_due_date': submission_group.extended_due_date
+    }
+    data['relationships'] = {
+        'project': {
+            'data': project_to_json(
+                submission_group.project, with_fields=False)
+        }
+    }
 
     return data

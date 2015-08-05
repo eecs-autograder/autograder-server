@@ -43,6 +43,7 @@ class _SetUpBase(TemporaryFilesystemTestCase):
                 'type': 'compiled_test_case',
                 'attributes': {
                     'name': 'test',
+                    'hide_from_students': False,
                     'command_line_arguments': ['spam'],
                     'standard_input': 'eggs',
                     'test_resource_files': ['cheese.txt'],
@@ -160,6 +161,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
                 'type': 'compiled_test_case',
                 'id': self.ag_test_starter.pk,
                 'attributes': {
+                    'hide_from_students': True,
                     'command_line_arguments': ['eggs'],
                     'standard_input': 'spam',
                     'test_resource_files': [],

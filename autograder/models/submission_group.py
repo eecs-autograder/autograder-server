@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
 from autograder.models import Project
-from autograder.models.model_utils import ModelValidatableOnSave
+from autograder.models.utils import ModelValidatableOnSave
 
 import autograder.shared.utilities as ut
 
@@ -42,7 +42,6 @@ class SubmissionGroup(ModelValidatableOnSave):
         Always use SubmissionGroup.objects.create_group(). This
         function properly handles initialization and validation of the
         members field.
-
 
     Fields:
         members -- The Users that belong to this submission group.
@@ -109,9 +108,12 @@ class SubmissionGroup(ModelValidatableOnSave):
         if num_members > self.project.max_group_size:
             raise ValidationError(
                 "Tried to add {} members, but the max "
-                "for project {} is {}".format(
+                "for project '{}' is {}".format(
                     num_members, self.project.name,
                     self.project.max_group_size))
+
+        members = self.members.all()
+        self._clean_group_members_for_enrollment(members)
 
         # This check a bit strange and worth explaining:
         # We need to make sure that none of the members of this group
@@ -123,11 +125,38 @@ class SubmissionGroup(ModelValidatableOnSave):
         #
         # Therefore, we need to ignore this submission group when
         # checking to see if a user is already part of a group.
-        for member in self.members.all():
+        for member in members:
             current_memberships = member.submission_groups.filter(
                 project=self.project)
             if current_memberships.count() > 1:
                 raise ValidationError(
                     "User {} is already part of a submission "
-                    "group for project {}".format(
+                    "group for project '{}'".format(
                         member.username, self.project.name))
+
+    def _clean_group_members_for_enrollment(self, members):
+        semester = self.project.semester
+        num_enrolled = ut.count_if(
+            members, lambda member: semester.is_enrolled_student(member))
+
+        num_staff = ut.count_if(
+            members, lambda member: semester.is_semester_staff(member))
+
+        if num_staff:
+            if num_staff != len(members):
+                raise ValidationError(
+                    "Groups with any staff members "
+                    "must consist of only staff members")
+            return
+
+        if not self.project.allow_submissions_from_non_enrolled_students:
+            if not num_enrolled or num_enrolled != len(members):
+                raise ValidationError(
+                    "This project only accepts submissions "
+                    "from enrolled students.")
+            return
+
+        if num_enrolled and num_enrolled != len(members):
+            raise ValidationError(
+                "Non-enrolled students can only be in "
+                "groups with other non-enrolled students.")

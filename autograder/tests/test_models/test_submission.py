@@ -14,11 +14,7 @@ from autograder.models import (
 
 import autograder.shared.utilities as ut
 
-
-def _make_dummy_user(username, password):
-    user = User.objects.create(username=username)
-    user.set_password(password)
-    return user
+import autograder.tests.dummy_object_utils as obj_ut
 
 
 class SubmissionTestCase(TemporaryFilesystemTestCase):
@@ -34,10 +30,8 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             expected_student_file_patterns=[
                 Project.FilePatternTuple('test_*.cpp', 1, 2)])
 
-        self.group_members = [
-            _make_dummy_user('steve', 'spam'),
-            _make_dummy_user('joe', 'eggs')
-        ]
+        self.group_members = obj_ut.create_dummy_users(2)
+        self.semester.add_enrolled_students(*self.group_members)
 
         self.submission_group = SubmissionGroup.objects.create_group(
             self.group_members, self.project)

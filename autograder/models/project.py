@@ -10,7 +10,7 @@ from django.contrib.postgres.fields import ArrayField  # , JSONField
 
 from jsonfield import JSONField
 
-from autograder.models.model_utils import (
+from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
 from autograder.models import Semester
 
@@ -46,6 +46,16 @@ class Project(ModelValidatableOnSave):
             students from submitting even if visible_to_students is True and
             it is before closing_time.
             Default value: False.
+
+        allow_submissions_from_non_enrolled_students -- By default,
+            only staff members and enrolled students for a given Semester
+            can submit to its Projects. When this field is set to True,
+            submissions will be accepted from any authenticated Users,
+            with the following caveats:
+                - In order to view the Project, non-enrolled students
+                must be given a direct link to a page where it can be viewed.
+                - When group work is allowed, non-enrolled students can
+                only be in groups with other non-enrolled students.
 
         min_group_size -- The minimum number of students that can work
             in a group on this project.
@@ -155,6 +165,9 @@ class Project(ModelValidatableOnSave):
     visible_to_students = models.BooleanField(default=False)
     closing_time = models.DateTimeField(default=None, null=True, blank=True)
     disallow_student_submissions = models.BooleanField(default=False)
+
+    allow_submissions_from_non_enrolled_students = models.BooleanField(
+        default=False)
 
     min_group_size = models.IntegerField(
         default=1, validators=[MinValueValidator(1)])

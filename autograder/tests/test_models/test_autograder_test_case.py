@@ -48,6 +48,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(self.TEST_NAME, loaded_test_case.name)
         self.assertEqual(self.project, loaded_test_case.project)
 
+        self.assertEqual(loaded_test_case.hide_from_students, True)
+
         self.assertEqual(loaded_test_case.command_line_arguments, [])
         self.assertEqual(loaded_test_case.standard_input, "")
         self.assertEqual(loaded_test_case.test_resource_files, [])
@@ -79,6 +81,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
         new_test_case = AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
+            hide_from_students=False,
             command_line_arguments=cmd_args,
             standard_input=input_stream_content,
             test_resource_files=resource_files,
@@ -96,6 +99,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(new_test_case, loaded_test_case)
         self.assertEqual(self.TEST_NAME, loaded_test_case.name)
         self.assertEqual(self.project, loaded_test_case.project)
+
+        self.assertEqual(loaded_test_case.hide_from_students, False)
 
         self.assertEqual(
             loaded_test_case.command_line_arguments, cmd_args)
