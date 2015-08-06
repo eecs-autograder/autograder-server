@@ -56,6 +56,7 @@ class Project(ModelValidatableOnSave):
                 must be given a direct link to a page where it can be viewed.
                 - When group work is allowed, non-enrolled students can
                 only be in groups with other non-enrolled students.
+            Default value: False
 
         min_group_size -- The minimum number of students that can work
             in a group on this project.

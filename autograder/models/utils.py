@@ -47,45 +47,89 @@ class FeedbackConfiguration(object):
     )
 
     def __init__(self, **kwargs):
-        self._return_code_feedback_level = kwargs.get(
+        self.return_code_feedback_level = kwargs.get(
             'return_code_feedback_level',
             FeedbackConfiguration.RETURN_CODE_FEEDBACK_LEVELS[0])
 
-        self._output_feedback_level = kwargs.get(
+        self.output_feedback_level = kwargs.get(
             'output_feedback_level',
             FeedbackConfiguration.OUTPUT_FEEDBACK_LEVELS[0])
 
-        self._compilation_feedback_level = kwargs.get(
+        self.compilation_feedback_level = kwargs.get(
             'compilation_feedback_level',
             FeedbackConfiguration.COMPILATION_FEEDBACK_LEVELS[0])
 
-        self._valgrind_feedback_levels = kwargs.get(
-            'valgrind_feedback_levels',
+        self.valgrind_feedback_level = kwargs.get(
+            'valgrind_feedback_level',
             FeedbackConfiguration.VALGRIND_FEEDBACK_LEVELS[0])
 
-        self._points_feedback_level = kwargs.get(
+        self.points_feedback_level = kwargs.get(
             'points_feedback_level',
             FeedbackConfiguration.POINTS_FEEDBACK_LEVELS[0])
+
+    def to_json(self):
+        return {
+            'return_code_feedback_level': self.return_code_feedback_level,
+            'output_feedback_level': self.output_feedback_level,
+            'compilation_feedback_level': self.compilation_feedback_level,
+            'valgrind_feedback_level': self.valgrind_feedback_level,
+            'points_feedback_level': self.points_feedback_level
+        }
 
     @property
     def return_code_feedback_level(self):
         self._return_code_feedback_level
 
+    @return_code_feedback_level.setter
+    def return_code_feedback_level(self, value):
+        if value not in FeedbackConfiguration.RETURN_CODE_FEEDBACK_LEVELS:
+            raise ValueError()
+        self._return_code_feedback_level = value
+
     @property
     def output_feedback_level(self):
         self._output_feedback_level
+
+    @output_feedback_level.setter
+    def output_feedback_level(self, value):
+        if value not in FeedbackConfiguration.OUTPUT_FEEDBACK_LEVELS:
+            raise ValueError()
+        self._output_feedback_level = value
 
     @property
     def compilation_feedback_level(self):
         self._compilation_feedback_level
 
+    @compilation_feedback_level.setter
+    def compilation_feedback_level(self, value):
+        if value not in FeedbackConfiguration.COMPILATION_FEEDBACK_LEVELS:
+            raise ValueError()
+        self._compilation_feedback_level = value
+
     @property
-    def valgrind_feedback_levels(self):
-        self._valgrind_feedback_levels
+    def valgrind_feedback_level(self):
+        self._valgrind_feedback_level
+
+    @valgrind_feedback_level.setter
+    def valgrind_feedback_level(self, value):
+        if value not in FeedbackConfiguration.VALGRIND_FEEDBACK_LEVELS:
+            raise ValueError()
+        self._valgrind_feedback_level = value
 
     @property
     def points_feedback_level(self):
         self._points_feedback_level
+
+    @points_feedback_level.setter
+    def points_feedback_level(self, value):
+        if value not in FeedbackConfiguration.POINTS_FEEDBACK_LEVELS:
+            raise ValueError()
+        self._points_feedback_level = value
+
+
+# class PointDistribution(object):
+#     def __init__(self, **kwargs):
+#         self.
 
 
 class ManagerWithValidateOnCreate(models.Manager):

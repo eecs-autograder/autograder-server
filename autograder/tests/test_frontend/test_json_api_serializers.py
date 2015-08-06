@@ -281,7 +281,11 @@ class AutograderTestCaseSerializerTestCase(TemporaryFilesystemTestCase):
             compiler='g++',
             compiler_flags=['-Wall'],
             files_to_compile_together=['spam.cpp', 'egg.cpp'],
-            executable_name='prog')
+            executable_name='prog',
+            points_for_correct_return_code=42,
+            points_for_correct_output=3,
+            points_for_no_valgrind_errors=9001,
+            points_for_compilation_success=75)
 
     def test_serialize_test_case_with_fields(self):
         expected = {
@@ -306,7 +310,12 @@ class AutograderTestCaseSerializerTestCase(TemporaryFilesystemTestCase):
                 'compiler': 'g++',
                 'compiler_flags': ['-Wall'],
                 'files_to_compile_together': ['spam.cpp', 'egg.cpp'],
-                'executable_name': 'prog'
+                'executable_name': 'prog',
+
+                'points_for_correct_return_code': 42,
+                'points_for_correct_output': 3,
+                'points_for_no_valgrind_errors': 9001,
+                'points_for_compilation_success': 75
             },
             'relationships': {
                 'project': {

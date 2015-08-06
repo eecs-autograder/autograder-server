@@ -40,8 +40,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     test cases used to evaluate student-submitted code.
 
     Fields:
-        TODO: feedback levels
-
         name -- The name used to identify this test case.
                 Must be non-empty and non-null.
                 Must be unique among test cases associated with a given
@@ -50,6 +48,13 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
         project -- The Project this test case is associated with.
                    This field is REQUIRED.
+
+        hide_from_students -- When this field is True, students should not
+            receive feedback about this test case.
+            Note: Staff members will still receive feedback on this
+                test case for their own submissions, but when viewing
+                a student submission, this test case will still be hidden.
+            Default value: True
 
         command_line_arguments -- A list of arguments to be passed
             to the program being tested.
@@ -149,6 +154,24 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             each flag in this field. The strings will contain an error
             message for their corresponding flag or be empty if their
             corresponding flag did not cause an error.
+
+        points_for_correct_return_code -- The number of points to be awarded
+            for the program being tested exiting with the correct return_code.
+            Default value: 0
+
+        points_for_correct_output -- The number of points to be awarded
+            for the program being tested producing the correct output
+            (standard out and standard error).
+            Default value: 0
+
+        points_for_no_valgrind_errors -- The number of points to be awarded
+            for the program being tested not triggering any valgrind errors.
+            Default value: 0
+
+        points_for_compilation_success -- The number of points to be
+            awarded for the program being tested compiling successfully.
+            Default value: 0
+
 
     Fat interface fields:
         NOTE: These fields all default to a "Falsy" value and should be
@@ -262,6 +285,16 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             blank=True  # See comment for command_line_arguments
             ),
         null=True, default=None, blank=True)
+
+    # Point distribution fields
+    points_for_correct_return_code = models.IntegerField(
+        default=0, validators=[MinValueValidator(0)])
+    points_for_correct_output = models.IntegerField(
+        default=0, validators=[MinValueValidator(0)])
+    points_for_no_valgrind_errors = models.IntegerField(
+        default=0, validators=[MinValueValidator(0)])
+    points_for_compilation_success = models.IntegerField(
+        default=0, validators=[MinValueValidator(0)])
 
     # Fat interface fields
     compiler = models.CharField(

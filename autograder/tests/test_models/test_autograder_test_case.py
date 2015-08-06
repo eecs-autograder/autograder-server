@@ -61,6 +61,11 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertFalse(loaded_test_case.use_valgrind)
         self.assertIsNone(loaded_test_case.valgrind_flags)
 
+        self.assertEqual(0, loaded_test_case.points_for_correct_return_code)
+        self.assertEqual(0, loaded_test_case.points_for_correct_output)
+        self.assertEqual(0, loaded_test_case.points_for_no_valgrind_errors)
+        self.assertEqual(0, loaded_test_case.points_for_compilation_success)
+
         # Fat interface fields
         self.assertEqual(loaded_test_case.compiler, "")
         self.assertEqual(loaded_test_case.compiler_flags, [])
@@ -398,6 +403,26 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         loaded_test = AutograderTestCaseBase.objects.get(
             name=self.TEST_NAME, project=self.project)
         self.assertEqual(loaded_test.valgrind_flags, ['spam', 'eggs'])
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_on_negative_point_distributions(self):
+        with self.assertRaises(ValidationError) as cm:
+            AutograderTestCaseBase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                points_for_correct_return_code=-1,
+                points_for_correct_output=-1,
+                points_for_no_valgrind_errors=-1,
+                points_for_compilation_success=-1)
+
+        self.assertTrue(
+            'points_for_correct_return_code' in cm.exception.message_dict)
+        self.assertTrue(
+            'points_for_correct_output' in cm.exception.message_dict)
+        self.assertTrue(
+            'points_for_no_valgrind_errors' in cm.exception.message_dict)
+        self.assertTrue(
+            'points_for_compilation_success' in cm.exception.message_dict)
 
 
 # -----------------------------------------------------------------------------
