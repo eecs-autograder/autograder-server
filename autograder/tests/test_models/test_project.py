@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
 
 from autograder.models import Project, Semester, Course
+from autograder.models.fields import FeedbackConfiguration
 
 import autograder.shared.utilities as ut
 
@@ -41,6 +42,10 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.name, self.PROJECT_NAME)
         self.assertEqual(loaded_project.semester, self.semester)
 
+        self.assertEqual(
+            loaded_project.test_case_feedback_configuration,
+            FeedbackConfiguration())
+
         self.assertEqual(loaded_project.get_project_files(), [])
         self.assertEqual(loaded_project.visible_to_students, False)
         self.assertEqual(loaded_project.closing_time, None)
@@ -67,9 +72,17 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             Project.FilePatternTuple("test[!0-9]?.cpp", 3, 5)
         ]
 
+        feedback_config = FeedbackConfiguration(
+            return_code_feedback_level='correct_or_incorrect_only',
+            output_feedback_level='show_expected_and_actual_values',
+            compilation_feedback_level='success_or_failure_only',
+            valgrind_feedback_level='show_valgrind_output'
+        )
+
         new_project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME,
             semester=self.semester,
+            test_case_feedback_configuration=feedback_config,
             visible_to_students=True,
             closing_time=tomorrow_date,
             disallow_student_submissions=True,
@@ -88,6 +101,10 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project, new_project)
         self.assertEqual(loaded_project.name, self.PROJECT_NAME)
         self.assertEqual(loaded_project.semester, self.semester)
+
+        self.assertEqual(
+            loaded_project.test_case_feedback_configuration,
+            feedback_config)
 
         self.assertEqual(loaded_project.visible_to_students, True)
         self.assertEqual(loaded_project.closing_time, tomorrow_date)

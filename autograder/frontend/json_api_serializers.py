@@ -146,6 +146,7 @@ def project_to_json(project, with_fields=True):
                 },
                 ...
             ],
+            'test_case_feedback_configuration': {...},
             'visible_to_students': ...,
             'closing_time': ...,
             'disallow_student_submissions': ...,
@@ -191,6 +192,8 @@ def project_to_json(project, with_fields=True):
             }
             for file_ in project.get_project_files()
         ],
+        'test_case_feedback_configuration': (
+            project.test_case_feedback_configuration.to_json()),
         'visible_to_students': project.visible_to_students,
         'closing_time': project.closing_time,
         'disallow_student_submissions': (

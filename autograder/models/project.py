@@ -10,9 +10,11 @@ from django.contrib.postgres.fields import ArrayField  # , JSONField
 
 from jsonfield import JSONField
 
+from autograder.models import Semester
+from autograder.models.fields import (
+    FeedbackConfigurationField)
 from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
-from autograder.models import Semester
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
@@ -32,6 +34,9 @@ class Project(ModelValidatableOnSave):
 
         semester -- The Semester this project belongs to.
             This field is REQUIRED.
+
+        test_case_feedback_configuration -- The feedback
+            configuration to use if not overridden at the submission level.
 
         visible_to_students -- Whether information about this Project can
             be viewed by students.
@@ -162,6 +167,9 @@ class Project(ModelValidatableOnSave):
 
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     semester = models.ForeignKey(Semester, related_name='projects')
+
+    test_case_feedback_configuration = FeedbackConfigurationField()
+        # default=FeedbackConfiguration)
 
     visible_to_students = models.BooleanField(default=False)
     closing_time = models.DateTimeField(default=None, null=True, blank=True)

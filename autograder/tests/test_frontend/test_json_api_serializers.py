@@ -213,15 +213,19 @@ class ProjectSerializerTestCase(TemporaryFilesystemTestCase):
                     }
                     for filename in self.project.get_project_file_basenames()
                 ],
+                'test_case_feedback_configuration': (
+                    self.project.test_case_feedback_configuration.to_json()),
                 'visible_to_students': self.project.visible_to_students,
                 'closing_time': self.project.closing_time,
-                'disallow_student_submissions': self.project.disallow_student_submissions,
+                'disallow_student_submissions': (
+                    self.project.disallow_student_submissions),
                 'allow_submissions_from_non_enrolled_students': (
                     self.project.allow_submissions_from_non_enrolled_students),
                 'min_group_size': self.project.min_group_size,
                 'max_group_size': self.project.max_group_size,
                 'required_student_files': self.project.required_student_files,
-                'expected_student_file_patterns': self.project.expected_student_file_patterns,
+                'expected_student_file_patterns': (
+                    self.project.expected_student_file_patterns),
             },
             'relationships': {
                 'semester': {
