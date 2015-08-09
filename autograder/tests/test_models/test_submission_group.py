@@ -18,10 +18,11 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.course = Course.objects.create(name='eecs280')
-        self.semester = Semester.objects.create(name='f15', course=self.course)
+        self.course = Course.objects.validate_and_create(name='eecs280')
+        self.semester = Semester.objects.validate_and_create(
+            name='f15', course=self.course)
 
-        self.project = Project.objects.create(
+        self.project = Project.objects.validate_and_create(
             name='my_project', semester=self.semester, max_group_size=2)
 
         self.enrolled_group = obj_ut.create_dummy_users(2)
@@ -75,7 +76,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(self.project, loaded_group.project)
 
     def test_valid_member_of_multiple_groups_for_different_projects(self):
-        other_project = Project.objects.create(
+        other_project = Project.objects.validate_and_create(
             name='project spam', semester=self.semester, max_group_size=2)
 
         repeated_user = self.enrolled_group[0]

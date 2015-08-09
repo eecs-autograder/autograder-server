@@ -12,10 +12,11 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.course = Course.objects.create(name='eecs280')
-        self.semester = Semester.objects.create(name='f15', course=self.course)
+        self.course = Course.objects.validate_and_create(name='eecs280')
+        self.semester = Semester.objects.validate_and_create(
+            name='f15', course=self.course)
 
-        self.project = Project.objects.create(
+        self.project = Project.objects.validate_and_create(
             name='my_project', semester=self.semester,
             required_student_files=['file1.cpp', 'file2.cpp'],
             expected_student_file_patterns=[
@@ -26,7 +27,7 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
 
         self.TEST_NAME = 'my_test'
 
-        self.test_case = AutograderTestCaseBase.objects.create(
+        self.test_case = AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project)
 
     # -------------------------------------------------------------------------

@@ -24,8 +24,8 @@ _FILENAME_WITH_SHELL_CHARS = '; echo "haxorz"; # '
 class ProjectTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
-        self.course = Course.objects.create(name='eecs280')
-        self.semester = Semester.objects.create(name='f15', course=self.course)
+        self.course = Course.objects.validate_and_create(name='eecs280')
+        self.semester = Semester.objects.validate_and_create(name='f15', course=self.course)
         self.PROJECT_NAME = 'stats_project'
 
     # -------------------------------------------------------------------------
@@ -547,8 +547,8 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
 class ProjectFilesystemTest(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
-        self.course = Course.objects.create(name='eecs280')
-        self.semester = Semester.objects.create(name='f15', course=self.course)
+        self.course = Course.objects.validate_and_create(name='eecs280')
+        self.semester = Semester.objects.validate_and_create(name='f15', course=self.course)
         self.PROJECT_NAME = 'stats_project'
 
         self.sample_project_filename = "spam_EGGS-42.txt"
@@ -631,7 +631,7 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
     # This test can probably be phased out.
     # def test_exception_on_add_file_overwrite_not_ok(self):
-    #     project = Project.objects.create(
+    #     project = Project.objects.validate_and_create(
     #         name=self.PROJECT_NAME, semester=self.semester)
 
     #     project.add_project_file(
@@ -646,7 +646,7 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
     # This test can probably be phased out.
 #     def test_no_exception_on_add_file_overwrite_ok(self):
-#         project = Project.objects.create(
+#         project = Project.objects.validate_and_create(
 #             name=self.PROJECT_NAME, semester=self.semester)
 
 #         self.assertEqual(project.project_files, [])
@@ -713,7 +713,7 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_valid_remove_project_file(self):
-        project = Project.objects.create(
+        project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME, semester=self.semester)
         project.add_project_file(self.sample_project_file)
 
@@ -727,7 +727,7 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_remove_nonexistant_project_file(self):
-        project = Project.objects.create(
+        project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME, semester=self.semester)
         with self.assertRaises(ObjectDoesNotExist):
             project.remove_project_file(self.sample_project_filename)

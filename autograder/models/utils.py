@@ -21,6 +21,11 @@ class ManagerWithValidateOnCreate(models.Manager):
         model.save()
         return model
 
+    def create(self, **kwargs):
+        raise NotImplementedError(
+            'create() is unsupported for this model. '
+            'Please use validate_and_create() instead.')
+
 
 class PolymorphicManagerWithValidateOnCreate(PolymorphicManager):
     """
@@ -32,6 +37,11 @@ class PolymorphicManagerWithValidateOnCreate(PolymorphicManager):
         model.full_clean()
         model.save()
         return model
+
+    def create(self, **kwargs):
+        raise NotImplementedError(
+            'create() is unsupported for this model. '
+            'Please use validate_and_create() instead.')
 
 
 class ModelValidatableOnSave(models.Model):

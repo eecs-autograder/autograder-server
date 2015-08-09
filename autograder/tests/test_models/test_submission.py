@@ -21,10 +21,11 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.course = Course.objects.create(name='eecs280')
-        self.semester = Semester.objects.create(name='f15', course=self.course)
+        self.course = Course.objects.validate_and_create(name='eecs280')
+        self.semester = Semester.objects.validate_and_create(
+            name='f15', course=self.course)
 
-        self.project = Project.objects.create(
+        self.project = Project.objects.validate_and_create(
             name='my_project', semester=self.semester, max_group_size=2,
             required_student_files=['spam.cpp', 'eggs.cpp'],
             expected_student_file_patterns=[
@@ -73,7 +74,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
                     self.assertEqual(content.decode('utf-8'), f.read())
 
         iterable = enumerate(
-            sorted(loaded_submission.get_submitted_files(),
+            sorted(loaded_submission.submitted_files,
                    key=lambda obj: obj.name))
         for index, value in iterable:
             self.assertEqual(

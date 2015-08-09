@@ -223,7 +223,7 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
 class SemesterFilesystemTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
-        self.course = Course.objects.create(name="eecs280")
+        self.course = Course.objects.validate_and_create(name="eecs280")
         self.SEMESTER_NAME = "fall2015"
 
     # -------------------------------------------------------------------------

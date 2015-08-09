@@ -30,8 +30,10 @@ class _SubmissionManager(models.Manager):
     @transaction.atomic
     def create_submission(self, **kwargs):
         files = kwargs.pop('submitted_files')
-        # files = self._discard_unnecessary_files(files, kwargs['project'])
         model = self.model(**kwargs)
+        # Submission's save method throws an exception if the model
+        # hasn't already been saved, so we need to call the parent
+        # version here.
         super(Submission, model).save()
         for file_obj in files:
             if file_obj.name in model.get_submitted_file_basenames():
@@ -41,13 +43,12 @@ class _SubmissionManager(models.Manager):
                 continue
 
             try:
-                model.submitted_files.add(
+                model._submitted_files.add(
                     _SubmittedFile.objects.validate_and_create(
                         submitted_file=file_obj, submission=model))
             except ValidationError:
                 continue
 
-        # model.validate_and_save()
         try:
             model.full_clean()
         except ValidationError as e:
@@ -62,7 +63,8 @@ class _SubmissionManager(models.Manager):
             'This method is not supported for Submissions')
 
 
-class Submission(models.Model):
+# TODO: submitted_files protocol and documentation thereof
+class Submission(ModelValidatableOnSave):
     """
     Represents a single submission for a particular project.
 
@@ -75,7 +77,12 @@ class Submission(models.Model):
             object to a Project.
             This field is REQUIRED.
 
-        submitted_files -- The files included in this submission.
+        submitted_files -- A list of the files included in this submission.
+            Submission.create_submission automatically
+            filters through the submitted files and discards any
+            that:
+                -
+
             This model's clean() method will verify that these files
             conform to the requirements of the Project that submission_group
             belongs to.
@@ -85,6 +92,9 @@ class Submission(models.Model):
             the submission will be marked as invalid. Any other extra files
             submitted will be discarded. Also, any files that have illegal
             filenames will be discarded.
+
+        discarded_files -- A list of names of files that were discarded
+            when this Submission was created.
 
         timestamp -- The timestamp at which this Submission was
             recorded.
@@ -115,9 +125,6 @@ class Submission(models.Model):
             Default value: empty string
 
     Methods:
-        validate_and_save()
-
-        get_submitted_files()
         get_submitted_file_basenames()
 
     Overridden methods:
@@ -128,7 +135,7 @@ class Submission(models.Model):
 
     # -------------------------------------------------------------------------
 
-    # TODO: make this a proper enum once migrations support it enums
+    # TODO: make this a proper enum once migrations support enums
     class GradingStatus(object):
         received = 'received'
         queued = 'queued'
@@ -150,6 +157,10 @@ class Submission(models.Model):
     submission_group = models.ForeignKey(SubmissionGroup)
 
     @property
+    def submitted_files(self):
+        return [obj.submitted_file for obj in self._submitted_files.all()]
+
+    @property
     def timestamp(self):
         return self._timestamp
 
@@ -165,17 +176,14 @@ class Submission(models.Model):
 
     # -------------------------------------------------------------------------
 
-    def validate_and_save(self):
-        self.full_clean()
-        super().save()
-
-    def get_submitted_files(self):
-        return [obj.submitted_file for obj in self.submitted_files.all()]
+    # def validate_and_save(self):
+    #     self.full_clean()
+    #     super().save()
 
     def get_submitted_file_basenames(self):
         return [
             os.path.basename(obj.submitted_file.name) for
-            obj in self.submitted_files.all()]
+            obj in self._submitted_files.all()]
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -193,10 +201,7 @@ class Submission(models.Model):
         super().clean()
 
         errors = []
-        submitted_filenames = [
-            os.path.basename(file_obj.name) for
-            file_obj in self.get_submitted_files()
-        ]
+        submitted_filenames = self.get_submitted_file_basenames()
 
         project = self.submission_group.project
         required_filenames = project.required_student_files
@@ -223,13 +228,6 @@ class Submission(models.Model):
             if duplicated:
                 errors.append('Duplicate file: ' + filename)
 
-            # matches_any_pattern = ut.count_if(
-            #     expected_patterns,
-            #     lambda pattern_obj: fnmatch.fnmatch(
-            #         filename, pattern_obj.pattern))
-            # is_extra_file = (
-            #     filename not in required_filenames and
-            #     not matches_any_pattern)
             is_extra_file = self.file_is_extra(filename)
             if is_extra_file:
                 errors.append('Extra file submitted: ' + filename)
@@ -242,18 +240,15 @@ class Submission(models.Model):
             self.submission_group.project.expected_student_file_patterns,
             lambda pattern_obj: fnmatch.fnmatch(
                 filename, pattern_obj.pattern))
-
-        return (filename not in self.submission_group.project.required_student_files and
+        required_files = self.submission_group.project.required_student_files
+        return (filename not in required_files and
                 not matches_any_pattern)
 
 
 class _SubmittedFile(ModelValidatableOnSave):
     objects = ManagerWithValidateOnCreate()
 
-    class Meta:
-        unique_together = ('submitted_file', 'submission')
-
-    submission = models.ForeignKey(Submission, related_name='submitted_files')
+    submission = models.ForeignKey(Submission, related_name='_submitted_files')
 
     submitted_file = models.FileField(
         upload_to=_get_submission_file_upload_to_dir,
