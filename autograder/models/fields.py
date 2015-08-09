@@ -4,37 +4,47 @@ import json
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from jsonfield import JSONField
+# from jsonfield import JSONField
 
 
 def _validate_feedback_configuration(config):
     config.validate()
 
 
-class FeedbackConfigurationField(JSONField):
-    def __init__(self, *args, **kwargs):
-        kwargs.pop('default', None)
-
-        validators = kwargs.pop('validators', [])
-        validators.append(_validate_feedback_configuration)
-        return super().__init__(*args, validators=validators, **kwargs)
-
+class FeedbackConfigurationField(models.TextField):
     def get_prep_value(self, value):
-        return super().get_prep_value(value.to_json())
+        if value is None:
+            return None
+
+        if isinstance(value, dict):
+            return json.dumps(value)
+
+        if isinstance(value, FeedbackConfiguration):
+            return json.dumps(value.to_json())
+
+        return value
 
     def to_python(self, value):
-        value = super().to_python(value)
-
         if value is None:
             return None
 
         if isinstance(value, dict):
             return FeedbackConfiguration(**value)
 
+        if isinstance(value, str):
+            return FeedbackConfiguration(**json.loads(value))
+
         return value
 
-    def get_default(self):
-        return FeedbackConfiguration()
+    def validate(self, value, model_instance):
+        if value is None:
+            return
+
+        value.validate()
+        return super().validate(value, model_instance)
+
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
 
 
 class FeedbackConfiguration(object):

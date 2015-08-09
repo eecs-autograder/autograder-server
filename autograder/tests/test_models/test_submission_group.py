@@ -93,7 +93,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
             self.user_sort_key)
         self.assertEqual(self.project, loaded_first_group.project)
 
-        loaded_second_group = SubmissionGroup.objects.get(pk=second_group)
+        loaded_second_group = SubmissionGroup.objects.get(pk=second_group.pk)
         self.assertEqual(second_group, loaded_second_group)
         self.assertEqual(
             [repeated_user], list(loaded_second_group.members.all()))
@@ -154,7 +154,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         group = SubmissionGroup.objects.create_group(
             self.staff_group, project=self.project)
 
-        loaded_group = SubmissionGroup.objects.get(pk=group)
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
 
         self.assertEqual(group, loaded_group)
         self.assertListsEqual(
@@ -174,7 +174,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         group = SubmissionGroup.objects.create_group(
             self.non_enrolled_group, project=self.project)
 
-        loaded_group = SubmissionGroup.objects.get(pk=group)
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
 
         self.assertEqual(group, loaded_group)
         self.assertListsEqual(

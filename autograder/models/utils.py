@@ -44,6 +44,9 @@ class ModelValidatableOnSave(models.Model):
     Methods:
         validate_and_save()
     """
+    class Meta:
+        abstract = True
+
     def validate_and_save(self):
         self.full_clean()
         self.save()

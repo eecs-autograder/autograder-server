@@ -45,7 +45,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleFileTuple('test_spam.cpp', b'cheeese')
         ])
 
-        submission = Submission.objects.validate_and_create(
+        submission = Submission.objects.create_submission(
             submission_group=self.submission_group,
             submitted_files=[
                 SimpleUploadedFile(name, content) for
@@ -58,6 +58,11 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             loaded_submission.submission_group, self.submission_group)
         self.assertEqual(loaded_submission.timestamp, submission.timestamp)
+        self.assertIsNone(loaded_submission.test_case_feedback_config_override)
+        self.assertEqual(
+            loaded_submission.status,
+            Submission.GradingStatus.received)
+        self.assertEqual(loaded_submission.invalid_reason, [])
 
         self.assertTrue(os.path.isdir(ut.get_submission_dir(submission)))
         with ut.ChangeDirectory(ut.get_submission_dir(submission)):
@@ -75,40 +80,125 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
                 submit_file_data[index].name, os.path.basename(value.name))
             self.assertEqual(submit_file_data[index].content, value.read())
 
-    def test_exception_on_submission_missing_files(self):
-        with self.assertRaises(ValidationError) as cm:
-            Submission.objects.validate_and_create(
-                submission_group=self.submission_group,
-                submitted_files=[
-                    SimpleUploadedFile('eggs.cpp', b'merp'),
-                    SimpleUploadedFile('test_spam.cpp', b'cheeese')])
+    def test_invalid_submission_missing_required_file(self):
+        files = [
+            SimpleUploadedFile('spam.cpp', b'blah'),
+            SimpleUploadedFile('test_spam.cpp', b'cheeese')
+        ]
+        Submission.objects.create_submission(
+            submission_group=self.submission_group,
+            submitted_files=files)
 
-        self.assertTrue('submitted_files' in cm.exception.message_dict)
+        loaded_submission = Submission.objects.get(
+            submission_group=self.submission_group)
 
-        with self.assertRaises(ValidationError) as cm:
-            Submission.objects.validate_and_create(
-                submission_group=self.submission_group,
-                submitted_files=[
-                    SimpleUploadedFile('spam.cpp', b'blah'),
-                    SimpleUploadedFile('eggs.cpp', b'merp')])
+        self.assertEqual(
+            loaded_submission.status, Submission.GradingStatus.invalid)
+        self.assertTrue(loaded_submission.invalid_reason)
 
-        self.assertTrue('submitted_files' in cm.exception.message_dict)
+    def test_invalid_submission_not_enough_of_pattern(self):
+        files = [
+            SimpleUploadedFile('spam.cpp', b'blah'),
+            SimpleUploadedFile('eggs.cpp', b'merp'),
+        ]
+        Submission.objects.create_submission(
+            submission_group=self.submission_group,
+            submitted_files=files)
 
-    def test_exception_on_extra_file(self):
-        with self.assertRaises(ValidationError):
-            Submission.objects.validate_and_create(
-                submission_group=self.submission_group,
-                ignore_extra_files=False,
-                submitted_files=[
-                    SimpleUploadedFile('spam.cpp', b'blah'),
-                    SimpleUploadedFile('eggs.cpp', b'merp'),
-                    SimpleUploadedFile('test_spam.cpp', b'cheeese'),
-                    SimpleUploadedFile('extra.cpp', b'toomuch')])
+        loaded_submission = Submission.objects.get(
+            submission_group=self.submission_group)
 
-    def test_exception_on_submit_same_file_twice(self):
-        with self.assertRaises(ValidationError):
-            Submission.objects.validate_and_create(
-                submission_group=self.submission_group,
-                submitted_files=[
-                    SimpleUploadedFile('spam.cpp', b'blah'),
-                    SimpleUploadedFile('spam.cpp', b'blah')])
+        self.assertEqual(
+            loaded_submission.status, Submission.GradingStatus.invalid)
+        self.assertTrue(loaded_submission.invalid_reason)
+
+    def test_invalid_submission_too_much_of_pattern(self):
+        files = [
+            SimpleUploadedFile('spam.cpp', b'blah'),
+            SimpleUploadedFile('eggs.cpp', b'merp'),
+            SimpleUploadedFile('test_spam.cpp', b'cheeese'),
+            SimpleUploadedFile('test_egg.cpp', b'cheeese'),
+            SimpleUploadedFile('test_sausage.cpp', b'cheeese')
+        ]
+        Submission.objects.create_submission(
+            submission_group=self.submission_group,
+            submitted_files=files)
+
+        loaded_submission = Submission.objects.get(
+            submission_group=self.submission_group)
+
+        self.assertEqual(
+            loaded_submission.status, Submission.GradingStatus.invalid)
+        self.assertTrue(loaded_submission.invalid_reason)
+
+    def test_extra_file_discarded(self):
+        files = [
+            SimpleUploadedFile('spam.cpp', b'blah'),
+            SimpleUploadedFile('eggs.cpp', b'merp'),
+            SimpleUploadedFile('test_spam.cpp', b'cheeese'),
+        ]
+        extra_file = SimpleUploadedFile('extra.cpp', b'merp')
+        files.append(extra_file)
+
+        Submission.objects.create_submission(
+            submission_group=self.submission_group,
+            submitted_files=files)
+
+        loaded_submission = Submission.objects.get(
+            submission_group=self.submission_group)
+
+        self.assertEqual(
+            Submission.GradingStatus.received, loaded_submission.status)
+        self.assertEqual(
+            sorted(loaded_submission.get_submitted_file_basenames()),
+            sorted(['spam.cpp', 'eggs.cpp', 'test_spam.cpp']))
+
+        with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
+            self.assertFalse(os.path.exists(extra_file.name))
+
+    def test_file_with_illegal_name_discarded(self):
+        files = [
+            SimpleUploadedFile('spam.cpp', b'blah'),
+            SimpleUploadedFile('eggs.cpp', b'merp'),
+            SimpleUploadedFile('test_spam.cpp', b'cheeese'),
+        ]
+        illegal_file = SimpleUploadedFile('; echo "haxorz!" # ', b'merp')
+        files.append(illegal_file)
+
+        Submission.objects.create_submission(
+            submission_group=self.submission_group,
+            submitted_files=files)
+
+        loaded_submission = Submission.objects.get(
+            submission_group=self.submission_group)
+
+        self.assertEqual(
+            Submission.GradingStatus.received, loaded_submission.status)
+        self.assertEqual(
+            sorted(loaded_submission.get_submitted_file_basenames()),
+            sorted(['spam.cpp', 'eggs.cpp', 'test_spam.cpp']))
+
+        with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
+            self.assertFalse(os.path.exists(illegal_file.name))
+
+    def test_duplicate_files_discarded(self):
+        files = [
+            SimpleUploadedFile('spam.cpp', b'blah'),
+            SimpleUploadedFile('spam.cpp', b'blah'),
+            SimpleUploadedFile('eggs.cpp', b'merp'),
+            SimpleUploadedFile('eggs.cpp', b'merp'),
+            SimpleUploadedFile('eggs.cpp', b'merp'),
+            SimpleUploadedFile('test_spam.cpp', b'cheeese')
+        ]
+        Submission.objects.create_submission(
+            submission_group=self.submission_group,
+            submitted_files=files)
+
+        loaded_submission = Submission.objects.get(
+            submission_group=self.submission_group)
+
+        self.assertEqual(
+            Submission.GradingStatus.received, loaded_submission.status)
+        self.assertEqual(
+            sorted(loaded_submission.get_submitted_file_basenames()),
+            sorted(['spam.cpp', 'eggs.cpp', 'test_spam.cpp']))

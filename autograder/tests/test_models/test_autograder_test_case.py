@@ -1061,6 +1061,11 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.assertNotEqual(0, result.valgrind_return_code)
         self.assertTrue(result.valgrind_errors_present)
 
+    # -------------------------------------------------------------------------
+
+    def run_with_pattern_in_files_to_compile(self):
+        self.fail()
+
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
