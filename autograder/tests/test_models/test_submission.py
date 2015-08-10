@@ -132,14 +132,16 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             loaded_submission.status, Submission.GradingStatus.invalid)
         self.assertTrue(loaded_submission.invalid_reason)
 
-    def test_extra_file_discarded(self):
+    def test_extra_files_discarded(self):
         files = [
             SimpleUploadedFile('spam.cpp', b'blah'),
             SimpleUploadedFile('eggs.cpp', b'merp'),
             SimpleUploadedFile('test_spam.cpp', b'cheeese'),
         ]
-        extra_file = SimpleUploadedFile('extra.cpp', b'merp')
-        files.append(extra_file)
+        extra_files = [
+            SimpleUploadedFile('extra.cpp', b'merp'),
+            SimpleUploadedFile('extra_extra.cpp', b'spam')]
+        files += extra_files
 
         Submission.objects.create_submission(
             submission_group=self.submission_group,
@@ -154,17 +156,25 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             sorted(loaded_submission.get_submitted_file_basenames()),
             sorted(['spam.cpp', 'eggs.cpp', 'test_spam.cpp']))
 
-        with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
-            self.assertFalse(os.path.exists(extra_file.name))
+        self.assertEqual(
+            sorted(loaded_submission.discarded_files),
+            sorted([file_.name for file_ in extra_files]))
 
-    def test_file_with_illegal_name_discarded(self):
+        with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
+            for file_ in extra_files:
+                self.assertFalse(os.path.exists(file_.name))
+
+    def test_files_with_illegal_names_discarded(self):
         files = [
             SimpleUploadedFile('spam.cpp', b'blah'),
             SimpleUploadedFile('eggs.cpp', b'merp'),
             SimpleUploadedFile('test_spam.cpp', b'cheeese'),
         ]
-        illegal_file = SimpleUploadedFile('; echo "haxorz!" # ', b'merp')
-        files.append(illegal_file)
+        illegal_files = [
+            SimpleUploadedFile('; echo "haxorz!" # ', b'merp'),
+            SimpleUploadedFile('@$#%@$#^%$badfilename.bad', b'bad')]
+
+        files += illegal_files
 
         Submission.objects.create_submission(
             submission_group=self.submission_group,
@@ -179,18 +189,27 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             sorted(loaded_submission.get_submitted_file_basenames()),
             sorted(['spam.cpp', 'eggs.cpp', 'test_spam.cpp']))
 
+        self.assertEqual(
+            sorted(loaded_submission.discarded_files),
+            sorted([file_.name for file_ in illegal_files]))
+
         with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
-            self.assertFalse(os.path.exists(illegal_file.name))
+            for file_ in illegal_files:
+                self.assertFalse(os.path.exists(file_.name))
 
     def test_duplicate_files_discarded(self):
         files = [
             SimpleUploadedFile('spam.cpp', b'blah'),
-            SimpleUploadedFile('spam.cpp', b'blah'),
-            SimpleUploadedFile('eggs.cpp', b'merp'),
-            SimpleUploadedFile('eggs.cpp', b'merp'),
             SimpleUploadedFile('eggs.cpp', b'merp'),
             SimpleUploadedFile('test_spam.cpp', b'cheeese')
         ]
+        duplicate_files = [
+            SimpleUploadedFile('spam.cpp', b'blah'),
+            SimpleUploadedFile('eggs.cpp', b'merp'),
+            SimpleUploadedFile('eggs.cpp', b'merp')
+        ]
+        files += duplicate_files
+
         Submission.objects.create_submission(
             submission_group=self.submission_group,
             submitted_files=files)
@@ -203,3 +222,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             sorted(loaded_submission.get_submitted_file_basenames()),
             sorted(['spam.cpp', 'eggs.cpp', 'test_spam.cpp']))
+
+        self.assertEqual(
+            sorted(loaded_submission.discarded_files),
+            sorted([file_.name for file_ in duplicate_files]))

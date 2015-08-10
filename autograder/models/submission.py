@@ -4,6 +4,7 @@ import enum
 
 from django.db import models, transaction
 from django.core.exceptions import ValidationError
+from django.contrib.postgres.fields import ArrayField
 
 from jsonfield import JSONField
 
@@ -37,9 +38,11 @@ class _SubmissionManager(models.Manager):
         super(Submission, model).save()
         for file_obj in files:
             if file_obj.name in model.get_submitted_file_basenames():
+                model.discarded_files.append(file_obj.name)
                 continue
 
             if model.file_is_extra(file_obj.name):
+                model.discarded_files.append(file_obj.name)
                 continue
 
             try:
@@ -47,6 +50,7 @@ class _SubmissionManager(models.Manager):
                     _SubmittedFile.objects.validate_and_create(
                         submitted_file=file_obj, submission=model))
             except ValidationError:
+                model.discarded_files.append(file_obj.name)
                 continue
 
         try:
@@ -54,8 +58,8 @@ class _SubmissionManager(models.Manager):
         except ValidationError as e:
             model.status = Submission.GradingStatus.invalid
             model.invalid_reason = e.message_dict
-            model.save()
 
+        model.save()
         return model
 
     def create(self, *args, **kwargs):
@@ -71,6 +75,18 @@ class Submission(ModelValidatableOnSave):
     IMPORTANT: Always use Submission.objects.create_submission()
         when creating new submission objects.
 
+    Submission.objects.create_submission() filters through the list
+    of submitted files and discards any that:
+        - Have illegal filenames
+        - Are not required or expected by the Project
+        - Are duplicates of another file (in a given group of files with
+            the same name, all but one of those
+            files are arbitrarily discarded)
+    The remaining files are then added to the submission, and
+    the normal cleaning process proceeds. If cleaning raises a
+    ValidationError, this function will catch it and mark the
+    submission as invalid.
+
     Fields:
         submission_group -- The SubmissionGroup that this submission
             belongs to. Note that this field indirectly links this Submission
@@ -78,20 +94,6 @@ class Submission(ModelValidatableOnSave):
             This field is REQUIRED.
 
         submitted_files -- A list of the files included in this submission.
-            Submission.create_submission automatically
-            filters through the submitted files and discards any
-            that:
-                -
-
-            This model's clean() method will verify that these files
-            conform to the requirements of the Project that submission_group
-            belongs to.
-            If a submission doesn't meet those requirements
-            (i.e. it is missing a required file or has
-            too many or too few files that match one of the expected patterns),
-            the submission will be marked as invalid. Any other extra files
-            submitted will be discarded. Also, any files that have illegal
-            filenames will be discarded.
 
         discarded_files -- A list of names of files that were discarded
             when this Submission was created.
@@ -160,6 +162,10 @@ class Submission(ModelValidatableOnSave):
     def submitted_files(self):
         return [obj.submitted_file for obj in self._submitted_files.all()]
 
+    discarded_files = ArrayField(
+        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
+        default=list, blank=True)
+
     @property
     def timestamp(self):
         return self._timestamp
@@ -172,13 +178,9 @@ class Submission(ModelValidatableOnSave):
         max_length=gc.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
         choices=_GRADING_STATUS_CHOICES)
 
-    invalid_reason = JSONField(default=[])
+    invalid_reason = JSONField(default=list)
 
     # -------------------------------------------------------------------------
-
-    # def validate_and_save(self):
-    #     self.full_clean()
-    #     super().save()
 
     def get_submitted_file_basenames(self):
         return [
@@ -222,15 +224,15 @@ class Submission(ModelValidatableOnSave):
                 errors.append(
                     'Too many files matching the pattern: ' + pattern)
 
-        for filename in submitted_filenames:
-            duplicated = ut.count_if(
-                submitted_filenames, lambda name: name == filename) > 1
-            if duplicated:
-                errors.append('Duplicate file: ' + filename)
+        # for filename in submitted_filenames:
+        #     duplicated = ut.count_if(
+        #         submitted_filenames, lambda name: name == filename) > 1
+        #     if duplicated:
+        #         errors.append('Duplicate file: ' + filename)
 
-            is_extra_file = self.file_is_extra(filename)
-            if is_extra_file:
-                errors.append('Extra file submitted: ' + filename)
+        #     is_extra_file = self.file_is_extra(filename)
+        #     if is_extra_file:
+        #         errors.append('Extra file submitted: ' + filename)
 
         if errors:
             raise ValidationError(errors)
