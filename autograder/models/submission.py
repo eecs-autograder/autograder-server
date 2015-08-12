@@ -224,16 +224,6 @@ class Submission(ModelValidatableOnSave):
                 errors.append(
                     'Too many files matching the pattern: ' + pattern)
 
-        # for filename in submitted_filenames:
-        #     duplicated = ut.count_if(
-        #         submitted_filenames, lambda name: name == filename) > 1
-        #     if duplicated:
-        #         errors.append('Duplicate file: ' + filename)
-
-        #     is_extra_file = self.file_is_extra(filename)
-        #     if is_extra_file:
-        #         errors.append('Extra file submitted: ' + filename)
-
         if errors:
             raise ValidationError(errors)
 

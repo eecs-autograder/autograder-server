@@ -2,6 +2,7 @@ import os
 
 from django.db import models, transaction
 from django.contrib.auth.models import User
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 
 from autograder.models import Project
@@ -71,7 +72,9 @@ class SubmissionGroup(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    members = models.ManyToManyField(User, related_name='submission_groups')
+    # members = models.ManyToManyField(User, related_name='submission_groups')
+    members = ArrayField(
+        models.CharField(max_length=30))
     project = models.ForeignKey(Project)
     extended_due_date = models.DateTimeField(
         null=True, default=None, blank=True)
@@ -102,15 +105,16 @@ class SubmissionGroup(ModelValidatableOnSave):
 
         num_members = self.members.count()
         if num_members < 1:
-            raise ValidationError(
-                "SubmissionGroups must have at least one member")
+            raise ValidationError({
+                'members': "SubmissionGroups must have at least one member"})
 
         if num_members > self.project.max_group_size:
-            raise ValidationError(
-                "Tried to add {} members, but the max "
-                "for project '{}' is {}".format(
-                    num_members, self.project.name,
-                    self.project.max_group_size))
+            raise ValidationError({
+                'members': (
+                    "Tried to add {} members, but the max "
+                    "for project '{}' is {}".format(
+                        num_members, self.project.name,
+                        self.project.max_group_size))})
 
         members = self.members.all()
         self._clean_group_members_for_enrollment(members)
@@ -129,10 +133,11 @@ class SubmissionGroup(ModelValidatableOnSave):
             current_memberships = member.submission_groups.filter(
                 project=self.project)
             if current_memberships.count() > 1:
-                raise ValidationError(
-                    "User {} is already part of a submission "
-                    "group for project '{}'".format(
-                        member.username, self.project.name))
+                raise ValidationError({
+                    'members': (
+                        "User {} is already part of a submission "
+                        "group for project '{}'".format(
+                            member.username, self.project.name))})
 
     def _clean_group_members_for_enrollment(self, members):
         semester = self.project.semester
@@ -144,19 +149,22 @@ class SubmissionGroup(ModelValidatableOnSave):
 
         if num_staff:
             if num_staff != len(members):
-                raise ValidationError(
-                    "Groups with any staff members "
-                    "must consist of only staff members")
+                raise ValidationError({
+                    'members': (
+                        "Groups with any staff members "
+                        "must consist of only staff members")})
             return
 
         if not self.project.allow_submissions_from_non_enrolled_students:
             if not num_enrolled or num_enrolled != len(members):
-                raise ValidationError(
-                    "This project only accepts submissions "
-                    "from enrolled students.")
+                raise ValidationError({
+                    'members': (
+                        "This project only accepts submissions "
+                        "from enrolled students.")})
             return
 
         if num_enrolled and num_enrolled != len(members):
-            raise ValidationError(
-                "Non-enrolled students can only be in "
-                "groups with other non-enrolled students.")
+            raise ValidationError({
+                'members': (
+                    "Non-enrolled students can only be in "
+                    "groups with other non-enrolled students.")})

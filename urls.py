@@ -65,7 +65,15 @@ urlpatterns = [
 
     url(r'^ag-test-cases/ag-test-case/$',
         ajax_request_handlers.AutograderTestCaseRequestHandler.as_view(),
-        name='add-ag-test-case')
+        name='add-ag-test-case'),
+
+    url(r'^submission-groups/submission-group/$',
+        ajax_request_handlers.SubmissionGroupRequestHandler.as_view(),
+        name='submission-group-no-id'),
+
+    url(r'^submission-groups/submission-group/(?P<submission_group_id>\d+)/$',
+        ajax_request_handlers.SubmissionGroupRequestHandler.as_view(),
+        name='submission-group-with-id')
 
     # --- COURSES ---
     #   json format:
@@ -266,9 +274,9 @@ urlpatterns = [
     #       }
     #   }
     #
-    # GET                       /submission-groups?project=<project-id>, users=*<user-id>
     # POST                      /submission-groups/submission-group
-    # GET DELETE                /submission-groups/submission-group/<submission-group-id>
+    # GET                       /submission-groups/submission-group/?project=<project-id>&user=<user-id>
+    # PATCH DELETE              /submission-groups/submission-group/<submission-group-id>
     #
     #
     #

@@ -255,7 +255,9 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
             'executable_name': <value>
         },
         'relationships': {
-            'project': <project>
+            'project': {
+                'data': <project>
+            }
         }
     }
 
@@ -335,6 +337,23 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
 # -----------------------------------------------------------------------------
 
 def submission_group_to_json(submission_group, with_fields=True):
+    """
+    Returns a JSON representation of the given submission group
+    of the following form:
+    {
+        'type': 'submission_group',
+        'id': <id>,
+        'attributes': {
+            'members': [<username>, ...],
+            'extended_due_date': <date | None>
+        },
+        'relationships': {
+            'project': {
+                'data': <project>
+            }
+        }
+    }
+    """
     data = {
         'type': 'submission_group',
         'id': submission_group.pk
