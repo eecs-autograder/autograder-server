@@ -10,14 +10,18 @@ import autograder.tests.dummy_object_utils as obj_ut
 
 from .utils import (
     process_get_request, process_post_request,
-    process_patch_request, json_load_bytes)
+    process_patch_request, json_load_bytes, RequestHandlerTestCase)
 
 from autograder.frontend.json_api_serializers import (
     project_to_json, submission_group_to_json)
 from autograder.models import SubmissionGroup
 
 
-class _SetUpBase(TemporaryFilesystemTestCase):
+def _names(users):
+    return [user.username for user in users]
+
+
+class _SetUpBase(RequestHandlerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -73,7 +77,7 @@ class CreateSubmissionGroupRequestTestCase(_SetUpBase):
             'data': submission_group_to_json(loaded)
             # TODO: include submissions
         }
-        self.assertEqual(expected, response_content)
+        self.assertJSONObjsEqual(expected, response_content)
 
     def test_valid_admin_create_other_group(self):
         members = obj_ut.create_dummy_users(2)
@@ -91,16 +95,17 @@ class CreateSubmissionGroupRequestTestCase(_SetUpBase):
         expected = {
             'data': submission_group_to_json(loaded)
         }
-        self.assertEqual(expected, response_content)
+        self.assertJSONObjsEqual(expected, response_content)
 
     def test_error_user_already_in_group(self):
         new_users = obj_ut.create_dummy_users(2)
         self.semester.add_enrolled_students(*new_users)
         members = [self.enrolled] + new_users
-        self.group_json_starter['data']['attributes']['members'] = [
-            member.username for member in members]
+        self.group_json_starter['data']['attributes']['members'] = _names(
+            members)
 
-        SubmissionGroup.objects.create_group(members, self.project)
+        SubmissionGroup.objects.validate_and_create(
+            members=_names(members), project=self.project)
 
         creator = members[-1]
         self.group_json_starter['data']['attributes']['members'] = [
@@ -164,8 +169,8 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
         new_users = obj_ut.create_dummy_users(2)
         self.semester.add_enrolled_students(*new_users)
         self.members = [self.enrolled] + new_users
-        self.group = SubmissionGroup.objects.create_group(
-            members=self.members, project=self.project)
+        self.group = SubmissionGroup.objects.validate_and_create(
+            members=_names(self.members), project=self.project)
 
     def test_valid_get_own_group(self):
         response = _get_submission_group_request(
@@ -177,7 +182,7 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
             # TODO: include submissions
         }
 
-        self.assertEqual(expected, json_load_bytes(response.content))
+        self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
 
     def test_valid_admin_or_staff_get_other_group(self):
         expected = {
@@ -190,7 +195,7 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
                 self.project.pk, self.enrolled.username, user)
             self.assertEqual(200, response.status_code)
 
-            self.assertEqual(expected, json_load_bytes(response.content))
+            self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
 
     def test_error_group_not_found(self):
         response = _get_submission_group_request(
@@ -227,8 +232,8 @@ class PatchSubmissionGroupRequestTestCase(_SetUpBase):
         new_users = obj_ut.create_dummy_users(2)
         self.semester.add_enrolled_students(*new_users)
         self.members = [self.enrolled] + new_users
-        self.group = SubmissionGroup.objects.create_group(
-            members=self.members, project=self.project)
+        self.group = SubmissionGroup.objects.validate_and_create(
+            members=_names(self.members), project=self.project)
 
         self.extended_due_date = (
             timezone.now() + datetime.timedelta(days=1)).replace(
@@ -249,9 +254,10 @@ class PatchSubmissionGroupRequestTestCase(_SetUpBase):
             self.group.pk, self.patch_data, self.admin)
         self.assertEqual(204, response.status_code)
 
-        loaded = SubmissionGroup.objects.get(pk=self.group)
+        loaded = SubmissionGroup.objects.get(pk=self.group.pk)
 
-        self.assertEqual(loaded.extended_due_date, self.extended_due_date)
+        self.assertJSONObjsEqual(
+            loaded.extended_due_date, self.extended_due_date)
 
         # Remove extension
         self.patch_data['data']['attributes']['extended_due_date'] = None
@@ -259,9 +265,9 @@ class PatchSubmissionGroupRequestTestCase(_SetUpBase):
             self.group.pk, self.patch_data, self.admin)
         self.assertEqual(204, response.status_code)
 
-        loaded = SubmissionGroup.objects.get(pk=self.group)
+        loaded = SubmissionGroup.objects.get(pk=self.group.pk)
 
-        self.assertEqual(loaded.extended_due_date, None)
+        self.assertJSONObjsEqual(loaded.extended_due_date, None)
 
     # def test_error_trying_to_edit_non_editable_fields(self):
     #     self.fail()
@@ -279,7 +285,7 @@ class PatchSubmissionGroupRequestTestCase(_SetUpBase):
                 self.group.pk, self.patch_data, user)
             self.assertEqual(403, response.status_code)
 
-            loaded = SubmissionGroup.objects.get(pk=self.group)
+            loaded = SubmissionGroup.objects.get(pk=self.group.pk)
 
             self.assertEqual(loaded.extended_due_date, None)
 

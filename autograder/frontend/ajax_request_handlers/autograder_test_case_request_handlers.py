@@ -17,7 +17,7 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
         'compiled_test_case': CompiledAutograderTestCase
     }
 
-    _editable_fields = [
+    _EDITABLE_FIELDS = [
         'name',
         'hide_from_students',
         'command_line_arguments',
@@ -66,7 +66,7 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
                     type_str])
             new_test = test_class(project=project)
             to_set = request_content['data']['attributes']
-            for field in AutograderTestCaseRequestHandler._editable_fields:
+            for field in AutograderTestCaseRequestHandler._EDITABLE_FIELDS:
                 if field in to_set:
                     setattr(new_test, field, to_set[field])
         except KeyError:
@@ -100,7 +100,7 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
         request_content = json.loads(request.body.decode('utf-8'))
         to_edit = request_content['data']['attributes']
 
-        for field in AutograderTestCaseRequestHandler._editable_fields:
+        for field in AutograderTestCaseRequestHandler._EDITABLE_FIELDS:
             if field in to_edit:
                 setattr(test_case, field, to_edit[field])
 

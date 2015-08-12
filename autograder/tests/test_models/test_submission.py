@@ -32,10 +32,11 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
                 Project.FilePatternTuple('test_*.cpp', 1, 2)])
 
         self.group_members = obj_ut.create_dummy_users(2)
+        self.member_names = [member.username for member in self.group_members]
         self.semester.add_enrolled_students(*self.group_members)
 
-        self.submission_group = SubmissionGroup.objects.create_group(
-            self.group_members, self.project)
+        self.submission_group = SubmissionGroup.objects.validate_and_create(
+            members=self.member_names, project=self.project)
 
     def test_valid_init(self):
         SimpleFileTuple = namedtuple('SimpleFileTuple', ['name', 'content'])
@@ -152,13 +153,13 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(
             Submission.GradingStatus.received, loaded_submission.status)
-        self.assertEqual(
-            sorted(loaded_submission.get_submitted_file_basenames()),
-            sorted(['spam.cpp', 'eggs.cpp', 'test_spam.cpp']))
+        self.assertCountEqual(
+            loaded_submission.get_submitted_file_basenames(),
+            ['spam.cpp', 'eggs.cpp', 'test_spam.cpp'])
 
-        self.assertEqual(
-            sorted(loaded_submission.discarded_files),
-            sorted([file_.name for file_ in extra_files]))
+        self.assertCountEqual(
+            loaded_submission.discarded_files,
+            [file_.name for file_ in extra_files])
 
         with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
             for file_ in extra_files:
@@ -185,13 +186,13 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(
             Submission.GradingStatus.received, loaded_submission.status)
-        self.assertEqual(
-            sorted(loaded_submission.get_submitted_file_basenames()),
-            sorted(['spam.cpp', 'eggs.cpp', 'test_spam.cpp']))
+        self.assertCountEqual(
+            loaded_submission.get_submitted_file_basenames(),
+            ['spam.cpp', 'eggs.cpp', 'test_spam.cpp'])
 
-        self.assertEqual(
-            sorted(loaded_submission.discarded_files),
-            sorted([file_.name for file_ in illegal_files]))
+        self.assertCountEqual(
+            loaded_submission.discarded_files,
+            [file_.name for file_ in illegal_files])
 
         with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
             for file_ in illegal_files:
@@ -219,10 +220,10 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(
             Submission.GradingStatus.received, loaded_submission.status)
-        self.assertEqual(
-            sorted(loaded_submission.get_submitted_file_basenames()),
-            sorted(['spam.cpp', 'eggs.cpp', 'test_spam.cpp']))
+        self.assertCountEqual(
+            loaded_submission.get_submitted_file_basenames(),
+            ['spam.cpp', 'eggs.cpp', 'test_spam.cpp'])
 
-        self.assertEqual(
-            sorted(loaded_submission.discarded_files),
-            sorted([file_.name for file_ in duplicate_files]))
+        self.assertCountEqual(
+            loaded_submission.discarded_files,
+            [file_.name for file_ in duplicate_files])

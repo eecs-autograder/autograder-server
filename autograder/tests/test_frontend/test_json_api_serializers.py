@@ -1,6 +1,9 @@
+import json
+
 from django.utils import timezone
 from django.core.urlresolvers import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.serializers.json import DjangoJSONEncoder
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -17,7 +20,14 @@ from autograder.models import CompiledAutograderTestCase, SubmissionGroup
 # print(json.dumps(actual, sort_keys=True, indent=4))
 
 
-class CourseSerializerTestCase(TemporaryFilesystemTestCase):
+class SerializerTestCase(TemporaryFilesystemTestCase):
+    def assertJSONDictsEqual(self, json1, json2):
+        self.assertEqual(
+            json.dumps(json1, sort_keys=True, indent=4, cls=DjangoJSONEncoder),
+            json.dumps(json2, sort_keys=True, indent=4, cls=DjangoJSONEncoder))
+
+
+class CourseSerializerTestCase(SerializerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -32,7 +42,7 @@ class CourseSerializerTestCase(TemporaryFilesystemTestCase):
             'id': self.course.pk,
             'attributes': {
                 'name': self.course.name,
-                'course_admin_names': [user.username]
+                'course_admin_names': self.course.course_admin_names
             },
             'links': {
                 'self': reverse('get-course', args=[self.course.pk])
@@ -41,7 +51,7 @@ class CourseSerializerTestCase(TemporaryFilesystemTestCase):
 
         actual = course_to_json(self.course)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
     def test_serialize_course_without_fields(self):
         expected = {
@@ -54,13 +64,13 @@ class CourseSerializerTestCase(TemporaryFilesystemTestCase):
 
         actual = course_to_json(self.course, with_fields=False)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-class SemesterSerializerTestCase(TemporaryFilesystemTestCase):
+class SemesterSerializerTestCase(SerializerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -108,7 +118,7 @@ class SemesterSerializerTestCase(TemporaryFilesystemTestCase):
 
         actual = semester_to_json(self.semester, user_is_semester_staff=True)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
     def test_serialize_semester_with_fields_not_staff(self):
         expected = {
@@ -139,7 +149,7 @@ class SemesterSerializerTestCase(TemporaryFilesystemTestCase):
 
         actual = semester_to_json(self.semester, user_is_semester_staff=False)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
     def test_serialize_semester_no_fields_is_staff(self):
         expected = {
@@ -156,7 +166,7 @@ class SemesterSerializerTestCase(TemporaryFilesystemTestCase):
         actual = semester_to_json(
             self.semester, with_fields=False, user_is_semester_staff=True)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
     def test_serialize_semester_no_fields_not_staff(self):
         expected = {
@@ -173,13 +183,13 @@ class SemesterSerializerTestCase(TemporaryFilesystemTestCase):
         actual = semester_to_json(
             self.semester, with_fields=False, user_is_semester_staff=False)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-class ProjectSerializerTestCase(TemporaryFilesystemTestCase):
+class ProjectSerializerTestCase(SerializerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -236,7 +246,7 @@ class ProjectSerializerTestCase(TemporaryFilesystemTestCase):
 
         actual = project_to_json(self.project)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
     def test_serialize_project_no_fields(self):
         expected = {
@@ -249,13 +259,13 @@ class ProjectSerializerTestCase(TemporaryFilesystemTestCase):
 
         actual = project_to_json(self.project, with_fields=False)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-class AutograderTestCaseSerializerTestCase(TemporaryFilesystemTestCase):
+class AutograderTestCaseSerializerTestCase(SerializerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -330,7 +340,7 @@ class AutograderTestCaseSerializerTestCase(TemporaryFilesystemTestCase):
 
         actual = autograder_test_case_to_json(self.ag_test)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
     def test_serialize_test_case_without_fields(self):
         expected = {
@@ -343,13 +353,13 @@ class AutograderTestCaseSerializerTestCase(TemporaryFilesystemTestCase):
 
         actual = autograder_test_case_to_json(self.ag_test, with_fields=False)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-class SubmissionGroupSerializerTestCase(TemporaryFilesystemTestCase):
+class SubmissionGroupSerializerTestCase(SerializerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -361,18 +371,21 @@ class SubmissionGroupSerializerTestCase(TemporaryFilesystemTestCase):
         self.project.save()
 
         self.members = obj_ut.create_dummy_users(2)
+        self.member_names = [member.username for member in self.members]
+
         self.semester.add_enrolled_students(*self.members)
-        self.member_names = [user.username for user in self.members]
         self.due_date = timezone.now()
-        self.submission_group = SubmissionGroup.objects.create_group(
-            self.members, self.project, extended_due_date=self.due_date)
+
+        self.submission_group = SubmissionGroup.objects.validate_and_create(
+            members=self.member_names, project=self.project,
+            extended_due_date=self.due_date)
 
     def test_serialize_submission_group_with_fields(self):
         expected = {
             'type': 'submission_group',
             'id': self.submission_group.pk,
             'attributes': {
-                'members': sorted(self.member_names),
+                'members': self.submission_group.members,
                 'extended_due_date': self.due_date
             },
             'relationships': {
@@ -383,9 +396,8 @@ class SubmissionGroupSerializerTestCase(TemporaryFilesystemTestCase):
         }
 
         actual = submission_group_to_json(self.submission_group)
-        actual['attributes']['members'].sort()
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)
 
     def test_serialize_submission_group_without_fields(self):
         expected = {
@@ -396,4 +408,4 @@ class SubmissionGroupSerializerTestCase(TemporaryFilesystemTestCase):
         actual = submission_group_to_json(
             self.submission_group, with_fields=False)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONDictsEqual(expected, actual)

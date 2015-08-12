@@ -1,6 +1,6 @@
 import os
 import shutil
-import copy
+import functools
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -69,7 +69,7 @@ class Semester(ModelValidatableOnSave):
 
     @property
     def semester_staff_names(self):
-        return (copy.deepcopy(self._semester_staff_names) +
+        return (tuple(self._semester_staff_names) +
                 self.course.course_admin_names)
 
     _semester_staff_names = ArrayField(
@@ -78,7 +78,7 @@ class Semester(ModelValidatableOnSave):
 
     @property
     def enrolled_student_names(self):
-        return copy.deepcopy(self._enrolled_student_names)
+        return tuple(self._enrolled_student_names)
 
     _enrolled_student_names = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
@@ -134,12 +134,21 @@ class Semester(ModelValidatableOnSave):
 
     def is_semester_staff(self, user):
         """
-        Returns True if the given User is a staff member for this Semester
+        Returns True if the given user (can be a User object or string
+        username) is a staff member for this Semester
         or a course admin for this Semester's course.
         Returns False otherwise.
         """
-        return (user.username in self._semester_staff_names or
-                self.course.is_course_admin(user))
+        @functools.singledispatch
+        def _is_semester_staff_impl(user, names, course):
+            return user.username in names or course.is_course_admin(user)
+
+        @_is_semester_staff_impl.register(str)
+        def _(username, names, course):
+            return username in names or course.is_course_admin(username)
+
+        return _is_semester_staff_impl(
+            user, self._semester_staff_names, self.course)
 
     def add_enrolled_students(self, *users):
         """
@@ -164,10 +173,19 @@ class Semester(ModelValidatableOnSave):
 
     def is_enrolled_student(self, user):
         """
-        Returns True if the given User is an enrolled student for
+        Returns True if the given user (can be a User object or
+        string username) is an enrolled student for
         this Semester. Returns False otherwise.
         """
-        return user.username in self._enrolled_student_names
+        @functools.singledispatch
+        def _is_enrolled_student_impl(user, names):
+            return user.username in names
+
+        @_is_enrolled_student_impl.register(str)
+        def _(username, names):
+            return username in names
+
+        return _is_enrolled_student_impl(user, self._enrolled_student_names)
 
     # -------------------------------------------------------------------------
 

@@ -1,6 +1,5 @@
 import os
 import re
-import shutil
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -223,10 +222,7 @@ def get_student_submission_group_relative_dir(submission_group):
     Same as get_student_submission_group_dir() but returns a path that is
     relative to MEDIA_ROOT.
     """
-    # Sort and concatenate the usernames in the group. Use the result
-    # as the basename of the submission directory.
-    directory_basename = '_'.join(
-        sorted((member.username for member in submission_group.members.all())))
+    directory_basename = '_'.join(sorted(submission_group.members))
     return os.path.join(
         get_project_submissions_by_student_relative_dir(
             submission_group.project), directory_basename)

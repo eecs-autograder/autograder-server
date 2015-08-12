@@ -1,15 +1,12 @@
-from autograder.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-
 from autograder.frontend.json_api_serializers import (
     course_to_json, semester_to_json)
 
 import autograder.tests.dummy_object_utils as obj_ut
 
-from .utils import process_get_request, json_load_bytes
+from .utils import process_get_request, json_load_bytes, RequestHandlerTestCase
 
 
-class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
+class CourseRequestHandlerTestCase(RequestHandlerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -28,7 +25,7 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(200, response.status_code)
 
         content = json_load_bytes(response.content)
-        self.assertEqual(
+        self.assertJSONObjsEqual(
             content,
             {
                 'data': course_to_json(course),
@@ -47,7 +44,7 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(200, response.status_code)
 
         content = json_load_bytes(response.content)
-        self.assertEqual(
+        self.assertJSONObjsEqual(
             content,
             {
                 'data': course_to_json(course),
@@ -90,7 +87,7 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
         response = _list_courses_request(course_admin)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual(expected, json_load_bytes(response.content))
+        self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
 
     def test_list_courses_empty_list_non_admin(self):
         user = obj_ut.create_dummy_users()
@@ -100,7 +97,7 @@ class CourseRequestHandlerTestCase(TemporaryFilesystemTestCase):
         expected = {'data': []}
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual(expected, json_load_bytes(response.content))
+        self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
 
     # -------------------------------------------------------------------------
 

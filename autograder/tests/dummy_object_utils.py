@@ -7,7 +7,7 @@ from autograder.models import Course, Semester, Project
 
 
 def _get_unique_id():
-    user_id = base64.b64encode(uuid.uuid4().bytes)
+    user_id = base64.urlsafe_b64encode(uuid.uuid4().bytes)
     # print(len(user_id))
     return user_id.decode('utf-8')
 

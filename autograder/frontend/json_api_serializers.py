@@ -363,7 +363,7 @@ def submission_group_to_json(submission_group, with_fields=True):
         return data
 
     data['attributes'] = {
-        'members': [user.username for user in submission_group.members.all()],
+        'members': submission_group.members,
         'extended_due_date': submission_group.extended_due_date
     }
     data['relationships'] = {

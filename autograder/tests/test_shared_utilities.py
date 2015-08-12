@@ -90,23 +90,11 @@ MockCourse = collections.namedtuple('MockCourse', ['name'])
 MockSemester = collections.namedtuple('MockSemester', ['name', 'course'])
 MockProject = collections.namedtuple('MockProject', ['name', 'semester'])
 
-
-class MockSubmissionGroup(object):
-    class MockMembersQuerySet(object):
-        def __init__(self, members):
-            self.members = members
-
-        def all(self):
-            return self.members
-
-    def __init__(self, members, project):
-        self.members = MockSubmissionGroup.MockMembersQuerySet(members)
-        self.project = project
-
-
 MockUser = collections.namedtuple('MockUser', ['username'])
 MockSubmission = collections.namedtuple(
     'MockSubmission', ['submission_group', 'timestamp'])
+MockSubmissionGroup = collections.namedtuple(
+    'MockSubmissionGroup', ['members', 'project'])
 
 
 class FileSystemUtilTestCase(TestCase):
@@ -117,13 +105,14 @@ class FileSystemUtilTestCase(TestCase):
         self.course = MockCourse(name='eecs280')
         self.semester = MockSemester(name='fall2015', course=self.course)
         self.project = MockProject(name='p1', semester=self.semester)
-        self.users = [
-            MockUser('joe'), MockUser('bob'),
-            MockUser('fred'), MockUser('steve')
-        ]
+        self.usernames = ['joe', 'fred', 'bob', 'steve']
+        # self.users = [
+        #     MockUser('joe'), MockUser('bob'),
+        #     MockUser('fred'), MockUser('steve')
+        # ]
         self.group_dir_basename = 'bob_fred_joe_steve'
         self.group = MockSubmissionGroup(
-            members=self.users, project=self.project)
+            members=self.usernames, project=self.project)
 
     # -------------------------------------------------------------------------
 

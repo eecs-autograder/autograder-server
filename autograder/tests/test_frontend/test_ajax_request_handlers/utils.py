@@ -4,6 +4,16 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.test import RequestFactory
 from django.core.urlresolvers import resolve
 
+from autograder.tests.temporary_filesystem_test_case import (
+    TemporaryFilesystemTestCase)
+
+
+class RequestHandlerTestCase(TemporaryFilesystemTestCase):
+    def assertJSONObjsEqual(self, json1, json2):
+        self.assertEqual(
+            json.dumps(json1, sort_keys=True, indent=4, cls=DjangoJSONEncoder),
+            json.dumps(json2, sort_keys=True, indent=4, cls=DjangoJSONEncoder))
+
 
 def json_load_bytes(data):
     return json.loads(data.decode('utf-8'))

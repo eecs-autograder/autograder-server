@@ -105,7 +105,7 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
 
         loaded = Semester.objects.get(pk=self.semester.pk)
         self.assertEqual(
-            [self.user.username, user2.username], loaded.semester_staff_names)
+            (self.user.username, user2.username), loaded.semester_staff_names)
 
     def test_valid_remove_semester_staff(self):
         self.semester.add_semester_staff(self.user)
@@ -118,14 +118,15 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
     def test_valid_remove_multiple_staff(self):
         more_users = obj_ut.create_dummy_users(3)
         self.semester.add_semester_staff(*more_users)
-        self.assertEqual(
+        self.assertCountEqual(
             self.semester.semester_staff_names,
-            [user.username for user in more_users])
+            (user.username for user in more_users))
 
         self.semester.remove_semester_staff(more_users[0], more_users[2])
 
         loaded = Semester.objects.get(pk=self.semester.pk)
-        self.assertEqual(loaded.semester_staff_names, [more_users[1].username])
+        self.assertCountEqual(
+            loaded.semester_staff_names, [more_users[1].username])
 
     def test_exception_remove_user_not_semester_staff(self):
         with self.assertRaises(ValidationError):
@@ -133,8 +134,11 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
 
     def test_is_semester_staff(self):
         self.assertFalse(self.semester.is_semester_staff(self.user))
+        self.assertFalse(self.semester.is_semester_staff(self.user.username))
+
         self.semester.add_semester_staff(self.user)
         self.assertTrue(self.semester.is_semester_staff(self.user))
+        self.assertTrue(self.semester.is_semester_staff(self.user.username))
 
     def test_valid_add_enrolled_students(self):
         self.semester.add_enrolled_students(self.user)
@@ -150,7 +154,7 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
 
         loaded = Semester.objects.get(pk=self.semester.pk)
         self.assertEqual(
-            [self.user.username, user2.username],
+            (self.user.username, user2.username),
             loaded.enrolled_student_names)
 
     def test_valid_remove_enrolled_student(self):
@@ -165,14 +169,14 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
     def test_valid_remove_multiple_students(self):
         more_users = obj_ut.create_dummy_users(3)
         self.semester.add_enrolled_students(*more_users)
-        self.assertEqual(
+        self.assertCountEqual(
             self.semester.enrolled_student_names,
-            [user.username for user in more_users])
+            (user.username for user in more_users))
 
         self.semester.remove_enrolled_students(more_users[0], more_users[2])
 
         loaded = Semester.objects.get(pk=self.semester.pk)
-        self.assertEqual(
+        self.assertCountEqual(
             loaded.enrolled_student_names, [more_users[1].username])
 
     def test_exception_on_remove_user_not_enrolled_student(self):
@@ -181,8 +185,11 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
 
     def test_is_enrolled_student(self):
         self.assertFalse(self.semester.is_enrolled_student(self.user))
+        self.assertFalse(self.semester.is_enrolled_student(self.user.username))
+
         self.semester.add_enrolled_students(self.user)
         self.assertTrue(self.semester.is_enrolled_student(self.user))
+        self.assertTrue(self.semester.is_enrolled_student(self.user.username))
 
     def test_get_staff_semesters_for_user(self):
         semesters = obj_ut.create_dummy_semesters(self.course, 10)
@@ -214,7 +221,7 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
 
         self.assertTrue(self.semester.is_semester_staff(self.user))
         self.assertEqual(
-            [self.user.username], self.semester.semester_staff_names)
+            (self.user.username,), self.semester.semester_staff_names)
 
 
 # -----------------------------------------------------------------------------

@@ -75,7 +75,7 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
 
         loaded = Course.objects.get(name=self.course.name)
         self.assertEqual(
-            [self.user.username, user2.username], loaded.course_admin_names)
+            (self.user.username, user2.username), loaded.course_admin_names)
 
     def test_valid_remove_course_admin(self):
         self.course.add_course_admins(self.user)
@@ -92,8 +92,12 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
 
     def test_is_course_admin(self):
         self.assertFalse(self.course.is_course_admin(self.user))
+        self.assertFalse(self.course.is_course_admin(self.user.username))
+
         self.course.add_course_admins(self.user)
+
         self.assertTrue(self.course.is_course_admin(self.user))
+        self.assertTrue(self.course.is_course_admin(self.user.username))
 
     def test_get_courses_for_user(self):
         self.course.delete()
@@ -103,9 +107,7 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
             course.add_course_admins(self.user)
 
         courses_queryset = Course.get_courses_for_user(self.user)
-        self.assertEqual(
-            list(courses_queryset),
-            sorted(subset, key=lambda course: course.name))
+        self.assertCountEqual(courses_queryset, subset)
 
 
 # -----------------------------------------------------------------------------

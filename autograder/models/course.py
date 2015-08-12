@@ -1,6 +1,6 @@
 import os
 import shutil
-import copy
+import functools
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -51,7 +51,7 @@ class Course(ModelValidatableOnSave):
 
     @property
     def course_admin_names(self):
-        return copy.deepcopy(self._course_admin_names)
+        return tuple(self._course_admin_names)
 
     _course_admin_names = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
@@ -95,10 +95,18 @@ class Course(ModelValidatableOnSave):
 
     def is_course_admin(self, user):
         """
-        Returns True if the given User is an administrator for this Course,
-        False otherwise.
+        Returns True if the given user (can be a User object or string
+        username) is an administrator for this Course, False otherwise.
         """
-        return user.username in self._course_admin_names
+        @functools.singledispatch
+        def _is_course_admin_impl(user, names):
+            return user.username in names
+
+        @_is_course_admin_impl.register(str)
+        def _(username, names):
+            return username in names
+
+        return _is_course_admin_impl(user, self._course_admin_names)
 
     # -------------------------------------------------------------------------
 

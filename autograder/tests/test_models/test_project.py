@@ -25,7 +25,8 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.course = Course.objects.validate_and_create(name='eecs280')
-        self.semester = Semester.objects.validate_and_create(name='f15', course=self.course)
+        self.semester = Semester.objects.validate_and_create(
+            name='f15', course=self.course)
         self.PROJECT_NAME = 'stats_project'
 
     # -------------------------------------------------------------------------

@@ -1,20 +1,17 @@
 from django.core.exceptions import ObjectDoesNotExist
 
-from autograder.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-
 import autograder.tests.dummy_object_utils as obj_ut
 
 from .utils import (
     process_get_request, process_post_request,
-    process_patch_request, json_load_bytes)
+    process_patch_request, json_load_bytes, RequestHandlerTestCase)
 
 from autograder.frontend.json_api_serializers import (
     semester_to_json, project_to_json)
 from autograder.models import Semester
 
 
-class GetSemesterRequestTestCase(TemporaryFilesystemTestCase):
+class GetSemesterRequestTestCase(RequestHandlerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -48,7 +45,7 @@ class GetSemesterRequestTestCase(TemporaryFilesystemTestCase):
         actual = json_load_bytes(response.content)
         actual['included'] = sorted(actual['included'], key=sort_key)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONObjsEqual(expected, actual)
 
     def test_get_semester_as_staff(self):
         self.semester.add_semester_staff(self.user)
@@ -69,7 +66,7 @@ class GetSemesterRequestTestCase(TemporaryFilesystemTestCase):
         actual = json_load_bytes(response.content)
         actual['included'] = sorted(actual['included'], key=sort_key)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONObjsEqual(expected, actual)
 
     def test_get_semester_as_enrolled_student(self):
         self.semester.add_enrolled_students(self.user)
@@ -89,7 +86,7 @@ class GetSemesterRequestTestCase(TemporaryFilesystemTestCase):
         actual = json_load_bytes(response.content)
         actual['included'] = sorted(actual['included'], key=sort_key)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONObjsEqual(expected, actual)
 
     def test_get_semester_permission_denied(self):
         response = _get_semester_request(self.semester.pk, self.user)
@@ -103,7 +100,7 @@ def _get_semester_request(semester_id, user):
 
 # -----------------------------------------------------------------------------
 
-class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
+class ListSemestersRequestTestCase(RequestHandlerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -137,7 +134,7 @@ class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
         actual = json_load_bytes(response.content)
         actual['data'] = sorted(actual['data'], key=sort_key)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONObjsEqual(expected, actual)
 
     def test_list_semesters_staff_member(self):
         subset = [self.semesters1[1], self.semesters2[-1]]
@@ -158,7 +155,7 @@ class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
         actual = json_load_bytes(response.content)
         actual['data'] = sorted(actual['data'], key=sort_key)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONObjsEqual(expected, actual)
 
     def test_list_semesters_enrolled_student(self):
         subset = [self.semesters1[0], self.semesters2[-2]]
@@ -179,7 +176,7 @@ class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
         actual = json_load_bytes(response.content)
         actual['data'] = sorted(actual['data'], key=sort_key)
 
-        self.assertEqual(expected, actual)
+        self.assertJSONObjsEqual(expected, actual)
 
     def test_list_semesters_enrolled_student_and_semester_staff(self):
         self.semesters1[0].add_semester_staff(self.user)
@@ -197,13 +194,14 @@ class ListSemestersRequestTestCase(TemporaryFilesystemTestCase):
         response = _list_semesters_request(self.user)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual(expected, json_load_bytes(response.content))
+        self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
 
     def test_list_semesters_nobody_user(self):
         response = _list_semesters_request(self.user)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual({'data': []}, json_load_bytes(response.content))
+        self.assertJSONObjsEqual(
+            {'data': []}, json_load_bytes(response.content))
 
 
 def _list_semesters_request(user):
@@ -213,7 +211,7 @@ def _list_semesters_request(user):
 
 # -----------------------------------------------------------------------------
 
-class PatchSemesterTestCase(TemporaryFilesystemTestCase):
+class PatchSemesterTestCase(RequestHandlerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -428,7 +426,7 @@ def _patch_semester_request(semester_id, user,
 
 # -----------------------------------------------------------------------------
 
-class AddSemesterTestCase(TemporaryFilesystemTestCase):
+class AddSemesterTestCase(RequestHandlerTestCase):
     def setUp(self):
         super().setUp()
 
@@ -451,13 +449,13 @@ class AddSemesterTestCase(TemporaryFilesystemTestCase):
                                      user_is_semester_staff=True)
         }
 
-        self.assertEqual(expected, json_load_bytes(response.content))
+        self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
 
         self.assertEqual(loaded_semester.name, semester_name)
         self.assertEqual(loaded_semester.course, self.course)
-        self.assertEqual(
+        self.assertCountEqual(
             loaded_semester.semester_staff_names, [self.admin.username])
-        self.assertEqual(loaded_semester.enrolled_student_names, [])
+        self.assertCountEqual(loaded_semester.enrolled_student_names, [])
 
     def test_add_semester_permission_denied(self):
         semester_name = 'spam'
