@@ -184,6 +184,12 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
 
         self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
 
+        response = _get_submission_group_by_id_request(
+            self.group.pk, self.enrolled)
+        self.assertEqual(200, response.status_code)
+
+        self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
+
     def test_valid_admin_or_staff_get_other_group(self):
         expected = {
             'data': submission_group_to_json(self.group)
@@ -195,7 +201,14 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
                 self.project.pk, self.enrolled.username, user)
             self.assertEqual(200, response.status_code)
 
-            self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
+            self.assertJSONObjsEqual(
+                expected, json_load_bytes(response.content))
+
+            response = _get_submission_group_by_id_request(self.group.pk, user)
+            self.assertEqual(200, response.status_code)
+
+            self.assertJSONObjsEqual(
+                expected, json_load_bytes(response.content))
 
     def test_error_group_not_found(self):
         response = _get_submission_group_request(
@@ -206,20 +219,35 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
             self.project.pk, self.nobody.username, self.nobody)
         self.assertEqual(404, response.status_code)
 
+        response = _get_submission_group_by_id_request(42, self.admin)
+        self.assertEqual(404, response.status_code)
+
     def test_error_project_not_found(self):
         response = _get_submission_group_request(
             42, self.enrolled.username, self.enrolled)
         self.assertEqual(404, response.status_code)
 
     def test_permission_denied(self):
-        response = _get_submission_group_request(
-            self.project.pk, self.enrolled.username, self.nobody)
-        self.assertEqual(403, response.status_code)
+        other_enrolled = obj_ut.create_dummy_users()
+
+        for user in (other_enrolled, self.nobody):
+            response = _get_submission_group_request(
+                self.project.pk, self.enrolled.username, user)
+            self.assertEqual(403, response.status_code)
+
+            response = _get_submission_group_by_id_request(
+                self.group.pk, user)
+            self.assertEqual(403, response.status_code)
 
 
 def _get_submission_group_request(project_id, username, requesting_user):
     url = '/submission-groups/submission-group/?project_id={}&username={}'.format(
         project_id, username)
+    return process_get_request(url, requesting_user)
+
+
+def _get_submission_group_by_id_request(group_id, requesting_user):
+    url = '/submission-groups/submission-group/{}/'.format(group_id)
     return process_get_request(url, requesting_user)
 
 

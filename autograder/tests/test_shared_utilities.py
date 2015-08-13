@@ -105,11 +105,8 @@ class FileSystemUtilTestCase(TestCase):
         self.course = MockCourse(name='eecs280')
         self.semester = MockSemester(name='fall2015', course=self.course)
         self.project = MockProject(name='p1', semester=self.semester)
+
         self.usernames = ['joe', 'fred', 'bob', 'steve']
-        # self.users = [
-        #     MockUser('joe'), MockUser('bob'),
-        #     MockUser('fred'), MockUser('steve')
-        # ]
         self.group_dir_basename = 'bob_fred_joe_steve'
         self.group = MockSubmissionGroup(
             members=self.usernames, project=self.project)

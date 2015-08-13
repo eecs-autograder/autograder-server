@@ -7,3 +7,6 @@ from .project_request_handlers import ProjectRequestHandler, ProjectFileRequestH
 from .autograder_test_case_request_handlers import AutograderTestCaseRequestHandler
 
 from .submission_group_request_handlers import SubmissionGroupRequestHandler
+
+from .submission_request_handlers import (
+    SubmissionRequestHandler, SubmittedFileRequestHandler)

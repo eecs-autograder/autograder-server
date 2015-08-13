@@ -47,7 +47,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleFileTuple('test_spam.cpp', b'cheeese')
         ])
 
-        submission = Submission.objects.create_submission(
+        submission = Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=[
                 SimpleUploadedFile(name, content) for
@@ -87,7 +87,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleUploadedFile('spam.cpp', b'blah'),
             SimpleUploadedFile('test_spam.cpp', b'cheeese')
         ]
-        Submission.objects.create_submission(
+        Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=files)
 
@@ -103,7 +103,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleUploadedFile('spam.cpp', b'blah'),
             SimpleUploadedFile('eggs.cpp', b'merp'),
         ]
-        Submission.objects.create_submission(
+        Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=files)
 
@@ -122,7 +122,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleUploadedFile('test_egg.cpp', b'cheeese'),
             SimpleUploadedFile('test_sausage.cpp', b'cheeese')
         ]
-        Submission.objects.create_submission(
+        Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=files)
 
@@ -144,7 +144,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleUploadedFile('extra_extra.cpp', b'spam')]
         files += extra_files
 
-        Submission.objects.create_submission(
+        Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=files)
 
@@ -177,7 +177,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         files += illegal_files
 
-        Submission.objects.create_submission(
+        Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=files)
 
@@ -211,7 +211,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         ]
         files += duplicate_files
 
-        Submission.objects.create_submission(
+        Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=files)
 

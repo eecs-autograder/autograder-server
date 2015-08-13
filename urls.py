@@ -73,7 +73,20 @@ urlpatterns = [
 
     url(r'^submission-groups/submission-group/(?P<submission_group_id>\d+)/$',
         ajax_request_handlers.SubmissionGroupRequestHandler.as_view(),
-        name='submission-group-with-id')
+        name='submission-group-with-id'),
+
+    url(r'^submissions/submission/(?P<submission_id>)\d+/$',
+        ajax_request_handlers.SubmissionRequestHandler.as_view(),
+        name='submission-handler'),
+
+    url(r'^submissions/submission/$',
+        ajax_request_handlers.SubmissionRequestHandler.as_view(),
+        name='add-submission'),
+
+    url(r'^submissions/submission/(?P<submission_id>\d+)/file/(?P<filename>{})/$'.format(
+        gc.PROJECT_FILENAME_WHITELIST_REGEX.pattern),
+        ajax_request_handlers.SubmittedFileRequestHandler.as_view(),
+        name='get-submitted-file')
 
     # --- COURSES ---
     #   json format:
@@ -276,7 +289,7 @@ urlpatterns = [
     #
     # POST                      /submission-groups/submission-group
     # GET                       /submission-groups/submission-group/?project=<project-id>&user=<user-id>
-    # PATCH DELETE              /submission-groups/submission-group/<submission-group-id>
+    # GET PATCH DELETE              /submission-groups/submission-group/<submission-group-id>
     #
     #
     #

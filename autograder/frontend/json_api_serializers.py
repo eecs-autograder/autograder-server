@@ -168,6 +168,9 @@ def project_to_json(project, with_fields=True):
             }
         }
     }
+
+    When with_fields is False, the 'attributes' and 'relationships'
+    keys are not included.
     """
     data = {
         'type': 'project',
@@ -261,6 +264,9 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
         }
     }
 
+    When with_fields is False, the 'attributes' and 'relationships'
+    keys are not included.
+
     The 'type' field corresponds to the type of the given test case
     as follows:
         CompiledAutograderTestCase: 'compiled_test_case'
@@ -343,6 +349,9 @@ def submission_group_to_json(submission_group, with_fields=True):
     {
         'type': 'submission_group',
         'id': <id>,
+        'links': {
+            'self': <self link>
+        },
         'attributes': {
             'members': [<username>, ...],
             'extended_due_date': <date | None>
@@ -353,10 +362,17 @@ def submission_group_to_json(submission_group, with_fields=True):
             }
         }
     }
+
+    When with_fields is False, the 'attributes' and 'relationships'
+    keys are not included.
     """
     data = {
         'type': 'submission_group',
-        'id': submission_group.pk
+        'id': submission_group.pk,
+        'links': {
+            'self': reverse(
+                'submission-group-with-id', args=[submission_group.pk])
+        }
     }
 
     if not with_fields:
@@ -370,6 +386,79 @@ def submission_group_to_json(submission_group, with_fields=True):
         'project': {
             'data': project_to_json(
                 submission_group.project, with_fields=False)
+        }
+    }
+
+    return data
+
+
+# -----------------------------------------------------------------------------
+
+def submission_to_json(submission, with_fields=True):
+    """
+    Returns a JSON representation of the given submission group of the
+    following form:
+    {
+        'type': 'submission',
+        'id': <id>,
+        'links': {
+            'self': <self link>
+        }
+        'attributes': {
+            'submitted_files': [
+                {
+                    'filename': <filename>,
+                    'file_url': <file_url>,
+                    'size': <size>
+                }
+            ],
+            'discarded_files': [<filename>, ...],
+            'timestamp': <timestamp>,
+            'test_case_feedback_config_override': {<settings>},
+            'status': <status>,
+            'invalid_reason': <reason>
+        },
+        'relationships': {
+            'submission_group': {
+                'data': <submission_group>
+            },
+        }
+
+    }
+    """
+    data = {
+        'type': 'submission',
+        'id': submission.pk,
+        'links': {
+            'self': reverse('submission-handler', args=[submission.pk])
+        }
+    }
+
+    if not with_fields:
+        return data
+
+    data['attributes'] = {
+        'submitted_files': [
+            {
+                'filename': os.path.basename(file_.name),
+                'file_url': reverse(
+                    'get-submitted-file',
+                    args=[submission.pk, os.path.basename(file_.name)]),
+                'size': file_.size
+            }
+            for file_ in submission.submitted_files
+        ],
+        'discarded_files': submission.discarded_files,
+        'timestamp': submission.timestamp,
+        'test_case_feedback_config_override': (
+            submission.test_case_feedback_config_override),
+        'status': submission.status,
+        'invalid_reason': submission.invalid_reason
+    }
+
+    data['relationships'] = {
+        'submission_group': {
+            'data': submission_group_to_json(submission.submission_group)
         }
     }
 

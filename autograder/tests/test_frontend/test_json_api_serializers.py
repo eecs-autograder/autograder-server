@@ -1,3 +1,4 @@
+import os
 import json
 
 from django.utils import timezone
@@ -12,12 +13,14 @@ import autograder.tests.dummy_object_utils as obj_ut
 
 from autograder.frontend.json_api_serializers import (
     course_to_json, semester_to_json, project_to_json,
-    autograder_test_case_to_json, submission_group_to_json)
+    autograder_test_case_to_json, submission_group_to_json,
+    submission_to_json)
 
-from autograder.models import CompiledAutograderTestCase, SubmissionGroup
+from autograder.models import (
+    CompiledAutograderTestCase, SubmissionGroup, Submission)
 
-# print(json.dumps(expected, sort_keys=True, indent=4))
-# print(json.dumps(actual, sort_keys=True, indent=4))
+# print(json.dumps(expected, sort_keys=True, indent=4, cls=DjangoJSONEncoder))
+# print(json.dumps(actual, sort_keys=True, indent=4, cls=DjangoJSONEncoder))
 
 
 class SerializerTestCase(TemporaryFilesystemTestCase):
@@ -384,6 +387,11 @@ class SubmissionGroupSerializerTestCase(SerializerTestCase):
         expected = {
             'type': 'submission_group',
             'id': self.submission_group.pk,
+            'links': {
+                'self': reverse(
+                    'submission-group-with-id',
+                    args=[self.submission_group.pk])
+            },
             'attributes': {
                 'members': self.submission_group.members,
                 'extended_due_date': self.due_date
@@ -402,10 +410,91 @@ class SubmissionGroupSerializerTestCase(SerializerTestCase):
     def test_serialize_submission_group_without_fields(self):
         expected = {
             'type': 'submission_group',
-            'id': self.submission_group.pk
+            'id': self.submission_group.pk,
+            'links': {
+                'self': reverse(
+                    'submission-group-with-id',
+                    args=[self.submission_group.pk])
+            },
         }
 
         actual = submission_group_to_json(
             self.submission_group, with_fields=False)
+
+        self.assertJSONDictsEqual(expected, actual)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+class SubmissionSerializerTestCase(SerializerTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.course = obj_ut.create_dummy_courses()
+        self.semester = obj_ut.create_dummy_semesters(self.course)
+
+        self.project = obj_ut.create_dummy_projects(self.semester)
+        self.project.required_student_files = ['spam.cpp']
+
+        self.member = obj_ut.create_dummy_users()
+
+        self.semester.add_enrolled_students(self.member)
+
+        self.submission_group = SubmissionGroup.objects.validate_and_create(
+            members=[self.member.username], project=self.project)
+
+        self.submission = Submission.objects.validate_and_create(
+            submission_group=self.submission_group,
+            submitted_files=[SimpleUploadedFile('spam.cpp', b'spaaaaam')])
+
+    def test_serialize_submission_with_fields(self):
+        expected = {
+            'type': 'submission',
+            'id': self.submission.pk,
+            'links': {
+                'self': reverse(
+                    'submission-handler', args=[self.submission.pk])
+            },
+            'attributes': {
+                'submitted_files': [
+                    {
+                        'filename': os.path.basename(file_.name),
+                        'file_url': reverse(
+                            'get-submitted-file',
+                            args=[self.submission.pk,
+                                  os.path.basename(file_.name)]),
+                        'size': file_.size
+                    }
+                    for file_ in self.submission.submitted_files
+                ],
+                'discarded_files': self.submission.discarded_files,
+                'timestamp': self.submission.timestamp,
+                'test_case_feedback_config_override': None,
+                'status': self.submission.status,
+                'invalid_reason': self.submission.invalid_reason
+            },
+            'relationships': {
+                'submission_group': {
+                    'data': submission_group_to_json(self.submission_group)
+                }
+            }
+        }
+
+        actual = submission_to_json(self.submission)
+
+        self.assertJSONDictsEqual(expected, actual)
+
+    def test_serialize_submission_without_fields(self):
+        expected = {
+            'type': 'submission',
+            'id': self.submission.pk,
+            'links': {
+                'self': reverse(
+                    'submission-handler', args=[self.submission.pk])
+            }
+        }
+
+        actual = submission_to_json(self.submission, with_fields=False)
 
         self.assertJSONDictsEqual(expected, actual)

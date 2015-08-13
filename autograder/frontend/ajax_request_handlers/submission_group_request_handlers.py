@@ -47,33 +47,39 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
         }
         return JsonResponse(response_content, status=201)
 
-    def get(self, request):
+    def get(self, request, submission_group_id=None):
         """
-        Query params: project_id, username
+        If a submission_group_id is not provided, then the submission group
+        can be looked up with the following query string
+        parameters: project_id, username
         """
-        project_id = request.GET['project_id']
         try:
-            project = Project.objects.get(pk=project_id)
+            if submission_group_id is None:
+                group = self._get_by_query_params(request)
+            else:
+                group = SubmissionGroup.objects.get(pk=submission_group_id)
         except ObjectDoesNotExist:
             return HttpResponseNotFound()
+        except KeyError:
+            return HttpResponse(status=400)
 
-        username = request.GET['username']
-
-        requesting_self = self.request.user.username == username
-        if (not requesting_self and
-                not project.semester.is_semester_staff(request.user)):
+        if (request.user.username not in group.members and
+                not group.project.semester.is_semester_staff(request.user)):
             return HttpResponseForbidden()
-
-        try:
-            user = (request.user if requesting_self else
-                    User.objects.get_or_create(username=username)[0])
-            group = SubmissionGroup.get_project_group_for_user(
-                user.username, project)
-        except ObjectDoesNotExist:
-            return HttpResponseNotFound()
 
         return JsonResponse(
             {'data': submission_group_to_json(group)}, status=200)
+
+    def _get_by_query_params(self, request):
+        project_id = request.GET['project_id']
+        project = Project.objects.get(pk=project_id)
+        username = request.GET['username']
+
+        group = SubmissionGroup.get_project_group_for_user(
+            username, project)
+        return group
+
+    # -------------------------------------------------------------------------
 
     def patch(self, request, submission_group_id):
         try:

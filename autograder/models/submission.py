@@ -27,9 +27,9 @@ def _validate_filename(file_obj):
     ut.check_user_provided_filename(file_obj.name)
 
 
-class _SubmissionManager(models.Manager):
+class _SubmissionManager(ManagerWithValidateOnCreate):
     @transaction.atomic
-    def create_submission(self, **kwargs):
+    def validate_and_create(self, **kwargs):
         files = kwargs.pop('submitted_files')
         model = self.model(**kwargs)
         # Submission's save method throws an exception if the model
@@ -67,15 +67,14 @@ class _SubmissionManager(models.Manager):
             'This method is not supported for Submissions')
 
 
-# TODO: submitted_files protocol and documentation thereof
 class Submission(ModelValidatableOnSave):
     """
     Represents a single submission for a particular project.
 
-    IMPORTANT: Always use Submission.objects.create_submission()
+    IMPORTANT: Always use Submission.objects.validate_and_create()
         when creating new submission objects.
 
-    Submission.objects.create_submission() filters through the list
+    Submission.objects.validate_and_create() filters through the list
     of submitted files and discards any that:
         - Have illegal filenames
         - Are not required or expected by the Project
@@ -137,7 +136,7 @@ class Submission(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    # TODO: make this a proper enum once migrations support enums
+    # TODO: make this a proper enum once django migrations support enums
     class GradingStatus(object):
         received = 'received'
         queued = 'queued'
@@ -191,7 +190,7 @@ class Submission(ModelValidatableOnSave):
         if not self.pk:
             raise RuntimeError(
                 'When creating a new Submission, '
-                'you must use Submission.objects.create_submission')
+                'you must use Submission.objects.validate_and_create')
 
         super().save(*args, **kwargs)
 
