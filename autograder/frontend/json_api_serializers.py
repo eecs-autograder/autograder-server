@@ -2,6 +2,7 @@ import os
 
 from django.core.urlresolvers import reverse
 
+# TODO: REMOVE HACK
 from autograder.models import CompiledAutograderTestCase
 
 # The json data produced by functions in this module should
@@ -275,6 +276,7 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
     Raises TypeError if the type of autograder_test_case is not
     listed in the above type mapping.
     """
+    # TODO: move serializer to the test case class or use single dispatch
     if isinstance(autograder_test_case, CompiledAutograderTestCase):
         type_ = 'compiled_test_case'
     else:
@@ -423,7 +425,6 @@ def submission_to_json(submission, with_fields=True):
                 'data': <submission_group>
             },
         }
-
     }
     """
     data = {
@@ -450,11 +451,16 @@ def submission_to_json(submission, with_fields=True):
         ],
         'discarded_files': submission.discarded_files,
         'timestamp': submission.timestamp,
-        'test_case_feedback_config_override': (
-            submission.test_case_feedback_config_override),
         'status': submission.status,
         'invalid_reason': submission.invalid_reason
     }
+    config = submission.test_case_feedback_config_override
+    try:
+        data['attributes']['test_case_feedback_config_override'] = (
+            config.to_json())
+    except Exception:
+        data['attributes']['test_case_feedback_config_override'] = (
+            config)
 
     data['relationships'] = {
         'submission_group': {

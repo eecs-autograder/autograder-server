@@ -59,6 +59,7 @@ class FeedbackConfiguration(object):
     # The values in these lists are ordered from least
     # feedback to most feedback.
 
+    # TODO: use enums or named constants instead of strings
     RETURN_CODE_FEEDBACK_LEVELS = (
         'no_feedback',
         'correct_or_incorrect_only',
@@ -74,7 +75,7 @@ class FeedbackConfiguration(object):
     COMPILATION_FEEDBACK_LEVELS = (
         'no_feedback',
         'success_or_failure_only',
-        'show_error_messages',
+        'show_compiler_output',
     )
 
     VALGRIND_FEEDBACK_LEVELS = (
@@ -85,12 +86,23 @@ class FeedbackConfiguration(object):
 
     POINTS_FEEDBACK_LEVELS = (
         'hide',
-        # Note: When "show_total" is chosen, it will only show the
-        # total calculated from parts of the test case that the
+        # Note: When "show_total" or "show_breakdown" is chosen,
+        # it will only show the
+        # points from parts of the test case that the
         # student receives feedback on.
         'show_total',
         'show_breakdown',
     )
+
+    @classmethod
+    def get_max_feedback(class_):
+        return FeedbackConfiguration(
+            return_code_feedback_level=class_.RETURN_CODE_FEEDBACK_LEVELS[-1],
+            output_feedback_level=class_.OUTPUT_FEEDBACK_LEVELS[-1],
+            compilation_feedback_level=class_.COMPILATION_FEEDBACK_LEVELS[-1],
+            valgrind_feedback_level=class_.VALGRIND_FEEDBACK_LEVELS[-1],
+            points_feedback_level=class_.POINTS_FEEDBACK_LEVELS[-1]
+        )
 
     def __init__(self, **kwargs):
         self.return_code_feedback_level = kwargs.get(

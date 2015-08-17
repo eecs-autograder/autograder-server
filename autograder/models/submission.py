@@ -46,6 +46,7 @@ class _SubmissionManager(ManagerWithValidateOnCreate):
                 continue
 
             try:
+                # TODO optimize
                 model._submitted_files.add(
                     _SubmittedFile.objects.validate_and_create(
                         submitted_file=file_obj, submission=model))
@@ -55,6 +56,7 @@ class _SubmissionManager(ManagerWithValidateOnCreate):
 
         try:
             model.full_clean()
+            model._validate_submitted_files()
         except ValidationError as e:
             model.status = Submission.GradingStatus.invalid
             model.invalid_reason = e.message_dict
@@ -106,6 +108,11 @@ class Submission(ModelValidatableOnSave):
             the feedback configuration here will override the Project level
             feedback configuration.
             Default value: None
+
+        show_all_test_cases -- A hard override for visible/hidden test cases.
+            When this field is True, students will get feedback
+            on ALL test cases, including those marked as hidden.
+            This field does not effect the feedback configuration.
 
         status -- The grading status of this submission. Acceptable values
             and their meanings are as follows:
@@ -173,6 +180,8 @@ class Submission(ModelValidatableOnSave):
 
     test_case_feedback_config_override = FeedbackConfigurationField(
         null=True, default=None)
+    show_all_test_cases = models.BooleanField(default=False, blank=True)
+
     status = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
         choices=_GRADING_STATUS_CHOICES)
@@ -198,9 +207,7 @@ class Submission(ModelValidatableOnSave):
         if not os.path.isdir(submission_dir):
             os.makedirs(submission_dir)
 
-    def clean(self):
-        super().clean()
-
+    def _validate_submitted_files(self):
         errors = []
         submitted_filenames = self.get_submitted_file_basenames()
 
@@ -224,7 +231,7 @@ class Submission(ModelValidatableOnSave):
                     'Too many files matching the pattern: ' + pattern)
 
         if errors:
-            raise ValidationError(errors)
+            raise ValidationError({'submitted_files': errors})
 
     def file_is_extra(self, filename):
         matches_any_pattern = ut.count_if(

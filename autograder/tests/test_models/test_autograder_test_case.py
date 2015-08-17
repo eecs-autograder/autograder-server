@@ -1062,8 +1062,10 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(result.valgrind_errors_present)
 
     # -------------------------------------------------------------------------
+    import unittest
 
-    def run_with_pattern_in_files_to_compile(self):
+    @unittest.skip('not implemented')
+    def test_run_with_pattern_in_files_to_compile(self):
         self.fail()
 
 # -----------------------------------------------------------------------------

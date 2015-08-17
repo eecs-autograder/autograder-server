@@ -15,7 +15,7 @@ from django.core.validators import MinValueValidator
 from autograder.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
-from autograder.models import Project, CompiledAutograderTestCaseResult
+from autograder.models import Project, AutograderTestCaseResultBase
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
@@ -155,6 +155,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             message for their corresponding flag or be empty if their
             corresponding flag did not cause an error.
 
+        valgrind_time_limit -- TODO
+
         points_for_correct_return_code -- The number of points to be awarded
             for the program being tested exiting with the correct return_code.
             Default value: 0
@@ -214,6 +216,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             This field is restricted to the same charset as uploaded
             project files.
             Default value: empty string
+
+        compilation_time_limit -- TODO
 
         interpreter -- TODO
         interpreter_flags -- TODO
@@ -498,7 +502,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     # -------------------------------------------------------------------------
 
     def run(self):
-        result = CompiledAutograderTestCaseResult(test_case=self)
+        result = AutograderTestCaseResultBase(test_case=self)
 
         compilation_command = (
             [self.compiler] + self.compiler_flags +
@@ -506,11 +510,11 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         )
 
         runner = _SubprocessRunner(compilation_command)
-        result._compilation_standard_output = runner.stdout
-        result._compilation_standard_error_output = runner.stderr
-        result._compilation_return_code = runner.return_code
+        result.compilation_standard_output = runner.stdout
+        result.compilation_standard_error_output = runner.stderr
+        result.compilation_return_code = runner.return_code
 
-        if result._compilation_return_code != 0 or result.timed_out:
+        if result.compilation_return_code != 0 or result.timed_out:
             # print(result._compilation_return_code)
             # print(runner.stderr)
             return result
@@ -523,24 +527,22 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
             run_program_cmd, timeout=self.time_limit,
             stdin_content=self.standard_input)
 
-        result._return_code = runner.return_code
-        result._standard_output = runner.stdout
-        result._standard_error_output = runner.stderr
-        result._timed_out = runner.timed_out
+        result.return_code = runner.return_code
+        result.standard_output = runner.stdout
+        result.standard_error_output = runner.stderr
+        result.timed_out = runner.timed_out
 
         if not self.use_valgrind:
             return result
 
         valgrind_run_cmd = ['valgrind'] + self.valgrind_flags + run_program_cmd
 
-        # Note the increased time limit. This is because using valgrind
-        # causes the program to run drastically slower.
         runner = _SubprocessRunner(
-            valgrind_run_cmd, timeout=self.time_limit * 2,
-            stdin_content=self.standard_input, merge_stdout_and_stderr=True)
+            valgrind_run_cmd, timeout=self.time_limit,
+            stdin_content=self.standard_input)
 
-        result._valgrind_return_code = runner.return_code
-        result._valgrind_output = runner.stdout
+        result.valgrind_return_code = runner.return_code
+        result.valgrind_output = runner.stderr
 
         return result
 

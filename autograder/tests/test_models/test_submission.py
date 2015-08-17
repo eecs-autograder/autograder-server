@@ -59,6 +59,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_submission, submission)
         self.assertEqual(
             loaded_submission.submission_group, self.submission_group)
+        self.assertFalse(loaded_submission.show_all_test_cases)
         self.assertEqual(loaded_submission.timestamp, submission.timestamp)
         self.assertIsNone(loaded_submission.test_case_feedback_config_override)
         self.assertEqual(

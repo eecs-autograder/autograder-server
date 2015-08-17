@@ -13,11 +13,12 @@ import autograder.tests.dummy_object_utils as obj_ut
 
 from autograder.frontend.json_api_serializers import (
     course_to_json, semester_to_json, project_to_json,
-    autograder_test_case_to_json, submission_group_to_json,
-    submission_to_json)
+    autograder_test_case_to_json,
+    submission_group_to_json, submission_to_json)
 
 from autograder.models import (
-    CompiledAutograderTestCase, SubmissionGroup, Submission)
+    CompiledAutograderTestCase, SubmissionGroup, Submission,
+    AutograderTestCaseResultBase)
 
 # print(json.dumps(expected, sort_keys=True, indent=4, cls=DjangoJSONEncoder))
 # print(json.dumps(actual, sort_keys=True, indent=4, cls=DjangoJSONEncoder))

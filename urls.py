@@ -75,7 +75,7 @@ urlpatterns = [
         ajax_request_handlers.SubmissionGroupRequestHandler.as_view(),
         name='submission-group-with-id'),
 
-    url(r'^submissions/submission/(?P<submission_id>)\d+/$',
+    url(r'^submissions/submission/(?P<submission_id>\d+)/$',
         ajax_request_handlers.SubmissionRequestHandler.as_view(),
         name='submission-handler'),
 
@@ -250,12 +250,6 @@ urlpatterns = [
     #                       'self': <self link>
     #                   },
     #                   'data': {'type': 'submission_group', 'id': <id>}
-    #               },
-    #               'project': {
-    #                   'links': {
-    #                       'self': <self link>
-    #                   },
-    #                   'data': {'type': 'project', 'id': <id>}
     #               }
     #           }
     #       }
@@ -263,8 +257,8 @@ urlpatterns = [
     #
     # GET                       /submissions?project=<project-id>, user=<user-id>, submission-group=<submission-group-id>
     # POST                      /submissions/submission
-    # GET                       /submissions/submission/<submission-id>
-    # GET                       /submissions/submission/<submission-id>/<filename>
+    # GET PATCH                 /submissions/submission/<submission-id>
+    # GET                       /submissions/submission/<submission-id>/file/<filename>
     #
     # --- SUBMISSION GROUPS ---
     #   json format:
@@ -289,7 +283,7 @@ urlpatterns = [
     #
     # POST                      /submission-groups/submission-group
     # GET                       /submission-groups/submission-group/?project=<project-id>&user=<user-id>
-    # GET PATCH DELETE              /submission-groups/submission-group/<submission-group-id>
+    # GET PATCH DELETE          /submission-groups/submission-group/<submission-group-id>
     #
     #
     #
