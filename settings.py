@@ -116,3 +116,5 @@ STATIC_URL = '/frontend/static/'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'autograder', 'frontend', 'static'),
 )
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'autograder', 'frontend', 'static')
