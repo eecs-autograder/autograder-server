@@ -25,6 +25,10 @@ from autograder.models import (
 
 
 class SerializerTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+        self.maxDiff = None
+
     def assertJSONDictsEqual(self, json1, json2):
         self.assertEqual(
             json.dumps(json1, sort_keys=True, indent=4, cls=DjangoJSONEncoder),
@@ -37,7 +41,7 @@ class CourseSerializerTestCase(SerializerTestCase):
 
         self.course = obj_ut.create_dummy_courses()
 
-    def test_serialize_course_with_fields(self):
+    def test_serialize_course_all_fields(self):
         user = obj_ut.create_dummy_users()
         self.course.add_course_admins(user)
 
@@ -63,10 +67,13 @@ class CourseSerializerTestCase(SerializerTestCase):
             'id': self.course.pk,
             'links': {
                 'self': reverse('get-course', args=[self.course.pk])
+            },
+            'attributes': {
+                'name': self.course.name
             }
         }
 
-        actual = course_to_json(self.course, with_fields=False)
+        actual = course_to_json(self.course, all_fields=False)
 
         self.assertJSONDictsEqual(expected, actual)
 
@@ -90,7 +97,7 @@ class SemesterSerializerTestCase(SerializerTestCase):
         self.enrolled_student = obj_ut.create_dummy_users()
         self.semester.add_enrolled_students(self.enrolled_student)
 
-    def test_serialize_semester_with_fields_is_staff(self):
+    def test_serialize_semester_all_fields_is_staff(self):
         expected = {
             'type': 'semester',
             'id': self.semester.pk,
@@ -101,14 +108,8 @@ class SemesterSerializerTestCase(SerializerTestCase):
             },
             'relationships': {
                 'course': {
-                    'data': {
-                        'type': 'course',
-                        'id': self.course.pk,
-                        'links': {
-                            'self': reverse(
-                                'get-course', args=[self.course.pk]),
-                        },
-                    }
+                    'data': course_to_json(
+                        self.semester.course, all_fields=False)
                 }
             },
             'links': {
@@ -124,7 +125,7 @@ class SemesterSerializerTestCase(SerializerTestCase):
 
         self.assertJSONDictsEqual(expected, actual)
 
-    def test_serialize_semester_with_fields_not_staff(self):
+    def test_serialize_semester_all_fields_not_staff(self):
         expected = {
             'type': 'semester',
             'id': self.semester.pk,
@@ -133,14 +134,8 @@ class SemesterSerializerTestCase(SerializerTestCase):
             },
             'relationships': {
                 'course': {
-                    'data': {
-                        'type': 'course',
-                        'id': self.course.pk,
-                        'links': {
-                            'self': reverse(
-                                'get-course', args=[self.course.pk]),
-                        },
-                    }
+                    'data': course_to_json(
+                        self.semester.course, all_fields=False)
                 }
             },
             'links': {
@@ -164,11 +159,14 @@ class SemesterSerializerTestCase(SerializerTestCase):
             },
             'meta': {
                 'is_staff': True
+            },
+            'attributes': {
+                'name': self.semester.name
             }
         }
 
         actual = semester_to_json(
-            self.semester, with_fields=False, user_is_semester_staff=True)
+            self.semester, all_fields=False, user_is_semester_staff=True)
 
         self.assertJSONDictsEqual(expected, actual)
 
@@ -181,11 +179,14 @@ class SemesterSerializerTestCase(SerializerTestCase):
             },
             'meta': {
                 'is_staff': False
+            },
+            'attributes': {
+                'name': self.semester.name
             }
         }
 
         actual = semester_to_json(
-            self.semester, with_fields=False, user_is_semester_staff=False)
+            self.semester, all_fields=False, user_is_semester_staff=False)
 
         self.assertJSONDictsEqual(expected, actual)
 
@@ -209,7 +210,7 @@ class ProjectSerializerTestCase(SerializerTestCase):
         self.project.add_project_file(
             SimpleUploadedFile('cheese.txt', b'cheeeese'))
 
-    def test_serialize_project_with_fields(self):
+    def test_serialize_project_all_fields(self):
         expected = {
             'type': 'project',
             'id': self.project.pk,
@@ -243,7 +244,7 @@ class ProjectSerializerTestCase(SerializerTestCase):
             },
             'relationships': {
                 'semester': {
-                    'data': semester_to_json(self.semester, with_fields=False)
+                    'data': semester_to_json(self.semester, all_fields=False)
                 }
             }
         }
@@ -258,10 +259,13 @@ class ProjectSerializerTestCase(SerializerTestCase):
             'id': self.project.pk,
             'links': {
                 'self': reverse('project-handler', args=[self.project.pk])
+            },
+            'attributes': {
+                'name': self.project.name
             }
         }
 
-        actual = project_to_json(self.project, with_fields=False)
+        actual = project_to_json(self.project, all_fields=False)
 
         self.assertJSONDictsEqual(expected, actual)
 
@@ -305,7 +309,7 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
             points_for_no_valgrind_errors=9001,
             points_for_compilation_success=75)
 
-    def test_serialize_test_case_with_fields(self):
+    def test_serialize_test_case_all_fields(self):
         expected = {
             'type': 'compiled_test_case',
             'id': self.ag_test.pk,
@@ -337,7 +341,7 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
             },
             'relationships': {
                 'project': {
-                    'data': project_to_json(self.project, with_fields=False)
+                    'data': project_to_json(self.project, all_fields=False)
                 }
             }
         }
@@ -352,10 +356,13 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
             'id': self.ag_test.pk,
             'links': {
                 'self': reverse('ag-test-handler', args=[self.ag_test.pk])
+            },
+            'attributes': {
+                'name': 'test'
             }
         }
 
-        actual = autograder_test_case_to_json(self.ag_test, with_fields=False)
+        actual = autograder_test_case_to_json(self.ag_test, all_fields=False)
 
         self.assertJSONDictsEqual(expected, actual)
 
@@ -384,7 +391,7 @@ class SubmissionGroupSerializerTestCase(SerializerTestCase):
             members=self.member_names, project=self.project,
             extended_due_date=self.due_date)
 
-    def test_serialize_submission_group_with_fields(self):
+    def test_serialize_submission_group_all_fields(self):
         expected = {
             'type': 'submission_group',
             'id': self.submission_group.pk,
@@ -399,7 +406,7 @@ class SubmissionGroupSerializerTestCase(SerializerTestCase):
             },
             'relationships': {
                 'project': {
-                    'data': project_to_json(self.project, with_fields=False)
+                    'data': project_to_json(self.project, all_fields=False)
                 }
             }
         }
@@ -417,10 +424,13 @@ class SubmissionGroupSerializerTestCase(SerializerTestCase):
                     'submission-group-with-id',
                     args=[self.submission_group.pk])
             },
+            'attributes': {
+                'members': self.submission_group.members
+            }
         }
 
         actual = submission_group_to_json(
-            self.submission_group, with_fields=False)
+            self.submission_group, all_fields=False)
 
         self.assertJSONDictsEqual(expected, actual)
 
@@ -449,7 +459,7 @@ class SubmissionSerializerTestCase(SerializerTestCase):
             submission_group=self.submission_group,
             submitted_files=[SimpleUploadedFile('spam.cpp', b'spaaaaam')])
 
-    def test_serialize_submission_with_fields(self):
+    def test_serialize_submission_all_fields(self):
         expected = {
             'type': 'submission',
             'id': self.submission.pk,
@@ -493,9 +503,12 @@ class SubmissionSerializerTestCase(SerializerTestCase):
             'links': {
                 'self': reverse(
                     'submission-handler', args=[self.submission.pk])
+            },
+            'attributes': {
+                'timestamp': self.submission.timestamp
             }
         }
 
-        actual = submission_to_json(self.submission, with_fields=False)
+        actual = submission_to_json(self.submission, all_fields=False)
 
         self.assertJSONDictsEqual(expected, actual)

@@ -62,7 +62,7 @@ class _SetUpBase(TemporaryFilesystemTestCase):
                 'relationships': {
                     'project': {
                         'data': project_to_json(
-                            self.project, with_fields=False)
+                            self.project, all_fields=False)
                     }
                 }
             }

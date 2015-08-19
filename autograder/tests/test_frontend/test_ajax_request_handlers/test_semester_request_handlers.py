@@ -37,8 +37,8 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
             'data': semester_to_json(
                 self.semester, user_is_semester_staff=True),
             'included': sorted([
-                project_to_json(self.visible_project, with_fields=False),
-                project_to_json(self.hidden_project, with_fields=False)
+                project_to_json(self.visible_project, all_fields=False),
+                project_to_json(self.hidden_project, all_fields=False)
             ], key=sort_key)
         }
 
@@ -58,8 +58,8 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
             'data': semester_to_json(
                 self.semester, user_is_semester_staff=True),
             'included': sorted([
-                project_to_json(self.visible_project, with_fields=False),
-                project_to_json(self.hidden_project, with_fields=False)
+                project_to_json(self.visible_project, all_fields=False),
+                project_to_json(self.hidden_project, all_fields=False)
             ], key=sort_key)
         }
 
@@ -79,7 +79,7 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
             'data': semester_to_json(
                 self.semester, user_is_semester_staff=False),
             'included': sorted([
-                project_to_json(self.visible_project, with_fields=False)
+                project_to_json(self.visible_project, all_fields=False)
             ], key=sort_key)
         }
 

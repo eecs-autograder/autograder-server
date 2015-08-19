@@ -1,3 +1,9 @@
-from django.contrib import admin
+# from django.contrib import admin
 
-# Register your models here.
+# from autograder import models
+
+
+# # class CourseAdmin(admin.ModelAdmin):
+# #     pass
+
+# admin.site.register(models.Course)

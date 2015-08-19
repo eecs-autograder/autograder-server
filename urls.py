@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+# from django.contrib.auth import views as auth_views
 
 from autograder.frontend import views, ajax_request_handlers
 
@@ -22,6 +23,13 @@ import autograder.shared.global_constants as gc
 
 
 urlpatterns = [
+
+    # url(r'^accounts', include('django.contrib.auth.urls')),
+    # url(r'^accounts/login/$', auth_views.login),
+
+
+    url(r'^$', views.MainAppPage.as_view(), name='main-app-page'),
+
     url(r'^courses/course/(?P<course_id>\d+)/$',
         ajax_request_handlers.GetCourse.as_view(),
         name='get-course'),

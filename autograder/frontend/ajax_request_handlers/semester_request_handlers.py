@@ -24,12 +24,12 @@ class SemesterRequestHandler(LoginRequiredView):
 
         if semester.is_enrolled_student(request.user):
             included = [
-                project_to_json(project, with_fields=False) for project in
+                project_to_json(project, all_fields=False) for project in
                 semester.projects.filter(visible_to_students=True)
             ]
         elif is_staff:
             included = [
-                project_to_json(project, with_fields=False) for project in
+                project_to_json(project, all_fields=False) for project in
                 semester.projects.all()
             ]
         else:

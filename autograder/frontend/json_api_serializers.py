@@ -12,7 +12,7 @@ from autograder.models import CompiledAutograderTestCase
 # for the most common format used in this module.
 
 
-def course_to_json(course, with_fields=True):
+def course_to_json(course, all_fields=True):
     """
     Returns a JSON representation of the given course of the
     following form:
@@ -28,7 +28,7 @@ def course_to_json(course, with_fields=True):
         }
     }
 
-    If with_fields is False, the 'attributes' key will NOT be
+    If all_fields is False, 'name' will be the only field
     included.
     """
     data = {
@@ -36,23 +36,25 @@ def course_to_json(course, with_fields=True):
         'id': course.pk,
         'links': {
             'self': reverse('get-course', args=[course.pk])
+        },
+        'attributes': {
+            'name': course.name
         }
     }
 
-    if not with_fields:
+    if not all_fields:
         return data
 
-    data['attributes'] = {
-        'name': course.name,
+    data['attributes'].update({
         'course_admin_names': course.course_admin_names
-    }
+    })
 
     return data
 
 
 # -----------------------------------------------------------------------------
 
-def semester_to_json(semester, with_fields=True, user_is_semester_staff=False):
+def semester_to_json(semester, all_fields=True, user_is_semester_staff=False):
     """
     Returns a JSON representation of the given semester of the
     following form:
@@ -66,10 +68,8 @@ def semester_to_json(semester, with_fields=True, user_is_semester_staff=False):
         },
         'relationships': {
             'course': {
-                'links': {
-                    'self': <course url>,
-                },
-                'data': {'type': 'course', 'id': <course-id>}
+                'data': {
+                    <course (all_fields=False)>
             }
         },
         'links': {
@@ -81,13 +81,14 @@ def semester_to_json(semester, with_fields=True, user_is_semester_staff=False):
         }
     }
 
-    If with_fields is False, the 'attributes' and 'relationships' keys
-    and the 'course_admin_names' meta field will NOT be included.
+    If all_fields is False, 'name' will be the only field included
+    (the rest of the fields under the 'attributes' and 'relationships' keys
+    and the 'course_admin_names' meta field will be omitted).
 
     user_is_semester_staff indicates the value of the 'is_staff' key in the
-    'meta' section. When this value is True, the 'semester_staff_names'
-     and 'enrolled_student_names' attributes and
-     the 'course_admin_names' meta field will be included.
+    'meta' section. When this value is False, the 'semester_staff_names'
+    and 'enrolled_student_names' attributes and
+    the 'course_admin_names' meta field will be omitted.
     """
     data = {
         'type': 'semester',
@@ -97,15 +98,14 @@ def semester_to_json(semester, with_fields=True, user_is_semester_staff=False):
         },
         'meta': {
             'is_staff': user_is_semester_staff
+        },
+        'attributes': {
+            'name': semester.name
         }
     }
 
-    if not with_fields:
+    if not all_fields:
         return data
-
-    data['attributes'] = {
-        'name': semester.name
-    }
 
     if user_is_semester_staff:
         data['attributes']['semester_staff_names'] = (
@@ -118,7 +118,7 @@ def semester_to_json(semester, with_fields=True, user_is_semester_staff=False):
 
     data['relationships'] = {
         'course': {
-            'data': course_to_json(semester.course, with_fields=False)
+            'data': course_to_json(semester.course, all_fields=False)
         }
     }
 
@@ -127,7 +127,7 @@ def semester_to_json(semester, with_fields=True, user_is_semester_staff=False):
 
 # -----------------------------------------------------------------------------
 
-def project_to_json(project, with_fields=True):
+def project_to_json(project, all_fields=True):
     """
     Returns a JSON representation of the given project of the
     following form:
@@ -159,33 +159,30 @@ def project_to_json(project, with_fields=True):
         },
         'relationships': {
             'semester': {
-                'data': {
-                    'type': 'semester',
-                    'id': <semester-id>,
-                    'links': {
-                        'self': <semester url>,
-                    }
-                }
+                'data': <semester (all_fields=False)>
             }
         }
     }
 
-    When with_fields is False, the 'attributes' and 'relationships'
-    keys are not included.
+    When all_fields is False, 'name' will be the only field included
+    (the rest of the fields under the 'attributes' and 'relationships'
+    keys are not included).
     """
     data = {
         'type': 'project',
         'id': project.id,
         'links': {
             'self': reverse('project-handler', args=[project.pk])
+        },
+        'attributes': {
+            'name': project.name
         }
     }
 
-    if not with_fields:
+    if not all_fields:
         return data
 
-    data['attributes'] = {
-        'name': project.name,
+    data['attributes'].update({
         'project_files': [
             {
                 'filename': os.path.basename(file_.name),
@@ -209,11 +206,11 @@ def project_to_json(project, with_fields=True):
         'required_student_files': project.required_student_files,
         'expected_student_file_patterns': (
             project.expected_student_file_patterns)
-    }
+    })
 
     data['relationships'] = {
         'semester': {
-            'data': semester_to_json(project.semester, with_fields=False)
+            'data': semester_to_json(project.semester, all_fields=False)
         }
     }
 
@@ -222,7 +219,7 @@ def project_to_json(project, with_fields=True):
 
 # -----------------------------------------------------------------------------
 
-def autograder_test_case_to_json(autograder_test_case, with_fields=True):
+def autograder_test_case_to_json(autograder_test_case, all_fields=True):
     """
     Returns a JSON representation fo the given test case of the
     following form:
@@ -260,13 +257,14 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
         },
         'relationships': {
             'project': {
-                'data': <project>
+                'data': <project (all_fields=False)>
             }
         }
     }
 
-    When with_fields is False, the 'attributes' and 'relationships'
-    keys are not included.
+    When all_fields is False, 'name' will be the only field included
+    (the other fields under the 'attributes' and 'relationships'
+    keys are not included).
 
     The 'type' field corresponds to the type of the given test case
     as follows:
@@ -287,14 +285,16 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
         'id': autograder_test_case.pk,
         'links': {
             'self': reverse('ag-test-handler', args=[autograder_test_case.pk])
+        },
+        'attributes': {
+            'name': autograder_test_case.name
         }
     }
 
-    if not with_fields:
+    if not all_fields:
         return data
 
-    data['attributes'] = {
-        'name': autograder_test_case.name,
+    data['attributes'].update({
         'hide_from_students': autograder_test_case.hide_from_students,
         'command_line_arguments': (
             autograder_test_case.command_line_arguments),
@@ -319,7 +319,7 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
             autograder_test_case.points_for_no_valgrind_errors),
         'points_for_compilation_success': (
             autograder_test_case.points_for_compilation_success)
-    }
+    })
 
     if type_ == 'compiled_test_case':
         data['attributes'].update(
@@ -335,7 +335,7 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
     data['relationships'] = {
         'project': {
             'data': project_to_json(
-                autograder_test_case.project, with_fields=False)
+                autograder_test_case.project, all_fields=False)
         }
     }
 
@@ -344,7 +344,7 @@ def autograder_test_case_to_json(autograder_test_case, with_fields=True):
 
 # -----------------------------------------------------------------------------
 
-def submission_group_to_json(submission_group, with_fields=True):
+def submission_group_to_json(submission_group, all_fields=True):
     """
     Returns a JSON representation of the given submission group
     of the following form:
@@ -360,13 +360,14 @@ def submission_group_to_json(submission_group, with_fields=True):
         },
         'relationships': {
             'project': {
-                'data': <project>
+                'data': <project (all_fields=False)>
             }
         }
     }
 
-    When with_fields is False, the 'attributes' and 'relationships'
-    keys are not included.
+    When all_fields is False, 'members' will be the only field included
+    (the other fields under the 'attributes' and 'relationships'
+    keys are not included).
     """
     data = {
         'type': 'submission_group',
@@ -374,20 +375,22 @@ def submission_group_to_json(submission_group, with_fields=True):
         'links': {
             'self': reverse(
                 'submission-group-with-id', args=[submission_group.pk])
+        },
+        'attributes': {
+            'members': submission_group.members
         }
     }
 
-    if not with_fields:
+    if not all_fields:
         return data
 
-    data['attributes'] = {
-        'members': submission_group.members,
+    data['attributes'].update({
         'extended_due_date': submission_group.extended_due_date
-    }
+    })
     data['relationships'] = {
         'project': {
             'data': project_to_json(
-                submission_group.project, with_fields=False)
+                submission_group.project, all_fields=False)
         }
     }
 
@@ -396,7 +399,7 @@ def submission_group_to_json(submission_group, with_fields=True):
 
 # -----------------------------------------------------------------------------
 
-def submission_to_json(submission, with_fields=True):
+def submission_to_json(submission, all_fields=True):
     """
     Returns a JSON representation of the given submission group of the
     following form:
@@ -422,23 +425,30 @@ def submission_to_json(submission, with_fields=True):
         },
         'relationships': {
             'submission_group': {
-                'data': <submission_group>
+                'data': <submission_group (all_fields=False)>
             },
         }
     }
+
+    When all_fields is False, 'timestamp' will be the only field included
+    (the other fields under the 'attributes' and 'relationships' keys
+    will be omitted).
     """
     data = {
         'type': 'submission',
         'id': submission.pk,
         'links': {
             'self': reverse('submission-handler', args=[submission.pk])
+        },
+        'attributes': {
+            'timestamp': submission.timestamp
         }
     }
 
-    if not with_fields:
+    if not all_fields:
         return data
 
-    data['attributes'] = {
+    data['attributes'].update({
         'submitted_files': [
             {
                 'filename': os.path.basename(file_.name),
@@ -450,10 +460,9 @@ def submission_to_json(submission, with_fields=True):
             for file_ in submission.submitted_files
         ],
         'discarded_files': submission.discarded_files,
-        'timestamp': submission.timestamp,
         'status': submission.status,
         'invalid_reason': submission.invalid_reason
-    }
+    })
     config = submission.test_case_feedback_config_override
     try:
         data['attributes']['test_case_feedback_config_override'] = (

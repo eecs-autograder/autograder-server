@@ -5,6 +5,7 @@ Classes:
         programs.
 """
 
+import os
 import subprocess
 
 from django.db import models
@@ -558,6 +559,22 @@ class _SubprocessRunner(object):
     Convenience wrapper for calling Popen and retrieving the data
     we usually need.
     """
+    def _get_docker_args():
+        return [
+            'docker', 'run',
+            '-a', 'STDIN', '-a', 'STDOUT', '-a', 'STDERR',  # Attach streams
+            '--rm',  # Delete the container when finished running
+            '-m', '500M',  # Memory limit
+            '--memory-swap', '750M',  # Total memory limit (memory + swap)
+            '--ulimit', 'nproc=5',  # Limit number of processes
+            '-v', os.getcwd() + ':/home/files',  # Mount the current directory
+            '-w', '/home/files',  # Set working directory in container
+            # -u nobody  # set user (root by default, but we don't want that)
+            # '-t',  # Allocate a pseudo-tty
+            '-i',  # Run in interactive mode (needed for input redirection)
+            'autograder'  # Specify which image to use
+        ]
+
     def __init__(self, program_args, **kwargs):
         self._args = program_args
         self._timeout = kwargs.get('timeout', gc.DEFAULT_SUBPROCESS_TIMEOUT)
@@ -601,7 +618,7 @@ class _SubprocessRunner(object):
         # Popen and subprocess.PIPE is the preferred approach to
         # redirecting input and output from strings.
         self._process = subprocess.Popen(
-            self._args,
+            _SubprocessRunner._get_docker_args() + self._args,
             universal_newlines=True,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -617,6 +634,12 @@ class _SubprocessRunner(object):
             self._process.stdin.close()
 
             self._return_code = self._process.returncode
+
+            print(self._process.args)
+            print(self._process.returncode)
+            print(self._stdout)
+            print(self._stderr)
+            # print(self._process.stdin.read())
         except subprocess.TimeoutExpired:
             self._process.kill()
             self._stdout, self._stderr = self._process.communicate()

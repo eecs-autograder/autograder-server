@@ -51,7 +51,7 @@ class CourseRequestHandlerTestCase(RequestHandlerTestCase):
                 'included': [
                     {
                         'data': semester_to_json(
-                            semester, with_fields=False,
+                            semester, all_fields=False,
                             user_is_semester_staff=True)
                     }
                     for semester in semesters
