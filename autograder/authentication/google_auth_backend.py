@@ -23,6 +23,8 @@ class GoogleAuthBackend(object):
         except crypt.AppIdentityError as e:
             print(e)
             return None
+        except Exception:
+            return None
 
         username = id_info['email']
         user = User.objects.get_or_create(username=username)[0]
