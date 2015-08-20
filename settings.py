@@ -50,7 +50,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    # TODO: Uncomment once set up on server
+    # TODO: Uncomment once set up on server?
     # 'django.contrib.auth.middleware.RemoteUserMiddleware',
 )
 
@@ -75,12 +75,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wsgi.application'
 
-# AUTHENTICATION_BACKENDS = (
-#     # TODO: uncomment once set up on server
-#     # 'django.contrib.auth.backends.RemoteUserBackend',
-#     # TODO: comment out set up on server
-#     'django.contrib.auth.backends.ModelBackend',
-# )
+AUTHENTICATION_BACKENDS = (
+    # 'django.contrib.auth.backends.ModelBackend',
+    'autograder.authentication.google_auth_backend.GoogleAuthBackend',
+    # # TODO: uncomment once set up on server
+    # # 'django.contrib.auth.backends.RemoteUserBackend',
+)
+
+LOGIN_URL = '/login/'
 
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
@@ -111,10 +113,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
-STATIC_URL = '/frontend/static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'autograder', 'frontend', 'static'),
 )
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'autograder', 'frontend', 'static')

@@ -1,0 +1,414 @@
+{% extends "autograder/base.html" %}
+{% load staticfiles %}
+
+{% block head_content %}
+    <!-- File Upload -->
+
+    <!-- Generic page styles -->
+    <link rel="stylesheet" href="{% static 'autograder/file-upload/css/style.css' %}">
+    <!-- blueimp Gallery styles -->
+    <!--<link rel="stylesheet" href="//blueimp.github.io/Gallery/css/blueimp-gallery.min.css">-->
+    <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
+    <link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload.css' %}">
+    <link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-ui.css' %}">
+    <!-- CSS adjustments for browsers with JavaScript disabled -->
+    <noscript><link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-noscript.css' %}"></noscript>
+    <noscript><link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-ui-noscript.css' %}"></noscript>
+
+    <!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
+    <script src="{% static 'autograder/file-upload/js/vendor/jquery.ui.widget.js' %}"></script>
+    <!-- The Templates plugin is included to render the upload/download listings -->
+    <script src="{% static 'autograder/file-upload/js/tmpl.min.js' %}"></script>
+    <!-- The Load Image plugin is included for the preview images and image resizing functionality -->
+    <script src="{% static 'autograder/file-upload/js/load-image.all.min.js' %}"></script>
+    <!-- The Canvas to Blob plugin is included for image resizing functionality -->
+    <!--<script src="//blueimp.github.io/JavaScript-Canvas-to-Blob/js/canvas-to-blob.min.js"></script>-->
+    <!-- blueimp Gallery script -->
+    <!--<script src="//blueimp.github.io/Gallery/js/jquery.blueimp-gallery.min.js"></script>-->
+    <!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
+    <script src="{% static 'autograder/file-upload/js/jquery.iframe-transport.js' %}"></script>
+    <!-- The basic File Upload plugin -->
+    <script src="{% static 'autograder/file-upload/js/jquery.fileupload.js' %}"></script>
+    <!-- The File Upload processing plugin -->
+    <script src="{% static 'autograder/file-upload/js/jquery.fileupload-process.js' %}"></script>
+    <!-- The File Upload image preview & resize plugin -->
+    <script src="{% static 'autograder/file-upload/js/jquery.fileupload-image.js' %}"></script>
+    <!-- The File Upload audio preview plugin -->
+    <script src="{% static 'autograder/file-upload/js/jquery.fileupload-audio.js' %}"></script>
+    <!-- The File Upload video preview plugin -->
+    <script src="{% static 'autograder/file-upload/js/jquery.fileupload-video.js' %}"></script>
+    <!-- The File Upload validation plugin -->
+    <script src="{% static 'autograder/file-upload/js/jquery.fileupload-validate.js' %}"></script>
+    <!-- The File Upload user interface plugin -->
+    <script src="{% static 'autograder/file-upload/js/jquery.fileupload-ui.js' %}"></script>
+
+    <!-- /File Upload -->
+
+    <script type="text/javascript">
+    $(document).ready(function() {
+        view_landing_page();
+    });
+    </script>
+
+{% endblock head_content %}
+
+{% block body %}
+
+<h1>The Autograder</h1>
+
+<script type="text/javascript">
+    function thingy()
+    {
+        console.log('thingy');
+        $.get('{% url "list-semesters" %}', function(data, status) {
+            console.log('post status: ' + status + ' ' + data);
+        });
+    }
+</script>
+<button onclick="thingy();">clicky</button>
+
+<div id='main-area' class='container'>
+
+
+</div>
+
+<script src='https://www.jsviews.com/download/jsrender.min.js'></script>
+
+<script type="text/javascript">
+
+'use strict';
+
+function view_landing_page()
+{
+    var data = {
+        'courses': load_courses(),
+        'semesters': load_semesters()
+    };
+    console.log(data);
+    var tmpl = $.templates('#landing-page');
+    $('#main-area').html(tmpl.render(data));
+}
+
+function view_semester(url)
+{
+    var data = get_semester(url);
+    console.log(data);
+    var tmpl = $.templates('#view-semester');
+    $('#main-area').html(tmpl.render(data));
+}
+
+function view_project(url)
+{
+    var data = get_project(url);
+    console.log(data);
+    var tmpl = $.templates('#view-project');
+    $('#main-area').html(tmpl.render(data));
+
+    console.log($('#fileupload'));
+    $('#fileupload').fileupload({
+        'url': '/blah',
+        'singleFileUploads': false
+    });
+}
+
+function load_courses()
+{
+    return [{
+        'type': 'course',
+        'id': 42,
+        'attributes': {
+            'name': 'eecs280',
+            'course_admin_names': ['jameslp', 'awdeorio']
+        },
+        'links': {
+            'self': 'linky'
+        }
+    }]
+} // load_courses
+
+function load_semesters()
+{
+    return [{
+        'type': 'semester',
+        'id': 14,
+        'attributes': {
+            'name': 'fall15',
+            'semester_staff_names': ['jameslp', 'jsatonik'],
+            'enrolled_student_names': ['baburgess', 'tsafavi']
+        },
+        'links': {
+            'self': 'linky'
+        },
+        'meta': {
+            'is_staff': true,
+            'course_admin_names': ["jameslp", "awdeorio"]
+        }
+    },
+    {
+        'type': 'semester',
+        'id': 14,
+        'attributes': {
+            'name': 'sp13'
+        },
+        'links': {
+            'self': 'linky'
+        },
+        'meta': {
+            'is_staff': false
+        }
+    }]
+} // load_semesters
+
+function get_semester(url)
+{
+    return {
+        'data': {
+            'type': 'semester',
+            'id': 65,
+            'attributes': {
+                'name': 'fall15',
+                'semester_staff_names': ['jameslp', 'jsatonik'],
+                'enrolled_student_names': ['baburgess', 'tsafavi']
+            },
+            'meta': {
+                'is_staff': true,
+                'course_admin_names': ["jameslp", "awdeorio"]
+            }
+        },
+        'included': [
+            {
+                'type': 'project',
+                'id': 73,
+                'attributes': {
+                    'name': 'Project 1'
+                },
+                'links': {
+                    'self': 'linky'
+                }
+            },
+            {
+                'type': 'project',
+                'id': 72,
+                'attributes': {
+                    'name': 'Project 2'
+                },
+                'links': {
+                    'self': 'linky'
+                }
+            }
+        ]
+    }
+} // get_semester
+
+function get_project(url)
+{
+    return {
+        'data': {
+            'type': 'project',
+            'id': 85,
+            'links': {
+                'self': 'linky'
+            },
+            'attributes': {
+                'name': 'Project 1',
+                'closing_time': 'August 24, 2015, 11:55 PM',
+                'disallow_student_submissions': false,
+                'required_student_files': ['spam.cpp', 'eggs.cpp']
+            }
+        }
+    }
+} // get_project
+
+</script>
+
+{% verbatim %}
+
+<script id='landing-page' type="text/x-jsrender">
+
+<div id='courses' class='container'>
+    {{if courses && courses.length}}
+        <div>Courses: </div>
+        <ul>
+            {{for courses}}
+                <li>
+                <div>{{>attributes.name}}</div>
+                <div>Admins: {{>attributes.course_admin_names}}</div>
+                </li>
+            {{/for}}
+        </ul>
+    {{/if}}
+</div>
+
+<div id='semesters' class='container'>
+    {{if semesters && semesters.length}}
+        <div>Semesters: </div>
+        <ul>
+            {{for semesters}}
+                <li>
+                    <div>
+                        <a onclick="view_semester('{{:links.self}}');">
+                            {{>attributes.name}} {{if meta.is_staff}}(staff){{/if}}
+                        </a>
+                    </div>
+                </li>
+            {{/for}}
+        </ul>
+    {{/if}}
+</div>
+
+</script> <!-- landing page -->
+
+
+<script id='view-semester' type="text/x-jsrender">
+
+<div id='semester'>
+    <div>{{>data.attributes.name}}</div>
+    <ul>
+        {{for included}}
+            <ul>
+                <a onclick="view_project('{{:links.self}}');">
+                    {{>attributes.name}}
+                </a>
+            </ul>
+        {{/for}}
+    </ul>
+</div>
+
+</script>
+
+
+<script id='view-project' type="text/x-jsrender">
+
+<div id='project'>
+    <div>{{>data.attributes.name}}</div>
+
+    <div class="container" id='submit-files'>
+        <h2 class="lead">Submit Files</h2>
+        <!-- The file upload form used as target for the file upload widget -->
+        <form id="fileupload" method="POST" enctype="multipart/form-data">
+            <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
+            <div class="row fileupload-buttonbar">
+                <div class="col-lg-7">
+                    <!-- The fileinput-button span is used to style the file input field as button -->
+                    <span class="btn btn-success fileinput-button">
+                        <i class="glyphicon glyphicon-plus"></i>
+                        <span>Add files...</span>
+                        <input type="file" name="files" multiple>
+                    </span>
+                    <button type="submit" class="btn btn-primary start">
+                        <i class="glyphicon glyphicon-upload"></i>
+                        <span>SUBMIT</span>
+                    </button>
+                    <button type="reset" class="btn btn-warning cancel">
+                        <i class="glyphicon glyphicon-ban-circle"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <!-- <button type="button" class="btn btn-danger delete">
+                        <i class="glyphicon glyphicon-trash"></i>
+                        <span>Delete</span>
+                    </button> -->
+                    <input type="checkbox" class="toggle">
+                    <!-- The global file processing state -->
+                    <span class="fileupload-process"></span>
+                </div>
+                <!-- The global progress state -->
+                <div class="col-lg-5 fileupload-progress fade">
+                    <!-- The global progress bar -->
+                    <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+                    </div>
+                    <!-- The extended global progress state -->
+                    <div class="progress-extended">&nbsp;</div>
+                </div>
+            </div>
+            <!-- The table listing the files available for upload/download -->
+            <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
+        </form>
+        <br>
+    </div>
+</div>
+
+</script>
+
+<script id="template-upload" type="text/x-tmpl">
+{% for (var i=0, file; file=o.files[i]; i++) { %}
+    <tr class="template-upload fade">
+        <td>
+            <span class="preview"></span>
+        </td>
+        <td>
+            <p class="name">{%=file.name%}</p>
+            <strong class="error text-danger"></strong>
+        </td>
+        <td>
+            <p class="size">Processing...</p>
+            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar progress-bar-success" style="width:0%;"></div></div>
+        </td>
+        <td>
+            {% if (!i && !o.options.autoUpload) { %}
+                <button class="btn btn-primary start" disabled>
+                    <i class="glyphicon glyphicon-upload"></i>
+                    <span>Start</span>
+                </button>
+            {% } %}
+            {% if (!i) { %}
+                <button class="btn btn-warning cancel">
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <span>Cancel</span>
+                </button>
+            {% } %}
+        </td>
+    </tr>
+{% } %}
+</script>
+<!-- The template to display files available for download -->
+<script id="template-download" type="text/x-tmpl">
+{% for (var i=0, file; file=o.files[i]; i++) { %}
+    <tr class="template-download fade">
+        <td>
+            <span class="preview">
+                {% if (file.thumbnailUrl) { %}
+                    <a href="{%=file.url%}" title="{%=file.name%}" download="{%=file.name%}" data-gallery><img src="{%=file.thumbnailUrl%}"></a>
+                {% } %}
+            </span>
+        </td>
+        <td>
+            <p class="name">
+                {% if (file.url) { %}
+                    <!-- This version triggers a file download -->
+                    <!-- <a href="{%=file.url%}" title="{%=file.name%}" download="{%=file.name%}" {%=file.thumbnailUrl?'data-gallery':''%}>{%=file.name%}</a> -->
+                    <!-- This version opens the file in a new tab -->
+                    <a href="{%=file.url%}" title="{%=file.name%}" target='_blank' {%=file.thumbnailUrl?'data-gallery':''%}>{%=file.name%}</a>
+                {% } else { %}
+                    <span>{%=file.name%}</span>
+                {% } %}
+            </p>
+            {% if (file.error) { %}
+                <div><span class="label label-danger">Error</span> {%=file.error%}</div>
+            {% } %}
+        </td>
+        <td>
+            <span class="size">{%=o.formatFileSize(file.size)%}</span>
+        </td>
+        <td>
+            {% if (file.deleteUrl) { %}
+                <button class="btn btn-danger delete" onclick='$.post("{%=file.deleteUrl%}");'>
+                    <i class="glyphicon glyphicon-trash"></i>
+                    <span>Delete</span>
+                </button>
+                <input type="checkbox" name="delete" value="1" class="toggle">
+            {% } else { %}
+                <button class="btn btn-warning cancel">
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <span>Cancel</span>
+                </button>
+            {% } %}
+        </td>
+    </tr>
+{% } %}
+</script>
+
+{% endverbatim %}
+
+{% endblock body %}
+

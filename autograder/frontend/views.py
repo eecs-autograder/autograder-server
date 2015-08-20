@@ -15,20 +15,57 @@ from django.shortcuts import get_object_or_404, render
 
 from django.template import RequestContext
 from django.core.urlresolvers import reverse_lazy, reverse
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden
+from django.contrib.auth import authenticate, login
 
 # from django.views.decorators.csrf import ensure_csrf_cookie
 # from django.utils.decorators import method_decorator
 
-from autograder.frontend.frontend_utils import LoginRequiredView
+from autograder.frontend.frontend_utils import ExceptionLoggingView, LoginRequiredView
 from autograder.models import (
     Course, Semester, Project, CompiledAutograderTestCase)
 
 
-class MainAppPage(View):
+class MainAppPage(LoginRequiredView):
     def get(self, request):
         return render(request, 'autograder/main_app.html', {})
 
+
+from django.contrib.auth.forms import AuthenticationForm
+
+
+# class LoginForm(AuthenticationForm):
+#     def clean(self):
+#         print('clean')
+#         token = self.request.POST.get('idtoken')
+#         if token:
+#             self.user_cache = authenticate(token=token)
+#             print(self.user_cache)
+#             if self.user_cache is None:
+#                 raise ValidationError('invalid login', code='invalid_login')
+#             else:
+#                 self.confirm_login_allowed(self.user_cache)
+
+#         return self.cleaned_data
+
+
+class LoginView(ExceptionLoggingView):
+    def get(self, request):
+        redirect_url = request.GET.get('next', reverse('main-app-page'))
+        if request.user.is_authenticated():
+            return HttpResponseRedirect(redirect_url)
+
+        return render(request, 'autograder/login.html',
+                      {'redirect_url': redirect_url})
+
+    def post(self, request):
+        user = authenticate(token=request.POST['idtoken'])
+        if user is None:
+            return HttpResponseForbidden('Authentication failure')
+
+        login(request, user)
+        return HttpResponseRedirect(
+            request.POST.get('redirect_url', reverse('main-app-page')))
 
 # class AllCoursesView(CreateView):
 #     template_name = 'autograder/course_list.html'
