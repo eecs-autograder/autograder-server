@@ -31,11 +31,11 @@ urlpatterns = [
     #     {'template_name': 'autograder/login.html',
     #      'authentication_form': views.LoginForm}, name='login'),
 
-    url(r'^$', views.MainAppPage.as_view(), name='main-app-page'),
+    url(r'^/tasky/$', views.Tasky.as_view(), name='tasky'),
 
     url(r'^login/$', views.LoginView.as_view(), name='login'),
 
-    url(r'^logout/$', auth_views.logout_then_login, name='logout'),
+    url(r'^logout/$', views.LogoutView.as_view(), name='logout'),
 
     url(r'^courses/course/(?P<course_id>\d+)/$',
         ajax_request_handlers.GetCourse.as_view(),
@@ -101,7 +101,9 @@ urlpatterns = [
     url(r'^submissions/submission/(?P<submission_id>\d+)/file/(?P<filename>{})/$'.format(
         gc.PROJECT_FILENAME_WHITELIST_REGEX.pattern),
         ajax_request_handlers.SubmittedFileRequestHandler.as_view(),
-        name='get-submitted-file')
+        name='get-submitted-file'),
+
+    url(r'$/*', views.MainAppPage.as_view(), name='main-app-page'),
 
     # --- COURSES ---
     #   json format:

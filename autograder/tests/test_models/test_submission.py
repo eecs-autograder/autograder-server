@@ -228,3 +228,12 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(
             loaded_submission.discarded_files,
             [file_.name for file_ in duplicate_files])
+
+    def test_error_project_deadline_passed(self):
+        self.fail()
+
+    def test_no_error_project_deadline_passed_but_group_has_extension(self):
+        self.fail()
+
+    def test_error_project_deadline_and_extension_passed(self):
+        self.fail()

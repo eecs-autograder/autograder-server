@@ -54,6 +54,18 @@ def course_to_json(course, all_fields=True):
 
 # -----------------------------------------------------------------------------
 
+# TODO: get rid of user_is_semester_staff
+#       add meta 'permissions' field to response content
+#       i.e. {
+#           'data': {...},
+#           'meta': {
+#               'permissions': {
+#                   can_edit: tf,
+#                   can_view_other_students tf,
+#
+#               }
+#           }
+#       }
 def semester_to_json(semester, all_fields=True, user_is_semester_staff=False):
     """
     Returns a JSON representation of the given semester of the

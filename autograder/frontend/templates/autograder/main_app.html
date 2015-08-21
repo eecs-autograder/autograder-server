@@ -1,7 +1,59 @@
-{% extends "autograder/base.html" %}
-{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags (Bootstrap) -->
 
-{% block head_content %}
+
+    <title>The Autograder</title>
+
+    {% load staticfiles %}
+
+    <!-- JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+    <!-- JQuery Cookie -->
+    <script src="{% static 'autograder/jquery-cookie/jquery.cookie.js' %}"></script>
+
+    <!-- Google Authentication -->
+    <meta name="google-signin-scope" content="profile email">
+    <meta name="google-signin-client_id" content="358440655746-bl5ig1es62n6n4oho525l4f58fgl367c.apps.googleusercontent.com">
+
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+
+    <!-- csrf protection -->
+    <script id='csrf-setup' type="text/javascript">
+        // source: https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/#ajax
+        var csrftoken = $.cookie('csrftoken');
+        function csrfSafeMethod(method)
+        {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
+    </script>
+
+    <!-- Boostrap -->
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" async defer></script>
+
+    <!-- /Bootstrap -->
+
     <!-- File Upload -->
 
     <!-- Generic page styles -->
@@ -44,371 +96,263 @@
 
     <!-- /File Upload -->
 
-    <script type="text/javascript">
-    $(document).ready(function() {
-        view_landing_page();
+    <script src='https://www.jsviews.com/download/jsrender.min.js'></script>
+    <script src="https://www.jsviews.com/download/sample-tag-controls/range/range.js"></script>
+
+    <script type="text/javascript" id='page-navigation'>
+
+    'use strict';
+
+    $(document).ready(function () {
+        $(window).on('popstate', function (e) {
+            load_view();
+        });
     });
-    </script>
 
-{% endblock head_content %}
-
-{% block body %}
-
-<h1>The Autograder</h1>
-
-<script type="text/javascript">
-    function thingy()
+    function load_view()
     {
-        console.log('thingy');
-        $.get('{% url "list-semesters" %}', function(data, status) {
-            console.log('post status: ' + status + ' ' + data);
+        console.log('load_view');
+        // var pageName = getPageName();
+        var current_path = window.location.pathname;
+        // Offset the split and substring indices by one to ignore the leading
+        // slash.
+        var view_name = current_path.split('/')[1];
+        var resource_url = current_path.substring(view_name.length + 1);
+
+        if (view_name === '')
+        {
+            load_landing_page();
+        }
+        else if (view_name === 'semester')
+        {
+            load_semester_view(resource_url);
+        }
+        else if (view_name === 'project')
+        {
+            load_project_view(resource_url);
+        }
+        else
+        {
+            history.replaceState(null, '', '/');
+            load_landing_page();
+        }
+    }
+
+    function load_landing_page()
+    {
+        $.when(
+            $.get({% url 'list-courses' %}), $.get({% url 'list-semesters' %})
+        ).done(function(courses_result, semesters_result) {
+            // console.log(courses_result[0]);
+            // console.log(semesters_result[0]);
+            var data = {
+                'courses': courses_result[0],
+                'semesters': semesters_result[0]
+            };
+            // console.log(data);
+            render_and_fix_links('landing-page', data);
+            // console.log($('#main-area'));
+        });
+    }
+
+    function load_semester_view(semester_url)
+    {
+        // console.log('load_semester_view');
+        // console.log(semester_url);
+        $.get(semester_url, function(data, status) {
+            console.log(data);
+            // console.log(status);
+            render_and_fix_links('view-semester', data);
+        });
+    }
+
+    function load_project_view(project_url)
+    {
+        console.log('load_project_view');
+        $.get(project_url, function(project_data, status) {
+            var auth2 = gapi.auth2.getAuthInstance();
+            var profile = auth2.currentUser.get().getBasicProfile();
+            var url = "{% url 'submission-group-no-id' %}" + '?' + $.param(
+                {'project_id': project_data.data.id, 'username': profile.getEmail()});
+            console.log(url);
+            $.ajax(url,
+            {
+                statusCode: {
+                    404: function() {
+                        load_register_group_view(project_data);
+                    }
+                }
+            });
+
+            //         url).done(function(group_data, status) {
+            //     console.log(group_data);
+            //     render_and_fix_links('#view-project', project_data);
+            //     console.log($('#fileupload'));
+            //     $('#fileupload').fileupload({
+            //         'url': '/blah',
+            //         'singleFileUploads': false
+            //     });
+            // }
+            // ).fail(function(group_data, status, xhr) {
+            //     console.log(status);
+            //     if (status !== 'NOT FOUND')
+            //     {
+            //         console.log('errorrrr!');
+            //         return;
+            //     }
+            //     load_register_group_view(project_data);
+            // });
+
+        });
+    }
+
+    function load_register_group_view(project_data)
+    {
+        console.log(project_data);
+        var promise = render_and_fix_links(
+            'register-group-view',
+            {'max_group_size': project_data.data.attributes.max_group_size});
+
+        $.when(promise).done(function() {
+            $('#register-group-button').click(function (event) {
+                // event.preventDefault();
+                console.log('hello');
+                var members = [];
+                $('#register-group-form :text').each(function(i, field) {
+                    if (field.name !== 'members')
+                    {
+                        return;
+                    }
+                    var email = $.trim(field.value);
+                    if (email.split('@')[1] !== 'umich.edu')
+                    {
+                        $(this).after('<span>wow u lozer</span>');
+                    }
+                });
+            });
+            $('#work-alone-box').click(function() {
+                if ($(this).is(':checked'))
+                {
+                    $('#partner-list').hide();
+                    return;
+                }
+                $('#partner-list').show();
+            });
+        });
+    }
+
+    function render_and_fix_links(template_name, data)
+    {
+        var deferred = $.Deferred();
+        $.when(lazy_get_template(template_name)).done(function() {
+            var tmpl = $.templates[template_name];
+            // console.log(tmpl);
+            // console.log(tmpl.render(data));
+            var rendered = tmpl.render(data);
+            $('#main-area').html(rendered);
+
+            // Adapted from: http://www.codemag.com/article/1301091
+            // Date accessed: 2015-08-20
+            $("a[data-role='ajax']").click(function (e) {
+                e.preventDefault();
+                var pageName = $(this).attr("href");
+                window.history.pushState(null, "", pageName);
+                load_view();
+            });
+            deferred.resolve();
+        });
+        return deferred.promise();
+    }
+
+    // Adapted from: http://www.jsviews.com/#samples/jsr/composition/remote-tmpl
+    function lazy_get_template(name)
+    {
+        // If the named remote template is not yet loaded and compiled
+        // as a named template, fetch it. In either case, return a promise
+        // (already resolved, if the template has already been loaded)
+        var deferred = $.Deferred();
+        if ($.templates[name])
+        {
+            deferred.resolve();
+        }
+        else
+        {
+            var url = '/static/autograder/jsrender-templates/' + name + '.tmpl'
+            $.get(url).done(function(data, status) {
+                // console.log(data);
+                $.templates(name, data);
+                deferred.resolve();
+            });
+        }
+        return deferred.promise();
+    }
+    </script>
+</head>
+<body>
+
+<div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+<script>
+    function onSignIn(googleUser)
+    {
+        // Useful data for your client-side scripts:
+        var profile = googleUser.getBasicProfile();
+        // console.log("ID: " + profile.getId()); // Don't send this directly to your server!
+        // console.log("Name: " + profile.getName());
+        // console.log("Image URL: " + profile.getImageUrl());
+        // console.log("Email: " + profile.getEmail());
+
+        if (profile.getEmail().split('@')[1] != 'umich.edu')
+        {
+            alert('Please sign in with your "umich.edu" email address');
+            gapi.auth2.getAuthInstance().signOut();
+            return;
+        }
+
+        // The ID token you need to pass to your backend:
+        var id_token = googleUser.getAuthResponse().id_token;
+        // console.log("ID Token: " + id_token);
+
+        login_to_server(id_token);
+    }
+
+    function login_to_server(id_token)
+    {
+        $.post(
+            "{% url 'login' %}", {'idtoken': id_token}
+        ).done(
+            load_view
+        ).fail(
+            function() {
+                console.log('login failure: ' + status + ' ' + data);
+                signOut();
+            }
+        );
+    }
+
+</script>
+
+<script>
+    function signOut()
+    {
+        $.post("{% url 'logout' %}", function() {
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut().then(function () {
+                console.log('User signed out.');
+                history.pushState(null, "", '/');
+                $('#main-area').html('');
+            });
         });
     }
 </script>
-<button onclick="thingy();">clicky</button>
+<button onclick='signOut();'>Sign out</button>
+
+<h1>The Autograder</h1>
 
 <div id='main-area' class='container'>
 
 
 </div>
 
-<script src='https://www.jsviews.com/download/jsrender.min.js'></script>
-
-<script type="text/javascript">
-
-'use strict';
-
-function view_landing_page()
-{
-    var data = {
-        'courses': load_courses(),
-        'semesters': load_semesters()
-    };
-    console.log(data);
-    var tmpl = $.templates('#landing-page');
-    $('#main-area').html(tmpl.render(data));
-}
-
-function view_semester(url)
-{
-    var data = get_semester(url);
-    console.log(data);
-    var tmpl = $.templates('#view-semester');
-    $('#main-area').html(tmpl.render(data));
-}
-
-function view_project(url)
-{
-    var data = get_project(url);
-    console.log(data);
-    var tmpl = $.templates('#view-project');
-    $('#main-area').html(tmpl.render(data));
-
-    console.log($('#fileupload'));
-    $('#fileupload').fileupload({
-        'url': '/blah',
-        'singleFileUploads': false
-    });
-}
-
-function load_courses()
-{
-    return [{
-        'type': 'course',
-        'id': 42,
-        'attributes': {
-            'name': 'eecs280',
-            'course_admin_names': ['jameslp', 'awdeorio']
-        },
-        'links': {
-            'self': 'linky'
-        }
-    }]
-} // load_courses
-
-function load_semesters()
-{
-    return [{
-        'type': 'semester',
-        'id': 14,
-        'attributes': {
-            'name': 'fall15',
-            'semester_staff_names': ['jameslp', 'jsatonik'],
-            'enrolled_student_names': ['baburgess', 'tsafavi']
-        },
-        'links': {
-            'self': 'linky'
-        },
-        'meta': {
-            'is_staff': true,
-            'course_admin_names': ["jameslp", "awdeorio"]
-        }
-    },
-    {
-        'type': 'semester',
-        'id': 14,
-        'attributes': {
-            'name': 'sp13'
-        },
-        'links': {
-            'self': 'linky'
-        },
-        'meta': {
-            'is_staff': false
-        }
-    }]
-} // load_semesters
-
-function get_semester(url)
-{
-    return {
-        'data': {
-            'type': 'semester',
-            'id': 65,
-            'attributes': {
-                'name': 'fall15',
-                'semester_staff_names': ['jameslp', 'jsatonik'],
-                'enrolled_student_names': ['baburgess', 'tsafavi']
-            },
-            'meta': {
-                'is_staff': true,
-                'course_admin_names': ["jameslp", "awdeorio"]
-            }
-        },
-        'included': [
-            {
-                'type': 'project',
-                'id': 73,
-                'attributes': {
-                    'name': 'Project 1'
-                },
-                'links': {
-                    'self': 'linky'
-                }
-            },
-            {
-                'type': 'project',
-                'id': 72,
-                'attributes': {
-                    'name': 'Project 2'
-                },
-                'links': {
-                    'self': 'linky'
-                }
-            }
-        ]
-    }
-} // get_semester
-
-function get_project(url)
-{
-    return {
-        'data': {
-            'type': 'project',
-            'id': 85,
-            'links': {
-                'self': 'linky'
-            },
-            'attributes': {
-                'name': 'Project 1',
-                'closing_time': 'August 24, 2015, 11:55 PM',
-                'disallow_student_submissions': false,
-                'required_student_files': ['spam.cpp', 'eggs.cpp']
-            }
-        }
-    }
-} // get_project
-
-</script>
-
-{% verbatim %}
-
-<script id='landing-page' type="text/x-jsrender">
-
-<div id='courses' class='container'>
-    {{if courses && courses.length}}
-        <div>Courses: </div>
-        <ul>
-            {{for courses}}
-                <li>
-                <div>{{>attributes.name}}</div>
-                <div>Admins: {{>attributes.course_admin_names}}</div>
-                </li>
-            {{/for}}
-        </ul>
-    {{/if}}
-</div>
-
-<div id='semesters' class='container'>
-    {{if semesters && semesters.length}}
-        <div>Semesters: </div>
-        <ul>
-            {{for semesters}}
-                <li>
-                    <div>
-                        <a onclick="view_semester('{{:links.self}}');">
-                            {{>attributes.name}} {{if meta.is_staff}}(staff){{/if}}
-                        </a>
-                    </div>
-                </li>
-            {{/for}}
-        </ul>
-    {{/if}}
-</div>
-
-</script> <!-- landing page -->
-
-
-<script id='view-semester' type="text/x-jsrender">
-
-<div id='semester'>
-    <div>{{>data.attributes.name}}</div>
-    <ul>
-        {{for included}}
-            <ul>
-                <a onclick="view_project('{{:links.self}}');">
-                    {{>attributes.name}}
-                </a>
-            </ul>
-        {{/for}}
-    </ul>
-</div>
-
-</script>
-
-
-<script id='view-project' type="text/x-jsrender">
-
-<div id='project'>
-    <div>{{>data.attributes.name}}</div>
-
-    <div class="container" id='submit-files'>
-        <h2 class="lead">Submit Files</h2>
-        <!-- The file upload form used as target for the file upload widget -->
-        <form id="fileupload" method="POST" enctype="multipart/form-data">
-            <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
-            <div class="row fileupload-buttonbar">
-                <div class="col-lg-7">
-                    <!-- The fileinput-button span is used to style the file input field as button -->
-                    <span class="btn btn-success fileinput-button">
-                        <i class="glyphicon glyphicon-plus"></i>
-                        <span>Add files...</span>
-                        <input type="file" name="files" multiple>
-                    </span>
-                    <button type="submit" class="btn btn-primary start">
-                        <i class="glyphicon glyphicon-upload"></i>
-                        <span>SUBMIT</span>
-                    </button>
-                    <button type="reset" class="btn btn-warning cancel">
-                        <i class="glyphicon glyphicon-ban-circle"></i>
-                        <span>Cancel</span>
-                    </button>
-                    <!-- <button type="button" class="btn btn-danger delete">
-                        <i class="glyphicon glyphicon-trash"></i>
-                        <span>Delete</span>
-                    </button> -->
-                    <input type="checkbox" class="toggle">
-                    <!-- The global file processing state -->
-                    <span class="fileupload-process"></span>
-                </div>
-                <!-- The global progress state -->
-                <div class="col-lg-5 fileupload-progress fade">
-                    <!-- The global progress bar -->
-                    <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-                        <div class="progress-bar progress-bar-success" style="width:0%;"></div>
-                    </div>
-                    <!-- The extended global progress state -->
-                    <div class="progress-extended">&nbsp;</div>
-                </div>
-            </div>
-            <!-- The table listing the files available for upload/download -->
-            <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
-        </form>
-        <br>
-    </div>
-</div>
-
-</script>
-
-<script id="template-upload" type="text/x-tmpl">
-{% for (var i=0, file; file=o.files[i]; i++) { %}
-    <tr class="template-upload fade">
-        <td>
-            <span class="preview"></span>
-        </td>
-        <td>
-            <p class="name">{%=file.name%}</p>
-            <strong class="error text-danger"></strong>
-        </td>
-        <td>
-            <p class="size">Processing...</p>
-            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar progress-bar-success" style="width:0%;"></div></div>
-        </td>
-        <td>
-            {% if (!i && !o.options.autoUpload) { %}
-                <button class="btn btn-primary start" disabled>
-                    <i class="glyphicon glyphicon-upload"></i>
-                    <span>Start</span>
-                </button>
-            {% } %}
-            {% if (!i) { %}
-                <button class="btn btn-warning cancel">
-                    <i class="glyphicon glyphicon-ban-circle"></i>
-                    <span>Cancel</span>
-                </button>
-            {% } %}
-        </td>
-    </tr>
-{% } %}
-</script>
-<!-- The template to display files available for download -->
-<script id="template-download" type="text/x-tmpl">
-{% for (var i=0, file; file=o.files[i]; i++) { %}
-    <tr class="template-download fade">
-        <td>
-            <span class="preview">
-                {% if (file.thumbnailUrl) { %}
-                    <a href="{%=file.url%}" title="{%=file.name%}" download="{%=file.name%}" data-gallery><img src="{%=file.thumbnailUrl%}"></a>
-                {% } %}
-            </span>
-        </td>
-        <td>
-            <p class="name">
-                {% if (file.url) { %}
-                    <!-- This version triggers a file download -->
-                    <!-- <a href="{%=file.url%}" title="{%=file.name%}" download="{%=file.name%}" {%=file.thumbnailUrl?'data-gallery':''%}>{%=file.name%}</a> -->
-                    <!-- This version opens the file in a new tab -->
-                    <a href="{%=file.url%}" title="{%=file.name%}" target='_blank' {%=file.thumbnailUrl?'data-gallery':''%}>{%=file.name%}</a>
-                {% } else { %}
-                    <span>{%=file.name%}</span>
-                {% } %}
-            </p>
-            {% if (file.error) { %}
-                <div><span class="label label-danger">Error</span> {%=file.error%}</div>
-            {% } %}
-        </td>
-        <td>
-            <span class="size">{%=o.formatFileSize(file.size)%}</span>
-        </td>
-        <td>
-            {% if (file.deleteUrl) { %}
-                <button class="btn btn-danger delete" onclick='$.post("{%=file.deleteUrl%}");'>
-                    <i class="glyphicon glyphicon-trash"></i>
-                    <span>Delete</span>
-                </button>
-                <input type="checkbox" name="delete" value="1" class="toggle">
-            {% } else { %}
-                <button class="btn btn-warning cancel">
-                    <i class="glyphicon glyphicon-ban-circle"></i>
-                    <span>Cancel</span>
-                </button>
-            {% } %}
-        </td>
-    </tr>
-{% } %}
-</script>
-
-{% endverbatim %}
-
-{% endblock body %}
+</body>
+</html>
 

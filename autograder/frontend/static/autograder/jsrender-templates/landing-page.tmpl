@@ -1,0 +1,32 @@
+<div id='courses' class='container'>
+    {{if courses.data && courses.data.length}}
+        <div>Courses: </div>
+        <ul>
+            {{for courses.data}}
+                <li>
+                <div>{{>attributes.name}}</div>
+                <div>Admins: {{>attributes.course_admin_names}}</div>
+                </li>
+            {{/for}}
+        </ul>
+    {{/if}}
+</div>
+
+<div id='semesters' class='container'>
+    {{if semesters.data && semesters.data.length}}
+        <div>Semesters: </div>
+        <ul>
+            {{for semesters.data}}
+                <li>
+                    <div>
+                        <a href="/semester{{:links.self}}" data-role='ajax'>
+                            {{>relationships.course.data.attributes.name}} - {{>attributes.name}} {{if meta.is_staff}}(staff){{/if}}
+                        </a>
+                    </div>
+                </li>
+            {{/for}}
+        </ul>
+    {{else}}
+        <div>You are not enrolled in any courses</div>
+    {{/if}}
+</div>

@@ -20,9 +20,5 @@ app.config_from_object('django.conf:settings')
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 app.conf.CELERY_ACCEPT_CONTENT = ['json']
-
-
-@app.task(bind=True)
-def debug_task(self):
-    print('Courses:')
-    # print(Course.objects.all())
+app.conf.CELERY_TASK_SERIALIZER = 'json'
+app.conf.CELERY_RESULT_SERIALIZER = 'json'

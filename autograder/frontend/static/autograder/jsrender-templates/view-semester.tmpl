@@ -1,0 +1,12 @@
+<div id='semester'>
+    <h2>{{>data.relationships.course.data.attributes.name}} - {{>data.attributes.name}}</h2>
+    <ul>
+        {{for included}}
+            <ul>
+                <a href="/project{{:links.self}}" data-role='ajax'>
+                    {{>attributes.name}}
+                </a>
+            </ul>
+        {{/for}}
+    </ul>
+</div>

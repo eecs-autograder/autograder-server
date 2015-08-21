@@ -75,5 +75,16 @@
 </script>
 <script src="https://apis.google.com/js/platform.js" async defer></script>
 
+<script type="text/javascript">
+    function tasky()
+    {
+        console.log('tasky');
+        $.get('{% url "tasky" %}', function(data, status) {
+            console.log('tasky status: ' + status + ' ' + data);
+        });
+    }
+</script>
+<button onclick='tasky();'>tasky</button>
+
 </body>
 </html>
