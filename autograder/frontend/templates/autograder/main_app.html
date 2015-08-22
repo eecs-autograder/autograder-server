@@ -26,7 +26,7 @@
     <!-- csrf protection -->
     <script id='csrf-setup' type="text/javascript">
         // source: https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/#ajax
-        var csrftoken = $.cookie('csrftoken');
+        // var csrftoken = $.cookie('csrftoken');
         function csrfSafeMethod(method)
         {
             // these HTTP methods do not require CSRF protection
@@ -35,7 +35,7 @@
         $.ajaxSetup({
             beforeSend: function(xhr, settings) {
                 if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    xhr.setRequestHeader("X-CSRFToken", $.cookie('csrftoken'));
                 }
             }
         });
@@ -182,53 +182,73 @@
                         load_register_group_view(project_data);
                     }
                 }
+            }).done(function(group_data, status) {
+                console.log(group_data);
+                render_and_fix_links('view-project', project_data);
+                console.log($('#fileupload'));
+                $('#fileupload').fileupload({
+                    'url': '/blah',
+                    'singleFileUploads': false
+                });
             });
-
-            //         url).done(function(group_data, status) {
-            //     console.log(group_data);
-            //     render_and_fix_links('#view-project', project_data);
-            //     console.log($('#fileupload'));
-            //     $('#fileupload').fileupload({
-            //         'url': '/blah',
-            //         'singleFileUploads': false
-            //     });
-            // }
-            // ).fail(function(group_data, status, xhr) {
-            //     console.log(status);
-            //     if (status !== 'NOT FOUND')
-            //     {
-            //         console.log('errorrrr!');
-            //         return;
-            //     }
-            //     load_register_group_view(project_data);
-            // });
-
         });
     }
 
     function load_register_group_view(project_data)
     {
-        console.log(project_data);
+        var max_size = project_data.data.attributes.max_group_size
+        var min_size = project_data.data.attributes.min_group_size;
+
         var promise = render_and_fix_links(
-            'register-group-view',
-            {'max_group_size': project_data.data.attributes.max_group_size});
+            'register-group-view', {'max_group_size': max_size});
 
         $.when(promise).done(function() {
             $('#register-group-button').click(function (event) {
                 // event.preventDefault();
-                console.log('hello');
-                var members = [];
+                console.log('bleeeeee');
+                $(".error").remove();
+
+                var members = [get_user_email()];
+                if ($('#work-alone-box').is(':checked'))
+                {
+                    submit_group_request(members, project_data);
+                    return;
+                }
+
                 $('#register-group-form :text').each(function(i, field) {
                     if (field.name !== 'members')
                     {
                         return;
                     }
                     var email = $.trim(field.value);
+                    if (email === '')
+                    {
+                        return;
+                    }
+
                     if (email.split('@')[1] !== 'umich.edu')
                     {
-                        $(this).after('<span>wow u lozer</span>');
+                        $(this).after('<span class="error">Please enter a "umich.edu" email address</span>');
+                        return;
                     }
+                    members.push(field.value);
                 });
+                if (members.length > max_size)
+                {
+                    $('#partner-list').append(
+                        '<div>Please enter at most ' + String(max_size - 1) +
+                        ' email(s)</div>');
+                    return;
+                }
+                if (members.length < min_size || members.length === 0)
+                {
+                    $('#partner-list').append(
+                        '<div class="error">Please enter at least ' +
+                        String(min_size - 1) + ' email(s)</div>');
+                    return;
+                }
+
+                submit_group_request(members, project_data);
             });
             $('#work-alone-box').click(function() {
                 if ($(this).is(':checked'))
@@ -239,6 +259,53 @@
                 $('#partner-list').show();
             });
         });
+    }
+
+    function submit_group_request(members, project_data)
+    {
+        // console.log(members);
+        // console.log(project_data);
+        var request_data = {
+            'data': {
+                'type': 'submission_group',
+                'attributes': {
+                    'members': members,
+                },
+                'relationships': {
+                    'project': {
+                        'data': {
+                            'type': 'project',
+                            'id': project_data.data.id
+                        }
+                    }
+                }
+            }
+        }
+
+        $.postJSON(
+            "{% url 'submission-group-no-id' %}", request_data
+        ).done(function(data, status) {
+            render_and_fix_links('view-project', project_data);
+        }).fail(function(data, status) {
+            // console.log(data);
+            var response_json = data.responseJSON;
+            // console.log(data.responseJSON);
+            // console.log(response_json.errors.meta);
+            var error_html = '<div class="error"><div>Errors</div><ul>'
+            $.each(response_json.errors.meta.members, function(i, message) {
+                error_html += $('<li/>').text(message).html();
+            });
+            error_html += '</ul></div></div>';
+            // console.log(error_html);
+            $('#partner-list').append(error_html);
+        });
+    }
+
+    function get_user_email()
+    {
+        var auth2 = gapi.auth2.getAuthInstance();
+        var profile = auth2.currentUser.get().getBasicProfile();
+        return profile.getEmail();
     }
 
     function render_and_fix_links(template_name, data)
@@ -286,6 +353,18 @@
         }
         return deferred.promise();
     }
+
+    // Adapted from: http://benjamin-schweizer.de/jquerypostjson.html
+    $.postJSON = function(url, data, callback) {
+        return jQuery.ajax({
+            'type': 'POST',
+            'url': url,
+            'contentType': 'application/json',
+            'data': JSON.stringify(data),
+            'dataType': 'json',
+            'success': callback
+        });
+    };
     </script>
 </head>
 <body>

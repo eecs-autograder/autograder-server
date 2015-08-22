@@ -111,6 +111,15 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual([], list(SubmissionGroup.objects.all()))
 
+        self.project.min_group_size = 2
+        self.project.validate_and_save()
+        with self.assertRaises(ValidationError):
+            SubmissionGroup.objects.validate_and_create(
+                members=_names(self.enrolled_group)[0:1],
+                project=self.project)
+
+        self.assertEqual([], list(SubmissionGroup.objects.all()))
+
     def test_exception_on_too_many_group_members(self):
         self.project.save()
 

@@ -120,9 +120,17 @@ class SubmissionGroup(ModelValidatableOnSave):
             return
 
         num_members = len(self._members)
+        if num_members < self.project.min_group_size:
+            raise ValidationError({
+                'members': (
+                    "Tried to add {} members, but the minimum "
+                    "for project '{}' is {}".format(
+                        num_members, self.project.name,
+                        self.project.min_group_size))})
+
         if num_members < 1:
             raise ValidationError({
-                'members': "SubmissionGroups must have at least one member"})
+                'members': "Groups must have at least one member"})
 
         if num_members > self.project.max_group_size:
             raise ValidationError({

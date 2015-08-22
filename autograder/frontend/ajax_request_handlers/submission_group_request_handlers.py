@@ -17,6 +17,7 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
 
     def post(self, request):
         print('create submission group')
+        print(request.body)
         request_content = json.loads(request.body.decode('utf-8'))
         project_id = (
             request_content['data']['relationships']['project']['data']['id'])
@@ -54,14 +55,12 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
         can be looked up with the following query string
         parameters: project_id, username
         """
-        print('looking up submission group')
         try:
             if submission_group_id is None:
                 group = self._get_by_query_params(request)
             else:
                 group = SubmissionGroup.objects.get(pk=submission_group_id)
         except ObjectDoesNotExist:
-            print('not found')
             return HttpResponseNotFound()
         except KeyError:
             return HttpResponse(status=400)
@@ -78,7 +77,6 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
         project = Project.objects.get(pk=project_id)
         username = request.GET['username']
 
-        print(project)
         group = SubmissionGroup.get_project_group_for_user(
             username, project)
         return group
