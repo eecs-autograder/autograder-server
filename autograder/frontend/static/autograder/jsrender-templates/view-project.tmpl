@@ -1,5 +1,5 @@
 <div id='project'>
-    <h2>{{>data.attributes.name}}</h2>
+    <h2>{{>project.data.attributes.name}}</h2>
 
     <div class="container" id='submit-files'>
         <h2 class="lead">Submit Files</h2>
@@ -7,7 +7,7 @@
         <form id="fileupload" method="POST" enctype="multipart/form-data">
             <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
 
-            <input type='hidden' name='submission_group_id' value='{{:submission_group_id}}'
+            <input type='hidden' name='submission_group_id' value='{{:submission_group_id}}'>
             <div class="row fileupload-buttonbar">
                 <div class="col-lg-7">
                     <!-- The fileinput-button span is used to style the file input field as button -->
@@ -126,4 +126,3 @@
     </tr>
 {% } %}
 </script>
-

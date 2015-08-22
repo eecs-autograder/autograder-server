@@ -1,5 +1,7 @@
 import os
+import shutil
 import re
+import datetime
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -245,9 +247,10 @@ def get_submission_relative_dir(submission):
     Same as get_submission_dir() but returns a path that is relative to
     MEDIA_ROOT.
     """
+    timestamp_str = submission.timestamp.strftime('%Y-%m-%d %H.%M.%S')
     return os.path.join(
         get_student_submission_group_relative_dir(submission.submission_group),
-        str(submission.timestamp))
+        timestamp_str)
 
 
 # -----------------------------------------------------------------------------
@@ -267,3 +270,36 @@ class ChangeDirectory(object):
 
     def __exit__(self, *args):
         os.chdir(self._original_dir)
+
+
+class TemporaryFile(object):
+    """
+    Enables creating and destroying a temporary file using "with" statements.
+    """
+    def __init__(self, filename, file_contents):
+        self.filename = filename
+        self.file_contents = file_contents
+
+    def __enter__(self):
+        with open(self.filename, 'w') as f:
+            f.write(self.file_contents)
+
+    def __exit__(self, *args):
+        os.remove(self.filename)
+
+
+class TemporaryDirectory(object):
+    """
+    Enables creating and destroying a temporary directory using
+    "with" statements.
+    Note that when the directory is destroyed, any files inside it
+    will be destroyed as well.
+    """
+    def __init__(self, dirname):
+        self.dirname = dirname
+
+    def __enter__(self):
+        os.mkdir(self.dirname)
+
+    def __exit__(self, *args):
+        shutil.rmtree(self.dirname)

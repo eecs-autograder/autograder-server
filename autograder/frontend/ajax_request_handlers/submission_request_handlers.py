@@ -14,6 +14,8 @@ from autograder.frontend.json_api_serializers import (
 from autograder.models import SubmissionGroup, Project, Submission
 from autograder.models.fields import FeedbackConfiguration
 
+from autograder.tasks import grade_submission
+
 
 class SubmissionRequestHandler(LoginRequiredView):
     _EDITABLE_FIELDS = [
@@ -49,6 +51,8 @@ class SubmissionRequestHandler(LoginRequiredView):
             test_case_feedback_config_override=feedback_override)
 
         # TODO: add to task queue
+        if submission.status != Submission.GradingStatus.invalid:
+            grade_submission.delay(submission.pk)
 
         response_content = {
             'data': submission_to_json(submission)

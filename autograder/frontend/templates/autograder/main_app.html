@@ -184,14 +184,46 @@
                 }
             }).done(function(group_data, status) {
                 console.log(group_data);
-                render_and_fix_links('view-project', project_data);
-                console.log($('#fileupload'));
-                $('#fileupload').fileupload({
-                    'url': '/blah',
-                    'singleFileUploads': false
+                var render_data = {
+                    'project': project_data,
+                    'submission_group_id': group_data.data.id
+                };
+                $.when(
+                    render_and_fix_links('view-project', render_data)
+                ).done(function() {
+                    $('#fileupload').fileupload({
+                        'url': "{% url 'add-submission' %}",
+                        'singleFileUploads': false
+                    });
                 });
+                // console.log('woooo');
+                // console.log($('#fileupload'));
+                // $('#fileupload').fileupload({
+                //     'url': '/blah',
+                //     'singleFileUploads': false
+                // });
+                // $('#file_input').change(function() {
+                //     console.log($(this).files);
+                // });
+
+                // var inputElement = document.getElementById("file_input");
+                // $('#file_input').on("change", handleFiles);
+                // function handleFiles() {
+                //     console.log('askd;ljfdsf');
+                //   var fileList = this.files; /* now you can work with the file list */
+                // }
+                // $('#file_select').click(function() {
+                //     console.log('clicky');
+                // });
             });
         });
+    }
+
+    function handle_file_input_change(files)
+    {
+        console.log("don't gooooo changin'");
+        console.log(files);
+        console.log($('#file_input')[0].files);
     }
 
     function load_register_group_view(project_data)
@@ -201,6 +233,8 @@
 
         var promise = render_and_fix_links(
             'register-group-view', {'max_group_size': max_size});
+
+        var deferred = $.Deferred();
 
         $.when(promise).done(function() {
             $('#register-group-button').click(function (event) {
@@ -258,7 +292,9 @@
                 }
                 $('#partner-list').show();
             });
+            deferred.resolve();
         });
+        return deferred.promise();
     }
 
     function submit_group_request(members, project_data)

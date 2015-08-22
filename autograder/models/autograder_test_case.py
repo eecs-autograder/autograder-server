@@ -78,7 +78,9 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             Default value: empty string
 
         test_resource_files -- A list of files that need to be
-            in the same directory as the program being tested.
+            in the same directory as the program being tested. This
+            includes any files that need to be compiled together,
+            files that the program will read from/write to, etc.
             This list is allowed to be empty.
             This value may NOT be None.
             Each of these files must have been uploaded to the Project

@@ -1,6 +1,7 @@
 import os
 import re
 import collections
+# import datetime
 
 from django.test import TestCase
 from django.conf import settings
@@ -38,6 +39,27 @@ class TestFileSystemNavigationUtils(TemporaryFilesystemTestCase):
                 os.getcwd())
 
         self.assertEqual(os.getcwd(), settings.MEDIA_ROOT)
+
+    def test_temporary_file(self):
+        filename = 'spam_file'
+        contents = "alsdkjflasjdfla;sdjf"
+        self.assertFalse(os.path.exists(filename))
+
+        with ut.TemporaryFile(filename, contents):
+            self.assertTrue(os.path.isfile(filename))
+            with open(filename) as f:
+                self.assertEqual(f.read(), contents)
+
+        self.assertFalse(os.path.exists(filename))
+
+    def test_temporary_directory(self):
+        dirname = 'eggs_dir'
+        self.assertFalse(os.path.exists(dirname))
+
+        with ut.TemporaryDirectory(dirname):
+            self.assertTrue(os.path.isdir(dirname))
+
+        self.assertFalse(os.path.exists(dirname))
 
 
 # -----------------------------------------------------------------------------
@@ -204,7 +226,7 @@ class FileSystemUtilTestCase(TestCase):
             self.SEMESTER_NAME, self.PROJECT_NAME,
             gc.PROJECT_SUBMISSIONS_DIRNAME,
             self.group_dir_basename,
-            str(timestamp))
+            timestamp.strftime('%Y-%m-%d %H.%M.%S'))
 
         actual_relative = ut.get_submission_relative_dir(submission)
         self.assertEqual(expected_relative, actual_relative)

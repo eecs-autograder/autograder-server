@@ -1,0 +1,19 @@
+# RabbitMQ
+sudo rabbitmq-server -detached
+sudo rabbitmqctl stop
+
+# Celery
+celery -A autograder worker -l info
+
+# Postgres
+postgres -D /usr/local/var/postgres
+
+# uWSGI
+uwsgi --ini autograder_uwsgi.ini
+
+# nginx
+./manage.py collectstatic  # gathers static files
+nginx
+nginx -s stop
+nginx -s restart
+
