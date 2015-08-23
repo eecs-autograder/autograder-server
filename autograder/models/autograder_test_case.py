@@ -542,7 +542,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
     # -------------------------------------------------------------------------
 
-    def run(self):
+    def run(self, submission):
         result = AutograderTestCaseResultBase(test_case=self)
 
         compilation_command = (
@@ -551,6 +551,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         )
 
         runner = _SubprocessRunner(compilation_command)
+        result.submission = submission
         result.compilation_standard_output = runner.stdout
         result.compilation_standard_error_output = runner.stderr
         result.compilation_return_code = runner.return_code

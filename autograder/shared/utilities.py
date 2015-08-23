@@ -17,6 +17,11 @@ def count_if(iterable, unary_predicate):
     return sum(1 for item in iterable if unary_predicate(item))
 
 
+# PRETTY_TIMESTAMP_FORMAT_STR = '%B %d, %Y %I:%M:%S %p'
+
+# FILESYSTEM_TIMESTAMP_FORMAT_STR = '%Y-%m-%d %H.%M.%S'
+
+
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -247,10 +252,9 @@ def get_submission_relative_dir(submission):
     Same as get_submission_dir() but returns a path that is relative to
     MEDIA_ROOT.
     """
-    timestamp_str = submission.timestamp.strftime('%Y-%m-%d %H.%M.%S')
     return os.path.join(
         get_student_submission_group_relative_dir(submission.submission_group),
-        timestamp_str)
+        str(submission.timestamp))
 
 
 # -----------------------------------------------------------------------------

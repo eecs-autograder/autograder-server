@@ -61,6 +61,5 @@ def _prepare_and_run_tests(submission):
             with ut.ChangeDirectory(temp_dirname):
                 for filename in os.listdir():
                     os.chmod(filename, 0o666)
-                result = test_case.run()
-                print(result)
+                result = test_case.run(submission)
                 result.save()

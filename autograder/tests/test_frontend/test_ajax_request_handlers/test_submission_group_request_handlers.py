@@ -75,7 +75,7 @@ class CreateSubmissionGroupRequestTestCase(_SetUpBase):
         loaded = SubmissionGroup.objects.get(pk=id_)
         expected = {
             'data': submission_group_to_json(loaded)
-            # TODO: include submissions
+            # TODO: include submissions?
         }
         self.assertJSONObjsEqual(expected, response_content)
 
@@ -188,7 +188,7 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
             'included': sorted([
                 submission_to_json(submission, all_fields=False)
                 for submission in self.submissions
-            ], key=lambda obj: obj['attributes']['timestamp'])
+            ], key=lambda obj: obj['attributes']['timestamp'], reverse=True)
         }
 
         self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
@@ -205,7 +205,7 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
             'included': sorted([
                 submission_to_json(submission, all_fields=False)
                 for submission in self.submissions
-            ], key=lambda obj: obj['attributes']['timestamp'])
+            ], key=lambda obj: obj['attributes']['timestamp'], reverse=True)
         }
 
         for user in (self.admin, self.staff):

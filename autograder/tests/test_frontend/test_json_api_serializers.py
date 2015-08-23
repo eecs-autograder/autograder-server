@@ -483,7 +483,8 @@ class SubmissionSerializerTestCase(SerializerTestCase):
                 'timestamp': self.submission.timestamp,
                 'test_case_feedback_config_override': None,
                 'status': self.submission.status,
-                'invalid_reason_or_error': self.submission.invalid_reason_or_error
+                'invalid_reason_or_error': (
+                    self.submission.invalid_reason_or_error)
             },
             'relationships': {
                 'submission_group': {

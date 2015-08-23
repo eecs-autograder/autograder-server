@@ -226,7 +226,7 @@ class FileSystemUtilTestCase(TestCase):
             self.SEMESTER_NAME, self.PROJECT_NAME,
             gc.PROJECT_SUBMISSIONS_DIRNAME,
             self.group_dir_basename,
-            timestamp.strftime('%Y-%m-%d %H.%M.%S'))
+            timestamp)
 
         actual_relative = ut.get_submission_relative_dir(submission)
         self.assertEqual(expected_relative, actual_relative)

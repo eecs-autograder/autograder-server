@@ -107,6 +107,12 @@
         $(window).on('popstate', function (e) {
             load_view();
         });
+
+        $.views.converters({
+            to_local_date: function(date_str) {
+                return new Date(date_str).toLocaleString();
+            }
+        });
     });
 
     function load_view()
@@ -179,42 +185,33 @@
             {
                 statusCode: {
                     404: function() {
+                        if (project_data.data.attributes.max_group_size === 1)
+                        {
+                            submit_group_request(
+                                [get_user_email()], project_data);
+                            return;
+                        }
                         load_register_group_view(project_data);
                     }
                 }
             }).done(function(group_data, status) {
                 console.log(group_data);
-                var render_data = {
+                var project_render_data = {
                     'project': project_data,
                     'submission_group_id': group_data.data.id
                 };
+                console.log(group_data);
                 $.when(
-                    render_and_fix_links('view-project', render_data)
+                    render_and_fix_links('view-project', project_render_data)
                 ).done(function() {
                     $('#fileupload').fileupload({
                         'url': "{% url 'add-submission' %}",
                         'singleFileUploads': false
                     });
-                });
-                // console.log('woooo');
-                // console.log($('#fileupload'));
-                // $('#fileupload').fileupload({
-                //     'url': '/blah',
-                //     'singleFileUploads': false
-                // });
-                // $('#file_input').change(function() {
-                //     console.log($(this).files);
-                // });
 
-                // var inputElement = document.getElementById("file_input");
-                // $('#file_input').on("change", handleFiles);
-                // function handleFiles() {
-                //     console.log('askd;ljfdsf');
-                //   var fileList = this.files; /* now you can work with the file list */
-                // }
-                // $('#file_select').click(function() {
-                //     console.log('clicky');
-                // });
+                    render_and_fix_links(
+                        'submission-list', group_data, $('#main-area'), true);
+                });
             });
         });
     }
@@ -344,15 +341,32 @@
         return profile.getEmail();
     }
 
-    function render_and_fix_links(template_name, data)
+    function render_and_fix_links(template_name, data, render_location, append)
     {
+        if (render_location === undefined)
+        {
+            render_location = $('#main-area');
+        }
+
+        if (append === undefined)
+        {
+            append = false;
+        }
+
         var deferred = $.Deferred();
         $.when(lazy_get_template(template_name)).done(function() {
             var tmpl = $.templates[template_name];
             // console.log(tmpl);
             // console.log(tmpl.render(data));
             var rendered = tmpl.render(data);
-            $('#main-area').html(rendered);
+            if (append)
+            {
+                render_location.append(rendered);
+            }
+            else
+            {
+                render_location.html(rendered);
+            }
 
             // Adapted from: http://www.codemag.com/article/1301091
             // Date accessed: 2015-08-20

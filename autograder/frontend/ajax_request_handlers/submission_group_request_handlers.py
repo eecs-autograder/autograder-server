@@ -72,7 +72,7 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
             'data': submission_group_to_json(group),
             'included': [
                 submission_to_json(submission, all_fields=False)
-                for submission in group.submissions.all().order_by('_timestamp')
+                for submission in group.submissions.all().order_by('-_timestamp')
             ]
         }
 
