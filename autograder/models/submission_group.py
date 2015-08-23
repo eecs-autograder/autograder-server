@@ -12,24 +12,6 @@ from autograder.models.utils import (
 import autograder.shared.utilities as ut
 
 
-# class _SubmissionGroupManager(models.Manager):
-#     @transaction.atomic
-#     def create_group(self, members, project, extended_due_date=None):
-#         group = super().create(
-#             project=project, extended_due_date=extended_due_date)
-#         group.members.add(*members)
-
-#         group.clean(_first_save=True)
-#         group.save()
-
-#         return group
-
-#     def create(self, **kwargs):
-#         raise NotImplementedError(
-#             "The create() method is not supported for SubmissionGroup. "
-#             "Please use create_group() instead.")
-
-
 class SubmissionGroup(ModelValidatableOnSave):
     """
     This class represents a group of students that can submit
@@ -99,9 +81,8 @@ class SubmissionGroup(ModelValidatableOnSave):
     # -------------------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
-        # check for pk?
-        members = kwargs.pop('members', [])
-        if not members and '_members' in kwargs:
+        members = kwargs.pop('members', None)
+        if members is None:  # and '_members' in kwargs:
             # __init__ is being called by the actual database
             return super().__init__(*args, **kwargs)
 

@@ -140,12 +140,18 @@ class GetProjectRequestTestCase(_SetUpBase):
         response = _get_project_request(42, self.admin)
         self.assertEqual(404, response.status_code)
 
-    def test_nobody_user_get_project(self):
-        # TODO: visible_to_non_enrolled_students field for project
+    def test_nobody_user_get_project_forbidden(self):
         for project in (self.visible_project, self.hidden_project):
             response = _get_project_request(
                 project.pk, self.nobody)
             self.assertEqual(403, response.status_code)
+
+    def test_nobody_user_can_view_public_and_visible_project(self):
+        self.visible_project.allow_submissions_from_non_enrolled_students = True
+        self.visible_project.validate_and_save()
+
+        response = _get_project_request(self.visible_project.pk, self.nobody)
+        self.assertEqual(200, response.status_code)
 
 
 def _get_project_request(project_id, user):

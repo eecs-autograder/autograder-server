@@ -50,9 +50,7 @@ def _prepare_and_run_tests(submission):
 
     for test_case in test_cases:
         with ut.TemporaryDirectory(temp_dirname):
-            student_files = submission.get_submitted_file_basenames()
-
-            for filename in student_files:
+            for filename in test_case.student_resource_files:
                 shutil.copy(filename, temp_dirname)
 
             for filename in test_case.test_resource_files:

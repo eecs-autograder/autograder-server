@@ -21,9 +21,11 @@ class ProjectRequestHandler(LoginRequiredView):
 
         is_staff = project.semester.is_semester_staff(request.user)
         is_enrolled = project.semester.is_enrolled_student(request.user)
+        project_public = project.allow_submissions_from_non_enrolled_students
         can_view_project = (
             is_staff or
-            is_enrolled and project.visible_to_students)
+            ((is_enrolled or project_public) and project.visible_to_students)
+        )
 
         if not can_view_project:
             return HttpResponseForbidden()

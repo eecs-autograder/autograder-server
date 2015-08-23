@@ -64,8 +64,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
             members=_names(self.enrolled_group), project=self.project,
             extended_due_date=extended_due_date)
 
-        loaded_group = SubmissionGroup.objects.get(
-            pk=group.pk)
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
 
         self.assertEqual(group, loaded_group)
         self.assertEqual(loaded_group.extended_due_date, extended_due_date)

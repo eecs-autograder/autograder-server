@@ -704,6 +704,10 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
+import unittest
+
+
+@unittest.skip('too long')
 class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
