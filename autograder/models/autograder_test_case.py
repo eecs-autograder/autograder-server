@@ -14,7 +14,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 
 from autograder.models.utils import (
-    PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
+    PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate,
+    filename_matches_any_pattern)
 
 from autograder.models import Project, AutograderTestCaseResultBase
 
@@ -77,18 +78,31 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             being tested.
             Default value: empty string
 
-        test_resource_files -- A list of files that need to be
+        test_resource_files -- A list of project files that need to be
             in the same directory as the program being tested. This
-            includes any files that need to be compiled together,
+            includes files that need to be compiled together,
             files that the program will read from/write to, etc.
             This list is allowed to be empty.
             This value may NOT be None.
-            Each of these files must have been uploaded to the Project
-                associated with this test case. Including a filename
+            IMPORTANT: Each of these files must have been uploaded to the
+                Project associated with this test case. Including a filename
                 in this list that does not exist for the Project will
-                cause ValueError to be raised.
+                cause ValidationError to be raised.
             As such, these filenames are restricted to the same charset
                 as uploaded project files.
+
+            Default value: empty list
+
+        student_resource_files -- A list of student files or pattern
+            that need to be in the same directory when the test case is run,
+            i.e. source code files, etc.
+            This list is allowed to be empty.
+            This value may NOT be None.
+            IMPORTANT: Each of these files must either be listed in
+            project.required_student_files or match one of the patterns in
+            project.expected_student_file_patterns, otherwise ValidationError
+            will be raised. As such, these filenames are restricted to the
+            same charset as uploaded project files.
 
             Default value: empty list
 
@@ -261,6 +275,10 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
         default=list, blank=True)
 
+    student_resource_files = ArrayField(
+        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
+        default=list, blank=True)
+
     time_limit = models.IntegerField(
         default=gc.DEFAULT_SUBPROCESS_TIMEOUT,
         validators=[MinValueValidator(1)])
@@ -363,9 +381,13 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         if valgrind_flag_errors:
             errors['valgrind_flags'] = valgrind_flag_errors
 
-        resource_file_errors = self._clean_test_resouce_files()
-        if resource_file_errors:
-            errors['test_resource_files'] = resource_file_errors
+        test_resource_file_errors = self._clean_test_resouce_files()
+        if test_resource_file_errors:
+            errors['test_resource_files'] = test_resource_file_errors
+
+        student_resource_file_errors = self._clean_student_resource_files()
+        if student_resource_file_errors:
+            errors['student_resource_files'] = student_resource_file_errors
 
         if errors:
             raise ValidationError(errors)
@@ -399,7 +421,23 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         for filename in self.test_resource_files:
             if not self.project.has_file(filename):
                 resource_file_errors.append(
-                    "File {0} does not exist in project {1}".format(
+                    "File {0} is not a project file project {1}".format(
+                        filename, self.project.name))
+
+        return resource_file_errors
+
+    def _clean_student_resource_files(self):
+        if self.student_resource_files is None:
+            return ["This field can't be null"]
+
+        resource_file_errors = []
+        for filename in self.student_resource_files:
+            is_required = filename in self.project.required_student_files
+            matches_pattern = filename_matches_any_pattern(
+                filename, self.project.expected_student_file_patterns)
+            if not is_required and not matches_pattern:
+                resource_file_errors.append(
+                    "File {0} is not a student file for project {1}".format(
                         filename, self.project.name))
 
         return resource_file_errors

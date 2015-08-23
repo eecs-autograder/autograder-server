@@ -433,7 +433,7 @@ def submission_to_json(submission, all_fields=True):
             'timestamp': <timestamp>,
             'test_case_feedback_config_override': {<settings>},
             'status': <status>,
-            'invalid_reason': <reason>
+            'invalid_reason_or_error': <reason>
         },
         'relationships': {
             'submission_group': {
@@ -473,7 +473,7 @@ def submission_to_json(submission, all_fields=True):
         ],
         'discarded_files': submission.discarded_files,
         'status': submission.status,
-        'invalid_reason': submission.invalid_reason
+        'invalid_reason_or_error': submission.invalid_reason_or_error
     })
     config = submission.test_case_feedback_config_override
     try:

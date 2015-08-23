@@ -5,13 +5,15 @@ import enum
 from django.db import models, transaction
 from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
+from django.utils import timezone
 
 from jsonfield import JSONField
 
 from autograder.models import SubmissionGroup
 from autograder.models.fields import FeedbackConfigurationField
 from autograder.models.utils import (
-    ModelValidatableOnSave, ManagerWithValidateOnCreate)
+    ModelValidatableOnSave, ManagerWithValidateOnCreate,
+    filename_matches_any_pattern)
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
@@ -59,7 +61,7 @@ class _SubmissionManager(ManagerWithValidateOnCreate):
             model._validate_submitted_files()
         except ValidationError as e:
             model.status = Submission.GradingStatus.invalid
-            model.invalid_reason = e.message_dict
+            model.invalid_reason_or_error = e.message_dict
 
         model.save()
         return model
@@ -101,8 +103,9 @@ class Submission(ModelValidatableOnSave):
 
         timestamp -- The timestamp at which this Submission was
             recorded.
-            This field is given a value automatically and cannot be
-            set manually.
+            If no value is specified upon creation, this field is given
+            a value automatically.
+            Once created, this field is READ ONLY.
 
         test_case_feedback_config_override -- When this field is not None,
             the feedback configuration here will override the Project level
@@ -126,9 +129,12 @@ class Submission(ModelValidatableOnSave):
                     finished being graded.
                 GradingStatus.invalid -- The submission failed one or more
                     validation checks that render it ungradeable.
+                GradingStatus.error -- Some unexpected error occurred
+                    in the grading process.
             Default value: GradingStatus.received
 
-        invalid_reason -- When a submission is marked as invalid, this
+        invalid_reason_or_error -- When a submission is marked as
+            invalid or an error occurs while grading, this
             field should store a JSON list describing the reason(s).
             Default value: empty string
 
@@ -136,8 +142,8 @@ class Submission(ModelValidatableOnSave):
         get_submitted_file_basenames()
 
     Overridden methods:
+        __init__()
         save()
-        clean()
     """
     objects = _SubmissionManager()
 
@@ -150,6 +156,7 @@ class Submission(ModelValidatableOnSave):
         being_graded = 'being_graded'
         finished_grading = 'finished_grading'
         invalid = 'invalid'
+        error = 'error'
 
     # !!!! IMPORTANT: UPDATE THESE WHENEVER GradingStatus IS CHANGED !!!!
     _GRADING_STATUS_CHOICES = (
@@ -157,7 +164,8 @@ class Submission(ModelValidatableOnSave):
         ('queued', 'Queued'),
         ('being_graded', 'Being graded'),
         ('finished_grading', 'Finished grading'),
-        ('invalid', 'Invalid')
+        ('invalid', 'Invalid'),
+        ('error', 'Error')
     )
 
     # -------------------------------------------------------------------------
@@ -186,7 +194,7 @@ class Submission(ModelValidatableOnSave):
         max_length=gc.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
         choices=_GRADING_STATUS_CHOICES)
 
-    invalid_reason = JSONField(default=list)
+    invalid_reason_or_error = JSONField(default=list)
 
     # -------------------------------------------------------------------------
 
@@ -194,6 +202,17 @@ class Submission(ModelValidatableOnSave):
         return [
             os.path.basename(obj.submitted_file.name) for
             obj in self._submitted_files.all()]
+
+    # -------------------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+        timestamp = kwargs.pop('timestamp', timezone.now())
+        if not timestamp and '_timestamp' in kwargs:
+            # __init__ is being called by the actual database
+            return super().__init__(*args, **kwargs)
+
+        # __init__ is being called by the user
+        return super().__init__(*args, _timestamp=timestamp, **kwargs)
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -234,10 +253,9 @@ class Submission(ModelValidatableOnSave):
             raise ValidationError({'submitted_files': errors})
 
     def file_is_extra(self, filename):
-        matches_any_pattern = ut.count_if(
-            self.submission_group.project.expected_student_file_patterns,
-            lambda pattern_obj: fnmatch.fnmatch(
-                filename, pattern_obj.pattern))
+        matches_any_pattern = filename_matches_any_pattern(
+            filename,
+            self.submission_group.project.expected_student_file_patterns)
         required_files = self.submission_group.project.required_student_files
         return (filename not in required_files and
                 not matches_any_pattern)

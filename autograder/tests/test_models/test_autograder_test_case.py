@@ -53,6 +53,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_test_case.command_line_arguments, [])
         self.assertEqual(loaded_test_case.standard_input, "")
         self.assertEqual(loaded_test_case.test_resource_files, [])
+        self.assertEqual(loaded_test_case.student_resource_files, [])
         self.assertEqual(loaded_test_case.time_limit, 10)
         self.assertIsNone(loaded_test_case.expected_return_code)
         self.assertFalse(loaded_test_case.expect_any_nonzero_return_code)
@@ -79,7 +80,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         input_stream_content = "spameggsausagespam"
         out_stream_content = "standardspaminputspam"
         err_stream_content = "errorzspam"
-        resource_files = ['spam.txt']
+        project_resource_files = ['spam.txt']
+        student_resource_files = ['file1.cpp', 'file2.cpp']
         time = 5
         ret_code = 0
         valgrind_flags = ['--leak-check=yes', '--error-exitcode=9000']
@@ -89,7 +91,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             hide_from_students=False,
             command_line_arguments=cmd_args,
             standard_input=input_stream_content,
-            test_resource_files=resource_files,
+            test_resource_files=project_resource_files,
+            student_resource_files=student_resource_files,
             time_limit=time,
             expected_return_code=ret_code,
             expected_standard_output=out_stream_content,
@@ -115,7 +118,10 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             input_stream_content)
 
         self.assertEqual(
-            loaded_test_case.test_resource_files, resource_files)
+            loaded_test_case.test_resource_files, project_resource_files)
+
+        self.assertEqual(
+            loaded_test_case.student_resource_files, student_resource_files)
 
         self.assertEqual(loaded_test_case.time_limit, time)
 
@@ -264,20 +270,44 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
+    # Note: Filenames in test_resource_files and student_resource_files
+    # are restricted to filenames validated by a Project. Therefore we
+    # can assume that the only legal choices for those fields have
+    # valid filenames.
+
     def test_exception_on_null_test_resource_files_list(self):
         with self.assertRaises(ValidationError):
             AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 test_resource_files=None)
 
-    def test_exception_on_test_resource_files_has_nonexistant_file(self):
+    def test_exception_on_test_resource_files_has_wrong_file(self):
+        # student_file.txt is a student file, not a project file
+        self.project.required_student_files.append('student_file.txt')
         with self.assertRaises(ValidationError) as cm:
             AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
-                test_resource_files=['no_file.txt'])
+                test_resource_files=['student_file.txt'])
 
         self.assertTrue('test_resource_files' in cm.exception.message_dict)
         error_list = cm.exception.message_dict['test_resource_files']
+        self.assertTrue(error_list[0])
+
+    def test_exception_on_null_student_resource_files_list(self):
+        with self.assertRaises(ValidationError):
+            AutograderTestCaseBase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                student_resource_files=None)
+
+    def test_exception_on_student_resource_files_has_wrong_file(self):
+        # spam.txt is a project file, not a student file
+        with self.assertRaises(ValidationError) as cm:
+            AutograderTestCaseBase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                student_resource_files=['spam.txt'])
+
+        self.assertTrue('student_resource_files' in cm.exception.message_dict)
+        error_list = cm.exception.message_dict['student_resource_files']
         self.assertTrue(error_list[0])
 
     # -------------------------------------------------------------------------

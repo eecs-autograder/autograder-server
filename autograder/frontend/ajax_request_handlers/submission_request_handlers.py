@@ -1,11 +1,13 @@
 import os
 import json
 
+from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.http import (
     HttpResponse, JsonResponse, HttpResponseForbidden, HttpResponseNotFound,
     HttpResponseBadRequest, FileResponse)
+from django.utils import timezone
 
 from autograder.frontend.frontend_utils import LoginRequiredView
 from autograder.frontend.json_api_serializers import (
@@ -28,6 +30,7 @@ class SubmissionRequestHandler(LoginRequiredView):
         POST dictionary parameters: 'submission_group_id'
         FILES key: 'files'
         """
+        timestamp = timezone.now()
         files = request.FILES.getlist('files')
         try:
             group = SubmissionGroup.objects.get(
@@ -36,6 +39,10 @@ class SubmissionRequestHandler(LoginRequiredView):
             return HttpResponseBadRequest()
         except ObjectDoesNotExist:
             return HttpResponseNotFound()
+
+        can_submit, message = self._validate_can_submit(group, timestamp)
+        if not can_submit:
+            return JsonResponse({'errors': {'meta': message}}, status=409)
 
         username = request.user.username
         if username not in group.members:
@@ -48,10 +55,12 @@ class SubmissionRequestHandler(LoginRequiredView):
 
         submission = Submission.objects.validate_and_create(
             submitted_files=files, submission_group=group,
-            test_case_feedback_config_override=feedback_override)
+            test_case_feedback_config_override=feedback_override,
+            timestamp=timestamp)
 
-        # TODO: add to task queue
         if submission.status != Submission.GradingStatus.invalid:
+            submission.status = Submission.GradingStatus.queued
+            submission.save()
             grade_submission.delay(submission.pk)
 
         response_content = {
@@ -59,6 +68,38 @@ class SubmissionRequestHandler(LoginRequiredView):
         }
 
         return JsonResponse(response_content, status=201)
+
+    def _validate_can_submit(self, group, timestamp):
+        has_submission_in_queue = Submission.objects.filter(
+            submission_group=group
+        ).filter(
+            Q(status=Submission.GradingStatus.received) |
+            Q(status=Submission.GradingStatus.queued) |
+            Q(status=Submission.GradingStatus.being_graded))
+
+        if has_submission_in_queue:
+            msg = ('You currently have a submission being processed. '
+                   'Please wait until it is finished before submitting again.')
+            return False, msg
+
+        if group.project.semester.is_semester_staff(group.members[0]):
+            return True, ''
+
+        if group.project.disallow_student_submissions:
+            return False, 'Submissions are currently disabled for this project'
+
+        if group.extended_due_date is not None:
+            deadline = group.extended_due_date
+        else:
+            deadline = group.project.closing_time
+
+        if deadline is None:
+            return True, ''
+
+        if timestamp > deadline:
+            return False, "The deadline for this project has passed"
+
+        return True, ''
 
     def get(self, request, submission_id):
         try:

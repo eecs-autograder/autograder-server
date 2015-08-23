@@ -371,7 +371,17 @@ class Project(ModelValidatableOnSave):
         Removes the specified file from the database and filesystem.
 
         Raises ObjectDoesNotExist if no such file exists for this Project.
+
+        Raises ValidationError if the file is depended on by any test
+        cases belonging to this Project, i.e. if it is listed in
+        project.test_resource_files
         """
+        tests_depend_on_file = self.autograder_test_cases.filter(
+            test_resource_files__contains=[filename])
+        if tests_depend_on_file:
+            raise ValidationError(
+                "One or more test cases depend on file " + filename)
+
         for file_obj in self._project_files.all():
             if file_obj.basename == filename:
                 file_obj.delete()

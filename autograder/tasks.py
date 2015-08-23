@@ -26,27 +26,43 @@ def debug_task(self):
 
 @shared_task(bind=True, ignore_result=True)
 def grade_submission(self, submission_id):
-    submission = Submission.objects.get(pk=submission_id)
-    test_cases = submission.submission_group.project.autograder_test_cases.all()
+    try:
+        submission = Submission.objects.get(pk=submission_id)
+        submission.status = Submission.GradingStatus.being_graded
+        submission.save()
+
+        with ut.ChangeDirectory(ut.get_submission_dir(submission)):
+            _prepare_and_run_tests(submission)
+            submission.status = Submission.GradingStatus.finished_grading
+            submission.save()
+    except Exception as e:
+        submission.status = Submission.GradingStatus.error
+        submission.invalid_reason_or_error = [str(e)]
+
+
+def _prepare_and_run_tests(submission):
     temp_dirname = 'grading_dir'
+    test_cases = (
+        submission.submission_group.project.autograder_test_cases.all())
+
     project_files_dir = ut.get_project_files_dir(
         submission.submission_group.project)
-    with ut.ChangeDirectory(ut.get_submission_dir(submission)):
-        for test_case in test_cases:
-            with ut.TemporaryDirectory(temp_dirname):
-                student_files = submission.get_submitted_file_basenames()
 
-                for filename in student_files:
-                    shutil.copy(filename, temp_dirname)
+    for test_case in test_cases:
+        with ut.TemporaryDirectory(temp_dirname):
+            student_files = submission.get_submitted_file_basenames()
 
-                for filename in test_case.test_resource_files:
-                    shutil.copy(
-                        os.path.join(project_files_dir, filename),
-                        temp_dirname)
+            for filename in student_files:
+                shutil.copy(filename, temp_dirname)
 
-                with ut.ChangeDirectory(temp_dirname):
-                    for filename in os.listdir():
-                        os.chmod(filename, 0o666)
-                    result = test_case.run()
-                    print(result)
-                    result.save()
+            for filename in test_case.test_resource_files:
+                shutil.copy(
+                    os.path.join(project_files_dir, filename),
+                    temp_dirname)
+
+            with ut.ChangeDirectory(temp_dirname):
+                for filename in os.listdir():
+                    os.chmod(filename, 0o666)
+                result = test_case.run()
+                print(result)
+                result.save()

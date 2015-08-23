@@ -65,7 +65,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             loaded_submission.status,
             Submission.GradingStatus.received)
-        self.assertEqual(loaded_submission.invalid_reason, [])
+        self.assertEqual(loaded_submission.invalid_reason_or_error, [])
 
         self.assertTrue(os.path.isdir(ut.get_submission_dir(submission)))
         with ut.ChangeDirectory(ut.get_submission_dir(submission)):
@@ -97,7 +97,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(
             loaded_submission.status, Submission.GradingStatus.invalid)
-        self.assertTrue(loaded_submission.invalid_reason)
+        self.assertTrue(loaded_submission.invalid_reason_or_error)
 
     def test_invalid_submission_not_enough_of_pattern(self):
         files = [
@@ -113,7 +113,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(
             loaded_submission.status, Submission.GradingStatus.invalid)
-        self.assertTrue(loaded_submission.invalid_reason)
+        self.assertTrue(loaded_submission.invalid_reason_or_error)
 
     def test_invalid_submission_too_much_of_pattern(self):
         files = [
@@ -132,7 +132,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(
             loaded_submission.status, Submission.GradingStatus.invalid)
-        self.assertTrue(loaded_submission.invalid_reason)
+        self.assertTrue(loaded_submission.invalid_reason_or_error)
 
     def test_extra_files_discarded(self):
         files = [
@@ -228,12 +228,3 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(
             loaded_submission.discarded_files,
             [file_.name for file_ in duplicate_files])
-
-    def test_error_project_deadline_passed(self):
-        self.fail()
-
-    def test_no_error_project_deadline_passed_but_group_has_extension(self):
-        self.fail()
-
-    def test_error_project_deadline_and_extension_passed(self):
-        self.fail()

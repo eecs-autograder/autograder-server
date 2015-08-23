@@ -99,6 +99,7 @@ class SubmissionGroup(ModelValidatableOnSave):
     # -------------------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
+        # check for pk?
         members = kwargs.pop('members', [])
         if not members and '_members' in kwargs:
             # __init__ is being called by the actual database

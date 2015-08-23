@@ -16,8 +16,8 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
     _EDITABLE_FIELDS = ['extended_due_date']
 
     def post(self, request):
-        print('create submission group')
-        print(request.body)
+        # print('create submission group')
+        # print(request.body)
         request_content = json.loads(request.body.decode('utf-8'))
         project_id = (
             request_content['data']['relationships']['project']['data']['id'])

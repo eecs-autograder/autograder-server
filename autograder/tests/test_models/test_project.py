@@ -5,7 +5,8 @@ import json
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
 
-from autograder.models import Project, Semester, Course
+from autograder.models import (
+    Project, Semester, Course, AutograderTestCaseBase)
 from autograder.models.fields import FeedbackConfiguration
 
 import autograder.shared.utilities as ut
@@ -725,10 +726,26 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         with ut.ChangeDirectory(ut.get_project_files_dir(project)):
             self.assertFalse(os.path.isfile(self.sample_project_filename))
 
-    # -------------------------------------------------------------------------
-
     def test_exception_on_remove_nonexistant_project_file(self):
         project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME, semester=self.semester)
         with self.assertRaises(ObjectDoesNotExist):
             project.remove_project_file(self.sample_project_filename)
+
+    def test_exception_on_remove_project_file_test_depends_on(self):
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        project.add_project_file(self.sample_project_file)
+
+        AutograderTestCaseBase.objects.validate_and_create(
+            name='testy', project=project,
+            test_resource_files=[self.sample_project_filename])
+
+        with self.assertRaises(ValidationError):
+            project.remove_project_file(self.sample_project_filename)
+
+    import unittest
+
+    @unittest.skip('Design decision needed')
+    def test_exception_on_remove_student_file_test_depends_on(self):
+        self.fail()
