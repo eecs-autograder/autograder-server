@@ -13,8 +13,8 @@ from .utils import (
     process_patch_request, json_load_bytes, RequestHandlerTestCase)
 
 from autograder.frontend.json_api_serializers import (
-    project_to_json, submission_group_to_json)
-from autograder.models import SubmissionGroup
+    project_to_json, submission_group_to_json, submission_to_json)
+from autograder.models import SubmissionGroup, Submission
 
 
 def _names(users):
@@ -172,14 +172,23 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
         self.group = SubmissionGroup.objects.validate_and_create(
             members=_names(self.members), project=self.project)
 
+        self.submissions = [
+            Submission.objects.validate_and_create(
+                submission_group=self.group, submitted_files=[]
+            ) for i in range(2)
+        ]
+
     def test_valid_get_own_group(self):
         response = _get_submission_group_request(
             self.project.pk, self.enrolled.username, self.enrolled)
         self.assertEqual(200, response.status_code)
 
         expected = {
-            'data': submission_group_to_json(self.group)
-            # TODO: include submissions
+            'data': submission_group_to_json(self.group),
+            'included': sorted([
+                submission_to_json(submission, all_fields=False)
+                for submission in self.submissions
+            ], key=lambda obj: obj['attributes']['timestamp'])
         }
 
         self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
@@ -192,8 +201,11 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
 
     def test_valid_admin_or_staff_get_other_group(self):
         expected = {
-            'data': submission_group_to_json(self.group)
-            # TODO: include submissions
+            'data': submission_group_to_json(self.group),
+            'included': sorted([
+                submission_to_json(submission, all_fields=False)
+                for submission in self.submissions
+            ], key=lambda obj: obj['attributes']['timestamp'])
         }
 
         for user in (self.admin, self.staff):

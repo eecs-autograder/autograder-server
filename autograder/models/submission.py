@@ -170,7 +170,8 @@ class Submission(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    submission_group = models.ForeignKey(SubmissionGroup)
+    submission_group = models.ForeignKey(
+        SubmissionGroup, related_name='submissions')
 
     @property
     def submitted_files(self):

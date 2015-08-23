@@ -7,7 +7,8 @@ from django.http import (
     HttpResponseBadRequest)
 
 from autograder.frontend.frontend_utils import LoginRequiredView
-from autograder.frontend.json_api_serializers import submission_group_to_json
+from autograder.frontend.json_api_serializers import (
+    submission_group_to_json, submission_to_json)
 
 from autograder.models import SubmissionGroup, Project
 
@@ -16,8 +17,6 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
     _EDITABLE_FIELDS = ['extended_due_date']
 
     def post(self, request):
-        # print('create submission group')
-        # print(request.body)
         request_content = json.loads(request.body.decode('utf-8'))
         project_id = (
             request_content['data']['relationships']['project']['data']['id'])
@@ -69,8 +68,15 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
                 not group.project.semester.is_semester_staff(request.user)):
             return HttpResponseForbidden()
 
-        return JsonResponse(
-            {'data': submission_group_to_json(group)}, status=200)
+        response_content = {
+            'data': submission_group_to_json(group),
+            'included': [
+                submission_to_json(submission, all_fields=False)
+                for submission in group.submissions.all().order_by('_timestamp')
+            ]
+        }
+
+        return JsonResponse(response_content, status=200)
 
     def _get_by_query_params(self, request):
         project_id = request.GET['project_id']
