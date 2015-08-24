@@ -22,7 +22,7 @@ from autograder.frontend.json_api_serializers import (
 
 from autograder.models import (
     SubmissionGroup, CompiledAutograderTestCase, Submission,
-    CompiledAutograderTestCaseResult)
+    AutograderTestCaseResultBase)
 from autograder.models.fields import FeedbackConfiguration
 
 
@@ -79,11 +79,11 @@ class _SetUpBase(RequestHandlerTestCase):
             SimpleUploadedFile('hello.cpp', b'int main() { return 0; }')
         ]
 
-        self.visible_result = CompiledAutograderTestCaseResult.objects.create(
+        self.visible_result = AutograderTestCaseResultBase.objects.create(
             test_case=self.visible_test,
             return_code=0)
 
-        self.hidden_result = CompiledAutograderTestCaseResult.objects.create(
+        self.hidden_result = AutograderTestCaseResultBase.objects.create(
             test_case=self.hidden_test,
             return_code=0)
 

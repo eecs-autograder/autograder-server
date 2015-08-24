@@ -137,6 +137,10 @@
         {
             load_project_view(resource_url);
         }
+        else if (view_name === 'submission')
+        {
+            load_submission_view(resource_url);
+        }
         else
         {
             history.replaceState(null, '', '/');
@@ -176,10 +180,11 @@
     {
         console.log('load_project_view');
         $.get(project_url, function(project_data, status) {
-            var auth2 = gapi.auth2.getAuthInstance();
-            var profile = auth2.currentUser.get().getBasicProfile();
+            // var auth2 = gapi.auth2.getAuthInstance();
+            // var profile = auth2.currentUser.get().getBasicProfile();
             var url = "{% url 'submission-group-no-id' %}" + '?' + $.param(
-                {'project_id': project_data.data.id, 'username': profile.getEmail()});
+                {'project_id': project_data.data.id,
+                 'username': get_user_email()});
             console.log(url);
             $.ajax(url,
             {
@@ -216,11 +221,20 @@
         });
     }
 
-    function handle_file_input_change(files)
+    // function handle_file_input_change(files)
+    // {
+    //     console.log("don't gooooo changin'");
+    //     console.log(files);
+    //     console.log($('#file_input')[0].files);
+    // }
+
+    function load_submission_view(submission_url)
     {
-        console.log("don't gooooo changin'");
-        console.log(files);
-        console.log($('#file_input')[0].files);
+        console.log('load_submission_view');
+        $.get(submission_url).done(function(data, status) {
+            console.log(data);
+            render_and_fix_links('view-submission', data);
+        });
     }
 
     function load_register_group_view(project_data)
@@ -475,11 +489,10 @@
 </script>
 <button onclick='signOut();'>Sign out</button>
 
-<h1>The Autograder</h1>
+<div class='container'>
+    <h1>The Autograder</h1>
 
-<div id='main-area' class='container'>
-
-
+    <div id='main-area' class='container'></div>
 </div>
 
 </body>

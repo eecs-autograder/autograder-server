@@ -4,8 +4,6 @@ from django.db import models
 
 from polymorphic import PolymorphicModel
 
-_DIFFER = difflib.Differ()
-
 
 class AutograderTestCaseResultBase(PolymorphicModel):
     """
@@ -124,12 +122,13 @@ class AutograderTestCaseResultBase(PolymorphicModel):
     compilation_standard_output = models.TextField()
     compilation_standard_error_output = models.TextField()
 
-    # TODO: clean up implementation of this method
     def to_json(self, override_feedback=None):
         """
         Returns a JSON representation of this autograder test case result
         of the following form:
         {
+            'test_name': <name>,
+
             // Note that some or all of the following may be ommitted
             // depending on the feedback level.
 
@@ -152,96 +151,222 @@ class AutograderTestCaseResultBase(PolymorphicModel):
             'compilation_stderr': <value>,
 
 
-            'return_code_points': <points awarded>,
-            'output_points': <points awarded>,
-            'valgrind_points': <points awarded>,
-            'compilation_points': <points awarded>,
+            'return_code_points_awarded': <points awarded>,
+            'return_code_points_possible': <points possible>,
 
-            'total_points': <points>,
+            'output_points_awarded': <points awarded>,
+            'output_points_possible': <points possible>,
+
+            'valgrind_points_awarded': <points awarded>,
+            'valgrind_points_possible': <points possible>,
+
+            'compilation_points_awarded': <points awarded>,
+            'compilation_points_possible': <points possible>,
+
+            'total_points_awarded': <total points awarded>,
+            'total_points_possible': <points possible>,
 
 
             'timed_out': <True | False>
         }
         """
-        feedback = (override_feedback if override_feedback is not None
-                    else self._get_feedback_config())
-        data = {'test_name': self.test_case.name}
+        feedback_configuration = (
+            override_feedback if override_feedback is not None
+            else self._get_feedback_config())
+        show_points_breakdown = (
+            feedback_configuration.points_feedback_level == 'show_breakdown')
+        result = {'test_name': self.test_case.name}
 
-        if feedback.compilation_feedback_level == 'success_or_failure_only':
-            data['compilation_succeeded'] = self.compilation_succeeded
-        elif feedback.compilation_feedback_level == 'show_compiler_output':
-            data['compilation_succeeded'] = self.compilation_succeeded
-            data['compilation_stdout'] = self.compilation_standard_output
-            data['compilation_stderr'] = self.compilation_standard_error_output
+        pts_data = {}
+
+        feedback, pts_awarded = self._get_compilation_feedback(
+            feedback_configuration, show_points_breakdown)
+        result.update(feedback)
+        pts_data['compilation_points_awarded'] = pts_awarded
 
         if self.compilation_succeeded:
-            data['timed_out'] = self.timed_out
-
-        if self.compilation_succeeded and not self.timed_out:
-            if feedback.return_code_feedback_level == 'correct_or_incorrect_only':
-                data['return_code_correct'] = self.return_code_correct
-            elif feedback.return_code_feedback_level == 'show_expected_and_actual_values':
-                data['return_code_correct'] = self.return_code_correct
-                data['expected_return_code'] = self.test_case.expected_return_code
-                data['actual_return_code'] = self.return_code
-
-            if feedback.output_feedback_level == 'correct_or_incorrect_only':
-                data['output_correct'] = self.output_correct
-            elif feedback.output_feedback_level == 'show_expected_and_actual_values':
-                data['output_correct'] = self.output_correct
-                data['stdout_diff'] = list(_DIFFER.compare(
-                    self.test_case.expected_standard_output.splitlines(keepends=True),
-                    self.standard_output.splitlines(keepends=True)))
-                data['stderr_diff'] = list(_DIFFER.compare(
-                    self.test_case.expected_standard_error_output.splitlines(keepends=True),
-                    self.standard_error_output.splitlines(keepends=True)))
-
-            if feedback.valgrind_feedback_level == 'errors_or_no_errors_only':
-                data['valgrind_errors_present'] = self.valgrind_errors_present
-            elif feedback.valgrind_feedback_level == 'show_valgrind_output':
-                data['valgrind_errors_present'] = self.valgrind_errors_present
-                data['valgrind_output'] = self.valgrind_output
-
-        if feedback.points_feedback_level == 'hide':
-            return data
-
-        total_points = 0
-        show_breakdown = feedback.points_feedback_level == 'show_breakdown'
-
-        if feedback.compilation_feedback_level != 'no_feedback':
-            points = (self.test_case.points_for_compilation_success if
-                      self.compilation_succeeded else 0)
-            total_points += points
-            if show_breakdown:
-                data['compilation_points'] = points
+            result['timed_out'] = self.timed_out
 
         if not self.compilation_succeeded or self.timed_out:
-            data['total_points'] = total_points
-            return data
+            result.update(self._get_points_feedback(
+                feedback_configuration, show_points_breakdown,
+                **pts_data))
+            return result
 
-        if feedback.return_code_feedback_level != 'no_feedback':
-            points = (self.test_case.points_for_correct_return_code if
-                      self.return_code_correct else 0)
-            total_points += points
-            if show_breakdown:
-                data['return_code_points'] = points
+        feedback, pts_awarded = self._get_return_code_feedback(
+            feedback_configuration, show_points_breakdown)
+        result.update(feedback)
+        pts_data['return_code_points_awarded'] = pts_awarded
 
-        if feedback.output_feedback_level != 'no_feedback':
-            points = (self.test_case.points_for_correct_output if
-                      self.output_correct else 0)
-            total_points += points
-            if show_breakdown:
-                data['output_points'] = points
+        feedback, pts_awarded = self._get_output_feedback(
+            feedback_configuration, show_points_breakdown)
+        result.update(feedback)
+        pts_data['output_points_awarded'] = pts_awarded
 
-        if feedback.valgrind_feedback_level != 'no_feedback':
-            points = (self.test_case.points_for_no_valgrind_errors if
-                      not self.valgrind_errors_present else 0)
-            total_points += points
-            if show_breakdown:
-                data['valgrind_points'] = points
+        feedback, pts_awarded = self._get_valgrind_feedback(
+            feedback_configuration, show_points_breakdown)
+        result.update(feedback)
+        pts_data['valgrind_points_awarded'] = pts_awarded
 
-        data['total_points'] = total_points
-        return data
+        points_feedback = self._get_points_feedback(
+            feedback_configuration, show_points_breakdown, **pts_data)
+        result.update(points_feedback)
+
+        return result
+
+    def _get_compilation_feedback(self, feedback_config,
+                                  show_points_breakdown):
+        result = {}
+        if (feedback_config.compilation_feedback_level == 'no_feedback' or
+                not self.test_case.test_checks_compilation):
+            return result, 0
+
+        result['compilation_succeeded'] = self.compilation_succeeded
+
+        show_compiler_output = (feedback_config.compilation_feedback_level ==
+                                'show_compiler_output')
+        if show_compiler_output:
+            result['compilation_stdout'] = self.compilation_standard_output
+            result['compilation_stderr'] = (
+                self.compilation_standard_error_output)
+
+        points_possible = self.test_case.points_for_compilation_success
+        points_awarded = points_possible if self.compilation_succeeded else 0
+
+        return result, points_awarded
+
+    def _get_return_code_feedback(self, feedback_config,
+                                  show_points_breakdown):
+        result = {}
+        if not self._give_return_code_feedback(feedback_config):
+            return result, 0
+
+        result['return_code_correct'] = self.return_code_correct
+
+        show_return_code_diff = (feedback_config.return_code_feedback_level ==
+                                 'show_expected_and_actual_values')
+
+        if show_return_code_diff:
+            result['expected_return_code'] = (
+                self.test_case.expected_return_code)
+            result['actual_return_code'] = self.return_code
+
+        points_possible = self.test_case.points_for_correct_return_code
+        points_awarded = points_possible if self.return_code_correct else 0
+
+        return result, points_awarded
+
+    def _get_output_feedback(self, feedback_config, show_points_breakdown):
+        result = {}
+        if not self._give_output_feedback(feedback_config):
+            return result, 0
+
+        result['output_correct'] = self.output_correct
+
+        show_output_diff = (feedback_config.output_feedback_level ==
+                            'show_expected_and_actual_values')
+        if show_output_diff:
+            result['stdout_diff'] = _get_diff(
+                self.test_case.expected_standard_output,
+                self.standard_output)
+            result['stderr_diff'] = _get_diff(
+                self.test_case.expected_standard_error_output,
+                self.standard_error_output)
+
+        points_possible = self.test_case.points_for_correct_output
+        points_awarded = points_possible if self.output_correct else 0
+
+        return result, points_awarded
+
+    def _get_valgrind_feedback(self, feedback_config, show_points_breakdown):
+        result = {}
+        if not self._give_valgrind_feedback(feedback_config):
+            return result, 0
+
+        result['valgrind_errors_present'] = self.valgrind_errors_present
+
+        if feedback_config.valgrind_feedback_level == 'show_valgrind_output':
+            result['valgrind_output'] = self.valgrind_output
+
+        points_possible = self.test_case.points_for_no_valgrind_errors
+        points_awarded = (
+            points_possible if not self.valgrind_errors_present else 0)
+
+        return result, points_awarded
+
+    def _get_points_feedback(self, feedback_config, show_points_breakdown,
+                             compilation_points_awarded=0,
+                             return_code_points_awarded=0,
+                             output_points_awarded=0,
+                             valgrind_points_awarded=0):
+        result = {}
+        if feedback_config.points_feedback_level == 'hide':
+            return result
+
+        compilation_points_possible = (
+            self.test_case.points_for_compilation_success)
+        return_code_points_possible = (
+            self.test_case.points_for_correct_return_code)
+        output_points_possible = self.test_case.points_for_correct_output
+        valgrind_points_possible = self.test_case.points_for_no_valgrind_errors
+
+        total_possible = 0
+        total_awarded = (
+            compilation_points_awarded + return_code_points_awarded +
+            output_points_awarded + valgrind_points_awarded)
+
+        breakdown = {}
+        if (self._give_compilation_feedback(feedback_config) and
+                compilation_points_possible):
+            breakdown['compilation_points_awarded'] = (
+                compilation_points_awarded)
+            breakdown['compilation_points_possible'] = (
+                compilation_points_possible)
+            total_possible += compilation_points_possible
+
+        if (self._give_return_code_feedback(feedback_config) and
+                return_code_points_possible):
+            breakdown['return_code_points_awarded'] = (
+                return_code_points_awarded)
+            breakdown['return_code_points_possible'] = (
+                return_code_points_possible)
+            total_possible += return_code_points_possible
+
+        if (self._give_output_feedback(feedback_config) and
+                output_points_possible):
+            breakdown['output_points_awarded'] = output_points_awarded
+            breakdown['output_points_possible'] = output_points_possible
+            total_possible += output_points_possible
+
+        if (self._give_valgrind_feedback(feedback_config) and
+                valgrind_points_possible):
+            breakdown['valgrind_points_awarded'] = valgrind_points_awarded
+            breakdown['valgrind_points_possible'] = valgrind_points_possible
+            total_possible += valgrind_points_possible
+
+        if show_points_breakdown:
+            result.update(breakdown)
+
+        result['total_points_possible'] = total_possible
+        result['total_points_awarded'] = total_awarded
+
+        return result
+
+    def _give_compilation_feedback(self, feedback_config):
+        return (feedback_config.compilation_feedback_level != 'no_feedback' and
+                self.test_case.test_checks_compilation())
+
+    def _give_return_code_feedback(self, feedback_config):
+        return (feedback_config.return_code_feedback_level != 'no_feedback' and
+                self.test_case.test_checks_return_code())
+
+    def _give_output_feedback(self, feedback_config):
+        return (feedback_config.output_feedback_level != 'no_feedback' and
+                self.test_case.test_checks_output())
+
+    def _give_valgrind_feedback(self, feedback_config):
+        return (self.test_case.use_valgrind and
+                feedback_config.valgrind_feedback_level != 'no_feedback')
 
     def _get_feedback_config(self):
         override = (
@@ -253,38 +378,12 @@ class AutograderTestCaseResultBase(PolymorphicModel):
 
         return self.test_case.project.test_case_feedback_configuration
 
+
 # -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
+
+_DIFFER = difflib.Differ()
 
 
-class CompiledAutograderTestCaseResult(AutograderTestCaseResultBase):
-    """
-    Stores the results from a compiled autograder test case.
-
-    Instance variables:
-        compilation_succeeded
-
-    Overidden methods:
-        to_json()
-        human_readable_summary() TODO
-    """
-    pass
-    # def to_json(self, override_feedback=None):
-    #     """
-    #     Returns a JSON representation of this compiled test case result.
-    #     The following fields are added to the base data:
-
-    #     {
-    #         'compilation_succeeded': <True | False>,
-    #         'compilation_stdout': <value>,
-    #         'compilation_stderr': <value>,
-
-    #         'compilation_points': <points awarded>,
-    #     }
-    #     """
-    #     base = super().to_json(override_feedback=override_feedback)
-
-    # @property
-    # def compilation_succeeded(self):
-    #     return self.compilation_return_code == 0
+def _get_diff(first, second):
+    return list(_DIFFER.compare(
+        first.splitlines(keepends=True), second.splitlines(keepends=True)))

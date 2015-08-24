@@ -1,0 +1,77 @@
+<div id='submission' class='container'>
+    <h3>Submitted at: {{to_local_date:data.attributes.timestamp}}</h3>
+
+    <div>Files submitted: </div>
+    <ul>
+    {{for data.attributes.submitted_files}}
+        <li><a href='{{: file_url}}'>{{>filename}}</a></li>
+    {{/for}}
+    </ul>
+
+    <div>Results: </div>
+    <ul>
+        <li>
+        {{for meta.results}}
+            <div>{{> test_name}}</div>
+            {{if compilation_succeeded !== undefined}}
+                <div>
+                    Compilation: {{if compilation_succeeded}}SUCCESS{{else}}FAILURE{{/if}}
+                </div>
+            {{/if}}
+            {{if compilation_stdout !== undefined}}
+                <div>Compilation standard output: {{> compilation_stdout}}</div>
+            {{/if}}
+            {{if compilation_stderr !== undefined}}
+                <div>Compilation standard error output: {{> compilation_stderr}}</div>
+            {{/if}}
+
+            {{if timed_out}}
+            {{else}}
+                {{if return_code_correct !== undefined}}
+                    <div>
+                        Return code: {{if return_code_correct}}CORRECT{{else}}INCORRECT{{/if}}
+                    </div>
+                {{/if}}
+
+                {{if output_correct !== undefined}}
+                    <div>
+                        Output: {{if output_correct}}CORRECT{{else}}INCORRECT{{/if}}
+                    </div>
+                {{/if}}
+                {{if stdout_diff !== undefined}}
+                    <div>Standard output diff: {{> stdout_diff}}</div>
+                {{/if}}
+                {{if stderr_diff !== undefined}}
+                    <div>Standard error output diff: {{> stderr_diff}}</div>
+                {{/if}}
+
+                {{if valgrind_errors_present !== undefined}}
+                    <div>Valgrind: {{if valgrind_errors_present}}CLEAN{{else}}ERRORS{{/if}}</div>
+                {{/if}}
+                {{if valgrind_output !== undefined}}
+                    <div>Valgrind output: {{>valgrind_output}}</div>
+                {{/if}}
+
+                {{if total_points_awarded !== undefined}}
+                    <div>Score for {{>test_name}}:</div>
+                    <ul>
+                    {{if compilation_points_awarded !== undefined}}
+                        <li>Compilation points: {{> compilation_points_awarded}}/{{>compilation_points_possible}}</li>
+                    {{/if}}
+                    {{if return_code_points_awarded !== undefined}}
+                        <li>Return code points: {{> return_code_points_awarded}}/{{>return_code_points_possible}}</li>
+                    {{/if}}
+                    {{if output_points_awarded !== undefined}}
+                        <li>Output points: {{> output_points_awarded}}/{{>output_points_possible}}</li>
+                    {{/if}}
+                    {{if valgrind_points_awarded !== undefined}}
+                        <li>Valgrind points: {{> valgrind_points_awarded}}/{{>valgrind_points_possible}}</li>
+                    {{/if}}
+                        <li>Total: {{> total_points_awarded}}/{{> total_points_possible}}</li>
+                    </ul>
+                {{/if}}
+            {{/if}}
+        {{/for}}
+        </li>
+    </ul>
+</div>

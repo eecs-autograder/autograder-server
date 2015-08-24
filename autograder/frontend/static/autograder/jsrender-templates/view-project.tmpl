@@ -28,8 +28,8 @@
                         <i class="glyphicon glyphicon-trash"></i>
                         <span>Delete</span>
                     </button> -->
-                    <input type="checkbox" class="toggle">
-                    <!-- The global file processing state -->
+<!--                     <input type="checkbox" class="toggle">
+ -->                    <!-- The global file processing state -->
                     <span class="fileupload-process"></span>
                 </div>
                 <!-- The global progress state -->
@@ -65,13 +65,13 @@
         </td>
         <td>
             {% if (!i && !o.options.autoUpload) { %}
-                <button class="btn btn-primary start" disabled>
+                <button class="btn btn-primary start" disabled style='display: none'>
                     <i class="glyphicon glyphicon-upload"></i>
                     <span>Start</span>
                 </button>
             {% } %}
             {% if (!i) { %}
-                <button class="btn btn-warning cancel">
+                <button class="btn btn-warning cancel" style='display: none'>
                     <i class="glyphicon glyphicon-ban-circle"></i>
                     <span>Cancel</span>
                 </button>
@@ -80,7 +80,7 @@
     </tr>
 {% } %}
 </script>
-<!-- The template to display files available for download -->
+ <!-- The template to display files available for download -->
 <script id="template-download" type="text/x-tmpl">
 {% for (var i=0, file; file=o.files[i]; i++) { %}
     <tr class="template-download fade">

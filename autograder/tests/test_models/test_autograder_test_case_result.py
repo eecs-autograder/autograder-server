@@ -9,7 +9,7 @@ import autograder.tests.dummy_object_utils as obj_ut
 from autograder.models import (
     Project, Semester, Course, AutograderTestCaseBase,
     CompiledAutograderTestCase, AutograderTestCaseResultBase,
-    CompiledAutograderTestCaseResult, SubmissionGroup, Submission)
+    SubmissionGroup, Submission)
 from autograder.models.fields import FeedbackConfiguration
 
 _DIFFER = difflib.Differ()
@@ -148,6 +148,14 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
                 SimpleUploadedFile('egg.cpp', b'egg')]
         )
 
+        self.medium_config = FeedbackConfiguration(
+            return_code_feedback_level='correct_or_incorrect_only',
+            output_feedback_level='correct_or_incorrect_only',
+            compilation_feedback_level='success_or_failure_only',
+            valgrind_feedback_level='errors_or_no_errors_only',
+            points_feedback_level='show_total'
+        )
+
     def test_serialize_results_low_feedback(self):
         self.assertEqual(
             {
@@ -171,13 +179,7 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             self.timed_out_result.to_json())
 
     def test_serialize_results_medium_feedback(self):
-        self.project.test_case_feedback_configuration = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only',
-            output_feedback_level='correct_or_incorrect_only',
-            compilation_feedback_level='success_or_failure_only',
-            valgrind_feedback_level='errors_or_no_errors_only',
-            points_feedback_level='show_total'
-        )
+        self.project.test_case_feedback_configuration = self.medium_config
         self.project.save()
 
         expected_correct = {
@@ -186,7 +188,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'output_correct': True,
             'valgrind_errors_present': False,
             'compilation_succeeded': True,
-            'total_points': 10,
+            'total_points_awarded': 10,
+            'total_points_possible': 10,
 
             'timed_out': False
         }
@@ -197,7 +200,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'output_correct': False,
             'valgrind_errors_present': True,
             'compilation_succeeded': True,
-            'total_points': 4,
+            'total_points_awarded': 4,
+            'total_points_possible': 10,
 
             'timed_out': False
         }
@@ -215,7 +219,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
                 'test_name': self.test_case.name,
                 'timed_out': True,
                 'compilation_succeeded': True,
-                'total_points': 4
+                'total_points_awarded': 4,
+                'total_points_possible': 10
             },
             self.timed_out_result.to_json())
 
@@ -233,11 +238,15 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
 
             'output_correct': True,
             'stdout_diff': list(_DIFFER.compare(
-                self.test_case.expected_standard_output.splitlines(keepends=True),
-                self.correct_test_result.standard_output.splitlines(keepends=True))),
+                self.test_case.expected_standard_output.splitlines(
+                    keepends=True),
+                self.correct_test_result.standard_output.splitlines(
+                    keepends=True))),
             'stderr_diff': list(_DIFFER.compare(
-                self.test_case.expected_standard_error_output.splitlines(keepends=True),
-                self.correct_test_result.standard_error_output.splitlines(keepends=True))),
+                self.test_case.expected_standard_error_output.splitlines(
+                    keepends=True),
+                self.correct_test_result.standard_error_output.splitlines(
+                    keepends=True))),
 
 
             'valgrind_errors_present': False,
@@ -249,12 +258,17 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'compilation_stderr': '',
 
 
-            'return_code_points': 1,
-            'output_points': 2,
-            'valgrind_points': 3,
-            'compilation_points': 4,
+            'return_code_points_awarded': 1,
+            'return_code_points_possible': 1,
+            'output_points_awarded': 2,
+            'output_points_possible': 2,
+            'valgrind_points_awarded': 3,
+            'valgrind_points_possible': 3,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
 
-            'total_points': 10,
+            'total_points_awarded': 10,
+            'total_points_possible': 10,
 
 
             'timed_out': False
@@ -269,9 +283,20 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'compilation_stdout': '',
             'compilation_stderr': 'lose',
 
-            'compilation_points': 0,
+            'compilation_points_awarded': 0,
+            'compilation_points_possible': 4,
 
-            'total_points': 0,
+            'return_code_points_awarded': 0,
+            'return_code_points_possible': 1,
+
+            'output_points_awarded': 0,
+            'output_points_possible': 2,
+
+            'valgrind_points_awarded': 0,
+            'valgrind_points_possible': 3,
+
+            'total_points_awarded': 0,
+            'total_points_possible': 10
         }
 
         self.assertEqual(
@@ -287,11 +312,15 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
 
             'output_correct': False,
             'stdout_diff': list(_DIFFER.compare(
-                self.test_case.expected_standard_output.splitlines(keepends=True),
-                self.incorrect_test_result.standard_output.splitlines(keepends=True))),
+                self.test_case.expected_standard_output.splitlines(
+                    keepends=True),
+                self.incorrect_test_result.standard_output.splitlines(
+                    keepends=True))),
             'stderr_diff': list(_DIFFER.compare(
-                self.test_case.expected_standard_error_output.splitlines(keepends=True),
-                self.incorrect_test_result.standard_error_output.splitlines(keepends=True))),
+                self.test_case.expected_standard_error_output.splitlines(
+                    keepends=True),
+                self.incorrect_test_result.standard_error_output.splitlines(
+                    keepends=True))),
 
 
             'valgrind_errors_present': True,
@@ -303,12 +332,17 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'compilation_stderr': 'woah',
 
 
-            'return_code_points': 0,
-            'output_points': 0,
-            'valgrind_points': 0,
-            'compilation_points': 4,
+            'return_code_points_awarded': 0,
+            'return_code_points_possible': 1,
+            'output_points_awarded': 0,
+            'output_points_possible': 2,
+            'valgrind_points_awarded': 0,
+            'valgrind_points_possible': 3,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
 
-            'total_points': 4,
+            'total_points_awarded': 4,
+            'total_points_possible': 10,
 
 
             'timed_out': False
@@ -324,9 +358,20 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'compilation_stdout': 'win',
             'compilation_stderr': '',
 
-            'compilation_points': 4,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
 
-            'total_points': 4,
+            'return_code_points_awarded': 0,
+            'return_code_points_possible': 1,
+
+            'output_points_awarded': 0,
+            'output_points_possible': 2,
+
+            'valgrind_points_awarded': 0,
+            'valgrind_points_possible': 3,
+
+            'total_points_awarded': 4,
+            'total_points_possible': 10,
 
             'timed_out': True
         }
@@ -374,42 +419,269 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             },
             self.correct_test_result.to_json(override_feedback=override))
 
-    # def test_output_diff_html_escaped(self):
-    #     self.incorrect_test_result.stdout = '<div>hello</div>'
-    #     self.incorrect_test_result.stderr = (
-    #         '<script type=text/javascript>haxorz</script>')
-    #     self.incorrect_test_result.save()
+    def test_mixed_feedback_points_breakdown(self):
+        feedback = self.medium_config
+        feedback.points_feedback_level = 'show_breakdown'
+        feedback.validate()
+        expected = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+            'output_correct': True,
+            'valgrind_errors_present': False,
+            'compilation_succeeded': True,
 
-    #     override = FeedbackConfiguration(
-    #         output_feedback_level='show_expected_and_actual_values')
-    #     override.validate()
+            'return_code_points_awarded': 1,
+            'return_code_points_possible': 1,
+            'output_points_awarded': 2,
+            'output_points_possible': 2,
+            'valgrind_points_awarded': 3,
+            'valgrind_points_possible': 3,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
 
-    #     self.submission.test_case_feedback_config_override = override
-    #     self.submission.save()
+            'total_points_awarded': 10,
+            'total_points_possible': 10,
 
-    #     self.incorrect_test_result.submission = self.submission
-    #     self.incorrect_test_result.save()
+            'timed_out': False
+        }
+        self.assertEqual(expected, self.correct_test_result.to_json(feedback))
 
-    #     result = self.incorrect_test_result.to_json()
+        feedback.return_code_feedback_level = 'no_feedback'
+        feedback.validate()
+        expected = {
+            'test_name': self.test_case.name,
+            'output_correct': True,
+            'valgrind_errors_present': False,
+            'compilation_succeeded': True,
 
-    #     expected = _DIFFER.compare(
-    #         self.test_case.expected_standard_output.splitlines(keepends=True),
-    #         self.incorrect_test_result.standard_output.splitlines(keepends=True)
-    #     )
-    #     self.assertEqual(list(expected), result['stdout_diff'])
+            'output_points_awarded': 2,
+            'output_points_possible': 2,
+            'valgrind_points_awarded': 3,
+            'valgrind_points_possible': 3,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
 
-    #     expected = _DIFFER.compare(
-    #         self.test_case.expected_standard_error_output.splitlines(keepends=True),
-    #         self.incorrect_test_result.standard_error_output.splitlines(keepends=True)
-    #     )
-    #     self.assertEqual(list(expected), result['stderr_diff'])
+            'total_points_awarded': 9,
+            'total_points_possible': 9,
 
-    import unittest
+            'timed_out': False
+        }
+        self.assertEqual(expected, self.correct_test_result.to_json(feedback))
 
-    @unittest.skip('todo')
-    def test_points_breakdown_feedback(self):
-        self.fail()
+        feedback.valgrind_feedback_level = 'no_feedback'
+        feedback.validate()
+        expected = {
+            'test_name': self.test_case.name,
+            'output_correct': True,
+            'compilation_succeeded': True,
 
-    @unittest.skip('todo')
+            'output_points_awarded': 2,
+            'output_points_possible': 2,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
+
+            'total_points_awarded': 6,
+            'total_points_possible': 6,
+
+            'timed_out': False
+        }
+        self.assertEqual(expected, self.correct_test_result.to_json(feedback))
+
+        feedback.compilation_feedback_level = 'no_feedback'
+        feedback.validate()
+        expected = {
+            'test_name': self.test_case.name,
+            'output_correct': True,
+
+            'output_points_awarded': 2,
+            'output_points_possible': 2,
+
+            'total_points_awarded': 2,
+            'total_points_possible': 2,
+
+            'timed_out': False
+        }
+        self.assertEqual(expected, self.correct_test_result.to_json(feedback))
+
+        feedback.output_feedback_level = 'no_feedback'
+        feedback.return_code_feedback_level = 'correct_or_incorrect_only'
+        feedback.validate()
+        expected = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+
+            'return_code_points_awarded': 1,
+            'return_code_points_possible': 1,
+
+            'total_points_awarded': 1,
+            'total_points_possible': 1,
+
+            'timed_out': False
+        }
+        self.assertEqual(expected, self.correct_test_result.to_json(feedback))
+
+    def test_not_checking_return_code(self):
+        self.test_case.expected_return_code = None
+        self.test_case.validate_and_save()
+
+        expected_medium = {
+            'test_name': self.test_case.name,
+            'output_correct': True,
+            'valgrind_errors_present': False,
+            'compilation_succeeded': True,
+            'total_points_awarded': 9,
+            'total_points_possible': 9,
+
+            'timed_out': False
+        }
+
+        self.assertEqual(
+            expected_medium,
+            self.correct_test_result.to_json(self.medium_config))
+
+        expected_high = {
+            'test_name': self.test_case.name,
+
+            'output_correct': True,
+            'stdout_diff': list(_DIFFER.compare(
+                self.test_case.expected_standard_output.splitlines(
+                    keepends=True),
+                self.correct_test_result.standard_output.splitlines(
+                    keepends=True))),
+            'stderr_diff': list(_DIFFER.compare(
+                self.test_case.expected_standard_error_output.splitlines(
+                    keepends=True),
+                self.correct_test_result.standard_error_output.splitlines(
+                    keepends=True))),
+
+            'valgrind_errors_present': False,
+            'valgrind_output': 'clean',
+
+            'compilation_succeeded': True,
+            'compilation_stdout': 'win',
+            'compilation_stderr': '',
+
+            'output_points_awarded': 2,
+            'output_points_possible': 2,
+            'valgrind_points_awarded': 3,
+            'valgrind_points_possible': 3,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
+
+            'total_points_awarded': 9,
+            'total_points_possible': 9,
+
+            'timed_out': False
+        }
+
+        self.assertEqual(expected_high, self.correct_test_result.to_json(
+            FeedbackConfiguration.get_max_feedback()))
+
+    def test_not_checking_output(self):
+        self.test_case.expected_standard_output = ''
+        self.test_case.expected_standard_error_output = ''
+        self.test_case.validate_and_save()
+
+        expected_medium = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+            'valgrind_errors_present': False,
+            'compilation_succeeded': True,
+            'total_points_awarded': 8,
+            'total_points_possible': 8,
+
+            'timed_out': False
+        }
+
+        self.assertEqual(
+            expected_medium,
+            self.correct_test_result.to_json(self.medium_config))
+
+        expected_high = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+            'expected_return_code': 0,
+            'actual_return_code': 0,
+
+            'valgrind_errors_present': False,
+            'valgrind_output': 'clean',
+
+            'compilation_succeeded': True,
+            'compilation_stdout': 'win',
+            'compilation_stderr': '',
+
+            'return_code_points_awarded': 1,
+            'return_code_points_possible': 1,
+            'valgrind_points_awarded': 3,
+            'valgrind_points_possible': 3,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
+
+            'total_points_awarded': 8,
+            'total_points_possible': 8,
+
+            'timed_out': False
+        }
+
+        self.assertEqual(expected_high, self.correct_test_result.to_json(
+            FeedbackConfiguration.get_max_feedback()))
+
     def test_not_using_valgrind(self):
-        self.fail()
+        self.test_case.use_valgrind = False
+        self.test_case.validate_and_save()
+
+        expected_medium = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+            'output_correct': True,
+            'compilation_succeeded': True,
+            'total_points_awarded': 7,
+            'total_points_possible': 7,
+
+            'timed_out': False
+        }
+
+        self.assertEqual(expected_medium,
+                         self.correct_test_result.to_json(self.medium_config))
+
+        expected_high = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+            'expected_return_code': 0,
+            'actual_return_code': 0,
+
+
+            'output_correct': True,
+            'stdout_diff': list(_DIFFER.compare(
+                self.test_case.expected_standard_output.splitlines(
+                    keepends=True),
+                self.correct_test_result.standard_output.splitlines(
+                    keepends=True))),
+            'stderr_diff': list(_DIFFER.compare(
+                self.test_case.expected_standard_error_output.splitlines(
+                    keepends=True),
+                self.correct_test_result.standard_error_output.splitlines(
+                    keepends=True))),
+
+            'compilation_succeeded': True,
+            'compilation_stdout': 'win',
+            'compilation_stderr': '',
+
+            'return_code_points_awarded': 1,
+            'return_code_points_possible': 1,
+            'output_points_awarded': 2,
+            'output_points_possible': 2,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
+
+            'total_points_awarded': 7,
+            'total_points_possible': 7,
+
+
+            'timed_out': False
+        }
+
+        self.assertEqual(
+            expected_high,
+            self.correct_test_result.to_json(
+                FeedbackConfiguration.get_max_feedback()))

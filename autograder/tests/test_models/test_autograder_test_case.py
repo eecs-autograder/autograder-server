@@ -454,6 +454,58 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(
             'points_for_compilation_success' in cm.exception.message_dict)
 
+    # -------------------------------------------------------------------------
+
+    def test_test_checks_return_code(self):
+        test = AutograderTestCaseBase.objects.validate_and_create(
+            name=self.TEST_NAME, project=self.project)
+        self.assertFalse(test.test_checks_return_code())
+
+        test.expect_any_nonzero_return_code = True
+        self.assertTrue(test.test_checks_return_code())
+
+        test.expect_any_nonzero_return_code = False
+        self.assertFalse(test.test_checks_return_code())
+
+        test.expected_return_code = 0
+        self.assertTrue(test.test_checks_return_code())
+
+    def test_test_checks_output(self):
+        test = AutograderTestCaseBase.objects.validate_and_create(
+            name=self.TEST_NAME, project=self.project)
+
+        self.assertFalse(test.test_checks_output())
+
+        test.expected_standard_output = 'spam'
+        test.validate_and_save()
+        self.assertTrue(test.test_checks_output())
+
+        test.expected_standard_output = ''
+        test.validate_and_save()
+        self.assertFalse(test.test_checks_output())
+
+        test.expected_standard_error_output = 'eggs'
+        test.validate_and_save()
+        self.assertTrue(test.test_checks_output())
+
+        test.expected_standard_output = 'spam'
+        test.validate_and_save()
+        self.assertTrue(test.test_checks_output())
+
+        test.expected_standard_output = ''
+        test.expected_standard_error_output = ''
+        test.validate_and_save()
+        self.assertFalse(test.test_checks_output())
+
+    def test_test_checks_compilation(self):
+        test = AutograderTestCaseBase.objects.validate_and_create(
+            name=self.TEST_NAME, project=self.project)
+
+        self.assertFalse(test.test_checks_compilation())
+
+        test.compiler = 'g++'
+        self.assertTrue(test.test_checks_compilation())
+
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -698,6 +750,15 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertTrue('time_limit' in cm.exception.message_dict)
         self.assertTrue('executable_name' in cm.exception.message_dict)
+
+    # -------------------------------------------------------------------------
+
+    def test_test_checks_compilation(self):
+        test = CompiledAutograderTestCase.objects.validate_and_create(
+            name=self.TEST_NAME, project=self.project,
+            **self.compiled_test_kwargs)
+
+        self.assertTrue(test.test_checks_compilation())
 
 
 # -----------------------------------------------------------------------------

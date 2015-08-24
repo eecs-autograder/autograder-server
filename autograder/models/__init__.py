@@ -9,7 +9,6 @@ from .submission import Submission
 
 # These next two imports need to be in this order to get around
 # circular dependency.
-from .autograder_test_case_result import (
-    AutograderTestCaseResultBase, CompiledAutograderTestCaseResult)
+from .autograder_test_case_result import AutograderTestCaseResultBase
 from .autograder_test_case import (
     AutograderTestCaseBase, CompiledAutograderTestCase)

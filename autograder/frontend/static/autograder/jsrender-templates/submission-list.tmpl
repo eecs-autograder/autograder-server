@@ -1,7 +1,8 @@
 <div id='submissions'>
-    <h3>Submissions for group: </h3>
+    <h3>Submissions:</h3>
+        <div>Group members: {{for data.attributes.members}}{{>}} {{/for}}</div>
     {{for included}}
-        <div><a href="{{:links.self}}">{{to_local_date:attributes.timestamp }}</a></div>
+        <div><a href="/submission{{:links.self}}">{{to_local_date:attributes.timestamp }}</a></div>
     {{else}}
         <div>You do not have any submissions yet</div>
     {{/for}}

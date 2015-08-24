@@ -240,6 +240,10 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         interpreter_flags -- TODO
         entry_point_file -- TODO
 
+    Instance methods:
+        test_checks_return_code()
+        test_checks_output()
+
     Abstract methods:
         run()
 
@@ -349,10 +353,12 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    def run(self):
+    def run(self, submission):
         """
         Runs this autograder test case and returns an
-            AutograderTestCaseResultBase object.
+            AutograderTestCaseResultBase object that is linked
+            to the given submission. If submission is None,
+            the result object will not be linked to any submission.
         Note that this method does NOT save the result object to the
             database.
 
@@ -458,6 +464,20 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
         return None
 
+    # -------------------------------------------------------------------------
+
+    def test_checks_return_code(self):
+        return (
+            self.expected_return_code is not None or
+            self.expect_any_nonzero_return_code)
+
+    def test_checks_output(self):
+        return (self.expected_standard_output or
+                self.expected_standard_error_output)
+
+    def test_checks_compilation(self):
+        return self.compiler
+
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -479,8 +499,12 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     Overridden methods:
         clean()
         run()
+        test_checks_compilation()
     """
     objects = PolymorphicManagerWithValidateOnCreate()
+
+    def test_checks_compilation(self):
+        return True
 
     def clean(self):
         errors = {}
