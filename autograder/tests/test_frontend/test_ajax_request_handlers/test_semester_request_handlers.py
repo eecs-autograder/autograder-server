@@ -39,7 +39,11 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
             'included': sorted([
                 project_to_json(self.visible_project, all_fields=False),
                 project_to_json(self.hidden_project, all_fields=False)
-            ], key=sort_key)
+            ], key=sort_key),
+            'meta': {
+                'is_staff': True,
+                'can_edit': True
+            }
         }
 
         actual = json_load_bytes(response.content)
@@ -60,7 +64,11 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
             'included': sorted([
                 project_to_json(self.visible_project, all_fields=False),
                 project_to_json(self.hidden_project, all_fields=False)
-            ], key=sort_key)
+            ], key=sort_key),
+            'meta': {
+                'is_staff': True,
+                'can_edit': False
+            }
         }
 
         actual = json_load_bytes(response.content)
@@ -80,7 +88,11 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
                 self.semester, user_is_semester_staff=False),
             'included': sorted([
                 project_to_json(self.visible_project, all_fields=False)
-            ], key=sort_key)
+            ], key=sort_key),
+            'meta': {
+                'is_staff': False,
+                'can_edit': False
+            }
         }
 
         actual = json_load_bytes(response.content)

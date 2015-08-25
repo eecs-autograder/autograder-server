@@ -23,6 +23,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'filesystem/')
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'l)=pokw&tlklpp6w*g*lsuha2a&o^1o3kpfl1)@1k-z4=trjp&'
 
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 

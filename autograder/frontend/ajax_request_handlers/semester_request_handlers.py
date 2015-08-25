@@ -38,7 +38,11 @@ class SemesterRequestHandler(LoginRequiredView):
         data = {
             'data': semester_to_json(
                 semester, user_is_semester_staff=is_staff),
-            'included': included
+            'included': included,
+            'meta': {
+                'is_staff': semester.is_semester_staff(request.user),
+                'can_edit': semester.course.is_course_admin(request.user)
+            }
         }
 
         return JsonResponse(data)

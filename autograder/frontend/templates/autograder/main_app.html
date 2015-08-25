@@ -233,7 +233,14 @@
         console.log('load_submission_view');
         $.get(submission_url).done(function(data, status) {
             console.log(data);
-            render_and_fix_links('view-submission', data);
+            $.when(
+                render_and_fix_links('view-submission', data)
+            ).done(function() {
+                // $('.file-link').click(function(event) {
+                //     event.preventDefault();
+                //     console.log($(this).attr('content-dest'));
+                // });
+            });
         });
     }
 
@@ -465,7 +472,7 @@
         ).done(
             load_view
         ).fail(
-            function() {
+            function(status, data) {
                 console.log('login failure: ' + status + ' ' + data);
                 signOut();
             }
@@ -477,13 +484,13 @@
 <script>
     function signOut()
     {
-        $.post("{% url 'logout' %}", function() {
-            var auth2 = gapi.auth2.getAuthInstance();
-            auth2.signOut().then(function () {
-                console.log('User signed out.');
-                history.pushState(null, "", '/');
-                $('#main-area').html('');
-            });
+        var auth2 = gapi.auth2.getAuthInstance();
+        auth2.signOut().then(function () {
+            console.log('User signed out.');
+            history.pushState(null, "", '/');
+            $('#main-area').html('');
+
+            $.post("{% url 'logout' %}");
         });
     }
 </script>

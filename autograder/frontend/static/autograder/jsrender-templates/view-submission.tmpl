@@ -4,7 +4,7 @@
     <div>Files submitted: </div>
     <ul>
     {{for data.attributes.submitted_files}}
-        <li><a href='{{: file_url}}'>{{>filename}}</a></li>
+        <li><a class='file-link' href='{{: file_url}}'>{{>filename}}</a></li>
     {{/for}}
     </ul>
 

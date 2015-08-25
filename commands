@@ -15,5 +15,5 @@ uwsgi --ini autograder_uwsgi.ini
 ./manage.py collectstatic  # gathers static files
 nginx
 nginx -s stop
-nginx -s restart
+nginx -s reload
 
