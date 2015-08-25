@@ -68,12 +68,20 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
                 not group.project.semester.is_semester_staff(request.user)):
             return HttpResponseForbidden()
 
+        is_admin = group.project.semester.course.is_course_admin(
+            request.user)
         response_content = {
             'data': submission_group_to_json(group),
             'included': [
                 submission_to_json(submission, all_fields=False)
                 for submission in group.submissions.all().order_by('-_timestamp')
-            ]
+            ],
+            'meta': {
+                'permissions': {
+                    'can_delete': is_admin,
+                    'can_edit': is_admin
+                }
+            }
         }
 
         return JsonResponse(response_content, status=200)

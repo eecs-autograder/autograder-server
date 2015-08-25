@@ -23,9 +23,7 @@ class GetCourse(LoginRequiredView):
             'data': course_to_json(course),
             'included': [
                 {
-                    'data': semester_to_json(
-                        semester, all_fields=False,
-                        user_is_semester_staff=True)
+                    'data': semester_to_json(semester, all_fields=False)
                 }
                 for semester in course.semesters.all().order_by('pk')
             ]

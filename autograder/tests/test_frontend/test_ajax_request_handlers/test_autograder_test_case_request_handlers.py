@@ -70,9 +70,9 @@ class _SetUpBase(TemporaryFilesystemTestCase):
         self.ag_test_starter = CompiledAutograderTestCase(
             project=self.project, **self.ag_test_json['data']['attributes'])
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
 
 class AddAutograderTestCaseRequestTestCase(_SetUpBase):
     def setUp(self):
@@ -114,8 +114,8 @@ def _add_ag_test_request(project, data, user):
     url = '/ag-test-cases/ag-test-case/'
     return process_post_request(url, data, user)
 
-
 # -----------------------------------------------------------------------------
+
 
 class GetAutograderTestCaseRequestTestCase(_SetUpBase):
     def setUp(self):
@@ -124,12 +124,18 @@ class GetAutograderTestCaseRequestTestCase(_SetUpBase):
         self.ag_test_starter.validate_and_save()
 
     def test_course_admin_or_staff_get_test_case(self):
-        for user in (self.admin, self.staff):
+        for user, is_admin in ((self.admin, True), (self.staff, False)):
             response = _get_ag_test_request(self.ag_test_starter.pk, user)
             self.assertEqual(200, response.status_code)
 
             expected = {
-                'data': autograder_test_case_to_json(self.ag_test_starter)
+                'data': autograder_test_case_to_json(self.ag_test_starter),
+                'meta': {
+                    'permissions': {
+                        'can_edit': is_admin,
+                        'can_delete': is_admin
+                    }
+                }
             }
             self.assertEqual(expected, json_load_bytes(response.content))
 
@@ -274,8 +280,8 @@ def _patch_ag_test_request(test_id, data, user):
     url = '/ag-test-cases/ag-test-case/{}/'.format(test_id)
     return process_patch_request(url, data, user)
 
-
 # -----------------------------------------------------------------------------
+
 
 class DeleteAutograderTestCaseRequestTestCase(_SetUpBase):
     def setUp(self):

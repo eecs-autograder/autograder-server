@@ -91,12 +91,7 @@ def semester_to_json(semester, all_fields=True):
 
     If all_fields is False, 'name' will be the only field included
     (the rest of the fields under the 'attributes' and 'relationships' keys
-    and the 'course_admin_names' meta field will be omitted).
-
-    user_is_semester_staff indicates the value of the 'is_staff' key in the
-    'meta' section. When this value is False, the 'semester_staff_names'
-    and 'enrolled_student_names' attributes and
-    the 'course_admin_names' meta field will be omitted.
+    will be omitted).
     """
     data = {
         'type': 'semester',
@@ -285,8 +280,9 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
     # TODO: move serializer to the test case class or use single dispatch
     if isinstance(autograder_test_case, CompiledAutograderTestCase):
         type_ = 'compiled_test_case'
+
     else:
-        raise TypeError()
+        type_ = 'dummy_test_case'
 
     data = {
         'type': type_,

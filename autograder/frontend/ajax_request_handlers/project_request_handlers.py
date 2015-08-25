@@ -7,7 +7,8 @@ from django.http import (
     FileResponse)
 
 from autograder.frontend.frontend_utils import LoginRequiredView
-from autograder.frontend.json_api_serializers import project_to_json
+from autograder.frontend.json_api_serializers import (
+    project_to_json, autograder_test_case_to_json)
 
 from autograder.models import Semester, Project
 
@@ -21,16 +22,36 @@ class ProjectRequestHandler(LoginRequiredView):
 
         is_staff = project.semester.is_semester_staff(request.user)
         is_enrolled = project.semester.is_enrolled_student(request.user)
-        project_public = project.allow_submissions_from_non_enrolled_students
+        proj_is_public = project.allow_submissions_from_non_enrolled_students
         can_view_project = (
             is_staff or
-            ((is_enrolled or project_public) and project.visible_to_students)
+            ((is_enrolled or proj_is_public) and project.visible_to_students)
         )
 
         if not can_view_project:
             return HttpResponseForbidden()
 
-        return JsonResponse({'data': project_to_json(project)})
+        response_content = {
+            'data': project_to_json(project),
+            'meta': {
+                'permissions': {
+                    'is_staff': is_staff,
+                    'can_edit': project.semester.course.is_course_admin(
+                        request.user)
+                }
+            },
+        }
+        if not is_staff:
+            response_content['data']['attributes'].pop('project_files')
+            response_content['data']['attributes'].pop(
+                'test_case_feedback_configuration')
+        else:
+            response_content['included'] = [
+                autograder_test_case_to_json(test_case)
+                for test_case in project.autograder_test_cases.all()
+            ]
+
+        return JsonResponse(response_content)
 
     def post(self, request):
         request_content = json.loads(request.body.decode('utf-8'))

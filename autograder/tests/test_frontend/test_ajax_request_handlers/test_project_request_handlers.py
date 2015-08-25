@@ -16,8 +16,9 @@ from .utils import (
     process_get_request, process_post_request,
     process_patch_request, process_delete_request, json_load_bytes)
 
-from autograder.frontend.json_api_serializers import project_to_json
-from autograder.models import Project
+from autograder.frontend.json_api_serializers import (
+    project_to_json, autograder_test_case_to_json)
+from autograder.models import Project, AutograderTestCaseBase
 
 
 class _SetUpBase(TemporaryFilesystemTestCase):
@@ -115,23 +116,68 @@ class GetProjectRequestTestCase(_SetUpBase):
 
         self.hidden_project = obj_ut.create_dummy_projects(self.semester)
 
-    def test_course_admin_or_staff_get_project(self):
+        for proj in (self.visible_project, self.hidden_project):
+            for i in range(5):
+                AutograderTestCaseBase.objects.validate_and_create(
+                    name='test{}'.format(i), project=proj)
+
+    def test_course_admin_get_project(self):
         # TODO: 'included' test cases
         for project in (self.visible_project, self.hidden_project):
             response = _get_project_request(
                 project.pk, self.admin)
             self.assertEqual(200, response.status_code)
-            self.assertEqual(
-                {'data': project_to_json(project)},
-                json_load_bytes(response.content))
+            expected = {
+                'data': project_to_json(project),
+                'meta': {
+                    'permissions': {
+                        'is_staff': True,
+                        'can_edit': True
+                    }
+                },
+                'included': [
+                    autograder_test_case_to_json(test_case)
+                    for test_case in project.autograder_test_cases.all()
+                ]
+            }
+            self.assertEqual(expected, json_load_bytes(response.content))
+
+    def test_semester_staff_get_project(self):
+        # TODO: 'included' test cases
+        for project in (self.visible_project, self.hidden_project):
+            response = _get_project_request(
+                project.pk, self.staff)
+            self.assertEqual(200, response.status_code)
+            expected = {
+                'data': project_to_json(project),
+                'meta': {
+                    'permissions': {
+                        'is_staff': True,
+                        'can_edit': False
+                    }
+                },
+                'included': [
+                    autograder_test_case_to_json(test_case)
+                    for test_case in project.autograder_test_cases.all()
+                ]
+            }
+            self.assertEqual(expected, json_load_bytes(response.content))
 
     def test_enrolled_student_get_project(self):
-        # TODO: 'included' test cases
         response = _get_project_request(self.visible_project.pk, self.enrolled)
         self.assertEqual(200, response.status_code)
-        self.assertEqual(
-            {'data': project_to_json(self.visible_project)},
-            json_load_bytes(response.content))
+        expected = {
+            'data': project_to_json(self.visible_project),
+            'meta': {
+                'permissions': {
+                    'is_staff': False,
+                    'can_edit': False
+                }
+            }
+        }
+        expected['data']['attributes'].pop('project_files')
+        expected['data']['attributes'].pop('test_case_feedback_configuration')
+        self.assertEqual(expected, json_load_bytes(response.content))
 
         response = _get_project_request(self.hidden_project.pk, self.enrolled)
         self.assertEqual(403, response.status_code)
@@ -152,6 +198,18 @@ class GetProjectRequestTestCase(_SetUpBase):
 
         response = _get_project_request(self.visible_project.pk, self.nobody)
         self.assertEqual(200, response.status_code)
+        expected = {
+            'data': project_to_json(self.visible_project),
+            'meta': {
+                'permissions': {
+                    'is_staff': False,
+                    'can_edit': False
+                }
+            }
+        }
+        expected['data']['attributes'].pop('project_files')
+        expected['data']['attributes'].pop('test_case_feedback_configuration')
+        self.assertEqual(expected, json_load_bytes(response.content))
 
 
 def _get_project_request(project_id, user):

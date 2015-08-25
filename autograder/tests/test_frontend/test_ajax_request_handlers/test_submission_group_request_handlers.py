@@ -188,7 +188,13 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
             'included': sorted([
                 submission_to_json(submission, all_fields=False)
                 for submission in self.submissions
-            ], key=lambda obj: obj['attributes']['timestamp'], reverse=True)
+            ], key=lambda obj: obj['attributes']['timestamp'], reverse=True),
+            'meta': {
+                'permissions': {
+                    'can_delete': False,
+                    'can_edit': False
+                }
+            }
         }
 
         self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
@@ -208,7 +214,13 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
             ], key=lambda obj: obj['attributes']['timestamp'], reverse=True)
         }
 
-        for user in (self.admin, self.staff):
+        for user, is_admin in ((self.admin, True), (self.staff, False)):
+            expected['meta'] = {
+                'permissions': {
+                    'can_delete': is_admin,
+                    'can_edit': is_admin
+                }
+            }
             response = _get_submission_group_request(
                 self.project.pk, self.enrolled.username, user)
             self.assertEqual(200, response.status_code)

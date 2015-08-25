@@ -45,7 +45,19 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
         if not test_case.project.semester.is_semester_staff(request.user):
             return HttpResponseForbidden()
 
-        return JsonResponse({'data': autograder_test_case_to_json(test_case)})
+        is_admin = (
+            test_case.project.semester.course.is_course_admin(request.user))
+        response_content = {
+            'data': autograder_test_case_to_json(test_case),
+            'meta': {
+                'permissions': {
+                    'can_edit': is_admin,
+                    'can_delete': is_admin
+                }
+            }
+        }
+
+        return JsonResponse(response_content)
 
     def post(self, request):
         request_content = json.loads(request.body.decode('utf-8'))
