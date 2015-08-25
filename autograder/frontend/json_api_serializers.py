@@ -68,7 +68,7 @@ def course_to_json(course, all_fields=True):
 #               }
 #           }
 #       }
-def semester_to_json(semester, all_fields=True, user_is_semester_staff=False):
+def semester_to_json(semester, all_fields=True):
     """
     Returns a JSON representation of the given semester of the
     following form:
@@ -76,9 +76,7 @@ def semester_to_json(semester, all_fields=True, user_is_semester_staff=False):
         'type': 'semester',
         'id': <id>,
         'attributes': {
-            'name': <name>,
-            'semester_staff_names': [<staff username>, ...],
-            'enrolled_student_names': [<student username>, ...]
+            'name': <name>
         },
         'relationships': {
             'course': {
@@ -88,10 +86,6 @@ def semester_to_json(semester, all_fields=True, user_is_semester_staff=False):
         },
         'links': {
             'self': <self link>
-        },
-        'meta': {
-            'is_staff': <true> | <false>,
-            'course_admin_names': [<course admin username>, ...]
         }
     }
 
@@ -110,9 +104,9 @@ def semester_to_json(semester, all_fields=True, user_is_semester_staff=False):
         'links': {
             'self': reverse('semester-handler', args=[semester.pk])
         },
-        'meta': {
-            'is_staff': user_is_semester_staff
-        },
+        # 'meta': {
+        #     'is_staff': user_is_semester_staff
+        # },
         'attributes': {
             'name': semester.name
         }
@@ -121,14 +115,14 @@ def semester_to_json(semester, all_fields=True, user_is_semester_staff=False):
     if not all_fields:
         return data
 
-    if user_is_semester_staff:
-        data['attributes']['semester_staff_names'] = (
-            semester.semester_staff_names)
-        data['attributes']['enrolled_student_names'] = (
-            semester.enrolled_student_names)
+    # if user_is_semester_staff:
+    #     data['attributes']['semester_staff_names'] = (
+    #         semester.semester_staff_names)
+    #     data['attributes']['enrolled_student_names'] = (
+    #         semester.enrolled_student_names)
 
-        data['meta']['course_admin_names'] = (
-            semester.course.course_admin_names)
+    #     data['meta']['course_admin_names'] = (
+    #         semester.course.course_admin_names)
 
     data['relationships'] = {
         'course': {

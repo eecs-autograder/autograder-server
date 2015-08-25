@@ -97,14 +97,40 @@ class SemesterSerializerTestCase(SerializerTestCase):
         self.enrolled_student = obj_ut.create_dummy_users()
         self.semester.add_enrolled_students(self.enrolled_student)
 
-    def test_serialize_semester_all_fields_is_staff(self):
+    # def test_serialize_semester_all_fields_is_staff(self):
+    #     expected = {
+    #         'type': 'semester',
+    #         'id': self.semester.pk,
+    #         'attributes': {
+    #             'name': self.semester.name,
+    #             'semester_staff_names': self.semester.semester_staff_names,
+    #             'enrolled_student_names': self.semester.enrolled_student_names
+    #         },
+    #         'relationships': {
+    #             'course': {
+    #                 'data': course_to_json(
+    #                     self.semester.course, all_fields=False)
+    #             }
+    #         },
+    #         'links': {
+    #             'self': reverse('semester-handler', args=[self.semester.pk])
+    #         },
+    #         'meta': {
+    #             'is_staff': True,
+    #             'course_admin_names': self.course.course_admin_names
+    #         }
+    #     }
+
+    #     actual = semester_to_json(self.semester, user_is_semester_staff=True)
+
+    #     self.assertJSONDictsEqual(expected, actual)
+
+    def test_serialize_semester_all_fields(self):
         expected = {
             'type': 'semester',
             'id': self.semester.pk,
             'attributes': {
                 'name': self.semester.name,
-                'semester_staff_names': self.semester.semester_staff_names,
-                'enrolled_student_names': self.semester.enrolled_student_names
             },
             'relationships': {
                 'course': {
@@ -115,50 +141,41 @@ class SemesterSerializerTestCase(SerializerTestCase):
             'links': {
                 'self': reverse('semester-handler', args=[self.semester.pk])
             },
-            'meta': {
-                'is_staff': True,
-                'course_admin_names': self.course.course_admin_names
-            }
+            # 'meta': {
+            #     'is_staff': False
+            # }
         }
 
-        actual = semester_to_json(self.semester, user_is_semester_staff=True)
+        actual = semester_to_json(self.semester)
 
         self.assertJSONDictsEqual(expected, actual)
 
-    def test_serialize_semester_all_fields_not_staff(self):
-        expected = {
-            'type': 'semester',
-            'id': self.semester.pk,
-            'attributes': {
-                'name': self.semester.name,
-            },
-            'relationships': {
-                'course': {
-                    'data': course_to_json(
-                        self.semester.course, all_fields=False)
-                }
-            },
-            'links': {
-                'self': reverse('semester-handler', args=[self.semester.pk])
-            },
-            'meta': {
-                'is_staff': False
-            }
-        }
+    # def test_serialize_semester_no_fields_is_staff(self):
+    #     expected = {
+    #         'type': 'semester',
+    #         'id': self.semester.pk,
+    #         'links': {
+    #             'self': reverse('semester-handler', args=[self.semester.pk])
+    #         },
+    #         'meta': {
+    #             'is_staff': True
+    #         },
+    #         'attributes': {
+    #             'name': self.semester.name
+    #         }
+    #     }
 
-        actual = semester_to_json(self.semester, user_is_semester_staff=False)
+    #     actual = semester_to_json(
+    #         self.semester, all_fields=False, user_is_semester_staff=True)
 
-        self.assertJSONDictsEqual(expected, actual)
+    #     self.assertJSONDictsEqual(expected, actual)
 
-    def test_serialize_semester_no_fields_is_staff(self):
+    def test_serialize_semester_no_fields(self):
         expected = {
             'type': 'semester',
             'id': self.semester.pk,
             'links': {
                 'self': reverse('semester-handler', args=[self.semester.pk])
-            },
-            'meta': {
-                'is_staff': True
             },
             'attributes': {
                 'name': self.semester.name
@@ -166,27 +183,7 @@ class SemesterSerializerTestCase(SerializerTestCase):
         }
 
         actual = semester_to_json(
-            self.semester, all_fields=False, user_is_semester_staff=True)
-
-        self.assertJSONDictsEqual(expected, actual)
-
-    def test_serialize_semester_no_fields_not_staff(self):
-        expected = {
-            'type': 'semester',
-            'id': self.semester.pk,
-            'links': {
-                'self': reverse('semester-handler', args=[self.semester.pk])
-            },
-            'meta': {
-                'is_staff': False
-            },
-            'attributes': {
-                'name': self.semester.name
-            }
-        }
-
-        actual = semester_to_json(
-            self.semester, all_fields=False, user_is_semester_staff=False)
+            self.semester, all_fields=False)
 
         self.assertJSONDictsEqual(expected, actual)
 

@@ -34,15 +34,16 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
 
         sort_key = lambda obj: obj['id']
         expected = {
-            'data': semester_to_json(
-                self.semester, user_is_semester_staff=True),
+            'data': semester_to_json(self.semester),
             'included': sorted([
                 project_to_json(self.visible_project, all_fields=False),
                 project_to_json(self.hidden_project, all_fields=False)
             ], key=sort_key),
             'meta': {
-                'is_staff': True,
-                'can_edit': True
+                'permissions': {
+                    'is_staff': True,
+                    'can_edit': True
+                }
             }
         }
 
@@ -59,15 +60,16 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
 
         sort_key = lambda obj: obj['id']
         expected = {
-            'data': semester_to_json(
-                self.semester, user_is_semester_staff=True),
+            'data': semester_to_json(self.semester),
             'included': sorted([
                 project_to_json(self.visible_project, all_fields=False),
                 project_to_json(self.hidden_project, all_fields=False)
             ], key=sort_key),
             'meta': {
-                'is_staff': True,
-                'can_edit': False
+                'permissions': {
+                    'is_staff': True,
+                    'can_edit': False
+                }
             }
         }
 
@@ -84,14 +86,15 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
 
         sort_key = lambda obj: obj['id']
         expected = {
-            'data': semester_to_json(
-                self.semester, user_is_semester_staff=False),
+            'data': semester_to_json(self.semester),
             'included': sorted([
                 project_to_json(self.visible_project, all_fields=False)
             ], key=sort_key),
             'meta': {
-                'is_staff': False,
-                'can_edit': False
+                'permissions': {
+                    'is_staff': False,
+                    'can_edit': False
+                }
             }
         }
 
@@ -138,7 +141,7 @@ class ListSemestersRequestTestCase(RequestHandlerTestCase):
         sort_key = lambda obj: obj['id']
         expected = {
             'data': sorted([
-                semester_to_json(semester, user_is_semester_staff=True)
+                semester_to_json(semester)
                 for semester in self.semesters
             ], key=sort_key)
         }
@@ -159,7 +162,7 @@ class ListSemestersRequestTestCase(RequestHandlerTestCase):
         sort_key = lambda obj: obj['id']
         expected = {
             'data': sorted([
-                semester_to_json(semester, user_is_semester_staff=True)
+                semester_to_json(semester)
                 for semester in subset
             ], key=sort_key)
         }
@@ -180,7 +183,7 @@ class ListSemestersRequestTestCase(RequestHandlerTestCase):
         sort_key = lambda obj: obj['id']
         expected = {
             'data': sorted([
-                semester_to_json(semester, user_is_semester_staff=False)
+                semester_to_json(semester)
                 for semester in subset
             ], key=sort_key)
         }
@@ -196,10 +199,8 @@ class ListSemestersRequestTestCase(RequestHandlerTestCase):
 
         expected = {
             'data': [
-                semester_to_json(
-                    self.semesters1[0], user_is_semester_staff=True),
-                semester_to_json(
-                    self.semesters2[-2], user_is_semester_staff=False)
+                semester_to_json(self.semesters1[0]),
+                semester_to_json(self.semesters2[-2])
             ]
         }
 
@@ -457,8 +458,7 @@ class AddSemesterTestCase(RequestHandlerTestCase):
             name=semester_name, course=self.course)
 
         expected = {
-            'data': semester_to_json(loaded_semester,
-                                     user_is_semester_staff=True)
+            'data': semester_to_json(loaded_semester)
         }
 
         self.assertJSONObjsEqual(expected, json_load_bytes(response.content))

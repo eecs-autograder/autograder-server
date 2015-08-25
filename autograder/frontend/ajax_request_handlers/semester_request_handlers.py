@@ -36,12 +36,13 @@ class SemesterRequestHandler(LoginRequiredView):
             return HttpResponseForbidden()
 
         data = {
-            'data': semester_to_json(
-                semester, user_is_semester_staff=is_staff),
+            'data': semester_to_json(semester),
             'included': included,
             'meta': {
-                'is_staff': semester.is_semester_staff(request.user),
-                'can_edit': semester.course.is_course_admin(request.user)
+                'permissions': {
+                    'is_staff': semester.is_semester_staff(request.user),
+                    'can_edit': semester.course.is_course_admin(request.user)
+                }
             }
         }
 
@@ -61,8 +62,7 @@ class SemesterRequestHandler(LoginRequiredView):
                 course=course)
 
             response_json = {
-                'data': semester_to_json(
-                    new_semester, user_is_semester_staff=True)
+                'data': semester_to_json(new_semester)
             }
             return JsonResponse(response_json, status=201)
         except ValidationError as e:
@@ -140,7 +140,7 @@ class ListSemesters(LoginRequiredView):
 
         data = {
             'data': [
-                semester_to_json(semester, user_is_semester_staff=True)
+                semester_to_json(semester)
                 for semester in staff_semesters.all()
             ]
         }
