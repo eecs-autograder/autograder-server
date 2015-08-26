@@ -18,8 +18,8 @@ from django.core.urlresolvers import reverse_lazy, reverse
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden
 from django.contrib.auth import authenticate, login, logout
 
-# from django.views.decorators.csrf import ensure_csrf_cookie
-# from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 
 from autograder.frontend.frontend_utils import ExceptionLoggingView, LoginRequiredView
 from autograder.models import (
@@ -27,6 +27,7 @@ from autograder.models import (
 
 
 class MainAppPage(ExceptionLoggingView):
+    @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         return render(request, 'autograder/main_app.html', {})
 

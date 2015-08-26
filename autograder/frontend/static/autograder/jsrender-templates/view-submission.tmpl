@@ -1,13 +1,25 @@
-<div id='submission' class='container'>
-    <h3>Submitted at: {{to_local_date:data.attributes.timestamp}}</h3>
-
+<div id='submission'>
+<!--     <h3>Submitted at: {{to_local_date:data.attributes.timestamp}}</h3>
+ -->
     <div>Files submitted: </div>
-    <ul>
-    {{for data.attributes.submitted_files}}
-        <li><a class='file-link' href='{{: file_url}}'>{{>filename}}</a></li>
-    {{/for}}
-    </ul>
-
+        <div class='panel-group'>
+            <div class='panel panel-default'>
+            {{for data.attributes.submitted_files}}
+                <div class='panel-heading'>
+                    <h4 class='panel-title'>
+                        <a data-toggle='collapse' class='collapsible-link'
+                           href="#file-{{>filename}}-{{:~root.data.id}}">
+                            {{>filename}}
+                        </a>
+                    </h4>
+                </div>
+                <div id='file-{{>filename}}-{{:~root.data.id}}' class='panel-collapse collapse'>
+                    <a href='{{: file_url}}' style='display:none'></a>
+                    <pre class='panel-body prettyprint'></pre>
+                </div>
+            {{/for}}
+            </div>
+        </div>
     <div>Results: </div>
     <ul>
         <li>
@@ -19,10 +31,10 @@
                 </div>
             {{/if}}
             {{if compilation_stdout !== undefined}}
-                <div>Compilation standard output: {{> compilation_stdout}}</div>
+                Compilation standard output: <pre>{{> compilation_stdout}}</pre>
             {{/if}}
             {{if compilation_stderr !== undefined}}
-                <div>Compilation standard error output: {{> compilation_stderr}}</div>
+                Compilation error output:  <pre>{{> compilation_stderr}}</pre>
             {{/if}}
 
             {{if timed_out}}
@@ -39,17 +51,17 @@
                     </div>
                 {{/if}}
                 {{if stdout_diff !== undefined}}
-                    <div>Standard output diff: {{> stdout_diff}}</div>
+                    Standard output diff: <pre>{{> stdout_diff}}</pre>
                 {{/if}}
                 {{if stderr_diff !== undefined}}
-                    <div>Standard error output diff: {{> stderr_diff}}</div>
+                    Standard error output diff: <pre>{{> stderr_diff}}</pre>
                 {{/if}}
 
                 {{if valgrind_errors_present !== undefined}}
                     <div>Valgrind: {{if valgrind_errors_present}}CLEAN{{else}}ERRORS{{/if}}</div>
                 {{/if}}
                 {{if valgrind_output !== undefined}}
-                    <div>Valgrind output: {{>valgrind_output}}</div>
+                    Valgrind output: <pre>{{>valgrind_output}}</pre>
                 {{/if}}
 
                 {{if total_points_awarded !== undefined}}

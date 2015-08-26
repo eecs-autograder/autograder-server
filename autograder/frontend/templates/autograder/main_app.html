@@ -23,6 +23,9 @@
 
     <script src="https://apis.google.com/js/platform.js" async defer></script>
 
+    <!-- code prettify -->
+    <script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+
     <!-- csrf protection -->
     <script id='csrf-setup' type="text/javascript">
         // source: https://docs.djangoproject.com/en/1.7/ref/contrib/csrf/#ajax
@@ -146,6 +149,9 @@
             history.replaceState(null, '', '/');
             load_landing_page();
         }
+
+        // HACK
+        $('.collapse').collapse();
     }
 
     function load_landing_page()
@@ -170,7 +176,6 @@
         // console.log('load_semester_view');
         // console.log(semester_url);
         $.get(semester_url, function(data, status) {
-            console.log(data);
             // console.log(status);
             render_and_fix_links('view-semester', data);
         });
@@ -180,12 +185,8 @@
     {
         console.log('load_project_view');
         $.get(project_url, function(project_data, status) {
-            // var auth2 = gapi.auth2.getAuthInstance();
-            // var profile = auth2.currentUser.get().getBasicProfile();
-            var url = "{% url 'submission-group-no-id' %}" + '?' + $.param(
-                {'project_id': project_data.data.id,
-                 'username': get_user_email()});
-            console.log(url);
+            var url = get_submission_group_url(
+                project_data.data.id, get_user_email());
             $.ajax(url,
             {
                 statusCode: {
@@ -203,7 +204,7 @@
                 console.log(group_data);
                 var project_render_data = {
                     'project': project_data,
-                    'submission_group_id': group_data.data.id
+                    'group': group_data
                 };
                 console.log(group_data);
                 $.when(
@@ -213,12 +214,56 @@
                         'url': "{% url 'add-submission' %}",
                         'singleFileUploads': false
                     });
-
+                    console.log(group_data);
                     render_and_fix_links(
-                        'submission-list', group_data, $('#main-area'), true);
+                        'submission-list', group_data,
+                        $('#own-submissions')
+                    ).done(function() {
+                        $('.collapse').on('show.bs.collapse', function() {
+                            var url = $('a', this).attr('href');
+                            var context = $('.panel-body', this);
+                            $.get(url).done(function(data, status) {
+                                console.log(data);
+                                console.log(context);
+                                render_and_fix_links(
+                                    'view-submission', data, context);
+                            });
+                        });
+                    });
+                    $('#load-student-submissions-button').click(function(event){
+                        event.preventDefault();
+                        $('#student-submission-view .error').remove();
+                        var email = $('#requested-email').val();
+                        if (!is_umich_email(email))
+                        {
+                            $('#requested-email').after(
+                                '<span class="error">Please enter a valid umich.edu email address</span>');
+                            return;
+                        }
+                        var url = get_submission_group_url(
+                            project_data.data.id, email);
+                        $.get(
+                            url
+                        ).done(function (data, status) {
+                            render_and_fix_links('submission-list', data, $('#student-submissions'));
+                        });
+                    });
+                    $('#requested-email').keypress(function(event) {
+                        if (event.which === 13) // enter key pressed
+                        {
+                            $('#load-student-submissions-button').click();
+                        }
+                    });
                 });
             });
         });
+    }
+
+    function get_submission_group_url(project_id, username)
+    {
+        return "{% url 'submission-group-no-id' %}" + '?' + $.param(
+            {'project_id': project_id,
+             'username': username});
     }
 
     // function handle_file_input_change(files)
@@ -232,7 +277,7 @@
     {
         console.log('load_submission_view');
         $.get(submission_url).done(function(data, status) {
-            console.log(data);
+            // console.log(data);
             $.when(
                 render_and_fix_links('view-submission', data)
             ).done(function() {
@@ -257,7 +302,7 @@
         $.when(promise).done(function() {
             $('#register-group-button').click(function (event) {
                 // event.preventDefault();
-                console.log('bleeeeee');
+                // console.log('bleeeeee');
                 $(".error").remove();
 
                 var members = [get_user_email()];
@@ -275,10 +320,11 @@
                     var email = $.trim(field.value);
                     if (email === '')
                     {
+                        // Skip blank fields
                         return;
                     }
 
-                    if (email.split('@')[1] !== 'umich.edu')
+                    if (!is_umich_email(email))
                     {
                         $(this).after('<span class="error">Please enter a "umich.edu" email address</span>');
                         return;
@@ -313,6 +359,11 @@
             deferred.resolve();
         });
         return deferred.promise();
+    }
+
+    function is_umich_email(email)
+    {
+        return email.split('@')[1] === 'umich.edu';
     }
 
     function submit_group_request(members, project_data)
@@ -440,7 +491,15 @@
 </head>
 <body>
 
-<div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+<div class='container'>
+    <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+    <button onclick='signOut();'>Sign out</button>
+
+    <h1>The Autograder</h1>
+
+    <div id='main-area' class='container'></div>
+</div>
+
 <script>
     function onSignIn(googleUser)
     {
@@ -494,13 +553,6 @@
         });
     }
 </script>
-<button onclick='signOut();'>Sign out</button>
-
-<div class='container'>
-    <h1>The Autograder</h1>
-
-    <div id='main-area' class='container'></div>
-</div>
 
 </body>
 </html>
