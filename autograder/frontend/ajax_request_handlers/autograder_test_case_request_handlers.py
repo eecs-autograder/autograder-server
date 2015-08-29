@@ -9,14 +9,10 @@ from autograder.frontend.json_api_serializers import (
     autograder_test_case_to_json)
 
 from autograder.models import (
-    Project, AutograderTestCaseBase, CompiledAutograderTestCase)
+    Project, AutograderTestCaseBase, AutograderTestCaseFactory)
 
 
 class AutograderTestCaseRequestHandler(LoginRequiredView):
-    _test_case_type_mappings = {
-        'compiled_test_case': CompiledAutograderTestCase
-    }
-
     _EDITABLE_FIELDS = [
         'name',
         'hide_from_students',
@@ -73,15 +69,13 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
         type_str = request_content['data']['type']
 
         try:
-            test_class = (
-                AutograderTestCaseRequestHandler._test_case_type_mappings[
-                    type_str])
-            new_test = test_class(project=project)
+            new_test = AutograderTestCaseFactory.new_instance(
+                type_str, project=project)
             to_set = request_content['data']['attributes']
             for field in AutograderTestCaseRequestHandler._EDITABLE_FIELDS:
                 if field in to_set:
                     setattr(new_test, field, to_set[field])
-        except KeyError:
+        except ValueError:
             return HttpResponse('Invalid test case type', status=400)
 
         try:

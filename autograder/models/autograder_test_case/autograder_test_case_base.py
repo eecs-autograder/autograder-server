@@ -1,12 +1,7 @@
 """
 Classes:
     AutograderTestCaseBase -- A fat interface for autograder test cases.
-    CompiledAutograderTestCase -- Defines a structure for testing compiled
-        programs.
 """
-
-import os
-import subprocess
 
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
@@ -17,15 +12,10 @@ from autograder.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate,
     filename_matches_any_pattern)
 
-from autograder.models import Project, AutograderTestCaseResultBase
+from autograder.models import Project
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
-
-
-# A list of compilers that may be used in autograder test cases that
-# require compilation.
-SUPPORTED_COMPILERS = ["g++"]
 
 
 def _validate_cmd_line_arg(arg):
@@ -243,14 +233,22 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     Instance methods:
         test_checks_return_code()
         test_checks_output()
+        test_checks_compilation()
+
+        to_json()
 
     Abstract methods:
         run()
+        get_type_str()
 
     Overridden methods:
         __init__()
         clean()
     """
+    # A list of compilers that may be used in autograder test cases that
+    # require compilation.
+    SUPPORTED_COMPILERS = ["g++"]
+
     class Meta:
         unique_together = ('name', 'project')
 
@@ -478,235 +476,5 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     def test_checks_compilation(self):
         return self.compiler
 
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-class CompiledAutograderTestCase(AutograderTestCaseBase):
-    """
-    This class allows evaluating a program that will be compiled
-    from student-submitted code.
-
-    This class does not define any new fields.
-    Instead, the following fields inherited from the base class
-    are now REQUIRED:
-        compiler
-        compiler_flags (This field is allowed to be empty)
-        files_to_compile_together
-        executable_name
-
-    Overridden methods:
-        clean()
-        run()
-        test_checks_compilation()
-    """
-    objects = PolymorphicManagerWithValidateOnCreate()
-
-    def test_checks_compilation(self):
-        return True
-
-    def clean(self):
-        errors = {}
-
-        try:
-            super().clean()
-        except ValidationError as e:
-            errors = e.message_dict
-
-        if self.compiler not in SUPPORTED_COMPILERS:
-            errors['compiler'] = 'Unsupported compiler'
-
-        compiler_flag_errors = self._clean_compiler_flags()
-        if compiler_flag_errors:
-            errors['compiler_flags'] = compiler_flag_errors
-
-        files_to_compile_errors = self._clean_files_to_compile_together()
-        if files_to_compile_errors:
-            errors['files_to_compile_together'] = files_to_compile_errors
-
-        try:
-            if self.executable_name:
-                self.executable_name = self.executable_name.strip()
-
-            ut.check_user_provided_filename(self.executable_name)
-        except ValidationError as e:
-            errors['executable_name'] = e.message
-
-        if errors:
-            raise ValidationError(errors)
-
-    def _clean_compiler_flags(self):
-        if self.compiler_flags is None:
-            return ['This value cannot be null']
-
-        self.compiler_flags = [arg.strip() for arg in self.compiler_flags]
-
-        return self._clean_arg_list(self.compiler_flags)
-
-    def _clean_files_to_compile_together(self):
-        if not self.files_to_compile_together:
-            return ['At least one file must be specified for compilation']
-
-        errors = []
-        patterns = [pattern_obj.pattern for pattern_obj in
-                    self.project.expected_student_file_patterns]
-        for filename in self.files_to_compile_together:
-            valid_filename = (
-                filename in self.project.get_project_file_basenames() or
-                filename in self.project.required_student_files or
-                filename in patterns
-            )
-
-            if not valid_filename:
-                errors.append('File {0} not found for project {1}'.format(
-                    filename, self.project.name))
-
-        return errors
-
-    # -------------------------------------------------------------------------
-
-    def run(self, submission):
-        result = AutograderTestCaseResultBase(test_case=self)
-
-        compilation_command = (
-            [self.compiler] + self.compiler_flags +
-            self.files_to_compile_together + ['-o', self.executable_name]
-        )
-
-        runner = _SubprocessRunner(compilation_command)
-        result.submission = submission
-        result.compilation_standard_output = runner.stdout
-        result.compilation_standard_error_output = runner.stderr
-        result.compilation_return_code = runner.return_code
-
-        if result.compilation_return_code != 0 or result.timed_out:
-            # print(result._compilation_return_code)
-            # print(runner.stderr)
-            return result
-
-        run_program_cmd = (
-            ['./' + self.executable_name] + self.command_line_arguments
-        )
-
-        runner = _SubprocessRunner(
-            run_program_cmd, timeout=self.time_limit,
-            stdin_content=self.standard_input)
-
-        result.return_code = runner.return_code
-        result.standard_output = runner.stdout
-        result.standard_error_output = runner.stderr
-        result.timed_out = runner.timed_out
-
-        if not self.use_valgrind:
-            return result
-
-        valgrind_run_cmd = ['valgrind'] + self.valgrind_flags + run_program_cmd
-
-        runner = _SubprocessRunner(
-            valgrind_run_cmd, timeout=self.time_limit,
-            stdin_content=self.standard_input)
-
-        result.valgrind_return_code = runner.return_code
-        result.valgrind_output = runner.stderr
-
-        return result
-
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-# TODO: Once upgraded to Python 3.5 and Django 1.9, replace Popen with the
-# new subprocess.run() method.
-class _SubprocessRunner(object):
-    """
-    Convenience wrapper for calling Popen and retrieving the data
-    we usually need.
-    """
-    def _get_docker_args():
-        return [
-            'docker', 'run',
-            '-a', 'STDIN', '-a', 'STDOUT', '-a', 'STDERR',  # Attach streams
-            '--rm',  # Delete the container when finished running
-            '-m', '500M',  # Memory limit
-            '--memory-swap', '750M',  # Total memory limit (memory + swap)
-            '--ulimit', 'nproc=5',  # Limit number of processes
-            '-v', os.getcwd() + ':/home/files',  # Mount the current directory
-            '-w', '/home/files',  # Set working directory in container
-            # -u nobody  # set user (root by default, but we don't want that)
-            # '-t',  # Allocate a pseudo-tty
-            '-i',  # Run in interactive mode (needed for input redirection)
-            'autograder'  # Specify which image to use
-        ]
-
-    def __init__(self, program_args, **kwargs):
-        self._args = program_args
-        self._timeout = kwargs.get('timeout', gc.DEFAULT_SUBPROCESS_TIMEOUT)
-        self._stdin_content = kwargs.get('stdin_content', '')
-        self._merge_stdout_and_stderr = kwargs.get(
-            'merge_stdout_and_stderr', False)
-
-        self._timed_out = False
-        self._return_code = None
-        self._stdout = None
-        self._stderr = None
-
-        self._process = None
-
-        self._run()
-
-    @property
-    def timed_out(self):
-        return self._timed_out
-
-    @property
-    def return_code(self):
-        return self._return_code
-
-    @property
-    def stdout(self):
-        return self._stdout
-
-    @property
-    def stderr(self):
-        return self._stderr
-
-    @property
-    def process(self):
-        return self._process
-
-    def _run(self):
-        # Note: It is not possible to use string streams
-        # (io.StringIO) with subprocess.call() because they do not
-        # have a fileno attribute. This is not a huge issue, as using
-        # Popen and subprocess.PIPE is the preferred approach to
-        # redirecting input and output from strings.
-        self._process = subprocess.Popen(
-            _SubprocessRunner._get_docker_args() + self._args,
-            universal_newlines=True,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=(subprocess.STDOUT if self._merge_stdout_and_stderr
-                    else subprocess.PIPE)
-        )
-
-        try:
-            self._stdout, self._stderr = self._process.communicate(
-                input=self._stdin_content,
-                timeout=self._timeout)
-
-            self._process.stdin.close()
-
-            self._return_code = self._process.returncode
-
-            print(self._process.args)
-            print(self._process.returncode)
-            print(self._stdout)
-            print(self._stderr)
-            # print(self._process.stdin.read())
-        except subprocess.TimeoutExpired:
-            self._process.kill()
-            self._stdout, self._stderr = self._process.communicate()
-            self._return_code = self._process.returncode
-            self._timed_out = True
+    def get_type_str(self):
+        raise NotImplementedError('Subclasses must override this method')

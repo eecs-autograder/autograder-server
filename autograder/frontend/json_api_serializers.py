@@ -269,23 +269,12 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
     (the other fields under the 'attributes' and 'relationships'
     keys are not included).
 
-    The 'type' field corresponds to the type of the given test case
-    as follows:
-        CompiledAutograderTestCase: 'compiled_test_case'
-        (support for more test cases will be added in the future)
-
-    Raises TypeError if the type of autograder_test_case is not
-    listed in the above type mapping.
+    The 'type' field will be a string representing the dynamic type
+    of the test case, and when that string is passed to the autograder
+    test factory, the same kind of test case should be returned.
     """
-    # TODO: move serializer to the test case class or use single dispatch
-    if isinstance(autograder_test_case, CompiledAutograderTestCase):
-        type_ = 'compiled_test_case'
-
-    else:
-        type_ = 'dummy_test_case'
-
     data = {
-        'type': type_,
+        'type': autograder_test_case.get_type_str(),
         'id': autograder_test_case.pk,
         'links': {
             'self': reverse('ag-test-handler', args=[autograder_test_case.pk])
@@ -325,7 +314,14 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
             autograder_test_case.points_for_compilation_success)
     })
 
-    if type_ == 'compiled_test_case':
+    data['relationships'] = {
+        'project': {
+            'data': project_to_json(
+                autograder_test_case.project, all_fields=False)
+        }
+    }
+
+    if autograder_test_case.compiler:
         data['attributes'].update(
             {
                 'compiler': autograder_test_case.compiler,
@@ -335,13 +331,6 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
                 'executable_name': autograder_test_case.executable_name
             }
         )
-
-    data['relationships'] = {
-        'project': {
-            'data': project_to_json(
-                autograder_test_case.project, all_fields=False)
-        }
-    }
 
     return data
 

@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 
 from autograder.models import (
     Project, Semester, Course, AutograderTestCaseBase,
-    CompiledAutograderTestCase)
+    CompiledAutograderTestCase, AutograderTestCaseFactory)
 
 # import autograder.shared.utilities as ut
 import autograder.shared.global_constants as gc
@@ -557,7 +557,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_valid_create_custom_values(self):
-        CompiledAutograderTestCase.objects.validate_and_create(
+        AutograderTestCaseFactory.validate_and_create(
+            'compiled_test_case',
             name=self.TEST_NAME, project=self.project,
             **self.compiled_test_kwargs)
 
@@ -575,7 +576,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['compiler'] = ''
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -585,7 +587,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['compiler'] = None
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -595,7 +598,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['compiler'] = 'spamcompiler++'
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -606,7 +610,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             '; echo "haxorz!#', '', '       ']
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -620,7 +625,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['compiler_flags'] = [
             '     spam    ', '   egg  ']
 
-        CompiledAutograderTestCase.objects.validate_and_create(
+        AutograderTestCaseFactory.validate_and_create(
+            'compiled_test_case',
             name=self.TEST_NAME, project=self.project,
             **self.compiled_test_kwargs)
 
@@ -634,7 +640,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['files_to_compile_together'] = []
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -645,7 +652,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['files_to_compile_together'] = None
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -656,7 +664,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['files_to_compile_together'].append('')
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -666,7 +675,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['files_to_compile_together'][-1] = None
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -677,7 +687,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             'nonexistant_file.txt')
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -690,7 +701,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['executable_name'] = ''
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -700,7 +712,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['executable_name'] = None
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -710,7 +723,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['executable_name'] = "../haxorz"
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -719,7 +733,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def test_executable_name_whitespace_stripped(self):
         self.compiled_test_kwargs['executable_name'] = "   spam.exe   "
 
-        CompiledAutograderTestCase.objects.validate_and_create(
+        AutograderTestCaseFactory.validate_and_create(
+            'compiled_test_case',
             name=self.TEST_NAME, project=self.project,
             **self.compiled_test_kwargs)
 
@@ -731,7 +746,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['executable_name'] = "     "
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 **self.compiled_test_kwargs)
 
@@ -743,7 +759,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiled_test_kwargs['executable_name'] = ''
 
         with self.assertRaises(ValidationError) as cm:
-            CompiledAutograderTestCase.objects.validate_and_create(
+            AutograderTestCaseFactory.validate_and_create(
+                'compiled_test_case',
                 name=self.TEST_NAME, project=self.project,
                 time_limit='spam',
                 **self.compiled_test_kwargs)
@@ -754,7 +771,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_test_checks_compilation(self):
-        test = CompiledAutograderTestCase.objects.validate_and_create(
+        test = AutograderTestCaseFactory.validate_and_create(
+            'compiled_test_case',
             name=self.TEST_NAME, project=self.project,
             **self.compiled_test_kwargs)
 
@@ -822,7 +840,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
             stdout_content)
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertEqual(result.standard_output, stdout_content)
         self.assertTrue(result.standard_output_correct)
@@ -840,7 +858,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
             expected_stdout_content)
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertNotEqual(result.standard_output, expected_stdout_content)
         self.assertFalse(result.standard_output_correct)
@@ -858,7 +876,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
             stderr_content)
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertEqual(result.standard_error_output, stderr_content)
         self.assertTrue(result.standard_error_output_correct)
@@ -876,7 +894,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
             expected_stderr_content)
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertNotEqual(
             result.standard_error_output, expected_stderr_content)
@@ -894,7 +912,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.expected_return_code = expected_return_code
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertEqual(expected_return_code, result.return_code)
         self.assertTrue(result.return_code_correct)
@@ -910,7 +928,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.expected_return_code = expected_return_code
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertNotEqual(expected_return_code, result.return_code)
         self.assertFalse(result.return_code_correct)
@@ -925,7 +943,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.expect_any_nonzero_return_code = True
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertNotEqual(0, result.return_code)
         self.assertTrue(result.return_code_correct)
@@ -940,7 +958,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.expect_any_nonzero_return_code = True
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertEqual(0, result.return_code)
         self.assertFalse(result.return_code_correct)
@@ -958,7 +976,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.expected_standard_output = expected_output
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -975,7 +993,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.expected_standard_output = expected_output
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -997,7 +1015,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.expected_standard_output = expected_output
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -1011,7 +1029,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.time_limit = 1
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertTrue(result.timed_out)
         self.assertNotEqual(result.return_code, 0)
@@ -1025,7 +1043,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.use_valgrind = True
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertEqual(result.valgrind_return_code, 0)
 
@@ -1043,7 +1061,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.use_valgrind = True
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertNotEqual(result.valgrind_return_code, 0)
 
@@ -1058,7 +1076,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
 
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertNotEqual(result.compilation_return_code, 0)
         self.assertNotEqual(result.compilation_standard_error_output, '')
@@ -1098,7 +1116,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.use_valgrind = True
 
         self.test_case_starter.save()
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertEqual(expected_stdout, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -1142,7 +1160,7 @@ class CompiledAutograderTestRunTestCase(TemporaryFilesystemTestCase):
         self.test_case_starter.use_valgrind = True
 
         self.test_case_starter.save()
-        result = self.test_case_starter.run()
+        result = self.test_case_starter.run(submission=None)
 
         self.assertNotEqual(expected_stdout, result.standard_output)
         self.assertFalse(result.standard_output_correct)

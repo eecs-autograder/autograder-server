@@ -22,8 +22,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 
 from autograder.frontend.frontend_utils import ExceptionLoggingView, LoginRequiredView
-from autograder.models import (
-    Course, Semester, Project, CompiledAutograderTestCase)
+from autograder.models import Course, Semester, Project
 
 
 class MainAppPage(ExceptionLoggingView):

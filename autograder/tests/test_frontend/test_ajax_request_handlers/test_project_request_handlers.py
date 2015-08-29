@@ -18,7 +18,7 @@ from .utils import (
 
 from autograder.frontend.json_api_serializers import (
     project_to_json, autograder_test_case_to_json)
-from autograder.models import Project, AutograderTestCaseBase
+from autograder.models import Project, AutograderTestCaseFactory
 
 
 class _SetUpBase(TemporaryFilesystemTestCase):
@@ -112,17 +112,22 @@ class GetProjectRequestTestCase(_SetUpBase):
 
         self.visible_project = obj_ut.create_dummy_projects(self.semester)
         self.visible_project.visible_to_students = True
+        self.visible_project.required_student_files = ['spam.cpp']
         self.visible_project.validate_and_save()
 
         self.hidden_project = obj_ut.create_dummy_projects(self.semester)
+        self.hidden_project.required_student_files = ['spam.cpp']
+        self.hidden_project.validate_and_save()
 
         for proj in (self.visible_project, self.hidden_project):
             for i in range(5):
-                AutograderTestCaseBase.objects.validate_and_create(
-                    name='test{}'.format(i), project=proj)
+                AutograderTestCaseFactory.validate_and_create(
+                    'compiled_test_case',
+                    name='test{}'.format(i), project=proj,
+                    compiler='g++', files_to_compile_together=['spam.cpp'],
+                    executable_name='cheese')
 
     def test_course_admin_get_project(self):
-        # TODO: 'included' test cases
         for project in (self.visible_project, self.hidden_project):
             response = _get_project_request(
                 project.pk, self.admin)
@@ -143,7 +148,6 @@ class GetProjectRequestTestCase(_SetUpBase):
             self.assertEqual(expected, json_load_bytes(response.content))
 
     def test_semester_staff_get_project(self):
-        # TODO: 'included' test cases
         for project in (self.visible_project, self.hidden_project):
             response = _get_project_request(
                 project.pk, self.staff)
