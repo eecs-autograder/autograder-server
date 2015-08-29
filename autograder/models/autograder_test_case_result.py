@@ -188,6 +188,8 @@ class AutograderTestCaseResultBase(PolymorphicModel):
             result['timed_out'] = self.timed_out
 
         if not self.compilation_succeeded or self.timed_out:
+            # print('compilation_succeeded: ', self.compilation_succeeded)
+            # print('timed_out')
             result.update(self._get_points_feedback(
                 feedback_configuration, show_points_breakdown,
                 **pts_data))
@@ -265,6 +267,7 @@ class AutograderTestCaseResultBase(PolymorphicModel):
 
         show_output_diff = (feedback_config.output_feedback_level ==
                             'show_expected_and_actual_values')
+        # print("show output diff?: ", show_output_diff)
         if show_output_diff:
             result['stdout_diff'] = _get_diff(
                 self.test_case.expected_standard_output,

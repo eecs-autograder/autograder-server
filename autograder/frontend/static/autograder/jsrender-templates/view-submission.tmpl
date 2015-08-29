@@ -1,6 +1,7 @@
 <div id='submission'>
 <!--     <h3>Submitted at: {{to_local_date:data.attributes.timestamp}}</h3>
  -->
+    <h4>Status: {{> data.attributes.status}}</h4>
     <div>Files submitted: </div>
         <div class='panel-group'>
             <div class='panel panel-default'>
@@ -38,6 +39,7 @@
             {{/if}}
 
             {{if timed_out}}
+                <div>Your program exceeded the time limit and was terminated</div>
             {{else}}
                 {{if return_code_correct !== undefined}}
                     <div>

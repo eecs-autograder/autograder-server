@@ -224,6 +224,7 @@ class Submission(ModelValidatableOnSave):
         super().save(*args, **kwargs)
 
         submission_dir = ut.get_submission_dir(self)
+        # print(submission_dir)
         if not os.path.isdir(submission_dir):
             os.makedirs(submission_dir)
 

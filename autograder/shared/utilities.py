@@ -19,7 +19,7 @@ def count_if(iterable, unary_predicate):
 
 # PRETTY_TIMESTAMP_FORMAT_STR = '%B %d, %Y %I:%M:%S %p'
 
-# FILESYSTEM_TIMESTAMP_FORMAT_STR = '%Y-%m-%d %H.%M.%S'
+FILESYSTEM_TIMESTAMP_FORMAT_STR = '%Y-%m-%d %H.%M.%S'
 
 
 # -----------------------------------------------------------------------------
@@ -254,7 +254,7 @@ def get_submission_relative_dir(submission):
     """
     return os.path.join(
         get_student_submission_group_relative_dir(submission.submission_group),
-        str(submission.timestamp))
+        submission.timestamp.strftime(FILESYSTEM_TIMESTAMP_FORMAT_STR))
 
 
 # -----------------------------------------------------------------------------
