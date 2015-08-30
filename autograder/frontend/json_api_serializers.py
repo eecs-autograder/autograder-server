@@ -2,10 +2,7 @@ import os
 
 from django.core.urlresolvers import reverse
 
-# TODO: REMOVE HACK, write an actual factory function
-from autograder.models import CompiledAutograderTestCase
-
-import autograder.shared.utilities as ut
+# import autograder.shared.utilities as ut
 
 # The json data produced by functions in this module should
 # loosely adhere to the JSON API standard: http://jsonapi.org/format/

@@ -14,5 +14,6 @@ from .autograder_test_case_result import AutograderTestCaseResultBase
 # you should only access them through the factory function below
 from .autograder_test_case.autograder_test_case_base import AutograderTestCaseBase
 from .autograder_test_case.compiled_autograder_test_case import CompiledAutograderTestCase
+from .autograder_test_case.compilation_only_autograder_test_case import CompilationOnlyAutograderTestCase
 
 from .autograder_test_case import AutograderTestCaseFactory

@@ -11,6 +11,7 @@ class SubprocessRunner(object):
     Convenience wrapper for calling Popen and retrieving the data
     we usually need.
     """
+    # TODO: mock this for unit tests
     def _get_docker_args():
         return [
             'docker', 'run',

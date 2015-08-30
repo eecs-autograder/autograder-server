@@ -1,8 +1,3 @@
-"""
-Classes:
-    AutograderTestCaseBase -- A fat interface for autograder test cases.
-"""
-
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
@@ -16,6 +11,8 @@ from autograder.models import Project
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
+
+from .utils import SubprocessRunner
 
 
 def _validate_cmd_line_arg(arg):
@@ -97,7 +94,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             Default value: empty list
 
         time_limit -- The time limit in seconds to be placed on the
-            program being tested.
+            program being tested. This currently applies to compilation,
+            running the program, and running the program with Valgrind.
             This value must be positive (and nonzero).
             Default value: 10 seconds
 
@@ -364,6 +362,21 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         """
         raise NotImplementedError("Derived classes must override this method.")
 
+    def _compile_program(self, submission, result_ref):
+        compilation_command = (
+            [self.compiler] + self.compiler_flags +
+            self.files_to_compile_together
+        )
+
+        if self.compiler == 'g++' and self.executable_name:
+            compilation_command += ['-o', self.executable_name]
+
+        runner = SubprocessRunner(compilation_command)
+        result_ref.submission = submission
+        result_ref.compilation_standard_output = runner.stdout
+        result_ref.compilation_standard_error_output = runner.stderr
+        result_ref.compilation_return_code = runner.return_code
+
     # -------------------------------------------------------------------------
 
     def clean(self):
@@ -461,6 +474,63 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             return errors
 
         return None
+
+    # -------------------------------------------------------------------------
+
+    def _clean_compiler(self):
+        if self.compiler not in AutograderTestCaseBase.SUPPORTED_COMPILERS:
+            return {'compiler': 'Unsupported compiler'}
+
+        return {}
+
+    def _clean_compiler_flags(self):
+        if self.compiler_flags is None:
+            return ['This value cannot be null']
+
+        self.compiler_flags = [arg.strip() for arg in self.compiler_flags]
+
+        errors = self._clean_arg_list(self.compiler_flags)
+        if errors:
+            return {'compiler_flags': errors}
+
+        return {}
+
+    def _clean_files_to_compile_together(self):
+        if not self.files_to_compile_together:
+            return {
+                'files_to_compile_together': [
+                    'At least one file must be specified for compilation']
+            }
+
+        errors = []
+        patterns = [pattern_obj.pattern for pattern_obj in
+                    self.project.expected_student_file_patterns]
+        for filename in self.files_to_compile_together:
+            valid_filename = (
+                filename in self.project.get_project_file_basenames() or
+                filename in self.project.required_student_files or
+                filename in patterns
+            )
+
+            if not valid_filename:
+                errors.append('File {0} not found for project {1}'.format(
+                    filename, self.project.name))
+
+        if errors:
+            return {'files_to_compile_together': errors}
+
+        return {}
+
+    def _clean_executable_name(self):
+        try:
+            if self.executable_name:
+                self.executable_name = self.executable_name.strip()
+
+            ut.check_user_provided_filename(self.executable_name)
+
+            return {}
+        except ValidationError as e:
+            return {'executable_name': e.message}
 
     # -------------------------------------------------------------------------
 

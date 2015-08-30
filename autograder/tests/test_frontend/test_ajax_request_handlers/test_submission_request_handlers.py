@@ -7,21 +7,16 @@ from django.test import RequestFactory
 from django.core.urlresolvers import resolve
 from django.utils import timezone
 
-from autograder.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-
 import autograder.tests.dummy_object_utils as obj_ut
 
 from .utils import (
-    process_get_request, process_post_request,
+    process_get_request,
     process_patch_request, json_load_bytes, RequestHandlerTestCase)
 
-from autograder.frontend.json_api_serializers import (
-    project_to_json, submission_group_to_json,
-    submission_to_json)
+from autograder.frontend.json_api_serializers import submission_to_json
 
 from autograder.models import (
-    SubmissionGroup, CompiledAutograderTestCase, Submission,
+    SubmissionGroup, AutograderTestCaseFactory, Submission,
     AutograderTestCaseResultBase)
 from autograder.models.fields import FeedbackConfiguration
 
@@ -52,7 +47,8 @@ class _SetUpBase(RequestHandlerTestCase):
         self.project.feedback_config = feedback_config
         self.project.save()
 
-        self.visible_test = CompiledAutograderTestCase.objects.validate_and_create(
+        self.visible_test = AutograderTestCaseFactory.validate_and_create(
+            'compiled_test_case',
             name='visible', project=self.project,
             hide_from_students=False,
             expected_return_code=0,
@@ -61,7 +57,8 @@ class _SetUpBase(RequestHandlerTestCase):
             files_to_compile_together=['hello.cpp'],
             executable_name='prog')
 
-        self.hidden_test = CompiledAutograderTestCase.objects.validate_and_create(
+        self.hidden_test = AutograderTestCaseFactory.validate_and_create(
+            'compiled_test_case',
             name='hidden', project=self.project,
             hide_from_students=True,
             expected_return_code=0,
