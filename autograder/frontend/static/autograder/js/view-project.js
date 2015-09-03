@@ -43,9 +43,10 @@ function register_group(project_data)
     console.log('register_group');
     if (project_data.data.attributes.max_group_size === 1)
     {
+        var group_registered = $.Deferred();
         submit_group_request(
-            [get_user_email()], project_data);
-        return;
+            [get_user_email()], project_data, group_registered);
+        return group_registered.promise();
     }
     var group_registered = process_group_registration(project_data);
     return group_registered;
