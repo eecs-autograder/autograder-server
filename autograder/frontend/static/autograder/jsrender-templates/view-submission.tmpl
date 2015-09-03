@@ -3,24 +3,11 @@
  -->
     <h4>Status: {{> data.attributes.status}}</h4>
     <div>Files submitted: </div>
-        <div class='panel-group'>
-            <div class='panel panel-default'>
-            {{for data.attributes.submitted_files}}
-                <div class='panel-heading'>
-                    <h4 class='panel-title'>
-                        <a data-toggle='collapse' class='collapsible-link'
-                           href="#file-{{>filename}}-{{:~root.data.id}}">
-                            {{>filename}}
-                        </a>
-                    </h4>
-                </div>
-                <div id='file-{{>filename}}-{{:~root.data.id}}' class='panel-collapse collapse'>
-                    <a href='{{: file_url}}' style='display:none'></a>
-                    <pre class='panel-body prettyprint'></pre>
-                </div>
-            {{/for}}
-            </div>
+        {{for data.attributes.submitted_files}}
+        <div>
+            <a href="{{: file_url}}" target='_blank'>{{>filename}}</a>
         </div>
+        {{/for}}
     <div>Results: </div>
     <ul>
         <li>

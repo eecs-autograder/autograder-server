@@ -182,4 +182,4 @@ class SubmittedFileRequestHandler(LoginRequiredView):
         if not matches:
             return HttpResponseNotFound()
 
-        return FileResponse(matches[0])
+        return HttpResponse(matches[0], content_type='text/plain')

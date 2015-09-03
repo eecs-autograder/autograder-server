@@ -342,7 +342,7 @@ class GetSubmissionRequestTestCase(_SetUpBase):
 
             self.assertJSONObjsEqual(expected, actual)
 
-    def test_show_all_tests_override(self):
+    def test_show_all_tests_override_for_student(self):
         group = SubmissionGroup.objects.validate_and_create(
             members=[self.enrolled.username], project=self.project)
         submission = Submission.objects.validate_and_create(
@@ -362,6 +362,37 @@ class GetSubmissionRequestTestCase(_SetUpBase):
                 'results': list(sorted([
                     self.visible_result.to_json(),
                     self.hidden_result.to_json()
+                ], key=sort_key))
+            }
+        }
+
+        actual = json_load_bytes(response.content)
+        actual['meta']['results'].sort(key=sort_key)
+
+        self.assertJSONObjsEqual(expected, actual)
+
+    def test_show_all_tests_override_staff_view_student_submission(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=[self.enrolled.username], project=self.project)
+        submission = Submission.objects.validate_and_create(
+            submission_group=group, submitted_files=self.files)
+        submission.results.add(self.visible_result, self.hidden_result)
+
+        submission.show_all_test_cases = True
+        submission.save()
+
+        response = _get_submission_request(submission.pk, self.staff)
+        self.assertEqual(200, response.status_code)
+
+        sort_key = lambda obj: obj['test_name']
+        expected = {
+            'data': submission_to_json(submission),
+            'meta': {
+                'results': list(sorted([
+                    self.visible_result.to_json(
+                        FeedbackConfiguration.get_max_feedback()),
+                    self.hidden_result.to_json(
+                        FeedbackConfiguration.get_max_feedback())
                 ], key=sort_key))
             }
         }
@@ -479,10 +510,11 @@ class GetSubmittedFileRequestTestCase(_SetUpBase):
                 self.submission.pk, file_.name, user)
 
             self.assertEqual(200, response.status_code)
+            # self.assertEqual('text/plain', response.content_type)
 
             file_.seek(0)
             self.assertEqual(
-                file_.read(), b''.join(response.streaming_content))
+                file_.read(), response.content) #b''.join(response.streaming_content))
 
     def test_file_not_found(self):
         response = _get_submitted_file_request(
