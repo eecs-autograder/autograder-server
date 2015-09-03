@@ -125,8 +125,8 @@ function load_submission(url, context)
         if (status === 'being_graded' || status === 'received' ||
             status === 'queued')
         {
-            console.log('will try again in half a second');
-            setTimeout(function() {load_submission(url, context);}, 500);
+            console.log('will try again a few seconds');
+            setTimeout(function() {load_submission(url, context);}, 5000);
         }
     });
 }

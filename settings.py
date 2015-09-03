@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
+import djcelery
+djcelery.setup_loader()
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'filesystem/')
@@ -41,7 +44,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'autograder',
-    'polymorphic'
+    'polymorphic',
+    'djcelery'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -79,10 +83,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'wsgi.application'
 
 AUTHENTICATION_BACKENDS = (
-    # 'django.contrib.auth.backends.ModelBackend',
     'autograder.authentication.google_auth_backend.GoogleAuthBackend',
-    # # TODO: uncomment once set up on server
-    # # 'django.contrib.auth.backends.RemoteUserBackend',
 )
 
 LOGIN_URL = '/login/'

@@ -90,12 +90,16 @@ class AutograderTestCaseResultBase(PolymorphicModel):
 
     @property
     def standard_output_correct(self):
-        return self.standard_output == self.test_case.expected_standard_output
+        return (
+            not self.test_case.expected_standard_output or
+            self.standard_output == self.test_case.expected_standard_output)
 
     @property
     def standard_error_output_correct(self):
-        return (self.standard_error_output ==
-                self.test_case.expected_standard_error_output)
+        return (
+            not self.test_case.expected_standard_error_output or
+            (self.standard_error_output ==
+                self.test_case.expected_standard_error_output))
 
     @property
     def output_correct(self):

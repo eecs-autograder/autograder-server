@@ -13,3 +13,4 @@ Dependencies and requirements:
 - django-polymorphic
 - oauth2client
 - pyOpenSSL (required by oauth2client)
+- django-celery

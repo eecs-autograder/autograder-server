@@ -15,7 +15,7 @@ from autograder.models.fields import FeedbackConfiguration
 _DIFFER = difflib.Differ()
 
 
-class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
+class _SetUpBase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
@@ -31,13 +31,13 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
         self.project.add_project_file(
             SimpleUploadedFile('spam.txt', b'hello there!'))
 
-        self.TEST_NAME = 'my_test'
+        self.test_name = 'my_test'
 
         self.test_case = AutograderTestCaseBase.objects.validate_and_create(
-            name=self.TEST_NAME, project=self.project)
+            name=self.test_name, project=self.project)
 
-    # -------------------------------------------------------------------------
 
+class AutograderTestCaseResultTestCase(_SetUpBase):
     def test_default_init(self):
         result = AutograderTestCaseResultBase.objects.create(
             test_case=self.test_case)
@@ -60,7 +60,109 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_result.compilation_standard_error_output, '')
 
 
+class ResultOutputCorrectTestCase(_SetUpBase):
+    def setUp(self):
+        super().setUp()
+
+        self.correct_stdout = 'correct_stdout'
+        self.correct_stderr = 'correct stderr'
+
+        self.result = AutograderTestCaseResultBase(
+            test_case=self.test_case
+        )
+
+    def _init_expected_output(self):
+        self.test_case.expected_standard_output = self.correct_stdout
+        self.test_case.expected_standard_error_output = self.correct_stderr
+
+        self.test_case.validate_and_save()
+
+    def test_stdout_right_stderr_right(self):
+        self._init_expected_output()
+
+        self.result.standard_output = self.correct_stdout
+        self.result.standard_error_output = self.correct_stderr
+
+        self.assertTrue(self.result.standard_output_correct)
+        self.assertTrue(self.result.standard_error_output_correct)
+        self.assertTrue(self.result.output_correct)
+
+    def test_stdout_right_stderr_wrong(self):
+        self._init_expected_output()
+
+        self.result.standard_output = self.correct_stdout
+        self.result.standard_error_output = 'wrong'
+
+        self.assertTrue(self.result.standard_output_correct)
+        self.assertFalse(self.result.standard_error_output_correct)
+        self.assertFalse(self.result.output_correct)
+
+    def test_stdout_wrong_stderr_right(self):
+        self._init_expected_output()
+
+        self.result.standard_output = 'wrong'
+        self.result.standard_error_output = self.correct_stderr
+
+        self.assertFalse(self.result.standard_output_correct)
+        self.assertTrue(self.result.standard_error_output_correct)
+        self.assertFalse(self.result.output_correct)
+
+    def test_stdout_wrong_stderr_wrong(self):
+        self._init_expected_output()
+
+        self.result.standard_output = 'wrong'
+        self.result.standard_error_output = 'wrong'
+
+        self.assertFalse(self.result.standard_output_correct)
+        self.assertFalse(self.result.standard_error_output_correct)
+        self.assertFalse(self.result.output_correct)
+
+    def test_stdout_right_no_stderr(self):
+        self.test_case.expected_standard_output = self.correct_stdout
+        self.test_case.validate_and_save()
+
+        self.result.standard_output = self.correct_stdout
+        self.result.standard_error_output = "won't be checked"
+
+        self.assertTrue(self.result.standard_output_correct)
+        self.assertTrue(self.result.standard_error_output_correct)
+        self.assertTrue(self.result.output_correct)
+
+    def test_stdout_wrong_no_stderr(self):
+        self.test_case.expected_standard_output = self.correct_stdout
+        self.test_case.validate_and_save()
+
+        self.result.standard_output = 'wrong'
+        self.result.standard_error_output = "won't be checked"
+
+        self.assertFalse(self.result.standard_output_correct)
+        self.assertTrue(self.result.standard_error_output_correct)
+        self.assertFalse(self.result.output_correct)
+
+    def test_no_stdout_stderr_right(self):
+        self.test_case.expected_standard_error_output = self.correct_stderr
+        self.test_case.validate_and_save()
+
+        self.result.standard_output = "won't be checked"
+        self.result.standard_error_output = self.correct_stderr
+
+        self.assertTrue(self.result.standard_output_correct)
+        self.assertTrue(self.result.standard_error_output_correct)
+        self.assertTrue(self.result.output_correct)
+
+    def test_no_stdout_stderr_wrong(self):
+        self.test_case.expected_standard_error_output = self.correct_stderr
+        self.test_case.validate_and_save()
+
+        self.result.standard_output = "won't be checked"
+        self.result.standard_error_output = 'wrong'
+
+        self.assertTrue(self.result.standard_output_correct)
+        self.assertFalse(self.result.standard_error_output_correct)
+        self.assertFalse(self.result.output_correct)
+
 # -----------------------------------------------------------------------------
+
 
 class CompiledAutograderTestCaseResultSerializerTestCase(
         TemporaryFilesystemTestCase):
