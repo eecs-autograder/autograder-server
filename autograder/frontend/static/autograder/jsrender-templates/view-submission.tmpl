@@ -3,11 +3,11 @@
  -->
     <h4>Status: {{> data.attributes.status}}</h4>
     <div>Files submitted: </div>
-        {{for data.attributes.submitted_files}}
-        <div>
-            <a href="{{: file_url}}" target='_blank'>{{>filename}}</a>
-        </div>
-        {{/for}}
+    {{for data.attributes.submitted_files}}
+    <ul>
+        <li><a href="{{: file_url}}" target='_blank'>{{>filename}}</a></li>
+    </ul>
+    {{/for}}
     <div>Results: </div>
     <ul>
         <li>

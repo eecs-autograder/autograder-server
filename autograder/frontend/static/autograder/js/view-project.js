@@ -63,47 +63,7 @@ function show_project(group_data, project_data)
     };
     $.when(
         render_and_fix_links('view-project', project_render_data)
-    ).done(function() {
-        console.log('project rendered');
-        console.log($('#fileupload'));
-        $('#fileupload').fileupload({
-            'url': "/submissions/submission/",
-            'singleFileUploads': false,
-            'done': function(event, response) {
-                on_submit_success(event, response, group_data.data.id);
-            }
-        });
-        // console.log(group_data);
-        render_and_fix_links(
-            'submission-list', group_data, $('#own-submissions')
-        ).done(function() { setup_collapsibles($('.submission-collapse')) });
-        $('#load-student-submissions-button').click(function(event){
-            event.preventDefault();
-            $('#student-submission-view .error').remove();
-            var email = $('#requested-email').val();
-            if (!is_umich_email(email))
-            {
-                $('#requested-email').after(
-                    '<span class="error">Please enter a valid umich.edu email address</span>');
-                return;
-            }
-            var url = get_submission_group_url(
-                project_data.data.id, email);
-            $.get(
-                url
-            ).done(function (data, status) {
-                $.when(render_and_fix_links('submission-list', data, $('#student-submissions'))).done(
-                    setup_collapsibles($('#student-submissions .submission-collapse'))
-                );
-            });
-        });
-        $('#requested-email').keypress(function(event) {
-            if (event.which === 13) // enter key pressed
-            {
-                $('#load-student-submissions-button').click();
-            }
-        });
-    });
+    ).done(function() { submit_widgit_init(group_data, project_data); });
 }
 
 function setup_collapsibles(selector)
@@ -165,19 +125,88 @@ function on_submit_success(event, response, group_id)
     $('#' + node_id).collapse();
 }
 
-function submit_widgit_init()
+function submit_widgit_init(group_data, project_data)
 {
+    console.log('project rendered');
+    console.log($('#fileupload'));
+    $('#fileupload').fileupload({
+        'url': "/submissions/submission/",
+        'dropZone': $('#dropzone'),
+        'singleFileUploads': false,
+        'done': function(event, response) {
+            on_submit_success(event, response, group_data.data.id);
+        }
+    });
 
+    $(document).bind('dragover', function (e) {
+        var dropZone = $('#dropzone'),
+            timeout = window.dropZoneTimeout;
+        if (!timeout) {
+            dropZone.addClass('in');
+        } else {
+            clearTimeout(timeout);
+        }
+        var found = false,
+            node = e.target;
+        do {
+            if (node === dropZone[0]) {
+                found = true;
+                break;
+            }
+            node = node.parentNode;
+        } while (node != null);
+        if (found) {
+            dropZone.addClass('hover');
+        } else {
+            dropZone.removeClass('hover');
+        }
+        window.dropZoneTimeout = setTimeout(function () {
+            window.dropZoneTimeout = null;
+            dropZone.removeClass('in hover');
+        }, 100);
+    });
+
+    // console.log(group_data);
+    render_and_fix_links(
+        'submission-list', group_data, $('#own-submissions')
+    ).done(view_own_submissions_widget_init);
+
+    view_student_submissions_widget_init(project_data);
 }
 
 function view_own_submissions_widget_init()
 {
-
+    setup_collapsibles($('.submission-collapse'));
 }
 
-function view_student_submissions_widget_init()
+function view_student_submissions_widget_init(project_data)
 {
-
+    $('#load-student-submissions-button').click(function(event){
+        event.preventDefault();
+        $('#student-submission-view .error').remove();
+        var email = $('#requested-email').val();
+        if (!is_umich_email(email))
+        {
+            $('#requested-email').after(
+                '<span class="error">Please enter a valid umich.edu email address</span>');
+            return;
+        }
+        var url = get_submission_group_url(
+            project_data.data.id, email);
+        $.get(
+            url
+        ).done(function (data, status) {
+            $.when(render_and_fix_links('submission-list', data, $('#student-submissions'))).done(
+                setup_collapsibles($('#student-submissions .submission-collapse'))
+            );
+        });
+    });
+    $('#requested-email').keypress(function(event) {
+        if (event.which === 13) // enter key pressed
+        {
+            $('#load-student-submissions-button').click();
+        }
+    });
 }
 
 function get_submission_group_url(project_id, username)
