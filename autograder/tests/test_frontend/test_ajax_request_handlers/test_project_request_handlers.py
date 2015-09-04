@@ -129,8 +129,7 @@ class GetProjectRequestTestCase(_SetUpBase):
 
     def test_course_admin_get_project(self):
         for project in (self.visible_project, self.hidden_project):
-            response = _get_project_request(
-                project.pk, self.admin)
+            response = _get_project_request(project.pk, self.admin)
             self.assertEqual(200, response.status_code)
             expected = {
                 'data': project_to_json(project),
@@ -138,7 +137,8 @@ class GetProjectRequestTestCase(_SetUpBase):
                     'permissions': {
                         'is_staff': True,
                         'can_edit': True
-                    }
+                    },
+                    'username': self.admin.username
                 },
                 'included': [
                     autograder_test_case_to_json(test_case)
@@ -149,8 +149,7 @@ class GetProjectRequestTestCase(_SetUpBase):
 
     def test_semester_staff_get_project(self):
         for project in (self.visible_project, self.hidden_project):
-            response = _get_project_request(
-                project.pk, self.staff)
+            response = _get_project_request(project.pk, self.staff)
             self.assertEqual(200, response.status_code)
             expected = {
                 'data': project_to_json(project),
@@ -158,7 +157,8 @@ class GetProjectRequestTestCase(_SetUpBase):
                     'permissions': {
                         'is_staff': True,
                         'can_edit': False
-                    }
+                    },
+                    'username': self.staff.username
                 },
                 'included': [
                     autograder_test_case_to_json(test_case)
@@ -176,7 +176,8 @@ class GetProjectRequestTestCase(_SetUpBase):
                 'permissions': {
                     'is_staff': False,
                     'can_edit': False
-                }
+                },
+                'username': self.enrolled.username
             }
         }
         expected['data']['attributes'].pop('project_files')
@@ -208,7 +209,8 @@ class GetProjectRequestTestCase(_SetUpBase):
                 'permissions': {
                     'is_staff': False,
                     'can_edit': False
-                }
+                },
+                'username': self.nobody.username
             }
         }
         expected['data']['attributes'].pop('project_files')
