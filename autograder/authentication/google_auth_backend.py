@@ -6,6 +6,7 @@ from oauth2client import client, crypt
 from autograder.identitytoolkit import gitkitclient
 
 from django.conf import settings
+from django.http import HttpResponse, HttpResponseRedirect
 
 # (Receive token by HTTPS POST)
 
@@ -19,14 +20,40 @@ gitkit_instance = gitkitclient.GitkitClient.FromConfigFile(server_config_json)
 
 class GoogleIdentityToolkitSessionMiddleware(object):
     def process_request(self, request):
-        print('WHEEEEEEEEE')
-        gtoken = request.cookies.get('gtoken', None)
-        if gtoken is not None:
-            gitkit_user = gitkit_instance.VerifyGitkitToken(gtoken)
-            print(gitkit_user)
-            if gitkit_user:
-                print('hooray!')
-            # text = "Welcome " + gitkit_user.email + "! Your user info is: " + str(vars(gitkit_user))
+        if request.path == '/callback/':
+            return None
+
+        print('process_request, GITkit middleware')
+        gtoken = request.COOKIES.get('gtoken', None)
+        if gtoken is None:
+            print('redirecting to login page')
+            return None  # HttpResponseRedirect('/callback/?mode=select')
+
+        gitkit_user = gitkit_instance.VerifyGitkitToken(gtoken)
+        print(gitkit_user)
+        if not gitkit_user:
+            print('error verifying token')
+            return HttpResponse(
+                'Unable to validate user', content_type='text/plain')
+
+        print(gitkit_user.email)
+
+        if gitkit_user.email.split('@')[-1] != APPS_DOMAIN_NAME:
+            return HttpResponse(
+                'Please sign in with a umich.edu email address',
+                content_type='text/plain')
+
+        user = User.objects.get_or_create(username=gitkit_user.email)[0]
+        request.user = user
+
+        print('success')
+        return None
+
+        # print('hooray!')
+        # print(dir(gitkit_user))
+        # print(gitkit_user.name)
+
+        # text = "Welcome " + gitkit_user.email + "! Your user info is: " + str(vars(gitkit_user))
 
 
 class GoogleAuthBackend(object):

@@ -158,7 +158,7 @@ class RpcHelper(object):
 
     resp, content = self.http.request(cert_url, headers=headers)
     if resp.status == 200:
-      return json.loads(content)
+      return json.loads(content.decode('utf-8'))
     else:
       raise errors.GitkitServerError('Error response for cert url: %s' %
                                      content)
@@ -201,11 +201,11 @@ class RpcHelper(object):
     body = urllib.parse.urlencode({
         'assertion': self._GenerateAssertion(),
         'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-    })
+    }).encode('utf-8')
     req = urllib.request.Request(RpcHelper.TOKEN_ENDPOINT)
     req.add_header('Content-type', 'application/x-www-form-urlencoded')
     raw_response = urllib.request.urlopen(req, body)
-    return json.loads(raw_response.read())['access_token']
+    return json.loads(raw_response.read().decode('utf-8'))['access_token']
 
   def _GenerateAssertion(self):
     """Generates the signed assertion that will be used in the request.

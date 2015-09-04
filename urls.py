@@ -107,7 +107,7 @@ urlpatterns = [
         ajax_request_handlers.SubmittedFileRequestHandler.as_view(),
         name='get-submitted-file'),
 
-    url(r'^$', views.MainAppPage.as_view(), name='main-app-page'),
+    url(r'^/*', views.MainAppPage.as_view(), name='main-app-page'),
 
     # --- COURSES ---
     #   json format:
