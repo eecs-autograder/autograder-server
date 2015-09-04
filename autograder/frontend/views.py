@@ -53,7 +53,9 @@ class Tasky(ExceptionLoggingView):
 class LoginView(ExceptionLoggingView):
     def get(self, request):
         print(request)
-        return render_to_response('autograder/login.html', {})
+        return render_to_response(
+            'autograder/login.html')#,
+            # {'redirect_url', request.GET['next']})
 
     # def get(self, request):
     #     redirect_url = request.GET.get('next', reverse('main-app-page'))

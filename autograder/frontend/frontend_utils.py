@@ -19,7 +19,6 @@ class ExceptionLoggingView(View):
 
 
 class LoginRequiredView(ExceptionLoggingView):
-    pass
-    # @method_decorator(login_required(login_url='/callback/?mode=select'))
-    # def dispatch(self, *args, **kwargs):
-    #     return super().dispatch(*args, **kwargs)
+    @method_decorator(login_required(login_url='/callback/?mode=select'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)

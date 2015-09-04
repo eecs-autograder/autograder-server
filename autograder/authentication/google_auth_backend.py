@@ -1,6 +1,6 @@
 import os
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
 
 from oauth2client import client, crypt
 from autograder.identitytoolkit import gitkitclient
@@ -20,13 +20,13 @@ gitkit_instance = gitkitclient.GitkitClient.FromConfigFile(server_config_json)
 
 class GoogleIdentityToolkitSessionMiddleware(object):
     def process_request(self, request):
-        if request.path == '/callback/':
-            return None
+        # if request.path == '/callback/':
+        #     return None
 
         print('process_request, GITkit middleware')
         gtoken = request.COOKIES.get('gtoken', None)
         if gtoken is None:
-            print('redirecting to login page')
+            request.user = AnonymousUser()
             return None  # HttpResponseRedirect('/callback/?mode=select')
 
         gitkit_user = gitkit_instance.VerifyGitkitToken(gtoken)

@@ -51,10 +51,12 @@ INSTALLED_APPS = (
 )
 
 MIDDLEWARE_CLASSES = (
-    'autograder.authentication.google_auth_backend.GoogleIdentityToolkitSessionMiddleware',
     # 'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+
+    'autograder.authentication.google_auth_backend.GoogleIdentityToolkitSessionMiddleware',
+
     # 'django.contrib.auth.middleware.AuthenticationMiddleware',
     # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     # 'django.contrib.messages.middleware.MessageMiddleware',
