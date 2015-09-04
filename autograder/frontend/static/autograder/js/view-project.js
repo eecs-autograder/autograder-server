@@ -86,9 +86,7 @@ function load_submission(url, context)
     $.get(url).done(function(data, status) {
         // console.log(data);
         // console.log(context);
-        render_and_fix_links('view-submission', data, context, true).done(function() {
-            $('.progress', context).hide();
-        });
+        render_and_fix_links('view-submission', data, context);
         var status = data.data.attributes.status;
         if (status === 'being_graded' || status === 'received' ||
             status === 'queued')
