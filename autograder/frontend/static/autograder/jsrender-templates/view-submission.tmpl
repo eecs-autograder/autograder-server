@@ -12,7 +12,7 @@
     <ul>
         <li>
         {{for meta.results}}
-            <div>{{> test_name}}</div>
+            <h5>{{> test_name}}</h5>
             {{if compilation_succeeded !== undefined}}
                 <div>
                     Compilation: {{if compilation_succeeded}}SUCCESS{{else}}FAILURE{{/if}}
@@ -40,10 +40,20 @@
                     </div>
                 {{/if}}
                 {{if stdout_diff !== undefined}}
-                    Standard output diff: <pre>{{> stdout_diff}}</pre>
+                    <div>
+                        Standard output diff:
+                        <div style='overflow: scroll'>
+                            {{format_diff:stdout_diff}}
+                        </div>
+                    </div>
                 {{/if}}
                 {{if stderr_diff !== undefined}}
-                    Standard error output diff: <pre>{{> stderr_diff}}</pre>
+                    <div>
+                        Standard error diff:
+                        <div style='overflow: scroll'>
+                            {{format_diff:stderr_diff}}
+                        </div>
+                    </div>
                 {{/if}}
 
                 {{if valgrind_errors_present !== undefined}}

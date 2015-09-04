@@ -76,7 +76,7 @@ function show_project(group_data, project_data)
         // console.log(group_data);
         render_and_fix_links(
             'submission-list', group_data, $('#own-submissions')
-        ).done(function() { setup_collapsibles($('.collapse')) });
+        ).done(function() { setup_collapsibles($('.submission-collapse')) });
         $('#load-student-submissions-button').click(function(event){
             event.preventDefault();
             $('#student-submission-view .error').remove();
@@ -93,7 +93,7 @@ function show_project(group_data, project_data)
                 url
             ).done(function (data, status) {
                 $.when(render_and_fix_links('submission-list', data, $('#student-submissions'))).done(
-                    setup_collapsibles($('#student-submissions .collapse'))
+                    setup_collapsibles($('#student-submissions .submission-collapse'))
                 );
             });
         });
@@ -108,7 +108,10 @@ function show_project(group_data, project_data)
 
 function setup_collapsibles(selector)
 {
+    // console.log('setting up');
+    // console.log(selector);
     selector.on('show.bs.collapse', function() {
+        // console.log('oiueqroiwuer');
         var url = $('a', this).attr('href');
         var context = $('.panel-body', this);
         load_submission(url, context);
@@ -149,7 +152,7 @@ function on_submit_success(event, response, group_id)
     +           "</a>"
     +       "</h4>"
     +   "</div>"
-    +   "<div id='" + node_id + "' class='panel-collapse collapse'>"
+    +   "<div id='" + node_id + "' class='panel-collapse collapse submission-collapse'>"
     +       "<a href='" + json.data.links.self + "' style='display:none'></a>"
     +       "<div class='panel-body'></div>"
     +   "</div>")

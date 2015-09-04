@@ -1,0 +1,13 @@
+/*table.table-condensed.table-bordered.diff-table>tbody>tr>th,
+table.table-condensed.table-bordered.diff-table>tbody>tr>td {
+    border-top: none;
+    overflow: scroll;
+}
+*/
+
+/*.diff-table>thead>tr>th,
+.diff-table>tbody>tr>th,
+.diff-table>tfoot>tr>th,
+.diff-table>thead>tr>td,
+.diff-table>tbody>tr>td,
+.diff-table>tfoot>tr>td */
