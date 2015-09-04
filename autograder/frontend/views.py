@@ -1,31 +1,33 @@
 import os
-import json
-import traceback
+# import json
+# import traceback
 # import datetime
 
-from django.utils import timezone
+# from django.utils import timezone
 
-from django.views.generic.base import View
-from django.views.generic.edit import CreateView, DeleteView
+# from django.views.generic.base import View
+# from django.views.generic.edit import CreateView, DeleteView
 
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.forms.forms import NON_FIELD_ERRORS
+# from django.core.exceptions import ValidationError, ObjectDoesNotExist
+# from django.forms.forms import NON_FIELD_ERRORS
 
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import render
 
-from django.template import RequestContext
-from django.core.urlresolvers import reverse_lazy, reverse
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden
+# from django.template import RequestContext
+# from django.core.urlresolvers import reverse_lazy, reverse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.contrib.auth import authenticate, login, logout
 
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 
 from autograder.frontend.frontend_utils import ExceptionLoggingView, LoginRequiredView
-from autograder.models import Course, Semester, Project
+# from autograder.models import Course, Semester, Project
+
+from django.shortcuts import render_to_response
 
 
-class MainAppPage(ExceptionLoggingView):
+class MainAppPage(LoginRequiredView):
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         return render(request, 'autograder/main_app.html', {})
@@ -42,7 +44,17 @@ class Tasky(ExceptionLoggingView):
         return HttpResponse()
 
 
+# class GoogleIdentityLogin(ExceptionLoggingView):
+#     def get(self, request):
+#         print(request)
+#         return render_to_response('autograder/login.html', {})
+
+
 class LoginView(ExceptionLoggingView):
+    def get(self, request):
+        print(request)
+        return render_to_response('autograder/login.html', {})
+
     # def get(self, request):
     #     redirect_url = request.GET.get('next', reverse('main-app-page'))
     #     if request.user.is_authenticated():

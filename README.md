@@ -12,5 +12,8 @@ Dependencies and requirements:
 - django-jsonfield # (will be removed once django 1.9 becomes stable)
 - django-polymorphic
 - oauth2client
-- pyOpenSSL (required by oauth2client)
+- pyOpenSSL
 - django-celery
+
+# Bundled
+- identity-toolkit-python-client (needed refactor to python3)

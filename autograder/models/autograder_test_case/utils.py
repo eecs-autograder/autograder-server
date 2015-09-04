@@ -20,9 +20,9 @@ class SubprocessRunner(object):
             '-m', '500M',  # Memory limit
             '--memory-swap', '750M',  # Total memory limit (memory + swap)
             '--ulimit', 'nproc=5',  # Limit number of processes
-            '-v', os.getcwd() + ':/home/files',  # Mount the current directory
-            '-w', '/home/files',  # Set working directory in container
-            # '-u', 'nobody',  # set user (root by default, but we don't want that)
+            '-v', os.getcwd() + ':/home/autograder',  # Mount the current directory
+            '-w', '/home/autograder',  # Set working directory in container
+            '-u', 'autograder',  # set user (root by default, but we don't want that)
             # '-t',  # Allocate a pseudo-tty
             '-i',  # Run in interactive mode (needed for input redirection)
             'autograder'  # Specify which image to use

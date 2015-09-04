@@ -45,16 +45,19 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'autograder',
     'polymorphic',
-    'djcelery'
+    'djcelery',
+    # 'provider',
+    # 'provider.oauth2'
 )
 
 MIDDLEWARE_CLASSES = (
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'autograder.authentication.google_auth_backend.GoogleIdentityToolkitSessionMiddleware',
+    # 'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    # 'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    # 'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     # TODO: Uncomment once set up on server?
@@ -86,7 +89,7 @@ AUTHENTICATION_BACKENDS = (
     'autograder.authentication.google_auth_backend.GoogleAuthBackend',
 )
 
-LOGIN_URL = '/login/'
+# LOGIN_URL = '/login/'
 
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases

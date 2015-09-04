@@ -1,11 +1,32 @@
+import os
+
 from django.contrib.auth.models import User
 
 from oauth2client import client, crypt
+from autograder.identitytoolkit import gitkitclient
+
+from django.conf import settings
 
 # (Receive token by HTTPS POST)
 
 CLIENT_ID = '358440655746-bl5ig1es62n6n4oho525l4f58fgl367c.apps.googleusercontent.com'
 APPS_DOMAIN_NAME = 'umich.edu'
+
+server_config_json = os.path.join(
+    settings.BASE_DIR, 'gitkit-server-config.json')
+gitkit_instance = gitkitclient.GitkitClient.FromConfigFile(server_config_json)
+
+
+class GoogleIdentityToolkitSessionMiddleware(object):
+    def process_request(self, request):
+        print('WHEEEEEEEEE')
+        gtoken = request.cookies.get('gtoken', None)
+        if gtoken is not None:
+            gitkit_user = gitkit_instance.VerifyGitkitToken(gtoken)
+            print(gitkit_user)
+            if gitkit_user:
+                print('hooray!')
+            # text = "Welcome " + gitkit_user.email + "! Your user info is: " + str(vars(gitkit_user))
 
 
 class GoogleAuthBackend(object):

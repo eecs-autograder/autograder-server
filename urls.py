@@ -24,6 +24,8 @@ import autograder.shared.global_constants as gc
 
 urlpatterns = [
 
+    # url(r'^oauth2/', include('provider.oauth2.urls', namespace='oauth2')),
+
     # url(r'^accounts', include('django.contrib.auth.urls')),
     # url(r'^accounts/login/$', auth_views.login),
 
@@ -36,6 +38,8 @@ urlpatterns = [
     url(r'^login/$', views.LoginView.as_view(), name='login'),
 
     url(r'^logout/$', views.LogoutView.as_view(), name='logout'),
+
+    url(r'^callback/$', views.LoginView.as_view(), name='callback'),
 
     url(r'^courses/course/(?P<course_id>\d+)/$',
         ajax_request_handlers.GetCourse.as_view(),
@@ -103,7 +107,7 @@ urlpatterns = [
         ajax_request_handlers.SubmittedFileRequestHandler.as_view(),
         name='get-submitted-file'),
 
-    url(r'$/*', views.MainAppPage.as_view(), name='main-app-page'),
+    url(r'^$', views.MainAppPage.as_view(), name='main-app-page'),
 
     # --- COURSES ---
     #   json format:

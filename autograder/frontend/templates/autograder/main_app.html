@@ -287,70 +287,103 @@
         });
     };
     </script>
+
+
+<script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
+<link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
+<script type=text/javascript>
+  window.google.identitytoolkit.signInButton(
+    '#navbar', // accepts any CSS selector
+    {
+      widgetUrl: "/callback/",
+      signOutUrl: "/",
+      // Optional - Begin the sign-in flow in a popup window
+      //popupMode: true,
+
+      // Optional - Begin the sign-in flow immediately on page load.
+      //            Note that if this is true, popupMode param is ignored
+      // loginFirst: true,
+
+      // Optional - Cookie name (default: gtoken)
+      //            NOTE: Also needs to be added to config of ‘widget
+      //                  page’. See below
+      //cookieName: ‘example_cookie’,
+    }
+  );
+</script>
+
 </head>
 <body>
 
 <div class='container'>
-    <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+<!--     <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
     <button onclick='signOut();'>Sign out</button>
-
+ -->
     <h1>The Autograder</h1>
+
+    <div id="navbar"></div>
+
 
     <div id='main-area' class='container'></div>
 </div>
 
 <script>
-    function onSignIn(googleUser)
-    {
-        // Useful data for your client-side scripts:
-        var profile = googleUser.getBasicProfile();
-        // console.log("ID: " + profile.getId()); // Don't send this directly to your server!
-        // console.log("Name: " + profile.getName());
-        // console.log("Image URL: " + profile.getImageUrl());
-        // console.log("Email: " + profile.getEmail());
 
-        if (profile.getEmail().split('@')[1] != 'umich.edu')
-        {
-            alert('Please sign in with your "umich.edu" email address');
-            gapi.auth2.getAuthInstance().signOut();
-            return;
-        }
 
-        // The ID token you need to pass to your backend:
-        var id_token = googleUser.getAuthResponse().id_token;
-        // console.log("ID Token: " + id_token);
 
-        login_to_server(id_token);
-    }
 
-    function login_to_server(id_token)
-    {
-        $.post(
-            "{% url 'login' %}", {'idtoken': id_token}
-        ).done(
-            load_view
-        ).fail(
-            function(status, data) {
-                console.log('login failure: ' + status + ' ' + data);
-                signOut();
-            }
-        );
-    }
+
+    // function onSignIn(googleUser)
+    // {
+    //     // Useful data for your client-side scripts:
+    //     var profile = googleUser.getBasicProfile();
+    //     // console.log("ID: " + profile.getId()); // Don't send this directly to your server!
+    //     // console.log("Name: " + profile.getName());
+    //     // console.log("Image URL: " + profile.getImageUrl());
+    //     // console.log("Email: " + profile.getEmail());
+
+    //     if (profile.getEmail().split('@')[1] != 'umich.edu')
+    //     {
+    //         alert('Please sign in with your "umich.edu" email address');
+    //         gapi.auth2.getAuthInstance().signOut();
+    //         return;
+    //     }
+
+    //     // The ID token you need to pass to your backend:
+    //     var id_token = googleUser.getAuthResponse().id_token;
+    //     // console.log("ID Token: " + id_token);
+
+    //     login_to_server(id_token);
+    // }
+
+    // function login_to_server(id_token)
+    // {
+    //     $.post(
+    //         "{% url 'login' %}", {'idtoken': id_token}
+    //     ).done(
+    //         load_view
+    //     ).fail(
+    //         function(status, data) {
+    //             console.log('login failure: ' + status + ' ' + data);
+    //             signOut();
+    //         }
+    //     );
+    // }
 
 </script>
 
 <script>
-    function signOut()
-    {
-        var auth2 = gapi.auth2.getAuthInstance();
-        auth2.signOut().then(function () {
-            console.log('User signed out.');
-            history.pushState(null, "", '/');
-            $('#main-area').html('');
+    // function signOut()
+    // {
+    //     var auth2 = gapi.auth2.getAuthInstance();
+    //     auth2.signOut().then(function () {
+    //         console.log('User signed out.');
+    //         history.pushState(null, "", '/');
+    //         $('#main-area').html('');
 
-            $.post("{% url 'logout' %}");
-        });
-    }
+    //         $.post("{% url 'logout' %}");
+    //     });
+    // }
 
 </script>
 
