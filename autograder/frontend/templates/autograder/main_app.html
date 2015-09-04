@@ -18,11 +18,11 @@
     <script src="{% static 'autograder/jquery-cookie/jquery.cookie.js' %}"></script>
 
     <!-- Google Authentication -->
-    <meta name="google-signin-scope" content="profile email">
+<!--     <meta name="google-signin-scope" content="profile email">
     <meta name="google-signin-client_id" content="358440655746-bl5ig1es62n6n4oho525l4f58fgl367c.apps.googleusercontent.com">
 
     <script src="https://apis.google.com/js/platform.js" async defer></script>
-
+ -->
     <!-- code prettify -->
     <script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
 
@@ -121,6 +121,8 @@
         });
 
         load_view();
+
+        console.log(window.google.identitytoolkit);
     });
 
     function load_view()
@@ -209,9 +211,10 @@
 
     function get_user_email()
     {
-        var auth2 = gapi.auth2.getAuthInstance();
-        var profile = auth2.currentUser.get().getBasicProfile();
-        return profile.getEmail();
+        alert('why is this function being called');
+        // var auth2 = gapi.auth2.getAuthInstance();
+        // var profile = auth2.currentUser.get().getBasicProfile();
+        // return profile.getEmail();
     }
 
     function render_and_fix_links(template_name, data, render_location, append)
@@ -291,15 +294,16 @@
     </script>
 
 
+<!-- Google Identity Toolkit -->
 <script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
 <link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
 <script type=text/javascript>
   window.google.identitytoolkit.signInButton(
-    '#navbar', // accepts any CSS selector
+    '#gitkit-dropdown', // accepts any CSS selector
     {
       widgetUrl: "/callback/",
       signOutUrl: "/",
-      // Optional - Begin the sign-in flow in a popup window
+      // Optional - Begin the sign-in flow in a popup window (BROKEN)
       //popupMode: true,
 
       // Optional - Begin the sign-in flow immediately on page load.
@@ -317,77 +321,32 @@
 </head>
 <body>
 
+<nav class="navbar navbar-default navbar-fixed-top">
+
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <div class='navbar-brand'>The Autograder</div>
+        </div>
+        <div>
+            <ul class="nav navbar-nav navbar-right">
+                <li><div id="gitkit-dropdown"></div></li>
+            </ul>
+        </div>
+    </div>
+
+</nav>
+
 <div class='container'>
-<!--     <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
-    <button onclick='signOut();'>Sign out</button>
- -->
-    <h1>The Autograder</h1>
+    <!-- <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+    <button onclick='signOut();'>Sign out</button> -->
 
-    <div id="navbar"></div>
+<!--     <h1>The Autograder</h1> -->
 
 
-    <div id='main-area' class='container'></div>
+
+
+    <div id='main-area'></div>
 </div>
-
-<script>
-
-
-
-
-
-    // function onSignIn(googleUser)
-    // {
-    //     // Useful data for your client-side scripts:
-    //     var profile = googleUser.getBasicProfile();
-    //     // console.log("ID: " + profile.getId()); // Don't send this directly to your server!
-    //     // console.log("Name: " + profile.getName());
-    //     // console.log("Image URL: " + profile.getImageUrl());
-    //     // console.log("Email: " + profile.getEmail());
-
-    //     if (profile.getEmail().split('@')[1] != 'umich.edu')
-    //     {
-    //         alert('Please sign in with your "umich.edu" email address');
-    //         gapi.auth2.getAuthInstance().signOut();
-    //         return;
-    //     }
-
-    //     // The ID token you need to pass to your backend:
-    //     var id_token = googleUser.getAuthResponse().id_token;
-    //     // console.log("ID Token: " + id_token);
-
-    //     login_to_server(id_token);
-    // }
-
-    // function login_to_server(id_token)
-    // {
-    //     $.post(
-    //         "{% url 'login' %}", {'idtoken': id_token}
-    //     ).done(
-    //         load_view
-    //     ).fail(
-    //         function(status, data) {
-    //             console.log('login failure: ' + status + ' ' + data);
-    //             signOut();
-    //         }
-    //     );
-    // }
-
-</script>
-
-<script>
-    // function signOut()
-    // {
-    //     var auth2 = gapi.auth2.getAuthInstance();
-    //     auth2.signOut().then(function () {
-    //         console.log('User signed out.');
-    //         history.pushState(null, "", '/');
-    //         $('#main-area').html('');
-
-    //         $.post("{% url 'logout' %}");
-    //     });
-    // }
-
-</script>
 
 <script src="{% static 'autograder/js/register-group-view.js' %}"></script>
 <script src="{% static 'autograder/js/view-project.js' %}"></script>

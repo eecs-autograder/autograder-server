@@ -18,7 +18,7 @@ function get_or_register_group(project_data)
     console.log('get_or_register_group');
     var deferred = $.Deferred();
     var url = get_submission_group_url(
-        project_data.data.id, get_user_email());
+        project_data.data.id, project_data.meta.username);
     console.log(url);
     $.ajax(url,
     {
@@ -45,7 +45,7 @@ function register_group(project_data)
     {
         var group_registered = $.Deferred();
         submit_group_request(
-            [get_user_email()], project_data, group_registered);
+            [project_data.meta.username], project_data, group_registered);
         return group_registered.promise();
     }
     var group_registered = process_group_registration(project_data);

@@ -22,7 +22,7 @@
           signInSuccessUrl: 'http://localhost:8000/',
           signInOptions: ["google", "password"],
           oobActionUrl: 'http://localhost:8000/auth-email',
-          siteName: 'this site',
+          siteName: 'The Autograder',
 
           // Optional - function called after sign in completes and before
           // redirecting to signInSuccessUrl. Return false to disable
@@ -78,6 +78,10 @@
 
   </head>
   <body>
+
+    {% if redirect_reason %}
+    <script type='text/javascript'>alert('{{ redirect_reason }}');</script>
+    {% endif %}
 
     <!-- Include the sign in page widget with the matching 'gitkitWidgetDiv' id -->
     <div id="gitkitWidgetDiv"></div>

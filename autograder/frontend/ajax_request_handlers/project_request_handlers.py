@@ -38,7 +38,9 @@ class ProjectRequestHandler(LoginRequiredView):
                     'is_staff': is_staff,
                     'can_edit': project.semester.course.is_course_admin(
                         request.user)
-                }
+                },
+                # HACK
+                'username': request.user.username
             },
         }
         if not is_staff:
