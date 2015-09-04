@@ -63,7 +63,10 @@ function show_project(group_data, project_data)
     };
     $.when(
         render_and_fix_links('view-project', project_render_data)
-    ).done(function() { submit_widgit_init(group_data, project_data); });
+    ).done(function() {
+        submit_widgit_init(group_data, project_data);
+        $('#loading-bar').hide();
+    });
 }
 
 function setup_collapsibles(selector)
@@ -83,7 +86,9 @@ function load_submission(url, context)
     $.get(url).done(function(data, status) {
         // console.log(data);
         // console.log(context);
-        render_and_fix_links('view-submission', data, context);
+        render_and_fix_links('view-submission', data, context, true).done(function() {
+            $('.progress', context).hide();
+        });
         var status = data.data.attributes.status;
         if (status === 'being_graded' || status === 'received' ||
             status === 'queued')
@@ -114,7 +119,20 @@ function on_submit_success(event, response, group_id)
     +   "</div>"
     +   "<div id='" + node_id + "' class='panel-collapse collapse submission-collapse'>"
     +       "<a href='" + json.data.links.self + "' style='display:none'></a>"
-    +       "<div class='panel-body'></div>"
+    +       "<div class='panel-body'>"
+    +           "<div class='row'>"
+    +               "<div class='col-sm-3'></div>"
+    +               "<div class='col-sm-6'>"
+    +                   "<div class='progress' >"
+    +                       "<div class='progress-bar progress-bar-striped active' role='progressbar'"
+    +                            "aria-valuenow='1' aria-valuemin='0' aria-valuemax='1' style='width:100%'>"
+    +                           "Loading..."
+    +                       "</div>"
+    +                   "</div>"
+    +               "</div>"
+    +               "<div class='col-sm-3'></div>"
+    +           "</div>"
+    +       "</div>"
     +   "</div>")
 
     console.log(html);

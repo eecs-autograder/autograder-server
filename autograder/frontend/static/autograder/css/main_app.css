@@ -38,3 +38,32 @@ table.table-condensed.table-bordered.diff-table>tbody>tr>td {
     transition: all 0.3s ease-out;
     opacity: 1;
 }
+
+/*#loading-bar {
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background-color:rgba(0, 0, 0, 0.85);
+    background: url(data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAABl0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuNUmK/OAAAAATSURBVBhXY2RgYNgHxGAAYuwDAA78AjwwRoQYAAAAAElFTkSuQmCC) repeat scroll transparent\9;
+    z-index:9999;
+    color:white;
+}
+
+#loading-bar.progress {
+    position:relative;
+    top:100px;
+    left:0;
+    right:0;
+    bottom:0;
+}
+*/
+body {
+  padding-top: 100px;
+}
+@media (max-width: 979px) {
+  body {
+    padding-top: 0px;
+  }
+}
