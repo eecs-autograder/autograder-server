@@ -39,26 +39,22 @@ table.table-condensed.table-bordered.diff-table>tbody>tr>td {
     opacity: 1;
 }
 
-/*#loading-bar {
-    position:absolute;
+.overlay {
+    position: fixed;
     top:0;
     left:0;
     right:0;
     bottom:0;
-    background-color:rgba(0, 0, 0, 0.85);
-    background: url(data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAABl0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuNUmK/OAAAAATSURBVBhXY2RgYNgHxGAAYuwDAA78AjwwRoQYAAAAAElFTkSuQmCC) repeat scroll transparent\9;
+    background-color: #ffffff;
+    opacity: 0.8;
     z-index:9999;
-    color:white;
 }
 
-#loading-bar.progress {
+#loading-bar-proper {
     position:relative;
-    top:100px;
-    left:0;
-    right:0;
-    bottom:0;
+    margin-top: 40%;
 }
-*/
+
 body {
   padding-top: 100px;
 }
