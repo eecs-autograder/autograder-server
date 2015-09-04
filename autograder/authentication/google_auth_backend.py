@@ -8,7 +8,9 @@ from autograder.identitytoolkit import gitkitclient
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 
-# (Receive token by HTTPS POST)
+import logging
+
+logger = logging.getLogger(__name__)
 
 CLIENT_ID = '358440655746-bl5ig1es62n6n4oho525l4f58fgl367c.apps.googleusercontent.com'
 APPS_DOMAIN_NAME = 'umich.edu'
@@ -20,20 +22,24 @@ gitkit_instance = gitkitclient.GitkitClient.FromConfigFile(server_config_json)
 
 class GoogleIdentityToolkitSessionMiddleware(object):
     def process_request(self, request):
+        logger.info('process_request, GITkit middleware')
+
         if request.path == '/callback/':
+            logger.info('login page requested. setting anonymous user')
+            request.user = AnonymousUser()
             return None
 
-        print('process_request, GITkit middleware')
         gtoken = request.COOKIES.get('gtoken', None)
         if gtoken is None:
+            logger.info('gtoken not set. redirecting...')
             return self.redirect_to_login(request, '')
             # request.user = AnonymousUser()
             # return HttpResponseRedirect('/callback/?mode=select')
 
         gitkit_user = gitkit_instance.VerifyGitkitToken(gtoken)
-        print(gitkit_user)
+        logger.info(gitkit_user)
         if not gitkit_user:
-            print('error verifying token')
+            logger.info('error verifying token')
             return self.redirect_to_login(
                 request,
                 'Error signing in. '
@@ -41,9 +47,10 @@ class GoogleIdentityToolkitSessionMiddleware(object):
             # return HttpResponse(
             #     'Unable to validate user', content_type='text/plain')
 
-        print(gitkit_user.email)
+        logger.info(gitkit_user.email)
 
         if gitkit_user.email.split('@')[-1] != APPS_DOMAIN_NAME:
+            logger.info('email is not umich.edu. redirecting...')
             return self.redirect_to_login(
                 request,
                 'Please sign in with a umich.edu email address')
@@ -51,7 +58,7 @@ class GoogleIdentityToolkitSessionMiddleware(object):
         user = User.objects.get_or_create(username=gitkit_user.email)[0]
         request.user = user
 
-        print('success')
+        logger.info('success')
         return None
 
     def redirect_to_login(self, request, reason):
