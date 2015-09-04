@@ -57,7 +57,7 @@
                 {{/if}}
 
                 {{if valgrind_errors_present !== undefined}}
-                    <div>Valgrind: {{if valgrind_errors_present}}CLEAN{{else}}ERRORS{{/if}}</div>
+                    <div>Valgrind: {{if valgrind_errors_present}}ERRORS{{else}}CLEAN{{/if}}</div>
                 {{/if}}
                 {{if valgrind_output !== undefined}}
                     Valgrind output: <pre>{{>valgrind_output}}</pre>
