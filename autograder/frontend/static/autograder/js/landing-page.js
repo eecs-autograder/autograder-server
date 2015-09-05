@@ -14,15 +14,15 @@ function load_landing_page()
     return loaded.promise();
 }
 
-function _render_landing_page(courses_result, semesters_result, template)
+function _render_landing_page(courses, semesters, template)
 {
     var data = {
-        'courses': courses_result,
-        'semesters': semesters_result
+        'courses': courses,
+        'semesters': semesters
     };
 
     var rendered = template.render(data);
 
     $('#main-area').html(rendered);
-    $("a[data-role='ajax'").click(ajax_link_click_handler);
+    $("a[data-role='ajax']").click(ajax_link_click_handler);
 }

@@ -37,20 +37,6 @@ function load_view()
     loaded.done(function() { $('#loading-bar').hide(); });
 }
 
-
-
-function load_semester_view(semester_url)
-{
-    // console.log('load_semester_view');
-    // console.log(semester_url);
-    $.get(semester_url, function(data, status) {
-        // console.log(status);
-        render_and_fix_links('view-semester', data).done(function() {
-            $('#loading-bar').hide();
-        });
-    });
-}
-
 function load_submission_view(submission_url)
 {
     console.log('load_submission_view');
