@@ -26,5 +26,5 @@ function _render_landing_page_template(courses, semesters, template)
     console.log(rendered);
     $("a[data-role='ajax']", rendered).click(ajax_link_click_handler);
 
-    return rendered;
+    // return rendered;
 }

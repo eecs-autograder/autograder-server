@@ -168,7 +168,7 @@ function _on_submit_success(event, response, group_id)
 
     lazy_get_template('submission-collapse-panel').done(function(template) {
         var rendered = $.parseHTML(template.render(submission));
-        $('#submission-list .panel').prepend(rendered);
+        $('#own-submissions #submission-list .panel').prepend(rendered);
 
         var collapsible = $('#submission-' + String(submission.id));
         collapsible.on('show.bs.collapse', _load_submission);
