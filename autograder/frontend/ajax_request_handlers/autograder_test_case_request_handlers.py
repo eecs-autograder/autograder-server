@@ -19,6 +19,7 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
         'command_line_arguments',
         'standard_input',
         'test_resource_files',
+        'student_resource_files',
         'time_limit',
         'expected_return_code',
         'expect_any_nonzero_return_code',
@@ -67,6 +68,8 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
             return HttpResponseForbidden()
 
         type_str = request_content['data']['type']
+
+
 
         try:
             new_test = AutograderTestCaseFactory.new_instance(

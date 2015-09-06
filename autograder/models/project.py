@@ -2,6 +2,7 @@ import os
 import shutil
 import collections
 import json
+import copy
 
 from django.db import models
 from django.core.validators import MinValueValidator
@@ -15,6 +16,9 @@ from autograder.models.fields import (
     FeedbackConfigurationField, FeedbackConfiguration)
 from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
+
+from .autograder_test_case.autograder_test_case_base import (
+    AutograderTestCaseBase)
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
@@ -183,7 +187,30 @@ class Project(ModelValidatableOnSave):
     max_group_size = models.IntegerField(
         default=1, validators=[MinValueValidator(1)])
 
-    required_student_files = ArrayField(
+    @property
+    def required_student_files(self):
+        return copy.deepcopy(self._required_student_files)
+
+    @required_student_files.setter
+    def required_student_files(self, value):
+        files_removed = set(self._required_student_files) - set(value)
+
+        for file_ in files_removed:
+            tests_that_depend = AutograderTestCaseBase.objects.filter(
+                student_resource_files__contains=[file_])
+            if tests_that_depend:
+                error_msg = (
+                    'Cannot remove the required file: "{}". '
+                    'The test cases {} depend on it.'.format(
+                        file_,
+                        ', '.join((test.name for test in tests_that_depend))
+                    )
+                )
+                raise ValidationError({'required_student_files': error_msg})
+
+        self._required_student_files = value
+
+    _required_student_files = ArrayField(
         models.CharField(
             max_length=gc.MAX_CHAR_FIELD_LEN,
             blank=True  # We are setting this here so that the clean method
@@ -201,6 +228,32 @@ class Project(ModelValidatableOnSave):
 
     @expected_student_file_patterns.setter
     def expected_student_file_patterns(self, value):
+        old_patterns = {
+            pat_obj.pattern for pat_obj in self.expected_student_file_patterns
+        }
+
+        new_patterns = {
+            pat_obj.pattern if isinstance(pat_obj, Project.FilePatternTuple)
+            else pat_obj[0]
+            for pat_obj in value
+        }
+
+        removed_patterns = old_patterns - new_patterns
+
+        for pattern in removed_patterns:
+            tests_that_depend = AutograderTestCaseBase.objects.filter(
+                student_resource_files__contains=[pattern])
+            if tests_that_depend:
+                error_msg = (
+                    'Cannot remove the expected pattern: "{}". '
+                    'The test cases {} depend on it.'.format(
+                        pattern,
+                        ', '.join((test.name for test in tests_that_depend))
+                    )
+                )
+                raise ValidationError(
+                    {'expected_student_file_patterns': error_msg})
+
         self._expected_student_file_patterns = value
 
     _expected_student_file_patterns = JSONField(

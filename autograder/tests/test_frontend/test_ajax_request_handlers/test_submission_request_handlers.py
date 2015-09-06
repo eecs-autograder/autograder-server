@@ -55,6 +55,7 @@ class _SetUpBase(RequestHandlerTestCase):
             points_for_correct_return_code=2,
             compiler='g++',
             files_to_compile_together=['hello.cpp'],
+            student_resource_files=['hello.cpp'],
             executable_name='prog')
 
         self.hidden_test = AutograderTestCaseFactory.validate_and_create(
@@ -65,6 +66,7 @@ class _SetUpBase(RequestHandlerTestCase):
             points_for_correct_return_code=2,
             compiler='g++',
             files_to_compile_together=['hello.cpp'],
+            student_resource_files=['hello.cpp'],
             executable_name='prog')
         # self.hidden_test.pk = None
         # self.hidden_test.name = 'hidden'

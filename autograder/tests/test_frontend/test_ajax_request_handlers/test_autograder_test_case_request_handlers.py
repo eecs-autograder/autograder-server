@@ -47,6 +47,7 @@ class _SetUpBase(TemporaryFilesystemTestCase):
                     'command_line_arguments': ['spam'],
                     'standard_input': 'eggs',
                     'test_resource_files': ['cheese.txt'],
+                    'student_resource_files': self.project.required_student_files,
                     'time_limit': 5,
                     'expected_return_code': 0,
                     'expect_any_nonzero_return_code': False,

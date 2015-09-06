@@ -5,25 +5,54 @@ function load_edit_project_view(project_url)
     var loaded = $.Deferred();
 
     $.when(
-        $.get(project_url), lazy_get_template('edit_project_view')
-    ).done(function(project_ajax, template) {
-        var widget = _render_edit_project_view(project_ajax[0], template);
+        $.get(project_url),
+        lazy_get_template('edit_project_view'),
+        lazy_get_template('test_case_panel'),
+        lazy_get_template('test_case_form')
+    ).done(function(project_ajax, project_tmpl,
+                    test_panel_tmpl, test_form_tmpl) {
+        var widget = _render_edit_project_view(
+            project_ajax[0], project_tmpl, test_panel_tmpl, test_form_tmpl);
         loaded.resolve();
     });
 
     return loaded.promise();
 }
 
-function _render_edit_project_view(project, template)
+function _render_edit_project_view(
+    project, project_tmpl, test_panel_tmpl, test_form_tmpl)
 {
-    $('#main-area').html(template.render(project));
+    console.log(project);
+    var tmpl_helpers = {
+        test_case_panel: test_panel_tmpl,
+        test_case_form: test_form_tmpl,
+        populate_fields: true,
+        in_array: $.inArray
+    };
+    $('#main-area').html(project_tmpl.render(project, tmpl_helpers));
     // $("a[data-role='ajax']").click(ajax_link_click_handler);
     $('#save-button').click(function(e) {
-        _save_button_click_handler(e, project);
+        _save_project_button_click_handler(e, project);
+    });
+
+
+    var add_test_fields_tmpl_helpers = {
+        test_case_form: test_form_tmpl,
+        type_override: $('#test_type').val(),
+        populate_fields: false
+    };
+
+    var add_test_fields = $(
+        test_form_tmpl.render(project, add_test_fields_tmpl_helpers));
+    $('#add_test_fields').append(add_test_fields.html());
+
+    $('#add_test_form').submit(function(e) {
+        e.preventDefault();
+        // var new_panel = test_panel_tmpl.render({} , tmpl_helpers);
     });
 }
 
-function _save_button_click_handler(e, project)
+function _save_project_button_click_handler(e, project)
 {
     console.log(project);
     var new_feedback_config = {

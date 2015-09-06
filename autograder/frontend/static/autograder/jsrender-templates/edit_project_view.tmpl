@@ -120,7 +120,7 @@
     <div>Required student files</div>
     <ul>
     {{for data.attributes.required_student_files}}
-        <li><input type='text' name='required_student_files' value='{{>}}'></li>
+        <li><input type='text' name='required_student_files' value='{{:}}'></li>
     {{/for}}
     </ul>
     <button id='add_required_file_slot_button' type='button'>Add slot</button>
@@ -132,11 +132,11 @@
         <li>
             <div class='expected_pattern'>
                 <span>Pattern: </span>
-                <input type='text' name='pattern'>
+                <input type='text' name='pattern' value='{{:#data[0]}}'>
                 <span>Minimum number of matches</span>
-                <input type='text' name='min_num_matches'>
+                <input type='text' name='min_num_matches' value='{{:#data1]}}'>
                 <span>Maximum number of matches</span>
-                <input type='text' name='max_num_matches'>
+                <input type='text' name='max_num_matches' value='{{:#data[2]}}'>
             </div>
         </li>
     {{/for}}
@@ -149,7 +149,32 @@
 <button id='save-button' type='button'>SAVE CHANGES</button>
 
 <div id='test_cases'>
+    <h4>Test Cases</h4>
+    <div class='panel-group'>
+        <div class='panel panel-default'>
+            {{for included tmpl=~test_case_panel /}}
+        </div>
+    </div>
+</div>
 
+<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#add_test_case">
+    Add a test case
+</button>
+
+<div id="add_test_case" class="collapse">
+    <form role='form' id='add_test_form'>
+        <div class='form-group'>
+            <label for='test_type'>Test type:</label>
+            <select id='test_type' class='form-control' name='test_type'>
+                <option value='compiled_test_case'>Compiled and run</option>
+                <option value='compilation_only_test_case'>Compilation only</option>
+            </select>
+        </div>
+
+        <div id='add_test_fields'></div>
+
+        <button type="submit" class="btn btn-default">Add</button>
+    </form>
 </div>
 
 <!-- Add/delete submission groups -->

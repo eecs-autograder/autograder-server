@@ -21,7 +21,8 @@ class SharedTestsAndSetupForTestsWithCompilation(object):
             name='my_project', semester=semester,
             required_student_files=['file1.cpp', 'file2.cpp'],
             expected_student_file_patterns=[
-                Project.FilePatternTuple('test_*.cpp', 1, 2)])
+                Project.FilePatternTuple('test_*.cpp', 1, 2),
+                Project.FilePatternTuple('funsy[0-9].cpp', 0, 2)])
 
         self.project_files = [
             SimpleUploadedFile('spam.txt', b'hello there!'),
@@ -38,14 +39,15 @@ class SharedTestsAndSetupForTestsWithCompilation(object):
         self.compiler_flags = ['--foo_arg=bar', '-s']
 
         self.files_to_compile_together = [
-            file_obj.name for file_obj in self.project_files
+            'spam.txt',  # project file
+            'file1.cpp',  # required student file
+            'test_*.cpp'  # expected student pattern
         ]
-        self.files_to_compile_together.append('file1.cpp')  # required file
-        self.files_to_compile_together.append('test_*.cpp')  # expected pattern
-
         self.executable_name = "sausage.exe"
 
         self.compiled_test_kwargs = {
+            "test_resource_files": ['spam.txt'],
+            "student_resource_files": ['file1.cpp', 'test_*.cpp'],
             "compiler": self.compiler,
             "compiler_flags": self.compiler_flags,
             "files_to_compile_together": self.files_to_compile_together,
@@ -148,7 +150,7 @@ class SharedTestsAndSetupForTestsWithCompilation(object):
         self.assertTrue(
             'files_to_compile_together' in cm.exception.message_dict)
 
-    def test_exception_on_nonexistant_files_to_compile_together(self):
+    def test_exception_on_empty_name_in_files_to_compile_together(self):
         self.compiled_test_kwargs['files_to_compile_together'].append('')
 
         with self.assertRaises(ValidationError) as cm:
@@ -160,7 +162,8 @@ class SharedTestsAndSetupForTestsWithCompilation(object):
         self.assertTrue(
             'files_to_compile_together' in cm.exception.message_dict)
 
-        self.compiled_test_kwargs['files_to_compile_together'][-1] = None
+    def test_exception_on_None_in_files_to_compile_together(self):
+        self.compiled_test_kwargs['files_to_compile_together'].append(None)
 
         with self.assertRaises(ValidationError) as cm:
             AutograderTestCaseFactory.validate_and_create(
@@ -171,8 +174,57 @@ class SharedTestsAndSetupForTestsWithCompilation(object):
         self.assertTrue(
             'files_to_compile_together' in cm.exception.message_dict)
 
-        self.compiled_test_kwargs['files_to_compile_together'][-1] = (
+    def test_exception_on_nonexistant_name_in_files_to_compile_together(self):
+
+        self.compiled_test_kwargs['files_to_compile_together'].append(
             'nonexistant_file.txt')
+
+        with self.assertRaises(ValidationError) as cm:
+            AutograderTestCaseFactory.validate_and_create(
+                self.get_ag_test_type_str_for_factory(),
+                name=self.test_name, project=self.project,
+                **self.compiled_test_kwargs)
+
+        self.assertTrue(
+            'files_to_compile_together' in cm.exception.message_dict)
+
+    def test_exception_on_non_test_resource_file_to_compile_together(self):
+        assert 'eggs.cpp' in self.project.get_project_file_basenames()
+
+        self.compiled_test_kwargs['files_to_compile_together'].append(
+            'eggs.cpp')  # Project file, but not in test_resource_files
+
+        with self.assertRaises(ValidationError) as cm:
+            AutograderTestCaseFactory.validate_and_create(
+                self.get_ag_test_type_str_for_factory(),
+                name=self.test_name, project=self.project,
+                **self.compiled_test_kwargs)
+
+        self.assertTrue(
+            'files_to_compile_together' in cm.exception.message_dict)
+
+    def test_exception_on_non_student_resource_file_to_compile_together(self):
+        assert 'file2.cpp' in self.project.required_student_files
+
+        self.compiled_test_kwargs['files_to_compile_together'].append(
+            'file2.cpp')
+
+        with self.assertRaises(ValidationError) as cm:
+            AutograderTestCaseFactory.validate_and_create(
+                self.get_ag_test_type_str_for_factory(),
+                name=self.test_name, project=self.project,
+                **self.compiled_test_kwargs)
+
+        self.assertTrue(
+            'files_to_compile_together' in cm.exception.message_dict)
+
+    def test_exception_on_non_student_resource_pattern_to_compile_together(self):
+        assert 'funsy[0-9].cpp' in [
+            pat_obj.pattern for pat_obj in
+            self.project.expected_student_file_patterns]
+
+        self.compiled_test_kwargs['files_to_compile_together'].append(
+            'funsy[0-9].cpp')
 
         with self.assertRaises(ValidationError) as cm:
             AutograderTestCaseFactory.validate_and_create(
@@ -216,6 +268,10 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
     def setUp(self):
         super().setUp()
 
+        import autograder.models.autograder_test_case.utils
+        self.orig_docker_args = autograder.models.autograder_test_case.utils._DOCKER_ARGS
+        autograder.models.autograder_test_case.utils._DOCKER_ARGS = []
+
         self.original_dir = os.getcwd()
         self.new_dir = os.path.join(settings.MEDIA_ROOT, 'working_dir')
         os.mkdir(self.new_dir)
@@ -241,12 +297,16 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
             name='test1', project=self.project,
             compiler='g++',
             compiler_flags=['-Wall', '-pedantic'],
+            test_resource_files=[self.cpp_filename],
             files_to_compile_together=[self.cpp_filename],
             executable_name=self.executable_name
         )
 
     def tearDown(self):
         super().tearDown()
+
+        import autograder.models.autograder_test_case.utils
+        autograder.models.autograder_test_case.utils._DOCKER_ARGS = self.orig_docker_args
 
         os.chdir(self.original_dir)
 

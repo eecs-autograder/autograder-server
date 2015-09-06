@@ -126,6 +126,7 @@ class GetProjectRequestTestCase(_SetUpBase):
                     'compiled_test_case',
                     name='test{}'.format(i), project=proj,
                     compiler='g++', files_to_compile_together=['spam.cpp'],
+                    student_resource_files=proj.required_student_files,
                     executable_name='cheese')
 
     def test_course_admin_get_project(self):

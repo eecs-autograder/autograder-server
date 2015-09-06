@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 
-from autograder.models import AutograderTestCaseResultBase
+from ..autograder_test_case_result import AutograderTestCaseResultBase
 from autograder.models.utils import PolymorphicManagerWithValidateOnCreate
 
 from .autograder_test_case_base import AutograderTestCaseBase

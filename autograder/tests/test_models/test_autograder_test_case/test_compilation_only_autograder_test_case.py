@@ -1,5 +1,3 @@
-import unittest
-
 from autograder.models import (
     AutograderTestCaseBase, AutograderTestCaseFactory)
 
@@ -20,12 +18,11 @@ class CompilationOnlyAutograderTestCaseTestCase(
         return 'compilation_only_test_case'
 
     def test_valid_create_custom_values(self):
+        self.compiled_test_kwargs.pop('executable_name')
         AutograderTestCaseFactory.validate_and_create(
             'compilation_only_test_case',
             name=self.test_name, project=self.project,
-            compiler=self.compiler,
-            compiler_flags=self.compiler_flags,
-            files_to_compile_together=self.files_to_compile_together)
+            **self.compiled_test_kwargs)
 
         loaded_test = AutograderTestCaseBase.objects.get(
             name=self.test_name, project=self.project)
@@ -40,9 +37,7 @@ class CompilationOnlyAutograderTestCaseTestCase(
         test = AutograderTestCaseFactory.validate_and_create(
             'compilation_only_test_case',
             name=self.test_name, project=self.project,
-            compiler=self.compiler,
-            compiler_flags=self.compiler_flags,
-            files_to_compile_together=self.files_to_compile_together)
+            **self.compiled_test_kwargs)
 
         self.assertFalse(test.test_checks_return_code())
 
@@ -50,14 +45,11 @@ class CompilationOnlyAutograderTestCaseTestCase(
         test = AutograderTestCaseFactory.validate_and_create(
             'compilation_only_test_case',
             name=self.test_name, project=self.project,
-            compiler=self.compiler,
-            compiler_flags=self.compiler_flags,
-            files_to_compile_together=self.files_to_compile_together)
+            **self.compiled_test_kwargs)
 
         self.assertFalse(test.test_checks_output())
 
 
-@unittest.skip('too long, needs docker')
 class CompilationOnlyAutograderTestRunTestCase(
         SharedSetUpTearDownForRunTestsWithCompilation,
         TemporaryFilesystemTestCase):

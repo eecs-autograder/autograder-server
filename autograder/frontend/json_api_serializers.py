@@ -236,6 +236,7 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
             'command_line_arguments': <value>,
             'standard_input': <value>,
             'test_resource_files': <value>,
+            'student_resource_files': <value>,
             'time_limit': <value>,
             'expected_return_code': <value>,
             'expect_any_nonzero_return_code': <value>,
@@ -289,6 +290,7 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
         'command_line_arguments': (
             autograder_test_case.command_line_arguments),
         'standard_input': autograder_test_case.standard_input,
+        'student_resource_files': autograder_test_case.student_resource_files,
         'test_resource_files': autograder_test_case.test_resource_files,
         'time_limit': autograder_test_case.time_limit,
         'expected_return_code': autograder_test_case.expected_return_code,

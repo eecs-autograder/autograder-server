@@ -106,7 +106,6 @@ class CompiledAutograderTestCaseTestCase(
 # -----------------------------------------------------------------------------
 
 
-@unittest.skip('too long, needs docker')
 class CompiledAutograderTestRunTestCase(
         SharedSetUpTearDownForRunTestsWithCompilation,
         TemporaryFilesystemTestCase):

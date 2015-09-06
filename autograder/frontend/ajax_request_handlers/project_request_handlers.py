@@ -109,10 +109,11 @@ class ProjectRequestHandler(LoginRequiredView):
         request_content = json.loads(request.body.decode('utf-8'))
         to_edit = request_content['data']['attributes']
 
-        for field in ProjectRequestHandler._EDITABLE_FIELDS:
-            if field in to_edit:
-                setattr(project, field, to_edit[field])
         try:
+            for field in ProjectRequestHandler._EDITABLE_FIELDS:
+                if field in to_edit:
+                    setattr(project, field, to_edit[field])
+
             project.validate_and_save()
             return HttpResponse(status=204)
         except ValidationError as e:

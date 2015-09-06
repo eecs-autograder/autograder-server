@@ -744,8 +744,77 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         with self.assertRaises(ValidationError):
             project.remove_project_file(self.sample_project_filename)
 
-    import unittest
+    # import unittest
 
-    @unittest.skip('Design decision needed')
+    # @unittest.skip('')
     def test_exception_on_remove_student_file_test_depends_on(self):
-        self.fail()
+        filename = 'required.cpp'
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester,
+            required_student_files=[filename])
+
+        AutograderTestCaseBase.objects.validate_and_create(
+            name='testy', project=project,
+            student_resource_files=[filename])
+
+        with self.assertRaises(ValidationError) as cm:
+            project.required_student_files = []
+
+        self.assertTrue('required_student_files' in cm.exception.message_dict)
+
+    def test_exception_on_remove_multiple_student_files_tests_depend_on(self):
+        filenames = ['required1.cpp', 'required2.cpp', 'required3.cpp']
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester,
+            required_student_files=filenames)
+
+        tests = []
+        for file_, index in zip(filenames, range(len(filenames))):
+            tests.append(AutograderTestCaseBase.objects.validate_and_create(
+                name='testy{}'.format(index), project=project,
+                student_resource_files=[file_]))
+
+        with self.assertRaises(ValidationError) as cm:
+            project.required_student_files = []
+
+        self.assertTrue('required_student_files' in cm.exception.message_dict)
+
+    # @unittest.skip('')
+    def test_exception_on_remove_student_pattern_test_depends_on(self):
+        pattern = Project.FilePatternTuple('test_*.cpp', 0, 3)
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester,
+            expected_student_file_patterns=[pattern])
+
+        AutograderTestCaseBase.objects.validate_and_create(
+            name='testy', project=project,
+            student_resource_files=[pattern.pattern])
+
+        with self.assertRaises(ValidationError) as cm:
+            project.expected_student_file_patterns = []
+
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)
+
+    def test_exception_on_remove_multiple_patterns_tests_depend_on(self):
+        patterns = [
+            Project.FilePatternTuple('test_*.cpp', 0, 3),
+            Project.FilePatternTuple('fily_*.cpp', 0, 3),
+            Project.FilePatternTuple('wabbit_*.cpp', 0, 3)
+        ]
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester,
+            expected_student_file_patterns=patterns)
+
+        tests = []
+        for file_, index in zip(patterns, range(len(patterns))):
+            tests.append(AutograderTestCaseBase.objects.validate_and_create(
+                name='testy{}'.format(index), project=project,
+                student_resource_files=[
+                    pat_obj.pattern for pat_obj in patterns]))
+
+        with self.assertRaises(ValidationError) as cm:
+            project.expected_student_file_patterns = []
+
+        self.assertTrue(
+            'expected_student_file_patterns' in cm.exception.message_dict)

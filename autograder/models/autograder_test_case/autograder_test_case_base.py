@@ -7,8 +7,6 @@ from autograder.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate,
     filename_matches_any_pattern)
 
-from autograder.models import Project
-
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
 
@@ -208,9 +206,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
         files_to_compile_together -- A list of files that need to be
             compiled together. These filenames are restricted to those
-            in project.required_student_files and project.project files,
-            and may also include patterns from
-            project.expected_student_file_patterns.
+            in test_resource_files and student_resource_files.
             NOTE: When a pattern is part of this list, all student-submitted
                 files matching the pattern will be compiled together.
 
@@ -253,7 +249,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     objects = PolymorphicManagerWithValidateOnCreate()
 
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
-    project = models.ForeignKey(Project, related_name='autograder_test_cases')
+    project = models.ForeignKey('Project', related_name='autograder_test_cases')
 
     hide_from_students = models.BooleanField(default=True)
 
@@ -503,18 +499,21 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             }
 
         errors = []
-        patterns = [pattern_obj.pattern for pattern_obj in
-                    self.project.expected_student_file_patterns]
+        # patterns = [pattern_obj.pattern for pattern_obj in
+        #             self.project.expected_student_file_patterns]
         for filename in self.files_to_compile_together:
             valid_filename = (
-                filename in self.project.get_project_file_basenames() or
-                filename in self.project.required_student_files or
-                filename in patterns
+                filename in self.test_resource_files or
+                filename in self.student_resource_files
+                # filename in self.project.get_project_file_basenames() or
+                # filename in self.project.required_student_files or
+                # filename in patterns
             )
 
             if not valid_filename:
-                errors.append('File {0} not found for project {1}'.format(
-                    filename, self.project.name))
+                errors.append(
+                    'File {0} not a resource file for this test'.format(
+                        filename))
 
         if errors:
             return {'files_to_compile_together': errors}

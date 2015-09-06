@@ -1,0 +1,12 @@
+<div class='panel-heading'>
+    <h4 class='panel-title'>
+        <a data-toggle='collapse' class='collapsible-link' href="#test-{{:id}}">
+            {{>attributes.name}} ({{> type}})
+        </a>
+    </h4>
+</div>
+<div class='panel-collapse collapse' id='test-{{:id}}'>
+    <div class="panel-body">
+    {{include tmpl=~test_case_form/}}
+    </div>
+</div>
