@@ -15,6 +15,17 @@ $.postJSON = function(url, data, callback) {
     });
 };
 
+$.patchJSON = function(url, data, callback) {
+    return jQuery.ajax({
+        'type': 'PATCH',
+        'url': url,
+        'contentType': 'application/json',
+        'data': JSON.stringify(data),
+        'dataType': 'json',
+        'success': callback
+    });
+};
+
 // Adapted from: http://www.jsviews.com/#samples/jsr/composition/remote-tmpl
 function lazy_get_template(name)
 {

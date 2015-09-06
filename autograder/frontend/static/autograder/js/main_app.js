@@ -24,6 +24,10 @@ function load_view()
     {
         loaded = load_project_submission_view(resource_url);
     }
+    else if (view_name === 'edit-project')
+    {
+        loaded = load_edit_project_view(resource_url);
+    }
     // else if (view_name === 'submission')
     // {
     //     loaded = load_submission_view(resource_url);

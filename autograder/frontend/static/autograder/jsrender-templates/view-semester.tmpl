@@ -3,9 +3,20 @@
     <ul>
         {{for included}}
             <ul>
-                <a href="/project{{:links.self}}" data-role='ajax'>
-                    {{>attributes.name}}
-                </a>
+            <div class='row'>
+                <div class='col-sm-2'>
+                    <a href="/project{{:links.self}}" data-role='ajax'>
+                        {{>attributes.name}}
+                    </a>
+                </div>
+            {{if ~root.meta.permissions.can_edit}}
+                <div class='col-sm-1'>
+                    <a href="/edit-project{{:links.self}}" data-role='ajax'>
+                        (edit)
+                    </a>
+                </div>
+            {{/if}}
+            </div>
             </ul>
         {{/for}}
     </ul>

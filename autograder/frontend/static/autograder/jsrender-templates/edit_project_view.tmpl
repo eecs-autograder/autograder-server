@@ -1,0 +1,144 @@
+<!-- Edit project -->
+<h3>Edit Project - {{> data.attributes.name }}</h3>
+<div id='fields'>
+    <div>Test Case Feedback Levels</div>
+    <ul id='feedback_levels'>
+        <li>
+            <select id='return_code_feedback_level'>
+                <option value='no_feedback'>No feedback</option>
+                <option value='correct_or_incorrect_only'
+                        {{if data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='correct_or_incorrect_only'}}
+                            selected
+                        {{/if}}>
+                    Indicate correct or incorrect
+                </option>
+                <option value='show_expected_and_actual_values'
+                        {{if data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='show_expected_and_actual_values'}}
+                            selected
+                        {{/if}}>
+                    Show expected and actual values
+                </option>
+            </select>
+        </li>
+        <li>
+            <select id='output_feedback_level'>
+                <option value='no_feedback'>No feedback</option>
+                <option value='correct_or_incorrect_only'
+                        {{if data.attributes.test_case_feedback_configuration.output_feedback_level === 'correct_or_incorrect_only'}}
+                            selected
+                        {{/if}}>
+                    Indicate correct or incorrect
+                </option>
+                <option value='show_expected_and_actual_values'
+                        {{if data.attributes.test_case_feedback_configuration.output_feedback_level === 'show_expected_and_actual_values'}}
+                            selected
+                        {{/if}}>
+                    Show expected and actual values (diff)
+                </option>
+            </select>
+        </li>
+        <li>
+            <select id='compilation_feedback_level'>
+                <option value='no_feedback'>No feedback</option>
+                <option value='success_or_failure_only'
+                        {{if data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'success_or_failure_only'}}
+                            selected
+                        {{/if}}>
+                    Indicate success or failure
+                </option>
+                <option value='show_compiler_output'
+                        {{if data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'show_compiler_output'}}
+                            selected
+                        {{/if}}>
+                    Show compiler output
+                </option>
+            </select>
+        </li>
+        <li>
+            <select id='valgrind_feedback_level'>
+                <option value='no_feedback'>No feedback</option>
+                <option value='errors_or_no_errors_only'
+                        {{if data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'errors_or_no_errors_only'}}
+                            selected
+                        {{/if}}>
+                    Indicate clean or errors present
+                </option>
+                <option value='show_valgrind_output'
+                        {{if data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'show_valgrind_output'}}
+                            selected
+                        {{/if}}>
+                    Show valgrind output
+                </option>
+            </select>
+        </li>
+    </ul>
+
+    <input type='checkbox' id='visible_to_students' value='true'
+           {{if data.attributes.visible_to_students}}checked{{/if}}>
+        Visible to students
+    </input><br>
+    <input type='checkbox' id='disallow_student_submissions' value='true'
+           {{if data.attributes.disallow_student_submissions}}checked{{/if}}>
+        Disallow student submissions
+    </input><br>
+    <input type='checkbox' id='allow_submissions_from_non_enrolled_students'
+           value='true' {{if data.attributes.allow_submissions_from_non_enrolled_students}}checked{{/if}}>
+        Allow submissions from non-enrolled students
+    </input><br>
+
+    <span>Closing time: </span>
+    <span id="datetimepicker" class="input-append">
+        <input id='closing_time' data-format="MM/dd/yyyy HH:mm:ss PP"
+               type="text" name='closing_time'></input>
+        <span class="add-on">
+            <i data-time-icon="icon-time" data-date-icon="icon-calendar"></i>
+        </span>
+    </span><br>
+
+    <span>Minimum group size</span>
+    <input type='text' id='min_group_size' value='{{> data.attributes.min_group_size}}'><br>
+    <span>Maximum group size</span>
+    <input type='text' id='max_group_size' value='{{> data.attributes.max_group_size}}'><br>
+
+    <div>Required student files</div>
+    <ul>
+    {{for data.attributes.required_student_files}}
+        <li><input type='text' name='required_student_files' value='{{>}}'></li>
+    {{/for}}
+    </ul>
+    <button id='add_required_file_slot_button' type='button'>Add slot</button>
+    <button id='remove_required_file_slot_button' type="button">Remove slot</button>
+
+    <div>Expected student file patterns</div>
+    <ul>
+    {{for data.attributes.expected_student_file_patterns}}
+        <li>
+            <div class='expected_pattern'>
+                <span>Pattern: </span>
+                <input type='text' name='pattern'>
+                <span>Minimum number of matches</span>
+                <input type='text' name='min_num_matches'>
+                <span>Maximum number of matches</span>
+                <input type='text' name='max_num_matches'>
+            </div>
+        </li>
+    {{/for}}
+    </ul>
+    <button id='add_expected_pattern_slot_button' type='button'>Add slot</button>
+    <button id='remove_expected_pattern_slot_button' type="button">Remove slot</button>
+
+</div>
+
+<button id='save-button' type='button'>SAVE CHANGES</button>
+
+<div id='test_cases'>
+
+</div>
+
+<!-- Add/delete submission groups -->
+
+
+<!-- Download final scores/code -->
+
+
+<!-- Override feedback for final submissions -->

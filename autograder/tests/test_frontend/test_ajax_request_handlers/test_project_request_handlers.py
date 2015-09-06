@@ -19,6 +19,7 @@ from .utils import (
 from autograder.frontend.json_api_serializers import (
     project_to_json, autograder_test_case_to_json)
 from autograder.models import Project, AutograderTestCaseFactory
+from autograder.models.fields import FeedbackConfiguration
 
 
 class _SetUpBase(TemporaryFilesystemTestCase):
@@ -238,9 +239,12 @@ class PatchProjectRequestTestCase(_SetUpBase):
                 'type': 'project',
                 'id': self.project.pk,
                 'attributes': {
+                    'test_case_feedback_configuration': (
+                        FeedbackConfiguration.get_max_feedback().to_json()),
                     'visible_to_students': True,
                     'closing_time': closing_time,
                     'disallow_student_submissions': True,
+                    'allow_submissions_from_non_enrolled_students': True,
                     'min_group_size': 2,
                     'max_group_size': 3,
                     'required_student_files': ['spam.cpp', 'eggs.cpp'],

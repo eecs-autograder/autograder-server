@@ -14,6 +14,18 @@ from autograder.models import Semester, Project
 
 
 class ProjectRequestHandler(LoginRequiredView):
+    _EDITABLE_FIELDS = [
+        'test_case_feedback_configuration',
+        'visible_to_students',
+        'closing_time',
+        'disallow_student_submissions',
+        'allow_submissions_from_non_enrolled_students',
+        'min_group_size',
+        'max_group_size',
+        'required_student_files',
+        'expected_student_file_patterns'
+    ]
+
     def get(self, request, project_id):
         try:
             project = Project.objects.get(pk=project_id)
@@ -97,29 +109,9 @@ class ProjectRequestHandler(LoginRequiredView):
         request_content = json.loads(request.body.decode('utf-8'))
         to_edit = request_content['data']['attributes']
 
-        if 'visible_to_students' in to_edit:
-            project.visible_to_students = to_edit['visible_to_students']
-
-        if 'closing_time' in to_edit:
-            project.closing_time = to_edit['closing_time']
-
-        if 'disallow_student_submissions' in to_edit:
-            project.disallow_student_submissions = (
-                to_edit['disallow_student_submissions'])
-
-        if 'min_group_size' in to_edit:
-            project.min_group_size = to_edit['min_group_size']
-
-        if 'max_group_size' in to_edit:
-            project.max_group_size = to_edit['max_group_size']
-
-        if 'required_student_files' in to_edit:
-            project.required_student_files = to_edit['required_student_files']
-
-        if 'expected_student_file_patterns' in to_edit:
-            project.expected_student_file_patterns = (
-                to_edit['expected_student_file_patterns'])
-
+        for field in ProjectRequestHandler._EDITABLE_FIELDS:
+            if field in to_edit:
+                setattr(project, field, to_edit[field])
         try:
             project.validate_and_save()
             return HttpResponse(status=204)
