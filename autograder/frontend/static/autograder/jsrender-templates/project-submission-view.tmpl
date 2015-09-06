@@ -54,14 +54,16 @@
 <span id='view-student-submissions'>
     <h3>Student Submissions</h3>
     <span id='student-submission-view'>Student email: <input id='requested-email' type='text'> <button id='load-student-submissions-button' type='button'>Search</button></span>
-    <div id='student-submissions'></div>
+    <div id='student-submissions'>
+    </div>
 </span>
 {{/if}}
 <span id='view-submissions'>
     <h3>Your Submissions</h3>
-    <div id='own-submissions'></div>
+    <div id='own-submissions'>
+        {{include tmpl=~submission_panel_list /}}
+    </div>
 </span>
-
 
 <script id="template-upload" type="text/x-tmpl">
 {% for (var i=0, file; file=o.files[i]; i++) { %}

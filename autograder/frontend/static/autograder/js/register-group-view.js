@@ -1,29 +1,103 @@
-function process_group_registration(project_data)
+function register_group(project)
 {
-    console.log('process_group_registration');
-    var max_size = project_data.data.attributes.max_group_size
-    var min_size = project_data.data.attributes.min_group_size;
+    console.log('register_group');
+    console.log(project);
+    var registered = $.Deferred();
 
-    var registration_view_rendered = render_and_fix_links(
-        'register-group-view', {'max_group_size': max_size});
+    if (project.data.attributes.max_group_size === 1)
+    {
+        var members = [project.meta.username];
+        submit_group_request(
+            members, project
+        ).done(function(group) {
+            registered.resolve(group);
+        });
+    }
+    else
+    {
+        lazy_get_template(
+            'register-group-view'
+        ).then(function(template) {
+            return _render_and_process_group_registration_view(project, template);
+        }).done(function(group) {
+            registered.resolve(group);
+        });
+    }
 
-    var deferred = $.Deferred();
-
-    $.when(registration_view_rendered).done(function() {
-        initialize_group_registration_view(
-            min_size, max_size, project_data, deferred);
-    });
-    return deferred.promise();
+    return registered.promise();
 }
 
-function initialize_group_registration_view(
-    min_size, max_size, project_data, deferred)
+function submit_group_request(members, project)
 {
-    console.log('initialize_group_registration_view');
-    $('#register-group-button').click(function(event) {
-        register_group_button_click_handler(
-            event, min_size, max_size, project_data, deferred);
+    console.log('submit_group_members');
+
+    var group_registered = $.Deferred();
+    // console.log(members);
+    // console.log(project);
+    var request_data = {
+        'data': {
+            'type': 'submission_group',
+            'attributes': {
+                'members': members,
+            },
+            'relationships': {
+                'project': {
+                    'data': {
+                        'type': 'project',
+                        'id': project.data.id
+                    }
+                }
+            }
+        }
+    }
+
+    $.postJSON(
+        "/submission-groups/submission-group/", request_data
+    ).done(function(group) {
+        console.log('resolving');
+        group_registered.resolve(group);
+    }).fail(function(data) {
+        // console.log(data);
+        var response_json = data.responseJSON;
+        // console.log(data.responseJSON);
+        // console.log(response_json.errors.meta);
+        var error_html = '<div class="error"><div>Errors</div><ul>'
+        $.each(response_json.errors.meta.members, function(i, message) {
+            error_html += $('<li/>').text(message).html();
+        });
+        error_html += '</ul></div></div>';
+        // console.log(error_html);
+        $('#partner-list').after(error_html);
     });
+
+    return group_registered.promise();
+}
+
+function _render_and_process_group_registration_view(project, template)
+{
+    console.log('_render_and_process_group_registration_view');
+    console.log(project);
+    console.log(template);
+
+    var rendered = template.render(project);
+    $('#main-area').html(rendered);
+    $('#loading-bar').hide();
+    // var registration_view_rendered = render_and_fix_links(
+    //     'register-group-view', {'max_group_size': max_size});
+
+    var group_registered = $.Deferred();
+
+    // _initialize_group_registration_view(project, group_registered);
+    // registration_view_rendered.done(function() {
+    //     initialize_group_registration_view(
+    //         min_size, max_size, project);
+    // }).done(function() {
+    //     deferred.resolve
+    // });
+    $('#register-group-button').click(function(e) {
+        _register_group_button_click_handler(e, project, group_registered);
+    });
+
     $('#work-alone-box').click(function() {
         if ($(this).is(':checked'))
         {
@@ -32,19 +106,23 @@ function initialize_group_registration_view(
         }
         $('#partner-list').show();
     });
+
+
+    return group_registered.promise();
 }
 
-function register_group_button_click_handler(
-    event, min_size, max_size, project_data, deferred)
+function _register_group_button_click_handler(e, project, deferred)
 {
     // event.preventDefault();
-    console.log('register_group_button_click_handler');
+    console.log('_register_group_button_click_handler');
     $(".error").remove();
 
-    var members = [get_user_email()];
+    var members = [project.meta.username];
     if ($('#work-alone-box').is(':checked'))
     {
-        submit_group_request(members, project_data);
+        submit_group_request(members, project).done(function(group) {
+            deferred.resolve(group);
+        });
         return;
     }
 
@@ -67,6 +145,8 @@ function register_group_button_click_handler(
         }
         members.push(field.value);
     });
+
+    var max_size = project.data.attributes.max_group_size;
     if (members.length > max_size)
     {
         $('#partner-list').append(
@@ -74,6 +154,7 @@ function register_group_button_click_handler(
             ' email(s)</div>');
         return;
     }
+    var min_size = project.data.attributes.min_group_size;
     if (members.length < min_size || members.length === 0)
     {
         $('#partner-list').append(
@@ -82,50 +163,7 @@ function register_group_button_click_handler(
         return;
     }
 
-    submit_group_request(members, project_data, deferred);
-}
-
-function submit_group_request(members, project_data, deferred)
-{
-    console.log('submit_group_members');
-    // console.log(members);
-    // console.log(project_data);
-    var request_data = {
-        'data': {
-            'type': 'submission_group',
-            'attributes': {
-                'members': members,
-            },
-            'relationships': {
-                'project': {
-                    'data': {
-                        'type': 'project',
-                        'id': project_data.data.id
-                    }
-                }
-            }
-        }
-    }
-
-    $.postJSON(
-        "/submission-groups/submission-group/", request_data
-    ).done(function(group_data, status) {
-        console.log('resolving');
-        deferred.resolve(group_data, project_data);
-    }).fail(function(data, status) {
-        // console.log(data);
-        var response_json = data.responseJSON;
-        // console.log(data.responseJSON);
-        // console.log(response_json.errors.meta);
-        var error_html = '<div class="error"><div>Errors</div><ul>'
-        $.each(response_json.errors.meta.members, function(i, message) {
-            error_html += $('<li/>').text(message).html();
-        });
-        error_html += '</ul></div></div>';
-        // console.log(error_html);
-        $('#partner-list').after(error_html);
+    submit_group_request(members, project).done(function(group) {
+        deferred.resolve(group);
     });
 }
-
-
-

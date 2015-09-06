@@ -1,0 +1,24 @@
+<div class='panel-heading'>
+    <h4 class='panel-title'>
+        <a data-toggle='collapse' class='collapsible-link' href="#submission-{{:id}}">
+            {{to_local_date:attributes.timestamp }}
+        </a>
+    </h4>
+</div>
+<div id='submission-{{:id}}' class='panel-collapse collapse submission-collapse'>
+    <a href="{{:links.self}}" style='display:none'></a>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-sm-3"></div>
+            <div class='col-sm-6'>
+                <div class="progress" >
+                    <div class="progress-bar progress-bar-striped active" role="progressbar"
+                         aria-valuenow="1" aria-valuemin="0" aria-valuemax="1" style="width:100%">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3"></div>
+        </div>
+    </div>
+</div>

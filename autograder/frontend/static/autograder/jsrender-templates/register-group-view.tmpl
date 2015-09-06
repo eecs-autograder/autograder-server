@@ -1,29 +1,15 @@
 <div id='register-group-form'>
-    {{if min_group_size === 1}}
+    {{if data.attributes.min_group_size === 1}}
     <input type='checkbox' id='work-alone-box' name='work_alone' value='true'> I am working alone</input><br>
     <div> - or - </div>
     {{/if}}
     <div id='partner-list'>
         <div>Partner email(s):</div>
         <ul>
-            {^{range start=1 end=max_group_size-1}}
+            {^{range start=1 end=data.attributes.max_group_size-1}}
             <li><input type='text' name='members'></li>
             {{/range}}
         </ul>
     </div>
     <button id='register-group-button' type='button'>Register</button>
 </div>
-
-<!-- <script type="text/javascript">
-
-function prep_register_group_view()
-{
-    $("a[data-role='ajax']").click(function (e) {
-        e.preventDefault();
-        var pageName = $(this).attr("href");
-        window.history.pushState(null, "", pageName);
-        load_view();
-    });
-}
-
-</script> -->

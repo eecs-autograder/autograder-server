@@ -1,147 +1,99 @@
-function load_and_display_project_view(project_url)
+'use strict';
+
+function load_project_submission_view(project_url)
 {
     console.log('load_project_view');
+    var loaded = $.Deferred();
     // console.log(project_url);
-    var project_loaded = $.get(project_url).promise();
-    $.get(project_url).done(function(project_data) {
-        $.when(get_or_register_group(project_data)).done(
-            function(group_data, project_data) {
-                show_project(group_data, project_data);
+    // var project_loaded = ;
+    $.when(
+        $.get(project_url)
+    ).then(function(project) {
+        return _get_or_register_group(project);
+    }).then(function(group, project) {
+        console.log('wheee');
+        console.log(group);
+        console.log(project);
+
+        $.when(
+            lazy_get_template('project-submission-view'),
+            lazy_get_template('submission-panel-list'),
+            lazy_get_template('submission-collapse-panel')
+        ).done(function(template,
+                        submission_panel_list_tmpl,
+                        submission_collapse_panel_tmpl) {
+            var template_helpers = {
+                submission_panel_list: submission_panel_list_tmpl,
+                submission_collapse_panel: submission_collapse_panel_tmpl
+            };
+            var rendered = _render_project_view(
+                group, project, template, template_helpers);
+
+            $('#main-area').html(rendered);
+
+            _initialize_project_submission_view()
+
+            loaded.resolve();
         });
     });
-    // var group_loaded = project_loaded.done(get_or_register_group).promise();
-    // group_loaded.done(show_project);
+
+    return loaded.promise();
 }
 
-function get_or_register_group(project_data)
+function _get_or_register_group(project)
 {
-    console.log('get_or_register_group');
-    var deferred = $.Deferred();
-    var url = get_submission_group_url(
-        project_data.data.id, project_data.meta.username);
-    console.log(url);
+    console.log('_get_or_register_group');
+    console.log(project);
+    var group_loaded = $.Deferred();
+
+    var url = get_submission_group_url(project.data.id, project.meta.username);
     $.ajax(url,
     {
         statusCode: {
             404: function() {
-                var group_registered = register_group(project_data);
-                group_registered.done(function(group_data, project_data) {
+                console.log('needs to register');
+                var group_registered = register_group(project);
+                group_registered.done(function(group) {
                     console.log('resolving');
-                    deferred.resolve(group_data, project_data);
+                    group_loaded.resolve(group, project);
                 });
             }
         }
-    }).done(function(group_data, status) {
-        console.log('resolving');
-        deferred.resolve(group_data, project_data);
+    }).done(function(group) {
+        console.log('group loaded');
+        group_loaded.resolve(group, project);
     });
-    return deferred.promise();
+
+    console.log('returning promise');
+    return group_loaded.promise();
 }
 
-function register_group(project_data)
+function _render_project_view(group, project, template, template_helpers)
 {
-    console.log('register_group');
-    if (project_data.data.attributes.max_group_size === 1)
-    {
-        var group_registered = $.Deferred();
-        submit_group_request(
-            [project_data.meta.username], project_data, group_registered);
-        return group_registered.promise();
-    }
-    var group_registered = process_group_registration(project_data);
-    return group_registered;
-}
-
-function show_project(group_data, project_data)
-{
-    console.log('show_project');
-    // console.log(group_data);
-    // console.log(project_data);
+    console.log('_render_project_view');
+    console.log(group);
+    console.log(project);
+    console.log(template_helpers);
     var project_render_data = {
-        'project': project_data,
-        'group': group_data
+        'project': project,
+        'group': group
     };
-    $.when(
-        render_and_fix_links('view-project', project_render_data)
-    ).done(function() {
-        submit_widgit_init(group_data, project_data);
-        $('#loading-bar').hide();
-    });
+    var rendered = template.render(project_render_data, template_helpers);
+    console.log(rendered);
+
+    return rendered;
 }
 
-function setup_collapsibles(selector)
+function _initialize_project_submission_view(group, project)
 {
-    // console.log('setting up');
-    // console.log(selector);
-    selector.on('show.bs.collapse', function() {
-        // console.log('oiueqroiwuer');
-        var url = $('a', this).attr('href');
-        var context = $('.panel-body', this);
-        load_submission(url, context);
-    });
+    _initialize_submit_widget(group, project);
+    setup_collapsibles($('.submission-collapse'));
+    view_student_submissions_widget_init(project);
 }
 
-function load_submission(url, context)
-{
-    $.get(url).done(function(data, status) {
-        // console.log(data);
-        // console.log(context);
-        render_and_fix_links('view-submission', data, context);
-        var status = data.data.attributes.status;
-        if (status === 'being_graded' || status === 'received' ||
-            status === 'queued')
-        {
-            console.log('will try again a few seconds');
-            setTimeout(function() {load_submission(url, context);}, 5000);
-        }
-    });
-}
+// -----------------------------------------------------------------------------
 
-function on_submit_success(event, response, group_id)
-{
-    console.log(response);
-    var json = response.result;
-    console.log('doneeee');
-
-    $('#upload-progress').empty();
-
-    var node_id = "submission-" + String(json.data.id) + "-" + String(group_id)
-
-    var html = (
-        "<div class='panel-heading'>"
-    +       "<h4 class='panel-title'>"
-    +           "<a data-toggle='collapse' class='collapsible-link' href='#" + node_id + "'>"
-    +               new Date(json.data.attributes.timestamp).toLocaleString()
-    +           "</a>"
-    +       "</h4>"
-    +   "</div>"
-    +   "<div id='" + node_id + "' class='panel-collapse collapse submission-collapse'>"
-    +       "<a href='" + json.data.links.self + "' style='display:none'></a>"
-    +       "<div class='panel-body'>"
-    +           "<div class='row'>"
-    +               "<div class='col-sm-3'></div>"
-    +               "<div class='col-sm-6'>"
-    +                   "<div class='progress' >"
-    +                       "<div class='progress-bar progress-bar-striped active' role='progressbar'"
-    +                            "aria-valuenow='1' aria-valuemin='0' aria-valuemax='1' style='width:100%'>"
-    +                           "Loading..."
-    +                       "</div>"
-    +                   "</div>"
-    +               "</div>"
-    +               "<div class='col-sm-3'></div>"
-    +           "</div>"
-    +       "</div>"
-    +   "</div>")
-
-    console.log(html);
-
-    $('#submission-list .panel').prepend(html);
-    setup_collapsibles($('#' + node_id));
-
-    $('#' + node_id).collapse();
-}
-
-function submit_widgit_init(group_data, project_data)
+function _initialize_submit_widget(group, project)
 {
     console.log('project rendered');
     console.log($('#fileupload'));
@@ -150,7 +102,7 @@ function submit_widgit_init(group_data, project_data)
         'dropZone': $('#dropzone'),
         'singleFileUploads': false,
         'done': function(event, response) {
-            on_submit_success(event, response, group_data.data.id);
+            on_submit_success(event, response, group.data.id);
         }
     });
 
@@ -181,21 +133,63 @@ function submit_widgit_init(group_data, project_data)
             dropZone.removeClass('in hover');
         }, 100);
     });
-
-    // console.log(group_data);
-    render_and_fix_links(
-        'submission-list', group_data, $('#own-submissions')
-    ).done(view_own_submissions_widget_init);
-
-    view_student_submissions_widget_init(project_data);
 }
 
-function view_own_submissions_widget_init()
+function on_submit_success(event, response, group_id)
 {
-    setup_collapsibles($('.submission-collapse'));
+    console.log(response);
+    var submission = response.result.data;
+    console.log(submission);
+    console.log('doneeee');
+
+    $('#upload-progress').empty();
+
+    // var node_id = "submission-" + String(submission.data.id) + "-" + String(group_id)
+
+    var submission_widget = $.parseHTML(
+        $.templates('#submission-collapse-panel').render(submission));
+
+    console.log(submission_widget);
+
+    var collapsible_context = $('<div>').append(submission_widget);
+    var collapsible = $('.submission-collapse', collapsible_context);
+    console.log(collapsible);
+    setup_collapsibles(collapsible);
+
+    $('#submission-list .panel').prepend(submission_widget);
+
+    collapsible.collapse();
 }
 
-function view_student_submissions_widget_init(project_data)
+function setup_collapsibles(selector)
+{
+    // console.log('setting up');
+    // console.log(selector);
+    selector.on('show.bs.collapse', function() {
+        // console.log('oiueqroiwuer');
+        var url = $('a', this).attr('href');
+        var context = $('.panel-body', this);
+        load_submission(url, context);
+    });
+}
+
+function load_submission(url, context)
+{
+    $.get(url).done(function(data, status) {
+        // console.log(data);
+        // console.log(context);
+        render_and_fix_links('view-submission', data, context);
+        var status = data.data.attributes.status;
+        if (status === 'being_graded' || status === 'received' ||
+            status === 'queued')
+        {
+            console.log('will try again a few seconds');
+            setTimeout(function() {load_submission(url, context);}, 5000);
+        }
+    });
+}
+
+function view_student_submissions_widget_init(project)
 {
     $('#load-student-submissions-button').click(function(event){
         event.preventDefault();
@@ -208,7 +202,7 @@ function view_student_submissions_widget_init(project_data)
             return;
         }
         var url = get_submission_group_url(
-            project_data.data.id, email);
+            project.data.id, email);
         $.get(
             url
         ).done(function (data, status) {

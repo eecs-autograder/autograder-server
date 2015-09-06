@@ -14,41 +14,48 @@ function load_view()
 
     if (view_name === '')
     {
-        loaded = load_landing_page();
+        loaded = get_landing_page_widget();
     }
     else if (view_name === 'semester')
     {
-        loaded = load_semester_view(resource_url);
+        loaded = get_semester_widget(resource_url);
     }
     else if (view_name === 'project')
     {
-        loaded = load_and_display_project_view(resource_url);
+        loaded = load_project_submission_view(resource_url);
     }
-    else if (view_name === 'submission')
-    {
-        loaded = load_submission_view(resource_url);
-    }
+    // else if (view_name === 'submission')
+    // {
+    //     loaded = load_submission_view(resource_url);
+    // }
     else
     {
         history.replaceState(null, '', '/');
         loaded = load_landing_page();
     }
 
-    loaded.done(function() { $('#loading-bar').hide(); });
-}
-
-function load_submission_view(submission_url)
-{
-    console.log('load_submission_view');
-    $.get(submission_url).done(function(data, status) {
-        // console.log(data);
-        $.when(
-            render_and_fix_links('view-submission', data)
-        ).done(function() {
-            $('#loading-bar').hide();
-        });
+    loaded.done(function() {//widget, widget_setup_func) {
+        // console.log(widget);
+        // $('#main-area').html(widget);
+        // widget_setup_func();
+        // $('#main-area').empty();
+        // $('#main-area').append(widget);
+        $('#loading-bar').hide();
     });
 }
+
+// function load_submission_view(submission_url)
+// {
+//     console.log('load_submission_view');
+//     $.get(submission_url).done(function(data, status) {
+//         // console.log(data);
+//         $.when(
+//             render_and_fix_links('view-submission', data)
+//         ).done(function() {
+//             $('#loading-bar').hide();
+//         });
+//     });
+// }
 
 function render_and_fix_links(template_name, data, render_location, append)
 {

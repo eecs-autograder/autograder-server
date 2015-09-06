@@ -22,44 +22,49 @@ gitkit_instance = gitkitclient.GitkitClient.FromConfigFile(server_config_json)
 
 class GoogleIdentityToolkitSessionMiddleware(object):
     def process_request(self, request):
-        logger.info('process_request, GITkit middleware')
+        # dummy version because my internet is shit
+        request.user = User.objects.get_or_create(
+            username='jameslp@umich.edu')[0]
 
-        if request.path == '/callback/':
-            logger.info('login page requested. setting anonymous user')
-            request.user = AnonymousUser()
-            return None
+    # def process_request(self, request):
+    #     logger.info('process_request, GITkit middleware')
 
-        gtoken = request.COOKIES.get('gtoken', None)
-        if gtoken is None:
-            logger.info('gtoken not set. redirecting...')
-            return self.redirect_to_login(request, '')
-            # request.user = AnonymousUser()
-            # return HttpResponseRedirect('/callback/?mode=select')
+    #     if request.path == '/callback/':
+    #         logger.info('login page requested. setting anonymous user')
+    #         request.user = AnonymousUser()
+    #         return None
 
-        gitkit_user = gitkit_instance.VerifyGitkitToken(gtoken)
-        logger.info(gitkit_user)
-        if not gitkit_user:
-            logger.info('error verifying token')
-            return self.redirect_to_login(
-                request,
-                'Error signing in. '
-                'Please try again with your umich.edu email address')
-            # return HttpResponse(
-            #     'Unable to validate user', content_type='text/plain')
+    #     gtoken = request.COOKIES.get('gtoken', None)
+    #     if gtoken is None:
+    #         logger.info('gtoken not set. redirecting...')
+    #         return self.redirect_to_login(request, '')
+    #         # request.user = AnonymousUser()
+    #         # return HttpResponseRedirect('/callback/?mode=select')
 
-        logger.info(gitkit_user.email)
+    #     gitkit_user = gitkit_instance.VerifyGitkitToken(gtoken)
+    #     logger.info(gitkit_user)
+    #     if not gitkit_user:
+    #         logger.info('error verifying token')
+    #         return self.redirect_to_login(
+    #             request,
+    #             'Error signing in. '
+    #             'Please try again with your umich.edu email address')
+    #         # return HttpResponse(
+    #         #     'Unable to validate user', content_type='text/plain')
 
-        if gitkit_user.email.split('@')[-1] != APPS_DOMAIN_NAME:
-            logger.info('email is not umich.edu. redirecting...')
-            return self.redirect_to_login(
-                request,
-                'Please sign in with a umich.edu email address')
+    #     logger.info(gitkit_user.email)
 
-        user = User.objects.get_or_create(username=gitkit_user.email)[0]
-        request.user = user
+    #     if gitkit_user.email.split('@')[-1] != APPS_DOMAIN_NAME:
+    #         logger.info('email is not umich.edu. redirecting...')
+    #         return self.redirect_to_login(
+    #             request,
+    #             'Please sign in with a umich.edu email address')
 
-        logger.info('success')
-        return None
+    #     user = User.objects.get_or_create(username=gitkit_user.email)[0]
+    #     request.user = user
+
+    #     logger.info('success')
+    #     return None
 
     def redirect_to_login(self, request, reason):
         return HttpResponseRedirect(

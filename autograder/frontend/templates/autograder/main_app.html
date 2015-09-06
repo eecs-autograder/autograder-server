@@ -13,8 +13,11 @@
     {% load staticfiles %}
 
     <!-- Boostrap -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+<!--     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css"> -->
+    <link rel="stylesheet" href="{% static 'autograder/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'autograder/bootstrap/css/bootstrap-theme.min.css' %}">
+
 
     <!-- File Upload -->
     <!-- Generic page styles -->
@@ -32,7 +35,7 @@
     <link rel="stylesheet" href="{% static 'autograder/css/main_app.css' %}">
 
     <!-- Google Identity Toolkit -->
-    <link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
+<!--     <link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" /> -->
 
 </head>
 <body>
@@ -74,7 +77,8 @@
 <!-- ======================================================================= -->
 
 <!-- JQuery -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script> -->
+<script src="{% static 'autograder/third-party/jquery.min.js' %}"></script>
 
 <script type="text/javascript">
 'use strict';
@@ -94,12 +98,12 @@ $(document).ready(function () {
         }
     });
 
-    window.google.identitytoolkit.signInButton(
-    '#gitkit-dropdown', // accepts any CSS selector
-    {
-        widgetUrl: "/callback/",
-        signOutUrl: "/",
-    });
+    // window.google.identitytoolkit.signInButton(
+    // '#gitkit-dropdown', // accepts any CSS selector
+    // {
+    //     widgetUrl: "/callback/",
+    //     signOutUrl: "/",
+    // });
 
 
     $(window).on('popstate', function (e) {
@@ -124,7 +128,8 @@ $(document).ready(function () {
 <script src="{% static 'autograder/jquery-cookie/jquery.cookie.js' %}"></script>
 
 <!-- Boostrap -->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> -->
+<script src="{% static 'autograder/bootstrap/js/bootstrap.min.js' %}"></script>
 
 <!-- File Upload -->
 
@@ -148,11 +153,13 @@ $(document).ready(function () {
 <!-- /File Upload -->
 
 <!-- jsrender -->
-<script src='https://www.jsviews.com/download/jsrender.min.js'></script>
-<script src="https://www.jsviews.com/download/sample-tag-controls/range/range.js"></script>
+<!-- <script src='https://www.jsviews.com/download/jsrender.min.js'></script> -->
+<!-- <script src="https://www.jsviews.com/download/sample-tag-controls/range/range.js"></script> -->
+<script src='{% static "autograder/third-party/jsrender.min.js" %}'></script>
+<script src="{% static 'autograder/third-party/range.js' %}"></script>
 
 <!-- Google Identity Toolkit -->
-<script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
+<!-- <script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script> -->
 
 <!-- Autograder -->
 <script src="{% static 'autograder/js/utilities.js' %}"></script>

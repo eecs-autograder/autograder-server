@@ -18,6 +18,7 @@ $.postJSON = function(url, data, callback) {
 // Adapted from: http://www.jsviews.com/#samples/jsr/composition/remote-tmpl
 function lazy_get_template(name)
 {
+    console.log('lazy_get_template(' + name + ')');
     // If the named remote template is not yet loaded and compiled
     // as a named template, fetch it. In either case, return a promise
     // (already resolved, if the template has already been loaded)

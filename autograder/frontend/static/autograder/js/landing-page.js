@@ -1,6 +1,6 @@
-function load_landing_page()
+function get_landing_page_widget()
 {
-    console.log('load_landing_page');
+    console.log('get_landing_page_widget');
 
     var loaded = $.Deferred();
 
@@ -8,21 +8,23 @@ function load_landing_page()
         $.get('/courses/'), $.get('/semesters/'),
         lazy_get_template('landing-page')
     ).done(function(courses_ajax, semesters_ajax, template) {
-        _render_landing_page(courses_ajax[0], semesters_ajax[0], template);
-        loaded.resolve();
+        var widget = _render_landing_page_template(
+            courses_ajax[0], semesters_ajax[0], template);
+        loaded.resolve(widget);
     });
     return loaded.promise();
 }
 
-function _render_landing_page(courses, semesters, template)
+function _render_landing_page_template(courses, semesters, template)
 {
     var data = {
         'courses': courses,
         'semesters': semesters
     };
 
-    var rendered = template.render(data);
+    var rendered = $.parseHTML(template.render(data));
+    console.log(rendered);
+    $("a[data-role='ajax']", rendered).click(ajax_link_click_handler);
 
-    $('#main-area').html(rendered);
-    $("a[data-role='ajax']").click(ajax_link_click_handler);
+    return rendered;
 }

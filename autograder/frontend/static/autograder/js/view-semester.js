@@ -1,4 +1,4 @@
-function load_semester_view(semester_url)
+function get_semester_widget(semester_url)
 {
     console.log('load_semester_view');
 
@@ -7,8 +7,8 @@ function load_semester_view(semester_url)
     $.when(
         $.get(semester_url), lazy_get_template('view-semester')
     ).done(function(semester_ajax, template) {
-        _render_semester_view(semester_ajax[0], template);
-        loaded.resolve();
+        var widget = _render_semester_view(semester_ajax[0], template);
+        loaded.resolve(widget);
     });
 
     return loaded.promise();
@@ -16,8 +16,8 @@ function load_semester_view(semester_url)
 
 function _render_semester_view(semester, template)
 {
-    var rendered = template.render(semester);
+    var rendered = $.parseHTML(template.render(semester));
 
-    $('#main-area').html(rendered);
-    $("a[data-role='ajax']").click(ajax_link_click_handler);
+    $("a[data-role='ajax']", rendered).click(ajax_link_click_handler);
+    return rendered;
 }
