@@ -10,7 +10,7 @@ function get_landing_page_widget()
     ).done(function(courses_ajax, semesters_ajax, template) {
         var widget = _render_landing_page_template(
             courses_ajax[0], semesters_ajax[0], template);
-        loaded.resolve(widget);
+        loaded.resolve();
     });
     return loaded.promise();
 }
@@ -22,9 +22,6 @@ function _render_landing_page_template(courses, semesters, template)
         'semesters': semesters
     };
 
-    var rendered = $.parseHTML(template.render(data));
-    console.log(rendered);
-    $("a[data-role='ajax']", rendered).click(ajax_link_click_handler);
-
-    // return rendered;
+    $('#main-area').html(template.render(data));
+    $("a[data-role='ajax']").click(ajax_link_click_handler);
 }
