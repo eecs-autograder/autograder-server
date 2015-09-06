@@ -71,6 +71,23 @@
                 </option>
             </select>
         </li>
+        <li>
+            <select id='points_feedback_level'>
+                <option value='hide'>Hide</option>
+                <option value='show_total'
+                        {{if data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_total'}}
+                            selected
+                        {{/if}}>
+                    Show total points
+                </option>
+                <option value='show_breakdown'
+                        {{if data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_breakdown'}}
+                            selected
+                        {{/if}}>
+                    Show score breakdown
+                </option>
+            </select>
+        </li>
     </ul>
 
     <input type='checkbox' id='visible_to_students' value='true'

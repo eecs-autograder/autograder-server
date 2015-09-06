@@ -29,8 +29,9 @@ function _save_button_click_handler(e, project)
     var new_feedback_config = {
         return_code_feedback_level: $('#return_code_feedback_level').val(),
         output_feedback_level: $('#output_feedback_level').val(),
-        compiler_feedback_level: $('#compiler_feedback_level').val(),
-        valgrind_feedback_level: $('#valgrind_feedback_level').val()
+        compilation_feedback_level: $('#compilation_feedback_level').val(),
+        valgrind_feedback_level: $('#valgrind_feedback_level').val(),
+        points_feedback_level: $('#points_feedback_level').val()
     };
     project.data.attributes.test_case_feedback_configuration = new_feedback_config;
 
