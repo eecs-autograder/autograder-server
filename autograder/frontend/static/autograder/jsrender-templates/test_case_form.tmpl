@@ -1,7 +1,8 @@
 <form role='form' class='test_case_form'>
+    {{if ~populate_fields}}<input type='hidden' name='test_type' value='{{:type}}'>{{/if}}
     <div class='form-group'>
         <label for="name">Name: </label>
-        <input type="name" class="form-control" value='{{if ~populate_fields}}{{: attributes.name}}{{/if}}'>
+        <input name='name' type="text" class="form-control" value='{{if ~populate_fields}}{{: attributes.name}}{{/if}}'>
     </div>
     <div class='checkbox'>
         <label>
@@ -17,17 +18,15 @@
     </div>
     <div class='form-group'>
         <label for='standard_input'>Standard input to be sent to the program (whitespace is preserved):</label>
-        <textarea name='standard_input' class='form-control'>
-            {{if ~populate_fields}}{{:attributes.standard_input}}{{/if}}
-        </textarea>
+        <textarea name='standard_input' class='form-control'>{{if ~populate_fields}}{{:attributes.standard_input}}{{/if}}</textarea>
     </div>
     <div class='form-group'>
         <div>Project files needed for this test:</div>
-        {{for ~root.data.attributes.project_files}}
+        {{for ~root.project.data.attributes.project_files}}
             <label>
                 <input type='checkbox' value='{{: filename}}' name='test_resource_files'
                         {{if ~populate_fields}}
-                            {{if ~in_array(#data, ~root.data.attributes.test_resource_files) }}checked{{/if}}
+                            {{if ~in_array(#data, ~root.project.data.attributes.test_resource_files) }}checked{{/if}}
                         {{/if}}>
                 {{> filename}}
             </label>
@@ -37,29 +36,30 @@
     </div>
     <div class='form-group'>
         <div>Student files needed for this test:</div>
-    {{for ~root.data.attributes.required_student_files}}
+    {{for ~root.project.data.attributes.required_student_files}}
         <div class='checkbox'>
             <label>
                 <input type='checkbox' value='{{:}}' name='student_resource_files'
                         {{if ~populate_fields}}
-                            {{if ~in_array(#data, ~root.data.attributes.student_resource_files) }}checked{{/if}}
+                            {{if ~in_array(#data, ~root.project.data.attributes.student_resource_files) }}checked{{/if}}
                         {{/if}}>
                 {{>}}
             </label>
         </div>
     {{/for}}
-    {{for ~root.data.attributes.expected_student_file_patterns}}
+    {{for ~root.project.data.attributes.expected_student_file_patterns}}
         <div class='checkbox'>
             <label>
                 <input type='checkbox' value='{{:#data[0]}}' name='student_resource_files'
                     {{if ~populate_fields}}
-                            {{if ~in_array(#data[0], ~root.data.attributes.student_resource_files) }}checked{{/if}}
+                            {{if ~in_array(#data[0], ~root.project.data.attributes.student_resource_files) }}checked{{/if}}
                     {{/if}}>
                 {{> #data[0]}}
             </label>
         </div>
     {{/for}}
     </div>
+
     <div class='form-group'>
         <select id='compiler' class='form-control' name='compiler'>
             <option value='g++'>g++</option>
@@ -69,6 +69,46 @@
         <label for='compiler_flags'>Compiler flags: </label>
         <input type='text' name='compiler_flags' class='form-control'
                value='{{if ~populate_fields}}{{for attributes.compiler_flags}}{{:}} {{/for}}{{/if}}'>
+    </div>
+    <div class='form-group'>
+        <div>Files to compile together (files checked here must also be checked for Project files or Student files above): </div>
+    {{for ~root.project.data.attributes.project_files}}
+        <div class='checkbox'>
+            <label>
+                <input type='checkbox' value='{{:#data.filename}}' name='files_to_compile_together'
+                    {{if ~populate_fields}}
+                            {{if ~in_array(#data.filename, ~root.project.data.attributes.files_to_compile_together) }}checked{{/if}}
+                    {{/if}}>
+                {{> #data.filename}}
+            </label>
+        </div>
+    {{/for}}
+    {{for ~root.project.data.attributes.required_student_files}}
+        <div class='checkbox'>
+            <label>
+                <input type='checkbox' value='{{:#data}}' name='files_to_compile_together'
+                    {{if ~populate_fields}}
+                            {{if ~in_array(#data, ~root.project.data.attributes.files_to_compile_together) }}checked{{/if}}
+                    {{/if}}>
+                {{> #data}}
+            </label>
+        </div>
+    {{/for}}
+    {{for ~root.project.data.attributes.expected_student_file_patterns}}
+        <div class='checkbox'>
+            <label>
+                <input type='checkbox' value='{{:#data[0]}}' name='files_to_compile_together'
+                    {{if ~populate_fields}}
+                            {{if ~in_array(#data[0], ~root.project.data.attributes.files_to_compile_together) }}checked{{/if}}
+                    {{/if}}>
+                {{> #data[0]}}
+            </label>
+        </div>
+    {{/for}}
+    </div>
+    <div class='form-group'>
+        <label for="executable_name">Executable program name: </label>
+        <input name='executable_name' type="text" class="form-control" value='{{if ~populate_fields}}{{: attributes.executable_name}}{{/if}}'>
     </div>
 
     <div class='form-group'>

@@ -69,8 +69,6 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
 
         type_str = request_content['data']['type']
 
-
-
         try:
             new_test = AutograderTestCaseFactory.new_instance(
                 type_str, project=project)

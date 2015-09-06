@@ -1,5 +1,5 @@
 <!-- Edit project -->
-<h3>Edit Project - {{> data.attributes.name }}</h3>
+<h3>Edit Project - {{> project.data.attributes.name }}</h3>
 <div id='fields'>
     <div>Test Case Feedback Levels</div>
     <ul id='feedback_levels'>
@@ -7,13 +7,13 @@
             <select id='return_code_feedback_level'>
                 <option value='no_feedback'>No feedback</option>
                 <option value='correct_or_incorrect_only'
-                        {{if data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='correct_or_incorrect_only'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='correct_or_incorrect_only'}}
                             selected
                         {{/if}}>
                     Indicate correct or incorrect
                 </option>
                 <option value='show_expected_and_actual_values'
-                        {{if data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='show_expected_and_actual_values'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='show_expected_and_actual_values'}}
                             selected
                         {{/if}}>
                     Show expected and actual values
@@ -24,13 +24,13 @@
             <select id='output_feedback_level'>
                 <option value='no_feedback'>No feedback</option>
                 <option value='correct_or_incorrect_only'
-                        {{if data.attributes.test_case_feedback_configuration.output_feedback_level === 'correct_or_incorrect_only'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.output_feedback_level === 'correct_or_incorrect_only'}}
                             selected
                         {{/if}}>
                     Indicate correct or incorrect
                 </option>
                 <option value='show_expected_and_actual_values'
-                        {{if data.attributes.test_case_feedback_configuration.output_feedback_level === 'show_expected_and_actual_values'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.output_feedback_level === 'show_expected_and_actual_values'}}
                             selected
                         {{/if}}>
                     Show expected and actual values (diff)
@@ -41,13 +41,13 @@
             <select id='compilation_feedback_level'>
                 <option value='no_feedback'>No feedback</option>
                 <option value='success_or_failure_only'
-                        {{if data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'success_or_failure_only'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'success_or_failure_only'}}
                             selected
                         {{/if}}>
                     Indicate success or failure
                 </option>
                 <option value='show_compiler_output'
-                        {{if data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'show_compiler_output'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'show_compiler_output'}}
                             selected
                         {{/if}}>
                     Show compiler output
@@ -58,13 +58,13 @@
             <select id='valgrind_feedback_level'>
                 <option value='no_feedback'>No feedback</option>
                 <option value='errors_or_no_errors_only'
-                        {{if data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'errors_or_no_errors_only'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'errors_or_no_errors_only'}}
                             selected
                         {{/if}}>
                     Indicate clean or errors present
                 </option>
                 <option value='show_valgrind_output'
-                        {{if data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'show_valgrind_output'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'show_valgrind_output'}}
                             selected
                         {{/if}}>
                     Show valgrind output
@@ -75,13 +75,13 @@
             <select id='points_feedback_level'>
                 <option value='hide'>Hide</option>
                 <option value='show_total'
-                        {{if data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_total'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_total'}}
                             selected
                         {{/if}}>
                     Show total points
                 </option>
                 <option value='show_breakdown'
-                        {{if data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_breakdown'}}
+                        {{if project.data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_breakdown'}}
                             selected
                         {{/if}}>
                     Show score breakdown
@@ -91,15 +91,15 @@
     </ul>
 
     <input type='checkbox' id='visible_to_students' value='true'
-           {{if data.attributes.visible_to_students}}checked{{/if}}>
+           {{if project.data.attributes.visible_to_students}}checked{{/if}}>
         Visible to students
     </input><br>
     <input type='checkbox' id='disallow_student_submissions' value='true'
-           {{if data.attributes.disallow_student_submissions}}checked{{/if}}>
+           {{if project.data.attributes.disallow_student_submissions}}checked{{/if}}>
         Disallow student submissions
     </input><br>
     <input type='checkbox' id='allow_submissions_from_non_enrolled_students'
-           value='true' {{if data.attributes.allow_submissions_from_non_enrolled_students}}checked{{/if}}>
+           value='true' {{if project.data.attributes.allow_submissions_from_non_enrolled_students}}checked{{/if}}>
         Allow submissions from non-enrolled students
     </input><br>
 
@@ -113,13 +113,13 @@
     </span><br>
 
     <span>Minimum group size</span>
-    <input type='text' id='min_group_size' value='{{> data.attributes.min_group_size}}'><br>
+    <input type='text' id='min_group_size' value='{{> project.data.attributes.min_group_size}}'><br>
     <span>Maximum group size</span>
-    <input type='text' id='max_group_size' value='{{> data.attributes.max_group_size}}'><br>
+    <input type='text' id='max_group_size' value='{{> project.data.attributes.max_group_size}}'><br>
 
     <div>Required student files</div>
     <ul>
-    {{for data.attributes.required_student_files}}
+    {{for project.data.attributes.required_student_files}}
         <li><input type='text' name='required_student_files' value='{{:}}'></li>
     {{/for}}
     </ul>
@@ -128,7 +128,7 @@
 
     <div>Expected student file patterns</div>
     <ul>
-    {{for data.attributes.expected_student_file_patterns}}
+    {{for project.data.attributes.expected_student_file_patterns}}
         <li>
             <div class='expected_pattern'>
                 <span>Pattern: </span>
@@ -152,7 +152,7 @@
     <h4>Test Cases</h4>
     <div class='panel-group'>
         <div class='panel panel-default'>
-            {{for included tmpl=~test_case_panel /}}
+            {{for project.included tmpl=~test_case_panel /}}
         </div>
     </div>
 </div>
