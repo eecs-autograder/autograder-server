@@ -56,10 +56,16 @@ table.table-condensed.table-bordered.diff-table>tbody>tr>td {
 }
 
 body {
-  padding-top: 100px;
+    padding-top: 100px;
+    padding-bottom: 100px;
 }
 @media (max-width: 979px) {
-  body {
-    padding-top: 0px;
-  }
+    body {
+        padding-top: 0px;
+        padding-bottom: 0px;
+    }
+}
+
+#test_cases {
+    margin-top: 5%;
 }

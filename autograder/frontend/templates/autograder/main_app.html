@@ -13,10 +13,10 @@
     {% load staticfiles %}
 
     <!-- Boostrap -->
-<!--     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css"> -->
-    <link rel="stylesheet" href="{% static 'autograder/bootstrap/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'autograder/bootstrap/css/bootstrap-theme.min.css' %}">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+    <!-- <link rel="stylesheet" href="{% static 'autograder/bootstrap/css/bootstrap.min.css' %}"> -->
+    <!-- <link rel="stylesheet" href="{% static 'autograder/bootstrap/css/bootstrap-theme.min.css' %}"> -->
 
 
     <!-- File Upload -->
@@ -31,11 +31,19 @@
     <noscript><link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-noscript.css' %}"></noscript>
     <noscript><link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-ui-noscript.css' %}"></noscript>
 
-    <!-- Autograder CSS -->
-    <link rel="stylesheet" href="{% static 'autograder/css/main_app.css' %}">
+    <!-- Datetime input field -->
+    <link rel="stylesheet" href="{% static 'autograder/third-party/datetime-widget/bootstrap-datetimepicker.min.css' %}">
+
+
+    <!-- <link href="https://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet"> -->
+    <!-- <link rel="stylesheet" type="text/css" media="screen" -->
+          <!-- href="https://tarruda.github.com/bootstrap-datetimepicker/assets/css/bootstrap-datetimepicker.min.css"> -->
 
     <!-- Google Identity Toolkit -->
 <!--     <link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" /> -->
+
+    <!-- Autograder CSS -->
+    <link rel="stylesheet" href="{% static 'autograder/css/main_app.css' %}">
 
 </head>
 <body>
@@ -77,8 +85,8 @@
 <!-- ======================================================================= -->
 
 <!-- JQuery -->
-<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script> -->
-<script src="{% static 'autograder/third-party/jquery.min.js' %}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<!-- <script src="{% static 'autograder/third-party/jquery.min.js' %}"></script> -->
 
 <script type="text/javascript">
 'use strict';
@@ -128,8 +136,8 @@ $(document).ready(function () {
 <script src="{% static 'autograder/jquery-cookie/jquery.cookie.js' %}"></script>
 
 <!-- Boostrap -->
-<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> -->
-<script src="{% static 'autograder/bootstrap/js/bootstrap.min.js' %}"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<!-- <script src="{% static 'autograder/bootstrap/js/bootstrap.min.js' %}"></script> -->
 
 <!-- File Upload -->
 
@@ -153,10 +161,15 @@ $(document).ready(function () {
 <!-- /File Upload -->
 
 <!-- jsrender -->
-<!-- <script src='https://www.jsviews.com/download/jsrender.min.js'></script> -->
-<!-- <script src="https://www.jsviews.com/download/sample-tag-controls/range/range.js"></script> -->
-<script src='{% static "autograder/third-party/jsrender.min.js" %}'></script>
-<script src="{% static 'autograder/third-party/range.js' %}"></script>
+<script src='https://www.jsviews.com/download/jsrender.min.js'></script>
+<script src="https://www.jsviews.com/download/sample-tag-controls/range/range.js"></script>
+<!-- <script src='{% static "autograder/third-party/jsrender.min.js" %}'></script> -->
+<!-- <script src="{% static 'autograder/third-party/range.js' %}"></script> -->
+
+<!-- Datetime input field -->
+<script type="text/javascript" src="{% static 'autograder/third-party/datetime-widget/moment.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'autograder/third-party/datetime-widget/bootstrap-datetimepicker.min.js' %}"></script>
+
 
 <!-- Google Identity Toolkit -->
 <!-- <script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script> -->

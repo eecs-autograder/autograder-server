@@ -9,7 +9,8 @@
             <input type='checkbox' name='hide_from_students'
                    {{if ~populate_fields && attributes.hide_from_students || !~populate_fields}}
                     checked{{/if}}>
-            Hide this test from students</label>
+            <b>Hide this test from students</b>
+        </label>
     </div>
     <div class='form-group'>
         <label for='command_line_arguments'>Command line arguments to be passed to the program:</label>
@@ -21,7 +22,7 @@
         <textarea name='standard_input' class='form-control'>{{if ~populate_fields}}{{:attributes.standard_input}}{{/if}}</textarea>
     </div>
     <div class='form-group'>
-        <div>Project files needed for this test:</div>
+        <label>Project files needed for this test:</label>
         {{for ~root.project.data.attributes.project_files}}
             <label>
                 <input type='checkbox' value='{{: filename}}' name='test_resource_files'
@@ -31,11 +32,11 @@
                 {{> filename}}
             </label>
         {{else}}
-            (No project files found)
+            <br><i>(No project files found)</i>
         {{/for}}
     </div>
     <div class='form-group'>
-        <div>Student files needed for this test:</div>
+        <label>Student files needed for this test:</label>
     {{for ~root.project.data.attributes.required_student_files}}
         <div class='checkbox'>
             <label>
@@ -61,6 +62,7 @@
     </div>
 
     <div class='form-group'>
+        <label for='compiler'>Compiler:</label>
         <select id='compiler' class='form-control' name='compiler'>
             <option value='g++'>g++</option>
         </select>
@@ -71,7 +73,7 @@
                value='{{if ~populate_fields}}{{for attributes.compiler_flags}}{{:}} {{/for}}{{/if}}'>
     </div>
     <div class='form-group'>
-        <div>Files to compile together (files checked here must also be checked for Project files or Student files above): </div>
+        <label>Files to compile together (files checked here must also be checked for Project files or Student files above): </label>
     {{for ~root.project.data.attributes.project_files}}
         <div class='checkbox'>
             <label>
@@ -123,7 +125,7 @@
     <div class='checkbox'>
         <label>
             <input type='checkbox' name='expect_any_nonzero_return_code'>
-            Expect any nonzero return code
+            <b>Expect any nonzero return code</b>
         </label>
     </div>
     <div class='form-group'>
@@ -137,7 +139,7 @@
     <div class='checkbox'>
         <label>
             <input type='checkbox' name='use_valgrind' {{if ~populate_fields && attributes.use_valgrind}}checked{{/if}}>
-            Use Valgrind
+            <b>Use Valgrind</b>
         </label>
     </div>
     <div class='form-group'>
@@ -165,5 +167,5 @@
         <input type='text' name='points_for_compilation_success'
                 value='{{if ~populate_fields}}{{: attributes.points_for_compilation_success}}{{/if}}' class='form-control'>
     </div>
-    {{if ~populate_fields}}<button type="submit" class="btn btn-default">Save Test</button>{{/if}}
+    {{if ~populate_fields}}<button type="submit" data-loading-text='Saving...' autocomplete='off' class="btn btn-default btn-success">Save Test</button>{{/if}}
 </form>

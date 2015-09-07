@@ -33,9 +33,21 @@ function _render_edit_project_view(
         in_array: $.inArray
     };
     $('#main-area').html(project_tmpl.render(tmpl_context, tmpl_helpers));
+
+    console.log(project.data.attributes.closing_time);
+    $('#datetimepicker').datetimepicker({
+        defaultDate: project.data.attributes.closing_time
+    });
+
+    $('#add_required_file_slot_button').click(function() {
+        $(this).before(
+            "<input type='text' class='form-control' name='required_student_files''>"
+        );
+    });
+
     // $("a[data-role='ajax']").click(ajax_link_click_handler);
-    $('#save-button').click(function(e) {
-        _save_project_button_click_handler(e, project);
+    $('#project_fields_form').submit(function(e) {
+        _save_project_settings(e, project);
     });
 
     $('#test_cases form').each(function() {
@@ -71,11 +83,11 @@ function _save_test_form_handler(e)
 {
     console.log('saving');
     e.preventDefault();
-    $('button', this).button('Saving...');
+    $('button', this).button('loading');
     var url = $(this).attr('patch_url');
     var patch_data = _extract_test_case_form_fields($(this));
     $.patchJSON(url, patch_data).done(function() {
-        $('button', this).button('Save Test');
+        $('button', this).button('reset');
     }).fail(function(response) {
         console.log('error!!');
         console.log(response);
@@ -104,6 +116,7 @@ function _add_test_case_button_handler(
         var delete_buttons = $('#test_cases .delete-test-btn');
         $(delete_buttons[delete_buttons.length - 1]).click(
             _delete_test_button_handler);
+        $('#add_test_case').collapse();
     });
 }
 
@@ -207,9 +220,10 @@ function _extract_delimited_text_field(form, name, delimiter)
     return filtered;
 }
 
-function _save_project_button_click_handler(e, project)
+function _save_project_settings(e, project)
 {
     console.log(project);
+    e.preventDefault();
     var new_feedback_config = {
         return_code_feedback_level: $('#return_code_feedback_level').val(),
         output_feedback_level: $('#output_feedback_level').val(),
@@ -226,14 +240,27 @@ function _save_project_button_click_handler(e, project)
     project.data.attributes.allow_submissions_from_non_enrolled_students = (
         $('#allow_submissions_from_non_enrolled_students').is(':checked'));
 
-    var closing_time = $('#closing_time').val();
-    if (closing_time.trim() === '')
+    var closing_time = $('#datetimepicker').data(
+        'DateTimePicker').viewDate().toISOString();
+    if ($('#closing_time').val().trim() === '')
     {
         closing_time = null;
     }
+    console.log(closing_time);
     project.data.attributes.closing_time = closing_time;
     project.data.attributes.min_group_size = $('#min_group_size').val().trim();
     project.data.attributes.max_group_size = $('#max_group_size').val().trim();
+
+    var required_files = [];
+    $(':input[name="required_student_files"]').each(function() {
+        var val = $(this).val().trim();
+        if (val !== '')
+        {
+            required_files.push(val);
+        }
+    });
+    console.log(required_files);
+    project.data.attributes.required_student_files = required_files;
 
     $.patchJSON(
         project.data.links.self, project
