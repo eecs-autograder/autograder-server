@@ -79,6 +79,7 @@
     </div>
     <div class='form-group'>
         <label>Files to compile together (files checked here must also be checked for Project files or Student files above): </label>
+        <div><i>Project files: </i></div>
         {{for ~root.project.data.attributes.project_files ~test_data=#data}}
         <div class='checkbox'>
             <label>
@@ -90,6 +91,7 @@
             </label>
         </div>
         {{/for}}
+        <div><i>Student files: </i></div>
         {{for ~root.project.data.attributes.required_student_files ~test_data=#data}}
         <div class='checkbox'>
             <label>

@@ -5,14 +5,17 @@
     <h3>Due date: {{to_local_date:project.data.attributes.closing_time}}</h3>
     {{/if}}
     {{if group.data.attributes.extended_due_date}}
-    <div>You have been granted an extension for this project. Your due date is: {{to_local_date:group.data.attributes.extended_due_date}}</div>
+    <div><i>You have been granted an extension for this project.
+        Your due date is:</i> <b>{{to_local_date:group.data.attributes.extended_due_date}}</b></div>
     {{/if}}
 
     <div id='submit-files'>
         <h2 class="lead">Submit Files</h2>
-        <div>Please submit the following files: </div>
+        <div><i>Please submit the following files: </i></div>
         <ul>
-
+        {{for project.data.attributes.required_student_files}}
+            <b>{{>}}</b>
+        {{/for}}
         </ul>
 
         <!-- The file upload form used as target for the file upload widget -->

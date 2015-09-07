@@ -14,12 +14,23 @@
         <div>Please contact your administrator</div>
         {{/if}}
     {{/if}}
+
     <div>Files submitted: </div>
-    {{for data.attributes.submitted_files}}
     <ul>
+    {{for data.attributes.submitted_files}}
         <li><a href="{{: file_url}}" target='_blank'>{{>filename}}</a></li>
-    </ul>
     {{/for}}
+    </ul>
+
+    {{if data.attributes.discarded_files}}
+    <div>The following files were discarded due to being unnecessary: </div>
+    <ul>
+    {{for data.attributes.discarded_files}}
+        <li><i>{{>}}</i></li>
+    {{/for}}
+    </ul>
+    {{/if}}
+
     <div>Results: </div>
     <ul>
         <li>
