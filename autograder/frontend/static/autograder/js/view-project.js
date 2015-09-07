@@ -76,6 +76,7 @@ function _render_project_view(group, project, template, template_helpers)
 
 function _initialize_project_submission_view(group, project)
 {
+    console.log(group.included);
     _initialize_submit_widget(group, project);
     $('.submission-collapse').on('show.bs.collapse', _load_submission);
     _initialize_view_student_submissions_widget(project);
@@ -89,7 +90,25 @@ function _initialize_submit_widget(group, project)
         'singleFileUploads': false,
         'done': function(event, response) {
             _on_submit_success(event, response, group.data.id);
-        }
+        },
+        'fail': function(event, response) {
+            console.log('error')
+            $('#upload-progress').empty();
+            $('#fileupload .error').remove();
+
+            var error_dict = $.parseJSON(response._response.jqXHR.responseText);
+            console.log(error_dict)
+            var error = $('<div class="error">');
+            console.log(response);
+            console.log(event);
+            error.text('ERROR: ' + error_dict.errors.meta);
+            $('#fileupload').append(error);
+        },
+        // 'always': function() {
+        //     console.log('always');
+        //     $('#upload-progress').empty();
+        //     $('#fileupload .error').remove();
+        // }
     });
 
     $(document).bind('dragover', function (e) {
@@ -165,6 +184,7 @@ function _on_submit_success(event, response, group_id)
 {
     var submission = response.result.data;
     $('#upload-progress').empty();
+    $('#fileupload .error').remove();
 
     lazy_get_template('submission-collapse-panel').done(function(template) {
         var rendered = $.parseHTML(template.render(submission));
@@ -190,6 +210,7 @@ function _load_submission(event, url, render_location)
     $.get(
         url
     ).then(function(submission) {
+        console.log(submission)
         return _render_submission(submission, render_location)
     }).then(function(submission) {
         var status = submission.data.attributes.status;

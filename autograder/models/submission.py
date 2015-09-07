@@ -136,7 +136,7 @@ class Submission(ModelValidatableOnSave):
         invalid_reason_or_error -- When a submission is marked as
             invalid or an error occurs while grading, this
             field should store a JSON list describing the reason(s).
-            Default value: empty string
+            Default value: empty list
 
     Methods:
         get_submitted_file_basenames()

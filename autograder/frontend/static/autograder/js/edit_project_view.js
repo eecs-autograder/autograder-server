@@ -88,6 +88,7 @@ function _render_edit_project_view(
         );
     });
 
+    console.log('waaaaaaaa');
     $('#project_fields_form').submit(function(e) {
         _save_project_settings(e, project);
     });

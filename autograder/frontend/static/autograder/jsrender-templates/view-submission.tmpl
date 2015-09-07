@@ -2,6 +2,18 @@
 <!--     <h3>Submitted at: {{to_local_date:data.attributes.timestamp}}</h3>
  -->
     <h4>Status: {{> data.attributes.status}}</h4>
+    {{if invalid_reason_or_error !=== }}
+        {{if data.attributes.status === 'invalid'}}
+        <div>Reason(s): </div>
+        <ul>
+            {{for data.attributes.invalid_reason_or_error.submitted_files}}
+            <li>{{>}}</li>
+            {{/for}}
+        </ul>
+        {{else data.attributes.status === 'error'}}
+        <div>Please contact your administrator</div>
+        {{/if}}
+    {{/if}}
     <div>Files submitted: </div>
     {{for data.attributes.submitted_files}}
     <ul>
