@@ -39,7 +39,7 @@ function _get_or_register_group(project)
     console.log('_get_or_register_group');
     var group_loaded = $.Deferred();
 
-    var url = _get_submission_group_url(project.data.id, project.meta.username);
+    var url = _get_submission_group_url(project.data.id, [project.meta.username]);
     $.ajax(url,
     {
         statusCode: {
@@ -154,7 +154,7 @@ function _initialize_view_student_submissions_widget(project)
             return;
         }
         $.when(
-            $.get(_get_submission_group_url(project.data.id, email)),
+            $.get(_get_submission_group_url(project.data.id, [email])),
             lazy_get_template('submission-panel-list'),
             lazy_get_template('submission-collapse-panel')
         ).done(function(group_response, panel_list_tmpl, collapse_panel_tmpl) {
@@ -238,10 +238,11 @@ function _render_submission(submission, render_location)
     return finished_rendering.promise();
 }
 
-function _get_submission_group_url(project_id, username)
+function _get_submission_group_url(project_id, usernames)
 {
+
     return "/submission-groups/submission-group/?" + $.param(
         {'project_id': project_id,
-         'username': username});
+         'usernames': usernames});
 }
 
