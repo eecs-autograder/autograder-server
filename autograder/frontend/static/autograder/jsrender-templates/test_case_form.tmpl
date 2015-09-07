@@ -1,4 +1,4 @@
-<form role='form' class='test_case_form'>
+<form role='form' class='test_case_form' {{if ~populate_fields}}patch_url="{{:links.self}}"{{/if}}>
     {{if ~populate_fields}}<input type='hidden' name='test_type' value='{{:type}}'>{{/if}}
     <div class='form-group'>
         <label for="name">Name: </label>
@@ -165,5 +165,5 @@
         <input type='text' name='points_for_compilation_success'
                 value='{{if ~populate_fields}}{{: attributes.points_for_compilation_success}}{{/if}}' class='form-control'>
     </div>
-    {{if ~populate_fields}}<button type="submit" class="btn btn-default">Save test</button>{{/if}}
+    {{if ~populate_fields}}<button type="submit" class="btn btn-default">Save Test</button>{{/if}}
 </form>

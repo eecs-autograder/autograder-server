@@ -38,6 +38,13 @@ function _render_edit_project_view(
         _save_project_button_click_handler(e, project);
     });
 
+    $('#test_cases form').each(function() {
+        $(this).submit(_save_test_form_handler);
+    });
+
+    $('#test_cases .delete-test-btn').each(function() {
+        $(this).click(_delete_test_button_handler);
+    });
 
     var add_test_fields_tmpl_helpers = {
         test_case_form: test_form_tmpl,
@@ -60,6 +67,21 @@ function _render_edit_project_view(
     });
 }
 
+function _save_test_form_handler(e)
+{
+    console.log('saving');
+    e.preventDefault();
+    $('button', this).button('Saving...');
+    var url = $(this).attr('patch_url');
+    var patch_data = _extract_test_case_form_fields($(this));
+    $.patchJSON(url, patch_data).done(function() {
+        $('button', this).button('Save Test');
+    }).fail(function(response) {
+        console.log('error!!');
+        console.log(response);
+    });
+}
+
 function _add_test_case_button_handler(
     project, new_test, test_panel_tmpl, test_form_tmpl)
 {
@@ -77,6 +99,24 @@ function _add_test_case_button_handler(
         console.log(tmpl_context);
         var new_test_panel = test_panel_tmpl.render(tmpl_context, tmpl_helpers);
         $('#test_cases .panel').append(new_test_panel);
+        var forms = $('#test_cases form');
+        $(forms[forms.length - 1]).submit(_save_test_form_handler);
+        var delete_buttons = $('#test_cases .delete-test-btn');
+        $(delete_buttons[delete_buttons.length - 1]).click(
+            _delete_test_button_handler);
+    });
+}
+
+function _delete_test_button_handler()
+{
+    var delete_url = $(this).attr('delete_url');
+    var button = $(this);
+    $.ajax(delete_url, {method: 'DELETE'}).done(function() {
+        var panel_id = button.attr('panel_id');
+        var panel_head = $('.panel-heading').has(button);
+        var panel = $('#' + panel_id);
+        panel_head.remove();
+        panel.remove();
     });
 }
 

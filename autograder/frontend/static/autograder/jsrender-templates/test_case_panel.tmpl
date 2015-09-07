@@ -3,6 +3,8 @@
         <a data-toggle='collapse' class='collapsible-link' href="#test-{{:id}}">
             {{>attributes.name}} ({{> type}})
         </a>
+        <button type='button' panel_id='test-{{:id}}' delete_url='{{:links.self}}'
+                class='btn btn-xs btn-danger pull-right delete-test-btn'>DELETE</button>
     </h4>
 </div>
 <div class='panel-collapse collapse' id='test-{{:id}}'>
