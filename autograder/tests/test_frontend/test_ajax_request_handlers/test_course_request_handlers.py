@@ -84,8 +84,11 @@ class CourseRequestHandlerTestCase(RequestHandlerTestCase):
 
         response = _list_courses_request(course_admin)
 
+        actual = json_load_bytes(response.content)
+        actual['data'].sort(key=lambda obj: obj['attributes']['name'])
+
         self.assertEqual(200, response.status_code)
-        self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
+        self.assertJSONObjsEqual(expected, actual)
 
     def test_list_courses_empty_list_non_admin(self):
         user = obj_ut.create_dummy_users()
