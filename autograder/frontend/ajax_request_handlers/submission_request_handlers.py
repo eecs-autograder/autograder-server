@@ -108,9 +108,10 @@ class SubmissionRequestHandler(LoginRequiredView):
             return HttpResponseNotFound()
 
         username = request.user.username
-        semester = submission.submission_group.project.semester
+        group = submission.submission_group
+        semester = group.project.semester
         is_staff = semester.is_semester_staff(username)
-        is_member = username in submission.submission_group.members
+        is_member = username in group.members
         if not is_member and not is_staff:
             return HttpResponseForbidden()
 
@@ -123,15 +124,37 @@ class SubmissionRequestHandler(LoginRequiredView):
             result_set = submission.results.filter(
                 test_case__hide_from_students=False)
 
+        results_json = [
+            result.to_json(override_feedback=feedback_override) for
+            result in result_set
+        ]
+
         response_content = {
             'data': submission_to_json(submission),
             'meta': {
-                'results': [
-                    result.to_json(override_feedback=feedback_override) for
-                    result in result_set
-                ]
+                'results': results_json
             }
         }
+
+        if feedback_override is not None:
+            points_feedback = feedback_override.points_feedback_level
+        elif submission.test_case_feedback_config_override is not None:
+            feedback = submission.test_case_feedback_config_override
+            points_feedback = feedback.points_feedback_level
+        else:
+            feedback = group.project.test_case_feedback_configuration
+            points_feedback = feedback.points_feedback_level
+
+        if points_feedback == 'hide':
+            return JsonResponse(response_content, status=200)
+
+        total_score = sum(
+            result['total_points_awarded'] for result in results_json)
+        points_possible = sum(
+            result['total_points_possible'] for result in results_json)
+
+        response_content['meta']['total_points_awarded'] = total_score
+        response_content['meta']['total_points_possible'] = points_possible
 
         return JsonResponse(response_content, status=200)
 

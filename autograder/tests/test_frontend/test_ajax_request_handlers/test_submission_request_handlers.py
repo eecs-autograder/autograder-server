@@ -275,17 +275,57 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         response = _get_submission_request(submission.pk, self.enrolled)
         self.assertEqual(200, response.status_code)
 
+        # No points feedback
         expected = {
             'data': submission_to_json(submission),
             'meta': {
                 'results': [
-                    self.visible_result.to_json()
+                    self.visible_result.to_json(),
                 ]
+            }
+        }
+        actual = json_load_bytes(response.content)
+        self.assertJSONObjsEqual(expected, actual)
+
+        # Show points total, override at submission level
+        submission.test_case_feedback_config_override = (
+            self.project.test_case_feedback_configuration)
+        submission.test_case_feedback_config_override.points_feedback_level = (
+            'show_total')
+        submission.save()
+
+        response = _get_submission_request(submission.pk, self.enrolled)
+        self.assertEqual(200, response.status_code)
+
+        expected = {
+            'data': submission_to_json(submission),
+            'meta': {
+                'results': [
+                    self.visible_result.to_json(),
+                ],
+                'total_points_awarded': (
+                    self.visible_result.to_json()['total_points_awarded']),
+                'total_points_possible': (
+                    self.visible_result.to_json()['total_points_possible'])
             }
         }
 
         actual = json_load_bytes(response.content)
+        self.assertJSONObjsEqual(expected, actual)
 
+        # Show points total, set at project level
+        submission.test_case_feedback_config_override = None
+        submission.save()
+        self.project.test_case_feedback_configuration.points_feedback_level = (
+            'show_total')
+        self.project.validate_and_save()
+
+        expected['data'] = submission_to_json(submission)
+
+        response = _get_submission_request(submission.pk, self.enrolled)
+        self.assertEqual(200, response.status_code)
+
+        actual = json_load_bytes(response.content)
         self.assertJSONObjsEqual(expected, actual)
 
     def test_admin_or_staff_get_student_submit(self):
@@ -306,7 +346,13 @@ class GetSubmissionRequestTestCase(_SetUpBase):
                     'results': [
                         self.visible_result.to_json(
                             FeedbackConfiguration.get_max_feedback())
-                    ]
+                    ],
+                    'total_points_possible': self.visible_result.to_json(
+                        FeedbackConfiguration.get_max_feedback()
+                        )['total_points_possible'],
+                    'total_points_awarded': self.visible_result.to_json(
+                        FeedbackConfiguration.get_max_feedback()
+                        )['total_points_awarded']
                 }
             }
 
@@ -327,15 +373,25 @@ class GetSubmissionRequestTestCase(_SetUpBase):
             self.assertEqual(200, response.status_code)
 
             sort_key = lambda obj: obj['test_name']
+            results_json = list(sorted([
+                self.visible_result.to_json(
+                    FeedbackConfiguration.get_max_feedback()),
+                self.hidden_result.to_json(
+                    FeedbackConfiguration.get_max_feedback())
+            ], key=sort_key))
+
+            pts_possible = sum(
+                result['total_points_possible'] for result in results_json)
+
+            pts_awarded = sum(
+                result['total_points_awarded'] for result in results_json)
+
             expected = {
                 'data': submission_to_json(submission),
                 'meta': {
-                    'results': list(sorted([
-                        self.visible_result.to_json(
-                            FeedbackConfiguration.get_max_feedback()),
-                        self.hidden_result.to_json(
-                            FeedbackConfiguration.get_max_feedback())
-                    ], key=sort_key))
+                    'results': results_json,
+                    'total_points_possible': pts_possible,
+                    'total_points_awarded': pts_awarded
                 }
             }
 
@@ -387,15 +443,25 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         self.assertEqual(200, response.status_code)
 
         sort_key = lambda obj: obj['test_name']
+        results_json = list(sorted([
+            self.visible_result.to_json(
+                FeedbackConfiguration.get_max_feedback()),
+            self.hidden_result.to_json(
+                FeedbackConfiguration.get_max_feedback())
+        ], key=sort_key))
+
+        pts_possible = sum(
+            result['total_points_possible'] for result in results_json)
+
+        pts_awarded = sum(
+            result['total_points_awarded'] for result in results_json)
+
         expected = {
             'data': submission_to_json(submission),
             'meta': {
-                'results': list(sorted([
-                    self.visible_result.to_json(
-                        FeedbackConfiguration.get_max_feedback()),
-                    self.hidden_result.to_json(
-                        FeedbackConfiguration.get_max_feedback())
-                ], key=sort_key))
+                'results': results_json,
+                'total_points_awarded': pts_awarded,
+                'total_points_possible': pts_possible
             }
         }
 

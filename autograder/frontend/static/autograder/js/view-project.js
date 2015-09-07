@@ -54,6 +54,7 @@ function _get_or_register_group(project)
         }
     }).done(function(group) {
         console.log('group loaded');
+        console.log(group);
         group_loaded.resolve(group, project);
     });
 

@@ -40,7 +40,7 @@
           <!-- href="https://tarruda.github.com/bootstrap-datetimepicker/assets/css/bootstrap-datetimepicker.min.css"> -->
 
     <!-- Google Identity Toolkit -->
-<!--     <link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" /> -->
+    <link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
 
     <!-- Autograder CSS -->
     <link rel="stylesheet" href="{% static 'autograder/css/main_app.css' %}">
@@ -106,12 +106,12 @@ $(document).ready(function () {
         }
     });
 
-    // window.google.identitytoolkit.signInButton(
-    // '#gitkit-dropdown', // accepts any CSS selector
-    // {
-    //     widgetUrl: "/callback/",
-    //     signOutUrl: "/",
-    // });
+    window.google.identitytoolkit.signInButton(
+    '#gitkit-dropdown', // accepts any CSS selector
+    {
+        widgetUrl: "/callback/",
+        signOutUrl: "/",
+    });
 
 
     $(window).on('popstate', function (e) {
@@ -172,7 +172,7 @@ $(document).ready(function () {
 
 
 <!-- Google Identity Toolkit -->
-<!-- <script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script> -->
+<script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
 
 <!-- Autograder -->
 <script src="{% static 'autograder/js/utilities.js' %}"></script>
