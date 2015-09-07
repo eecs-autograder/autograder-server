@@ -30,7 +30,7 @@ function _render_edit_project_view(
         test_case_panel: test_panel_tmpl,
         test_case_form: test_form_tmpl,
         populate_fields: true,
-        in_array: $.inArray
+        in_array: in_array
     };
     $('#main-area').html(project_tmpl.render(tmpl_context, tmpl_helpers));
 
@@ -44,24 +44,37 @@ function _render_edit_project_view(
             uploadTemplateId: null,
             downloadTemplateId: null,
             uploadTemplate: function(data) {
-                console.log(data);
                 return upload_tmpl.render(data);
             },
             downloadTemplate: function(data) {
-                // console.log(data);
-                // return download_tmpl.render(data);
+                console.log(data);
+                return download_tmpl.render(data);
             },
-            done: function(event, response) {
-                console.log(event);
-                console.log(response);
-                $('#file_list .files').append(
-                    download_tmpl.render(response.result));
+            // done: function(event, response) {
+            //     console.log(event);
+            //     console.log(response);
+            //     $('#file_list .files').append(
+            //         download_tmpl.render(response.result));
+
+            // },
+            getFilesFromResponse: function(data) {
+                console.log('getFilesFromResponse');
+                console.log(data.result);
+                if ($.isArray(data.result))
+                {
+                    return data.result;
+                }
+                return [data.result];
             }
         });
 
-        $.each(project.data.attributes.project_files, function(index, value) {
-            $('#file_list .files').append(download_tmpl.render(value));
-        });
+        $('#file_list .files').append(download_tmpl.render({
+            files: project.data.attributes.project_files
+        }));
+
+        // $.each(project.data.attributes.project_files, function(index, value) {
+        //     $('#file_list .files').append(download_tmpl.render(value));
+        // });
     });
 
     // settings set-up
@@ -113,11 +126,12 @@ function _save_test_form_handler(e)
 {
     console.log('saving');
     e.preventDefault();
-    $('button', this).button('loading');
+    var button = $('button', this)
+    button.button('loading');
     var url = $(this).attr('patch_url');
     var patch_data = _extract_test_case_form_fields($(this));
     $.patchJSON(url, patch_data).done(function() {
-        $('button', this).button('reset');
+        button.button('reset');
     }).fail(function(response) {
         console.log('error!!');
         console.log(response);
@@ -130,7 +144,7 @@ function _add_test_case_button_handler(
     var tmpl_helpers = {
         test_case_form: test_form_tmpl,
         populate_fields: true,
-        in_array: $.inArray
+        in_array: in_array
     };
 
     $.postJSON(

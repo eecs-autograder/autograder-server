@@ -3,6 +3,11 @@ function is_umich_email(email)
     return email.split('@')[1] === 'umich.edu';
 }
 
+function in_array(element, array)
+{
+    return $.inArray(element, array) !== -1 ;
+}
+
 // Adapted from: http://benjamin-schweizer.de/jquerypostjson.html
 $.postJSON = function(url, data, callback) {
     return jQuery.ajax({
