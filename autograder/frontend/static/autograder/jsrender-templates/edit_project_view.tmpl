@@ -1,185 +1,231 @@
 <h3>Project Admin - {{> project.data.attributes.name }}</h3>
 
-<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#edit_project">
+<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#project_files">
+    Project files
+</button><br>
+<div id='project_files' class='collapse'>
+    <div class='well'>
+    <h2 class="lead">Project Files</h2>
+    <!-- The file upload form used as target for the file upload widget -->
+    <form id="project_file_upload" method="POST" enctype="multipart/form-data">
+        <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
+        <div class="row fileupload-buttonbar">
+            <div class="col-lg-7">
+                <!-- The fileinput-button span is used to style the file input field as button -->
+                <span class="btn btn-success fileinput-button">
+                    <i class="glyphicon glyphicon-plus"></i>
+                    <span>Add files...</span>
+                    <input type="file" name="file" multiple>
+                </span>
+                <button type="submit" class="btn btn-primary start">
+                    <i class="glyphicon glyphicon-upload"></i>
+                    <span>Start upload</span>
+                </button>
+                <button type="reset" class="btn btn-warning cancel">
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <span>Cancel upload</span>
+                </button>
+                <button type="button" class="btn btn-danger delete">
+                    <i class="glyphicon glyphicon-trash"></i>
+                    <span>Delete</span>
+                </button>
+                <input type="checkbox" class="toggle">
+                <!-- The global file processing state -->
+                <span class="fileupload-process"></span>
+            </div>
+            <!-- The global progress state -->
+            <div class="col-lg-5 fileupload-progress fade">
+                <!-- The global progress bar -->
+                <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+                </div>
+                <!-- The extended global progress state -->
+                <div class="progress-extended">&nbsp;</div>
+            </div>
+        </div>
+        <!-- The table listing the files available for upload/download -->
+        <table role="presentation" id='file_list' class="table table-striped"><tbody class="files"></tbody></table>
+    </form>
+    </div>
+</div>
+
+<button type="button" id='expand_settings' class="btn btn-info" data-toggle="collapse" data-target="#edit_project">
     Settings
 </button>
-
 <div id="edit_project" class="collapse">
+    <form id='project_fields_form' role='form'>
+        <!-- <h5>Test Case Feedback Levels</h5> -->
+        <div class='checkbox'>
+            <label>
+                <input type='checkbox' id='visible_to_students' value='true'
+                       {{if project.data.attributes.visible_to_students}}checked{{/if}}>
+                Visible to students
+            </label>
+        </div>
 
-<form id='project_fields_form' role='form'>
-    <!-- <h5>Test Case Feedback Levels</h5> -->
-    <div class='checkbox'>
-        <label>
-            <input type='checkbox' id='visible_to_students' value='true'
-                   {{if project.data.attributes.visible_to_students}}checked{{/if}}>
-            Visible to students
-        </label>
-    </div>
+        <div class='checkbox'>
+            <label>
+                <input type='checkbox' id='disallow_student_submissions' value='true'
+                       {{if project.data.attributes.disallow_student_submissions}}checked{{/if}}>
+                Disallow student submissions
+            </label>
+        </div>
 
-    <div class='checkbox'>
-        <label>
-            <input type='checkbox' id='disallow_student_submissions' value='true'
-                   {{if project.data.attributes.disallow_student_submissions}}checked{{/if}}>
-            Disallow student submissions
-        </label>
-    </div>
+        <div class='checkbox'>
+            <label>
+                <input type='checkbox' id='allow_submissions_from_non_enrolled_students'
+                       value='true' {{if project.data.attributes.allow_submissions_from_non_enrolled_students}}checked{{/if}}>
+                Allow submissions from non-enrolled students
+            </label>
+        </div>
 
-    <div class='checkbox'>
-        <label>
-            <input type='checkbox' id='allow_submissions_from_non_enrolled_students'
-                   value='true' {{if project.data.attributes.allow_submissions_from_non_enrolled_students}}checked{{/if}}>
-            Allow submissions from non-enrolled students
-        </label>
-    </div>
-
-    <div class="row">
-        <div class='col-sm-6'>
-            <div class="form-group">
-                <label>Closing time: </label>
-                <div class='input-group date' id='datetimepicker'>
-                    <input type='text' name='closing_time' id='closing_time' class="form-control" />
-                    <span class="input-group-addon">
-                        <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
+        <div class="row">
+            <div class='col-sm-6'>
+                <div class="form-group">
+                    <label>Closing time: </label>
+                    <div class='input-group date' id='datetimepicker'>
+                        <input type='text' name='closing_time' id='closing_time' class="form-control" />
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- </div> -->
+        <!-- </div> -->
 
-    <div class='form-group'>
-        <label>Minimum group size</label>
-        <input type='text' id='min_group_size' class='form-control' value='{{> project.data.attributes.min_group_size}}'>
-    </div>
-    <div class='form-group'>
-        <label>Maximum group size</label>
-        <input type='text' id='max_group_size' class='form-control' value='{{> project.data.attributes.max_group_size}}'>
-    </div>
+        <div class='form-group'>
+            <label>Minimum group size</label>
+            <input type='text' id='min_group_size' class='form-control' value='{{> project.data.attributes.min_group_size}}'>
+        </div>
+        <div class='form-group'>
+            <label>Maximum group size</label>
+            <input type='text' id='max_group_size' class='form-control' value='{{> project.data.attributes.max_group_size}}'>
+        </div>
 
-    <div class='form-group'>
-        <label>Required student files</label>
-    {{for project.data.attributes.required_student_files}}
-        <input type='text' class='form-control' name='required_student_files' value='{{:}}'>
-    {{/for}}
-        <button id='add_required_file_slot_button' class='btn btn-default' type='button'>Add slot</button>
-    </div>
+        <div class='form-group'>
+            <label>Required student files</label>
+        {{for project.data.attributes.required_student_files}}
+            <input type='text' class='form-control' name='required_student_files' value='{{:}}'>
+        {{/for}}
+            <button id='add_required_file_slot_button' class='btn btn-default' type='button'>Add slot</button>
+        </div>
 
-<!--     <div>Expected student file patterns</div>
-    <ul>
-    {{for project.data.attributes.expected_student_file_patterns}}
-        <li>
-            <div class='expected_pattern'>
-                <span>Pattern: </span>
-                <input type='text' name='pattern' value='{{:#data[0]}}'>
-                <span>Minimum number of matches</span>
-                <input type='text' name='min_num_matches' value='{{:#data[1]}}'>
-                <span>Maximum number of matches</span>
-                <input type='text' name='max_num_matches' value='{{:#data[2]}}'>
+    <!--     <div>Expected student file patterns</div>
+        <ul>
+        {{for project.data.attributes.expected_student_file_patterns}}
+            <li>
+                <div class='expected_pattern'>
+                    <span>Pattern: </span>
+                    <input type='text' name='pattern' value='{{:#data[0]}}'>
+                    <span>Minimum number of matches</span>
+                    <input type='text' name='min_num_matches' value='{{:#data[1]}}'>
+                    <span>Maximum number of matches</span>
+                    <input type='text' name='max_num_matches' value='{{:#data[2]}}'>
+                </div>
+            </li>
+        {{/for}}
+        </ul>
+        <button id='add_expected_pattern_slot_button' type='button'>Add slot</button>
+        <button id='remove_expected_pattern_slot_button' type="button">Remove slot</button>
+     -->
+
+        <div id='feedback_levels'>
+            <div class='form-group'>
+                <label>Return code feedback level</label>
+                <select id='return_code_feedback_level' class='form-control'>
+                    <option value='no_feedback'>No feedback</option>
+                    <option value='correct_or_incorrect_only'
+                            {{if project.data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='correct_or_incorrect_only'}}
+                                selected
+                            {{/if}}>
+                        Indicate correct or incorrect
+                    </option>
+                    <option value='show_expected_and_actual_values'
+                            {{if project.data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='show_expected_and_actual_values'}}
+                                selected
+                            {{/if}}>
+                        Show expected and actual values
+                    </option>
+                </select>
             </div>
-        </li>
-    {{/for}}
-    </ul>
-    <button id='add_expected_pattern_slot_button' type='button'>Add slot</button>
-    <button id='remove_expected_pattern_slot_button' type="button">Remove slot</button>
- -->
+            <div class='form-group'>
+                <label>Output feedback level</label>
+                <select id='output_feedback_level' class='form-control'>
+                    <option value='no_feedback'>No feedback</option>
+                    <option value='correct_or_incorrect_only'
+                            {{if project.data.attributes.test_case_feedback_configuration.output_feedback_level === 'correct_or_incorrect_only'}}
+                                selected
+                            {{/if}}>
+                        Indicate correct or incorrect
+                    </option>
+                    <option value='show_expected_and_actual_values'
+                            {{if project.data.attributes.test_case_feedback_configuration.output_feedback_level === 'show_expected_and_actual_values'}}
+                                selected
+                            {{/if}}>
+                        Show expected and actual values (diff)
+                    </option>
+                </select>
+            </div>
+            <div class='form-group'>
+                <label>Compilation feedback level</label>
+                <select id='compilation_feedback_level' class='form-control'>
+                    <option value='no_feedback'>No feedback</option>
+                    <option value='success_or_failure_only'
+                            {{if project.data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'success_or_failure_only'}}
+                                selected
+                            {{/if}}>
+                        Indicate success or failure
+                    </option>
+                    <option value='show_compiler_output'
+                            {{if project.data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'show_compiler_output'}}
+                                selected
+                            {{/if}}>
+                        Show compiler output
+                    </option>
+                </select>
+            </div>
+            <div class='form-group'>
+                <label>Compilation feedback level</label>
+                <select id='valgrind_feedback_level' class='form-control'>
+                    <option value='no_feedback'>No feedback</option>
+                    <option value='errors_or_no_errors_only'
+                            {{if project.data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'errors_or_no_errors_only'}}
+                                selected
+                            {{/if}}>
+                        Indicate clean or errors present
+                    </option>
+                    <option value='show_valgrind_output'
+                            {{if project.data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'show_valgrind_output'}}
+                                selected
+                            {{/if}}>
+                        Show valgrind output
+                    </option>
+                </select>
+            </div>
+            <div class='form-group'>
+                <label>Points feedback level</label>
+                <select id='points_feedback_level' class='form-control'>
+                    <option value='hide'>Hide</option>
+                    <option value='show_total'
+                            {{if project.data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_total'}}
+                                selected
+                            {{/if}}>
+                        Show total points
+                    </option>
+                    <option value='show_breakdown'
+                            {{if project.data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_breakdown'}}
+                                selected
+                            {{/if}}>
+                        Show score breakdown
+                    </option>
+                </select>
+            </div>
+        </div>
 
-    <div id='feedback_levels'>
-        <div class='form-group'>
-            <label>Return code feedback level</label>
-            <select id='return_code_feedback_level' class='form-control'>
-                <option value='no_feedback'>No feedback</option>
-                <option value='correct_or_incorrect_only'
-                        {{if project.data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='correct_or_incorrect_only'}}
-                            selected
-                        {{/if}}>
-                    Indicate correct or incorrect
-                </option>
-                <option value='show_expected_and_actual_values'
-                        {{if project.data.attributes.test_case_feedback_configuration.return_code_feedback_level ==='show_expected_and_actual_values'}}
-                            selected
-                        {{/if}}>
-                    Show expected and actual values
-                </option>
-            </select>
-        </div>
-        <div class='form-group'>
-            <label>Output feedback level</label>
-            <select id='output_feedback_level' class='form-control'>
-                <option value='no_feedback'>No feedback</option>
-                <option value='correct_or_incorrect_only'
-                        {{if project.data.attributes.test_case_feedback_configuration.output_feedback_level === 'correct_or_incorrect_only'}}
-                            selected
-                        {{/if}}>
-                    Indicate correct or incorrect
-                </option>
-                <option value='show_expected_and_actual_values'
-                        {{if project.data.attributes.test_case_feedback_configuration.output_feedback_level === 'show_expected_and_actual_values'}}
-                            selected
-                        {{/if}}>
-                    Show expected and actual values (diff)
-                </option>
-            </select>
-        </div>
-        <div class='form-group'>
-            <label>Compilation feedback level</label>
-            <select id='compilation_feedback_level' class='form-control'>
-                <option value='no_feedback'>No feedback</option>
-                <option value='success_or_failure_only'
-                        {{if project.data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'success_or_failure_only'}}
-                            selected
-                        {{/if}}>
-                    Indicate success or failure
-                </option>
-                <option value='show_compiler_output'
-                        {{if project.data.attributes.test_case_feedback_configuration.compilation_feedback_level === 'show_compiler_output'}}
-                            selected
-                        {{/if}}>
-                    Show compiler output
-                </option>
-            </select>
-        </div>
-        <div class='form-group'>
-            <label>Compilation feedback level</label>
-            <select id='valgrind_feedback_level' class='form-control'>
-                <option value='no_feedback'>No feedback</option>
-                <option value='errors_or_no_errors_only'
-                        {{if project.data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'errors_or_no_errors_only'}}
-                            selected
-                        {{/if}}>
-                    Indicate clean or errors present
-                </option>
-                <option value='show_valgrind_output'
-                        {{if project.data.attributes.test_case_feedback_configuration.valgrind_feedback_level === 'show_valgrind_output'}}
-                            selected
-                        {{/if}}>
-                    Show valgrind output
-                </option>
-            </select>
-        </div>
-        <div class='form-group'>
-            <label>Points feedback level</label>
-            <select id='points_feedback_level' class='form-control'>
-                <option value='hide'>Hide</option>
-                <option value='show_total'
-                        {{if project.data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_total'}}
-                            selected
-                        {{/if}}>
-                    Show total points
-                </option>
-                <option value='show_breakdown'
-                        {{if project.data.attributes.test_case_feedback_configuration.points_feedback_level === 'show_breakdown'}}
-                            selected
-                        {{/if}}>
-                    Show score breakdown
-                </option>
-            </select>
-        </div>
-    </div>
-
-    <button id='save_project_button' class='btn btn-default btn-success' type='submit'>SAVE CHANGES</button>
-</form>
-
+        <button id='save_project_button' class='btn btn-default btn-success' type='submit'>SAVE CHANGES</button>
+    </form>
 </div>
 
 

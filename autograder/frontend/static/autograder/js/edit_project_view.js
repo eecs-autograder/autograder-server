@@ -34,7 +34,37 @@ function _render_edit_project_view(
     };
     $('#main-area').html(project_tmpl.render(tmpl_context, tmpl_helpers));
 
-    console.log(project.data.attributes.closing_time);
+    // file upload set-up
+    $.when(
+        lazy_get_template('upload-ready-project-file'),
+        lazy_get_template('download-ready-project-file')
+    ).done(function(upload_tmpl, download_tmpl) {
+        $('#project_file_upload').fileupload({
+            url: project.data.links.self + 'add-file/',
+            uploadTemplateId: null,
+            downloadTemplateId: null,
+            uploadTemplate: function(data) {
+                console.log(data);
+                return upload_tmpl.render(data);
+            },
+            downloadTemplate: function(data) {
+                // console.log(data);
+                // return download_tmpl.render(data);
+            },
+            done: function(event, response) {
+                console.log(event);
+                console.log(response);
+                $('#file_list .files').append(
+                    download_tmpl.render(response.result));
+            }
+        });
+
+        $.each(project.data.attributes.project_files, function(index, value) {
+            $('#file_list .files').append(download_tmpl.render(value));
+        });
+    });
+
+    // settings set-up
     $('#datetimepicker').datetimepicker({
         defaultDate: project.data.attributes.closing_time
     });
@@ -45,11 +75,11 @@ function _render_edit_project_view(
         );
     });
 
-    // $("a[data-role='ajax']").click(ajax_link_click_handler);
     $('#project_fields_form').submit(function(e) {
         _save_project_settings(e, project);
     });
 
+    // test case edit set-up
     $('#test_cases form').each(function() {
         $(this).submit(_save_test_form_handler);
     });
