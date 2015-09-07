@@ -261,7 +261,28 @@
 </div>
 
 <!-- Add/delete submission groups -->
+<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#grant_extension">
+    Give a student an extension
+</button>
 
+<div id="grant_extension" class="collapse">
+    <form role='form' id='grant_extension_form'>
+        <div class="row">
+            <div class='col-sm-6'>
+                <div class="form-group">
+                    <label>Extended due date: </label>
+                    <div class='input-group date' id='extension-time'>
+                        <input type='text' name='extension' id='extension' class="form-control" />
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-default">Add</button>
+    </form>
+</div>
 
 <!-- Download final scores/code -->
 

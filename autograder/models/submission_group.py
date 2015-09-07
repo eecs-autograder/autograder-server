@@ -39,7 +39,7 @@ class SubmissionGroup(ModelValidatableOnSave):
 
     Static methods:
         get_groups_for_user()
-        get_project_group_for_user()
+        get_group()
 
     Overridden methods:
         clean()
@@ -57,15 +57,26 @@ class SubmissionGroup(ModelValidatableOnSave):
         """
         return SubmissionGroup.objects.filter(_members__contains=[username])
 
+    # @staticmethod
+    # def get_project_group_for_user(username, project):
+    #     """
+    #     Returns the SubmissionGroup that the user belongs to for the
+    #     given project. Raises ObjectDoesNotExist if no such SubmissionGroup
+    #     exists.
+    #     """
+    #     return SubmissionGroup.objects.get(
+    #         _members__contains=[username], project=project)
+
     @staticmethod
-    def get_project_group_for_user(username, project):
+    def get_group(usernames, project):
         """
-        Returns the SubmissionGroup that the user belongs to for the
-        given project. Raises ObjectDoesNotExist if no such SubmissionGroup
+        Returns the SubmissionGroup that contains the specified users for
+        the given project.
+        Raises ObjectDoesNotExist if no such SubmissionGroup
         exists.
         """
         return SubmissionGroup.objects.get(
-            _members__contains=[username], project=project)
+            _members__contains=usernames, project=project)
 
     # -------------------------------------------------------------------------
 

@@ -2,7 +2,7 @@ import os
 import datetime
 
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -192,3 +192,74 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
             SubmissionGroup.objects.validate_and_create(
                 members=_names(self.staff_group + self.enrolled_group),
                 project=self.project)
+
+# -----------------------------------------------------------------------------
+
+
+class GroupQueryFunctionTests(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.course = Course.objects.validate_and_create(name='eecs280')
+        self.semester = Semester.objects.validate_and_create(
+            name='f15', course=self.course)
+
+        self.project = Project.objects.validate_and_create(
+            name='my_project', semester=self.semester, max_group_size=5,
+            allow_submissions_from_non_enrolled_students=True)
+
+    def test_get_single_member_group(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=['jameslp@umich.edu'], project=self.project)
+
+        self.assertEqual(
+            group,
+            SubmissionGroup.get_group(['jameslp@umich.edu'], self.project))
+
+    def test_get_multiple_member_group_exact(self):
+        members = [
+            'jameslp@umich.edu', 'awdeorio@umich.edu', 'jsatonik@umich.edu'
+        ]
+        group = SubmissionGroup.objects.validate_and_create(
+            members=members, project=self.project)
+
+        lookup = [
+            'jsatonik@umich.edu', 'jameslp@umich.edu', 'awdeorio@umich.edu'
+        ]
+        self.assertEqual(group,SubmissionGroup.get_group(lookup, self.project))
+
+    def test_get_multiple_member_group_subset(self):
+        members = [
+            'jameslp@umich.edu', 'awdeorio@umich.edu', 'jsatonik@umich.edu'
+        ]
+        group = SubmissionGroup.objects.validate_and_create(
+            members=members, project=self.project)
+
+        lookup = [
+            'jsatonik@umich.edu', 'awdeorio@umich.edu'
+        ]
+        self.assertEqual(group,SubmissionGroup.get_group(lookup, self.project))
+
+    def test_not_found_no_match(self):
+        members = [
+            'jameslp@umich.edu', 'awdeorio@umich.edu', 'jsatonik@umich.edu'
+        ]
+        SubmissionGroup.objects.validate_and_create(
+            members=members, project=self.project)
+
+        lookup = ['jjuett@umich.edu']
+        with self.assertRaises(ObjectDoesNotExist):
+            SubmissionGroup.get_group(lookup, self.project)
+
+    def test_not_found_partial_match(self):
+        members = [
+            'jameslp@umich.edu', 'awdeorio@umich.edu', 'jsatonik@umich.edu'
+        ]
+        SubmissionGroup.objects.validate_and_create(
+            members=members, project=self.project)
+
+        lookup = [
+            'jsatonik@umich.edu', 'jjuett@umich.edu'
+        ]
+        with self.assertRaises(ObjectDoesNotExist):
+            SubmissionGroup.get_group(lookup, self.project)

@@ -89,10 +89,9 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
     def _get_by_query_params(self, request):
         project_id = request.GET['project_id']
         project = Project.objects.get(pk=project_id)
-        username = request.GET['username']
+        usernames = request.GET.getlist('usernames')
 
-        group = SubmissionGroup.get_project_group_for_user(
-            username, project)
+        group = SubmissionGroup.get_group(usernames, project)
         return group
 
     # -------------------------------------------------------------------------

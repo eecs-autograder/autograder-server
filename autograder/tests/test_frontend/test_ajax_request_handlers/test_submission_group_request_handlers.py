@@ -180,7 +180,34 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
 
     def test_valid_get_own_group(self):
         response = _get_submission_group_request(
-            self.project.pk, self.enrolled.username, self.enrolled)
+            self.project.pk, [self.enrolled.username], self.enrolled)
+        self.assertEqual(200, response.status_code)
+
+        expected = {
+            'data': submission_group_to_json(self.group),
+            'included': sorted([
+                submission_to_json(submission, all_fields=False)
+                for submission in self.submissions
+            ], key=lambda obj: obj['attributes']['timestamp'], reverse=True),
+            'meta': {
+                'permissions': {
+                    'can_delete': False,
+                    'can_edit': False
+                }
+            }
+        }
+
+        self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
+
+        response = _get_submission_group_by_id_request(
+            self.group.pk, self.enrolled)
+        self.assertEqual(200, response.status_code)
+
+        self.assertJSONObjsEqual(expected, json_load_bytes(response.content))
+
+    def test_valid_get_group_by_all_members(self):
+        response = _get_submission_group_request(
+            self.project.pk, _names(self.members), self.enrolled)
         self.assertEqual(200, response.status_code)
 
         expected = {
@@ -222,7 +249,7 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
                 }
             }
             response = _get_submission_group_request(
-                self.project.pk, self.enrolled.username, user)
+                self.project.pk, [self.enrolled.username], user)
             self.assertEqual(200, response.status_code)
 
             self.assertJSONObjsEqual(
@@ -236,11 +263,11 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
 
     def test_error_group_not_found(self):
         response = _get_submission_group_request(
-            self.project.pk, 'steve_the_nonexistant_user', self.admin)
+            self.project.pk, ['steve_the_nonexistant_user'], self.admin)
         self.assertEqual(404, response.status_code)
 
         response = _get_submission_group_request(
-            self.project.pk, self.nobody.username, self.nobody)
+            self.project.pk, [self.nobody.username], self.nobody)
         self.assertEqual(404, response.status_code)
 
         response = _get_submission_group_by_id_request(42, self.admin)
@@ -248,7 +275,7 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
 
     def test_error_project_not_found(self):
         response = _get_submission_group_request(
-            42, self.enrolled.username, self.enrolled)
+            42, [self.enrolled.username], self.enrolled)
         self.assertEqual(404, response.status_code)
 
     def test_permission_denied(self):
@@ -256,7 +283,7 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
 
         for user in (other_enrolled, self.nobody):
             response = _get_submission_group_request(
-                self.project.pk, self.enrolled.username, user)
+                self.project.pk, [self.enrolled.username], user)
             self.assertEqual(403, response.status_code)
 
             response = _get_submission_group_by_id_request(
@@ -264,9 +291,12 @@ class GetSubmissionGroupRequestTestCase(_SetUpBase):
             self.assertEqual(403, response.status_code)
 
 
-def _get_submission_group_request(project_id, username, requesting_user):
-    url = '/submission-groups/submission-group/?project_id={}&username={}'.format(
-        project_id, username)
+def _get_submission_group_request(project_id, usernames, requesting_user):
+    url = '/submission-groups/submission-group/?project_id={}'.format(
+        project_id)#, ','.join(usernames))
+    for username in usernames:
+        url += '&usernames={}'.format(username)
+    # print(url)
     return process_get_request(url, requesting_user)
 
 
