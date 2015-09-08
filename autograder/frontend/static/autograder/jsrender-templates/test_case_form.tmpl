@@ -85,7 +85,7 @@
             <label>
                 <input type='checkbox' value='{{:filename}}' name='files_to_compile_together'
                     {{if ~populate_fields}}
-                            {{if ~in_array(filename, ~test_data.attributes.files_to_compile_together) }}checked{{/if}}
+                            {{if ~in_array(filename, ~test_data.attributes.project_files) }}checked{{/if}}
                     {{/if}}>
                 {{> #data.filename}}
             </label>

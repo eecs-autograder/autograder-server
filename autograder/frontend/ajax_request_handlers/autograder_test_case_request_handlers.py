@@ -30,7 +30,11 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
         'compiler',
         'compiler_flags',
         'files_to_compile_together',
-        'executable_name'
+        'executable_name',
+        'points_for_correct_return_code',
+        'points_for_correct_output',
+        'points_for_no_valgrind_errors',
+        'points_for_compilation_success'
     ]
 
     def get(self, request, test_id):

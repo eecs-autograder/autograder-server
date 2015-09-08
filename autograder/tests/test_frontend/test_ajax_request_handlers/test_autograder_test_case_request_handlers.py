@@ -58,7 +58,11 @@ class _SetUpBase(TemporaryFilesystemTestCase):
                     'compiler': 'g++',
                     'compiler_flags': ['-Wall'],
                     'files_to_compile_together': ['spam.cpp', 'egg.cpp'],
-                    'executable_name': 'sausage'
+                    'executable_name': 'sausage',
+                    'points_for_correct_return_code': 1,
+                    'points_for_correct_output': 2,
+                    'points_for_no_valgrind_errors': 3,
+                    'points_for_compilation_success': 4
                 },
                 'relationships': {
                     'project': {
@@ -182,7 +186,11 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
                     'compiler': 'g++',
                     'compiler_flags': ['-Wall', '-Wextra'],
                     'files_to_compile_together': ['egg.cpp'],
-                    'executable_name': 'baked_beans'
+                    'executable_name': 'baked_beans',
+                    'points_for_correct_return_code': 2,
+                    'points_for_correct_output': 3,
+                    'points_for_no_valgrind_errors': 4,
+                    'points_for_compilation_success': 5
                 }
             }
         }

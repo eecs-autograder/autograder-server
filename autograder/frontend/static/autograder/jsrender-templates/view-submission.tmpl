@@ -22,7 +22,7 @@
     {{/for}}
     </ul>
 
-    {{if data.attributes.discarded_files}}
+    {{if data.attributes.discarded_files.length}}
     <div>The following files were discarded due to being unnecessary: </div>
     <ul>
     {{for data.attributes.discarded_files}}
@@ -33,8 +33,8 @@
 
     <div>Results: </div>
     <ul>
-        <li>
         {{for meta.results}}
+        <li>
             <h5>{{> test_name}}</h5>
             {{if compilation_succeeded !== undefined}}
                 <div>
@@ -105,8 +105,8 @@
                     </ul>
                 {{/if}}
             {{/if}}
-        {{/for}}
         </li>
+        {{/for}}
     </ul>
     <div><b>Total score: {{> meta.total_points_awarded}}/{{> meta.total_points_possible}}</b></div>
 </div>

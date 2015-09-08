@@ -240,9 +240,15 @@ function _render_submission(submission, render_location)
 
 function _get_submission_group_url(project_id, usernames)
 {
+    var url = "/submission-groups/submission-group/?project_id=" + String(project_id);
+    $.each(usernames, function(index, username) {
+        url += '&usernames=' + username
+    });
+    console.log(url);
+    return url;
 
-    return "/submission-groups/submission-group/?" + $.param(
-        {'project_id': project_id,
-         'usernames': usernames});
+    // + $.param(
+    //     {'project_id': project_id,
+    //      'usernames': usernames});
 }
 

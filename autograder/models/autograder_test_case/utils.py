@@ -3,19 +3,21 @@ import subprocess
 
 import autograder.shared.global_constants as gc
 
-_DOCKER_ARGS = [
-    'docker', 'run',
-    '-a', 'STDIN', '-a', 'STDOUT', '-a', 'STDERR',  # Attach streams
-    '--rm',  # Delete the container when finished running
-    '-m', '500M',  # Memory limit
-    '--memory-swap', '750M',  # Total memory limit (memory + swap)
-    '--ulimit', 'nproc=5',  # Limit number of processes
-    '-v', os.getcwd() + ':/home/autograder',  # Mount the current directory
-    '-w', '/home/autograder',  # Set working directory in container
-    '-u', 'autograder',  # set user (root by default, but we don't want that)
-    '-i',  # Run in interactive mode (needed for input redirection)
-    'autograder'  # Specify which image to use
-]
+
+def _get_docker_args():
+    return [
+        'docker', 'run',
+        '-a', 'STDIN', '-a', 'STDOUT', '-a', 'STDERR',  # Attach streams
+        '--rm',  # Delete the container when finished running
+        '-m', '500M',  # Memory limit
+        '--memory-swap', '750M',  # Total memory limit (memory + swap)
+        '--ulimit', 'nproc=5',  # Limit number of processes
+        '-v', os.getcwd() + ':/home/autograder',  # Mount the current directory
+        '-w', '/home/autograder',  # Set working directory in container
+        # '-u', 'autograder',  # set user (root by default, but we don't want that)
+        '-i',  # Run in interactive mode (needed for input redirection)
+        'autograder'  # Specify which image to use
+    ]
 
 
 # TODO: Once upgraded to Python 3.5 and Django 1.9, replace Popen with the
@@ -68,7 +70,7 @@ class SubprocessRunner(object):
         # Popen and subprocess.PIPE is the preferred approach to
         # redirecting input and output from strings.
         self._process = subprocess.Popen(
-            _DOCKER_ARGS + self._args,
+            _get_docker_args() + self._args,
             universal_newlines=True,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,

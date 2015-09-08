@@ -304,6 +304,7 @@ class TemporaryDirectory(object):
 
     def __enter__(self):
         os.mkdir(self.dirname)
+        os.chmod(self.dirname, 0o777)
 
     def __exit__(self, *args):
         shutil.rmtree(self.dirname)

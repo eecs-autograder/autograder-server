@@ -8,6 +8,8 @@ from autograder.models import Course, Submission
 
 import autograder.shared.utilities as ut
 
+import logging
+logger = logging.getLogger(__name__)
 
 @shared_task(bind=True, ignore_result=True)
 def debug_task(self):
@@ -49,6 +51,7 @@ def _prepare_and_run_tests(submission):
         submission.submission_group.project)
 
     for test_case in test_cases:
+        print(test_case.name)
         with ut.TemporaryDirectory(temp_dirname):
             for filename in test_case.student_resource_files:
                 shutil.copy(filename, temp_dirname)
@@ -60,6 +63,9 @@ def _prepare_and_run_tests(submission):
 
             with ut.ChangeDirectory(temp_dirname):
                 for filename in os.listdir():
+                    print(filename)
                     os.chmod(filename, 0o666)
                 result = test_case.run(submission)
+                print('finished running')
                 result.save()
+    print('done')

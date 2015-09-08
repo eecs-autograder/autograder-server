@@ -1,3 +1,5 @@
+import os
+
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
@@ -372,6 +374,9 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         result_ref.compilation_standard_output = runner.stdout
         result_ref.compilation_standard_error_output = runner.stderr
         result_ref.compilation_return_code = runner.return_code
+
+        # if self.executable_name:
+        #     os.chmod(self.executable_name, 0o777)
 
     # -------------------------------------------------------------------------
 
