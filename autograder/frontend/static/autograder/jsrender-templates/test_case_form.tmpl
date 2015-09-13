@@ -85,7 +85,8 @@
             <label>
                 <input type='checkbox' value='{{:filename}}' name='files_to_compile_together'
                     {{if ~populate_fields}}
-                            {{if ~in_array(filename, ~test_data.attributes.project_files) }}checked{{/if}}
+                            {{if ~in_array(filename, ~test_data.attributes.files_to_compile_together) &&
+                                 ~in_array(filename, ~test_data.attributes.test_resource_files) }}checked{{/if}}
                     {{/if}}>
                 {{> #data.filename}}
             </label>
@@ -97,7 +98,8 @@
             <label>
                 <input type='checkbox' value='{{:#data}}' name='files_to_compile_together'
                     {{if ~populate_fields}}
-                            {{if ~in_array(#data, ~test_data.attributes.files_to_compile_together) }}checked{{/if}}
+                            {{if ~in_array(#data, ~test_data.attributes.files_to_compile_together) &&
+                                 ~in_array(#data, ~test_data.attributes.student_resource_files) }}checked{{/if}}
                     {{/if}}>
                 {{> #data}}
             </label>
