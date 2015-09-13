@@ -5,7 +5,6 @@ from autograder.models.utils import PolymorphicManagerWithValidateOnCreate
 from ..autograder_test_case_result import AutograderTestCaseResultBase
 
 from .autograder_test_case_base import AutograderTestCaseBase
-from .utils import SubprocessRunner
 
 
 class CompiledAutograderTestCase(AutograderTestCaseBase):
@@ -53,11 +52,11 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
     # -------------------------------------------------------------------------
 
-    def run(self, submission):
+    def run(self, submission, autograder_sandbox):
         result = AutograderTestCaseResultBase(test_case=self)
 
         # result is modified by reference in this function
-        self._compile_program(submission, result)
+        self._compile_program(submission, result, autograder_sandbox)
 
         if result.compilation_return_code != 0 or result.timed_out:
             # print(result._compilation_return_code)
@@ -68,7 +67,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
             ['./' + self.executable_name] + self.command_line_arguments
         )
 
-        runner = SubprocessRunner(
+        runner = autograder_sandbox.run_cmd(
             run_program_cmd, timeout=self.time_limit,
             stdin_content=self.standard_input)
 
@@ -82,7 +81,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
         valgrind_run_cmd = ['valgrind'] + self.valgrind_flags + run_program_cmd
 
-        runner = SubprocessRunner(
+        runner = autograder_sandbox.run_cmd(
             valgrind_run_cmd, timeout=self.time_limit,
             stdin_content=self.standard_input)
 

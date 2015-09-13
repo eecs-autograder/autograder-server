@@ -1,4 +1,6 @@
 import os
+import uuid
+import base64
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -7,6 +9,8 @@ from django.core.exceptions import ValidationError
 from autograder.models import (
     Project, Semester, Course,
     AutograderTestCaseBase, AutograderTestCaseFactory)
+
+from autograder.autograder_sandbox import AutograderSandbox
 
 
 class SharedTestsAndSetupForTestsWithCompilation(object):
@@ -265,12 +269,19 @@ class SharedTestsAndSetupForTestsWithCompilation(object):
 
 
 class SharedSetUpTearDownForRunTestsWithCompilation(object):
+    @classmethod
+    def setUpClass(class_):
+        name = 'unit-test-sandbox-{}'.format(uuid.uuid4().hex)
+
+        class_.sandbox = AutograderSandbox(name=name)
+        class_.sandbox.start()
+
+    @classmethod
+    def tearDownClass(class_):
+        class_.sandbox.stop()
+
     def setUp(self):
         super().setUp()
-
-        import autograder.models.autograder_test_case.utils
-        self.orig_docker_args = autograder.models.autograder_test_case.utils._DOCKER_ARGS
-        autograder.models.autograder_test_case.utils._DOCKER_ARGS = []
 
         self.original_dir = os.getcwd()
         self.new_dir = os.path.join(settings.MEDIA_ROOT, 'working_dir')
@@ -305,10 +316,12 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
     def tearDown(self):
         super().tearDown()
 
-        import autograder.models.autograder_test_case.utils
-        autograder.models.autograder_test_case.utils._DOCKER_ARGS = self.orig_docker_args
-
         os.chdir(self.original_dir)
+
+        self.sandbox.clear_working_dir()
+        print('verifying working dir was cleared')
+        ls_result = self.sandbox.run_cmd(['ls'])
+        self.assertEqual(ls_result.stdout, '')
 
     def get_ag_test_type_str_for_factory(self):
         raise NotImplementedError(

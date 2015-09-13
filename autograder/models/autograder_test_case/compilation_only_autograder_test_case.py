@@ -49,8 +49,8 @@ class CompilationOnlyAutograderTestCase(AutograderTestCaseBase):
 
     # -------------------------------------------------------------------------
 
-    def run(self, submission):
+    def run(self, submission, autograder_sandbox):
         result = AutograderTestCaseResultBase(test_case=self)
-        self._compile_program(submission, result)
+        self._compile_program(submission, result, autograder_sandbox)
 
         return result

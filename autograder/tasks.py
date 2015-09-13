@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+import subprocess
 
 from celery import shared_task
 
@@ -10,6 +11,7 @@ import autograder.shared.utilities as ut
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 @shared_task(bind=True, ignore_result=True)
 def debug_task(self):

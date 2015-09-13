@@ -1,28 +1,83 @@
 import os
 import subprocess
+import uuid
 
 import autograder.shared.global_constants as gc
 
 
-def _get_docker_args():
-    return [
-        'docker', 'run',
-        '-a', 'STDIN', '-a', 'STDOUT', '-a', 'STDERR',  # Attach streams
-        '--rm',  # Delete the container when finished running
-        '-m', '500M',  # Memory limit
-        '--memory-swap', '750M',  # Total memory limit (memory + swap)
-        '--ulimit', 'nproc=5',  # Limit number of processes
-        '-v', os.getcwd() + ':/home/autograder',  # Mount the current directory
-        '-w', '/home/autograder',  # Set working directory in container
-        # '-u', 'autograder',  # set user (root by default, but we don't want that)
-        '-i',  # Run in interactive mode (needed for input redirection)
-        'autograder'  # Specify which image to use
-    ]
+SANDBOX_WORKING_DIR_NAME = '/home/autograder/working_dir'
+
+
+class AutograderSandbox(object):
+    def __init__(self, name):
+        self.name = name
+
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, *args, **kwargs):
+        self.stop()
+
+    def start(self):
+        subprocess.call(
+            ['docker', 'create', '--name=' + self.name,
+             '-m', '500M',  # Memory limit
+             '--memory-swap', '750M',  # Total memory limit (memory + swap)
+             '--ulimit', 'nproc=5',  # Limit number of processes
+             '-a', 'STDOUT', '-a', 'STDERR',  # Attach streams
+             '-i',  # Run in interactive mode (needed for input redirection)
+             '-t',  # Allocate psuedo tty
+             'autograder', 'bash']
+        )
+        subprocess.call(['docker', 'start', self.name])
+
+    def stop(self):
+        subprocess.call(['docker', 'stop', self.name])
+
+    def copy_into_sandbox(self, *filenames):
+        for filename in filenames:
+            subprocess.call(
+                ['docker', 'cp', filename,
+                 self.name + ':/home/autograder/working_dir']
+            )
+
+        subprocess.call(
+            ['docker', 'exec', self.name,
+             'chown', 'autograder:autograder'] + list(filenames))
+
+    def run_cmd(self, cmd_exec_args,
+                as_root=False,
+                timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT,
+                stdin_content=''):
+        args = ['docker', 'exec', '-i']
+        if not as_root:
+            args.append('--user=autograder')
+        args.append(self.name)
+        args += cmd_exec_args
+
+        runner = _SubprocessRunner(
+            args, timeout=timeout, stdin_content=stdin_content)
+        return runner
+
+    def clear_working_dir(self):
+        working_dir_contents = subprocess.check_output(
+            ['docker', 'exec', '--user=autograder', self.name,
+             'ls', SANDBOX_WORKING_DIR_NAME], universal_newlines=True
+        ).split()
+
+        backup_dirname = "/home/autograder/old-" + uuid.uuid4().hex
+        subprocess.call(
+            ['docker', 'exec', '--user=autograder', self.name,
+             "mkdir", "-p", backup_dirname])
+
+        subprocess.call(
+            ['docker', 'exec', '--user=autograder', self.name,
+             "mv"] + working_dir_contents + [backup_dirname])
 
 
 # TODO: Once upgraded to Python 3.5 and Django 1.9, replace Popen with the
 # new subprocess.run() method.
-class SubprocessRunner(object):
+class _SubprocessRunner(object):
     """
     Convenience wrapper for calling Popen and retrieving the data
     we usually need.
@@ -70,7 +125,7 @@ class SubprocessRunner(object):
         # Popen and subprocess.PIPE is the preferred approach to
         # redirecting input and output from strings.
         self._process = subprocess.Popen(
-            _get_docker_args() + self._args,
+            self._args,
             universal_newlines=True,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,

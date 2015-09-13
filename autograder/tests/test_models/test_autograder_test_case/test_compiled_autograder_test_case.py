@@ -120,11 +120,14 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.expected_standard_output = (
             stdout_content)
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertEqual(result.standard_output, stdout_content)
         self.assertTrue(result.standard_output_correct)
@@ -137,12 +140,15 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         expected_stdout_content = "hello world"
         self.test_case_starter.expected_standard_output = (
             expected_stdout_content)
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertNotEqual(result.standard_output, expected_stdout_content)
         self.assertFalse(result.standard_output_correct)
@@ -156,11 +162,14 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.expected_standard_error_output = (
             stderr_content)
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertEqual(result.standard_error_output, stderr_content)
         self.assertTrue(result.standard_error_output_correct)
@@ -173,12 +182,15 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         expected_stderr_content = "hello world"
         self.test_case_starter.expected_standard_error_output = (
             expected_stderr_content)
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertNotEqual(
             result.standard_error_output, expected_stderr_content)
@@ -193,10 +205,13 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.expected_return_code = expected_return_code
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertEqual(expected_return_code, result.return_code)
         self.assertTrue(result.return_code_correct)
@@ -208,11 +223,14 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         expected_return_code = 0
         self.test_case_starter.expected_return_code = expected_return_code
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertNotEqual(expected_return_code, result.return_code)
         self.assertFalse(result.return_code_correct)
@@ -224,10 +242,13 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.expect_any_nonzero_return_code = True
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertNotEqual(0, result.return_code)
         self.assertTrue(result.return_code_correct)
@@ -239,10 +260,13 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.expect_any_nonzero_return_code = True
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertEqual(0, result.return_code)
         self.assertFalse(result.return_code_correct)
@@ -254,13 +278,16 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(CppProgramStrs.PRINT_CMD_ARGS)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         expected_output = ' '.join(cmd_args)
 
         self.test_case_starter.command_line_arguments = cmd_args
         self.test_case_starter.expected_standard_output = expected_output
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -271,13 +298,16 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(CppProgramStrs.PRINT_STDIN_CONTENT)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         expected_output = "egg bacon spam and sausage "
 
         self.test_case_starter.standard_input = expected_output
         self.test_case_starter.expected_standard_output = expected_output
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -296,10 +326,13 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(CppProgramStrs.PRINT_FILE_CONTENT)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename, input_filename)
+
         self.test_case_starter.expected_standard_output = expected_output
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -310,10 +343,13 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(CppProgramStrs.INFINITE_LOOP)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.time_limit = 1
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertTrue(result.timed_out)
         self.assertNotEqual(result.return_code, 0)
@@ -324,10 +360,13 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(CppProgramStrs.RETURN_ONLY_TEMPLATE.format(0))
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.use_valgrind = True
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertEqual(result.valgrind_return_code, 0)
 
@@ -342,10 +381,13 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(CppProgramStrs.MEMORY_LEAK)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.use_valgrind = True
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertNotEqual(result.valgrind_return_code, 0)
 
@@ -358,9 +400,12 @@ class CompiledAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(CppProgramStrs.COMPILE_ERROR)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.save()
 
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertNotEqual(result.compilation_return_code, 0)
         self.assertNotEqual(result.compilation_standard_error_output, '')
@@ -383,6 +428,8 @@ class CompiledAutograderTestRunTestCase(
         with open(input_filename, 'w') as f:
             f.write(file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename, input_filename)
+
         stdin_content = 'some content for stdin '
 
         cmd_args = ['zomg', 'wtf', 'bbq']
@@ -400,7 +447,8 @@ class CompiledAutograderTestRunTestCase(
         self.test_case_starter.use_valgrind = True
 
         self.test_case_starter.save()
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertEqual(expected_stdout, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -430,6 +478,8 @@ class CompiledAutograderTestRunTestCase(
         with open(input_filename, 'w') as f:
             f.write(file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename, input_filename)
+
         stdin_content = 'some content for stdin '
 
         cmd_args = ['zomg', 'wtf', 'bbq']
@@ -444,7 +494,8 @@ class CompiledAutograderTestRunTestCase(
         self.test_case_starter.use_valgrind = True
 
         self.test_case_starter.save()
-        result = self.test_case_starter.run(submission=None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertNotEqual(expected_stdout, result.standard_output)
         self.assertFalse(result.standard_output_correct)

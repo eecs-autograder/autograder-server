@@ -62,8 +62,11 @@ class CompilationOnlyAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(cpp_file_content)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.validate_and_save()
-        result = self.test_case_starter.run(None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertTrue(result.compilation_succeeded)
 
@@ -71,7 +74,10 @@ class CompilationOnlyAutograderTestRunTestCase(
         with open(self.cpp_filename, 'w') as f:
             f.write(CppProgramStrs.COMPILE_ERROR)
 
+        self.sandbox.copy_into_sandbox(self.cpp_filename)
+
         self.test_case_starter.validate_and_save()
-        result = self.test_case_starter.run(None)
+        result = self.test_case_starter.run(
+            submission=None, autograder_sandbox=self.sandbox)
 
         self.assertFalse(result.compilation_succeeded)

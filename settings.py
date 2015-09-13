@@ -16,6 +16,11 @@ import os
 import djcelery
 djcelery.setup_loader()
 
+# Celery (task queue) settings
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'filesystem/')
@@ -24,7 +29,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'filesystem/')
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'l)=pokw&tlklpp6w*g*lsuha2a&o^1o3kpfl1)@1k-z4=trjp&'
+SECRET_KEY = ''
+with open('secret_key') as f:
+    SECRET_KEY = f.read()
 
 # SESSION_COOKIE_SECURE = True
 # CSRF_COOKIE_SECURE = True
@@ -149,9 +156,9 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers':['file'],
+            'handlers': ['file'],
             'propagate': True,
-            'level':'DEBUG',
+            'level': 'DEBUG',
         },
         'autograder': {
             'handlers': ['file'],

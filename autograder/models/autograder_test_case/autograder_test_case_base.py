@@ -12,8 +12,6 @@ from autograder.models.utils import (
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
 
-from .utils import SubprocessRunner
-
 
 def _validate_cmd_line_arg(arg):
     if not arg:
@@ -347,12 +345,13 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    def run(self, submission):
+    def run(self, submission, autograder_sandbox):
         """
         Runs this autograder test case and returns an
             AutograderTestCaseResultBase object that is linked
             to the given submission. If submission is None,
             the result object will not be linked to any submission.
+            The test case will be run inside the given AutograderSandbox.
         Note that this method does NOT save the result object to the
             database.
 
@@ -360,7 +359,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         """
         raise NotImplementedError("Derived classes must override this method.")
 
-    def _compile_program(self, submission, result_ref):
+    def _compile_program(self, submission, result_ref, autograder_sandbox):
         compilation_command = (
             [self.compiler] + self.compiler_flags +
             self.files_to_compile_together
@@ -369,14 +368,11 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         if self.compiler == 'g++' and self.executable_name:
             compilation_command += ['-o', self.executable_name]
 
-        runner = SubprocessRunner(compilation_command)
+        compile_result = autograder_sandbox.run_cmd(compilation_command)
         result_ref.submission = submission
-        result_ref.compilation_standard_output = runner.stdout
-        result_ref.compilation_standard_error_output = runner.stderr
-        result_ref.compilation_return_code = runner.return_code
-
-        # if self.executable_name:
-        #     os.chmod(self.executable_name, 0o777)
+        result_ref.compilation_standard_output = compile_result.stdout
+        result_ref.compilation_standard_error_output = compile_result.stderr
+        result_ref.compilation_return_code = compile_result.return_code
 
     # -------------------------------------------------------------------------
 
