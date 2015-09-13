@@ -21,7 +21,7 @@ class AutograderSandbox(object):
 
     def start(self):
         print('starting container: ' + self.name)
-        subprocess.call(
+        subprocess.check_call(
             ['docker', 'create', '--name=' + self.name,
              '-m', '500M',  # Memory limit
              '--memory-swap', '750M',  # Total memory limit (memory + swap)
@@ -31,22 +31,28 @@ class AutograderSandbox(object):
              '-t',  # Allocate psuedo tty
              'autograder', 'bash']
         )
-        subprocess.call(['docker', 'start', self.name])
+        try:
+            subprocess.call(['docker', 'start', self.name])
+        except subprocess.CalledProcessError:
+            self.stop()
+            raise
 
     def stop(self):
         print('stopping container: ' + self.name)
-        subprocess.call(['docker', 'stop', self.name])
+        subprocess.check_call(['docker', 'stop', self.name])
 
     def copy_into_sandbox(self, *filenames):
         for filename in filenames:
-            subprocess.call(
+            subprocess.check_call(
                 ['docker', 'cp', filename,
                  self.name + ':/home/autograder/working_dir']
             )
 
-        subprocess.call(
-            ['docker', 'exec', self.name,
-             'chown', 'autograder:autograder'] + list(filenames))
+        basenames = [os.path.basename(filename) for filename in filenames]
+
+        subprocess.check_call(
+            ['docker', 'exec', self.name, 'chown', 'autograder:autograder'] +
+            basenames)
 
     def run_cmd(self, cmd_exec_args,
                 as_root=False,
@@ -71,11 +77,11 @@ class AutograderSandbox(object):
         ).split()
 
         backup_dirname = "/home/autograder/old-" + uuid.uuid4().hex
-        subprocess.call(
+        subprocess.check_call(
             ['docker', 'exec', '--user=autograder', self.name,
              "mkdir", "-p", backup_dirname])
 
-        subprocess.call(
+        subprocess.check_call(
             ['docker', 'exec', '--user=autograder', self.name,
              "mv"] + working_dir_contents + [backup_dirname])
 

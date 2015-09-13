@@ -40,6 +40,7 @@ def grade_submission(self, submission_id):
     except Exception as e:
         submission.status = Submission.GradingStatus.error
         submission.invalid_reason_or_error = [str(e)]
+        submission.save()
 
 
 def _prepare_and_run_tests(submission):
@@ -47,7 +48,7 @@ def _prepare_and_run_tests(submission):
     project_files_dir = ut.get_project_files_dir(group.project)
 
     sandbox_name = '{}-{}'.format(
-        '_'.join(sorted(group.members)),
+        '_'.join(sorted(group.members)).replace('@', '.'),
         submission.timestamp.strftime('%Y-%m-%d_%H.%M.%S'))
     print(sandbox_name)
 
@@ -66,30 +67,3 @@ def _prepare_and_run_tests(submission):
             result.save()
 
             sandbox.clear_working_dir()
-
-    # temp_dirname = 'grading_dir'
-    # test_cases = (
-    #     submission.submission_group.project.autograder_test_cases.all())
-
-    # project_files_dir = ut.get_project_files_dir(
-    #     submission.submission_group.project)
-
-    # for test_case in test_cases:
-    #     print(test_case.name)
-    #     with ut.TemporaryDirectory(temp_dirname):
-    #         for filename in test_case.student_resource_files:
-    #             shutil.copy(filename, temp_dirname)
-
-    #         for filename in test_case.test_resource_files:
-    #             shutil.copy(
-    #                 os.path.join(project_files_dir, filename),
-    #                 temp_dirname)
-
-    #         with ut.ChangeDirectory(temp_dirname):
-    #             for filename in os.listdir():
-    #                 print(filename)
-    #                 os.chmod(filename, 0o666)
-    #             result = test_case.run(submission)
-    #             print('finished running')
-    #             result.save()
-    # print('done')
