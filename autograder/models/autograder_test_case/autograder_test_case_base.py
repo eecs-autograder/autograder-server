@@ -368,7 +368,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         if self.compiler == 'g++' and self.executable_name:
             compilation_command += ['-o', self.executable_name]
 
-        compile_result = autograder_sandbox.run_cmd(compilation_command)
+        compile_result = autograder_sandbox.run_cmd(
+            compilation_command, timeout=self.time_limit)
         result_ref.submission = submission
         result_ref.compilation_standard_output = compile_result.stdout
         result_ref.compilation_standard_error_output = compile_result.stderr

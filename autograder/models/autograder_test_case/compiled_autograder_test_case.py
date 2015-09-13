@@ -53,6 +53,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     # -------------------------------------------------------------------------
 
     def run(self, submission, autograder_sandbox):
+        print('running test: ' + self.name)
         result = AutograderTestCaseResultBase(test_case=self)
 
         # result is modified by reference in this function

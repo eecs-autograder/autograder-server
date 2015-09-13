@@ -14,11 +14,13 @@ class AutograderSandbox(object):
 
     def __enter__(self):
         self.start()
+        return self
 
-    def __exit__(self, *args, **kwargs):
+    def __exit__(self, *args):
         self.stop()
 
     def start(self):
+        print('starting container: ' + self.name)
         subprocess.call(
             ['docker', 'create', '--name=' + self.name,
              '-m', '500M',  # Memory limit
@@ -32,6 +34,7 @@ class AutograderSandbox(object):
         subprocess.call(['docker', 'start', self.name])
 
     def stop(self):
+        print('stopping container: ' + self.name)
         subprocess.call(['docker', 'stop', self.name])
 
     def copy_into_sandbox(self, *filenames):
@@ -54,6 +57,8 @@ class AutograderSandbox(object):
             args.append('--user=autograder')
         args.append(self.name)
         args += cmd_exec_args
+
+        print('running: {}'.format(args))
 
         runner = _SubprocessRunner(
             args, timeout=timeout, stdin_content=stdin_content)

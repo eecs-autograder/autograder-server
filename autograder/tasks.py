@@ -1,11 +1,9 @@
 import os
-import shutil
 import time
-import subprocess
-
 from celery import shared_task
 
 from autograder.models import Course, Submission
+from autograder.autograder_sandbox import AutograderSandbox
 
 import autograder.shared.utilities as ut
 
@@ -45,29 +43,53 @@ def grade_submission(self, submission_id):
 
 
 def _prepare_and_run_tests(submission):
-    temp_dirname = 'grading_dir'
-    test_cases = (
-        submission.submission_group.project.autograder_test_cases.all())
+    group = submission.submission_group
+    project_files_dir = ut.get_project_files_dir(group.project)
 
-    project_files_dir = ut.get_project_files_dir(
-        submission.submission_group.project)
+    sandbox_name = '{}-{}'.format(
+        '_'.join(sorted(group.members)),
+        submission.timestamp.strftime('%Y-%m-%d_%H.%M.%S'))
+    print(sandbox_name)
 
-    for test_case in test_cases:
-        print(test_case.name)
-        with ut.TemporaryDirectory(temp_dirname):
-            for filename in test_case.student_resource_files:
-                shutil.copy(filename, temp_dirname)
+    with AutograderSandbox(name=sandbox_name) as sandbox:
+        for test_case in group.project.autograder_test_cases.all():
+            print(test_case.name)
+            files_to_copy = (
+                test_case.student_resource_files +
+                [os.path.join(project_files_dir, filename) for
+                 filename in test_case.test_resource_files])
+            sandbox.copy_into_sandbox(*files_to_copy)
 
-            for filename in test_case.test_resource_files:
-                shutil.copy(
-                    os.path.join(project_files_dir, filename),
-                    temp_dirname)
+            result = test_case.run(
+                submission=submission, autograder_sandbox=sandbox)
+            print('finished_running')
+            result.save()
 
-            with ut.ChangeDirectory(temp_dirname):
-                for filename in os.listdir():
-                    print(filename)
-                    os.chmod(filename, 0o666)
-                result = test_case.run(submission)
-                print('finished running')
-                result.save()
-    print('done')
+            sandbox.clear_working_dir()
+
+    # temp_dirname = 'grading_dir'
+    # test_cases = (
+    #     submission.submission_group.project.autograder_test_cases.all())
+
+    # project_files_dir = ut.get_project_files_dir(
+    #     submission.submission_group.project)
+
+    # for test_case in test_cases:
+    #     print(test_case.name)
+    #     with ut.TemporaryDirectory(temp_dirname):
+    #         for filename in test_case.student_resource_files:
+    #             shutil.copy(filename, temp_dirname)
+
+    #         for filename in test_case.test_resource_files:
+    #             shutil.copy(
+    #                 os.path.join(project_files_dir, filename),
+    #                 temp_dirname)
+
+    #         with ut.ChangeDirectory(temp_dirname):
+    #             for filename in os.listdir():
+    #                 print(filename)
+    #                 os.chmod(filename, 0o666)
+    #             result = test_case.run(submission)
+    #             print('finished running')
+    #             result.save()
+    # print('done')
