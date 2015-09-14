@@ -62,12 +62,13 @@ class AutograderSandbox(object):
         if not as_root:
             args.append('--user=autograder')
         args.append(self.name)
-        args += cmd_exec_args
+        args += ['timeout', str(timeout)] + cmd_exec_args
 
         print('running: {}'.format(args))
 
         runner = _SubprocessRunner(
-            args, timeout=timeout, stdin_content=stdin_content)
+            args,  # timeout=timeout,
+            stdin_content=stdin_content)
         return runner
 
     def clear_working_dir(self):
@@ -93,9 +94,15 @@ class _SubprocessRunner(object):
     Convenience wrapper for calling Popen and retrieving the data
     we usually need.
     """
+    # HACK: Currently, this class assumes that the command called inside
+    # Docker is wrapped in a linux timeout call. This is to get around the
+    # fact that we can't directly kill exec instances.
+    # See http://linux.die.net/man/1/timeout
+    _TIMEOUT_RETURN_CODE = 124
+
     def __init__(self, program_args, **kwargs):
         self._args = program_args
-        self._timeout = kwargs.get('timeout', gc.DEFAULT_SUBPROCESS_TIMEOUT)
+        # self._timeout = kwargs.get('timeout', gc.DEFAULT_SUBPROCESS_TIMEOUT)
         self._stdin_content = kwargs.get('stdin_content', '')
         self._merge_stdout_and_stderr = kwargs.get(
             'merge_stdout_and_stderr', False)
@@ -146,12 +153,14 @@ class _SubprocessRunner(object):
 
         try:
             self._stdout, self._stderr = self._process.communicate(
-                input=self._stdin_content,
-                timeout=self._timeout)
+                input=self._stdin_content)  # ,
+                #timeout=self._timeout)
 
             self._process.stdin.close()
 
             self._return_code = self._process.returncode
+            if self._return_code == _SubprocessRunner._TIMEOUT_RETURN_CODE:
+                self._timed_out = True
 
             print(self._process.args)
             print(self._process.returncode)
