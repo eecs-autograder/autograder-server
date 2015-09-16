@@ -23,9 +23,9 @@ class AutograderSandbox(object):
         print('starting container: ' + self.name)
         subprocess.check_call(
             ['docker', 'create', '--name=' + self.name,
-             '-m', '500M',  # Memory limit
-             '--memory-swap', '750M',  # Total memory limit (memory + swap)
-             '--ulimit', 'nproc=5',  # Limit number of processes
+             # unneeded # '-m', '1000M',  # Memory limit
+             # unneeded # '--memory-swap', '2000M',  # Total memory limit (memory + swap)
+             # BAAAAAAD!!!!! '--ulimit', 'nproc=5', # Limit number of processes
              '-a', 'STDOUT', '-a', 'STDERR',  # Attach streams
              '-i',  # Run in interactive mode (needed for input redirection)
              '-t',  # Allocate psuedo tty

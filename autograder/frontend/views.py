@@ -33,15 +33,15 @@ class MainAppPage(LoginRequiredView):
         return render(request, 'autograder/main_app.html', {})
 
 
-from autograder.tasks import debug_task
+# from autograder.tasks import debug_task
 
 
-class Tasky(ExceptionLoggingView):
-    def get(self, request):
-        print('request received')
-        debug_task.apply_async()
-        print('done queueing')
-        return HttpResponse()
+# class Tasky(ExceptionLoggingView):
+#     def get(self, request):
+#         print('request received')
+#         debug_task.apply_async()
+#         print('done queueing')
+#         return HttpResponse()
 
 
 # class GoogleIdentityLogin(ExceptionLoggingView):

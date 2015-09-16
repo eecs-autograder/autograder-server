@@ -85,7 +85,7 @@ class SubmissionGroup(ModelValidatableOnSave):
         return tuple(self._members)
 
     _members = ArrayField(models.CharField(max_length=30))
-    project = models.ForeignKey(Project)
+    project = models.ForeignKey(Project, related_name="submission_groups")
     extended_due_date = models.DateTimeField(
         null=True, default=None, blank=True)
 

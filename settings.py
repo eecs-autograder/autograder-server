@@ -13,13 +13,13 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
-import djcelery
-djcelery.setup_loader()
+# import djcelery
+# djcelery.setup_loader()
 
-# Celery (task queue) settings
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
+# # Celery (task queue) settings
+# CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_SERIALIZER = 'json'
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 

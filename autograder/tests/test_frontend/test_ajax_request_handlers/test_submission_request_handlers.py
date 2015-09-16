@@ -87,7 +87,7 @@ class _SetUpBase(RequestHandlerTestCase):
             return_code=0)
 
 
-@patch('autograder.frontend.ajax_request_handlers.submission_request_handlers.grade_submission.delay')
+# @patch('autograder.frontend.ajax_request_handlers.submission_request_handlers.grade_submission.delay')
 class AddSubmissionRequestTestCase(_SetUpBase):
     def setUp(self):
         super().setUp()

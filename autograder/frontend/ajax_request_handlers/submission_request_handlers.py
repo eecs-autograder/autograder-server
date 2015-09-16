@@ -16,7 +16,7 @@ from autograder.frontend.json_api_serializers import (
 from autograder.models import SubmissionGroup, Project, Submission
 from autograder.models.fields import FeedbackConfiguration
 
-from autograder.tasks import grade_submission
+# from autograder.tasks import grade_submission
 
 
 class SubmissionRequestHandler(LoginRequiredView):
@@ -61,7 +61,7 @@ class SubmissionRequestHandler(LoginRequiredView):
         if submission.status != Submission.GradingStatus.invalid:
             submission.status = Submission.GradingStatus.queued
             submission.save()
-            grade_submission.delay(submission.pk)
+            # grade_submission.delay(submission.pk)
 
         response_content = {
             'data': submission_to_json(submission)
