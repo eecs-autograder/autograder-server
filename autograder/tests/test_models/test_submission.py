@@ -228,3 +228,41 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(
             loaded_submission.discarded_files,
             [file_.name for file_ in duplicate_files])
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+
+class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.course = Course.objects.validate_and_create(name='eecs280')
+        self.semester = Semester.objects.validate_and_create(
+            name='f15', course=self.course)
+
+        self.project = Project.objects.validate_and_create(
+            name='my_project', semester=self.semester, max_group_size=5,
+            allow_submissions_from_non_enrolled_students=True)
+
+    def test_get_most_recent_submissions(self):
+        usernames = ["recent_submission_user{}".format(i) for i in range(10)]
+        groups = [
+            SubmissionGroup.objects.validate_and_create(
+                members=[username], project=self.project)
+            for username in usernames
+        ]
+        expected = []
+        for group in groups:
+            for i in range(4):
+                sub = Submission.objects.validate_and_create(
+                    submitted_files=[], submission_group=group)
+                if i == 3:
+                    expected.append(sub)
+
+        sort_key = lambda obj: obj.pk
+        actual = sorted(
+            Submission.get_most_recent_submissions(self.project),
+            key=sort_key)
+        self.assertEqual(sorted(expected, key=sort_key), actual)

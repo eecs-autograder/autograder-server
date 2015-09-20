@@ -7,6 +7,7 @@ import traceback
 import time
 import uuid
 import datetime
+import signal
 
 # HACK: Need to be able to specify whether to use the main settings
 # file or the system test one.
@@ -28,6 +29,13 @@ import autograder.shared.utilities as ut
 
 
 DIVIDER = '=' * 79 + '\n'
+
+
+def sigterm_handler(sig_num, stack):
+    from django.db import connection
+    connection.close()
+
+signal.signal(signal.SIGTERM, sigterm_handler)
 
 
 def main():

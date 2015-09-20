@@ -268,6 +268,3 @@ class GroupQueryFunctionTests(TemporaryFilesystemTestCase):
         ]
         with self.assertRaises(ObjectDoesNotExist):
             SubmissionGroup.get_group(lookup, self.project)
-
-    def test_get_most_recent_submissions(self):
-        self.fail()

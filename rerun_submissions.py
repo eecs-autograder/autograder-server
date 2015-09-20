@@ -31,13 +31,16 @@ def main():
     project = semester.projects.get(name=args.project_name)
 
     if args.all_final:
-        submissions = []
-        for group in project.submission_groups.filter(project=project):
-            group_subs = group.submissions.all().order_by('-_timestamp')
-            if group_subs:
-                sub = group_subs[0]
-                if sub.status != 'invalid':
-                    submissions.append(group_subs[0])
+        submissions = [
+            s for s in Submission.get_most_recent_submissions()
+            if s.status != 'invalid'
+        ]
+        # for group in project.submission_groups.filter(project=project):
+        #     group_subs = group.submissions.all().order_by('-_timestamp')
+        #     if group_subs:
+        #         sub = group_subs[0]
+        #         if sub.status != 'invalid':
+        #             submissions.append(group_subs[0])
     elif args.all_with_errors:
         submissions = Submission.objects.filter(
             status='error', submission_group__project=project)

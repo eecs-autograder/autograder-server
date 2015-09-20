@@ -138,6 +138,9 @@ class Submission(ModelValidatableOnSave):
             field should store a JSON list describing the reason(s).
             Default value: empty list
 
+    Static methods:
+        get_most_recent_submissions()
+
     Methods:
         get_submitted_file_basenames()
 
@@ -196,6 +199,26 @@ class Submission(ModelValidatableOnSave):
         choices=_GRADING_STATUS_CHOICES)
 
     invalid_reason_or_error = JSONField(default=list)
+
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def get_most_recent_submissions(project):
+        """
+        Returns a list containing each SubmissionGroup's most
+        recent Submission for the given project.
+        """
+        submissions = []
+        for group in project.submission_groups.all():
+            group_sub = group.submissions.order_by('-_timestamp')[0]
+
+            # .raw(
+            #     'SELECT * FROM autograder_submission '
+            #     'ORDER BY _timestamp DESC LIMIT 1')[0]
+            if group_sub:
+                submissions.append(group_sub)
+
+        return submissions
 
     # -------------------------------------------------------------------------
 

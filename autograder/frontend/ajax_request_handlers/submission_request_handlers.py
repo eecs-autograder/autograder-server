@@ -60,7 +60,8 @@ class SubmissionRequestHandler(LoginRequiredView):
                 'Submissions are currently disabled for this project')
 
         if error_message:
-            return JsonResponse({'errors': {'meta': message}}, status=409)
+            return JsonResponse(
+                {'errors': {'meta': error_message}}, status=409)
 
         submission = None
         with transaction.atomic(), connection.cursor() as c:
