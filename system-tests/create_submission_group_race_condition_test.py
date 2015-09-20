@@ -87,7 +87,7 @@ def try_to_create(group_created):
             SubmissionGroup, Course, Semester, Project)
 
         course = Course(name=COURSE_NAME)
-        course.save(using='system_tests')#.objects.db_manager('system_tests').validate_and_create(
+        course.save(using='system_tests')
 
         semester = Semester.objects.db_manager(
             'system_tests'

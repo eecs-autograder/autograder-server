@@ -21,8 +21,7 @@ class SubmissionGroupManager(ManagerWithValidateOnCreate):
         with connection.cursor() as c, transaction.atomic():
             c.execute('LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE'.format(
                 SubmissionGroup.objects.model._meta.db_table))
-            result = super().validate_and_create(**kwargs)
-            return result
+        return super().validate_and_create(**kwargs)
 
 
 class SubmissionGroup(ModelValidatableOnSave):
