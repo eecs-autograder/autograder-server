@@ -1,14 +1,13 @@
 #! /usr/bin/env python3
 
 """
-TODO: DOCUMENT ME!!!!!!!!!!!!!!!!!!!!!!
-
 Tests database locking for Submission POST request handler
 to prevent a race condition that allows multiple Submissions
 for a user to be queued at the same time.
 """
 
 import sys
+sys.path.append('..')
 
 import os
 import multiprocessing
@@ -19,7 +18,7 @@ SEMESTER_NAME = 'test-semester'
 PROJECT_NAME = 'test-project'
 GROUP_MEMBERS = ['test-student1']
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "system_test_settings")
 
 
 def main():
@@ -41,10 +40,6 @@ def main():
     try_to_create_proc.join(3)
 
     import django
-    from django.conf import settings
-    settings.BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    settings.MEDIA_ROOT = os.path.join(settings.BASE_DIR, 'tmp_filesystem')
-
     django.setup()
 
     from django.core.exceptions import ObjectDoesNotExist
@@ -81,11 +76,6 @@ def main():
 def try_to_create(submission_created):
     try:
         import django
-
-        from django.conf import settings
-        settings.BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        settings.MEDIA_ROOT = os.path.join(settings.BASE_DIR, 'tmp_filesystem')
-
         django.setup()
 
         from django.test import RequestFactory
@@ -150,5 +140,4 @@ def acquire_lock(tried_to_create, lock_acquired):
 
 
 if __name__ == '__main__':
-    sys.path.append('..')
     main()
