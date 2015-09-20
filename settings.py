@@ -30,7 +30,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'filesystem/')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = ''
-with open('secret_key') as f:
+with open(os.path.join(BASE_DIR, 'secret_key')) as f:
     SECRET_KEY = f.read()
 
 # SESSION_COOKIE_SECURE = True
@@ -52,7 +52,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'autograder',
     'polymorphic',
-    'djcelery',
+    # 'djcelery',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -105,6 +105,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'autograder-test-db',
+    },
+    'system_tests': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'system_tests_db'
     }
 }
 

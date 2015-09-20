@@ -1,5 +1,4 @@
 import datetime
-from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ObjectDoesNotExist
@@ -87,14 +86,13 @@ class _SetUpBase(RequestHandlerTestCase):
             return_code=0)
 
 
-# @patch('autograder.frontend.ajax_request_handlers.submission_request_handlers.grade_submission.delay')
 class AddSubmissionRequestTestCase(_SetUpBase):
     def setUp(self):
         super().setUp()
 
         self.maxDiff = None
 
-    def test_valid_student_submit(self, mock):
+    def test_valid_student_submit(self):
         group = SubmissionGroup.objects.validate_and_create(
             members=[self.enrolled.username], project=self.project)
 
@@ -112,9 +110,7 @@ class AddSubmissionRequestTestCase(_SetUpBase):
 
         self.assertJSONObjsEqual(expected, actual)
 
-        mock.assert_called_once_with(loaded.pk)
-
-    def test_valid_staff_or_admin_submit(self, mock):
+    def test_valid_staff_or_admin_submit(self):
         # Feedback configuration should be set to max automatically.
         for user in (self.admin, self.staff):
             group = SubmissionGroup.objects.validate_and_create(
@@ -138,9 +134,7 @@ class AddSubmissionRequestTestCase(_SetUpBase):
 
             self.assertJSONObjsEqual(expected, actual)
 
-            mock.assert_called_with(loaded.pk)
-
-    def test_invalid_user_not_in_group(self, mock):
+    def test_invalid_user_not_in_group(self):
         new_user = obj_ut.create_dummy_users()
         self.semester.add_enrolled_students(new_user)
         group = SubmissionGroup.objects.validate_and_create(
@@ -150,12 +144,12 @@ class AddSubmissionRequestTestCase(_SetUpBase):
 
         self.assertEqual(403, response.status_code)
 
-    def test_group_not_found(self, mock):
+    def test_group_not_found(self):
         response = _add_submission_request(self.files, 42, self.enrolled)
 
         self.assertEqual(404, response.status_code)
 
-    def test_invalid_already_has_submit_in_queue(self, mock):
+    def test_invalid_already_has_submit_in_queue(self):
         self.project.allow_submissions_from_non_enrolled_students = True
         self.project.validate_and_save()
         for user in (self.admin, self.staff, self.enrolled, self.nobody):
@@ -173,7 +167,7 @@ class AddSubmissionRequestTestCase(_SetUpBase):
 
             self.assertTrue('errors' in json_load_bytes(response.content))
 
-    def test_error_project_deadline_passed(self, mock):
+    def test_error_project_deadline_passed(self):
         self.project.allow_submissions_from_non_enrolled_students = True
         self.project.closing_time = (
             timezone.now() + datetime.timedelta(minutes=-1))
@@ -188,7 +182,7 @@ class AddSubmissionRequestTestCase(_SetUpBase):
                 Submission.objects.get(submission_group=group)
             self.assertTrue('errors' in json_load_bytes(response.content))
 
-    def test_no_error_project_deadline_passed_but_group_has_extension(self, mock):
+    def test_no_error_project_deadline_passed_but_group_has_extension(self):
         self.project.allow_submissions_from_non_enrolled_students = True
         self.project.closing_time = (
             timezone.now() + datetime.timedelta(minutes=-1))
@@ -202,7 +196,7 @@ class AddSubmissionRequestTestCase(_SetUpBase):
             response = _add_submission_request(self.files, group.pk, user)
             self.assertEqual(201, response.status_code)
 
-    def test_error_project_deadline_and_extension_passed(self, mock):
+    def test_error_project_deadline_and_extension_passed(self):
         self.project.allow_submissions_from_non_enrolled_students = True
         self.project.closing_time = (
             timezone.now() + datetime.timedelta(days=-1))
@@ -218,7 +212,7 @@ class AddSubmissionRequestTestCase(_SetUpBase):
             with self.assertRaises(ObjectDoesNotExist):
                 Submission.objects.get(submission_group=group)
 
-    def test_no_error_admin_or_staff_submit_passed_deadline(self, mock):
+    def test_no_error_admin_or_staff_submit_passed_deadline(self):
         self.project.closing_time = (
             timezone.now() + datetime.timedelta(minutes=-1))
         self.project.validate_and_save()
@@ -232,7 +226,7 @@ class AddSubmissionRequestTestCase(_SetUpBase):
             # There should be exactly one submission for the group
             Submission.objects.get(submission_group=group)
 
-    def test_error_student_submissions_disallowed(self, mock):
+    def test_error_student_submissions_disallowed(self):
         self.project.allow_submissions_from_non_enrolled_students = True
         self.project.disallow_student_submissions = True
         self.project.validate_and_save()

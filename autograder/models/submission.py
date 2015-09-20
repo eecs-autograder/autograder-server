@@ -228,6 +228,10 @@ class Submission(ModelValidatableOnSave):
         if not os.path.isdir(submission_dir):
             os.makedirs(submission_dir)
 
+    # TODO: clean method
+    # (so that if an invalid submission accidentally gets requeued,
+    # it will be marked as invalid again)
+
     def _validate_submitted_files(self):
         errors = []
         submitted_filenames = self.get_submitted_file_basenames()

@@ -1,6 +1,6 @@
 import os
 
-from django.db import models, transaction
+from django.db import models, transaction, connection
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
@@ -10,6 +10,19 @@ from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
 
 import autograder.shared.utilities as ut
+
+
+class SubmissionGroupManager(ManagerWithValidateOnCreate):
+    def validate_and_create(self, **kwargs):
+        """
+        Overridden for thread-safety with other attempts to create
+        SubmissionGroups.
+        """
+        with connection.cursor() as c, transaction.atomic():
+            c.execute('LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE'.format(
+                SubmissionGroup.objects.model._meta.db_table))
+            result = super().validate_and_create(**kwargs)
+            return result
 
 
 class SubmissionGroup(ModelValidatableOnSave):
@@ -45,7 +58,7 @@ class SubmissionGroup(ModelValidatableOnSave):
         clean()
         save()
     """
-    objects = ManagerWithValidateOnCreate()
+    objects = SubmissionGroupManager()
 
     # -------------------------------------------------------------------------
 

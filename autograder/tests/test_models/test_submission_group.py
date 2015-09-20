@@ -1,8 +1,9 @@
 import os
 import datetime
 
-from django.utils import timezone
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
+# from django.db import connection, transaction
+from django.utils import timezone
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -194,6 +195,8 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
                 project=self.project)
 
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 class GroupQueryFunctionTests(TemporaryFilesystemTestCase):
@@ -226,7 +229,8 @@ class GroupQueryFunctionTests(TemporaryFilesystemTestCase):
         lookup = [
             'jsatonik@umich.edu', 'jameslp@umich.edu', 'awdeorio@umich.edu'
         ]
-        self.assertEqual(group,SubmissionGroup.get_group(lookup, self.project))
+        self.assertEqual(
+            group, SubmissionGroup.get_group(lookup, self.project))
 
     def test_get_multiple_member_group_subset(self):
         members = [
@@ -238,7 +242,8 @@ class GroupQueryFunctionTests(TemporaryFilesystemTestCase):
         lookup = [
             'jsatonik@umich.edu', 'awdeorio@umich.edu'
         ]
-        self.assertEqual(group,SubmissionGroup.get_group(lookup, self.project))
+        self.assertEqual(
+            group, SubmissionGroup.get_group(lookup, self.project))
 
     def test_not_found_no_match(self):
         members = [
@@ -263,3 +268,6 @@ class GroupQueryFunctionTests(TemporaryFilesystemTestCase):
         ]
         with self.assertRaises(ObjectDoesNotExist):
             SubmissionGroup.get_group(lookup, self.project)
+
+    def test_get_most_recent_submissions(self):
+        self.fail()

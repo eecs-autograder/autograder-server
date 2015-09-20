@@ -106,6 +106,7 @@ class CompiledAutograderTestCaseTestCase(
 # -----------------------------------------------------------------------------
 
 
+@unittest.skip('in flux')
 class CompiledAutograderTestRunTestCase(
         SharedSetUpTearDownForRunTestsWithCompilation,
         TemporaryFilesystemTestCase):
