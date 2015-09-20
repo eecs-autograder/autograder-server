@@ -32,7 +32,7 @@ def main():
 
     if args.all_final:
         submissions = [
-            s for s in Submission.get_most_recent_submissions()
+            s for s in Submission.get_most_recent_submissions(project)
             if s.status != 'invalid'
         ]
         # for group in project.submission_groups.filter(project=project):
