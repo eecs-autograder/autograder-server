@@ -1,14 +1,19 @@
 #! /usr/bin/env python3
 
-import sys
-sys.path.append('.')
 import os
+import sys
+sys.path.append(os.path.basename(os.path.abspath(__file__)))
 import traceback
 import time
 import uuid
 import datetime
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+# HACK: Need to be able to specify whether to use the main settings
+# file or the system test one.
+if len(sys.argv) != 2:
+    print('Usage: {} settings_module')
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", sys.argv[1])
 
 import django
 django.setup()

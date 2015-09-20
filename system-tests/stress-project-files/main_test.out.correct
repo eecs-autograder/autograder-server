@@ -1,0 +1,23 @@
+enter a filename
+enter a column name
+reading column B from main_test_data.tsv
+Summary (value: frequency)
+6: 1
+7: 1
+8: 1
+9: 1
+10: 1
+
+count = 5
+sum = 40
+mean = 8
+stdev = 1.58114
+median = 8
+mode = 6
+min = 6
+max = 10
+  0th percentile = 6
+ 25th percentile = 7
+ 50th percentile = 8
+ 75th percentile = 9
+100th percentile = 10
