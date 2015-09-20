@@ -3,8 +3,8 @@
 import sys
 sys.path.append('.')
 import os
-import traceback
-import time
+# import traceback
+# import time
 import argparse
 # import settings
 # import django
@@ -12,13 +12,13 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
 import django
 django.setup()
-from django.db import transaction
-from django.db.models import Max
+# from django.db import transaction
+# from django.db.models import Max
 
 # import autograder.models
 
 from autograder.models import Course, Submission
-from autograder.autograder_sandbox import AutograderSandbox
+# from autograder.autograder_sandbox import AutograderSandbox
 
 import autograder.shared.utilities as ut
 

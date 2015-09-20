@@ -31,7 +31,10 @@ def main():
             archive_dirname = '_'.join(sorted(s.submission_group.members))
             with ut.ChangeDirectory(ut.get_submission_dir(s)):
                 for filename in s.get_submitted_file_basenames():
-                    target_name = os.path.join(archive_dirname, filename)
+                    target_name = os.path.join(
+                        '{}_{}_{}'.format(
+                            course.name, semester.name, project.name),
+                        archive_dirname, filename)
                     print(target_name)
                     z.write(filename, arcname=target_name)
 
