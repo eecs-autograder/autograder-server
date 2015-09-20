@@ -18,10 +18,11 @@ class SubmissionGroupManager(ManagerWithValidateOnCreate):
         Overridden for thread-safety with other attempts to create
         SubmissionGroups.
         """
-        with connection.cursor() as c, transaction.atomic():
+        with transaction.atomic(), connection.cursor() as c:
             c.execute('LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE'.format(
                 SubmissionGroup.objects.model._meta.db_table))
-        return super().validate_and_create(**kwargs)
+
+            return super().validate_and_create(**kwargs)
 
 
 class SubmissionGroup(ModelValidatableOnSave):
@@ -114,7 +115,6 @@ class SubmissionGroup(ModelValidatableOnSave):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-
         submission_group_dir = ut.get_student_submission_group_dir(self)
 
         if not os.path.isdir(submission_group_dir):

@@ -1,6 +1,7 @@
 import os
 import json
 
+from django.db import transaction, connection
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -38,11 +39,7 @@ class SubmissionRequestHandler(LoginRequiredView):
         except KeyError:
             return HttpResponseBadRequest()
         except ObjectDoesNotExist:
-            return HttpResponseNotFound()
-
-        can_submit, message = self._validate_can_submit(group, timestamp)
-        if not can_submit:
-            return JsonResponse({'errors': {'meta': message}}, status=409)
+            return HttpResponseNotFound('Submission group not found')
 
         username = request.user.username
         if username not in group.members:
@@ -53,10 +50,35 @@ class SubmissionRequestHandler(LoginRequiredView):
         feedback_override = (
             FeedbackConfiguration.get_max_feedback() if is_staff else None)
 
-        submission = Submission.objects.validate_and_create(
-            submitted_files=files, submission_group=group,
-            test_case_feedback_config_override=feedback_override,
-            timestamp=timestamp)
+        error_message = None
+        if group.project.semester.is_semester_staff(group.members[0]):
+            pass
+        elif self._deadline_passed(group, timestamp):
+            error_message = "The deadline for this project has passed"
+        elif group.project.disallow_student_submissions:
+            error_message = (
+                'Submissions are currently disabled for this project')
+
+        if error_message:
+            return JsonResponse({'errors': {'meta': message}}, status=409)
+
+        submission = None
+        with transaction.atomic(), connection.cursor() as c:
+            c.execute('LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE'.format(
+                Submission.objects.model._meta.db_table))
+
+            if self._user_has_active_submission(group, timestamp):
+                msg = (
+                    'You currently have a submission being processed. '
+                    'Please wait until it is finished before submitting again.'
+                )
+                return JsonResponse(
+                    {'errors': {'meta': msg}}, status=409)
+
+            submission = Submission.objects.validate_and_create(
+                submitted_files=files, submission_group=group,
+                test_case_feedback_config_override=feedback_override,
+                timestamp=timestamp)
 
         if submission.status != Submission.GradingStatus.invalid:
             submission.status = Submission.GradingStatus.queued
@@ -69,37 +91,25 @@ class SubmissionRequestHandler(LoginRequiredView):
 
         return JsonResponse(response_content, status=201)
 
-    def _validate_can_submit(self, group, timestamp):
-        has_submission_in_queue = Submission.objects.filter(
-            submission_group=group
-        ).filter(
-            Q(status=Submission.GradingStatus.received) |
-            Q(status=Submission.GradingStatus.queued) |
-            Q(status=Submission.GradingStatus.being_graded))
-
-        if has_submission_in_queue:
-            msg = ('You currently have a submission being processed. '
-                   'Please wait until it is finished before submitting again.')
-            return False, msg
-
-        if group.project.semester.is_semester_staff(group.members[0]):
-            return True, ''
-
-        if group.project.disallow_student_submissions:
-            return False, 'Submissions are currently disabled for this project'
-
+    def _deadline_passed(self, group, timestamp):
         if group.extended_due_date is not None:
             deadline = group.extended_due_date
         else:
             deadline = group.project.closing_time
 
         if deadline is None:
-            return True, ''
+            return False
 
         if timestamp > deadline:
-            return False, "The deadline for this project has passed"
+            return True
 
-        return True, ''
+    def _user_has_active_submission(self, group, timestamp):
+        return Submission.objects.filter(
+            submission_group=group
+        ).filter(
+            Q(status=Submission.GradingStatus.received) |
+            Q(status=Submission.GradingStatus.queued) |
+            Q(status=Submission.GradingStatus.being_graded))
 
     def get(self, request, submission_id):
         try:
