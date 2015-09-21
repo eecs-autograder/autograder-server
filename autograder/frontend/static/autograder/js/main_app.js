@@ -38,13 +38,19 @@ function load_view()
         loaded = load_landing_page();
     }
 
-    loaded.done(function() {//widget, widget_setup_func) {
-        // console.log(widget);
-        // $('#main-area').html(widget);
-        // widget_setup_func();
-        // $('#main-area').empty();
-        // $('#main-area').append(widget);
+    loaded.always(function() {
         $('#loading-bar').hide();
+    }).fail(function(error_message, status) {
+        var error_html = "<h2>Oops! You got an error!</h2>"
+        if (error_message)
+        {
+            error_html += "<div>Message: " + error_message + "</div>";
+        }
+        if (status)
+        {
+            error_html += "<div>Status: " + status + "</div>"
+        }
+        $('#main-area').html(error_html);
     });
 }
 

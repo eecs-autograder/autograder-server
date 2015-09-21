@@ -8,6 +8,12 @@ function load_project_submission_view(project_url)
         $.get(project_url)
     ).then(function(project) {
         return _get_or_register_group(project);
+    }, function(data, status) {
+        console.log('error loading project');
+        loaded.reject("Error loading project", data.statusText);
+    }).fail(function(error_message, data) {
+        console.log("Error getting group");
+        loaded.reject(error_message, data.statusText);
     }).then(function(group, project) {
         $.when(
             lazy_get_template('project-submission-view'),
@@ -56,6 +62,10 @@ function _get_or_register_group(project)
         console.log('group loaded');
         console.log(group);
         group_loaded.resolve(group, project);
+    }).fail(function(data, status) {
+        console.log('group load error!');
+        console.log(data);
+        group_loaded.reject("Error loading group", data);
     });
 
     return group_loaded.promise();

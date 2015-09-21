@@ -9,6 +9,10 @@ function get_semester_widget(semester_url)
     ).done(function(semester_ajax, template) {
         var widget = _render_semester_view(semester_ajax[0], template);
         loaded.resolve();
+    }).fail(function(data, status) {
+        console.log('Error loading semester:');
+        console.log(data);
+        loaded.reject("Error loading semester", data.statusText);
     });
 
     return loaded.promise();

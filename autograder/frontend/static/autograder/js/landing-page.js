@@ -11,6 +11,9 @@ function get_landing_page_widget()
         var widget = _render_landing_page_template(
             courses_ajax[0], semesters_ajax[0], template);
         loaded.resolve();
+    }).fail(function() {
+        console.log("Error loading landing page");
+        loaded.reject('Error loading landing page.')
     });
     return loaded.promise();
 }

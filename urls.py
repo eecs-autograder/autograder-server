@@ -23,18 +23,6 @@ import autograder.shared.global_constants as gc
 
 
 urlpatterns = [
-
-    # url(r'^oauth2/', include('provider.oauth2.urls', namespace='oauth2')),
-
-    # url(r'^accounts', include('django.contrib.auth.urls')),
-    # url(r'^accounts/login/$', auth_views.login),
-
-    # url(r'^login/$', auth_views.login,
-    #     {'template_name': 'autograder/login.html',
-    #      'authentication_form': views.LoginForm}, name='login'),
-
-    # url(r'^/tasky/$', views.Tasky.as_view(), name='tasky'),
-
     url(r'^login/$', views.LoginView.as_view(), name='login'),
 
     url(r'^logout/$', views.LogoutView.as_view(), name='logout'),
@@ -379,55 +367,3 @@ urlpatterns = [
     #
 
 ]
-
-
-# urlpatterns = [
-#     # url(r'^admin/', include(admin.site.urls)),
-
-#     url(r'^courses/$', views.AllCoursesView.as_view(),
-#         name='course-list'),
-
-#     url(r'^courses/(?P<course_name>.+)/$',
-#         views.SingleCourseView.as_view(),
-#         name='course-detail'),
-
-#     url(r'^delete-course/(?P<pk>.+)/$',
-#         views.DeleteCourse.as_view(),
-#         name='delete-course'),
-
-#     url(r'^delete-semester/(?P<course_name>.+)/(?P<semester_name>.+)/$',
-#         views.DeleteSemester.as_view(),
-#         name='delete-semester'),
-
-#     url(r'^semester/(?P<course_name>.+)/(?P<semester_name>.+)/$',
-#         views.SemesterView.as_view(),
-#         name='semester-detail'),
-
-#     url(r'^delete-project/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
-#         views.DeleteProject.as_view(),
-#         name='delete-project'),
-
-#     url(r'^project/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
-#         views.ProjectView.as_view(),
-#         name='project-detail'),
-
-#     url(r'^add-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
-#         views.AddProjectFile.as_view(),
-#         name='add-project-file'),
-
-#     url(r'^view-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/(?P<filename>.+)/$',
-#         views.ViewProjectFile.as_view(),
-#         name='view-project-file'),
-
-#     url(r'^delete-project-file/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/(?P<filename>.+)/$',
-#         views.DeleteProjectFile.as_view(),
-#         name='delete-project-file'),
-
-#     url(r'^add-or-update-test/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
-#         views.AddOrUpdateAutograderTest.as_view(),
-#         name='add-or-update-test'),
-
-#     url(r'^view-submissions/(?P<course_name>.+)/(?P<semester_name>.+)/(?P<project_name>.+)/$',
-#         views.SubmissionList.as_view(),
-#         name='view-submissions')
-# ]
