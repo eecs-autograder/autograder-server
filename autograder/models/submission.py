@@ -210,8 +210,12 @@ class Submission(ModelValidatableOnSave):
         """
         submissions = []
         for group in project.submission_groups.all():
-            group_sub = group.submissions.order_by('-_timestamp')[0]
-
+            try:
+                group_sub = group.submissions.order_by('-_timestamp')[0]
+            except IndexError:
+                continue
+            # TODO: get this query working so that we're not grabbing more
+            # submission than we need:
             # .raw(
             #     'SELECT * FROM autograder_submission '
             #     'ORDER BY _timestamp DESC LIMIT 1')[0]

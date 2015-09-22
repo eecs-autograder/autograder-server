@@ -246,7 +246,7 @@ class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
             name='my_project', semester=self.semester, max_group_size=5,
             allow_submissions_from_non_enrolled_students=True)
 
-    def test_get_most_recent_submissions(self):
+    def test_get_most_recent_submissions_normal(self):
         usernames = ["recent_submission_user{}".format(i) for i in range(10)]
         groups = [
             SubmissionGroup.objects.validate_and_create(
@@ -266,3 +266,10 @@ class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
             Submission.get_most_recent_submissions(self.project),
             key=sort_key)
         self.assertEqual(sorted(expected, key=sort_key), actual)
+
+    def test_get_most_recent_submissions_group_has_no_submissions(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=['steve'], project=self.project)
+        self.assertSequenceEqual([], group.submissions.all())
+        self.assertSequenceEqual(
+            [], Submission.get_most_recent_submissions(self.project))
