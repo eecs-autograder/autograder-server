@@ -31,7 +31,7 @@
                         <span>Add files...</span>
                         <input type="file" name="files" multiple>
                     </span>
-                    <button type="reset" class="btn btn-warning cancel">
+                    <button id='clear-files-button' type="reset" class="btn btn-warning cancel">
                         <i class="glyphicon glyphicon-ban-circle"></i>
                         <span>Clear Files</span>
                     </button>
@@ -54,12 +54,12 @@
                 </div>
             </div>
             <div id="dropzone" class="fade well">Drop files here</div>
-            <table role="presentation" class="table table-striped"><tbody id='upload-progress' class="files"></tbody></table>
+            <table id='upload-table' role="presentation" class="table table-striped"><tbody id='upload-progress' class="files"></tbody></table>
             <div class="row fileupload-buttonbar">
-                <button type="submit" class="btn btn-primary start">
+                <button id='submit-button' type="submit" class="btn btn-primary start">
                     <i class="glyphicon glyphicon-upload"></i>
                     <span>SUBMIT</span>
-                </button>            <!-- The table listing the files available for upload/download -->
+                </button>
             </div>
         </form>
         <br>

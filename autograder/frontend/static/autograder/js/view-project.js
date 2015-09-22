@@ -33,11 +33,55 @@ function load_project_submission_view(project_url)
 
             _initialize_project_submission_view(group, project);
 
+            _poll_for_new_submissions(group);
             loaded.resolve();
         });
     });
 
     return loaded.promise();
+}
+
+function _poll_for_new_submissions(group)
+{
+    console.log('_poll_for_new_submissions()');
+    if (group.data.attributes.members.length === 1)
+    {
+        console.log('Group size of 1, no need to poll');
+        return;
+    }
+
+    console.log('polling');
+    var old_url = window.location.pathname;
+    setTimeout(function() {
+        var current_url = window.location.pathname;
+        if (current_url !== old_url)
+        {
+            return;
+        }
+
+        $.get(
+            group.data.links.self
+        ).done(function (data, status) {
+            var num_panels = $('#own-submissions #submission-list .panel-heading').length;
+            console.log('num_panels' + ' ' + num_panels);
+            if (data.included.length > num_panels)
+            {
+                alert("A new submission has arrived.")
+                $.when(
+                    lazy_get_template('submission-panel-list'),
+                    lazy_get_template('submission-collapse-panel')
+                ).done(function(list_tmpl, panel_tmpl) {
+                    var render_data = {'group': group};
+                    console.log(render_data);
+                    var rendered = list_tmpl.render(
+                        render_data, {submission_collapse_panel: panel_tmpl});
+                    $('#own-submissions').html(rendered);
+                });
+            }
+
+            _poll_for_new_submissions(group);
+        });
+    }, 10000);
 }
 
 function _get_or_register_group(project)
@@ -95,14 +139,33 @@ function _initialize_project_submission_view(group, project)
 
 function _initialize_submit_widget(group, project)
 {
+    var uploaded_files = [];
     $('#fileupload').fileupload({
-        'url': "/submissions/submission/",
-        'dropZone': $('#dropzone'),
-        'singleFileUploads': false,
-        'done': function(event, response) {
+        url: "/submissions/submission/",
+        maxFileSize: 10000000, // 10MB
+        dropZone: $('#dropzone'),
+        singleFileUploads: false,
+        add: function(event, data) {
+            $.each(data.files, function(index, file) {
+                uploaded_files.push(file);
+                $('#upload-table .files').append(
+                    '<tr class="template-upload">' +
+                        '<td>' +
+                            '<span class="preview"></span>' +
+                        '</td>' +
+                        '<td>' +
+                            '<p class="name">' + file.name + '</p>' +
+                            '<strong class="error text-danger"></strong>' +
+                        '</td>' +
+                    '</tr>'
+                );
+                console.log(uploaded_files);
+            });
+        },
+        done: function(event, response) {
             _on_submit_success(event, response, group.data.id);
         },
-        'fail': function(event, response) {
+        fail: function(event, response) {
             console.log('error')
             $('#upload-progress').empty();
             $('#fileupload .error').remove();
@@ -115,11 +178,28 @@ function _initialize_submit_widget(group, project)
             error.text('ERROR: ' + error_dict.errors.meta);
             $('#fileupload').append(error);
         },
-        // 'always': function() {
-        //     console.log('always');
-        //     $('#upload-progress').empty();
-        //     $('#fileupload .error').remove();
-        // }
+    });
+
+    $('#submit-button').click(function(event) {
+        console.log('form submit');
+        event.preventDefault();
+        console.log(uploaded_files);
+        if (uploaded_files.length == 0)
+        {
+            return false;
+        }
+
+        console.log('sending...');
+        $('#fileupload').fileupload('send', {files: uploaded_files});
+        console.log('clearing upload list');
+        uploaded_files = [];
+        console.log(uploaded_files);
+    });
+
+    $('#clear-files-button').click(function(event) {
+        event.preventDefault();
+        uploaded_files = [];
+        $('#upload-table .files').empty();
     });
 
     $(document).bind('dragover', function (e) {
@@ -221,16 +301,21 @@ function _load_submission(event, url, render_location)
     $.get(
         url
     ).then(function(submission) {
-        console.log(submission)
+        console.log(submission);
         return _render_submission(submission, render_location)
     }).then(function(submission) {
         var status = submission.data.attributes.status;
         if (status === 'being_graded' || status === 'received' ||
             status === 'queued')
         {
+            var old_url = window.location.pathname;
             console.log('will try again a few seconds');
             setTimeout(function() {
-                _load_submission(event, url, render_location);
+                var current_url = window.location.pathname;
+                if (current_url === old_url)
+                {
+                    _load_submission(event, url, render_location);
+                }
             }, 5000);
         }
     });
