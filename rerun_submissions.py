@@ -38,8 +38,13 @@ def main():
     elif args.all_with_errors:
         submissions = Submission.objects.filter(
             status='error', submission_group__project=project)
-    # elif args.specified_final is not None:
-    #     groups = [group for group in groups if ]
+    elif args.specified_final is not None:
+        print(args.specified_final)
+        submissions = [
+            s for s in Submission.get_most_recent_submissions(project)
+            if s.status != 'invalid' and
+            set(s.submission_group.members).intersection(args.specified_final)
+        ]
 
     print('Re-running {} submissions...'.format(len(submissions)))
 
@@ -61,7 +66,7 @@ def parse_args():
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--all_final', '-F', action='store_true')
-    # group.add_argument('--specified_final', '-s', nargs='+')
+    group.add_argument('--specified_final', '-s', nargs='+')
     group.add_argument(
         '--all_with_errors', '-E', action='store_true', required=False)
 

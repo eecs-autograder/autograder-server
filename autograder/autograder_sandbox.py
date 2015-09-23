@@ -153,8 +153,7 @@ class _SubprocessRunner(object):
 
         try:
             self._stdout, self._stderr = self._process.communicate(
-                input=self._stdin_content)  # ,
-                #timeout=self._timeout)
+                input=self._stdin_content)  # ,#timeout=self._timeout)
 
             self._process.stdin.close()
 
@@ -172,3 +171,12 @@ class _SubprocessRunner(object):
             self._stdout, self._stderr = self._process.communicate()
             self._return_code = self._process.returncode
             self._timed_out = True
+
+            self._process.stdin.close()
+        except UnicodeDecodeError:
+            msg = ("Error reading program output: "
+                   "non-unicode characters detected")
+            self._stdout = msg
+            self._stderr = msg
+
+            self._process.stdin.close()
