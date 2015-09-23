@@ -106,7 +106,11 @@ function _get_or_register_group(project)
         console.log('group loaded');
         console.log(group);
         group_loaded.resolve(group, project);
-    }).fail(function(data, status) {
+    }).fail(function(data, status_text) {
+        if (data.status === 404)
+        {
+            return;
+        }
         console.log('group load error!');
         console.log(data);
         group_loaded.reject("Error loading group", data);
