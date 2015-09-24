@@ -61,25 +61,28 @@ function _poll_for_new_submissions(group)
 
         $.get(
             group.data.links.self
-        ).done(function (data, status) {
+        ).done(function (reloaded_group, status) {
+            console.log(reloaded_group);
             var num_panels = $('#own-submissions #submission-list .panel-heading').length;
             console.log('num_panels' + ' ' + num_panels);
-            if (data.included.length > num_panels)
+            if (reloaded_group.included.length > num_panels)
             {
                 alert("A new submission has arrived.")
                 $.when(
                     lazy_get_template('submission-panel-list'),
                     lazy_get_template('submission-collapse-panel')
                 ).done(function(list_tmpl, panel_tmpl) {
-                    var render_data = {'group': group};
+                    var render_data = {'group': reloaded_group};
                     console.log(render_data);
                     var rendered = list_tmpl.render(
                         render_data, {submission_collapse_panel: panel_tmpl});
                     $('#own-submissions').html(rendered);
+
+                    $('.submission-collapse').on('show.bs.collapse', _load_submission);
                 });
             }
 
-            _poll_for_new_submissions(group);
+            _poll_for_new_submissions(reloaded_group);
         });
     }, 10000);
 }
