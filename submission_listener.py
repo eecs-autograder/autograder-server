@@ -34,6 +34,7 @@ DIVIDER = '=' * 79 + '\n'
 def sigterm_handler(sig_num, stack):
     from django.db import connection
     connection.close()
+    raise SystemExit
 
 signal.signal(signal.SIGTERM, sigterm_handler)
 
