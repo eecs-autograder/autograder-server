@@ -16,6 +16,8 @@ from django.db import transaction
 # from django.db.models import Max
 # import autograder.models
 
+from django.core.exceptions import ObjectDoesNotExist
+
 from autograder.models import Course, SubmissionGroup
 
 
@@ -29,9 +31,12 @@ def main():
 
         with transaction.atomic():
             for member in args.new_members:
-                group = project.submission_groups.get(
-                    _members__contains=[member])
-                group.delete()
+                try:
+                    group = project.submission_groups.get(
+                        _members__contains=[member])
+                    group.delete()
+                except ObjectDoesNotExist:
+                    pass
             SubmissionGroup.objects.validate_and_create(
                 project=project, members=args.new_members)
 

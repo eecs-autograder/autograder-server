@@ -31,8 +31,7 @@ def main():
             'members': submission.submission_group.members,
             'results': [
                 result.to_json() for result in
-                sorted(submission.results.all(),
-                       key=lambda res: res.test_case.name)
+                submission.results.all().order_by('autograder_test_case__name')
             ]
         })
 
@@ -42,9 +41,8 @@ def main():
         return
 
     test_case_names = [
-        res.test_case.name for res in
-        sorted(submissions[0].results.all(),
-               key=lambda res: res.test_case.name)
+        test_case.name for test_case in
+        project.autograder_test_cases.all().order_by('name')
     ]
     rows = []
     for item in json_:

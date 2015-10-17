@@ -22,8 +22,16 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "system_test_settings")
 
 
 def main():
+    objects_created = multiprocessing.Event()
     tried_to_create = multiprocessing.Event()
     lock_acquired = multiprocessing.Event()
+
+    initialize_objects_proc = multiprocessing.Process(
+        target=initialize_objects, args=[objects_created])
+    initialize_objects_proc.start()
+
+    objects_created.wait()
+    print('objects initialized')
 
     acquire_lock_proc = multiprocessing.Process(
         target=acquire_lock, args=[tried_to_create, lock_acquired])
@@ -43,8 +51,7 @@ def main():
     django.setup()
 
     from django.core.exceptions import ObjectDoesNotExist
-    from autograder.models import (
-        Submission, SubmissionGroup, Course, Semester, Project)
+    from autograder.models import Submission, Course
 
     try:
         try:
@@ -73,6 +80,27 @@ def main():
         Course.objects.get(name=COURSE_NAME).delete()
 
 
+def initialize_objects(objects_created):
+    import django
+    django.setup()
+
+    from autograder.models import (
+        SubmissionGroup, Course, Semester, Project)
+
+    course = Course.objects.validate_and_create(name=COURSE_NAME)
+
+    semester = Semester.objects.validate_and_create(
+        name=SEMESTER_NAME, course=course)
+    project = Project.objects.validate_and_create(
+        name=PROJECT_NAME, semester=semester,
+        allow_submissions_from_non_enrolled_students=True
+    )
+    group = SubmissionGroup.objects.validate_and_create(
+        members=GROUP_MEMBERS, project=project)
+
+    objects_created.set()
+
+
 def try_to_create(submission_created):
     try:
         import django
@@ -82,23 +110,12 @@ def try_to_create(submission_created):
         from django.contrib.auth.models import User
 
         from autograder.frontend.ajax_request_handlers.submission_request_handlers import SubmissionRequestHandler
-        from autograder.models import (
-            SubmissionGroup, Course, Semester, Project)
+        from autograder.models import SubmissionGroup, Project
 
-        course = Course.objects.validate_and_create(name=COURSE_NAME)
-
-        semester = Semester.objects.validate_and_create(
-            name=SEMESTER_NAME, course=course)
-        project = Project.objects.validate_and_create(
-            name=PROJECT_NAME, semester=semester,
-            allow_submissions_from_non_enrolled_students=True
-        )
-        group = SubmissionGroup.objects.validate_and_create(
-            members=GROUP_MEMBERS, project=project)
+        group = SubmissionGroup.get_group(
+            GROUP_MEMBERS, Project.objects.get(name=PROJECT_NAME))
 
         print('Trying to create submission')
-        # Submission.objects.validate_and_create(
-        #     submission_group=group, submitted_files=[])
         request = RequestFactory().post(
             '/submissions/submission/',
             {'files': [], 'submission_group_id': group.pk})
@@ -123,17 +140,14 @@ def acquire_lock(tried_to_create, lock_acquired):
 
     django.setup()
 
-    from django.db import connection
-    from autograder.models import Submission
+    from django.db import transaction
+    from autograder.models import SubmissionGroup
 
-    print('grabbing lock for:', Submission.objects.model._meta.db_table)
-    with connection.cursor() as c:
-        # print(c.db.settings_dict)
-        c.execute('BEGIN')
-        c.execute(
-            'LOCK TABLE {} IN ROW EXCLUSIVE MODE'.format(
-                Submission.objects.model._meta.db_table)
-        )
+    print('grabbing lock for group')
+    with transaction.atomic():
+        SubmissionGroup.objects.select_for_update().get(
+            _members__contains=[GROUP_MEMBERS])
+
         lock_acquired.set()
         tried_to_create.wait()
         print('about to release lock')

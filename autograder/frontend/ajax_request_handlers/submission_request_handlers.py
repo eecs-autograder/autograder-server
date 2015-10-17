@@ -1,20 +1,20 @@
 import os
 import json
 
-from django.db import transaction, connection
+from django.db import transaction
 from django.db.models import Q
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.http import (
     HttpResponse, JsonResponse, HttpResponseForbidden, HttpResponseNotFound,
-    HttpResponseBadRequest, FileResponse)
+    HttpResponseBadRequest)
 from django.utils import timezone
 
 from autograder.frontend.frontend_utils import LoginRequiredView
 from autograder.frontend.json_api_serializers import (
-    submission_to_json, submission_group_to_json)
+    submission_to_json)
 
-from autograder.models import SubmissionGroup, Project, Submission
+from autograder.models import SubmissionGroup, Submission
 from autograder.models.fields import FeedbackConfiguration
 
 # from autograder.tasks import grade_submission
@@ -64,9 +64,9 @@ class SubmissionRequestHandler(LoginRequiredView):
                 {'errors': {'meta': error_message}}, status=409)
 
         submission = None
-        with transaction.atomic(), connection.cursor() as c:
-            c.execute('LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE'.format(
-                Submission.objects.model._meta.db_table))
+        with transaction.atomic():
+            group = SubmissionGroup.objects.select_for_update().get(
+                pk=group.pk)
 
             if self._user_has_active_submission(group, timestamp):
                 msg = (
