@@ -31,7 +31,7 @@ def main():
             'members': submission.submission_group.members,
             'results': [
                 result.to_json() for result in
-                submission.results.all().order_by('autograder_test_case__name')
+                submission.results.all().order_by('test_case__name')
             ]
         })
 
