@@ -28,6 +28,9 @@ def main():
     submissions = Submission.get_most_recent_submissions(project)
     with zipfile.ZipFile(args.archive_name, 'w') as z:
         for s in submissions:
+            if not args.include_staff and is_staff_submission(s, semester):
+                continue
+
             archive_dirname = '_'.join(sorted(s.submission_group.members))
             with ut.ChangeDirectory(ut.get_submission_dir(s)):
                 for filename in s.get_submitted_file_basenames():
@@ -46,7 +49,18 @@ def parse_args():
     parser.add_argument('project_name')
     parser.add_argument('archive_name')
 
+    parser.add_argument(
+        '--include_staff', '-s', action='store_true', default=False)
+
     return parser.parse_args()
+
+
+def is_staff_submission(submission, semester):
+    for username in submission.submission_group.members:
+        if semester.is_semester_staff(username):
+            return True
+
+    return False
 
 
 if __name__ == '__main__':

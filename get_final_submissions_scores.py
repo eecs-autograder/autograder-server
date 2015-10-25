@@ -27,6 +27,9 @@ def main():
 
     json_ = []
     for submission in submissions:
+        if not args.include_staff and is_staff_submission(
+                submission, semester):
+            continue
         json_.append({
             'members': submission.submission_group.members,
             'results': [
@@ -77,7 +80,18 @@ def parse_args():
     parser.add_argument(
         '--preserve_groups_in_csv', '-p', action='store_true', default=False)
 
+    parser.add_argument(
+        '--include_staff', '-s', action='store_true', default=False)
+
     return parser.parse_args()
+
+
+def is_staff_submission(submission, semester):
+    for username in submission.submission_group.members:
+        if semester.is_semester_staff(username):
+            return True
+
+    return False
 
 
 if __name__ == '__main__':

@@ -76,6 +76,9 @@ class AutograderSandbox(object):
             ['docker', 'exec', '--user=autograder', self.name,
              'ls', SANDBOX_WORKING_DIR_NAME], universal_newlines=True
         ).split()
+        working_dir_contents = [
+            os.path.join(SANDBOX_WORKING_DIR_NAME, filename)
+            for filename in working_dir_contents]
 
         backup_dirname = "/home/autograder/old-" + uuid.uuid4().hex
         subprocess.check_call(
