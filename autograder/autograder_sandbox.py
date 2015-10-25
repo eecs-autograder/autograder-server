@@ -1,6 +1,7 @@
 import os
 import subprocess
 import uuid
+import tempfile
 
 import autograder.shared.global_constants as gc
 
@@ -26,7 +27,7 @@ class AutograderSandbox(object):
              # unneeded # '-m', '1000M',  # Memory limit
              # unneeded # '--memory-swap', '2000M',  # Total memory limit (memory + swap)
              # BAAAAAAD!!!!! '--ulimit', 'nproc=5', # Limit number of processes
-             '-a', 'STDOUT', '-a', 'STDERR',  # Attach streams
+             '-a', 'STDOUT', '-a', 'STDERR', '-a', 'STDIN',  # Attach streams
              '-i',  # Run in interactive mode (needed for input redirection)
              '-t',  # Allocate psuedo tty
              'autograder', 'bash']
@@ -140,46 +141,70 @@ class _SubprocessRunner(object):
         return self._process
 
     def _run(self):
-        # Note: It is not possible to use string streams
-        # (io.StringIO) with subprocess.call() because they do not
-        # have a fileno attribute. This is not a huge issue, as using
-        # Popen and subprocess.PIPE is the preferred approach to
-        # redirecting input and output from strings.
-        self._process = subprocess.Popen(
-            self._args,
-            universal_newlines=True,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=(subprocess.STDOUT if self._merge_stdout_and_stderr
-                    else subprocess.PIPE)
-        )
+        # # Note: It is not possible to use string streams
+        # # (io.StringIO) with subprocess.call() because they do not
+        # # have a fileno attribute. This is not a huge issue, as using
+        # # Popen and subprocess.PIPE is the preferred approach to
+        # # redirecting input and output from strings.
+        # self._process = subprocess.Popen(
+        #     self._args,
+        #     universal_newlines=True,
+        #     stdin=subprocess.PIPE,
+        #     stdout=subprocess.PIPE,
+        #     stderr=(subprocess.STDOUT if self._merge_stdout_and_stderr
+        #             else subprocess.PIPE)
+        # )
+
+        # print("Subprocess started:", self._process)
 
         try:
-            self._stdout, self._stderr = self._process.communicate(
-                input=self._stdin_content)  # ,#timeout=self._timeout)
+            with tempfile.TemporaryFile() as stdin_content, \
+                    tempfile.TemporaryFile() as stdout_dest, \
+                    tempfile.TemporaryFile() as stderr_dest:
 
-            self._process.stdin.close()
+                print("Created temp files")
+                stdin_content.write(self._stdin_content.encode('utf-8'))
+                stdin_content.seek(0)
 
-            self._return_code = self._process.returncode
-            if self._return_code == _SubprocessRunner._TIMEOUT_RETURN_CODE:
-                self._timed_out = True
+                # self._stdout, self._stderr = self._process.communicate(
+                #     input=self._stdin_content)  # ,#timeout=self._timeout)
+                # print("Communicated with subprocess")
 
-            print(self._process.args)
-            print(self._process.returncode)
-            print(self._stdout)
-            print(self._stderr)
-            # print(self._process.stdin.read())
+                # self._process.stdin.close()
+                # print("Closed stdin")
+
+                # self._return_code = self._process.returncode
+
+                self._return_code = subprocess.call(
+                    self._args,
+                    stdin=stdin_content,
+                    stdout=stdout_dest,
+                    stderr=stderr_dest
+                )
+                print("Finished running: ", self._args)
+                if self._return_code == _SubprocessRunner._TIMEOUT_RETURN_CODE:
+                    self._timed_out = True
+
+                stdout_dest.seek(0)
+                stderr_dest.seek(0)
+                self._stdout = stdout_dest.read().decode('utf-8')
+                self._stderr = stderr_dest.read().decode('utf-8')
+
+                print("Return code: ", self._return_code)
+                print(self._stdout)
+                print(self._stderr)
+                # print(self._process.stdin.read())
         except subprocess.TimeoutExpired:
-            self._process.kill()
-            self._stdout, self._stderr = self._process.communicate()
-            self._return_code = self._process.returncode
+            # self._process.kill()
+            # self._stdout, self._stderr = self._process.communicate()
+            # self._return_code = self._process.returncode
             self._timed_out = True
 
-            self._process.stdin.close()
+            # self._process.stdin.close()
         except UnicodeDecodeError:
             msg = ("Error reading program output: "
                    "non-unicode characters detected")
             self._stdout = msg
             self._stderr = msg
 
-            self._process.stdin.close()
+            # self._process.stdin.close()
