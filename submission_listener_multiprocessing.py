@@ -44,8 +44,8 @@ def parse_args():
 
 
 def listen_for_and_grade_received_submissions(num_workers,
-                                            django_settings_module,
-                                            log_dirname):
+                                              django_settings_module,
+                                              log_dirname):
     print(os.getpid())
     print('hello world')
 
@@ -55,6 +55,13 @@ def listen_for_and_grade_received_submissions(num_workers,
 
     from autograder.models import Submission
     from django.db import transaction
+
+    # TODO: on start, grab any queued or being_graded submissions and
+    # mark them as received. for the being_graded ones, delete test results
+    # with transaction.atomic():
+    #     queued_submissions = Submission.objects.select_for_update().filter(
+    #         status=Submission.GradingStatus.queued
+    #     )
 
     with multiprocessing.Pool(processes=num_workers,
                               initializer=initialize_process,
