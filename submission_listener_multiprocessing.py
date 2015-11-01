@@ -13,7 +13,7 @@ import multiprocessing
 import contextlib
 
 DIVIDER = '=' * 79 + '\n'
-DEFAULT_LOG_DIRNAME = 'listener_logs'
+DEFAULT_LOG_DIRNAME = 'worker_logs'
 
 
 def main():
@@ -24,14 +24,14 @@ def main():
         #     args.log_dirname, 'submission_listener.log')
         # with open(main_listener_log_file, 'a') as f, \
         #         contextlib.redirect_stdout(f):
-        listen_for_and_grade_queued_submissions(
+        listen_for_and_grade_received_submissions(
             args.num_workers, args.django_settings_module, args.log_dirname)
     except KeyboardInterrupt:
         print('KEYBOARD INTERRUPT. Shutting down...')
     except Exception as e:
         print('SOMETHING VERY BAD HAPPENED')
         print(e)
-        traceback.print_exc()
+        print(traceback.format_exc())
 
 
 def parse_args():
@@ -43,7 +43,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def listen_for_and_grade_queued_submissions(num_workers,
+def listen_for_and_grade_received_submissions(num_workers,
                                             django_settings_module,
                                             log_dirname):
     print(os.getpid())
@@ -54,21 +54,34 @@ def listen_for_and_grade_queued_submissions(num_workers,
     initialize_process(django_settings_module)
 
     from autograder.models import Submission
+    from django.db import transaction
 
     with multiprocessing.Pool(processes=num_workers,
                               initializer=initialize_process,
                               initargs=[django_settings_module]) as workers:
         while True:
-            queued_submissions = Submission.objects.filter(
-                status='queued').order_by('_timestamp')
-            if not queued_submissions:
-                time.sleep(1)
-                continue
+            submission_ids = []
+            with transaction.atomic():
+                received_submissions = Submission.objects.select_for_update(
+                ).filter(
+                    status=Submission.GradingStatus.received
+                ).order_by('_timestamp')
+                if not received_submissions:
+                    time.sleep(1)
+                    continue
 
-            print('going to grade')
-            submission_ids = (
-                (sub.pk, log_dirname) for sub in queued_submissions)
-            workers.starmap(grade_submission, submission_ids)
+                print('queueing submissions')
+                for submission in received_submissions:
+                    submission.status = Submission.GradingStatus.queued
+                    submission.save()
+                    submission_ids.append(submission.pk)
+
+            for sub_id in submission_ids:
+                workers.apply_async(grade_submission, [sub_id, log_dirname])
+
+            # submission_ids = (
+            #     (sub.pk, log_dirname) for sub in received_submissions)
+            # workers.starmap(grade_submission, submission_ids)
 
 
 def initialize_process(django_settings_module):
@@ -96,7 +109,6 @@ def grade_submission(submission_id, log_dirname):
 
         print('grade_submission:', submission_id)
         try:
-            # TODO: make the grading process a member of submission
             submission = Submission.objects.get(pk=submission_id)
             submission.status = Submission.GradingStatus.being_graded
             submission.save()
@@ -136,7 +148,11 @@ def prepare_and_run_tests(submission):
         uuid.uuid4().hex)
     print(sandbox_name)
 
-    with AutograderSandbox(name=sandbox_name) as sandbox:
+    # HACK: this is a workaround to make it so that different docker
+    # containers use users with different UIDs
+    sandbox_linux_user_id = (submission.pk + 2000) % 3000
+    with AutograderSandbox(name=sandbox_name,
+                           linux_user_id=sandbox_linux_user_id) as sandbox:
         for test_case in group.project.autograder_test_cases.all():
             print(test_case.name)
             files_to_copy = (

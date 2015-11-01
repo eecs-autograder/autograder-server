@@ -61,8 +61,8 @@ def main():
         submission = Submission.objects.validate_and_create(
             submission_group=group, submitted_files=_get_files_to_submit())
         objects_created.append(submission)
-        submission.status = 'queued'
-        submission.save()
+        # submission.status =
+        # submission.save()
 
     num_submissions_left = get_num_submissions_being_processed()
     while num_submissions_left:
@@ -146,10 +146,11 @@ def load_test_case(json_):
 
 def start_workers(num_workers):
     for i in range(num_workers):
-        log_file = open('worker{}.log'.format(i), 'w')
+        log_file = open('listener.log'.format(i), 'w')
         worker = subprocess.Popen(
             ['python3', '-u',
-             '../submission_listener.py', 'system_test_settings'],
+             '../submission_listener_multiprocessing.py',
+             str(num_workers), 'system_test_settings'],
             universal_newlines=True, stderr=subprocess.STDOUT,
             stdout=log_file)
         workers.append((worker, log_file))
@@ -196,4 +197,5 @@ if __name__ == '__main__':
             timezone.now().strftime('%Y-%m-%d_%H.%M.%S'), uuid.uuid4().hex)
         os.mkdir(dirname, mode=0o750)
         subprocess.call(['mv'] + [log.name for p, log in workers] + [dirname])
+        subprocess.call(['mv', 'worker_logs', dirname])
         print('Done')

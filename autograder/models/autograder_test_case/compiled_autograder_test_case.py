@@ -68,7 +68,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
             ['./' + self.executable_name] + self.command_line_arguments
         )
 
-        runner = autograder_sandbox.run_cmd(
+        runner = autograder_sandbox.run_cmd_with_redirected_io(
             run_program_cmd, timeout=self.time_limit,
             stdin_content=self.standard_input)
 
@@ -82,7 +82,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
         valgrind_run_cmd = ['valgrind'] + self.valgrind_flags + run_program_cmd
 
-        runner = autograder_sandbox.run_cmd(
+        runner = autograder_sandbox.run_cmd_with_redirected_io(
             valgrind_run_cmd, timeout=self.time_limit,
             stdin_content=self.standard_input)
 

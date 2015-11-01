@@ -8,6 +8,9 @@ import time
 import uuid
 import datetime
 import signal
+import argparse
+import multiprocessing
+
 
 # HACK: Need to be able to specify whether to use the main settings
 # file or the system test one.
@@ -42,6 +45,8 @@ signal.signal(signal.SIGTERM, sigterm_handler)
 def main():
     print(os.getpid())
     print('hello world')
+
+    multiprocessing.set_start_method('spawn')
 
     while True:
         to_grade = None

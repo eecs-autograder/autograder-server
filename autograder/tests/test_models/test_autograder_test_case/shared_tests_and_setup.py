@@ -273,7 +273,7 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
     def setUpClass(class_):
         name = 'unit-test-sandbox-{}'.format(uuid.uuid4().hex)
 
-        class_.sandbox = AutograderSandbox(name=name)
+        class_.sandbox = AutograderSandbox(name=name, linux_user_id=2001)
         class_.sandbox.start()
 
     @classmethod
@@ -320,7 +320,7 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
 
         self.sandbox.clear_working_dir()
         print('verifying working dir was cleared')
-        ls_result = self.sandbox.run_cmd(['ls'])
+        ls_result = self.sandbox.run_cmd_with_redirected_io(['ls'])
         self.assertEqual(ls_result.stdout, '')
 
     def get_ag_test_type_str_for_factory(self):

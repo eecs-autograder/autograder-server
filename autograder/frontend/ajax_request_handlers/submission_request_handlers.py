@@ -81,9 +81,9 @@ class SubmissionRequestHandler(LoginRequiredView):
                 test_case_feedback_config_override=feedback_override,
                 timestamp=timestamp)
 
-        if submission.status != Submission.GradingStatus.invalid:
-            submission.status = Submission.GradingStatus.queued
-            submission.save()
+        # if submission.status != Submission.GradingStatus.invalid:
+        #     submission.status = Submission.GradingStatus.queued
+        #     submission.save()
             # grade_submission.delay(submission.pk)
 
         response_content = {

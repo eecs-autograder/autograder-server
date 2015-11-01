@@ -6,12 +6,15 @@ import tempfile
 import autograder.shared.global_constants as gc
 
 
-SANDBOX_WORKING_DIR_NAME = '/home/autograder/working_dir'
+SANDBOX_HOME_DIR_NAME = '/home/autograder'
+SANDBOX_WORKING_DIR_NAME = os.path.join(SANDBOX_HOME_DIR_NAME, 'working_dir')
 
 
 class AutograderSandbox(object):
-    def __init__(self, name):
+    def __init__(self, name, linux_user_id):
         self.name = name
+        self._linux_user_id = linux_user_id
+        self._linux_username = 'worker{}'.format(self._linux_user_id)
 
     def __enter__(self):
         self.start()
@@ -24,9 +27,6 @@ class AutograderSandbox(object):
         print('starting container: ' + self.name)
         subprocess.check_call(
             ['docker', 'create', '--name=' + self.name,
-             # unneeded # '-m', '1000M',  # Memory limit
-             # unneeded # '--memory-swap', '2000M',  # Total memory limit (memory + swap)
-             # BAAAAAAD!!!!! '--ulimit', 'nproc=5', # Limit number of processes
              '-a', 'STDOUT', '-a', 'STDERR', '-a', 'STDIN',  # Attach streams
              '-i',  # Run in interactive mode (needed for input redirection)
              '-t',  # Allocate psuedo tty
@@ -34,6 +34,16 @@ class AutograderSandbox(object):
         )
         try:
             subprocess.call(['docker', 'start', self.name])
+
+            self.run_cmd_success_required(
+                ['useradd', '--uid', str(self._linux_user_id),
+                 self._linux_username],
+                as_root=True)
+            self.run_cmd_success_required(
+                ['chown', '-R',
+                 self._linux_username + ':' + self._linux_username,
+                 SANDBOX_HOME_DIR_NAME], as_root=True)
+
         except subprocess.CalledProcessError:
             self.stop()
             raise
@@ -51,51 +61,63 @@ class AutograderSandbox(object):
 
         basenames = [os.path.basename(filename) for filename in filenames]
 
-        subprocess.check_call(
-            ['docker', 'exec', self.name, 'chown', 'autograder:autograder'] +
-            basenames)
+        self.run_cmd_success_required(
+            ['chown', self._linux_username + ':' + self._linux_username] +
+            basenames, as_root=True)
 
-    def run_cmd(self, cmd_exec_args,
-                as_root=False,
-                timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT,
-                stdin_content=''):
+    def run_cmd_with_redirected_io(self, cmd_exec_args,
+                                   as_root=False,
+                                   timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT,
+                                   stdin_content=''):
         args = ['docker', 'exec', '-i']
         if not as_root:
-            args.append('--user=autograder')
+            args.append('--user={}'.format(self._linux_username))
         args.append(self.name)
         args += ['timeout', str(timeout)] + cmd_exec_args
 
         print('running: {}'.format(args))
 
         runner = _SubprocessRunner(
-            args,  # timeout=timeout,
+            args, timeout=timeout * 2,
             stdin_content=stdin_content)
         return runner
 
+    def run_cmd_success_required(self, cmd_exec_args, as_root=False,
+                                 timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT,
+                                 return_output=True):
+        args = ['docker', 'exec']
+        if not as_root:
+            args.append('--user={}'.format(self._linux_username))
+        args.append(self.name)
+        args += cmd_exec_args
+
+        if return_output:
+            return subprocess.check_output(
+                args, timeout=timeout, universal_newlines=True)
+
+        subprocess.check_call(args, timeout=timeout)
+
     def clear_working_dir(self):
-        working_dir_contents = subprocess.check_output(
-            ['docker', 'exec', '--user=autograder', self.name,
-             'ls', SANDBOX_WORKING_DIR_NAME], universal_newlines=True
+        working_dir_contents = self.run_cmd_success_required(
+            ['ls', SANDBOX_WORKING_DIR_NAME]
         ).split()
         working_dir_contents = [
             os.path.join(SANDBOX_WORKING_DIR_NAME, filename)
             for filename in working_dir_contents]
 
-        backup_dirname = "/home/autograder/old-" + uuid.uuid4().hex
-        subprocess.check_call(
-            ['docker', 'exec', '--user=autograder', self.name,
-             "mkdir", "-p", backup_dirname])
+        backup_dirname = os.path.join(
+            SANDBOX_HOME_DIR_NAME, "old-" + uuid.uuid4().hex)
+        self.run_cmd_success_required(["mkdir", "-p", backup_dirname])
 
-        subprocess.check_call(
-            ['docker', 'exec', '--user=autograder', self.name,
-             "mv"] + working_dir_contents + [backup_dirname])
+        self.run_cmd_success_required(
+            ["mv"] + working_dir_contents + [backup_dirname])
 
 
-# TODO: Once upgraded to Python 3.5 and Django 1.9, replace Popen with the
+# TODO: Once upgraded to Python 3.5 and Django 1.9, replace call() with the
 # new subprocess.run() method.
 class _SubprocessRunner(object):
     """
-    Convenience wrapper for calling Popen and retrieving the data
+    Convenience wrapper for calling a subprocess and retrieving the data
     we usually need.
     """
     # HACK: Currently, this class assumes that the command called inside
@@ -106,7 +128,7 @@ class _SubprocessRunner(object):
 
     def __init__(self, program_args, **kwargs):
         self._args = program_args
-        # self._timeout = kwargs.get('timeout', gc.DEFAULT_SUBPROCESS_TIMEOUT)
+        self._timeout = kwargs.get('timeout', gc.DEFAULT_SUBPROCESS_TIMEOUT)
         self._stdin_content = kwargs.get('stdin_content', '')
         self._merge_stdout_and_stderr = kwargs.get(
             'merge_stdout_and_stderr', False)
@@ -141,22 +163,6 @@ class _SubprocessRunner(object):
         return self._process
 
     def _run(self):
-        # # Note: It is not possible to use string streams
-        # # (io.StringIO) with subprocess.call() because they do not
-        # # have a fileno attribute. This is not a huge issue, as using
-        # # Popen and subprocess.PIPE is the preferred approach to
-        # # redirecting input and output from strings.
-        # self._process = subprocess.Popen(
-        #     self._args,
-        #     universal_newlines=True,
-        #     stdin=subprocess.PIPE,
-        #     stdout=subprocess.PIPE,
-        #     stderr=(subprocess.STDOUT if self._merge_stdout_and_stderr
-        #             else subprocess.PIPE)
-        # )
-
-        # print("Subprocess started:", self._process)
-
         try:
             with tempfile.TemporaryFile() as stdin_content, \
                     tempfile.TemporaryFile() as stdout_dest, \
@@ -166,45 +172,29 @@ class _SubprocessRunner(object):
                 stdin_content.write(self._stdin_content.encode('utf-8'))
                 stdin_content.seek(0)
 
-                # self._stdout, self._stderr = self._process.communicate(
-                #     input=self._stdin_content)  # ,#timeout=self._timeout)
-                # print("Communicated with subprocess")
+                try:
+                    self._return_code = subprocess.call(
+                        self._args,
+                        stdin=stdin_content,
+                        stdout=stdout_dest,
+                        stderr=stderr_dest,
+                        timeout=self._timeout
+                    )
+                    print("Finished running: ", self._args)
+                    if (self._return_code ==
+                            _SubprocessRunner._TIMEOUT_RETURN_CODE):
+                        self._timed_out = True
+                finally:
+                    stdout_dest.seek(0)
+                    stderr_dest.seek(0)
+                    self._stdout = stdout_dest.read().decode('utf-8')
+                    self._stderr = stderr_dest.read().decode('utf-8')
 
-                # self._process.stdin.close()
-                # print("Closed stdin")
-
-                # self._return_code = self._process.returncode
-
-                self._return_code = subprocess.call(
-                    self._args,
-                    stdin=stdin_content,
-                    stdout=stdout_dest,
-                    stderr=stderr_dest
-                )
-                print("Finished running: ", self._args)
-                if self._return_code == _SubprocessRunner._TIMEOUT_RETURN_CODE:
-                    self._timed_out = True
-
-                stdout_dest.seek(0)
-                stderr_dest.seek(0)
-                self._stdout = stdout_dest.read().decode('utf-8')
-                self._stderr = stderr_dest.read().decode('utf-8')
-
-                print("Return code: ", self._return_code)
-                print(self._stdout)
-                print(self._stderr)
-                # print(self._process.stdin.read())
-        except subprocess.TimeoutExpired:
-            # self._process.kill()
-            # self._stdout, self._stderr = self._process.communicate()
-            # self._return_code = self._process.returncode
-            self._timed_out = True
-
-            # self._process.stdin.close()
+                    print("Return code: ", self._return_code)
+                    print(self._stdout)
+                    print(self._stderr)
         except UnicodeDecodeError:
             msg = ("Error reading program output: "
                    "non-unicode characters detected")
             self._stdout = msg
             self._stderr = msg
-
-            # self._process.stdin.close()
