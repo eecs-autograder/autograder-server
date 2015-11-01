@@ -106,6 +106,7 @@ class AddSubmissionRequestTestCase(_SetUpBase):
             'data': submission_to_json(loaded)
         }
 
+        self.assertEqual(Submission.GradingStatus.received, loaded.status)
         actual = json_load_bytes(response.content)
 
         self.assertJSONObjsEqual(expected, actual)

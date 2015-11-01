@@ -145,15 +145,15 @@ def load_test_case(json_):
 
 
 def start_workers(num_workers):
-    for i in range(num_workers):
-        log_file = open('listener.log'.format(i), 'w')
-        worker = subprocess.Popen(
-            ['python3', '-u',
-             '../submission_listener_multiprocessing.py',
-             str(num_workers), 'system_test_settings'],
-            universal_newlines=True, stderr=subprocess.STDOUT,
-            stdout=log_file)
-        workers.append((worker, log_file))
+    # for i in range(num_workers):
+    log_file = open('listener.log', 'w')
+    worker = subprocess.Popen(
+        ['python3', '-u',
+         '../submission_listener_multiprocessing.py',
+         str(num_workers), 'system_test_settings'],
+        universal_newlines=True, stderr=subprocess.STDOUT,
+        stdout=log_file)
+    workers.append((worker, log_file))
 
 
 _files_to_submit = []

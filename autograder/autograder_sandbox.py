@@ -73,7 +73,7 @@ class AutograderSandbox(object):
         if not as_root:
             args.append('--user={}'.format(self._linux_username))
         args.append(self.name)
-        args += ['timeout', str(timeout)] + cmd_exec_args
+        args += ['timeout_script.py', str(timeout)] + cmd_exec_args
 
         print('running: {}'.format(args))
 

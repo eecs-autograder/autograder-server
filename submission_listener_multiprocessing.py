@@ -63,6 +63,7 @@ def listen_for_and_grade_received_submissions(num_workers,
     #         status=Submission.GradingStatus.queued
     #     )
 
+    print(num_workers)
     with multiprocessing.Pool(processes=num_workers,
                               initializer=initialize_process,
                               initargs=[django_settings_module]) as workers:

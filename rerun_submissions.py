@@ -54,7 +54,7 @@ def main():
             submission.timestamp.strftime(ut.FILESYSTEM_TIMESTAMP_FORMAT_STR))
         )
         submission.results.all().delete()
-        submission.status = 'queued'
+        submission.status = Submission.GradingStatus.received
         submission.save()
 
 
