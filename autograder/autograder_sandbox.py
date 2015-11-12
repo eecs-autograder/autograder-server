@@ -11,10 +11,11 @@ SANDBOX_WORKING_DIR_NAME = os.path.join(SANDBOX_HOME_DIR_NAME, 'working_dir')
 
 
 class AutograderSandbox(object):
-    def __init__(self, name, linux_user_id):
+    def __init__(self, name):  # , linux_user_id):
         self.name = name
-        self._linux_user_id = linux_user_id
-        self._linux_username = 'worker{}'.format(self._linux_user_id)
+        # self._linux_user_id = linux_user_id
+        # self._linux_username = 'worker{}'.format(self._linux_user_id)
+        self._linux_username = 'autograder'
 
     def __enter__(self):
         self.start()
@@ -35,14 +36,14 @@ class AutograderSandbox(object):
         try:
             subprocess.call(['docker', 'start', self.name])
 
-            self.run_cmd_success_required(
-                ['useradd', '--uid', str(self._linux_user_id),
-                 self._linux_username],
-                as_root=True)
-            self.run_cmd_success_required(
-                ['chown', '-R',
-                 self._linux_username + ':' + self._linux_username,
-                 SANDBOX_HOME_DIR_NAME], as_root=True)
+            # self.run_cmd_success_required(
+            #     ['useradd', '--uid', str(self._linux_user_id),
+            #      self._linux_username],
+            #     as_root=True)
+            # self.run_cmd_success_required(
+            #     ['chown', '-R',
+            #      self._linux_username + ':' + self._linux_username,
+            #      SANDBOX_HOME_DIR_NAME], as_root=True)
 
         except subprocess.CalledProcessError:
             self.stop()

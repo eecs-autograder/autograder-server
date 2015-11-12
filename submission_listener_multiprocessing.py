@@ -156,11 +156,10 @@ def prepare_and_run_tests(submission):
         uuid.uuid4().hex)
     print(sandbox_name)
 
-    # HACK: this is a workaround to make it so that different docker
-    # containers use users with different UIDs
-    sandbox_linux_user_id = (submission.pk + 2000) % 3000
-    with AutograderSandbox(name=sandbox_name,
-                           linux_user_id=sandbox_linux_user_id) as sandbox:
+    # # HACK: this is a workaround to make it so that different docker
+    # # containers use users with different UIDs
+    # sandbox_linux_user_id = (submission.pk + 2000) % 3000
+    with AutograderSandbox(name=sandbox_name) as sandbox:
         for test_case in group.project.autograder_test_cases.all():
             print(test_case.name)
             files_to_copy = (

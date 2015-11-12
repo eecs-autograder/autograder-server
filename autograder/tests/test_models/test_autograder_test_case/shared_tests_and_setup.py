@@ -273,7 +273,7 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
     def setUpClass(class_):
         name = 'unit-test-sandbox-{}'.format(uuid.uuid4().hex)
 
-        class_.sandbox = AutograderSandbox(name=name, linux_user_id=2001)
+        class_.sandbox = AutograderSandbox(name=name)  # , linux_user_id=2001)
         class_.sandbox.start()
 
     @classmethod

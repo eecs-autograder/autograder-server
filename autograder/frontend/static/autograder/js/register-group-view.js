@@ -129,19 +129,20 @@ function _register_group_button_click_handler(e, project, deferred)
     $('#register-group-form :text').each(function(i, field) {
         if (field.name !== 'members')
         {
-            return;
+            return true;
         }
         var email = $.trim(field.value);
         if (email === '')
         {
             // Skip blank fields
-            return;
+            return true;
         }
 
         if (!is_umich_email(email))
         {
             $(this).after('<span class="error">Please enter a "umich.edu" email address</span>');
-            return;
+            deferred.reject();
+            return false;
         }
         members.push(field.value);
     });

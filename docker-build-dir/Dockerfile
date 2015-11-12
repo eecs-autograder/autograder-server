@@ -6,9 +6,9 @@ RUN apt-get install -y g++ valgrind
 
 RUN mkdir -p /home/autograder/working_dir
 
-# RUN useradd autograder && \
-#    mkdir -p /home/autograder/working_dir && \
-#    chown -R autograder:autograder /home/autograder
+RUN useradd autograder && \
+   mkdir -p /home/autograder/working_dir && \
+   chown -R autograder:autograder /home/autograder
 
 COPY timeout_script.py /usr/local/bin/timeout_script.py
 RUN chmod 555 /usr/local/bin/timeout_script.py
