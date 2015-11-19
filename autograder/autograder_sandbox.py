@@ -31,20 +31,11 @@ class AutograderSandbox(object):
              '-a', 'STDOUT', '-a', 'STDERR', '-a', 'STDIN',  # Attach streams
              '-i',  # Run in interactive mode (needed for input redirection)
              '-t',  # Allocate psuedo tty
-             'autograder', 'bash']
+             'autograder', 'bash'],
+            timeout=10
         )
         try:
-            subprocess.call(['docker', 'start', self.name])
-
-            # self.run_cmd_success_required(
-            #     ['useradd', '--uid', str(self._linux_user_id),
-            #      self._linux_username],
-            #     as_root=True)
-            # self.run_cmd_success_required(
-            #     ['chown', '-R',
-            #      self._linux_username + ':' + self._linux_username,
-            #      SANDBOX_HOME_DIR_NAME], as_root=True)
-
+            subprocess.check_call(['docker', 'start', self.name], timeout=10)
         except subprocess.CalledProcessError:
             self.stop()
             raise

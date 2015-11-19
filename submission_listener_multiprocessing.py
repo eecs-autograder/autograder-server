@@ -66,7 +66,8 @@ def listen_for_and_grade_received_submissions(num_workers,
     print(num_workers)
     with multiprocessing.Pool(processes=num_workers,
                               initializer=initialize_process,
-                              initargs=[django_settings_module]) as workers:
+                              initargs=[django_settings_module],
+                              maxtasksperchild=100) as workers:
         while True:
             submission_ids = []
             with transaction.atomic():
