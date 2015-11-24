@@ -117,15 +117,18 @@ function _register_group_button_click_handler(e, project, deferred)
     console.log('_register_group_button_click_handler');
     $(".error").remove();
 
-    var members = [project.meta.username];
-    if ($('#work-alone-box').is(':checked'))
+    var working_alone = $('#work-alone-box').is(':checked');
+    if (working_alone)
     {
-        submit_group_request(members, project).done(function(group) {
+        submit_group_request(
+            [project.meta.username], project
+        ).done(function(group) {
             deferred.resolve(group);
         });
         return;
     }
 
+    var members = [];
     $('#register-group-form :text').each(function(i, field) {
         if (field.name !== 'members')
         {
@@ -141,26 +144,44 @@ function _register_group_button_click_handler(e, project, deferred)
         if (!is_umich_email(email))
         {
             $(this).after('<span class="error">Please enter a "umich.edu" email address</span>');
-            deferred.reject();
             return false;
         }
         members.push(field.value);
     });
 
+    if (members.length === 0)
+    {
+        $('#partner-list').append(
+            '<div class="error">Please enter your partners\' uniquenames or specify that you are working alone.</div>');
+        return;
+    }
+
+    members.push(project.meta.username);
+
     var max_size = project.data.attributes.max_group_size;
     if (members.length > max_size)
     {
         $('#partner-list').append(
-            '<div>Please enter at most ' + String(max_size - 1) +
+            '<div class="error">Please enter at most ' + String(max_size - 1) +
             ' email(s)</div>');
         return;
     }
     var min_size = project.data.attributes.min_group_size;
-    if (members.length < min_size || members.length === 0)
+    if (members.length < min_size)
     {
         $('#partner-list').append(
             '<div class="error">Please enter at least ' +
             String(min_size - 1) + ' email(s)</div>');
+        return;
+    }
+
+    var confirm_msg = (
+        'You have specified your group as: ' + 
+        members.join(', ') + '\nONCE YOU REGISTER, YOU WILL NOT BE ABLE TO ' +
+        'MODIFY YOUR GROUP.\n Click "OK" to register, "Cancel" to go back.'
+    );
+    if (!confirm(confirm_msg))
+    {
         return;
     }
 
