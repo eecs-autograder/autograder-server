@@ -12,6 +12,10 @@ from autograder.models.utils import (
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
 
+# TODO: for fat interface fields, give them a meaningful default so that
+# we don't have to violate the Liskov Substitution principle by making
+# certain fields required in the derived classes.
+
 
 def _validate_cmd_line_arg(arg):
     if not arg:
@@ -36,7 +40,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         project -- The Project this test case is associated with.
                    This field is REQUIRED.
 
-        hide_from_students -- When this field is True, students should not
+        hide_from_students -- When this field is True, students will not
             receive feedback about this test case.
             Note: Staff members will still receive feedback on this
                 test case for their own submissions, but when viewing
@@ -65,7 +69,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
         test_resource_files -- A list of project files that need to be
             in the same directory as the program being tested. This
-            includes files that need to be compiled together,
+            includes source code dependencies,
             files that the program will read from/write to, etc.
             This list is allowed to be empty.
             This value may NOT be None.
@@ -92,10 +96,13 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             Default value: empty list
 
         time_limit -- The time limit in seconds to be placed on the
-            program being tested. This currently applies to compilation,
-            running the program, and running the program with Valgrind.
-            This value must be positive (and nonzero).
-            Default value: 10 seconds
+            program being tested. This limit currently applies to each of:
+            compilation, running the program, and running the program
+            with Valgrind (the timeout is applied separately to each).
+            Must be > 0
+            Must be <= 60 TODO: add test and validation for this
+            Default value: autograder.shared.global_constants
+                                     .DEFAULT_SUBPROCESS_TIMEOUT seconds
 
         expected_return_code -- The return code that the
             program being tested should exit with in order to pass
@@ -249,7 +256,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     objects = PolymorphicManagerWithValidateOnCreate()
 
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
-    project = models.ForeignKey('Project', related_name='autograder_test_cases')
+    project = models.ForeignKey(
+        'Project', related_name='autograder_test_cases')
 
     hide_from_students = models.BooleanField(default=True)
 
@@ -348,11 +356,12 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     def run(self, submission, autograder_sandbox):
         """
         Runs this autograder test case and returns an
-            AutograderTestCaseResultBase object that is linked
-            to the given submission. If submission is None,
-            the result object will not be linked to any submission.
-            The test case will be run inside the given AutograderSandbox.
-        Note that this method does NOT save the result object to the
+        AutograderTestCaseResultBase object that is linked
+        to the given submission. If submission is None,
+        the result object will not be linked to any submission.
+        The test case will be run inside the given AutograderSandbox.
+
+        NOTE: This method does NOT save the result object to the
             database.
 
         This method must be overridden by derived classes.
@@ -534,6 +543,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             return {'executable_name': e.message}
 
     # -------------------------------------------------------------------------
+
+    # TODO: Remove "tests_" prefix from these names
 
     def test_checks_return_code(self):
         return (

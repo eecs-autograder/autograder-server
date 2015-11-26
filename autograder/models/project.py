@@ -158,8 +158,10 @@ class Project(ModelValidatableOnSave):
         clean()
         delete()
     """
+    # TODO: Replace with either a straight postgres JSONfield, a picklefield,
+    # or some combination of the two
     FilePatternTuple = collections.namedtuple(
-        'ExpectedStudentFile',
+        'FilePatternTuple',
         ['pattern', 'min_num_matches', 'max_num_matches'])
 
     class Meta:
@@ -217,8 +219,9 @@ class Project(ModelValidatableOnSave):
                         # can check for emptiness and throw a more specific
                         # error. This lets us send ValidationErrors
                         # to the GUI side in a more convenient format.
-            ),
-        default=list, blank=True)
+        ),
+        default=list, blank=True
+    )
 
     @property
     def expected_student_file_patterns(self):

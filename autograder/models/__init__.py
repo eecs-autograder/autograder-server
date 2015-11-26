@@ -7,7 +7,7 @@ from .project import Project
 from .submission_group import SubmissionGroup
 from .submission import Submission
 
-# These next three imports need to be in this order to get around
+# These next imports need to be in this order to get around
 # circular dependency.
 from .autograder_test_case_result import AutograderTestCaseResultBase
 # Note: Even though we are importing the different types of test cases here,
@@ -17,3 +17,7 @@ from .autograder_test_case.compiled_autograder_test_case import CompiledAutograd
 from .autograder_test_case.compilation_only_autograder_test_case import CompilationOnlyAutograderTestCase
 
 from .autograder_test_case import AutograderTestCaseFactory
+
+from .student_test_suite.student_test_suite_base import StudentTestSuiteBase
+from .student_test_suite import StudentTestSuiteFactory
+from .student_test_suite.compiled_student_test_suite import CompiledStudentTestSuite

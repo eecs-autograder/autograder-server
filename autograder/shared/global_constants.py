@@ -3,6 +3,7 @@ import re
 MAX_CHAR_FIELD_LEN = 255
 
 DEFAULT_SUBPROCESS_TIMEOUT = 10
+MAX_SUBPROCESS_TIMEOUT = 60
 
 # For a given project, the name of the directory that
 # user-uploaded project files should be placed in.

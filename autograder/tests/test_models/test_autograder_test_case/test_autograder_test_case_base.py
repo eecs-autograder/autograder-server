@@ -63,6 +63,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(0, loaded_test_case.points_for_compilation_success)
 
         # Fat interface fields
+        # TODO: comment out, add to docs that defaults
+        # are specified by the derived classes
         self.assertEqual(loaded_test_case.compiler, "")
         self.assertEqual(loaded_test_case.compiler_flags, [])
         self.assertEqual(loaded_test_case.files_to_compile_together, [])

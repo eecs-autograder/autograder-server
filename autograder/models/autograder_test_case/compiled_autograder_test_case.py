@@ -7,6 +7,10 @@ from ..autograder_test_case_result import AutograderTestCaseResultBase
 from .autograder_test_case_base import AutograderTestCaseBase
 
 
+# TODO: remove the "these inherited fields are not required" stuff.
+#   instead, specify new default values
+
+
 class CompiledAutograderTestCase(AutograderTestCaseBase):
     """
     This class allows evaluating a program that will be compiled
