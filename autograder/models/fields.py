@@ -1,14 +1,171 @@
 import json
+from enum import Enum
 # import uuid
 
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.contrib.postgres.fields import ArrayField
 
 # from jsonfield import JSONField
+from picklefield.fields import PickledObjectField
+
+import autograder.shared.global_constants as gc
 
 
-def _validate_feedback_configuration(config):
-    config.validate()
+class StringListField(ArrayField):
+    def __init__(self, base_field=None, string_validators=[],
+                 strip_strings=True, allow_empty_strings=False, **kwargs):
+        base_field = models.CharField(
+            max_length=gc.MAX_CHAR_FIELD_LEN, blank=allow_empty_strings)
+        super().__init__(base_field, **kwargs)
+
+        self._strip_strings = strip_strings
+        self._string_validators = string_validators
+
+    def clean(self, value, model_instance):
+        if not self._strip_strings:
+            return
+
+        for string in value:
+            string = string.strip()
+
+        return super().clean(value, model_instance)
+
+    def validate(self, value, model_instance):
+        # intentionally models.Field super(), NOT ArrayField super()
+        super(ArrayField, self).validate(value, model_instance)
+        errors = []
+        error_found = False
+        for string in value:
+            try:
+                self.base_field.validate(string, model_instance)
+                for validator in self._string_validators:
+                    validator(string)
+                errors.append('')
+            except ValidationError as e:
+                errors.append(e.message)
+                error_found = True
+
+        if error_found:
+            raise ValidationError(errors)
+
+    def run_validators(self, value):
+        # intentionally models.Field super(), NOT ArrayField super()
+        super(ArrayField, self).run_validators(value)
+
+
+class StudentTestSuiteFeedbackConfigurationField(PickledObjectField):
+    def validate(self, value, model_instance):
+        if value is None:
+            return
+
+        if not isinstance(value, StudentTestSuiteFeedbackConfiguration):
+            raise ValueError(
+                'Expected object of type '
+                'StudentTestSuiteFeedbackConfiguration'
+                'but was of type {}'.format(type(value)))
+
+        return super().validate(value, model_instance)
+
+
+class StudentTestSuiteFeedbackConfiguration:
+    """
+    Members:
+        compilation_feedback_level
+        student_test_validity_feedback_level
+        buggy_implementations_exposed_feedback_level
+    """
+    def __init__(self, **kwargs):
+        self.compilation_feedback_level = kwargs.get(
+            'compilation_feedback_level', CompilationFeedbackLevel())
+
+        self.student_test_validity_feedback_level = kwargs.get(
+            'student_test_validity_feedback_level',
+            StudentTestCaseValidityFeedbackConfiguration())
+
+        self.buggy_implementations_exposed_feedback_level = kwargs.get(
+            'buggy_implementations_exposed_feedback_level',
+            BuggyImplementationsExposedFeedbackLevel())
+
+    @property
+    def compilation_feedback_level(self):
+        return self._compilation_feedback_level
+
+    @compilation_feedback_level.setter
+    def compilation_feedback_level(self, value):
+        if not isinstance(value, CompilationFeedbackLevel):
+            raise TypeError(
+                'Error assigning value of type {} '
+                'to compilation_feedback_level'.format(type(value)))
+
+        self._compilation_feedback_level = value
+
+    @property
+    def student_test_validity_feeback_level(self):
+        return self._student_test_validity_feeback_level
+
+    @student_test_validity_feeback_level.setter
+    def student_test_validity_feeback_level(self, value):
+        if not isinstance(value, StudentTestCaseValidityFeedbackConfiguration):
+            raise TypeError(
+                'Error assigning value of type {} '
+                'to student_test_validity_feeback_level'.format(type(value)))
+
+        self._compilation_feedback_level = value
+
+    @property
+    def buggy_implementations_exposed_feedback_level(self):
+        return self._buggy_implementations_exposed_feedback_level
+
+    @buggy_implementations_exposed_feedback_level.setter
+    def buggy_implementations_exposed_feedback_level(self, value):
+        if not isinstance(value, BuggyImplementationsExposedFeedbackLevel):
+            raise TypeError(
+                'Error assigning value of type {} '
+                'to buggy_implementations_exposed_feedback_level'.format(
+                    type(value)))
+
+        self._compilation_feedback_level = value
+
+
+class StudentTestCaseValidityFeedbackConfiguration(Enum):
+    no_feedback = 'no_feedback'
+    show_valid_or_invalid = 'show_valid_or_invalid'
+
+
+class BuggyImplementationsExposedFeedbackLevel(Enum):
+    no_feedback = 'no_feedback'
+    list_implementations_exposed = 'list_implementations_exposed'
+
+
+class CompilationFeedbackLevel(Enum):
+    no_feedback = 'no_feedback'
+    success_or_failure_only = 'success_or_failure_only'
+    show_compiler_output = 'show_compiler_output'
+
+
+class ReturnCodeFeedbackLevel(Enum):
+    no_feedback = 'no_feedback'
+    correct_or_incorrect_only = 'correct_or_incorrect_only'
+    show_expected_and_actual_values = 'show_expected_and_actual_values'
+
+
+class OutputFeedbackLevel(Enum):
+    no_feedback = 'no_feedback'
+    correct_or_incorrect_only = 'correct_or_incorrect_only'
+    show_expected_and_actual_values = 'show_expected_and_actual_values'
+
+
+class PointsFeedbackLevel:
+    hide = 'hide'
+    # Note: When "show_total" or "show_breakdown" is chosen,
+    # it will only show the
+    # points from parts of the test case or suite that the
+    # student receives feedback on.
+    show_total = 'show_total'
+    show_breakdown = 'show_breakdown'
+
+# -----------------------------------------------------------------------------
 
 
 class FeedbackConfigurationField(models.TextField):

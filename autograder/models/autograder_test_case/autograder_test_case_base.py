@@ -192,7 +192,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             interpreted program, a compilation-only program, a compiled
             and interpreted program, etc.
 
-        compiler -- The program that will be used to compile the program.
+        compiler -- The program that will be used to compile the test case
+            executable.
             Currently supported values: g++
             Default value: empty string
 
@@ -248,6 +249,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     """
     # A list of compilers that may be used in autograder test cases that
     # require compilation.
+    # TODO: make this a non-nested enum or at least abstract it to a field
     SUPPORTED_COMPILERS = ["g++"]
 
     class Meta:

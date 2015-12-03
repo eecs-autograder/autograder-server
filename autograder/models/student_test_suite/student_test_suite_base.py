@@ -1,15 +1,14 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 
 import autograder.shared.global_constants as gc
 # import autograder.shared.utilities as ut
 
-from autograder.models import Project
+from autograder.models import fields
 from autograder.models.utils import (
-    PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate,
-    filename_matches_any_pattern)
+    PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
 
 class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
@@ -111,14 +110,37 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
             Default value: True
 
     Fat interface fields:
-        TODO
-        compiler --
-        compiler_flags --
-        suite_resource_files_to_compile_together --
+        compiler -- The program that will be used to compile the test case
+            executables.
+            See autograder.models.autograder_test_case
+                          .AutograderTestCaseBase.SUPPORTED_COMPILERS
+            for a list of allowed values for this field.
+            Default value: g++
+
+        compiler_flags -- A list of option flags to be passed to the compiler.
+            These flags are limited to the character set specified by
+            autograder.shared.global_constants.COMMAND_LINE_ARG_WHITELIST_REGEX
+            NOTE: This list should NOT include the names of files that
+                need to be compiled and should not include flags that affect
+                the name of the resulting executable program.
+            This field is allowed to be empty.
+            This field may not be None.
+            Default value: empty list
+
+        suite_resource_files_to_compile_together -- A list of filenames
+            that will be compiled together with
+            each student test case, implementation file pair.
+            These filenames must be contained in suite_resource_filenames.
+            This field is allowed to be empty.
+            This field may not be None.
+            Default value: empty list
 
         TODO
         interpreter --
         interpreter_flags --
+
+    Instance methods:
+        evaluate()
     """
     class Meta:
         unique_together = ('name', 'project')
@@ -155,3 +177,104 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
                     MaxValueValidator(gc.MAX_SUBPROCESS_TIMEOUT)])
 
     hide_from_students = models.BooleanField(default=True)
+
+    # -------------------------------------------------------------------------
+
+    compiler = models.CharField(
+        max_length=gc.MAX_CHAR_FIELD_LEN, default='g++',
+        choices=(('g++', 'g++'),))  # TODO: centralize
+
+    compiler_flags = fields.StringListField(
+        default=list, blank=True, string_validators=[
+            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)])
+
+    suite_resource_files_to_compile_together = fields.StringListField(
+        default=list, blank=True)
+
+    # -------------------------------------------------------------------------
+
+    def clean(self):
+        super().clean()
+
+        errors = {}
+
+        if self.name:
+            self.name = self.name.strip()
+
+        if not self.name:
+            errors['name'] = "This field can't be empty"
+
+        patterns = [pattern_obj.pattern for pattern_obj in
+                    self.project.expected_student_file_patterns]
+
+        if self.student_test_case_filename_pattern not in patterns:
+            errors['student_test_case_filename_pattern'] = (
+                'Pattern {} is not an expected student '
+                'file pattern for project {}'.format(
+                    self.student_test_case_filename_pattern,
+                    self.project.name))
+
+        errors.update(self._clean_suite_resource_files())
+
+        if (self.correct_implementation_filename not in
+                self.project.get_project_file_basenames()):
+            errors['correct_implementation_filename'] = (
+                '{} is not a resource file for project {}'.format(
+                    self.correct_implementation_filename,
+                    self.project.name))
+
+        errors.update(self._clean_suite_resource_files_to_compile_together())
+        errors.update(self._clean_buggy_implementation_filenames())
+
+        if errors:
+            raise ValidationError(errors)
+
+    def _clean_suite_resource_files(self):
+        project_filenames = self.project.get_project_file_basenames()
+        errors = []
+
+        for filename in self.suite_resource_filenames:
+            if filename in project_filenames:
+                continue
+
+            errors.append(
+                '{} is not a resource file for project {}'.format(
+                    filename, self.project.name))
+
+        if errors:
+            return {'suite_resource_filenames': errors}
+
+        return {}
+
+    def _clean_suite_resource_files_to_compile_together(self):
+        errors = []
+
+        for filename in self.suite_resource_files_to_compile_together:
+            if filename in self.suite_resource_filenames:
+                continue
+
+            errors.append(
+                '{} is not a suite resource file for test suite {}'.format(
+                    filename, self.name))
+
+        if errors:
+            return {'suite_resource_files_to_compile_together': errors}
+
+        return {}
+
+    def _clean_buggy_implementation_filenames(self):
+        project_filenames = self.project.get_project_file_basenames()
+        errors = []
+
+        for filename in self.buggy_implementation_filenames:
+            if filename in project_filenames:
+                continue
+
+            errors.append(
+                '{} is not a resource file for project {}'.format(
+                    filename, self.project.name))
+
+        if errors:
+            return {'buggy_implementation_filenames': errors}
+
+        return {}

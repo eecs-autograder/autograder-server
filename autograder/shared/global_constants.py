@@ -39,4 +39,4 @@ DEFAULT_VALGRIND_FLAGS_WHEN_USED = ['--leak-check=full', '--error-exitcode=1']
 # Command line arguments can contain:
 #   alphanumeric characters, hyphen, underscore, equals, period
 COMMAND_LINE_ARG_WHITELIST_REGEX = re.compile(
-    r"[a-zA-Z0-9-_=.]+")
+    r"^[a-zA-Z0-9-_=.]+$")
