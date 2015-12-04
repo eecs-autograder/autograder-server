@@ -85,6 +85,31 @@ def create_dummy_projects(semester, num_projects=1):
     return projects
 
 
+def build_project(project_kwargs=None, semester_kwargs=None, course_kwargs=None):
+    if project_kwargs is None:
+        project_kwargs = {}
+    if semester_kwargs is None:
+        semester_kwargs = {}
+    if course_kwargs is None:
+        course_kwargs = {}
+
+    if 'name' not in course_kwargs:
+        course_kwargs['name'] = 'course{}'.format(_get_unique_id())
+    course = Course.objects.validate_and_create(**course_kwargs)
+
+    if 'name' not in semester_kwargs:
+        semester_kwargs['name'] = 'semester{}'.format(_get_unique_id())
+    if 'course' not in semester_kwargs:
+        semester_kwargs['course'] = course
+    semester = Semester.objects.validate_and_create(**semester_kwargs)
+
+    if 'name' not in project_kwargs:
+        project_kwargs['name'] = 'project{}'.format(_get_unique_id())
+    if 'semester' not in project_kwargs:
+        project_kwargs['semester'] = semester
+
+    return Project.objects.validate_and_create(**project_kwargs)
+
 # def create_dummy_compiled_autograder_tests(project, num_tests=1):
 #     """
 #     Returns a list containing the specified number of dummy

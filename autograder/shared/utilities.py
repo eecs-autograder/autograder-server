@@ -17,6 +17,14 @@ def count_if(iterable, unary_predicate):
     return sum(1 for item in iterable if unary_predicate(item))
 
 
+def find_if(iterable, unary_predicate):
+    """
+    Returns the first element for which unary_predicate returns True.
+    Returns None if no such element could be found.
+    """
+    return next((item for item in iterable if unary_predicate(item)), None)
+
+
 # PRETTY_TIMESTAMP_FORMAT_STR = '%B %d, %Y %I:%M:%S %p'
 
 FILESYSTEM_TIMESTAMP_FORMAT_STR = '%Y-%m-%d %H.%M.%S'

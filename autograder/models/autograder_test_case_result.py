@@ -5,6 +5,7 @@ from django.db import models
 from polymorphic import PolymorphicModel
 
 
+# TODO: rename to AutograderTestCaseResult
 class AutograderTestCaseResultBase(PolymorphicModel):
     """
     This class stores the data from an autograder test case
@@ -12,8 +13,10 @@ class AutograderTestCaseResultBase(PolymorphicModel):
 
     Fields:
         test_case -- The test case whose results this object is storing.
+            This field is REQUIRED.
 
         submission -- The submission the test case was run for.
+            This field can be None.
 
         return_code -- The return code of the program that was tested.
             Default value: None

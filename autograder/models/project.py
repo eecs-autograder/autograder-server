@@ -118,6 +118,8 @@ class Project(ModelValidatableOnSave):
                     This value must be non negative.
                     This value must be >= min_num_matches.
 
+            TODO: simplify validation error format (just send back a list of
+                strings corresponding to the objects)
             When ValidationError is raised for this field, the error message
             will be a list containing dictionaries *serialized as JSON strings*
             corresponding (in order) to each file pattern object in this field.

@@ -237,8 +237,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         test_checks_output()
         test_checks_compilation()
 
-        to_json()
-
     Abstract methods:
         run()
         get_type_str()

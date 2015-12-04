@@ -101,6 +101,7 @@ class StudentTestSuiteBaseTests(object):
         self.assertEqual('g++', loaded.compiler)
         self.assertEqual([], loaded.compiler_flags)
         self.assertEqual([], loaded.suite_resource_files_to_compile_together)
+        self.assertTrue(loaded.compile_implementation_files)
 
     def test_valid_initialization_custom_values(self):
         implementation_file_alias = 'aliuuuus.h'
@@ -121,7 +122,8 @@ class StudentTestSuiteBaseTests(object):
 
             compiler='g++',
             compiler_flags=compiler_flags,
-            suite_resource_files_to_compile_together=self.project_filenames
+            suite_resource_files_to_compile_together=self.project_filenames,
+            compile_implementation_files=False
         )
 
         loaded = StudentTestSuiteBase.objects.get(pk=suite.pk)
@@ -150,6 +152,7 @@ class StudentTestSuiteBaseTests(object):
         self.assertEqual(
             self.project_filenames,
             loaded.suite_resource_files_to_compile_together)
+        self.assertFalse(loaded.compile_implementation_files)
 
     def test_exception_on_non_unique_name_within_project(self):
         StudentTestSuiteFactory.validate_and_create(

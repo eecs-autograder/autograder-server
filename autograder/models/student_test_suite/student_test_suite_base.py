@@ -81,10 +81,11 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
 
         suite_resource_filenames -- A list of names of project files that
             must be present in the same directory as the current test case
-            and buggy implementation. This includes source code dependencies,
+            and implementation file. This includes source code dependencies,
             files that the program will read from/write to, etc.
-            NOTE: This list should NOT include buggy implementation filenames.
-            Those will be added automatically as per the evaluation protocol.
+            NOTE: This list should NOT include buggy or correct
+            implementation filenames. Those will be added automatically as
+            per the evaluation protocol.
 
             This list is allowed to be empty.
             This value may NOT be None.
@@ -135,11 +136,20 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
             This field may not be None.
             Default value: empty list
 
+        compile_implementation_files -- When this flag is True, the current
+            correct of buggy implementation file will be compiled together
+            with the current test case and specified resource files.
+            When this value is False, the implementation files are NOT
+            compiled together.
+            Note that this field is only considered by types of test suite
+            that use a compiler.
+            Default value: True
+
         TODO
         interpreter --
         interpreter_flags --
 
-    Instance methods:
+    Abstract methods:
         evaluate()
     """
     class Meta:
@@ -191,7 +201,28 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
     suite_resource_files_to_compile_together = fields.StringListField(
         default=list, blank=True)
 
+    compile_implementation_files = models.BooleanField(default=True)
+
     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+
+    def evaluate(self, submission, autograder_sandbox):
+        """
+        Evaluates this student test suite and returns a StudentTestSuiteResult
+        object that is linked to the given submission. The test suite
+        will be evaluated inside the given AutograderSandbox.
+
+        TODO: make the submission argument required for AutograderTestCaseBase.run()
+            (alternitavely, have it copy the files if it's None or assume they exist
+                in the sandbox otherwise, or vice-versa)
+        NOTE: Unlike the run() method for AutograderTestCaseBase, the
+            submission argument to this function may NOT be None.
+
+        NOTE: This method does NOT save the result object to the database.
+
+        This method must be overridden by derived classes.
+        """
+        raise NotImplementedError("Derived classes must override this method.")
 
     def clean(self):
         super().clean()

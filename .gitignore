@@ -64,3 +64,4 @@ filesystem
 tmp_filesystem
 **/*.log
 secret_key
+.DS_Store

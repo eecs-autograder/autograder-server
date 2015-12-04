@@ -21,3 +21,4 @@ from .autograder_test_case import AutograderTestCaseFactory
 from .student_test_suite.student_test_suite_base import StudentTestSuiteBase
 from .student_test_suite import StudentTestSuiteFactory
 from .student_test_suite.compiled_student_test_suite import CompiledStudentTestSuite
+from .student_test_suite import StudentTestSuiteResult

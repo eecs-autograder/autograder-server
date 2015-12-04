@@ -45,10 +45,17 @@ class AutograderSandbox(object):
         subprocess.check_call(['docker', 'stop', self.name])
 
     def copy_into_sandbox(self, *filenames):
+        """
+        Copies the specified files into the working directory of this
+        sandbox.
+        The filenames specified can be absolute paths or relative paths
+        to the current working directory.
+        """
         for filename in filenames:
             subprocess.check_call(
                 ['docker', 'cp', filename,
-                 self.name + ':/home/autograder/working_dir']
+                 self.name + ':' + SANDBOX_WORKING_DIR_NAME],
+                timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT
             )
 
         basenames = [os.path.basename(filename) for filename in filenames]
@@ -56,6 +63,28 @@ class AutograderSandbox(object):
         self.run_cmd_success_required(
             ['chown', self._linux_username + ':' + self._linux_username] +
             basenames, as_root=True)
+
+    def copy_and_rename_into_sandbox(self, filename, new_name):
+        """
+        Copies the specified file into the working directory of this sandbox
+        and renames the copy to new_name.
+        new_name must consist of only a filename. Any other path information
+        will be stripped.
+        The filename specified can be an absolute path or a relative path
+        to the current working directory.
+        """
+        copy_destination = self.name + ':' + os.path.join(
+            SANDBOX_WORKING_DIR_NAME, os.path.basename(new_name))
+
+        print(copy_destination)
+
+        subprocess.check_call(
+            ['docker', 'cp', filename, copy_destination],
+            timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT)
+
+        self.run_cmd_success_required(
+            ['chown', self._linux_username + ':' + self._linux_username,
+             new_name], as_root=True)
 
     def run_cmd_with_redirected_io(self, cmd_exec_args,
                                    as_root=False,
