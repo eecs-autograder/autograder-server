@@ -68,7 +68,9 @@ class StudentTestCaseValidityFeedbackConfiguration(Enum):
 
 class BuggyImplementationsExposedFeedbackLevel(Enum):
     no_feedback = 'no_feedback'
+    # TODO: rename to list_implementations_exposed_overall
     list_implementations_exposed = 'list_implementations_exposed'
+    # TODO: list_implementations_exposed_per_test
 
 
 class CompilationFeedbackLevel(Enum):

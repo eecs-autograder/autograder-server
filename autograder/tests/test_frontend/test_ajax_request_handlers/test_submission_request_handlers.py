@@ -107,6 +107,7 @@ class _SetUpBase(RequestHandlerTestCase):
             test_suite=self.visible_suite,
             buggy_solutions_exposed=['buggy1.cpp', 'buggy2.cpp'])
 
+        # TODO: add test suite results to get request
 
 class AddSubmissionRequestTestCase(_SetUpBase):
     def setUp(self):

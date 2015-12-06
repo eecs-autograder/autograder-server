@@ -35,10 +35,11 @@ class _SubmissionManager(ManagerWithValidateOnCreate):
     def validate_and_create(self, **kwargs):
         files = kwargs.pop('submitted_files')
         model = self.model(**kwargs)
-        # Submission's save method throws an exception if the model
-        # hasn't already been saved, so we need to call the parent
-        # version here.
-        super(Submission, model).save()
+        # # Submission's save method throws an exception if the model
+        # # hasn't already been saved, so we need to call the parent
+        # # version here.
+        # super(Submission, model).save()
+        model.save()
         for file_obj in files:
             if file_obj.name in model.get_submitted_file_basenames():
                 model.discarded_files.append(file_obj.name)
@@ -229,7 +230,7 @@ class Submission(ModelValidatableOnSave):
             except IndexError:
                 continue
             # TODO: get this query working so that we're not grabbing more
-            # submission than we need:
+            # submissions than we need:
             # .raw(
             #     'SELECT * FROM autograder_submission '
             #     'ORDER BY _timestamp DESC LIMIT 1')[0]
@@ -257,15 +258,9 @@ class Submission(ModelValidatableOnSave):
         return super().__init__(*args, _timestamp=timestamp, **kwargs)
 
     def save(self, *args, **kwargs):
-        if not self.pk:
-            raise RuntimeError(
-                'When creating a new Submission, '
-                'you must use Submission.objects.validate_and_create')
-
         super().save(*args, **kwargs)
 
         submission_dir = ut.get_submission_dir(self)
-        # print(submission_dir)
         if not os.path.isdir(submission_dir):
             os.makedirs(submission_dir)
 

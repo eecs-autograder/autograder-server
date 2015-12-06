@@ -90,12 +90,12 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         )
 
         suite_feedback_config = StudentTestSuiteFeedbackConfiguration(
-                compilation_feedback_level=(
-                    CompilationFeedbackLevel.success_or_failure_only),
-                student_test_validity_feedback_level=(
-                    StudentTestCaseValidityFeedbackConfiguration.show_valid_or_invalid),
-                buggy_implementations_exposed_feedback_level=(
-                    BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed)
+            compilation_feedback_level=(
+                CompilationFeedbackLevel.success_or_failure_only),
+            student_test_validity_feedback_level=(
+                StudentTestCaseValidityFeedbackConfiguration.show_valid_or_invalid),
+            buggy_implementations_exposed_feedback_level=(
+                BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed)
         )
 
         new_project = Project.objects.validate_and_create(

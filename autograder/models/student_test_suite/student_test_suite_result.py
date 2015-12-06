@@ -39,6 +39,22 @@ class StudentTestCaseEvaluationResult:
         self.buggy_implementations_exposed = kwargs.get(
             'buggy_implementations_exposed', [])
 
+    def __eq__(self, other):
+        if not isinstance(other, StudentTestCaseEvaluationResult):
+            return False
+
+        return (
+            self.student_test_case_name == other.student_test_case_name and
+            self.compilation_return_code == other.compilation_return_code and
+            self.compilation_standard_output == other.compilation_standard_output and
+            self.compilation_standard_error_output == other.compilation_standard_error_output and
+            self.valid == other.valid and
+            self.validity_check_standard_output == other.validity_check_standard_output and
+            self.validity_check_standard_error_output == other.validity_check_standard_error_output and
+            self.timed_out == other.timed_out and
+            self.buggy_implementations_exposed == other.buggy_implementations_exposed
+        )
+
     @property
     def compilation_succeeded(self):
         return self.compilation_return_code == 0
@@ -55,12 +71,18 @@ class StudentTestSuiteResult(models.Model):
 
         submission -- The submission the test suite was run for.
             This value can be None.
+            Default value: None
 
         buggy_implementations_exposed -- A list of the names of buggy
             implementations that were exposed by the student test suite.
             Default value: empty list
 
         detailed_results -- A list of StudentTestCaseEvaluationResult objects.
+            This field can be empty but may NOT be None.
+            Default value: empty list
+
+    Static methods:
+        new_test_evaluation_result_instance()
 
     Instance methods:
         to_json()
@@ -74,9 +96,13 @@ class StudentTestSuiteResult(models.Model):
 
     buggy_implementations_exposed = ag_fields.ClassField(set, default=set)
 
-    detailed_results = pg_fields.ArrayField(
-        ag_fields.ClassField(StudentTestCaseEvaluationResult),
-        default=list, blank=True)
+    detailed_results = ag_fields.ClassField(
+        list, blank=True, default=list)
+
+    @staticmethod
+    def new_test_evaluation_result_instance(student_test_case_name, **kwargs):
+        return StudentTestCaseEvaluationResult(
+            student_test_case_name, **kwargs)
 
     def to_json(self, feedack_config_override=None):
         """
