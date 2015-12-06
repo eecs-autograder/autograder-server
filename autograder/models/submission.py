@@ -124,7 +124,7 @@ class Submission(ModelValidatableOnSave):
             override the Project level feedback configuration.
             Default value: None
 
-        show_all_test_cases -- A hard override for visible/hidden test cases.
+        show_all_test_cases_and_suites -- A hard override for visible/hidden test cases.
             When this field is True, students will get feedback
             on ALL test cases, including those marked as hidden.
             This field does not effect the feedback configuration.
@@ -207,7 +207,7 @@ class Submission(ModelValidatableOnSave):
         null=True, default=None)
     student_test_suite_feedback_config_override = ClassField(
         StudentTestSuiteFeedbackConfiguration, null=True, default=None)
-    show_all_test_cases = models.BooleanField(default=False, blank=True)
+    show_all_test_cases_and_suites = models.BooleanField(default=False, blank=True)
 
     status = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,

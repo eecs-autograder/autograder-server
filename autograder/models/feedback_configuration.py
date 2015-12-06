@@ -37,6 +37,21 @@ class StudentTestSuiteFeedbackConfiguration:
             self.points_feedback_level == other.points_feedback_level
         )
 
+    @staticmethod
+    def get_max_feedback():
+        return StudentTestSuiteFeedbackConfiguration(
+            compilation_feedback_level=(
+                CompilationFeedbackLevel.show_compiler_output
+            ),
+            student_test_validity_feedback_level=(
+                StudentTestCaseValidityFeedbackLevel.show_validity_check_output
+            ),
+            buggy_implementations_exposed_feedback_level=(
+                (BuggyImplementationsExposedFeedbackLevel.
+                    list_implementations_exposed_per_test)),
+            points_feedback_level=PointsFeedbackLevel.show_breakdown
+        )
+
     @property
     def compilation_feedback_level(self):
         return self._compilation_feedback_level

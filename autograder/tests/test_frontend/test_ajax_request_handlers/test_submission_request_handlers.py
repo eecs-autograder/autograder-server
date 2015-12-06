@@ -17,8 +17,12 @@ from autograder.frontend.json_api_serializers import submission_to_json
 from autograder.models import (
     SubmissionGroup, AutograderTestCaseFactory, Submission,
     AutograderTestCaseResultBase, StudentTestSuiteFactory,
-    StudentTestSuiteResult)
+    StudentTestSuiteResult, Project)
 from autograder.models.fields import FeedbackConfiguration
+from autograder.models.feedback_configuration import (
+    StudentTestSuiteFeedbackConfiguration,
+    PointsFeedbackLevel,
+    BuggyImplementationsExposedFeedbackLevel)
 
 
 class _SetUpBase(RequestHandlerTestCase):
@@ -31,28 +35,41 @@ class _SetUpBase(RequestHandlerTestCase):
         self.staff = obj_ut.create_dummy_users()
         self.enrolled = obj_ut.create_dummy_users()
         self.nobody = obj_ut.create_dummy_users()
+        feedback_config = FeedbackConfiguration(
+            return_code_feedback_level='correct_or_incorrect_only')
 
-        self.course = obj_ut.create_dummy_courses()
-        self.semester = obj_ut.create_dummy_semesters(self.course)
+        self.project = obj_ut.build_project({
+            'expected_student_file_patterns': [
+                Project.FilePatternTuple('test_*.cpp', 0, 3)
+            ],
+            'allow_submissions_from_non_enrolled_students': True,
+            'test_case_feedback_configuration': feedback_config,
+            'required_student_files': ['hello.cpp']
+        })
+
+        proj_files = [
+            SimpleUploadedFile('correct.cpp', b'blah'),
+            SimpleUploadedFile('buggy1.cpp', b'buuug'),
+            SimpleUploadedFile('buggy2.cpp', b'buuug')
+        ]
+        for file_ in proj_files:
+            self.project.add_project_file(file_)
+
+        self.course = self.project.semester.course
+        self.semester = self.project.semester
 
         self.course.add_course_admins(self.admin)
         self.semester.add_semester_staff(self.staff)
         self.semester.add_enrolled_students(self.enrolled)
 
-        feedback_config = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only')
-
-        self.project = obj_ut.create_dummy_projects(self.semester)
-        self.project.required_student_files = ['hello.cpp']
-        self.project.feedback_config = feedback_config
-        self.project.save()
+        self.points_for_test = 2
 
         self.visible_test = AutograderTestCaseFactory.validate_and_create(
             'compiled_test_case',
             name='visible', project=self.project,
             hide_from_students=False,
             expected_return_code=0,
-            points_for_correct_return_code=2,
+            points_for_correct_return_code=self.points_for_test,
             compiler='g++',
             files_to_compile_together=['hello.cpp'],
             student_resource_files=['hello.cpp'],
@@ -63,7 +80,7 @@ class _SetUpBase(RequestHandlerTestCase):
             name='hidden', project=self.project,
             hide_from_students=True,
             expected_return_code=0,
-            points_for_correct_return_code=2,
+            points_for_correct_return_code=self.points_for_test,
             compiler='g++',
             files_to_compile_together=['hello.cpp'],
             student_resource_files=['hello.cpp'],
@@ -80,34 +97,48 @@ class _SetUpBase(RequestHandlerTestCase):
 
         self.visible_result = AutograderTestCaseResultBase.objects.create(
             test_case=self.visible_test,
+            compilation_return_code=0,
             return_code=0)
 
         self.hidden_result = AutograderTestCaseResultBase.objects.create(
             test_case=self.hidden_test,
+            compilation_return_code=0,
             return_code=0)
 
-        # self.visible_suite = StudentTestSuiteFactory.validate_and_create(
-        #     'compiled_student_test_suite',
-        #     name='visible_suite',
-        #     project=self.project,
-        #     student_test_case_filename_pattern='*_test.cpp',
-        #     correct_implementation_filename='correct.cpp',
-        #     hide_from_students=False
-        # )
+        self.points_per_buggy = 2
+        self.points_for_suite = 4
 
-        # self.hidden_suite = StudentTestSuiteFactory.validate_and_create(
-        #     'compiled_student_test_suite',
-        #     name='hidden_suite',
-        #     project=self.project,
-        #     student_test_case_filename_pattern='*_test.cpp',
-        #     correct_implementation_filename='correct.cpp'
-        # )
+        self.visible_suite = StudentTestSuiteFactory.validate_and_create(
+            'compiled_student_test_suite',
+            name='visible_suite',
+            project=self.project,
+            student_test_case_filename_pattern='test_*.cpp',
+            correct_implementation_filename='correct.cpp',
+            buggy_implementation_filenames=['buggy1.cpp', 'buggy2.cpp'],
+            hide_from_students=False,
+            points_per_buggy_implementation_exposed=self.points_per_buggy
+        )
 
-        # self.visible_suite_result = StudentTestSuiteResult.objects.create(
-        #     test_suite=self.visible_suite,
-        #     buggy_solutions_exposed=['buggy1.cpp', 'buggy2.cpp'])
+        self.hidden_suite = StudentTestSuiteFactory.validate_and_create(
+            'compiled_student_test_suite',
+            name='hidden_suite',
+            project=self.project,
+            student_test_case_filename_pattern='test_*.cpp',
+            buggy_implementation_filenames=['buggy1.cpp', 'buggy2.cpp'],
+            correct_implementation_filename='correct.cpp',
+            points_per_buggy_implementation_exposed=self.points_per_buggy
+        )
 
-        # TODO: add test suite results to get request
+        self.visible_suite_result = StudentTestSuiteResult.objects.create(
+            test_suite=self.visible_suite,
+            buggy_implementations_exposed=['buggy1.cpp', 'buggy2.cpp'])
+
+        self.hidden_suite_result = StudentTestSuiteResult.objects.create(
+            test_suite=self.hidden_suite,
+            buggy_implementations_exposed=['buggy1.cpp', 'buggy2.cpp'])
+
+        self.full_points = 2 * self.points_for_suite + 2 * self.points_for_test
+
 
 class AddSubmissionRequestTestCase(_SetUpBase):
     def setUp(self):
@@ -174,8 +205,6 @@ class AddSubmissionRequestTestCase(_SetUpBase):
         self.assertEqual(404, response.status_code)
 
     def test_invalid_already_has_submit_in_queue(self):
-        self.project.allow_submissions_from_non_enrolled_students = True
-        self.project.validate_and_save()
         for user in (self.admin, self.staff, self.enrolled, self.nobody):
             group = SubmissionGroup.objects.validate_and_create(
                 members=[user.username], project=self.project)
@@ -285,6 +314,8 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         submission = Submission.objects.validate_and_create(
             submission_group=group, submitted_files=self.files)
         submission.results.add(self.visible_result, self.hidden_result)
+        submission.suite_results.add(
+            self.visible_suite_result, self.hidden_suite_result)
 
         submission.test_case_feedback_config_override = FeedbackConfiguration(
             return_code_feedback_level='correct_or_incorrect_only')
@@ -299,6 +330,9 @@ class GetSubmissionRequestTestCase(_SetUpBase):
             'meta': {
                 'results': [
                     self.visible_result.to_json(),
+                ],
+                'suite_results': [
+                    self.visible_suite_result.to_json()
                 ]
             }
         }
@@ -310,6 +344,12 @@ class GetSubmissionRequestTestCase(_SetUpBase):
             self.project.test_case_feedback_configuration)
         submission.test_case_feedback_config_override.points_feedback_level = (
             'show_total')
+        submission.student_test_suite_feedback_config_override = (
+            StudentTestSuiteFeedbackConfiguration(
+                points_feedback_level=PointsFeedbackLevel.show_total,
+                buggy_implementations_exposed_feedback_level=(
+                    (BuggyImplementationsExposedFeedbackLevel.
+                        list_implementations_exposed_overall))))
         submission.save()
 
         response = _get_submission_request(submission.pk, self.enrolled)
@@ -321,10 +361,13 @@ class GetSubmissionRequestTestCase(_SetUpBase):
                 'results': [
                     self.visible_result.to_json(),
                 ],
+                'suite_results': [
+                    self.visible_suite_result.to_json()
+                ],
                 'total_points_awarded': (
-                    self.visible_result.to_json()['total_points_awarded']),
+                    self.points_for_test + self.points_for_suite),
                 'total_points_possible': (
-                    self.visible_result.to_json()['total_points_possible'])
+                    self.points_for_test + self.points_for_suite)
             }
         }
 
@@ -332,11 +375,14 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         self.assertJSONObjsEqual(expected, actual)
 
         # Show points total, set at project level
-        submission.test_case_feedback_config_override = None
-        submission.save()
-        self.project.test_case_feedback_configuration.points_feedback_level = (
-            'show_total')
+        self.project.test_case_feedback_configuration = (
+            submission.test_case_feedback_config_override)
+        self.project.student_test_suite_feedback_configuration = (
+            submission.student_test_suite_feedback_config_override)
         self.project.validate_and_save()
+        submission.test_case_feedback_config_override = None
+        submission.student_test_suite_feedback_config_override = None
+        submission.save()
 
         expected['data'] = submission_to_json(submission)
 
@@ -354,6 +400,8 @@ class GetSubmissionRequestTestCase(_SetUpBase):
             submission = Submission.objects.validate_and_create(
                 submission_group=group, submitted_files=self.files)
             submission.results.add(self.visible_result, self.hidden_result)
+            submission.suite_results.add(
+                self.visible_suite_result, self.hidden_suite_result)
 
             response = _get_submission_request(submission.pk, user)
             self.assertEqual(200, response.status_code)
@@ -365,12 +413,15 @@ class GetSubmissionRequestTestCase(_SetUpBase):
                         self.visible_result.to_json(
                             FeedbackConfiguration.get_max_feedback())
                     ],
-                    'total_points_possible': self.visible_result.to_json(
-                        FeedbackConfiguration.get_max_feedback()
-                        )['total_points_possible'],
-                    'total_points_awarded': self.visible_result.to_json(
-                        FeedbackConfiguration.get_max_feedback()
-                        )['total_points_awarded']
+                    'suite_results': [
+                        self.visible_suite_result.to_json(
+                            (StudentTestSuiteFeedbackConfiguration.
+                                get_max_feedback()))
+                    ],
+                    'total_points_possible': (
+                        self.points_for_test + self.points_for_suite),
+                    'total_points_awarded': (
+                        self.points_for_test + self.points_for_suite)
                 }
             }
 
@@ -386,6 +437,8 @@ class GetSubmissionRequestTestCase(_SetUpBase):
             submission = Submission.objects.validate_and_create(
                 submission_group=group, submitted_files=self.files)
             submission.results.add(self.visible_result, self.hidden_result)
+            submission.suite_results.add(
+                self.visible_suite_result, self.hidden_suite_result)
 
             response = _get_submission_request(submission.pk, user)
             self.assertEqual(200, response.status_code)
@@ -395,19 +448,25 @@ class GetSubmissionRequestTestCase(_SetUpBase):
                 self.visible_result.to_json(
                     FeedbackConfiguration.get_max_feedback()),
                 self.hidden_result.to_json(
-                    FeedbackConfiguration.get_max_feedback())
+                    FeedbackConfiguration.get_max_feedback()),
             ], key=sort_key))
 
-            pts_possible = sum(
-                result['total_points_possible'] for result in results_json)
+            suite_sort_key = lambda obj: obj['test_suite_name']
+            suite_results_json = list(sorted([
+                self.visible_suite_result.to_json(
+                    StudentTestSuiteFeedbackConfiguration.get_max_feedback()),
+                self.hidden_suite_result.to_json(
+                    StudentTestSuiteFeedbackConfiguration.get_max_feedback())
+            ], key=suite_sort_key))
 
-            pts_awarded = sum(
-                result['total_points_awarded'] for result in results_json)
+            pts_possible = 2 * self.points_for_test + 2 * self.points_for_suite
+            pts_awarded = 2 * self.points_for_test + 2 * self.points_for_suite
 
             expected = {
                 'data': submission_to_json(submission),
                 'meta': {
                     'results': results_json,
+                    'suite_results': suite_results_json,
                     'total_points_possible': pts_possible,
                     'total_points_awarded': pts_awarded
                 }
@@ -415,6 +474,7 @@ class GetSubmissionRequestTestCase(_SetUpBase):
 
             actual = json_load_bytes(response.content)
             actual['meta']['results'].sort(key=sort_key)
+            actual['meta']['suite_results'].sort(key=suite_sort_key)
 
             self.assertJSONObjsEqual(expected, actual)
 
@@ -424,26 +484,34 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         submission = Submission.objects.validate_and_create(
             submission_group=group, submitted_files=self.files)
         submission.results.add(self.visible_result, self.hidden_result)
+        submission.suite_results.add(
+            self.visible_suite_result, self.hidden_suite_result)
 
-        submission.show_all_test_cases = True
+        submission.show_all_test_cases_and_suites = True
         submission.save()
 
         response = _get_submission_request(submission.pk, self.enrolled)
         self.assertEqual(200, response.status_code)
 
         sort_key = lambda obj: obj['test_name']
+        suite_sort_key = lambda obj: obj['test_suite_name']
         expected = {
             'data': submission_to_json(submission),
             'meta': {
                 'results': list(sorted([
                     self.visible_result.to_json(),
                     self.hidden_result.to_json()
-                ], key=sort_key))
+                ], key=sort_key)),
+                'suite_results': list(sorted([
+                    self.visible_suite_result.to_json(),
+                    self.hidden_suite_result.to_json()
+                ], key=suite_sort_key))
             }
         }
 
         actual = json_load_bytes(response.content)
         actual['meta']['results'].sort(key=sort_key)
+        actual['meta']['suite_results'].sort(key=suite_sort_key)
 
         self.assertJSONObjsEqual(expected, actual)
 
@@ -453,8 +521,10 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         submission = Submission.objects.validate_and_create(
             submission_group=group, submitted_files=self.files)
         submission.results.add(self.visible_result, self.hidden_result)
+        submission.suite_results.add(
+            self.visible_suite_result, self.hidden_suite_result)
 
-        submission.show_all_test_cases = True
+        submission.show_all_test_cases_and_suites = True
         submission.save()
 
         response = _get_submission_request(submission.pk, self.staff)
@@ -468,23 +538,27 @@ class GetSubmissionRequestTestCase(_SetUpBase):
                 FeedbackConfiguration.get_max_feedback())
         ], key=sort_key))
 
-        pts_possible = sum(
-            result['total_points_possible'] for result in results_json)
-
-        pts_awarded = sum(
-            result['total_points_awarded'] for result in results_json)
+        suite_sort_key = lambda obj: obj['test_suite_name']
+        suite_results_json = list(sorted([
+            self.visible_suite_result.to_json(
+                StudentTestSuiteFeedbackConfiguration.get_max_feedback()),
+            self.hidden_suite_result.to_json(
+                StudentTestSuiteFeedbackConfiguration.get_max_feedback())
+        ], key=suite_sort_key))
 
         expected = {
             'data': submission_to_json(submission),
             'meta': {
                 'results': results_json,
-                'total_points_awarded': pts_awarded,
-                'total_points_possible': pts_possible
+                'suite_results': suite_results_json,
+                'total_points_awarded': self.full_points,
+                'total_points_possible': self.full_points
             }
         }
 
         actual = json_load_bytes(response.content)
         actual['meta']['results'].sort(key=sort_key)
+        actual['meta']['suite_results'].sort(key=suite_sort_key)
 
         self.assertJSONObjsEqual(expected, actual)
 
@@ -530,7 +604,7 @@ class PatchSubmissionRequestTestCase(_SetUpBase):
 
         self.assertEqual(loaded.test_case_feedback_config_override,
                          FeedbackConfiguration.get_max_feedback())
-        self.assertTrue(loaded.show_all_test_cases)
+        self.assertTrue(loaded.show_all_test_cases_and_suites)
 
     def test_bad_feedback_config(self):
         response = _patch_submission_request(
@@ -573,7 +647,7 @@ def _patch_submission_request(submission_id, new_feedback, user,
         }
     }
     if new_show_tests is not None:
-        data['data']['attributes']['show_all_test_cases'] = new_show_tests
+        data['data']['attributes']['show_all_test_cases_and_suites'] = new_show_tests
 
     return process_patch_request(url, data, user)
 

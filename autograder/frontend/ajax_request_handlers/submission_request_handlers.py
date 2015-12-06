@@ -16,14 +16,15 @@ from autograder.frontend.json_api_serializers import (
 
 from autograder.models import SubmissionGroup, Submission
 from autograder.models.fields import FeedbackConfiguration
-
+from autograder.models.feedback_configuration import (
+    StudentTestSuiteFeedbackConfiguration, PointsFeedbackLevel)
 # from autograder.tasks import grade_submission
 
 
 class SubmissionRequestHandler(LoginRequiredView):
     _EDITABLE_FIELDS = [
         'test_case_feedback_config_override',
-        'show_all_test_cases'
+        'show_all_test_cases_and_suites'
     ]
 
     def post(self, request):
@@ -128,42 +129,87 @@ class SubmissionRequestHandler(LoginRequiredView):
 
         feedback_override = (
             FeedbackConfiguration.get_max_feedback() if is_staff else None)
+        suite_feedback_override = (
+            StudentTestSuiteFeedbackConfiguration.get_max_feedback()
+            if is_staff else None)
 
-        if submission.show_all_test_cases or (is_staff and is_member):
+        if (submission.show_all_test_cases_and_suites or
+                (is_staff and is_member)):
             result_set = submission.results.all()
+            suite_result_set = submission.suite_results.all()
         else:
             result_set = submission.results.filter(
                 test_case__hide_from_students=False)
+            suite_result_set = submission.suite_results.filter(
+                test_suite__hide_from_students=False)
 
         results_json = [
             result.to_json(override_feedback=feedback_override) for
             result in result_set
         ]
 
+        suite_results_json = [
+            result.to_json(
+                feedback_config_override=suite_feedback_override)
+            for result in suite_result_set
+        ]
+
         response_content = {
             'data': submission_to_json(submission),
             'meta': {
-                'results': results_json
-                # TODO: test suite results
+                'results': results_json,
+                'suite_results': suite_results_json
             }
         }
 
         if feedback_override is not None:
             points_feedback = feedback_override.points_feedback_level
         elif submission.test_case_feedback_config_override is not None:
-            feedback = submission.test_case_feedback_config_override
-            points_feedback = feedback.points_feedback_level
+            points_feedback = (submission.test_case_feedback_config_override.
+                               points_feedback_level)
         else:
-            feedback = group.project.test_case_feedback_configuration
-            points_feedback = feedback.points_feedback_level
+            points_feedback = (group.project.test_case_feedback_configuration.
+                               points_feedback_level)
 
-        if points_feedback == 'hide':
+        if suite_feedback_override is not None:
+            suite_points_feedback = (
+                suite_feedback_override.points_feedback_level)
+        elif (submission.student_test_suite_feedback_config_override
+                is not None):
+            suite_points_feedback = (
+                submission.student_test_suite_feedback_config_override.
+                points_feedback_level)
+        else:
+            suite_points_feedback = (
+                group.project.student_test_suite_feedback_configuration.
+                points_feedback_level)
+
+        show_test_points = points_feedback != 'hide'
+        show_suite_points = suite_points_feedback != PointsFeedbackLevel.hide
+
+        if not show_test_points and not show_suite_points:
             return JsonResponse(response_content, status=200)
 
-        total_score = sum(
-            result['total_points_awarded'] for result in results_json)
-        points_possible = sum(
-            result['total_points_possible'] for result in results_json)
+        if show_test_points:
+            test_points_awarded = sum(
+                result['total_points_awarded'] for result in results_json)
+            test_points_possible = sum(
+                result['total_points_possible'] for result in results_json)
+        else:
+            test_points_awarded = 0
+            test_points_possible = 0
+
+        if show_suite_points:
+            suite_points_awarded = sum(
+                result['points_awarded'] for result in suite_results_json)
+            suite_points_possible = sum(
+                result['points_possible'] for result in suite_results_json)
+        else:
+            suite_points_awarded = 0
+            suite_points_possible = 0
+
+        total_score = test_points_awarded + suite_points_awarded
+        points_possible = test_points_possible + suite_points_possible
 
         response_content['meta']['total_points_awarded'] = total_score
         response_content['meta']['total_points_possible'] = points_possible

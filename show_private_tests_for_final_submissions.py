@@ -26,7 +26,7 @@ def main():
 
     submissions = Submission.get_most_recent_submissions(project)
     for submission in submissions:
-        submission.show_all_test_cases = True
+        submission.show_all_test_cases_and_suites = True
         submission.save()
 
 
