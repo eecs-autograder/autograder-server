@@ -6,8 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 
 from autograder.models.utils import (
-    PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate,
-    filename_matches_any_pattern)
+    PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
@@ -457,9 +456,12 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         resource_file_errors = []
         for filename in self.student_resource_files:
             is_required = filename in self.project.required_student_files
-            matches_pattern = filename_matches_any_pattern(
-                filename, self.project.expected_student_file_patterns)
-            if not is_required and not matches_pattern:
+            is_expected_pattern = filename in (
+                obj.pattern for obj in
+                self.project.expected_student_file_patterns)
+            # filename_matches_any_pattern(
+            #     filename, self.project.expected_student_file_patterns)
+            if not is_required and not is_expected_pattern:
                 resource_file_errors.append(
                     "File {0} is not a student file for project {1}".format(
                         filename, self.project.name))

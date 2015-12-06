@@ -522,6 +522,30 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             },
             self.correct_test_result.to_json(override_feedback=override))
 
+    def test_serialize_results_with_submission_and_manual_feedback_override(self):
+        submission_override = FeedbackConfiguration(
+            return_code_feedback_level='correct_or_incorrect_only')
+        submission_override.validate()
+
+        self.submission.test_case_feedback_config_override = submission_override
+        self.submission.save()
+
+        self.correct_test_result.submission = self.submission
+        self.correct_test_result.save()
+
+        manual_override = FeedbackConfiguration(
+            return_code_feedback_level='correct_or_incorrect_only')
+        manual_override.validate()
+
+        self.assertEqual(
+            {
+                'test_name': self.test_case.name,
+                'timed_out': False,
+                'return_code_correct': True
+            },
+            self.correct_test_result.to_json(
+                override_feedback=manual_override))
+
     def test_mixed_feedback_points_breakdown(self):
         feedback = self.medium_config
         feedback.points_feedback_level = 'show_breakdown'

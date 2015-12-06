@@ -176,6 +176,8 @@ def prepare_and_run_tests(submission):
 
             sandbox.clear_working_dir()
 
+        # TODO: Evaluate test suites
+
 
 if __name__ == '__main__':
     main()

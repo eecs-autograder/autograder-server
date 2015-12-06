@@ -144,6 +144,7 @@ class SubmissionRequestHandler(LoginRequiredView):
             'data': submission_to_json(submission),
             'meta': {
                 'results': results_json
+                # TODO: test suite results
             }
         }
 

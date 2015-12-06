@@ -38,7 +38,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.submission_group = SubmissionGroup.objects.validate_and_create(
             members=self.member_names, project=self.project)
 
-    def test_valid_init(self):
+    def test_valid_init_with_defaults(self):
         SimpleFileTuple = namedtuple('SimpleFileTuple', ['name', 'content'])
 
         submit_file_data = sorted([
@@ -62,6 +62,8 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertFalse(loaded_submission.show_all_test_cases)
         self.assertEqual(loaded_submission.timestamp, submission.timestamp)
         self.assertIsNone(loaded_submission.test_case_feedback_config_override)
+        self.assertIsNone(
+            loaded_submission.student_test_suite_feedback_config_override)
         self.assertEqual(
             loaded_submission.status,
             Submission.GradingStatus.received)
@@ -82,6 +84,27 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(
                 submit_file_data[index].name, os.path.basename(value.name))
             self.assertEqual(submit_file_data[index].content, value.read())
+
+    import unittest
+    @unittest.skip('TODO')
+    def test_valid_init_with_non_defaults(self):
+        self.fail()
+        # submit_file_data = sorted([
+        #     SimpleUploadedFile('spam.cpp', b'blah'),
+        #     SimpleUploadedFile('eggs.cpp', b'merp'),
+        #     SimpleUploadedFile('test_spam.cpp', b'cheeese')
+        # ])
+
+        # submission = Submission.objects.validate_and_create(
+        #     submission_group=self.submission_group,
+        #     submitted_files=[
+        #         SimpleUploadedFile(name, content) for
+        #         name, content in submit_file_data],
+
+        #     )
+
+        # loaded_submission = Submission.objects.get(
+        #     submission_group=self.submission_group)
 
     def test_invalid_submission_missing_required_file(self):
         files = [
@@ -115,7 +138,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             loaded_submission.status, Submission.GradingStatus.invalid)
         self.assertTrue(loaded_submission.invalid_reason_or_error)
 
-    def test_invalid_submission_too_much_of_pattern(self):
+    def test_extra_pattern_matching_files_discarded(self):
         files = [
             SimpleUploadedFile('spam.cpp', b'blah'),
             SimpleUploadedFile('eggs.cpp', b'merp'),
@@ -131,8 +154,13 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             submission_group=self.submission_group)
 
         self.assertEqual(
-            loaded_submission.status, Submission.GradingStatus.invalid)
-        self.assertTrue(loaded_submission.invalid_reason_or_error)
+            loaded_submission.status, Submission.GradingStatus.received)
+        self.assertSetEqual(
+            set(file_.name for file_ in files[:-1]),
+            set(loaded_submission.get_submitted_file_basenames()))
+
+        self.assertListEqual(
+            [files[-1].name], loaded_submission.discarded_files)
 
     def test_extra_files_discarded(self):
         files = [

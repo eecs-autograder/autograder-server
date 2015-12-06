@@ -136,8 +136,8 @@ class AutograderTestCaseResultBase(PolymorphicModel):
         {
             'test_name': <name>,
 
-            // Note that some or all of the following may be ommitted
-            // depending on the feedback level.
+            //** NOTE: Some or all of the following may be ommitted **//
+            //** depending on the feedback level.                   **//
 
             'return_code_correct': <True | False>,
             'expected_return_code': <value>,

@@ -7,6 +7,10 @@ from django.utils import timezone
 
 from autograder.models import (
     Project, Semester, Course, AutograderTestCaseBase)
+from autograder.models.feedback_configuration import (
+    StudentTestSuiteFeedbackConfiguration, CompilationFeedbackLevel,
+    StudentTestCaseValidityFeedbackConfiguration,
+    BuggyImplementationsExposedFeedbackLevel)
 from autograder.models.fields import FeedbackConfiguration
 
 import autograder.shared.utilities as ut
@@ -59,6 +63,10 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.max_group_size, 1)
         self.assertEqual(loaded_project.required_student_files, [])
         self.assertEqual(loaded_project.expected_student_file_patterns, [])
+        self.assertEqual(
+            loaded_project.student_test_suite_feedback_configuration,
+            StudentTestSuiteFeedbackConfiguration()
+        )
 
     # -------------------------------------------------------------------------
 
@@ -81,10 +89,20 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             valgrind_feedback_level='show_valgrind_output'
         )
 
+        suite_feedback_config = StudentTestSuiteFeedbackConfiguration(
+                compilation_feedback_level=(
+                    CompilationFeedbackLevel.success_or_failure_only),
+                student_test_validity_feedback_level=(
+                    StudentTestCaseValidityFeedbackConfiguration.show_valid_or_invalid),
+                buggy_implementations_exposed_feedback_level=(
+                    BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed)
+        )
+
         new_project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME,
             semester=self.semester,
             test_case_feedback_configuration=feedback_config,
+            student_test_suite_feedback_configuration=suite_feedback_config,
             visible_to_students=True,
             closing_time=tomorrow_date,
             disallow_student_submissions=True,
@@ -107,6 +125,9 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             loaded_project.test_case_feedback_configuration,
             feedback_config)
+        self.assertEqual(
+            loaded_project.student_test_suite_feedback_configuration,
+            suite_feedback_config)
 
         self.assertEqual(loaded_project.visible_to_students, True)
         self.assertEqual(loaded_project.closing_time, tomorrow_date)

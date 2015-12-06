@@ -4,12 +4,10 @@ import fnmatch
 from .student_test_suite_base import StudentTestSuiteBase
 
 from autograder.models.utils import (
-    PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate,
-    filename_matches_any_pattern)
+    PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
 from .student_test_suite_result import (
     StudentTestSuiteResult, StudentTestCaseEvaluationResult)
-from autograder.models import AutograderTestCaseFactory
 
 import autograder.shared.utilities as ut
 

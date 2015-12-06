@@ -96,6 +96,7 @@ class StudentTestSuiteBaseTests(object):
         self.assertEqual([], loaded.suite_resource_filenames)
         self.assertEqual(gc.DEFAULT_SUBPROCESS_TIMEOUT, loaded.time_limit)
         self.assertTrue(loaded.hide_from_students)
+        self.assertEqual(0, loaded.points_per_buggy_implementation_exposed)
 
         # Fat interface fields
         self.assertEqual('g++', loaded.compiler)
@@ -119,6 +120,7 @@ class StudentTestSuiteBaseTests(object):
             suite_resource_filenames=self.project_filenames,
             time_limit=time_limit,
             hide_from_students=False,
+            points_per_buggy_implementation_exposed=1,
 
             compiler='g++',
             compiler_flags=compiler_flags,
@@ -147,6 +149,7 @@ class StudentTestSuiteBaseTests(object):
             self.project_filenames, loaded.suite_resource_filenames)
         self.assertEqual(time_limit, loaded.time_limit)
         self.assertFalse(loaded.hide_from_students)
+        self.assertEqual(1, loaded.points_per_buggy_implementation_exposed)
 
         self.assertEqual(compiler_flags, loaded.compiler_flags)
         self.assertEqual(

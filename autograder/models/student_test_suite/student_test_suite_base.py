@@ -11,6 +11,8 @@ from autograder.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
 
+# TODO: points configuration
+
 class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
     """
     This base class provides a fat interface for evaluating student-submitted
@@ -64,7 +66,7 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
         buggy_implementation_filenames -- A list of names of project files,
             each of which contains a buggy implementation of the module
             being tested by this test suite.
-            This field can be empty but may NOT be None
+            This field can be empty but may NOT be None.
             Default value: Empty list
 
         implementation_file_alias -- When this value is non-empty, the current
@@ -109,6 +111,11 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
                 for their own submissions, but when viewing a student
                 submission, this test suite will still be hidden.
             Default value: True
+
+        points_per_buggy_implementation_exposed -- The number of points
+            awarded for each buggy implementation exposed.
+            This value must be >= 0
+            Default value: zero
 
     Fat interface fields:
         compiler -- The program that will be used to compile the test case
@@ -187,6 +194,9 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
                     MaxValueValidator(gc.MAX_SUBPROCESS_TIMEOUT)])
 
     hide_from_students = models.BooleanField(default=True)
+
+    points_per_buggy_implementation_exposed = models.IntegerField(
+        default=0, validators=[MinValueValidator(0)])
 
     # -------------------------------------------------------------------------
 

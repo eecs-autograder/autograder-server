@@ -16,7 +16,8 @@ from autograder.frontend.json_api_serializers import submission_to_json
 
 from autograder.models import (
     SubmissionGroup, AutograderTestCaseFactory, Submission,
-    AutograderTestCaseResultBase)
+    AutograderTestCaseResultBase, StudentTestSuiteFactory,
+    StudentTestSuiteResult)
 from autograder.models.fields import FeedbackConfiguration
 
 
@@ -84,6 +85,27 @@ class _SetUpBase(RequestHandlerTestCase):
         self.hidden_result = AutograderTestCaseResultBase.objects.create(
             test_case=self.hidden_test,
             return_code=0)
+
+        self.visible_suite = StudentTestSuiteFactory.validate_and_create(
+            'compiled_student_test_suite',
+            name='visible_suite',
+            project=self.project,
+            student_test_case_filename_pattern='*_test.cpp',
+            correct_implementation_filename='correct.cpp',
+            hide_from_students=False
+        )
+
+        self.hidden_suite = StudentTestSuiteFactory.validate_and_create(
+            'compiled_student_test_suite',
+            name='hidden_suite',
+            project=self.project,
+            student_test_case_filename_pattern='*_test.cpp',
+            correct_implementation_filename='correct.cpp'
+        )
+
+        self.visible_suite_result = StudentTestSuiteResult.objects.create(
+            test_suite=self.visible_suite,
+            buggy_solutions_exposed=['buggy1.cpp', 'buggy2.cpp'])
 
 
 class AddSubmissionRequestTestCase(_SetUpBase):

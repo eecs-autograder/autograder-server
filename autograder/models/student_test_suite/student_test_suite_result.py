@@ -66,16 +66,56 @@ class StudentTestSuiteResult(models.Model):
         to_json()
     """
     test_suite = models.ForeignKey(
-        'StudentTestSuiteBase', related_name='results')
+        'StudentTestSuiteBase')
 
     submission = models.ForeignKey(
-        Submission, null=True, blank=True, default=None)
+        Submission, null=True, blank=True, default=None,
+        related_name='suite_results')
 
     buggy_implementations_exposed = ag_fields.ClassField(set, default=set)
-
-    # buggy_implementations_exposed = ag_fields.StringListField(
-    #     strip_strings=False, default=[])
 
     detailed_results = pg_fields.ArrayField(
         ag_fields.ClassField(StudentTestCaseEvaluationResult),
         default=list, blank=True)
+
+    def to_json(self, feedack_config_override=None):
+        """
+        Returns a JSON representation of this test suite result of the
+        following form:
+
+        test_suite_name: <name>,
+
+        //** NOTE: Some or all of the following may be ommitted **//
+        //** depending on the feedback level.                   **//
+
+        buggy_implementations_exposed: [
+            <implementation filename>,
+            ...
+        ],
+
+        detailed_results: [
+            {
+                //** NOTE: Some of the following may be ommitted **//
+                //** depending on the feedback level.            **//
+
+                student_test_name: <name>,
+
+                compilation_return_code: <value>,
+                compilation_standard_output: <value>,
+                compilation_standard_error_output: <value>,
+
+                valid: <true|false>,
+                validity_check_standard_output: <value>,
+                validity_check_standard_error_output: <value>,
+
+                timed_out: <true|false>,
+
+                buggy_implementations_exposed: [
+                    <implementation filename>,
+                    ...
+                ]
+            },
+            ...
+        ]
+        """
+        pass

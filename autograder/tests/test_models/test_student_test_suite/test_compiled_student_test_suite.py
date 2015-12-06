@@ -186,7 +186,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
 
     def test_implementation_non_header_file_alias(self):
         self.suite.implementation_file_alias = 'alias.cpp'
-        self.buggy_implementation_filenames = [BUGGY_IMPLEMENTATION_RETURN_42.name]
+        self.buggy_implementation_filenames = [
+            BUGGY_IMPLEMENTATION_RETURN_42.name
+        ]
         self.suite.validate_and_save()
 
         self.submission = Submission.objects.validate_and_create(

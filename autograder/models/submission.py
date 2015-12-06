@@ -10,10 +10,11 @@ from django.utils import timezone
 from jsonfield import JSONField
 
 from autograder.models import SubmissionGroup
-from autograder.models.fields import FeedbackConfigurationField
+from autograder.models.fields import FeedbackConfigurationField, ClassField
 from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate,
-    filename_matches_any_pattern)
+    find_matching_pattern)
+from .feedback_configuration import StudentTestSuiteFeedbackConfiguration
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
@@ -81,7 +82,11 @@ class Submission(ModelValidatableOnSave):
     Submission.objects.validate_and_create() filters through the list
     of submitted files and discards any that:
         - Have illegal filenames
-        - Are not required or expected by the Project
+        - Are not required or expected by the Project. This includes files
+            that match an expected pattern but exceed the number of allowed
+            matches of that pattern. For example, if at most 2 files matching
+            the pattern test_*.cpp are expected but 3 such files are submitted,
+            the last one listed will be discarded.
         - Are duplicates of another file (in a given group of files with
             the same name, all but one of those
             files are arbitrarily discarded)
@@ -100,6 +105,7 @@ class Submission(ModelValidatableOnSave):
 
         discarded_files -- A list of names of files that were discarded
             when this Submission was created.
+            This field is set automatically.
 
         timestamp -- The timestamp at which this Submission was
             recorded.
@@ -112,10 +118,16 @@ class Submission(ModelValidatableOnSave):
             feedback configuration.
             Default value: None
 
+        student_test_suite_feedback_config_override -- When this field is not
+            None, the student test suite feedback configuration here will
+            override the Project level feedback configuration.
+            Default value: None
+
         show_all_test_cases -- A hard override for visible/hidden test cases.
             When this field is True, students will get feedback
             on ALL test cases, including those marked as hidden.
             This field does not effect the feedback configuration.
+            Default value: False
 
         status -- The grading status of this submission. Acceptable values
             and their meanings are as follows:
@@ -152,7 +164,7 @@ class Submission(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    # TODO: make this a proper enum once django migrations support enums
+    # TODO: make this a proper enum once django ORM supports enums
     class GradingStatus(object):
         received = 'received'
         queued = 'queued'
@@ -192,6 +204,8 @@ class Submission(ModelValidatableOnSave):
 
     test_case_feedback_config_override = FeedbackConfigurationField(
         null=True, default=None)
+    student_test_suite_feedback_config_override = ClassField(
+        StudentTestSuiteFeedbackConfiguration, null=True, default=None)
     show_all_test_cases = models.BooleanField(default=False, blank=True)
 
     status = models.CharField(
@@ -286,12 +300,19 @@ class Submission(ModelValidatableOnSave):
             raise ValidationError({'submitted_files': errors})
 
     def file_is_extra(self, filename):
-        matches_any_pattern = filename_matches_any_pattern(
+        required_files = self.submission_group.project.required_student_files
+        pattern_obj = find_matching_pattern(
             filename,
             self.submission_group.project.expected_student_file_patterns)
-        required_files = self.submission_group.project.required_student_files
-        return (filename not in required_files and
-                not matches_any_pattern)
+
+        if not pattern_obj:
+            return filename not in required_files
+
+        submission_dir = ut.get_submission_dir(self)
+        num_matches = len(fnmatch.filter(
+            os.listdir(submission_dir), pattern_obj.pattern))
+
+        return num_matches == pattern_obj.max_num_matches
 
 
 class _SubmittedFile(ModelValidatableOnSave):

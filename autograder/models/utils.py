@@ -8,8 +8,8 @@ from polymorphic import PolymorphicManager, PolymorphicModel
 import autograder.shared.utilities as ut
 
 
-def filename_matches_any_pattern(filename, pattern_objects):
-    return ut.count_if(
+def find_matching_pattern(filename, pattern_objects):
+    return ut.find_if(
         pattern_objects,
         lambda pattern_obj: fnmatch.fnmatch(filename, pattern_obj.pattern))
 
