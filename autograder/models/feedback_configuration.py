@@ -14,11 +14,14 @@ class StudentTestSuiteFeedbackConfiguration:
 
         self.student_test_validity_feedback_level = kwargs.get(
             'student_test_validity_feedback_level',
-            StudentTestCaseValidityFeedbackConfiguration.no_feedback)
+            StudentTestCaseValidityFeedbackLevel.no_feedback)
 
         self.buggy_implementations_exposed_feedback_level = kwargs.get(
             'buggy_implementations_exposed_feedback_level',
             BuggyImplementationsExposedFeedbackLevel.no_feedback)
+
+        self.points_feedback_level = kwargs.get(
+            'points_feedback_level', PointsFeedbackLevel.hide)
 
     def __eq__(self, other):
         if not isinstance(other, StudentTestSuiteFeedbackConfiguration):
@@ -30,7 +33,8 @@ class StudentTestSuiteFeedbackConfiguration:
             self.student_test_validity_feedback_level ==
             other.student_test_validity_feedback_level and
             self.buggy_implementations_exposed_feedback_level ==
-            other.buggy_implementations_exposed_feedback_level
+            other.buggy_implementations_exposed_feedback_level and
+            self.points_feedback_level == other.points_feedback_level
         )
 
     @property
@@ -48,7 +52,7 @@ class StudentTestSuiteFeedbackConfiguration:
     @student_test_validity_feedback_level.setter
     def student_test_validity_feedback_level(self, value):
         self._student_test_validity_feedback_level = (
-            StudentTestCaseValidityFeedbackConfiguration(
+            StudentTestCaseValidityFeedbackLevel(
                 value))
 
     @property
@@ -60,23 +64,36 @@ class StudentTestSuiteFeedbackConfiguration:
         self._buggy_implementations_exposed_feedback_level = (
             BuggyImplementationsExposedFeedbackLevel(value))
 
+    @property
+    def points_feedback_level(self):
+        return self._points_feedback_level
 
-class StudentTestCaseValidityFeedbackConfiguration(Enum):
+    @points_feedback_level.setter
+    def points_feedback_level(self, value):
+        self._points_feedback_level = PointsFeedbackLevel(value)
+
+
+class StudentTestCaseValidityFeedbackLevel(Enum):
     no_feedback = 'no_feedback'
     show_valid_or_invalid = 'show_valid_or_invalid'
+    show_validity_check_output = 'show_validity_check_output'
 
 
 class BuggyImplementationsExposedFeedbackLevel(Enum):
     no_feedback = 'no_feedback'
-    # TODO: rename to list_implementations_exposed_overall
-    list_implementations_exposed = 'list_implementations_exposed'
-    # TODO: list_implementations_exposed_per_test
+    list_implementations_exposed_overall = 'list_implementations_exposed_overall'
+    list_implementations_exposed_per_test = 'list_implementations_exposed_per_test'
 
 
 class CompilationFeedbackLevel(Enum):
     no_feedback = 'no_feedback'
     success_or_failure_only = 'success_or_failure_only'
     show_compiler_output = 'show_compiler_output'
+
+
+# TODO
+# class ProgramTimeoutFeedbackLevel(Enum):
+#     pass
 
 
 class ReturnCodeFeedbackLevel(Enum):
@@ -91,7 +108,7 @@ class OutputFeedbackLevel(Enum):
     show_expected_and_actual_values = 'show_expected_and_actual_values'
 
 
-class PointsFeedbackLevel:
+class PointsFeedbackLevel(Enum):
     hide = 'hide'
     # Note: When "show_total" or "show_breakdown" is chosen,
     # it will only show the

@@ -86,26 +86,26 @@ class _SetUpBase(RequestHandlerTestCase):
             test_case=self.hidden_test,
             return_code=0)
 
-        self.visible_suite = StudentTestSuiteFactory.validate_and_create(
-            'compiled_student_test_suite',
-            name='visible_suite',
-            project=self.project,
-            student_test_case_filename_pattern='*_test.cpp',
-            correct_implementation_filename='correct.cpp',
-            hide_from_students=False
-        )
+        # self.visible_suite = StudentTestSuiteFactory.validate_and_create(
+        #     'compiled_student_test_suite',
+        #     name='visible_suite',
+        #     project=self.project,
+        #     student_test_case_filename_pattern='*_test.cpp',
+        #     correct_implementation_filename='correct.cpp',
+        #     hide_from_students=False
+        # )
 
-        self.hidden_suite = StudentTestSuiteFactory.validate_and_create(
-            'compiled_student_test_suite',
-            name='hidden_suite',
-            project=self.project,
-            student_test_case_filename_pattern='*_test.cpp',
-            correct_implementation_filename='correct.cpp'
-        )
+        # self.hidden_suite = StudentTestSuiteFactory.validate_and_create(
+        #     'compiled_student_test_suite',
+        #     name='hidden_suite',
+        #     project=self.project,
+        #     student_test_case_filename_pattern='*_test.cpp',
+        #     correct_implementation_filename='correct.cpp'
+        # )
 
-        self.visible_suite_result = StudentTestSuiteResult.objects.create(
-            test_suite=self.visible_suite,
-            buggy_solutions_exposed=['buggy1.cpp', 'buggy2.cpp'])
+        # self.visible_suite_result = StudentTestSuiteResult.objects.create(
+        #     test_suite=self.visible_suite,
+        #     buggy_solutions_exposed=['buggy1.cpp', 'buggy2.cpp'])
 
         # TODO: add test suite results to get request
 

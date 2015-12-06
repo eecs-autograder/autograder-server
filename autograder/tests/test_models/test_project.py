@@ -9,7 +9,7 @@ from autograder.models import (
     Project, Semester, Course, AutograderTestCaseBase)
 from autograder.models.feedback_configuration import (
     StudentTestSuiteFeedbackConfiguration, CompilationFeedbackLevel,
-    StudentTestCaseValidityFeedbackConfiguration,
+    StudentTestCaseValidityFeedbackLevel,
     BuggyImplementationsExposedFeedbackLevel)
 from autograder.models.fields import FeedbackConfiguration
 
@@ -93,9 +93,9 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             compilation_feedback_level=(
                 CompilationFeedbackLevel.success_or_failure_only),
             student_test_validity_feedback_level=(
-                StudentTestCaseValidityFeedbackConfiguration.show_valid_or_invalid),
+                StudentTestCaseValidityFeedbackLevel.show_valid_or_invalid),
             buggy_implementations_exposed_feedback_level=(
-                BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed)
+                BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed_overall)
         )
 
         new_project = Project.objects.validate_and_create(

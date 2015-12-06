@@ -44,10 +44,12 @@ class Project(ModelValidatableOnSave):
         test_case_feedback_configuration -- The feedback configuration to use
             for autograder test cases belonging to this project.
             This value can be overridden in individual Submissions.
+            Default value: default initialized FeedbackConfiguration
 
         student_test_suite_feedback_configuration -- The feedback configuration
             to use for student test suites belonging to this project.
             This value can be overridden in individual Submissions.
+            Default value: default initialized StudentTestSuiteFeedbackConfiguration
 
         visible_to_students -- Whether information about this Project can
             be viewed by students.
