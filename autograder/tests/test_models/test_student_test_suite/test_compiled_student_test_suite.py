@@ -9,7 +9,9 @@ from autograder.tests.temporary_filesystem_test_case import (
 
 import autograder.tests.dummy_object_utils as obj_ut
 
-from autograder.models import StudentTestSuiteFactory, SubmissionGroup, Submission
+from autograder.models import (
+    StudentTestSuiteFactory, SubmissionGroup, Submission,
+    StudentTestSuiteResult)
 from autograder.autograder_sandbox import AutograderSandbox
 
 import autograder.shared.utilities as ut
@@ -76,6 +78,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_RETURN_42, STUDENT_TEST_IS_OVER_9000])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertSetEqual(
             result.buggy_implementations_exposed,
             set(file_.name for file_ in BUGGY_IMPLEMENTATIONS))
@@ -87,6 +92,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_THAT_DOESNT_COMPILE])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertSetEqual(
             result.buggy_implementations_exposed,
             set(file_.name for file_ in BUGGY_IMPLEMENTATIONS))
@@ -106,6 +114,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_THAT_IS_INVALID])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertSetEqual(
             result.buggy_implementations_exposed,
             set(file_.name for file_ in BUGGY_IMPLEMENTATIONS))
@@ -124,6 +135,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_RETURN_42])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertSetEqual(
             result.buggy_implementations_exposed,
             set([BUGGY_IMPLEMENTATION_RETURN_42.name]))
@@ -134,6 +148,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_THAT_CATCHES_NONE])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertTrue(result.detailed_results[0].valid)
         self.assertSetEqual(result.buggy_implementations_exposed, set())
 
@@ -143,6 +160,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_THAT_DOESNT_COMPILE])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertFalse(result.detailed_results[0].compilation_succeeded)
         self.assertSetEqual(result.buggy_implementations_exposed, set())
 
@@ -152,6 +172,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_THAT_IS_INVALID])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertFalse(result.detailed_results[0].valid)
         self.assertFalse(result.detailed_results[0].timed_out)
         self.assertSetEqual(result.buggy_implementations_exposed, set())
@@ -162,6 +185,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_THAT_INFINITE_LOOPS])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertFalse(result.detailed_results[0].valid)
         self.assertTrue(result.detailed_results[0].timed_out)
         self.assertSetEqual(result.buggy_implementations_exposed, set())
@@ -178,6 +204,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_IMPL_HEADER])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertTrue(result.detailed_results[0].compilation_succeeded)
         self.assertTrue(result.detailed_results[0].valid)
         self.assertSetEqual(
@@ -196,6 +225,9 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_THAT_TRIES_TO_OPEN_ALIASED_FILE])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        result.save()
+        result = StudentTestSuiteResult.objects.get(pk=result.pk)
+
         self.assertTrue(result.detailed_results[0].compilation_succeeded)
         self.assertTrue(result.detailed_results[0].valid)
         self.assertSetEqual(

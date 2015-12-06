@@ -176,7 +176,12 @@ def prepare_and_run_tests(submission):
 
             sandbox.clear_working_dir()
 
-        # TODO: Evaluate test suites
+        for test_suite in group.project.student_test_suites.all():
+            print('test_suite: ', test_suite.name)
+            result = test_suite.evaluate(
+                submission=submission, autograder_sandbox=sandbox)
+            print('finished evaluating suite')
+            result.save()
 
 
 if __name__ == '__main__':

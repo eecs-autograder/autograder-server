@@ -6,7 +6,8 @@ from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
 
 # from jsonfield import JSONField
-from picklefield.fields import PickledObjectField
+# from picklefield.fields import PickledObjectField
+from autograder.picklefield.fields import PickledObjectField
 
 import autograder.shared.global_constants as gc
 

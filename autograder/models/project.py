@@ -238,6 +238,8 @@ class Project(ModelValidatableOnSave):
         default=list, blank=True
     )
 
+    # TODO: fix this field so that there's a way to edit with the public
+    # interface
     @property
     def expected_student_file_patterns(self):
         return [

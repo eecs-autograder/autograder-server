@@ -30,7 +30,8 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
             os.listdir(submission_dir),
             self.student_test_case_filename_pattern)
 
-        results = StudentTestSuiteResult()
+        results = StudentTestSuiteResult(
+            test_suite=self, submission=submission)
 
         for test_file in test_files:
             test_result = self._evaluate_test_case(
