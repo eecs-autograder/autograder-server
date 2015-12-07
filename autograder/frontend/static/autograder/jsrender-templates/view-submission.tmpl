@@ -2,7 +2,7 @@
 <!--     <h3>Submitted at: {{to_local_date:data.attributes.timestamp}}</h3>
  -->
     <h4>Status: {{> data.attributes.status}}</h4>
-    {{if invalid_reason_or_error !=== }}
+    {{if invalid_reason_or_error !== undefined}}
         {{if data.attributes.status === 'invalid'}}
         <div>Reason(s): </div>
         <ul>
@@ -33,6 +33,36 @@
 
     <div>Results: </div>
     <ul>
+        {{for meta.suite_results}}
+        <li>
+            <h5>Student test suite: {{> test_suite_name}}</h5>
+            {{if buggy_implementations_exposed !== undefined}}
+                <div>Buggy solutions exposed:</div>
+                {{for buggy_implementations_exposed}}
+                    <div>{{>}}</div>
+                {{/for}}
+            {{/if}}
+            {{for detailed_results}}
+                {{if compilation_succeeded !== undefined}}
+                <span>Student test case "<b>{{> student_test_case_name}}</b>":</span>
+                    {{if compilation_succeeded}}
+                    <span>compilation success</span>
+                    {{else}}
+                    <span><b>COMPILATION FAILURE</b></span>
+                    {{/if}}
+                    {{if compilation_standard_output !== undefined}}
+                    <div>Compiler standard output:</div>
+                    <pre>{{> compilation_standard_output}}</pre>
+                    {{/if}}
+                    {{if compilation_standard_error_output !== +}}
+                    <div>Compiler error output:</div>
+                    <pre>{{> compilation_standard_error_output}}</pre>
+                    {{/if}}
+                </div>
+                {{/if}}
+            {{/for}}
+        </li>
+        {{/for}}
         {{for meta.results}}
         <li>
             <h5>{{> test_name}}</h5>

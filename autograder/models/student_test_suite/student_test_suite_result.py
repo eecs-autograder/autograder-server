@@ -138,7 +138,7 @@ class StudentTestSuiteResult(models.Model):
 
                 student_test_case_name: <name>,
 
-                compilation_return_code: <value>,
+                compilation_succeeded: <true|false>,
                 compilation_standard_output: <value>,
                 compilation_standard_error_output: <value>,
 

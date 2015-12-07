@@ -5,12 +5,9 @@ Dependencies and requirements:
 - django 1.8
 - postgres 9.4.0
 - Docker
-- Celery (task manager)
-- RabbitMQ (celery uses this)
 # Installed with pip:
 - pytz
 - django-jsonfield # (will be removed once django 1.9 becomes stable)
-- django-picklefield 0.3.2
 - django-polymorphic
 - oauth2client
 - pyOpenSSL
@@ -18,3 +15,4 @@ Dependencies and requirements:
 
 # Bundled
 - identity-toolkit-python-client (needed refactor to python3)
+- django-picklefield 0.3.2

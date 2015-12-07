@@ -16,6 +16,9 @@
         {{for project.data.attributes.required_student_files}}
             <li><b>{{>}}</b></li>
         {{/for}}
+        {{for project.data.attributes.expected_student_file_patterns}}
+            <li>{{> #data[1]}} - {{> #data[2]}} files matching the pattern: <b>{{> #data[0]}}</b>
+        {{/for}}
         </ul>
 
         <!-- The file upload form used as target for the file upload widget -->
