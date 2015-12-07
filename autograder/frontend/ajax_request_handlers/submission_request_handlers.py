@@ -1,6 +1,9 @@
 import os
 import json
 
+# import logging
+# logger = logging.getLogger(__name__)
+
 from django.db import transaction
 from django.db.models import Q
 # from django.contrib.auth.models import User
@@ -48,6 +51,8 @@ class SubmissionRequestHandler(LoginRequiredView):
 
         is_staff = group.project.semester.is_semester_staff(
             request.user.username)
+        # TODO: don't override feedback for staff here.
+        # let the get request do that.
         feedback_override = (
             FeedbackConfiguration.get_max_feedback() if is_staff else None)
 
@@ -129,6 +134,7 @@ class SubmissionRequestHandler(LoginRequiredView):
 
         feedback_override = (
             FeedbackConfiguration.get_max_feedback() if is_staff else None)
+        # logger.info('feedback override: {}'.format(feedback_override))
         suite_feedback_override = (
             StudentTestSuiteFeedbackConfiguration.get_max_feedback()
             if is_staff else None)
@@ -161,6 +167,8 @@ class SubmissionRequestHandler(LoginRequiredView):
                 'suite_results': suite_results_json
             }
         }
+
+        # logger.info('response_content: {}'.format(response_content))
 
         if feedback_override is not None:
             points_feedback = feedback_override.points_feedback_level

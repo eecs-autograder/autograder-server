@@ -35,6 +35,7 @@
     <ul>
         {{for meta.suite_results}}
         <li>
+            <h4>READ THIS SECTION</h4>
             <h5>Student test suite: {{> test_suite_name}}</h5>
             {{if buggy_implementations_exposed !== undefined}}
                 <div>Buggy solutions exposed:</div>
@@ -44,7 +45,7 @@
             {{/if}}
             {{for detailed_results}}
                 {{if compilation_succeeded !== undefined}}
-                <span>Student test case "<b>{{> student_test_case_name}}</b>":</span>
+                <span>Student test case "<i>{{> student_test_case_name}}</i>":</span>
                     {{if compilation_succeeded}}
                     <span>compilation success</span>
                     {{else}}
@@ -54,12 +55,12 @@
                     <div>Compiler standard output:</div>
                     <pre>{{> compilation_standard_output}}</pre>
                     {{/if}}
-                    {{if compilation_standard_error_output !== +}}
+                    {{if compilation_standard_error_output !== undefined}}
                     <div>Compiler error output:</div>
                     <pre>{{> compilation_standard_error_output}}</pre>
                     {{/if}}
-                </div>
                 {{/if}}
+                <br>
             {{/for}}
         </li>
         {{/for}}

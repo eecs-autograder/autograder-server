@@ -58,7 +58,7 @@
             <label>
                 <input type='checkbox' value='{{:#data[0]}}' name='student_resource_files'
                     {{if ~populate_fields}}
-                            {{if ~in_array(#data[0], ~attributes.student_resource_files) }}checked{{/if}}
+                            {{if ~in_array(#data[0], ~test_data.attributes.student_resource_files) }}checked{{/if}}
                     {{/if}}>
                 {{> #data[0]}}
             </label>

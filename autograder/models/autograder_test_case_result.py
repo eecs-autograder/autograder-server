@@ -180,6 +180,7 @@ class AutograderTestCaseResultBase(PolymorphicModel):
         feedback_configuration = (
             override_feedback if override_feedback is not None
             else self._get_feedback_config())
+
         show_points_breakdown = (
             feedback_configuration.points_feedback_level == 'show_breakdown')
         result = {'test_name': self.test_case.name}
@@ -379,6 +380,7 @@ class AutograderTestCaseResultBase(PolymorphicModel):
                 feedback_config.valgrind_feedback_level != 'no_feedback')
 
     def _get_feedback_config(self):
+        logger.info('_get_feedback_config')
         override = (
             self.submission is not None and
             self.submission.test_case_feedback_config_override is not None)
