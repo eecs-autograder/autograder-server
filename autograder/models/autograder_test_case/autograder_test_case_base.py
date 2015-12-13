@@ -360,7 +360,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     def run(self, submission, autograder_sandbox):
         """
         Runs this autograder test case and returns an
-        AutograderTestCaseResultBase object that is linked
+        AutograderTestCaseResult object that is linked
         to the given submission. If submission is None,
         the result object will not be linked to any submission.
         The test case will be run inside the given AutograderSandbox.

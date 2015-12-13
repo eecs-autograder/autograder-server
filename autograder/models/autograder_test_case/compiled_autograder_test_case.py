@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 
 from autograder.models.utils import PolymorphicManagerWithValidateOnCreate
 
-from ..autograder_test_case_result import AutograderTestCaseResultBase
+from ..autograder_test_case_result import AutograderTestCaseResult
 
 from .autograder_test_case_base import AutograderTestCaseBase
 
@@ -58,7 +58,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
     def run(self, submission, autograder_sandbox):
         print('running test: ' + self.name)
-        result = AutograderTestCaseResultBase(test_case=self)
+        result = AutograderTestCaseResult(test_case=self)
 
         # result is modified by reference in this function
         self._compile_program(submission, result, autograder_sandbox)

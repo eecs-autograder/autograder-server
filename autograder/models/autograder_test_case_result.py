@@ -2,11 +2,8 @@ import difflib
 
 from django.db import models
 
-from polymorphic.models import PolymorphicModel
 
-
-# TODO: rename to AutograderTestCaseResult
-class AutograderTestCaseResultBase(PolymorphicModel):
+class AutograderTestCaseResult(models.Model):
     """
     This class stores the data from an autograder test case
     and provides an interface for serializing the data.

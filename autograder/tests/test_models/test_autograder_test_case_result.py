@@ -8,7 +8,7 @@ import autograder.tests.dummy_object_utils as obj_ut
 
 from autograder.models import (
     Project, Semester, Course, AutograderTestCaseBase,
-    CompiledAutograderTestCase, AutograderTestCaseResultBase,
+    CompiledAutograderTestCase, AutograderTestCaseResult,
     SubmissionGroup, Submission)
 from autograder.models.fields import FeedbackConfiguration
 
@@ -39,10 +39,10 @@ class _SetUpBase(TemporaryFilesystemTestCase):
 
 class AutograderTestCaseResultTestCase(_SetUpBase):
     def test_default_init(self):
-        result = AutograderTestCaseResultBase.objects.create(
+        result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case)
 
-        loaded_result = AutograderTestCaseResultBase.objects.filter(
+        loaded_result = AutograderTestCaseResult.objects.filter(
             test_case=self.test_case)[0]
 
         self.assertEqual(result, loaded_result)
@@ -67,7 +67,7 @@ class ResultOutputCorrectTestCase(_SetUpBase):
         self.correct_stdout = 'correct_stdout'
         self.correct_stderr = 'correct stderr'
 
-        self.result = AutograderTestCaseResultBase(
+        self.result = AutograderTestCaseResult(
             test_case=self.test_case
         )
 
@@ -197,7 +197,7 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             deduction_for_valgrind_errors=2,
             points_for_compilation_success=4)
 
-        self.correct_test_result = AutograderTestCaseResultBase.objects.create(
+        self.correct_test_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
             return_code=0,
             standard_output='stdout\nspam\n',
@@ -209,13 +209,13 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             compilation_standard_output='win',
             compilation_standard_error_output='')
 
-        self.compile_fail_test_result = AutograderTestCaseResultBase.objects.create(
+        self.compile_fail_test_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
             compilation_return_code=42,
             compilation_standard_output='',
             compilation_standard_error_output='lose')
 
-        self.incorrect_test_result = AutograderTestCaseResultBase.objects.create(
+        self.incorrect_test_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
             return_code=42,
             standard_output='wrong',
@@ -227,7 +227,7 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             compilation_standard_output='hello',
             compilation_standard_error_output='woah')
 
-        self.valgrind_error_result = AutograderTestCaseResultBase.objects.create(
+        self.valgrind_error_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
             return_code=0,
             standard_output='stdout\nspam\n',
@@ -239,7 +239,7 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             compilation_standard_output='win',
             compilation_standard_error_output='')
 
-        self.timed_out_result = AutograderTestCaseResultBase.objects.create(
+        self.timed_out_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
             return_code=0,
             standard_output='stdout\nspam\n',

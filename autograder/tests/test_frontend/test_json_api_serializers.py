@@ -18,7 +18,7 @@ from autograder.frontend.json_api_serializers import (
 
 from autograder.models import (
     CompiledAutograderTestCase, SubmissionGroup, Submission,
-    AutograderTestCaseResultBase)
+    AutograderTestCaseResult)
 
 # print(json.dumps(expected, sort_keys=True, indent=4, cls=DjangoJSONEncoder))
 # print(json.dumps(actual, sort_keys=True, indent=4, cls=DjangoJSONEncoder))

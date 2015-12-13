@@ -9,7 +9,7 @@ from .submission import Submission
 
 # These next imports need to be in this order to get around
 # circular dependency.
-from .autograder_test_case_result import AutograderTestCaseResultBase
+from .autograder_test_case_result import AutograderTestCaseResult
 # Note: Even though we are importing the different types of test cases here,
 # you should only access them through the factory function below
 from .autograder_test_case.autograder_test_case_base import AutograderTestCaseBase

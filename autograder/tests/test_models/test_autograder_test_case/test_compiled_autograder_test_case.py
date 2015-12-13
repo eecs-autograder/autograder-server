@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 
 from autograder.models import (
     AutograderTestCaseBase, AutograderTestCaseFactory,
-    AutograderTestCaseResultBase)
+    AutograderTestCaseResult)
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -130,7 +130,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertEqual(result.standard_output, stdout_content)
         self.assertTrue(result.standard_output_correct)
@@ -153,7 +153,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertNotEqual(result.standard_output, expected_stdout_content)
         self.assertFalse(result.standard_output_correct)
@@ -176,7 +176,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertEqual(result.standard_error_output, stderr_content)
         self.assertTrue(result.standard_error_output_correct)
@@ -199,7 +199,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertNotEqual(
             result.standard_error_output, expected_stderr_content)
@@ -222,7 +222,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertEqual(expected_return_code, result.return_code)
         self.assertTrue(result.return_code_correct)
@@ -243,7 +243,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertNotEqual(expected_return_code, result.return_code)
         self.assertFalse(result.return_code_correct)
@@ -263,7 +263,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertNotEqual(0, result.return_code)
         self.assertTrue(result.return_code_correct)
@@ -283,7 +283,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertEqual(0, result.return_code)
         self.assertFalse(result.return_code_correct)
@@ -306,7 +306,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -328,7 +328,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -355,7 +355,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -374,7 +374,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertTrue(result.timed_out)
         self.assertNotEqual(result.return_code, 0)
@@ -393,7 +393,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertEqual(result.valgrind_return_code, 0)
 
@@ -416,7 +416,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertNotEqual(result.valgrind_return_code, 0)
 
@@ -436,7 +436,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertNotEqual(result.compilation_return_code, 0)
         self.assertNotEqual(result.compilation_standard_error_output, '')
@@ -481,7 +481,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertEqual(expected_stdout, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -530,7 +530,7 @@ class CompiledAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=None, autograder_sandbox=self.sandbox)
         result.save()
-        result = AutograderTestCaseResultBase.objects.get(pk=result.pk)
+        result = AutograderTestCaseResult.objects.get(pk=result.pk)
 
         self.assertNotEqual(expected_stdout, result.standard_output)
         self.assertFalse(result.standard_output_correct)
