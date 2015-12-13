@@ -146,6 +146,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             http://valgrind.org/
             Default value: False
 
+        TODO: always use --error-exitcode=<something>, get rid of default values
         valgrind_flags -- If use_valgrind is True, this field should
             contain a list of command line arguments to be passed to the
             valgrind program.
@@ -175,8 +176,12 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             (standard out and standard error).
             Default value: 0
 
-        points_for_no_valgrind_errors -- The number of points to be awarded
-            for the program being tested not triggering any valgrind errors.
+        deduction_for_valgrind_errors -- The number of points to be deducted
+            if the program being tested triggers any valgrind errors.
+            Valgrind errors are indicated by a nonzero return code.
+            This value is subtracted from
+                points_for_correct_output + points_for_correct_return_code,
+                and the result will NOT go below 0.
             Default value: 0
 
         points_for_compilation_success -- The number of points to be
@@ -319,7 +324,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         default=0, validators=[MinValueValidator(0)])
     points_for_correct_output = models.IntegerField(
         default=0, validators=[MinValueValidator(0)])
-    points_for_no_valgrind_errors = models.IntegerField(
+    deduction_for_valgrind_errors = models.IntegerField(
         default=0, validators=[MinValueValidator(0)])
     points_for_compilation_success = models.IntegerField(
         default=0, validators=[MinValueValidator(0)])

@@ -167,9 +167,9 @@
                 value='{{if ~populate_fields}}{{: attributes.points_for_correct_output}}{{else}}0{{/if}}' class='form-control'>
     </div>
     <div class='form-group'>
-        <label for='points_for_no_valgrind_errors'>Points for Valgrind clean: </label>
-        <input type='text' name='points_for_no_valgrind_errors'
-                value='{{if ~populate_fields}}{{: attributes.points_for_no_valgrind_errors}}{{else}}0{{/if}}' class='form-control'>
+        <label for='deduction_for_valgrind_errors'>Deduction for Valgrind errors: </label>
+        <input type='text' name='deduction_for_valgrind_errors'
+                value='{{if ~populate_fields}}{{: attributes.deduction_for_valgrind_errors}}{{else}}0{{/if}}' class='form-control'>
     </div>
     <div class='form-group'>
         <label for='points_for_compilation_success'>Points for compilation success: </label>

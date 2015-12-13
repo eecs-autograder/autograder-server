@@ -304,7 +304,7 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
             executable_name='prog',
             points_for_correct_return_code=42,
             points_for_correct_output=3,
-            points_for_no_valgrind_errors=9001,
+            deduction_for_valgrind_errors=9001,
             points_for_compilation_success=75)
 
     def test_serialize_test_case_all_fields(self):
@@ -335,7 +335,7 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
 
                 'points_for_correct_return_code': 42,
                 'points_for_correct_output': 3,
-                'points_for_no_valgrind_errors': 9001,
+                'deduction_for_valgrind_errors': 9001,
                 'points_for_compilation_success': 75
             },
             'relationships': {

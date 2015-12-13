@@ -204,7 +204,7 @@ function _extract_test_case_form_fields(form)
 
                 'points_for_correct_return_code': _extract_single_text_field(form, 'points_for_correct_return_code', true, 0),
                 'points_for_correct_output': _extract_single_text_field(form, 'points_for_correct_output', true, 0),
-                'points_for_no_valgrind_errors': _extract_single_text_field(form, 'points_for_no_valgrind_errors', true, 0),
+                'deduction_for_valgrind_errors': _extract_single_text_field(form, 'deduction_for_valgrind_errors', true, 0),
                 'points_for_compilation_success': _extract_single_text_field(form, 'points_for_compilation_success', true, 0)
             }
         }

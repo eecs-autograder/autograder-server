@@ -33,7 +33,7 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
         'executable_name',
         'points_for_correct_return_code',
         'points_for_correct_output',
-        'points_for_no_valgrind_errors',
+        'deduction_for_valgrind_errors',
         'points_for_compilation_success'
     ]
 

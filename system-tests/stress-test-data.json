@@ -56,7 +56,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": 0,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
@@ -84,7 +84,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": 0,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
@@ -112,7 +112,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": 0,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
@@ -140,7 +140,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": 0,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
@@ -168,7 +168,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": 0,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
@@ -196,7 +196,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": 0,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
@@ -224,7 +224,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": 0,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
@@ -252,7 +252,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": 0,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
@@ -280,7 +280,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": 0,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
@@ -308,7 +308,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": null,
         "command_line_arguments": "[]",
         "points_for_correct_output": 1,
@@ -336,7 +336,7 @@
 },
 {
     "fields": {
-        "points_for_no_valgrind_errors": 1,
+        "deduction_for_valgrind_errors": 1,
         "expected_return_code": null,
         "command_line_arguments": "[]",
         "points_for_correct_output": 0,
