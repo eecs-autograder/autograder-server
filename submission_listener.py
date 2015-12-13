@@ -10,87 +10,144 @@ import datetime
 import signal
 import argparse
 import multiprocessing
-
-
-# HACK: Need to be able to specify whether to use the main settings
-# file or the system test one.
-if len(sys.argv) != 2:
-    print('Usage: {} settings_module')
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", sys.argv[1])
-
-import django
-django.setup()
-from django.db import transaction
-
-# import autograder.models
-
-from autograder.models import Submission
-from autograder.autograder_sandbox import AutograderSandbox
-
-import autograder.shared.utilities as ut
-
+import contextlib
 
 DIVIDER = '=' * 79 + '\n'
-
-
-def sigterm_handler(sig_num, stack):
-    from django.db import connection
-    connection.close()
-    raise SystemExit
-
-signal.signal(signal.SIGTERM, sigterm_handler)
+DEFAULT_LOG_DIRNAME = 'worker_logs'
 
 
 def main():
+    try:
+        args = parse_args()
+        os.makedirs(args.log_dirname, mode=0o750, exist_ok=True)
+        # main_listener_log_file = os.path.join(
+        #     args.log_dirname, 'submission_listener.log')
+        # with open(main_listener_log_file, 'a') as f, \
+        #         contextlib.redirect_stdout(f):
+        listen_for_and_grade_received_submissions(
+            args.num_workers, args.django_settings_module, args.log_dirname)
+    except KeyboardInterrupt:
+        print('KEYBOARD INTERRUPT. Shutting down...')
+    except Exception as e:
+        print('SOMETHING VERY BAD HAPPENED')
+        print(e)
+        print(traceback.format_exc())
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("num_workers", type=int)
+    parser.add_argument("django_settings_module")
+    parser.add_argument("--log_dirname", '-d', default=DEFAULT_LOG_DIRNAME)
+
+    return parser.parse_args()
+
+
+def listen_for_and_grade_received_submissions(num_workers,
+                                              django_settings_module,
+                                              log_dirname):
     print(os.getpid())
     print('hello world')
 
     multiprocessing.set_start_method('spawn')
 
-    while True:
-        to_grade = None
-        submission_id = None
-        with transaction.atomic():
-            queued = Submission.objects.select_for_update().filter(
-                status='queued').order_by('_timestamp')
-            if not queued:
-                time.sleep(1)
-                continue
-            to_grade = queued[0]
-            submission_id = to_grade.pk
-            print(to_grade.submission_group.members)
-            to_grade.status = 'being_graded'
-            to_grade.save()
-            print('saved')
+    initialize_process(django_settings_module)
 
-        print('going to grade')
-        grade_submission(submission_id)
-        print(DIVIDER * 3)
-        to_grade = None
-        submission_id = None
+    from autograder.models import Submission
+    from django.db import transaction
+
+    # TODO: on start, grab any queued or being_graded submissions and
+    # mark them as received. for the being_graded ones, delete test results
+    # with transaction.atomic():
+    #     queued_submissions = Submission.objects.select_for_update().filter(
+    #         status=Submission.GradingStatus.queued
+    #     )
+
+    print(num_workers)
+    with multiprocessing.Pool(processes=num_workers,
+                              initializer=initialize_process,
+                              initargs=[django_settings_module],
+                              maxtasksperchild=100) as workers:
+        while True:
+            submission_ids = []
+            with transaction.atomic():
+                received_submissions = Submission.objects.select_for_update(
+                ).filter(
+                    status=Submission.GradingStatus.received
+                ).order_by('_timestamp')
+                if not received_submissions:
+                    time.sleep(1)
+                    continue
+
+                print('queueing submissions')
+                for submission in received_submissions:
+                    submission.status = Submission.GradingStatus.queued
+                    submission.save()
+                    submission_ids.append(submission.pk)
+
+            for sub_id in submission_ids:
+                workers.apply_async(grade_submission, [sub_id, log_dirname])
+
+            # submission_ids = (
+            #     (sub.pk, log_dirname) for sub in received_submissions)
+            # workers.starmap(grade_submission, submission_ids)
 
 
-def grade_submission(submission_id):
-    print('grade_submission')
-    try:
-        submission = Submission.objects.get(pk=submission_id)
-        submission.status = Submission.GradingStatus.being_graded
-        submission.save()
+def initialize_process(django_settings_module):
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", django_settings_module)
 
-        with ut.ChangeDirectory(ut.get_submission_dir(submission)):
-            _prepare_and_run_tests(submission)
-            submission.status = Submission.GradingStatus.finished_grading
+    import django
+    django.setup()
+
+    # print(django.db.connection)
+
+    def sigterm_handler(sig_num, stack):
+        from django.db import connection
+        connection.close()
+        raise SystemExit
+
+    signal.signal(signal.SIGTERM, sigterm_handler)
+
+
+def grade_submission(submission_id, log_dirname):
+    with get_worker_log_file(log_dirname) as f, \
+            contextlib.redirect_stdout(f):
+            # contextlib.redirect_stderr(f):
+        from autograder.models import Submission
+        import autograder.shared.utilities as ut
+
+        print('grade_submission:', submission_id)
+        try:
+            submission = Submission.objects.get(pk=submission_id)
+            submission.status = Submission.GradingStatus.being_graded
             submission.save()
-    except Exception as e:
-        print(e)
-        traceback.print_exc()
-        submission.status = Submission.GradingStatus.error
-        submission.invalid_reason_or_error = [str(e)]
-        submission.save()
+
+            with ut.ChangeDirectory(ut.get_submission_dir(submission)):
+                prepare_and_run_tests(submission)
+                submission.status = Submission.GradingStatus.finished_grading
+                submission.save()
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
+            submission.status = Submission.GradingStatus.error
+            submission.invalid_reason_or_error = [str(e)]
+            submission.save()
+        finally:
+            print(DIVIDER * 3)
 
 
-def _prepare_and_run_tests(submission):
+def get_worker_log_file(log_dirname):
+    log_filename = os.path.join(
+        log_dirname,
+        'worker{}.log'.format(multiprocessing.current_process().pid))
+    return open(log_filename, 'a')
+
+
+def prepare_and_run_tests(submission):
+    from autograder.autograder_sandbox import AutograderSandbox
+
+    import autograder.shared.utilities as ut
+
     group = submission.submission_group
     project_files_dir = ut.get_project_files_dir(group.project)
 
@@ -100,6 +157,9 @@ def _prepare_and_run_tests(submission):
         uuid.uuid4().hex)
     print(sandbox_name)
 
+    # # HACK: this is a workaround to make it so that different docker
+    # # containers use users with different UIDs
+    # sandbox_linux_user_id = (submission.pk + 2000) % 3000
     with AutograderSandbox(name=sandbox_name) as sandbox:
         for test_case in group.project.autograder_test_cases.all():
             print(test_case.name)
@@ -116,12 +176,13 @@ def _prepare_and_run_tests(submission):
 
             sandbox.clear_working_dir()
 
+        for test_suite in group.project.student_test_suites.all():
+            print('test_suite: ', test_suite.name)
+            result = test_suite.evaluate(
+                submission=submission, autograder_sandbox=sandbox)
+            print('finished evaluating suite')
+            result.save()
+
+
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        print('KEYBOARD INTERRUPT. Shutting down...')
-    except Exception as e:
-        print('SOMETHING VERY BAD HAPPENED')
-        print(e)
-        traceback.print_exc()
+    main()
