@@ -237,12 +237,14 @@ class SemesterFilesystemTestCase(TemporaryFilesystemTestCase):
 
     def test_semester_root_dir_created_and_removed(self):
         semester = Semester(name=self.SEMESTER_NAME, course=self.course)
-        expected_semester_root_dir = ut.get_semester_root_dir(semester)
 
-        self.assertFalse(os.path.exists(expected_semester_root_dir))
+        self.assertEqual(
+            [],
+            os.listdir(os.path.dirname(ut.get_semester_root_dir(semester))))
 
         semester.validate_and_save()
 
+        expected_semester_root_dir = ut.get_semester_root_dir(semester)
         self.assertTrue(os.path.isdir(expected_semester_root_dir))
 
         semester.delete()

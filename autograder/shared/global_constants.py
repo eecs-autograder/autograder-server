@@ -11,7 +11,7 @@ PROJECT_FILES_DIRNAME = 'project_files'
 
 # For a given project, the name of the directory that
 # student submissions should be placed in.
-PROJECT_SUBMISSIONS_DIRNAME = 'submissions_by_student'
+PROJECT_SUBMISSIONS_DIRNAME = 'submission_groups'
 
 # The subdirectory of settings.MEDIA_ROOT where courses will be placed.
 FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'

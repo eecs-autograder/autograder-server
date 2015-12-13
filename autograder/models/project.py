@@ -291,7 +291,7 @@ class Project(ModelValidatableOnSave):
 
         project_root_dir = ut.get_project_root_dir(self)
         project_files_dir = ut.get_project_files_dir(self)
-        project_submissions_dir = ut.get_project_submissions_by_student_dir(
+        project_submissions_dir = ut.get_project_submission_groups_dir(
             self)
 
         if not os.path.isdir(project_root_dir):

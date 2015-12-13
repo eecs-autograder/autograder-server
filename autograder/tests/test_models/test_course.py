@@ -109,9 +109,9 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
         courses_queryset = Course.get_courses_for_user(self.user)
         self.assertCountEqual(courses_queryset, subset)
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
 
 class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
@@ -122,11 +122,12 @@ class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
 
     def test_course_root_dir_created_and_removed(self):
         course = Course(name=self.COURSE_NAME)
-        expected_course_root_dir = ut.get_course_root_dir(course)
 
-        self.assertFalse(os.path.exists(expected_course_root_dir))
+        self.assertFalse(
+            os.path.exists(os.path.dirname(ut.get_course_root_dir(course))))
 
         course.validate_and_save()
+        expected_course_root_dir = ut.get_course_root_dir(course)
 
         self.assertTrue(os.path.isdir(expected_course_root_dir))
 

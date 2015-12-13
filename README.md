@@ -13,6 +13,7 @@ Dependencies and requirements:
 - pyOpenSSL
 - psycopg2
 - django-picklefield 0.3.2
+- tblib
 
 # Bundled
 - identity-toolkit-python-client (needed refactor to python3)

@@ -109,14 +109,9 @@ def check_shell_style_file_pattern(pattern):
 
 def get_course_root_dir(course):
     """
-    Computes the absolute path of the root directory for the given course.
-    For example: {MEDIA_ROOT}/courses/eecs280
-
-    NOTE: DO NOT COMPUTE COURSE ROOT DIRECTORIES MANUALLY.
-          ALWAYS DO SO BY USING THIS FUNCTION.
-          This will allow for the filesystem layout to be easily
-          modified if necessary.
+    Computes the absolute path of the base directory for the given course.
     """
+    print(settings.MEDIA_ROOT)
     return os.path.join(
         settings.MEDIA_ROOT, get_course_relative_root_dir(course))
 
@@ -126,18 +121,12 @@ def get_course_relative_root_dir(course):
     Same as get_course_root_dir() but returns a path that is
     relative to MEDIA_ROOT.
     """
-    return os.path.join('courses', course.name)
+    return os.path.join('courses', 'course{}'.format(course.pk))
 
 
 def get_semester_root_dir(semester):
     """
-    Computes the absolute path of the root directory for the given semester.
-    For example: {MEDIA_ROOT}/courses/eecs280/fall2015
-
-    NOTE: DO NOT COMPUTE SEMESTER ROOT DIRECTORIES MANUALLY.
-          ALWAYS DO SO BY USING THIS FUNCTION.
-          This will allow for the filesystem layout to be easily
-          modified if necessary.
+    Computes the absolute path of the base directory for the given semester.
     """
     return os.path.join(
         settings.MEDIA_ROOT, get_semester_relative_root_dir(semester))
@@ -149,18 +138,13 @@ def get_semester_relative_root_dir(semester):
     relative to MEDIA_ROOT.
     """
     return os.path.join(
-        get_course_relative_root_dir(semester.course), semester.name)
+        get_course_relative_root_dir(semester.course),
+        'semester{}'.format(semester.pk))
 
 
 def get_project_root_dir(project):
     """
-    Computes the absolute path of the root directory for the given project.
-    For example: {MEDIA_ROOT}/courses/eecs280/fall2015/project3
-
-    NOTE: DO NOT COMPUTE PROJECT ROOT DIRECTORIES MANUALLY.
-          ALWAYS DO SO BY USING THIS FUNCTION.
-          This will allow for the filesystem layout to be easily
-          modified if necessary.
+    Computes the absolute path of the base directory for the given project.
     """
     return os.path.join(
         settings.MEDIA_ROOT, get_project_relative_root_dir(project))
@@ -172,19 +156,14 @@ def get_project_relative_root_dir(project):
     relative to MEDIA_ROOT.
     """
     return os.path.join(
-        get_semester_relative_root_dir(project.semester), project.name)
+        get_semester_relative_root_dir(project.semester),
+        'project{}'.format(project.pk))
 
 
 def get_project_files_dir(project):
     """
     Computes the absolute path of the directory where uploaded files
     should be stored for the given project.
-    For example: {MEDIA_ROOT}/courses/eecs280/fall2015/project3/project_files
-
-    NOTE: DO NOT COMPUTE THIS PATH MANUALLY.
-          ALWAYS DO SO BY USING THIS FUNCTION.
-          This will allow for the filesystem layout to be easily
-          modified if necessary.
     """
     return os.path.join(
         settings.MEDIA_ROOT, get_project_files_relative_dir(project))
@@ -199,21 +178,19 @@ def get_project_files_relative_dir(project):
         get_project_relative_root_dir(project), gc.PROJECT_FILES_DIRNAME)
 
 
-def get_project_submissions_by_student_dir(project):
+def get_project_submission_groups_dir(project):
     """
-    Computes the absolute path of the directory where student submissions
-    should be stored for the given project.
-    For example:
-        {MEDIA_ROOT}/courses/eecs280/fall2015/project3/submissions_by_student
+    Computes the absolute path of the directory where student submission
+    groups should be stored for the given project.
     """
     return os.path.join(
         settings.MEDIA_ROOT,
-        get_project_submissions_by_student_relative_dir(project))
+        get_project_submission_groups_relative_dir(project))
 
 
-def get_project_submissions_by_student_relative_dir(project):
+def get_project_submission_groups_relative_dir(project):
     """
-    Same as get_project_submissions_by_student_dir() but returns a path
+    Same as get_project_submission_groups_dir() but returns a path
     that is relative to MEDIA_ROOT.
     """
     return os.path.join(
@@ -224,8 +201,6 @@ def get_student_submission_group_dir(submission_group):
     """
     Computes the absolute path of the directory where submissions for the
     given group should be stored.
-    For example:
-        {MEDIA_ROOT}/courses/eecs280/fall2015/project3/submissions_by_student/{group_names}
     """
     return os.path.join(
         settings.MEDIA_ROOT,
@@ -237,18 +212,15 @@ def get_student_submission_group_relative_dir(submission_group):
     Same as get_student_submission_group_dir() but returns a path that is
     relative to MEDIA_ROOT.
     """
-    directory_basename = '_'.join(sorted(submission_group.members))
     return os.path.join(
-        get_project_submissions_by_student_relative_dir(
-            submission_group.project), directory_basename)
+        get_project_submission_groups_relative_dir(submission_group.project),
+        'group{}'.format(submission_group.pk))
 
 
 def get_submission_dir(submission):
     """
     Computes the absolute path of the directory where files included
     in the given submission should be stored.
-    For example:
-        {MEDIA_ROOT}/courses/eecs280/fall2015/project3/submissions_by_student/{group_names}/{submission_timestamp}
     """
     return os.path.join(
         settings.MEDIA_ROOT,
@@ -262,7 +234,7 @@ def get_submission_relative_dir(submission):
     """
     return os.path.join(
         get_student_submission_group_relative_dir(submission.submission_group),
-        submission.timestamp.strftime(FILESYSTEM_TIMESTAMP_FORMAT_STR))
+        'submission{}'.format(submission.pk))
 
 
 # -----------------------------------------------------------------------------

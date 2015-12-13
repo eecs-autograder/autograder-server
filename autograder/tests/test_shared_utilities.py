@@ -6,7 +6,6 @@ import collections
 from django.test import TestCase
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -108,36 +107,35 @@ class CheckUserProvidedFilenameTest(TestCase):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-MockCourse = collections.namedtuple('MockCourse', ['name'])
-MockSemester = collections.namedtuple('MockSemester', ['name', 'course'])
-MockProject = collections.namedtuple('MockProject', ['name', 'semester'])
+MockCourse = collections.namedtuple('MockCourse', ['name', 'pk'])
+MockSemester = collections.namedtuple('MockSemester', ['name', 'course', 'pk'])
+MockProject = collections.namedtuple('MockProject', ['name', 'semester', 'pk'])
 
 MockUser = collections.namedtuple('MockUser', ['username'])
 MockSubmission = collections.namedtuple(
-    'MockSubmission', ['submission_group', 'timestamp'])
+    'MockSubmission', ['submission_group', 'pk'])
 MockSubmissionGroup = collections.namedtuple(
-    'MockSubmissionGroup', ['members', 'project'])
+    'MockSubmissionGroup', ['members', 'project', 'pk'])
 
 
 class FileSystemUtilTestCase(TestCase):
     def setUp(self):
-        self.COURSE_NAME = 'eecs280'
-        self.SEMESTER_NAME = 'fall2015'
-        self.PROJECT_NAME = 'p1'
-        self.course = MockCourse(name='eecs280')
-        self.semester = MockSemester(name='fall2015', course=self.course)
-        self.project = MockProject(name='p1', semester=self.semester)
+        self.COURSE_DIRNAME = 'course42'
+        self.SEMESTER_DIRNAME = 'semester3'
+        self.PROJECT_DIRNAME = 'project10'
+        self.course = MockCourse(name='eecs280', pk=42)
+        self.semester = MockSemester(name='fall2015', course=self.course, pk=3)
+        self.project = MockProject(name='p1', semester=self.semester, pk=10)
 
-        self.usernames = ['joe', 'fred', 'bob', 'steve']
-        self.group_dir_basename = 'bob_fred_joe_steve'
+        self.group_dir_basename = 'group75'
         self.group = MockSubmissionGroup(
-            members=self.usernames, project=self.project)
+            members=['steve'], project=self.project, pk=75)
 
     # -------------------------------------------------------------------------
 
     def test_get_course_root_dir(self):
         expected_relative = "{0}/{1}".format(
-            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME)
+            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_DIRNAME)
 
         actual_relative = ut.get_course_relative_root_dir(self.course)
         self.assertEqual(expected_relative, actual_relative)
@@ -149,8 +147,8 @@ class FileSystemUtilTestCase(TestCase):
 
     def test_get_semester_root_dir(self):
         expected_relative = "{0}/{1}/{2}".format(
-            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
-            self.SEMESTER_NAME)
+            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_DIRNAME,
+            self.SEMESTER_DIRNAME)
 
         actual_relative = ut.get_semester_relative_root_dir(self.semester)
         self.assertEqual(expected_relative, actual_relative)
@@ -162,8 +160,8 @@ class FileSystemUtilTestCase(TestCase):
 
     def test_get_project_root_dir(self):
         expected_relative = "{0}/{1}/{2}/{3}".format(
-            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
-            self.SEMESTER_NAME, self.PROJECT_NAME)
+            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_DIRNAME,
+            self.SEMESTER_DIRNAME, self.PROJECT_DIRNAME)
 
         actual_relative = ut.get_project_relative_root_dir(self.project)
         self.assertEqual(expected_relative, actual_relative)
@@ -175,8 +173,8 @@ class FileSystemUtilTestCase(TestCase):
 
     def test_get_project_files_dir(self):
         expected_relative = "{0}/{1}/{2}/{3}/{4}".format(
-            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
-            self.SEMESTER_NAME, self.PROJECT_NAME, gc.PROJECT_FILES_DIRNAME)
+            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_DIRNAME,
+            self.SEMESTER_DIRNAME, self.PROJECT_DIRNAME, gc.PROJECT_FILES_DIRNAME)
 
         actual_relative = ut.get_project_files_relative_dir(self.project)
         self.assertEqual(expected_relative, actual_relative)
@@ -186,24 +184,24 @@ class FileSystemUtilTestCase(TestCase):
         actual_absolute = ut.get_project_files_dir(self.project)
         self.assertEqual(expected_absolute, actual_absolute)
 
-    def test_get_project_submissions_by_student_dir(self):
+    def test_get_project_submission_groups_dir(self):
         expected_relative = "{0}/{1}/{2}/{3}/{4}".format(
-            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
-            self.SEMESTER_NAME, self.PROJECT_NAME,
+            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_DIRNAME,
+            self.SEMESTER_DIRNAME, self.PROJECT_DIRNAME,
             gc.PROJECT_SUBMISSIONS_DIRNAME)
-        actual_relative = ut.get_project_submissions_by_student_relative_dir(
+        actual_relative = ut.get_project_submission_groups_relative_dir(
             self.project)
         self.assertEqual(expected_relative, actual_relative)
 
         expected_absolute = settings.MEDIA_ROOT + expected_relative
-        actual_absolute = ut.get_project_submissions_by_student_dir(
+        actual_absolute = ut.get_project_submission_groups_dir(
             self.project)
         self.assertEqual(expected_absolute, actual_absolute)
 
     def test_get_student_submission_group_dir(self):
         expected_relative = "{0}/{1}/{2}/{3}/{4}/{5}".format(
-            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
-            self.SEMESTER_NAME, self.PROJECT_NAME,
+            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_DIRNAME,
+            self.SEMESTER_DIRNAME, self.PROJECT_DIRNAME,
             gc.PROJECT_SUBMISSIONS_DIRNAME,
             self.group_dir_basename)
 
@@ -217,16 +215,14 @@ class FileSystemUtilTestCase(TestCase):
         self.assertEqual(expected_absolute, actual_absolute)
 
     def test_get_submission_dir(self):
-        timestamp = timezone.now()
         submission = MockSubmission(
-            submission_group=self.group, timestamp=timestamp)
+            submission_group=self.group, pk=101)
 
         expected_relative = "{0}/{1}/{2}/{3}/{4}/{5}/{6}".format(
-            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_NAME,
-            self.SEMESTER_NAME, self.PROJECT_NAME,
+            gc.FILESYSTEM_ROOT_COURSES_DIRNAME, self.COURSE_DIRNAME,
+            self.SEMESTER_DIRNAME, self.PROJECT_DIRNAME,
             gc.PROJECT_SUBMISSIONS_DIRNAME,
-            self.group_dir_basename,
-            timestamp.strftime(ut.FILESYSTEM_TIMESTAMP_FORMAT_STR))
+            self.group_dir_basename, 'submission101')
 
         actual_relative = ut.get_submission_relative_dir(submission)
         self.assertEqual(expected_relative, actual_relative)

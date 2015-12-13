@@ -571,7 +571,8 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.course = Course.objects.validate_and_create(name='eecs280')
-        self.semester = Semester.objects.validate_and_create(name='f15', course=self.course)
+        self.semester = Semester.objects.validate_and_create(
+            name='f15', course=self.course)
         self.PROJECT_NAME = 'stats_project'
 
         self.sample_project_filename = "spam_EGGS-42.txt"
@@ -584,11 +585,15 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
     def test_project_root_dir_created_and_removed(self):
         project = Project(name=self.PROJECT_NAME, semester=self.semester)
-        expected_project_root_dir = ut.get_project_root_dir(project)
 
-        self.assertFalse(os.path.exists(expected_project_root_dir))
+        self.assertEqual(
+            [],
+            os.listdir(os.path.dirname(ut.get_project_root_dir(project))))
 
         project.save()
+
+        expected_project_root_dir = ut.get_project_root_dir(project)
+
         self.assertTrue(os.path.isdir(expected_project_root_dir))
 
         project.delete()
@@ -598,25 +603,30 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
     def test_project_files_dir_created(self):
         project = Project(name=self.PROJECT_NAME, semester=self.semester)
-        expected_project_files_dir = ut.get_project_files_dir(project)
 
-        self.assertFalse(os.path.exists(expected_project_files_dir))
+        self.assertFalse(
+            os.path.exists(
+                os.path.dirname(ut.get_project_files_dir(project))))
 
         project.save()
 
+        expected_project_files_dir = ut.get_project_files_dir(project)
         self.assertTrue(os.path.isdir(expected_project_files_dir))
 
     # -------------------------------------------------------------------------
 
     def test_project_submissions_dir_created(self):
         project = Project(name=self.PROJECT_NAME, semester=self.semester)
-        expected_project_submissions_by_student_dir = (
-            ut.get_project_submissions_by_student_dir(project))
 
         self.assertFalse(
-            os.path.exists(expected_project_submissions_by_student_dir))
+            os.path.exists(
+                os.path.dirname(
+                    ut.get_project_submission_groups_dir(project))))
 
         project.save()
+
+        expected_project_submissions_by_student_dir = (
+            ut.get_project_submission_groups_dir(project))
 
         self.assertTrue(
             os.path.isdir(expected_project_submissions_by_student_dir))
