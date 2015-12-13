@@ -14,6 +14,8 @@ from autograder.frontend.json_api_serializers import (
     project_to_json, autograder_test_case_to_json)
 from autograder.models import CompiledAutograderTestCase
 
+import autograder.shared.feedback_configuration as fbc
+
 
 class _SetUpBase(TemporaryFilesystemTestCase):
     def setUp(self):
@@ -43,7 +45,6 @@ class _SetUpBase(TemporaryFilesystemTestCase):
                 'type': 'compiled_test_case',
                 'attributes': {
                     'name': 'test',
-                    'hide_from_students': False,
                     'command_line_arguments': ['spam'],
                     'standard_input': 'eggs',
                     'test_resource_files': ['cheese.txt'],
@@ -62,7 +63,10 @@ class _SetUpBase(TemporaryFilesystemTestCase):
                     'points_for_correct_return_code': 1,
                     'points_for_correct_output': 2,
                     'deduction_for_valgrind_errors': 3,
-                    'points_for_compilation_success': 4
+                    'points_for_compilation_success': 4,
+                    'feedback_configuration': (
+                        fbc.AutograderTestCaseFeedbackConfiguration().to_json()
+                    )
                 },
                 'relationships': {
                     'project': {
@@ -172,7 +176,6 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
                 'type': 'compiled_test_case',
                 'id': self.ag_test_starter.pk,
                 'attributes': {
-                    'hide_from_students': True,
                     'command_line_arguments': ['eggs'],
                     'standard_input': 'spam',
                     'test_resource_files': [],
@@ -182,7 +185,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
                     'expected_standard_output': 'woooah',
                     'expected_standard_error_output': '',
                     'use_valgrind': False,
-                    'valgrind_flags': None,
+                    'valgrind_flags': ['--leak_check=full'],
                     'compiler': 'g++',
                     'compiler_flags': ['-Wall', '-Wextra'],
                     'files_to_compile_together': ['egg.cpp'],
@@ -190,7 +193,10 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
                     'points_for_correct_return_code': 2,
                     'points_for_correct_output': 3,
                     'deduction_for_valgrind_errors': 4,
-                    'points_for_compilation_success': 5
+                    'points_for_compilation_success': 5,
+                    'feedback_configuration': (
+                        (fbc.AutograderTestCaseFeedbackConfiguration.
+                            get_max_feedback().to_json()))
                 }
             }
         }

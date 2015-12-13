@@ -15,7 +15,6 @@ from autograder.models import (
 class AutograderTestCaseRequestHandler(LoginRequiredView):
     _EDITABLE_FIELDS = [
         'name',
-        'hide_from_students',
         'command_line_arguments',
         'standard_input',
         'test_resource_files',
@@ -34,7 +33,8 @@ class AutograderTestCaseRequestHandler(LoginRequiredView):
         'points_for_correct_return_code',
         'points_for_correct_output',
         'deduction_for_valgrind_errors',
-        'points_for_compilation_success'
+        'points_for_compilation_success',
+        'feedback_configuration'
     ]
 
     def get(self, request, test_id):
