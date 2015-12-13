@@ -226,7 +226,7 @@ class Submission(ModelValidatableOnSave):
         submissions = []
         for group in project.submission_groups.all():
             try:
-                group_sub = group.submissions.order_by('-_timestamp')[0]
+                group_sub = group.submissions.order_by('pk').last()
             except IndexError:
                 continue
             # TODO: get this query working so that we're not grabbing more

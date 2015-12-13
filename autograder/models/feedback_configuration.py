@@ -1,6 +1,10 @@
 from enum import Enum
 
 
+class AutograderTestCaseFeedbackConfiguration:
+    pass
+
+
 class StudentTestSuiteFeedbackConfiguration:
     """
     Members:
