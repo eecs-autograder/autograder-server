@@ -50,8 +50,8 @@ INSTALLED_APPS = (
     # 'django.contrib.sessions',
     # 'django.contrib.messages',
     'django.contrib.staticfiles',
-    'autograder',
     'polymorphic',
+    'autograder',
     # 'djcelery',
 )
 
@@ -103,7 +103,7 @@ AUTHENTICATION_BACKENDS = (
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'autograder-test-db',
     },
     # 'system_tests': {

@@ -2,7 +2,7 @@ import difflib
 
 from django.db import models
 
-from polymorphic import PolymorphicModel
+from polymorphic.models import PolymorphicModel
 
 
 # TODO: rename to AutograderTestCaseResult
@@ -380,7 +380,7 @@ class AutograderTestCaseResultBase(PolymorphicModel):
                 feedback_config.valgrind_feedback_level != 'no_feedback')
 
     def _get_feedback_config(self):
-        logger.info('_get_feedback_config')
+        # logger.info('_get_feedback_config')
         override = (
             self.submission is not None and
             self.submission.test_case_feedback_config_override is not None)

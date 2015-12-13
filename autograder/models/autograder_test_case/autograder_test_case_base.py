@@ -546,7 +546,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    # TODO: Remove "tests_" prefix from these names
+    # TODO: Remove "test_" prefix from these names
 
     def test_checks_return_code(self):
         return (

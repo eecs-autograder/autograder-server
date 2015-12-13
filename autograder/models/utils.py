@@ -3,7 +3,7 @@ import fnmatch
 
 from django.db import models
 
-from polymorphic import PolymorphicManager, PolymorphicModel
+from polymorphic.models import PolymorphicManager, PolymorphicModel
 
 import autograder.shared.utilities as ut
 

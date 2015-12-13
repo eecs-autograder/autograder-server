@@ -2,7 +2,7 @@
 
 Dependencies and requirements:
 - Python 3.4
-- django 1.8
+- django 1.9
 - postgres 9.4.0
 - Docker
 # Installed with pip:
@@ -11,8 +11,8 @@ Dependencies and requirements:
 - django-polymorphic
 - oauth2client
 - pyOpenSSL
-- django-celery
+- psycopg2
+- django-picklefield 0.3.2
 
 # Bundled
 - identity-toolkit-python-client (needed refactor to python3)
-- django-picklefield 0.3.2

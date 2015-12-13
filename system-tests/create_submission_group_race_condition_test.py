@@ -82,6 +82,13 @@ def try_to_create(group_created):
         from autograder.models import (
             SubmissionGroup, Course, Semester, Project)
 
+        # try:
+        #     print('aksdfajsdklfsad')
+        #     Course.objects.filter(name=COURSE_NAME).delete()
+        # except Exception as e:
+        #     print('blaaaaaaaaah', e)
+        #     pass
+
         course = Course(name=COURSE_NAME)
         course.save()
 

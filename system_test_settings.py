@@ -97,7 +97,7 @@ DATABASES = {
     #     'NAME': 'autograder-test-db',
     # },
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'system_tests_db'
     }
 }
