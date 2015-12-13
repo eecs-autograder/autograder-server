@@ -213,10 +213,10 @@ class AutograderTestCaseResultBase(PolymorphicModel):
         result.update(feedback)
         pts_data['output_points_awarded'] = pts_awarded
 
-        feedback, pts_awarded = self._get_valgrind_feedback(
+        feedback, pts_deducted = self._get_valgrind_feedback(
             feedback_configuration, show_points_breakdown)
         result.update(feedback)
-        pts_data['valgrind_points_awarded'] = pts_awarded
+        pts_data['valgrind_points_deducted'] = pts_deducted
 
         points_feedback = self._get_points_feedback(
             feedback_configuration, show_points_breakdown, **pts_data)
@@ -299,17 +299,17 @@ class AutograderTestCaseResultBase(PolymorphicModel):
         if feedback_config.valgrind_feedback_level == 'show_valgrind_output':
             result['valgrind_output'] = self.valgrind_output
 
-        points_possible = self.test_case.points_for_no_valgrind_errors
-        points_awarded = (
-            points_possible if not self.valgrind_errors_present else 0)
+        points_deducted = self.test_case.deduction_for_valgrind_errors
+        points_deducted = (
+            points_deducted if self.valgrind_errors_present else 0)
 
-        return result, points_awarded
+        return result, points_deducted
 
     def _get_points_feedback(self, feedback_config, show_points_breakdown,
                              compilation_points_awarded=0,
                              return_code_points_awarded=0,
                              output_points_awarded=0,
-                             valgrind_points_awarded=0):
+                             valgrind_points_deducted=0):
         result = {}
         if feedback_config.points_feedback_level == 'hide':
             return result
@@ -319,12 +319,15 @@ class AutograderTestCaseResultBase(PolymorphicModel):
         return_code_points_possible = (
             self.test_case.points_for_correct_return_code)
         output_points_possible = self.test_case.points_for_correct_output
-        valgrind_points_possible = self.test_case.points_for_no_valgrind_errors
+        valgrind_possible_deduction = (
+            self.test_case.deduction_for_valgrind_errors)
 
         total_possible = 0
         total_awarded = (
-            compilation_points_awarded + return_code_points_awarded +
-            output_points_awarded + valgrind_points_awarded)
+            compilation_points_awarded +
+            max(return_code_points_awarded +
+                output_points_awarded -
+                valgrind_points_deducted, 0))
 
         breakdown = {}
         if (self._give_compilation_feedback(feedback_config) and
@@ -350,10 +353,8 @@ class AutograderTestCaseResultBase(PolymorphicModel):
             total_possible += output_points_possible
 
         if (self._give_valgrind_feedback(feedback_config) and
-                valgrind_points_possible):
-            breakdown['valgrind_points_awarded'] = valgrind_points_awarded
-            breakdown['valgrind_points_possible'] = valgrind_points_possible
-            total_possible += valgrind_points_possible
+                valgrind_possible_deduction):
+            breakdown['valgrind_points_deducted'] = valgrind_points_deducted
 
         if show_points_breakdown:
             result.update(breakdown)
@@ -380,7 +381,6 @@ class AutograderTestCaseResultBase(PolymorphicModel):
                 feedback_config.valgrind_feedback_level != 'no_feedback')
 
     def _get_feedback_config(self):
-        # logger.info('_get_feedback_config')
         override = (
             self.submission is not None and
             self.submission.test_case_feedback_config_override is not None)

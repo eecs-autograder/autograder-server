@@ -61,7 +61,7 @@ class _SetUpBase(TemporaryFilesystemTestCase):
                     'executable_name': 'sausage',
                     'points_for_correct_return_code': 1,
                     'points_for_correct_output': 2,
-                    'points_for_no_valgrind_errors': 3,
+                    'deduction_for_valgrind_errors': 3,
                     'points_for_compilation_success': 4
                 },
                 'relationships': {
@@ -189,7 +189,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
                     'executable_name': 'baked_beans',
                     'points_for_correct_return_code': 2,
                     'points_for_correct_output': 3,
-                    'points_for_no_valgrind_errors': 4,
+                    'deduction_for_valgrind_errors': 4,
                     'points_for_compilation_success': 5
                 }
             }

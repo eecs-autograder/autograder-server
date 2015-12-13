@@ -194,7 +194,7 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             executable_name='prog',
             points_for_correct_return_code=1,
             points_for_correct_output=2,
-            points_for_no_valgrind_errors=3,
+            deduction_for_valgrind_errors=2,
             points_for_compilation_success=4)
 
         self.correct_test_result = AutograderTestCaseResultBase.objects.create(
@@ -226,6 +226,18 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             compilation_return_code=0,
             compilation_standard_output='hello',
             compilation_standard_error_output='woah')
+
+        self.valgrind_error_result = AutograderTestCaseResultBase.objects.create(
+            test_case=self.test_case,
+            return_code=0,
+            standard_output='stdout\nspam\n',
+            standard_error_output='stderr\negg\n',
+            timed_out=False,
+            valgrind_return_code=42,
+            valgrind_output='error',
+            compilation_return_code=0,
+            compilation_standard_output='win',
+            compilation_standard_error_output='')
 
         self.timed_out_result = AutograderTestCaseResultBase.objects.create(
             test_case=self.test_case,
@@ -277,6 +289,13 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
         self.assertEqual(
             {
                 'test_name': self.test_case.name,
+                'timed_out': False
+            },
+            self.valgrind_error_result.to_json())
+
+        self.assertEqual(
+            {
+                'test_name': self.test_case.name,
                 'timed_out': True
             },
             self.timed_out_result.to_json())
@@ -291,8 +310,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'output_correct': True,
             'valgrind_errors_present': False,
             'compilation_succeeded': True,
-            'total_points_awarded': 10,
-            'total_points_possible': 10,
+            'total_points_awarded': 7,
+            'total_points_possible': 7,
 
             'timed_out': False
         }
@@ -303,8 +322,24 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'output_correct': False,
             'valgrind_errors_present': True,
             'compilation_succeeded': True,
+            # deduction for valgrind errors only subtracts from output
+            # and return code points awarded
             'total_points_awarded': 4,
-            'total_points_possible': 10,
+            'total_points_possible': 7,
+
+            'timed_out': False
+        }
+
+        expected_valgrind_errors = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+            'output_correct': True,
+            'valgrind_errors_present': True,
+            'compilation_succeeded': True,
+            # deduction for valgrind errors only subtracts from output
+            # and return code points awarded
+            'total_points_awarded': 5,
+            'total_points_possible': 7,
 
             'timed_out': False
         }
@@ -318,12 +353,16 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             self.incorrect_test_result.to_json())
 
         self.assertEqual(
+            expected_valgrind_errors,
+            self.valgrind_error_result.to_json())
+
+        self.assertEqual(
             {
                 'test_name': self.test_case.name,
                 'timed_out': True,
                 'compilation_succeeded': True,
                 'total_points_awarded': 4,
-                'total_points_possible': 10
+                'total_points_possible': 7
             },
             self.timed_out_result.to_json())
 
@@ -365,13 +404,12 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'return_code_points_possible': 1,
             'output_points_awarded': 2,
             'output_points_possible': 2,
-            'valgrind_points_awarded': 3,
-            'valgrind_points_possible': 3,
+            'valgrind_points_deducted': 0,
             'compilation_points_awarded': 4,
             'compilation_points_possible': 4,
 
-            'total_points_awarded': 10,
-            'total_points_possible': 10,
+            'total_points_awarded': 7,
+            'total_points_possible': 7,
 
 
             'timed_out': False
@@ -395,11 +433,10 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'output_points_awarded': 0,
             'output_points_possible': 2,
 
-            'valgrind_points_awarded': 0,
-            'valgrind_points_possible': 3,
+            'valgrind_points_deducted': 0,
 
             'total_points_awarded': 0,
-            'total_points_possible': 10
+            'total_points_possible': 7
         }
 
         self.assertEqual(
@@ -439,21 +476,66 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'return_code_points_possible': 1,
             'output_points_awarded': 0,
             'output_points_possible': 2,
-            'valgrind_points_awarded': 0,
-            'valgrind_points_possible': 3,
+            'valgrind_points_deducted': 2,
             'compilation_points_awarded': 4,
             'compilation_points_possible': 4,
 
             'total_points_awarded': 4,
-            'total_points_possible': 10,
+            'total_points_possible': 7,
 
 
             'timed_out': False
         }
 
         self.assertEqual(
-            expected_incorrect,
-            self.incorrect_test_result.to_json())
+            expected_incorrect, self.incorrect_test_result.to_json())
+
+        expected_valgrind_errors = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+            'expected_return_code': 0,
+            'actual_return_code': 0,
+
+
+            'output_correct': True,
+            'stdout_diff': list(_DIFFER.compare(
+                self.test_case.expected_standard_output.splitlines(
+                    keepends=True),
+                self.correct_test_result.standard_output.splitlines(
+                    keepends=True))),
+            'stderr_diff': list(_DIFFER.compare(
+                self.test_case.expected_standard_error_output.splitlines(
+                    keepends=True),
+                self.correct_test_result.standard_error_output.splitlines(
+                    keepends=True))),
+
+
+            'valgrind_errors_present': True,
+            'valgrind_output': 'error',
+
+
+            'compilation_succeeded': True,
+            'compilation_stdout': 'win',
+            'compilation_stderr': '',
+
+
+            'return_code_points_awarded': 1,
+            'return_code_points_possible': 1,
+            'output_points_awarded': 2,
+            'output_points_possible': 2,
+            'valgrind_points_deducted': 2,
+            'compilation_points_awarded': 4,
+            'compilation_points_possible': 4,
+
+            'total_points_awarded': 5,
+            'total_points_possible': 7,
+
+
+            'timed_out': False
+        }
+
+        self.assertEqual(
+            expected_valgrind_errors, self.valgrind_error_result.to_json())
 
         expected_timeout = {
             'test_name': self.test_case.name,
@@ -470,11 +552,10 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'output_points_awarded': 0,
             'output_points_possible': 2,
 
-            'valgrind_points_awarded': 0,
-            'valgrind_points_possible': 3,
+            'valgrind_points_deducted': 0,
 
             'total_points_awarded': 4,
-            'total_points_possible': 10,
+            'total_points_possible': 7,
 
             'timed_out': True
         }
@@ -561,13 +642,12 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'return_code_points_possible': 1,
             'output_points_awarded': 2,
             'output_points_possible': 2,
-            'valgrind_points_awarded': 3,
-            'valgrind_points_possible': 3,
+            'valgrind_points_deducted': 0,
             'compilation_points_awarded': 4,
             'compilation_points_possible': 4,
 
-            'total_points_awarded': 10,
-            'total_points_possible': 10,
+            'total_points_awarded': 7,
+            'total_points_possible': 7,
 
             'timed_out': False
         }
@@ -583,13 +663,12 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
 
             'output_points_awarded': 2,
             'output_points_possible': 2,
-            'valgrind_points_awarded': 3,
-            'valgrind_points_possible': 3,
+            'valgrind_points_deducted': 0,
             'compilation_points_awarded': 4,
             'compilation_points_possible': 4,
 
-            'total_points_awarded': 9,
-            'total_points_possible': 9,
+            'total_points_awarded': 6,
+            'total_points_possible': 6,
 
             'timed_out': False
         }
@@ -612,7 +691,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
 
             'timed_out': False
         }
-        self.assertEqual(expected, self.correct_test_result.to_json(feedback))
+        self.assertEqual(
+            expected, self.valgrind_error_result.to_json(feedback))
 
         feedback.compilation_feedback_level = 'no_feedback'
         feedback.validate()
@@ -628,7 +708,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
 
             'timed_out': False
         }
-        self.assertEqual(expected, self.correct_test_result.to_json(feedback))
+        self.assertEqual(
+            expected, self.valgrind_error_result.to_json(feedback))
 
         feedback.output_feedback_level = 'no_feedback'
         feedback.return_code_feedback_level = 'correct_or_incorrect_only'
@@ -645,7 +726,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
 
             'timed_out': False
         }
-        self.assertEqual(expected, self.correct_test_result.to_json(feedback))
+        self.assertEqual(
+            expected, self.valgrind_error_result.to_json(feedback))
 
     def test_not_checking_return_code(self):
         self.test_case.expected_return_code = None
@@ -656,8 +738,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'output_correct': True,
             'valgrind_errors_present': False,
             'compilation_succeeded': True,
-            'total_points_awarded': 9,
-            'total_points_possible': 9,
+            'total_points_awarded': 6,
+            'total_points_possible': 6,
 
             'timed_out': False
         }
@@ -690,13 +772,12 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
 
             'output_points_awarded': 2,
             'output_points_possible': 2,
-            'valgrind_points_awarded': 3,
-            'valgrind_points_possible': 3,
+            'valgrind_points_deducted': 0,
             'compilation_points_awarded': 4,
             'compilation_points_possible': 4,
 
-            'total_points_awarded': 9,
-            'total_points_possible': 9,
+            'total_points_awarded': 6,
+            'total_points_possible': 6,
 
             'timed_out': False
         }
@@ -714,8 +795,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'return_code_correct': True,
             'valgrind_errors_present': False,
             'compilation_succeeded': True,
-            'total_points_awarded': 8,
-            'total_points_possible': 8,
+            'total_points_awarded': 5,
+            'total_points_possible': 5,
 
             'timed_out': False
         }
@@ -739,13 +820,12 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
 
             'return_code_points_awarded': 1,
             'return_code_points_possible': 1,
-            'valgrind_points_awarded': 3,
-            'valgrind_points_possible': 3,
+            'valgrind_points_deducted': 0,
             'compilation_points_awarded': 4,
             'compilation_points_possible': 4,
 
-            'total_points_awarded': 8,
-            'total_points_possible': 8,
+            'total_points_awarded': 5,
+            'total_points_possible': 5,
 
             'timed_out': False
         }
@@ -768,8 +848,9 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'timed_out': False
         }
 
-        self.assertEqual(expected_medium,
-                         self.correct_test_result.to_json(self.medium_config))
+        self.assertEqual(
+            expected_medium,
+            self.valgrind_error_result.to_json(self.medium_config))
 
         expected_high = {
             'test_name': self.test_case.name,
@@ -810,5 +891,5 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
 
         self.assertEqual(
             expected_high,
-            self.correct_test_result.to_json(
+            self.valgrind_error_result.to_json(
                 FeedbackConfiguration.get_max_feedback()))

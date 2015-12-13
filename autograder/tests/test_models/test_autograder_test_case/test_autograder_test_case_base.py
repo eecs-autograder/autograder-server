@@ -59,7 +59,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(0, loaded_test_case.points_for_correct_return_code)
         self.assertEqual(0, loaded_test_case.points_for_correct_output)
-        self.assertEqual(0, loaded_test_case.points_for_no_valgrind_errors)
+        self.assertEqual(0, loaded_test_case.deduction_for_valgrind_errors)
         self.assertEqual(0, loaded_test_case.points_for_compilation_success)
 
         # Fat interface fields
@@ -439,7 +439,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
                 name=self.TEST_NAME, project=self.project,
                 points_for_correct_return_code=-1,
                 points_for_correct_output=-1,
-                points_for_no_valgrind_errors=-1,
+                deduction_for_valgrind_errors=-1,
                 points_for_compilation_success=-1)
 
         self.assertTrue(
@@ -447,7 +447,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(
             'points_for_correct_output' in cm.exception.message_dict)
         self.assertTrue(
-            'points_for_no_valgrind_errors' in cm.exception.message_dict)
+            'deduction_for_valgrind_errors' in cm.exception.message_dict)
         self.assertTrue(
             'points_for_compilation_success' in cm.exception.message_dict)
 

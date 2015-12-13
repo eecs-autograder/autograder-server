@@ -247,7 +247,7 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
 
             'points_for_correct_return_code': <value>,
             'points_for_correct_output': <value>,
-            'points_for_no_valgrind_errors': <value>,
+            'deduction_for_valgrind_errors': <value>,
             'points_for_compilation_success': <value>,
 
             // Present depending on type
@@ -307,8 +307,8 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
             autograder_test_case.points_for_correct_return_code),
         'points_for_correct_output': (
             autograder_test_case.points_for_correct_output),
-        'points_for_no_valgrind_errors': (
-            autograder_test_case.points_for_no_valgrind_errors),
+        'deduction_for_valgrind_errors': (
+            autograder_test_case.deduction_for_valgrind_errors),
         'points_for_compilation_success': (
             autograder_test_case.points_for_compilation_success)
     })
