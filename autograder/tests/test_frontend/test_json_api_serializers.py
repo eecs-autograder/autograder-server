@@ -20,6 +20,8 @@ from autograder.models import (
     CompiledAutograderTestCase, SubmissionGroup, Submission,
     AutograderTestCaseResult)
 
+import autograder.shared.feedback_configuration as fbc
+
 # print(json.dumps(expected, sort_keys=True, indent=4, cls=DjangoJSONEncoder))
 # print(json.dumps(actual, sort_keys=True, indent=4, cls=DjangoJSONEncoder))
 
@@ -284,7 +286,6 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
         self.ag_test = CompiledAutograderTestCase.objects.validate_and_create(
             name='test',
             project=self.project,
-            hide_from_students=False,
             command_line_arguments=['argy', 'argy2'],
             standard_input='iiiin',
             test_resource_files=['cheese.txt'],
@@ -314,7 +315,6 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
             },
             'attributes': {
                 'name': 'test',
-                'hide_from_students': False,
                 'command_line_arguments': ['argy', 'argy2'],
                 'standard_input': 'iiiin',
                 'test_resource_files': ['cheese.txt'],
@@ -336,7 +336,8 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
                 'deduction_for_valgrind_errors': 9001,
                 'points_for_compilation_success': 75,
 
-                'feedback_configuration': None
+                'feedback_configuration': (
+                    fbc.AutograderTestCaseFeedbackConfiguration().to_json())
             },
             'relationships': {
                 'project': {

@@ -147,7 +147,6 @@ def project_to_json(project, all_fields=True):
                 },
                 ...
             ],
-            'test_case_feedback_configuration': {...},
             'visible_to_students': ...,
             'closing_time': ...,
             'disallow_student_submissions': ...,
@@ -193,8 +192,6 @@ def project_to_json(project, all_fields=True):
             }
             for file_ in project.get_project_files()
         ],
-        'test_case_feedback_configuration': (
-            project.test_case_feedback_configuration.to_json()),
         'visible_to_students': project.visible_to_students,
         'closing_time': project.closing_time,
         'disallow_student_submissions': (
@@ -232,7 +229,6 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
         'attributes': {
             // Present for all types
             'name': <value>,
-            'hide_from_students': <value>
             'command_line_arguments': <value>,
             'standard_input': <value>,
             'test_resource_files': <value>,
@@ -288,7 +284,6 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
         return data
 
     data['attributes'].update({
-        'hide_from_students': autograder_test_case.hide_from_students,
         'command_line_arguments': (
             autograder_test_case.command_line_arguments),
         'standard_input': autograder_test_case.standard_input,
@@ -312,7 +307,9 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
         'deduction_for_valgrind_errors': (
             autograder_test_case.deduction_for_valgrind_errors),
         'points_for_compilation_success': (
-            autograder_test_case.points_for_compilation_success)
+            autograder_test_case.points_for_compilation_success),
+        'feedback_configuration': (
+            autograder_test_case.feedback_configuration.to_json())
     })
 
     data['relationships'] = {
