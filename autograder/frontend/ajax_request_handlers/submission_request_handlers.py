@@ -18,18 +18,11 @@ from autograder.frontend.json_api_serializers import (
     submission_to_json)
 
 from autograder.models import SubmissionGroup, Submission
-from autograder.shared.feedback_configuration import (
-    AutograderTestCaseFeedbackConfiguration,
-    StudentTestSuiteFeedbackConfiguration, PointsFeedbackLevel)
-# from autograder.tasks import grade_submission
+
+import autograder.shared.feedback_configuration as fbc
 
 
 class SubmissionRequestHandler(LoginRequiredView):
-    _EDITABLE_FIELDS = [
-        'test_case_feedback_config_override',
-        'show_all_test_cases_and_suites'
-    ]
-
     def post(self, request):
         """
         POST dictionary parameters: 'submission_group_id'
@@ -48,14 +41,6 @@ class SubmissionRequestHandler(LoginRequiredView):
         username = request.user.username
         if username not in group.members:
             return HttpResponseForbidden()
-
-        is_staff = group.project.semester.is_semester_staff(
-            request.user.username)
-        # TODO: don't override feedback for staff here.
-        # let the get request do that.
-        feedback_override = (
-            AutograderTestCaseFeedbackConfiguration.get_max_feedback()
-            if is_staff else None)
 
         error_message = None
         if group.project.semester.is_semester_staff(group.members[0]):
@@ -85,13 +70,7 @@ class SubmissionRequestHandler(LoginRequiredView):
 
             submission = Submission.objects.validate_and_create(
                 submitted_files=files, submission_group=group,
-                test_case_feedback_config_override=feedback_override,
                 timestamp=timestamp)
-
-        # if submission.status != Submission.GradingStatus.invalid:
-        #     submission.status = Submission.GradingStatus.queued
-        #     submission.save()
-            # grade_submission.delay(submission.pk)
 
         response_content = {
             'data': submission_to_json(submission)
@@ -134,22 +113,24 @@ class SubmissionRequestHandler(LoginRequiredView):
             return HttpResponseForbidden()
 
         feedback_override = (
-            AutograderTestCaseFeedbackConfiguration.get_max_feedback()
+            fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()
             if is_staff else None)
-        # logger.info('feedback override: {}'.format(feedback_override))
         suite_feedback_override = (
-            StudentTestSuiteFeedbackConfiguration.get_max_feedback()
+            fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback()
             if is_staff else None)
 
-        if (submission.show_all_test_cases_and_suites or
+        # TODO: post deadline test revealing
+        if (  # submission.show_all_test_cases_and_suites or
                 (is_staff and is_member)):
             result_set = submission.results.all()
             suite_result_set = submission.suite_results.all()
         else:
             result_set = submission.results.filter(
-                test_case__hide_from_students=False)
+                test_case__feedback_configuration__visibility_level=(
+                    fbc.VisibilityLevel.show_to_students.value))  # TODO: abstract away this query
             suite_result_set = submission.suite_results.filter(
-                test_suite__hide_from_students=False)
+                test_suite__feedback_configuration__visibility_level=(
+                    fbc.VisibilityLevel.show_to_students.value))  # TODO: abstract away this query
 
         results_json = [
             result.to_json(override_feedback=feedback_override) for
@@ -172,84 +153,83 @@ class SubmissionRequestHandler(LoginRequiredView):
 
         # logger.info('response_content: {}'.format(response_content))
 
-        if feedback_override is not None:
-            points_feedback = feedback_override.points_feedback_level
-        elif submission.test_case_feedback_config_override is not None:
-            points_feedback = (submission.test_case_feedback_config_override.
-                               points_feedback_level)
-        else:
-            points_feedback = (group.project.test_case_feedback_configuration.
-                               points_feedback_level)
+        # if feedback_override is not None:
+        #     points_feedback = feedback_override.points_feedback_level
+        # else:
+        #     points_feedback = (group.project.test_case_feedback_configuration.
+        #                        points_feedback_level)
 
-        if suite_feedback_override is not None:
-            suite_points_feedback = (
-                suite_feedback_override.points_feedback_level)
-        elif (submission.student_test_suite_feedback_config_override
-                is not None):
-            suite_points_feedback = (
-                submission.student_test_suite_feedback_config_override.
-                points_feedback_level)
-        else:
-            suite_points_feedback = (
-                group.project.student_test_suite_feedback_configuration.
-                points_feedback_level)
+        # if suite_feedback_override is not None:
+        #     suite_points_feedback = (
+        #         suite_feedback_override.points_feedback_level)
+        # elif (submission.student_test_suite_feedback_config_override
+        #         is not None):
+        #     suite_points_feedback = (
+        #         submission.student_test_suite_feedback_config_override.
+        #         points_feedback_level)
+        # else:
+        #     suite_points_feedback = (
+        #         group.project.student_test_suite_feedback_configuration.
+        #         points_feedback_level)
 
-        show_test_points = points_feedback != 'hide'
-        show_suite_points = suite_points_feedback != PointsFeedbackLevel.hide
+        # show_test_points = points_feedback != fbc.PointsFeedbackLevel.hide
+        # show_suite_points = (
+        #     suite_points_feedback != fbc.PointsFeedbackLevel.hide)
 
-        if not show_test_points and not show_suite_points:
-            return JsonResponse(response_content, status=200)
+        # if not show_test_points and not show_suite_points:
+        #     return JsonResponse(response_content, status=200)
 
-        if show_test_points:
-            test_points_awarded = sum(
-                result['total_points_awarded'] for result in results_json)
-            test_points_possible = sum(
-                result['total_points_possible'] for result in results_json)
-        else:
-            test_points_awarded = 0
-            test_points_possible = 0
+        # if show_test_points:
+        test_points_awarded = sum(
+            result.get('total_points_awarded', 0) for result in results_json)
+        test_points_possible = sum(
+            result.get('total_points_possible', 0) for result in results_json)
+        # else:
+        #     test_points_awarded = 0
+        #     test_points_possible = 0
 
-        if show_suite_points:
-            suite_points_awarded = sum(
-                result['points_awarded'] for result in suite_results_json)
-            suite_points_possible = sum(
-                result['points_possible'] for result in suite_results_json)
-        else:
-            suite_points_awarded = 0
-            suite_points_possible = 0
+        # if show_suite_points:
+        suite_points_awarded = sum(
+            result.get('points_awarded', 0) for result in suite_results_json)
+        suite_points_possible = sum(
+            result.get('points_possible', 0) for result in suite_results_json)
+        # else:
+        #     suite_points_awarded = 0
+        #     suite_points_possible = 0
 
         total_score = test_points_awarded + suite_points_awarded
         points_possible = test_points_possible + suite_points_possible
 
-        response_content['meta']['total_points_awarded'] = total_score
-        response_content['meta']['total_points_possible'] = points_possible
+        if points_possible != 0:
+            response_content['meta']['total_points_awarded'] = total_score
+            response_content['meta']['total_points_possible'] = points_possible
 
         return JsonResponse(response_content, status=200)
 
-    def patch(self, request, submission_id):
-        try:
-            submission = Submission.objects.get(pk=submission_id)
-        except ObjectDoesNotExist:
-            return HttpResponseNotFound()
+    # def patch(self, request, submission_id):
+    #     try:
+    #         submission = Submission.objects.get(pk=submission_id)
+    #     except ObjectDoesNotExist:
+    #         return HttpResponseNotFound()
 
-        course = submission.submission_group.project.semester.course
-        if not course.is_course_admin(request.user):
-            return HttpResponseForbidden()
+    #     course = submission.submission_group.project.semester.course
+    #     if not course.is_course_admin(request.user):
+    #         return HttpResponseForbidden()
 
-        request_content = json.loads(request.body.decode('utf-8'))
-        to_edit = request_content['data']['attributes']
+    #     request_content = json.loads(request.body.decode('utf-8'))
+    #     to_edit = request_content['data']['attributes']
 
-        for field_name in SubmissionRequestHandler._EDITABLE_FIELDS:
-            if field_name in to_edit:
-                setattr(submission, field_name, to_edit[field_name])
+    #     for field_name in SubmissionRequestHandler._EDITABLE_FIELDS:
+    #         if field_name in to_edit:
+    #             setattr(submission, field_name, to_edit[field_name])
 
-        try:
-            submission.validate_and_save()
-        except ValidationError as e:
-            return JsonResponse(
-                {'errors': {'meta': e.message_dict}}, status=400)
+    #     try:
+    #         submission.validate_and_save()
+    #     except ValidationError as e:
+    #         return JsonResponse(
+    #             {'errors': {'meta': e.message_dict}}, status=400)
 
-        return HttpResponse(status=204)
+    #     return HttpResponse(status=204)
 
 
 class SubmittedFileRequestHandler(LoginRequiredView):

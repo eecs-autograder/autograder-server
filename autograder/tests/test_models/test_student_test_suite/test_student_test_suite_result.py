@@ -9,7 +9,7 @@ from autograder.models import (
     StudentTestSuiteFactory, SubmissionGroup, Submission, Project,
     StudentTestSuiteResult)
 
-import autograder.models.feedback_configuration as fdbk_conf
+import autograder.shared.feedback_configuration as fbc
 
 
 class _SharedSetUp(TemporaryFilesystemTestCase):
@@ -167,26 +167,26 @@ class StudentTestSuiteResultSerializerTestCase(_SharedSetUp):
         )
 
         self.low_feedback_config = (
-            fdbk_conf.StudentTestSuiteFeedbackConfiguration())
+            fbc.StudentTestSuiteFeedbackConfiguration())
 
-        self.medium_feedback_config = fdbk_conf.StudentTestSuiteFeedbackConfiguration(
+        self.medium_feedback_config = fbc.StudentTestSuiteFeedbackConfiguration(
             compilation_feedback_level=(
-                fdbk_conf.CompilationFeedbackLevel.success_or_failure_only),
+                fbc.CompilationFeedbackLevel.success_or_failure_only),
             student_test_validity_feedback_level=(
-                fdbk_conf.StudentTestCaseValidityFeedbackLevel.show_valid_or_invalid),
+                fbc.StudentTestCaseValidityFeedbackLevel.show_valid_or_invalid),
             buggy_implementations_exposed_feedback_level=(
-                fdbk_conf.BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed_overall),
-            points_feedback_level=fdbk_conf.PointsFeedbackLevel.show_total
+                fbc.BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed_overall),
+            points_feedback_level=fbc.PointsFeedbackLevel.show_total
         )
 
-        self.full_feedback_config = fdbk_conf.StudentTestSuiteFeedbackConfiguration(
+        self.full_feedback_config = fbc.StudentTestSuiteFeedbackConfiguration(
             compilation_feedback_level=(
-                fdbk_conf.CompilationFeedbackLevel.show_compiler_output),
+                fbc.CompilationFeedbackLevel.show_compiler_output),
             student_test_validity_feedback_level=(
-                fdbk_conf.StudentTestCaseValidityFeedbackLevel.show_validity_check_output),
+                fbc.StudentTestCaseValidityFeedbackLevel.show_validity_check_output),
             buggy_implementations_exposed_feedback_level=(
-                fdbk_conf.BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed_per_test),
-            points_feedback_level=fdbk_conf.PointsFeedbackLevel.show_breakdown
+                fbc.BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed_per_test),
+            points_feedback_level=fbc.PointsFeedbackLevel.show_breakdown
         )
 
         self.low_feedback_result = {
@@ -243,75 +243,45 @@ class StudentTestSuiteResultSerializerTestCase(_SharedSetUp):
         }
 
     def test_to_json_low_feedback(self):
-        self.project.student_test_suite_feedback_configuration = (
-            self.low_feedback_config)
-        self.project.validate_and_save()
+        self.suite.feedback_configuration = self.low_feedback_config
+        self.suite.validate_and_save()
 
         self.assertEqual(self.low_feedback_result, self.result.to_json())
 
     def test_to_json_medium_feedback(self):
-        self.project.student_test_suite_feedback_configuration = (
-            self.medium_feedback_config)
-        self.project.validate_and_save()
+        self.suite.feedback_configuration = self.medium_feedback_config
+        self.suite.validate_and_save()
 
         self.assertEqual(self.medium_feedback_result, self.result.to_json())
 
     def test_to_json_full_feedback(self):
         feedback_config = self.full_feedback_config
-        self.project.student_test_suite_feedback_configuration = (
-            feedback_config)
-        self.project.validate_and_save()
+        self.suite.feedback_configuration = feedback_config
+        self.suite.validate_and_save()
 
         self.assertEqual(self.full_feedback_result, self.result.to_json())
 
     def test_to_json_with_submission_no_feedback_override(self):
-        self.project.student_test_suite_feedback_configuration = (
-            self.low_feedback_config)
-        self.project.validate_and_save()
+        self.suite.feedback_configuration = self.low_feedback_config
+        self.suite.validate_and_save()
 
         self.assertEqual(self.low_feedback_result, self.result.to_json())
 
-    def test_to_json_with_submission_feedback_override(self):
-        self.project.student_test_suite_feedback_configuration = (
-            self.low_feedback_config)
-        self.submission.student_test_suite_feedback_config_override = (
-            self.medium_feedback_config)
-
-        self.project.validate_and_save()
-        self.submission.save()
-
-        self.assertEqual(self.medium_feedback_result, self.result.to_json())
-
     def test_to_json_with_manual_feedback_override(self):
-        self.project.student_test_suite_feedback_configuration = (
-            self.low_feedback_config)
+        self.suite.feedback_configuration = self.low_feedback_config
 
-        self.project.validate_and_save()
+        self.suite.validate_and_save()
         self.submission.save()
 
         self.assertEqual(
             self.medium_feedback_result,
             self.result.to_json(self.medium_feedback_config))
 
-    def test_to_json_with_submission_and_manual_feedback_override(self):
-        self.project.student_test_suite_feedback_configuration = (
-            self.low_feedback_config)
-        self.submission.student_test_suite_feedback_config_override = (
-            self.medium_feedback_result)
-
-        self.project.validate_and_save()
-        self.submission.save()
-
-        self.assertEqual(
-            self.full_feedback_result,
-            self.result.to_json(self.full_feedback_config))
-
     def test_to_json_points_feedback_high_but_buggy_exposure_feedback_low(self):
-        for points_level in (fdbk_conf.PointsFeedbackLevel.show_total,
-                             fdbk_conf.PointsFeedbackLevel.show_breakdown):
+        for points_level in (fbc.PointsFeedbackLevel.show_total,
+                             fbc.PointsFeedbackLevel.show_breakdown):
             self.low_feedback_config.points_feedback_level = points_level
-            self.project.student_test_suite_feedback_configuration = (
-                self.low_feedback_config)
-            self.project.validate_and_save()
+            self.suite.feedback_configuration = self.low_feedback_config
+            self.suite.validate_and_save()
 
             self.assertEqual(self.low_feedback_result, self.result.to_json())

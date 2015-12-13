@@ -34,14 +34,10 @@ class JsonSerializableClassField(pg_fields.JSONField):
         if value is None:
             return super().get_prep_value(value)
 
-        if not isinstance(value, self._class):
-            raise TypeError(
-                'Error preparing value of type {} for the field {}. '
-                'Expected value of type {}'.format(
-                    type(value), self.name, self._class))
+        if isinstance(value, self._class):
+            value = value.to_json()
 
-        json = value.to_json()
-        return super().get_prep_value(json)
+        return super().get_prep_value(value)
 
     def to_python(self, value):
         value = super().to_python(value)

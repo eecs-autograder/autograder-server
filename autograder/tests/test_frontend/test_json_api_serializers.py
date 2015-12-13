@@ -225,8 +225,6 @@ class ProjectSerializerTestCase(SerializerTestCase):
                     }
                     for filename in self.project.get_project_file_basenames()
                 ],
-                'test_case_feedback_configuration': (
-                    self.project.test_case_feedback_configuration.to_json()),
                 'visible_to_students': self.project.visible_to_students,
                 'closing_time': self.project.closing_time,
                 'disallow_student_submissions': (
@@ -336,7 +334,9 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
                 'points_for_correct_return_code': 42,
                 'points_for_correct_output': 3,
                 'deduction_for_valgrind_errors': 9001,
-                'points_for_compilation_success': 75
+                'points_for_compilation_success': 75,
+
+                'feedback_configuration': None
             },
             'relationships': {
                 'project': {
@@ -480,7 +480,6 @@ class SubmissionSerializerTestCase(SerializerTestCase):
                 ],
                 'discarded_files': self.submission.discarded_files,
                 'timestamp': self.submission.timestamp,
-                'test_case_feedback_config_override': None,
                 'status': self.submission.status,
                 'invalid_reason_or_error': (
                     self.submission.invalid_reason_or_error)

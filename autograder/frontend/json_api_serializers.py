@@ -250,6 +250,8 @@ def autograder_test_case_to_json(autograder_test_case, all_fields=True):
             'deduction_for_valgrind_errors': <value>,
             'points_for_compilation_success': <value>,
 
+            'feedback_configuration': <value>,
+
             // Present depending on type
             'compiler': <value>,
             'compiler_flags': <value>,
@@ -411,7 +413,6 @@ def submission_to_json(submission, all_fields=True):
             ],
             'discarded_files': [<filename>, ...],
             'timestamp': <timestamp>,
-            'test_case_feedback_config_override': {<settings>},
             'status': <status>,
             'invalid_reason_or_error': <reason>
         },
@@ -455,13 +456,6 @@ def submission_to_json(submission, all_fields=True):
         'status': submission.status,
         'invalid_reason_or_error': submission.invalid_reason_or_error
     })
-    config = submission.test_case_feedback_config_override
-    try:
-        data['attributes']['test_case_feedback_config_override'] = (
-            config.to_json())
-    except Exception:
-        data['attributes']['test_case_feedback_config_override'] = (
-            config)
 
     data['relationships'] = {
         'submission_group': {

@@ -1,4 +1,5 @@
 import datetime
+import copy
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ObjectDoesNotExist
@@ -18,11 +19,8 @@ from autograder.models import (
     SubmissionGroup, AutograderTestCaseFactory, Submission,
     AutograderTestCaseResult, StudentTestSuiteFactory,
     StudentTestSuiteResult, Project)
-from autograder.models.fields import FeedbackConfiguration
-from autograder.models.feedback_configuration import (
-    StudentTestSuiteFeedbackConfiguration,
-    PointsFeedbackLevel,
-    BuggyImplementationsExposedFeedbackLevel)
+
+import autograder.shared.feedback_configuration as fbc
 
 
 class _SetUpBase(RequestHandlerTestCase):
@@ -35,15 +33,15 @@ class _SetUpBase(RequestHandlerTestCase):
         self.staff = obj_ut.create_dummy_users()
         self.enrolled = obj_ut.create_dummy_users()
         self.nobody = obj_ut.create_dummy_users()
-        feedback_config = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only')
+        test_feedback_config = fbc.AutograderTestCaseFeedbackConfiguration(
+            return_code_feedback_level=(
+                fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
 
         self.project = obj_ut.build_project({
             'expected_student_file_patterns': [
                 Project.FilePatternTuple('test_*.cpp', 0, 3)
             ],
             'allow_submissions_from_non_enrolled_students': True,
-            'test_case_feedback_configuration': feedback_config,
             'required_student_files': ['hello.cpp']
         })
 
@@ -67,27 +65,30 @@ class _SetUpBase(RequestHandlerTestCase):
         self.visible_test = AutograderTestCaseFactory.validate_and_create(
             'compiled_test_case',
             name='visible', project=self.project,
-            hide_from_students=False,
             expected_return_code=0,
             points_for_correct_return_code=self.points_for_test,
             compiler='g++',
             files_to_compile_together=['hello.cpp'],
             student_resource_files=['hello.cpp'],
-            executable_name='prog')
+            executable_name='prog',
+            feedback_configuration=copy.copy(test_feedback_config))
+        self.visible_test.feedback_configuration.visibility_level = (
+            fbc.VisibilityLevel.show_to_students)
+        self.visible_test.save()
 
         self.hidden_test = AutograderTestCaseFactory.validate_and_create(
             'compiled_test_case',
             name='hidden', project=self.project,
-            hide_from_students=True,
             expected_return_code=0,
             points_for_correct_return_code=self.points_for_test,
             compiler='g++',
             files_to_compile_together=['hello.cpp'],
             student_resource_files=['hello.cpp'],
-            executable_name='prog')
-        # self.hidden_test.pk = None
-        # self.hidden_test.name = 'hidden'
-        # self.hidden_test.validate_and_save()
+            executable_name='prog',
+            feedback_configuration=copy.copy(test_feedback_config))
+        self.hidden_test.feedback_configuration.visibility_level = (
+            fbc.VisibilityLevel.hide_from_students)
+        self.hidden_test.save()
 
         self.assertNotEqual(self.visible_test, self.hidden_test)
 
@@ -115,8 +116,10 @@ class _SetUpBase(RequestHandlerTestCase):
             student_test_case_filename_pattern='test_*.cpp',
             correct_implementation_filename='correct.cpp',
             buggy_implementation_filenames=['buggy1.cpp', 'buggy2.cpp'],
-            hide_from_students=False,
-            points_per_buggy_implementation_exposed=self.points_per_buggy
+            points_per_buggy_implementation_exposed=self.points_per_buggy,
+            feedback_configuration=(
+                fbc.StudentTestSuiteFeedbackConfiguration(
+                    visibility_level=fbc.VisibilityLevel.show_to_students))
         )
 
         self.hidden_suite = StudentTestSuiteFactory.validate_and_create(
@@ -126,7 +129,10 @@ class _SetUpBase(RequestHandlerTestCase):
             student_test_case_filename_pattern='test_*.cpp',
             buggy_implementation_filenames=['buggy1.cpp', 'buggy2.cpp'],
             correct_implementation_filename='correct.cpp',
-            points_per_buggy_implementation_exposed=self.points_per_buggy
+            points_per_buggy_implementation_exposed=self.points_per_buggy,
+            feedback_configuration=(
+                fbc.StudentTestSuiteFeedbackConfiguration(
+                    visibility_level=fbc.VisibilityLevel.hide_from_students))
         )
 
         self.visible_suite_result = StudentTestSuiteResult.objects.create(
@@ -146,28 +152,9 @@ class AddSubmissionRequestTestCase(_SetUpBase):
 
         self.maxDiff = None
 
-    def test_valid_student_submit(self):
-        group = SubmissionGroup.objects.validate_and_create(
-            members=[self.enrolled.username], project=self.project)
-
-        response = _add_submission_request(
-            self.files, group.pk, self.enrolled)
-
-        self.assertEqual(201, response.status_code)
-
-        loaded = Submission.objects.get(submission_group__pk=group.pk)
-        expected = {
-            'data': submission_to_json(loaded)
-        }
-
-        self.assertEqual(Submission.GradingStatus.received, loaded.status)
-        actual = json_load_bytes(response.content)
-
-        self.assertJSONObjsEqual(expected, actual)
-
-    def test_valid_staff_or_admin_submit(self):
+    def test_valid_student_staff_or_admin_submit(self):
         # Feedback configuration should be set to max automatically.
-        for user in (self.admin, self.staff):
+        for user in (self.enrolled, self.admin, self.staff):
             group = SubmissionGroup.objects.validate_and_create(
                 members=[user.username], project=self.project)
 
@@ -180,10 +167,6 @@ class AddSubmissionRequestTestCase(_SetUpBase):
             expected = {
                 'data': submission_to_json(loaded)
             }
-
-            expected['data']['attributes'][
-                'test_case_feedback_config_override'] = (
-                    FeedbackConfiguration.get_max_feedback().to_json())
 
             actual = json_load_bytes(response.content)
 
@@ -317,9 +300,9 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         submission.suite_results.add(
             self.visible_suite_result, self.hidden_suite_result)
 
-        submission.test_case_feedback_config_override = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only')
-        submission.save()
+        self.visible_test.feedback_configuration.return_code_feedback_level = (
+            fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only)
+        self.visible_test.save()
 
         response = _get_submission_request(submission.pk, self.enrolled)
         self.assertEqual(200, response.status_code)
@@ -339,18 +322,19 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         actual = json_load_bytes(response.content)
         self.assertJSONObjsEqual(expected, actual)
 
-        # Show points total, override at submission level
-        submission.test_case_feedback_config_override = (
-            self.project.test_case_feedback_configuration)
-        submission.test_case_feedback_config_override.points_feedback_level = (
-            'show_total')
-        submission.student_test_suite_feedback_config_override = (
-            StudentTestSuiteFeedbackConfiguration(
-                points_feedback_level=PointsFeedbackLevel.show_total,
+        # Show points total
+        self.visible_test.feedback_configuration.points_feedback_level = (
+            fbc.PointsFeedbackLevel.show_total)
+        self.visible_test.save()
+
+        self.visible_suite.feedback_configuration = (
+            fbc.StudentTestSuiteFeedbackConfiguration(
+                points_feedback_level=fbc.PointsFeedbackLevel.show_total,
                 buggy_implementations_exposed_feedback_level=(
-                    (BuggyImplementationsExposedFeedbackLevel.
-                        list_implementations_exposed_overall))))
-        submission.save()
+                    (fbc.BuggyImplementationsExposedFeedbackLevel.
+                        list_implementations_exposed_overall)),
+                visibility_level=fbc.VisibilityLevel.show_to_students))
+        self.visible_suite.save()
 
         response = _get_submission_request(submission.pk, self.enrolled)
         self.assertEqual(200, response.status_code)
@@ -374,23 +358,23 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         actual = json_load_bytes(response.content)
         self.assertJSONObjsEqual(expected, actual)
 
-        # Show points total, set at project level
-        self.project.test_case_feedback_configuration = (
-            submission.test_case_feedback_config_override)
-        self.project.student_test_suite_feedback_configuration = (
-            submission.student_test_suite_feedback_config_override)
-        self.project.validate_and_save()
-        submission.test_case_feedback_config_override = None
-        submission.student_test_suite_feedback_config_override = None
-        submission.save()
+        # # Show points total, set at project level
+        # self.project.test_case_feedback_configuration = (
+        #     submission.test_case_feedback_config_override)
+        # self.project.student_test_suite_feedback_configuration = (
+        #     submission.student_test_suite_feedback_config_override)
+        # self.project.validate_and_save()
+        # submission.test_case_feedback_config_override = None
+        # submission.student_test_suite_feedback_config_override = None
+        # submission.save()
 
-        expected['data'] = submission_to_json(submission)
+        # expected['data'] = submission_to_json(submission)
 
-        response = _get_submission_request(submission.pk, self.enrolled)
-        self.assertEqual(200, response.status_code)
+        # response = _get_submission_request(submission.pk, self.enrolled)
+        # self.assertEqual(200, response.status_code)
 
-        actual = json_load_bytes(response.content)
-        self.assertJSONObjsEqual(expected, actual)
+        # actual = json_load_bytes(response.content)
+        # self.assertJSONObjsEqual(expected, actual)
 
     def test_admin_or_staff_get_student_submit(self):
         # Should get max feedback on visible test cases
@@ -411,11 +395,12 @@ class GetSubmissionRequestTestCase(_SetUpBase):
                 'meta': {
                     'results': [
                         self.visible_result.to_json(
-                            FeedbackConfiguration.get_max_feedback())
+                            (fbc.AutograderTestCaseFeedbackConfiguration.
+                                get_max_feedback()))
                     ],
                     'suite_results': [
                         self.visible_suite_result.to_json(
-                            (StudentTestSuiteFeedbackConfiguration.
+                            (fbc.StudentTestSuiteFeedbackConfiguration.
                                 get_max_feedback()))
                     ],
                     'total_points_possible': (
@@ -446,17 +431,21 @@ class GetSubmissionRequestTestCase(_SetUpBase):
             sort_key = lambda obj: obj['test_name']
             results_json = list(sorted([
                 self.visible_result.to_json(
-                    FeedbackConfiguration.get_max_feedback()),
+                    (fbc.AutograderTestCaseFeedbackConfiguration.
+                        get_max_feedback())),
                 self.hidden_result.to_json(
-                    FeedbackConfiguration.get_max_feedback()),
+                    (fbc.AutograderTestCaseFeedbackConfiguration.
+                        get_max_feedback())),
             ], key=sort_key))
 
             suite_sort_key = lambda obj: obj['test_suite_name']
             suite_results_json = list(sorted([
                 self.visible_suite_result.to_json(
-                    StudentTestSuiteFeedbackConfiguration.get_max_feedback()),
+                    (fbc.StudentTestSuiteFeedbackConfiguration.
+                        get_max_feedback())),
                 self.hidden_suite_result.to_json(
-                    StudentTestSuiteFeedbackConfiguration.get_max_feedback())
+                    (fbc.StudentTestSuiteFeedbackConfiguration.
+                        get_max_feedback()))
             ], key=suite_sort_key))
 
             pts_possible = 2 * self.points_for_test + 2 * self.points_for_suite
@@ -478,6 +467,8 @@ class GetSubmissionRequestTestCase(_SetUpBase):
 
             self.assertJSONObjsEqual(expected, actual)
 
+    import unittest
+    @unittest.skip('needs test case post deadline feedback override')
     def test_show_all_tests_override_for_student(self):
         group = SubmissionGroup.objects.validate_and_create(
             members=[self.enrolled.username], project=self.project)
@@ -515,6 +506,7 @@ class GetSubmissionRequestTestCase(_SetUpBase):
 
         self.assertJSONObjsEqual(expected, actual)
 
+    @unittest.skip('needs test case post deadline feedback override')
     def test_show_all_tests_override_staff_view_student_submission(self):
         group = SubmissionGroup.objects.validate_and_create(
             members=[self.enrolled.username], project=self.project)
@@ -533,17 +525,17 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         sort_key = lambda obj: obj['test_name']
         results_json = list(sorted([
             self.visible_result.to_json(
-                FeedbackConfiguration.get_max_feedback()),
+                fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()),
             self.hidden_result.to_json(
-                FeedbackConfiguration.get_max_feedback())
+                fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback())
         ], key=sort_key))
 
         suite_sort_key = lambda obj: obj['test_suite_name']
         suite_results_json = list(sorted([
             self.visible_suite_result.to_json(
-                StudentTestSuiteFeedbackConfiguration.get_max_feedback()),
+                fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback()),
             self.hidden_suite_result.to_json(
-                StudentTestSuiteFeedbackConfiguration.get_max_feedback())
+                fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback())
         ], key=suite_sort_key))
 
         expected = {
@@ -582,74 +574,74 @@ def _get_submission_request(submission_id, user):
 
 # -----------------------------------------------------------------------------
 
-class PatchSubmissionRequestTestCase(_SetUpBase):
-    def setUp(self):
-        super().setUp()
+# class PatchSubmissionRequestTestCase(_SetUpBase):
+#     def setUp(self):
+#         super().setUp()
 
-        self.group = SubmissionGroup.objects.validate_and_create(
-            members=[self.enrolled.username], project=self.project)
-        self.submission = Submission.objects.validate_and_create(
-            submission_group=self.group, submitted_files=self.files)
+#         self.group = SubmissionGroup.objects.validate_and_create(
+#             members=[self.enrolled.username], project=self.project)
+#         self.submission = Submission.objects.validate_and_create(
+#             submission_group=self.group, submitted_files=self.files)
 
-    def test_admin_override_feedback_for_student(self):
-        response = _patch_submission_request(
-            self.submission.pk,
-            FeedbackConfiguration.get_max_feedback().to_json(),
-            self.admin,
-            new_show_tests=True)
+#     def test_admin_override_feedback_for_student(self):
+#         response = _patch_submission_request(
+#             self.submission.pk,
+#             FeedbackConfiguration.get_max_feedback().to_json(),
+#             self.admin,
+#             new_show_tests=True)
 
-        self.assertEqual(204, response.status_code)
+#         self.assertEqual(204, response.status_code)
 
-        loaded = Submission.objects.get(pk=self.submission.pk)
+#         loaded = Submission.objects.get(pk=self.submission.pk)
 
-        self.assertEqual(loaded.test_case_feedback_config_override,
-                         FeedbackConfiguration.get_max_feedback())
-        self.assertTrue(loaded.show_all_test_cases_and_suites)
+#         self.assertEqual(loaded.test_case_feedback_config_override,
+#                          FeedbackConfiguration.get_max_feedback())
+#         self.assertTrue(loaded.show_all_test_cases_and_suites)
 
-    def test_bad_feedback_config(self):
-        response = _patch_submission_request(
-            self.submission.pk,
-            {'return_code_feedback_level': 'spam'},
-            self.admin)
+#     def test_bad_feedback_config(self):
+#         response = _patch_submission_request(
+#             self.submission.pk,
+#             {'return_code_feedback_level': 'spam'},
+#             self.admin)
 
-        self.assertEqual(400, response.status_code)
+#         self.assertEqual(400, response.status_code)
 
-    def test_submission_not_found(self):
-        response = _patch_submission_request(
-            42,
-            FeedbackConfiguration.get_max_feedback().to_json(),
-            self.admin)
+#     def test_submission_not_found(self):
+#         response = _patch_submission_request(
+#             42,
+#             FeedbackConfiguration.get_max_feedback().to_json(),
+#             self.admin)
 
-        self.assertEqual(404, response.status_code)
+#         self.assertEqual(404, response.status_code)
 
-    def test_permission_denied(self):
-        new_user = obj_ut.create_dummy_users()
-        self.semester.add_enrolled_students(new_user)
+#     def test_permission_denied(self):
+#         new_user = obj_ut.create_dummy_users()
+#         self.semester.add_enrolled_students(new_user)
 
-        for user in (new_user, self.nobody, self.enrolled):
-            response = _patch_submission_request(
-                self.submission.pk,
-                FeedbackConfiguration.get_max_feedback().to_json(),
-                user)
-            self.assertEqual(403, response.status_code)
+#         for user in (new_user, self.nobody, self.enrolled):
+#             response = _patch_submission_request(
+#                 self.submission.pk,
+#                 FeedbackConfiguration.get_max_feedback().to_json(),
+#                 user)
+#             self.assertEqual(403, response.status_code)
 
 
-def _patch_submission_request(submission_id, new_feedback, user,
-                              new_show_tests=None):
-    url = '/submissions/submission/{}/'.format(submission_id)
-    data = {
-        'data': {
-            'type': 'submission',
-            'id': submission_id,
-            'attributes': {
-                'test_case_feedback_config_override': new_feedback
-            }
-        }
-    }
-    if new_show_tests is not None:
-        data['data']['attributes']['show_all_test_cases_and_suites'] = new_show_tests
+# def _patch_submission_request(submission_id, new_feedback, user,
+#                               new_show_tests=None):
+#     url = '/submissions/submission/{}/'.format(submission_id)
+#     data = {
+#         'data': {
+#             'type': 'submission',
+#             'id': submission_id,
+#             'attributes': {
+#                 'test_case_feedback_config_override': new_feedback
+#             }
+#         }
+#     }
+#     if new_show_tests is not None:
+#         data['data']['attributes']['show_all_test_cases_and_suites'] = new_show_tests
 
-    return process_patch_request(url, data, user)
+#     return process_patch_request(url, data, user)
 
 
 # -----------------------------------------------------------------------------

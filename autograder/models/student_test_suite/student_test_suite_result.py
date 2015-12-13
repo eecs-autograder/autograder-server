@@ -156,8 +156,9 @@ class StudentTestSuiteResult(models.Model):
             ...
         ]
         """
-        feedback_config = self._determine_feedback_config(
-            feedback_config_override)
+        feedback_config = (
+            feedback_config_override if feedback_config_override is not None
+            else self.test_suite.feedback_configuration)
 
         result = {
             'test_suite_name': self.test_suite.name,
@@ -177,18 +178,6 @@ class StudentTestSuiteResult(models.Model):
                 feedback_config.buggy_implementations_exposed_feedback_level)))
 
         return result
-
-    def _determine_feedback_config(self, feedback_config_manual_override):
-        if feedback_config_manual_override is not None:
-            return feedback_config_manual_override
-
-        if (self.submission is not None and
-                self.submission.student_test_suite_feedback_config_override
-                is not None):
-            return self.submission.student_test_suite_feedback_config_override
-
-        return (self.test_suite.project
-                    .student_test_suite_feedback_configuration)
 
     def _compute_detailed_results(self, feedback_config):
         detailed_results = []

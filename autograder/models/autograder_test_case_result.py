@@ -404,17 +404,6 @@ class AutograderTestCaseResult(models.Model):
             (feedback_config.valgrind_feedback_level !=
                 fbc.ValgrindFeedbackLevel.no_feedback))
 
-    # def.test_case.feedback_configurationelf):
-    #     override = (
-    #         self.submission is not None and
-    #         self.submission.test_case_feedback_config_override is not None)
-
-    #     if override:
-    #         return self.submission.test_case_feedback_config_override
-
-    #     return self.test_case.project.test_case_feedback_configuration
-
-
 # -----------------------------------------------------------------------------
 
 _DIFFER = difflib.Differ()
