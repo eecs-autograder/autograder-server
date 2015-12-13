@@ -2,8 +2,8 @@ import os
 
 from collections import namedtuple
 
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
+# from django.contrib.auth.models import User
+# from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from autograder.tests.temporary_filesystem_test_case import (
@@ -40,7 +40,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.submission_group = SubmissionGroup.objects.validate_and_create(
             members=self.member_names, project=self.project)
 
-    def test_valid_init_with_defaults(self):
+    def test_valid_init(self):
         SimpleFileTuple = namedtuple('SimpleFileTuple', ['name', 'content'])
 
         submit_file_data = sorted([
@@ -61,11 +61,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_submission, submission)
         self.assertEqual(
             loaded_submission.submission_group, self.submission_group)
-        self.assertFalse(loaded_submission.show_all_test_cases_and_suites)
         self.assertEqual(loaded_submission.timestamp, submission.timestamp)
-        self.assertIsNone(loaded_submission.test_case_feedback_config_override)
-        self.assertIsNone(
-            loaded_submission.student_test_suite_feedback_config_override)
         self.assertEqual(
             loaded_submission.status,
             Submission.GradingStatus.received)
@@ -86,27 +82,6 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(
                 submit_file_data[index].name, os.path.basename(value.name))
             self.assertEqual(submit_file_data[index].content, value.read())
-
-    import unittest
-    @unittest.skip('TODO')
-    def test_valid_init_with_non_defaults(self):
-        self.fail()
-        # submit_file_data = sorted([
-        #     SimpleUploadedFile('spam.cpp', b'blah'),
-        #     SimpleUploadedFile('eggs.cpp', b'merp'),
-        #     SimpleUploadedFile('test_spam.cpp', b'cheeese')
-        # ])
-
-        # submission = Submission.objects.validate_and_create(
-        #     submission_group=self.submission_group,
-        #     submitted_files=[
-        #         SimpleUploadedFile(name, content) for
-        #         name, content in submit_file_data],
-
-        #     )
-
-        # loaded_submission = Submission.objects.get(
-        #     submission_group=self.submission_group)
 
     def test_invalid_submission_missing_required_file(self):
         files = [

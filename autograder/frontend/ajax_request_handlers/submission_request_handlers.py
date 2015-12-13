@@ -18,8 +18,8 @@ from autograder.frontend.json_api_serializers import (
     submission_to_json)
 
 from autograder.models import SubmissionGroup, Submission
-from autograder.models.fields import FeedbackConfiguration
-from autograder.models.feedback_configuration import (
+from autograder.shared.feedback_configuration import (
+    AutograderTestCaseFeedbackConfiguration,
     StudentTestSuiteFeedbackConfiguration, PointsFeedbackLevel)
 # from autograder.tasks import grade_submission
 
@@ -54,7 +54,8 @@ class SubmissionRequestHandler(LoginRequiredView):
         # TODO: don't override feedback for staff here.
         # let the get request do that.
         feedback_override = (
-            FeedbackConfiguration.get_max_feedback() if is_staff else None)
+            AutograderTestCaseFeedbackConfiguration.get_max_feedback()
+            if is_staff else None)
 
         error_message = None
         if group.project.semester.is_semester_staff(group.members[0]):
@@ -133,7 +134,8 @@ class SubmissionRequestHandler(LoginRequiredView):
             return HttpResponseForbidden()
 
         feedback_override = (
-            FeedbackConfiguration.get_max_feedback() if is_staff else None)
+            AutograderTestCaseFeedbackConfiguration.get_max_feedback()
+            if is_staff else None)
         # logger.info('feedback override: {}'.format(feedback_override))
         suite_feedback_override = (
             StudentTestSuiteFeedbackConfiguration.get_max_feedback()

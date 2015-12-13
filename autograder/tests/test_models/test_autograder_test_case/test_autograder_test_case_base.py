@@ -5,6 +5,7 @@ from autograder.models import (
     Project, Semester, Course, AutograderTestCaseBase)
 
 import autograder.shared.global_constants as gc
+import autograder.shared.feedback_configuration as fbc
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -43,8 +44,6 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(self.TEST_NAME, loaded_test_case.name)
         self.assertEqual(self.project, loaded_test_case.project)
 
-        self.assertEqual(loaded_test_case.hide_from_students, True)
-
         self.assertEqual(loaded_test_case.command_line_arguments, [])
         self.assertEqual(loaded_test_case.standard_input, "")
         self.assertEqual(loaded_test_case.test_resource_files, [])
@@ -61,6 +60,10 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(0, loaded_test_case.points_for_correct_output)
         self.assertEqual(0, loaded_test_case.deduction_for_valgrind_errors)
         self.assertEqual(0, loaded_test_case.points_for_compilation_success)
+
+        self.assertEqual(
+            fbc.AutograderTestCaseFeedbackConfiguration(),
+            loaded_test_case.feedback_configuration)
 
         # Fat interface fields
         # TODO: comment out, add to docs that defaults
@@ -85,7 +88,6 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
         new_test_case = AutograderTestCaseBase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
-            hide_from_students=False,
             command_line_arguments=cmd_args,
             standard_input=input_stream_content,
             test_resource_files=project_resource_files,
@@ -96,6 +98,12 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             expected_standard_error_output=err_stream_content,
             use_valgrind=True,
             valgrind_flags=valgrind_flags,
+            points_for_correct_return_code=1,
+            points_for_correct_output=2,
+            deduction_for_valgrind_errors=3,
+            points_for_compilation_success=4,
+            feedback_configuration=(
+                fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback())
         )
 
         loaded_test_case = AutograderTestCaseBase.objects.get(
@@ -105,18 +113,14 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(self.TEST_NAME, loaded_test_case.name)
         self.assertEqual(self.project, loaded_test_case.project)
 
-        self.assertEqual(loaded_test_case.hide_from_students, False)
-
         self.assertEqual(
             loaded_test_case.command_line_arguments, cmd_args)
-
         self.assertEqual(
             loaded_test_case.standard_input,
             input_stream_content)
 
         self.assertEqual(
             loaded_test_case.test_resource_files, project_resource_files)
-
         self.assertEqual(
             loaded_test_case.student_resource_files, student_resource_files)
 
@@ -128,14 +132,21 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             loaded_test_case.expected_standard_output,
             out_stream_content)
-
         self.assertEqual(
             loaded_test_case.expected_standard_error_output,
             err_stream_content)
 
         self.assertTrue(loaded_test_case.use_valgrind)
-
         self.assertEqual(loaded_test_case.valgrind_flags, valgrind_flags)
+
+        self.assertEqual(1, loaded_test_case.points_for_correct_return_code)
+        self.assertEqual(2, loaded_test_case.points_for_correct_output)
+        self.assertEqual(3, loaded_test_case.deduction_for_valgrind_errors)
+        self.assertEqual(4, loaded_test_case.points_for_compilation_success)
+
+        self.assertEqual(
+            fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback(),
+            loaded_test_case.feedback_configuration)
 
     # -------------------------------------------------------------------------
 
@@ -322,6 +333,14 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             AutograderTestCaseBase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=-1)
+
+        self.assertTrue('time_limit' in cm.exception.message_dict)
+
+    def test_exception_on_time_limit_too_large(self):
+        with self.assertRaises(ValidationError) as cm:
+            AutograderTestCaseBaseTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                time_limit=gc.MAX_SUBPROCESS_TIMEOUT + 1)
 
         self.assertTrue('time_limit' in cm.exception.message_dict)
 

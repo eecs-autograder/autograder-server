@@ -11,11 +11,7 @@ from django.contrib.postgres.fields import ArrayField  # , JSONField
 
 from jsonfield import JSONField
 
-from .feedback_configuration import StudentTestSuiteFeedbackConfiguration
-
 from autograder.models import Semester
-from autograder.models.fields import (
-    FeedbackConfigurationField, FeedbackConfiguration, ClassField)
 from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
 
@@ -40,16 +36,6 @@ class Project(ModelValidatableOnSave):
 
         semester -- The Semester this project belongs to.
             This field is REQUIRED.
-
-        test_case_feedback_configuration -- The feedback configuration to use
-            for autograder test cases belonging to this project.
-            This value can be overridden in individual Submissions.
-            Default value: default initialized FeedbackConfiguration
-
-        student_test_suite_feedback_configuration -- The feedback configuration
-            to use for student test suites belonging to this project.
-            This value can be overridden in individual Submissions.
-            Default value: default initialized StudentTestSuiteFeedbackConfiguration
 
         visible_to_students -- Whether information about this Project can
             be viewed by students.
@@ -153,15 +139,12 @@ class Project(ModelValidatableOnSave):
         add_project_file()
         remove_project_file()
         rename_project_file() TODO?
+        update_project_file() TODO
 
         get_project_file_basenames()
         get_project_files()
         get_file()
         has_file()
-
-        add_test_case() TODO (here or in test case?)
-        update_test_case() TODO (here or in test case?)
-        remove_test_case() TODO (here or in test case?)
 
     Overridden methods:
         __init__()
@@ -184,13 +167,6 @@ class Project(ModelValidatableOnSave):
 
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
     semester = models.ForeignKey(Semester, related_name='projects')
-
-    test_case_feedback_configuration = FeedbackConfigurationField(
-        default=FeedbackConfiguration)
-
-    student_test_suite_feedback_configuration = ClassField(
-        StudentTestSuiteFeedbackConfiguration,
-        default=StudentTestSuiteFeedbackConfiguration)
 
     visible_to_students = models.BooleanField(default=False)
     closing_time = models.DateTimeField(default=None, null=True, blank=True)

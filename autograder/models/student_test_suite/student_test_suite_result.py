@@ -2,9 +2,9 @@ from django.db import models
 import django.contrib.postgres.fields as pg_fields
 
 from autograder.models import Submission
-from .. import fields as ag_fields
+import autograder.fields as ag_fields
 
-from autograder.models.feedback_configuration import (
+from autograder.shared.feedback_configuration import (
     StudentTestCaseValidityFeedbackLevel,
     BuggyImplementationsExposedFeedbackLevel,
     CompilationFeedbackLevel,

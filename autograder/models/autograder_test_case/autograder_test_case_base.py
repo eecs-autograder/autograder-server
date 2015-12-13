@@ -3,13 +3,16 @@ import os
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 from autograder.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
+import autograder.fields as ag_fields
+
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
+import autograder.shared.feedback_configuration as fbc
 
 # TODO: for fat interface fields, give them a meaningful default so that
 # we don't have to violate the Liskov Substitution principle by making
@@ -189,17 +192,18 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             Default value: 0
 
 
+        feedback_configuration -- Specifies how much information should be
+            included in serialized run results.
+            Default value: default-initialized
+                AutograderTestCaseFeedbackConfiguration object
+
     Fat interface fields:
-        NOTE: These fields all default to a "Falsy" value and should be
-            used by derived classes to specifically define how types of
-            autograder tests should run, i.e. A compiled program, an
-            interpreted program, a compilation-only program, a compiled
-            and interpreted program, etc.
 
         compiler -- The program that will be used to compile the test case
             executable.
-            Currently supported values: g++
-            Default value: empty string
+            Currently supported values listed in
+                autograder.shared.global_constants.SUPPORTED_COMPILERS
+            Default value: g++
 
         compiler_flags -- A list of option flags to be passed to the compiler.
             These flags are limited to the same character set as
@@ -208,13 +212,9 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
                 need to be compiled and should not include flags that affect
                 the name of the resulting executable program.
 
+            This field is allowed to be empty.
+            This field may not be None.
             Default value: empty list
-
-            When ValidationError is raised for this field, the error message
-            will be a list containing strings corresponding (in order) to
-            each flag in this field. The strings will contain an error
-            message for their corresponding flag or be empty if their
-            corresponding flag did not cause an error.
 
         files_to_compile_together -- A list of files that need to be
             compiled together. These filenames are restricted to those
@@ -222,6 +222,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             NOTE: When a pattern is part of this list, all student-submitted
                 files matching the pattern will be compiled together.
 
+            This field is allowed to be empty.
+            This field may not be None.
             Default value: empty list
 
         executable_name -- The name of the executable program that should be
@@ -249,54 +251,34 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         __init__()
         clean()
     """
-    # A list of compilers that may be used in autograder test cases that
-    # require compilation.
-    # TODO: make this a non-nested enum or at least abstract it to a field
-    SUPPORTED_COMPILERS = ["g++"]
-
     class Meta:
         unique_together = ('name', 'project')
 
     objects = PolymorphicManagerWithValidateOnCreate()
 
-    name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
+    name = ag_fields.ShortStringField()
     project = models.ForeignKey(
         'Project', related_name='autograder_test_cases')
 
-    hide_from_students = models.BooleanField(default=True)
-
-    command_line_arguments = ArrayField(
-        models.CharField(
-            max_length=gc.MAX_CHAR_FIELD_LEN,
-            blank=True  # We are setting this here so that the clean method
-                        # can check for emptiness and throw a more specific
-                        # error. This lets us send ValidationErrors
-                        # to the GUI side in a more convenient format.
-                        # This comment also applies to valgrind_flags and
-                        # compiler_flags.
-            ),
-        blank=True, default=list)
+    command_line_arguments = ag_fields.StringArrayField(
+        strip_strings=True, allow_empty_strings=False,
+        string_validators=[_validate_cmd_line_arg], default=list, blank=True)
 
     standard_input = models.TextField(blank=True)
 
-    test_resource_files = ArrayField(
-        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
-        default=list, blank=True)
-
-    student_resource_files = ArrayField(
-        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
-        default=list, blank=True)
+    test_resource_files = ag_fields.StringArrayField(default=[], blank=True)
+    student_resource_files = ag_fields.StringArrayField(default=[], blank=True)
 
     time_limit = models.IntegerField(
         default=gc.DEFAULT_SUBPROCESS_TIMEOUT,
-        validators=[MinValueValidator(1)])
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(gc.MAX_SUBPROCESS_TIMEOUT)])
 
     expected_return_code = models.IntegerField(
         null=True, default=None, blank=True)
     expect_any_nonzero_return_code = models.BooleanField(default=False)
 
     expected_standard_output = models.TextField(blank=True)
-
     expected_standard_error_output = models.TextField(blank=True)
 
     @property
@@ -312,12 +294,9 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
     _use_valgrind = models.BooleanField(default=False)
 
-    valgrind_flags = ArrayField(
-        models.CharField(
-            max_length=gc.MAX_CHAR_FIELD_LEN,
-            blank=True  # See comment for command_line_arguments
-            ),
-        null=True, default=None, blank=True)
+    valgrind_flags = ag_fields.StringArrayField(
+        strip_strings=True, allow_empty_strings=False,
+        string_validators=[_validate_cmd_line_arg], default=list, blank=True)
 
     # Point distribution fields
     points_for_correct_return_code = models.IntegerField(
@@ -329,23 +308,24 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     points_for_compilation_success = models.IntegerField(
         default=0, validators=[MinValueValidator(0)])
 
+    feedback_configuration = ag_fields.JsonSerializableClassField(
+        fbc.AutograderTestCaseFeedbackConfiguration,
+        default=fbc.AutograderTestCaseFeedbackConfiguration)
+
     # Fat interface fields
-    compiler = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, blank=True)
+    compiler = ag_fields.ShortStringField(
+        blank=True,
+        choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS))
 
-    compiler_flags = ArrayField(
-        models.CharField(
-            max_length=gc.MAX_CHAR_FIELD_LEN,
-            blank=True  # See comment for command_line_arguments
-            ),
+    compiler_flags = ag_fields.StringArrayField(
+        strip_strings=True, allow_empty_strings=False,
+        string_validators=[_validate_cmd_line_arg], default=list, blank=True)
+
+    files_to_compile_together = ag_fields.StringArrayField(
         default=list, blank=True)
 
-    files_to_compile_together = ArrayField(
-        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
-        default=list, blank=True)
-
-    executable_name = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, blank=True)
+    executable_name = ag_fields.ShortStringField(
+        blank=True, validators=[ut.check_user_provided_filename])
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -395,20 +375,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
         errors = {}
 
-        if self.name:
-            self.name = self.name.strip()
-
-        if not self.name:
-            errors['name'] = "This field can't be empty"
-
-        cmd_arg_errors = self._clean_command_line_arguments()
-        if cmd_arg_errors:
-            errors['command_line_arguments'] = cmd_arg_errors
-
-        valgrind_flag_errors = self._clean_valgrind_flags()
-        if valgrind_flag_errors:
-            errors['valgrind_flags'] = valgrind_flag_errors
-
         test_resource_file_errors = self._clean_test_resouce_files()
         if test_resource_file_errors:
             errors['test_resource_files'] = test_resource_file_errors
@@ -419,27 +385,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
         if errors:
             raise ValidationError(errors)
-
-    def _clean_command_line_arguments(self):
-        if self.command_line_arguments is None:
-            return ["This field can't be null"]
-
-        self.command_line_arguments = [
-            arg.strip() for arg in self.command_line_arguments]
-
-        return self._clean_arg_list(self.command_line_arguments)
-
-    def _clean_valgrind_flags(self):
-        if not self.use_valgrind:
-            return None
-
-        if self.valgrind_flags is None:
-            return ["When using valgrind, valgrind_flags cannot be None"]
-
-        self.valgrind_flags = [
-            arg.strip() for arg in self.valgrind_flags]
-
-        return self._clean_arg_list(self.valgrind_flags)
 
     def _clean_test_resouce_files(self):
         if self.test_resource_files is None:
@@ -473,41 +418,13 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
         return resource_file_errors
 
-    def _clean_arg_list(self, arg_list):
-        errors = []
-        error_found = False
-        for arg in arg_list:
-            try:
-                _validate_cmd_line_arg(arg)
-                errors.append('')
-            except ValidationError as e:
-                error_found = True
-                errors.append(e.message)
-
-        if error_found:
-            return errors
-
-        return None
-
     # -------------------------------------------------------------------------
 
-    def _clean_compiler(self):
-        if self.compiler not in AutograderTestCaseBase.SUPPORTED_COMPILERS:
-            return {'compiler': 'Unsupported compiler'}
+    # def _clean_compiler(self):
+    #     if self.compiler not in AutograderTestCaseBase.SUPPORTED_COMPILERS:
+    #         return {'compiler': 'Unsupported compiler'}
 
-        return {}
-
-    def _clean_compiler_flags(self):
-        if self.compiler_flags is None:
-            return ['This value cannot be null']
-
-        self.compiler_flags = [arg.strip() for arg in self.compiler_flags]
-
-        errors = self._clean_arg_list(self.compiler_flags)
-        if errors:
-            return {'compiler_flags': errors}
-
-        return {}
+    #     return {}
 
     def _clean_files_to_compile_together(self):
         if not self.files_to_compile_together:
@@ -537,17 +454,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             return {'files_to_compile_together': errors}
 
         return {}
-
-    def _clean_executable_name(self):
-        try:
-            if self.executable_name:
-                self.executable_name = self.executable_name.strip()
-
-            ut.check_user_provided_filename(self.executable_name)
-
-            return {}
-        except ValidationError as e:
-            return {'executable_name': e.message}
 
     # -------------------------------------------------------------------------
 

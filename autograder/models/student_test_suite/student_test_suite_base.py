@@ -4,9 +4,10 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 
 import autograder.shared.global_constants as gc
+import autograder.shared.feedback_configuration as fbc
 # import autograder.shared.utilities as ut
 
-from autograder.models import fields
+import autograder.fields as ag_fields
 from autograder.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
@@ -105,23 +106,20 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
             Default value: autograder.shared.global_constants
                                      .DEFAULT_SUBPROCESS_TIMEOUT seconds
 
-        hide_from_students -- When this field is True, students will not
-            receive feedback about this test suite.
-            Note: Staff members will still receive feedback on this test suite
-                for their own submissions, but when viewing a student
-                submission, this test suite will still be hidden.
-            Default value: True
-
         points_per_buggy_implementation_exposed -- The number of points
             awarded for each buggy implementation exposed.
             This value must be >= 0
             Default value: zero
 
+        feedback_configuration -- Specifies how much information should be
+            included in serialized evaluation results.
+            Default value: default-initialized
+                StudentTestSuiteFeedbackConfiguration object
+
     Fat interface fields:
         compiler -- The program that will be used to compile the test case
             executables.
-            See autograder.models.autograder_test_case
-                          .AutograderTestCaseBase.SUPPORTED_COMPILERS
+            See autograder.shared.global_constants.SUPPORTED_COMPILERS
             for a list of allowed values for this field.
             Default value: g++
 
@@ -198,17 +196,22 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
     points_per_buggy_implementation_exposed = models.IntegerField(
         default=0, validators=[MinValueValidator(0)])
 
+    feedback_configuration = ag_fields.JsonSerializableClassField(
+        fbc.StudentTestSuiteFeedbackConfiguration,
+        default=fbc.StudentTestSuiteFeedbackConfiguration
+    )
+
     # -------------------------------------------------------------------------
 
     compiler = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, default='g++',
-        choices=(('g++', 'g++'),))  # TODO: centralize
+        choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS))
 
-    compiler_flags = fields.StringListField(
+    compiler_flags = ag_fields.StringArrayField(
         default=list, blank=True, string_validators=[
             RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)])
 
-    suite_resource_files_to_compile_together = fields.StringListField(
+    suite_resource_files_to_compile_together = ag_fields.StringArrayField(
         default=list, blank=True)
 
     compile_implementation_files = models.BooleanField(default=True)

@@ -10,7 +10,7 @@ from autograder.models import (
     Project, Semester, Course,
     AutograderTestCaseBase, AutograderTestCaseFactory)
 
-from autograder.autograder_sandbox import AutograderSandbox
+from autograder.security.autograder_sandbox import AutograderSandbox
 
 
 class SharedTestsAndSetupForTestsWithCompilation(object):

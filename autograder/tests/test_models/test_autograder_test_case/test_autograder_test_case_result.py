@@ -10,7 +10,8 @@ from autograder.models import (
     Project, Semester, Course, AutograderTestCaseBase,
     CompiledAutograderTestCase, AutograderTestCaseResult,
     SubmissionGroup, Submission)
-from autograder.models.fields import FeedbackConfiguration
+
+import autograder.shared.feedback_configuration as fbc
 
 _DIFFER = difflib.Differ()
 
@@ -263,12 +264,16 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
                 SimpleUploadedFile('egg.cpp', b'egg')]
         )
 
-        self.medium_config = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only',
-            output_feedback_level='correct_or_incorrect_only',
-            compilation_feedback_level='success_or_failure_only',
-            valgrind_feedback_level='errors_or_no_errors_only',
-            points_feedback_level='show_total'
+        self.medium_config = fbc.AutograderTestCaseFeedbackConfiguration(
+            return_code_feedback_level=(
+                fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only),
+            output_feedback_level=(
+                fbc.OutputFeedbackLevel.correct_or_incorrect_only),
+            compilation_feedback_level=(
+                fbc.CompilationFeedbackLevel.success_or_failure_only),
+            valgrind_feedback_level=(
+                fbc.ValgrindFeedbackLevel.errors_or_no_errors_only),
+            points_feedback_level=fbc.PointsFeedbackLevel.show_total
         )
 
     def test_serialize_results_low_feedback(self):
@@ -301,8 +306,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             self.timed_out_result.to_json())
 
     def test_serialize_results_medium_feedback(self):
-        self.project.test_case_feedback_configuration = self.medium_config
-        self.project.save()
+        self.test_case.feedback_configuration = self.medium_config
+        self.test_case.save()
 
         expected_correct = {
             'test_name': self.test_case.name,
@@ -367,9 +372,9 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             self.timed_out_result.to_json())
 
     def test_serialize_results_high_feedback(self):
-        self.project.test_case_feedback_configuration = (
-            FeedbackConfiguration.get_max_feedback())
-        self.project.save()
+        self.test_case.feedback_configuration = (
+            fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback())
+        self.test_case.save()
 
         expected_correct = {
             'test_name': self.test_case.name,
@@ -571,29 +576,30 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             },
             self.correct_test_result.to_json())
 
-    def test_serialize_results_with_submission_feedback_override(self):
-        override = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only')
-        override.validate()
+    # OBSOLETE
+    # def test_serialize_results_with_submission_feedback_override(self):
+    #     override = fbc.AutograderTestCaseFeedbackConfiguration(
+    #         return_code_feedback_level=(
+    #             fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
 
-        self.submission.test_case_feedback_config_override = override
-        self.submission.save()
+    #     self.submission.test_case_feedback_config_override = override
+    #     self.submission.save()
 
-        self.correct_test_result.submission = self.submission
-        self.correct_test_result.save()
+    #     self.correct_test_result.submission = self.submission
+    #     self.correct_test_result.save()
 
-        self.assertEqual(
-            {
-                'test_name': self.test_case.name,
-                'timed_out': False,
-                'return_code_correct': True
-            },
-            self.correct_test_result.to_json())
+    #     self.assertEqual(
+    #         {
+    #             'test_name': self.test_case.name,
+    #             'timed_out': False,
+    #             'return_code_correct': True
+    #         },
+    #         self.correct_test_result.to_json())
 
     def test_serialize_results_with_manual_feedback_override(self):
-        override = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only')
-        override.validate()
+        override = fbc.AutograderTestCaseFeedbackConfiguration(
+            return_code_feedback_level=(
+                fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
 
         self.assertEqual(
             {
@@ -603,34 +609,86 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             },
             self.correct_test_result.to_json(override_feedback=override))
 
-    def test_serialize_results_with_submission_and_manual_feedback_override(self):
-        submission_override = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only')
-        submission_override.validate()
+    # OBSOLETE
+    # def test_serialize_results_with_submission_and_manual_feedback_override(self):
+    #     submission_override = fbc.AutograderTestCaseFeedbackConfiguration(
+    #         return_code_feedback_level=(
+    #             fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
 
-        self.submission.test_case_feedback_config_override = submission_override
-        self.submission.save()
+    #     self.submission.test_case_feedback_config_override = submission_override
+    #     self.submission.save()
 
-        self.correct_test_result.submission = self.submission
-        self.correct_test_result.save()
+    #     self.correct_test_result.submission = self.submission
+    #     self.correct_test_result.save()
 
-        manual_override = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only')
-        manual_override.validate()
+    #     manual_override = fbc.AutograderTestCaseFeedbackConfiguration(
+    #         return_code_feedback_level=(
+    #             fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
+
+    #     self.assertEqual(
+    #         {
+    #             'test_name': self.test_case.name,
+    #             'timed_out': False,
+    #             'return_code_correct': True
+    #         },
+    #         self.correct_test_result.to_json(
+    #             override_feedback=manual_override))
+
+    def test_checking_output_with_show_output_feedback_level(self):
+        feedback = self.medium_config
+        feedback.output_feedback_level = (
+            fbc.OutputFeedbackLevel.show_program_output)
+
+        expected = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+            'output_correct': True,
+            'standard_output': (
+                self.correct_test_result.standard_output),
+            'standard_error_output': (
+                self.correct_test_result.standard_error_output),
+            'valgrind_errors_present': False,
+            'compilation_succeeded': True,
+            'total_points_awarded': 7,
+            'total_points_possible': 7,
+
+            'timed_out': False
+        }
 
         self.assertEqual(
-            {
-                'test_name': self.test_case.name,
-                'timed_out': False,
-                'return_code_correct': True
-            },
-            self.correct_test_result.to_json(
-                override_feedback=manual_override))
+            expected,
+            self.correct_test_result.to_json(override_feedback=feedback))
+
+    def test_not_checking_output_but_show_output_set(self):
+        self.test_case.expected_standard_output = ''
+        self.test_case.expected_standard_error_output = ''
+
+        feedback = self.medium_config
+        feedback.output_feedback_level = (
+            fbc.OutputFeedbackLevel.show_program_output)
+
+        expected = {
+            'test_name': self.test_case.name,
+            'return_code_correct': True,
+            'standard_output': (
+                self.correct_test_result.standard_output),
+            'standard_error_output': (
+                self.correct_test_result.standard_error_output),
+            'valgrind_errors_present': False,
+            'compilation_succeeded': True,
+            'total_points_awarded': 5,
+            'total_points_possible': 5,
+
+            'timed_out': False
+        }
+
+        self.assertEqual(
+            expected,
+            self.correct_test_result.to_json(override_feedback=feedback))
 
     def test_mixed_feedback_points_breakdown(self):
         feedback = self.medium_config
-        feedback.points_feedback_level = 'show_breakdown'
-        feedback.validate()
+        feedback.points_feedback_level = fbc.PointsFeedbackLevel.show_breakdown
         expected = {
             'test_name': self.test_case.name,
             'return_code_correct': True,
@@ -653,8 +711,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
         }
         self.assertEqual(expected, self.correct_test_result.to_json(feedback))
 
-        feedback.return_code_feedback_level = 'no_feedback'
-        feedback.validate()
+        feedback.return_code_feedback_level = (
+            fbc.ReturnCodeFeedbackLevel.no_feedback)
         expected = {
             'test_name': self.test_case.name,
             'output_correct': True,
@@ -674,8 +732,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
         }
         self.assertEqual(expected, self.correct_test_result.to_json(feedback))
 
-        feedback.valgrind_feedback_level = 'no_feedback'
-        feedback.validate()
+        feedback.valgrind_feedback_level = (
+            fbc.ValgrindFeedbackLevel.no_feedback)
         expected = {
             'test_name': self.test_case.name,
             'output_correct': True,
@@ -694,8 +752,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
         self.assertEqual(
             expected, self.valgrind_error_result.to_json(feedback))
 
-        feedback.compilation_feedback_level = 'no_feedback'
-        feedback.validate()
+        feedback.compilation_feedback_level = (
+            fbc.CompilationFeedbackLevel.no_feedback)
         expected = {
             'test_name': self.test_case.name,
             'output_correct': True,
@@ -711,9 +769,10 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
         self.assertEqual(
             expected, self.valgrind_error_result.to_json(feedback))
 
-        feedback.output_feedback_level = 'no_feedback'
-        feedback.return_code_feedback_level = 'correct_or_incorrect_only'
-        feedback.validate()
+        feedback.output_feedback_level = (
+            fbc.OutputFeedbackLevel.no_feedback)
+        feedback.return_code_feedback_level = (
+            fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only)
         expected = {
             'test_name': self.test_case.name,
             'return_code_correct': True,
@@ -783,7 +842,7 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
         }
 
         self.assertEqual(expected_high, self.correct_test_result.to_json(
-            FeedbackConfiguration.get_max_feedback()))
+            fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()))
 
     def test_not_checking_output(self):
         self.test_case.expected_standard_output = ''
@@ -831,7 +890,7 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
         }
 
         self.assertEqual(expected_high, self.correct_test_result.to_json(
-            FeedbackConfiguration.get_max_feedback()))
+            fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()))
 
     def test_not_using_valgrind(self):
         self.test_case.use_valgrind = False
@@ -892,4 +951,4 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
         self.assertEqual(
             expected_high,
             self.valgrind_error_result.to_json(
-                FeedbackConfiguration.get_max_feedback()))
+                fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()))

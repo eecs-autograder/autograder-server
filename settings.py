@@ -67,8 +67,6 @@ MIDDLEWARE_CLASSES = (
     # 'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    # TODO: Uncomment once set up on server?
-    # 'django.contrib.auth.middleware.RemoteUserMiddleware',
 )
 
 ROOT_URLCONF = 'urls'
@@ -92,9 +90,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wsgi.application'
 
-AUTHENTICATION_BACKENDS = (
-    'autograder.authentication.google_auth_backend.GoogleAuthBackend',
-)
+# AUTHENTICATION_BACKENDS = (
+#     'autograder.authentication.google_auth_backend.GoogleAuthBackend',
+# )
 
 # LOGIN_URL = '/login/'
 

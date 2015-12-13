@@ -32,22 +32,6 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     """
     objects = PolymorphicManagerWithValidateOnCreate()
 
-    def clean(self):
-        errors = {}
-
-        try:
-            super().clean()
-        except ValidationError as e:
-            errors = e.message_dict
-
-        errors.update(self._clean_compiler())
-        errors.update(self._clean_compiler_flags())
-        errors.update(self._clean_files_to_compile_together())
-        errors.update(self._clean_executable_name())
-
-        if errors:
-            raise ValidationError(errors)
-
     def test_checks_compilation(self):
         return True
 

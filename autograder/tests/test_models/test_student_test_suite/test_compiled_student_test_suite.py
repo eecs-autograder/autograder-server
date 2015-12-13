@@ -2,7 +2,8 @@ import uuid
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from .shared_tests_and_setup import StudentTestSuiteBaseTests
+from .student_test_suite_shared_tests_and_setup import (
+    StudentTestSuiteBaseTests)
 
 from autograder.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -12,9 +13,9 @@ import autograder.tests.dummy_object_utils as obj_ut
 from autograder.models import (
     StudentTestSuiteFactory, SubmissionGroup, Submission,
     StudentTestSuiteResult)
-from autograder.autograder_sandbox import AutograderSandbox
+from autograder.security.autograder_sandbox import AutograderSandbox
 
-import autograder.shared.utilities as ut
+# import autograder.shared.utilities as ut
 
 
 class CompiledStudentTestSuiteTestCase(

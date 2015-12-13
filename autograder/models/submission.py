@@ -1,6 +1,6 @@
 import os
 import fnmatch
-import enum
+# import enum
 
 from django.db import models, transaction
 from django.core.exceptions import ValidationError
@@ -10,11 +10,9 @@ from django.utils import timezone
 from jsonfield import JSONField
 
 from autograder.models import SubmissionGroup
-from autograder.models.fields import FeedbackConfigurationField, ClassField
 from autograder.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate,
     find_matching_pattern)
-from .feedback_configuration import StudentTestSuiteFeedbackConfiguration
 
 import autograder.shared.global_constants as gc
 import autograder.shared.utilities as ut
@@ -114,22 +112,6 @@ class Submission(ModelValidatableOnSave):
             a value automatically.
             Once created, this field is READ ONLY.
 
-        test_case_feedback_config_override -- When this field is not None,
-            the feedback configuration here will override the Project level
-            feedback configuration.
-            Default value: None
-
-        student_test_suite_feedback_config_override -- When this field is not
-            None, the student test suite feedback configuration here will
-            override the Project level feedback configuration.
-            Default value: None
-
-        show_all_test_cases_and_suites -- A hard override for visible/hidden test cases.
-            When this field is True, students will get feedback
-            on ALL test cases, including those marked as hidden.
-            This field does not effect the feedback configuration.
-            Default value: False
-
         status -- The grading status of this submission. Acceptable values
             and their meanings are as follows:
                 GradingStatus.received -- The submission has been received
@@ -202,12 +184,6 @@ class Submission(ModelValidatableOnSave):
         return self._timestamp
 
     _timestamp = models.DateTimeField(auto_now_add=True, editable=False)
-
-    test_case_feedback_config_override = FeedbackConfigurationField(
-        null=True, default=None)
-    student_test_suite_feedback_config_override = ClassField(
-        StudentTestSuiteFeedbackConfiguration, null=True, default=None)
-    show_all_test_cases_and_suites = models.BooleanField(default=False, blank=True)
 
     status = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,

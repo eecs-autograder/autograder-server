@@ -144,7 +144,7 @@ def get_worker_log_file(log_dirname):
 
 
 def prepare_and_run_tests(submission):
-    from autograder.autograder_sandbox import AutograderSandbox
+    from autograder.security.autograder_sandbox import AutograderSandbox
 
     import autograder.shared.utilities as ut
 

@@ -2,6 +2,8 @@ import difflib
 
 from django.db import models
 
+import autograder.shared.feedback_configuration as fbc
+
 
 class AutograderTestCaseResult(models.Model):
     """
@@ -40,7 +42,7 @@ class AutograderTestCaseResult(models.Model):
             tested.
             Default value: empty string
 
-    Fat interface fields:
+    Compilation-related fields:
         compilation_return_code -- The return code of the command used
             to compile the program being tested.
             Default value: None
@@ -142,8 +144,12 @@ class AutograderTestCaseResult(models.Model):
 
 
             'output_correct': <True | False>,
-            'stdout_diff': <diff>,
-            'stderr_diff': <diff>,
+            # At most one of stdout_diff or standard_output will be present
+            # depending on the feedback level and how the test case
+            # evaluates correctness.
+            # Similarly for stderr_diff and standard_error_output
+            'stdout_diff': <diff>, | 'standard_output': <output>,
+            'stderr_diff': <diff>, | 'standard_error_output': <output>,
 
 
             'valgrind_errors_present': <True | False>,
@@ -176,10 +182,11 @@ class AutograderTestCaseResult(models.Model):
         """
         feedback_configuration = (
             override_feedback if override_feedback is not None
-            else self._get_feedback_config())
+            else self.test_case.feedback_configuration)
 
         show_points_breakdown = (
-            feedback_configuration.points_feedback_level == 'show_breakdown')
+            (feedback_configuration.points_feedback_level ==
+                fbc.PointsFeedbackLevel.show_breakdown))
         result = {'test_name': self.test_case.name}
 
         pts_data = {}
@@ -224,14 +231,14 @@ class AutograderTestCaseResult(models.Model):
     def _get_compilation_feedback(self, feedback_config,
                                   show_points_breakdown):
         result = {}
-        if (feedback_config.compilation_feedback_level == 'no_feedback' or
-                not self.test_case.test_checks_compilation):
+        if not self._give_compilation_feedback(feedback_config):
             return result, 0
 
         result['compilation_succeeded'] = self.compilation_succeeded
 
-        show_compiler_output = (feedback_config.compilation_feedback_level ==
-                                'show_compiler_output')
+        show_compiler_output = (
+            (feedback_config.compilation_feedback_level ==
+                fbc.CompilationFeedbackLevel.show_compiler_output))
         if show_compiler_output:
             result['compilation_stdout'] = self.compilation_standard_output
             result['compilation_stderr'] = (
@@ -250,8 +257,9 @@ class AutograderTestCaseResult(models.Model):
 
         result['return_code_correct'] = self.return_code_correct
 
-        show_return_code_diff = (feedback_config.return_code_feedback_level ==
-                                 'show_expected_and_actual_values')
+        show_return_code_diff = (
+            (feedback_config.return_code_feedback_level ==
+                fbc.ReturnCodeFeedbackLevel.show_expected_and_actual_values))
 
         if show_return_code_diff:
             result['expected_return_code'] = (
@@ -265,13 +273,22 @@ class AutograderTestCaseResult(models.Model):
 
     def _get_output_feedback(self, feedback_config, show_points_breakdown):
         result = {}
-        if not self._give_output_feedback(feedback_config):
+
+        show_program_output = (
+            (feedback_config.output_feedback_level ==
+                fbc.OutputFeedbackLevel.show_program_output))
+        if show_program_output:
+            result['standard_output'] = self.standard_output
+            result['standard_error_output'] = self.standard_error_output
+
+        if not self._give_output_correctness_feedback(feedback_config):
             return result, 0
 
         result['output_correct'] = self.output_correct
 
-        show_output_diff = (feedback_config.output_feedback_level ==
-                            'show_expected_and_actual_values')
+        show_output_diff = (
+            (feedback_config.output_feedback_level ==
+                fbc.OutputFeedbackLevel.show_expected_and_actual_values))
         # print("show output diff?: ", show_output_diff)
         if show_output_diff:
             result['stdout_diff'] = _get_diff(
@@ -293,7 +310,8 @@ class AutograderTestCaseResult(models.Model):
 
         result['valgrind_errors_present'] = self.valgrind_errors_present
 
-        if feedback_config.valgrind_feedback_level == 'show_valgrind_output':
+        if (feedback_config.valgrind_feedback_level ==
+                fbc.ValgrindFeedbackLevel.show_valgrind_output):
             result['valgrind_output'] = self.valgrind_output
 
         points_deducted = self.test_case.deduction_for_valgrind_errors
@@ -308,7 +326,8 @@ class AutograderTestCaseResult(models.Model):
                              output_points_awarded=0,
                              valgrind_points_deducted=0):
         result = {}
-        if feedback_config.points_feedback_level == 'hide':
+        if (feedback_config.points_feedback_level ==
+                fbc.PointsFeedbackLevel.hide):
             return result
 
         compilation_points_possible = (
@@ -343,7 +362,7 @@ class AutograderTestCaseResult(models.Model):
                 return_code_points_possible)
             total_possible += return_code_points_possible
 
-        if (self._give_output_feedback(feedback_config) and
+        if (self._give_output_correctness_feedback(feedback_config) and
                 output_points_possible):
             breakdown['output_points_awarded'] = output_points_awarded
             breakdown['output_points_possible'] = output_points_possible
@@ -362,30 +381,38 @@ class AutograderTestCaseResult(models.Model):
         return result
 
     def _give_compilation_feedback(self, feedback_config):
-        return (feedback_config.compilation_feedback_level != 'no_feedback' and
-                self.test_case.test_checks_compilation())
+        return (
+            (feedback_config.compilation_feedback_level !=
+                fbc.CompilationFeedbackLevel.no_feedback) and
+            self.test_case.test_checks_compilation())
 
     def _give_return_code_feedback(self, feedback_config):
-        return (feedback_config.return_code_feedback_level != 'no_feedback' and
-                self.test_case.test_checks_return_code())
+        return (
+            (feedback_config.return_code_feedback_level !=
+                fbc.ReturnCodeFeedbackLevel.no_feedback) and
+            self.test_case.test_checks_return_code())
 
-    def _give_output_feedback(self, feedback_config):
-        return (feedback_config.output_feedback_level != 'no_feedback' and
-                self.test_case.test_checks_output())
+    def _give_output_correctness_feedback(self, feedback_config):
+        return (
+            (feedback_config.output_feedback_level !=
+                fbc.OutputFeedbackLevel.no_feedback) and
+            self.test_case.test_checks_output())
 
     def _give_valgrind_feedback(self, feedback_config):
-        return (self.test_case.use_valgrind and
-                feedback_config.valgrind_feedback_level != 'no_feedback')
+        return (
+            self.test_case.use_valgrind and
+            (feedback_config.valgrind_feedback_level !=
+                fbc.ValgrindFeedbackLevel.no_feedback))
 
-    def _get_feedback_config(self):
-        override = (
-            self.submission is not None and
-            self.submission.test_case_feedback_config_override is not None)
+    # def.test_case.feedback_configurationelf):
+    #     override = (
+    #         self.submission is not None and
+    #         self.submission.test_case_feedback_config_override is not None)
 
-        if override:
-            return self.submission.test_case_feedback_config_override
+    #     if override:
+    #         return self.submission.test_case_feedback_config_override
 
-        return self.test_case.project.test_case_feedback_configuration
+    #     return self.test_case.project.test_case_feedback_configuration
 
 
 # -----------------------------------------------------------------------------

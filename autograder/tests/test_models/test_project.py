@@ -7,11 +7,6 @@ from django.utils import timezone
 
 from autograder.models import (
     Project, Semester, Course, AutograderTestCaseBase)
-from autograder.models.feedback_configuration import (
-    StudentTestSuiteFeedbackConfiguration, CompilationFeedbackLevel,
-    StudentTestCaseValidityFeedbackLevel,
-    BuggyImplementationsExposedFeedbackLevel)
-from autograder.models.fields import FeedbackConfiguration
 
 import autograder.shared.utilities as ut
 
@@ -48,10 +43,6 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.name, self.PROJECT_NAME)
         self.assertEqual(loaded_project.semester, self.semester)
 
-        self.assertEqual(
-            loaded_project.test_case_feedback_configuration,
-            FeedbackConfiguration())
-
         self.assertEqual(loaded_project.get_project_files(), [])
         self.assertEqual(loaded_project.visible_to_students, False)
         self.assertEqual(loaded_project.closing_time, None)
@@ -63,10 +54,6 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.max_group_size, 1)
         self.assertEqual(loaded_project.required_student_files, [])
         self.assertEqual(loaded_project.expected_student_file_patterns, [])
-        self.assertEqual(
-            loaded_project.student_test_suite_feedback_configuration,
-            StudentTestSuiteFeedbackConfiguration()
-        )
 
     # -------------------------------------------------------------------------
 
@@ -82,27 +69,9 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
             Project.FilePatternTuple("test[!0-9]?.cpp", 3, 5)
         ]
 
-        feedback_config = FeedbackConfiguration(
-            return_code_feedback_level='correct_or_incorrect_only',
-            output_feedback_level='show_expected_and_actual_values',
-            compilation_feedback_level='success_or_failure_only',
-            valgrind_feedback_level='show_valgrind_output'
-        )
-
-        suite_feedback_config = StudentTestSuiteFeedbackConfiguration(
-            compilation_feedback_level=(
-                CompilationFeedbackLevel.success_or_failure_only),
-            student_test_validity_feedback_level=(
-                StudentTestCaseValidityFeedbackLevel.show_valid_or_invalid),
-            buggy_implementations_exposed_feedback_level=(
-                BuggyImplementationsExposedFeedbackLevel.list_implementations_exposed_overall)
-        )
-
         new_project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME,
             semester=self.semester,
-            test_case_feedback_configuration=feedback_config,
-            student_test_suite_feedback_configuration=suite_feedback_config,
             visible_to_students=True,
             closing_time=tomorrow_date,
             disallow_student_submissions=True,
@@ -121,13 +90,6 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project, new_project)
         self.assertEqual(loaded_project.name, self.PROJECT_NAME)
         self.assertEqual(loaded_project.semester, self.semester)
-
-        self.assertEqual(
-            loaded_project.test_case_feedback_configuration,
-            feedback_config)
-        self.assertEqual(
-            loaded_project.student_test_suite_feedback_configuration,
-            suite_feedback_config)
 
         self.assertEqual(loaded_project.visible_to_students, True)
         self.assertEqual(loaded_project.closing_time, tomorrow_date)
@@ -775,9 +737,11 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         with self.assertRaises(ValidationError):
             project.remove_project_file(self.sample_project_filename)
 
-    # import unittest
+    import unittest
+    @unittest.skip('todo')
+    def test_exception_on_remove_project_file_suite_depends_on(self):
+        self.fail()
 
-    # @unittest.skip('')
     def test_exception_on_remove_student_file_test_depends_on(self):
         filename = 'required.cpp'
         project = Project.objects.validate_and_create(
@@ -793,7 +757,7 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
         self.assertTrue('required_student_files' in cm.exception.message_dict)
 
-    def test_exception_on_remove_multiple_student_files_tests_depend_on(self):
+    def test_exception_on_remove_student_files_multiple_tests_depend_on(self):
         filenames = ['required1.cpp', 'required2.cpp', 'required3.cpp']
         project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME, semester=self.semester,
@@ -810,7 +774,14 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
         self.assertTrue('required_student_files' in cm.exception.message_dict)
 
-    # @unittest.skip('')
+    @unittest.skip('needs student test suite functionality')
+    def test_exception_on_remove_student_file_suite_depends_on(self):
+        self.fail()
+
+    @unittest.skip('needs student test suite functionality')
+    def test_exception_on_remove_student_files_multiple_suites_depend_on(self):
+        self.fail()
+
     def test_exception_on_remove_student_pattern_test_depends_on(self):
         pattern = Project.FilePatternTuple('test_*.cpp', 0, 3)
         project = Project.objects.validate_and_create(
@@ -827,7 +798,7 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         self.assertTrue(
             'expected_student_file_patterns' in cm.exception.message_dict)
 
-    def test_exception_on_remove_multiple_patterns_tests_depend_on(self):
+    def test_exception_on_remove_patterns_multiple_tests_depend_on(self):
         patterns = [
             Project.FilePatternTuple('test_*.cpp', 0, 3),
             Project.FilePatternTuple('fily_*.cpp', 0, 3),
@@ -849,3 +820,11 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
         self.assertTrue(
             'expected_student_file_patterns' in cm.exception.message_dict)
+
+    @unittest.skip('todo')
+    def test_exception_on_remove_pattern_suite_depends_on(self):
+        self.fail()
+
+    @unittest.skip('todo')
+    def test_exception_on_remove_multiple_patterns_suites_depend_on(self):
+        self.fail()

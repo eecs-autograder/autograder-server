@@ -6,6 +6,7 @@ from autograder.models import (
 # AutograderTestCaseBase, AutograderTestCaseFactory)
 
 import autograder.shared.global_constants as gc
+import autograder.shared.feedback_configuration as fbc
 
 import autograder.tests.dummy_object_utils as obj_ut
 
@@ -98,6 +99,10 @@ class StudentTestSuiteBaseTests(object):
         self.assertTrue(loaded.hide_from_students)
         self.assertEqual(0, loaded.points_per_buggy_implementation_exposed)
 
+        self.assertEqual(
+            fbc.StudentTestSuiteFeedbackConfiguration(),
+            loaded.feedback_configuration)
+
         # Fat interface fields
         self.assertEqual('g++', loaded.compiler)
         self.assertEqual([], loaded.compiler_flags)
@@ -121,6 +126,8 @@ class StudentTestSuiteBaseTests(object):
             time_limit=time_limit,
             hide_from_students=False,
             points_per_buggy_implementation_exposed=1,
+            feedback_configuration=(
+                fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback()),
 
             compiler='g++',
             compiler_flags=compiler_flags,
@@ -150,6 +157,10 @@ class StudentTestSuiteBaseTests(object):
         self.assertEqual(time_limit, loaded.time_limit)
         self.assertFalse(loaded.hide_from_students)
         self.assertEqual(1, loaded.points_per_buggy_implementation_exposed)
+
+        self.assertEqual(
+            fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback(),
+            loaded.feedback_configuration)
 
         self.assertEqual(compiler_flags, loaded.compiler_flags)
         self.assertEqual(
@@ -340,7 +351,8 @@ class StudentTestSuiteBaseTests(object):
                 self.get_student_test_suite_type_str_for_factory(),
                 name=self.suite_name,
                 project=self.project,
-                student_test_case_filename_pattern=self.test_file_pattern.pattern,
+                student_test_case_filename_pattern=(
+                    self.test_file_pattern.pattern),
                 correct_implementation_filename=self.correct_impl_file.name,
                 compiler_flags=['-Wall', ';echo "haxorz" #'])
 
