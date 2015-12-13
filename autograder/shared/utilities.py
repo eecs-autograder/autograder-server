@@ -111,7 +111,6 @@ def get_course_root_dir(course):
     """
     Computes the absolute path of the base directory for the given course.
     """
-    print(settings.MEDIA_ROOT)
     return os.path.join(
         settings.MEDIA_ROOT, get_course_relative_root_dir(course))
 
