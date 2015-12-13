@@ -19,7 +19,8 @@ from .utils import (
 from autograder.frontend.json_api_serializers import (
     project_to_json, autograder_test_case_to_json)
 from autograder.models import Project, AutograderTestCaseFactory
-from autograder.models.fields import FeedbackConfiguration
+
+import autograder.shared.feedback_configuration as fbc
 
 
 class _SetUpBase(TemporaryFilesystemTestCase):
@@ -183,7 +184,6 @@ class GetProjectRequestTestCase(_SetUpBase):
             }
         }
         expected['data']['attributes'].pop('project_files')
-        expected['data']['attributes'].pop('test_case_feedback_configuration')
         self.assertEqual(expected, json_load_bytes(response.content))
 
         response = _get_project_request(self.hidden_project.pk, self.enrolled)
@@ -216,7 +216,6 @@ class GetProjectRequestTestCase(_SetUpBase):
             }
         }
         expected['data']['attributes'].pop('project_files')
-        expected['data']['attributes'].pop('test_case_feedback_configuration')
         self.assertEqual(expected, json_load_bytes(response.content))
 
 
@@ -240,8 +239,6 @@ class PatchProjectRequestTestCase(_SetUpBase):
                 'type': 'project',
                 'id': self.project.pk,
                 'attributes': {
-                    'test_case_feedback_configuration': (
-                        FeedbackConfiguration.get_max_feedback().to_json()),
                     'visible_to_students': True,
                     'closing_time': closing_time,
                     'disallow_student_submissions': True,

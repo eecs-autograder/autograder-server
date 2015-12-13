@@ -15,7 +15,6 @@ from autograder.models import Semester, Project
 
 class ProjectRequestHandler(LoginRequiredView):
     _EDITABLE_FIELDS = [
-        'test_case_feedback_configuration',
         'visible_to_students',
         'closing_time',
         'disallow_student_submissions',
@@ -57,8 +56,6 @@ class ProjectRequestHandler(LoginRequiredView):
         }
         if not is_staff:
             response_content['data']['attributes'].pop('project_files')
-            response_content['data']['attributes'].pop(
-                'test_case_feedback_configuration')
         else:
             response_content['included'] = [
                 autograder_test_case_to_json(test_case)
