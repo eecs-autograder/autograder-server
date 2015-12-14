@@ -65,3 +65,7 @@ tmp_filesystem
 **/*.log
 secret_key
 .DS_Store
+secret_key
+
+**/settings/*
+!**/settings/*.py

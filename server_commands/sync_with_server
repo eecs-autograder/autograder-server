@@ -1,0 +1,1 @@
+rsync -a -v --delete --exclude="*.pyc" --exclude=__pycache__ autograder/ grader:django_autograder/autograder

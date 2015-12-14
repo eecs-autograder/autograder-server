@@ -1,0 +1,3 @@
+- change 'get factory string' to 'get factory string and required args' so
+that we can have (relatively) clean test case inheritance
+- restructure autograder test case hierarchy and try to use abstract base class

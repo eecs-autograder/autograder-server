@@ -43,7 +43,7 @@ def main():
     django.setup()
 
     from django.core.exceptions import ObjectDoesNotExist
-    from autograder.models import (
+    from autograder.core.models import (
         SubmissionGroup, Course, Semester, Project)
 
     try:
@@ -79,7 +79,7 @@ def try_to_create(group_created):
         import django
         django.setup()
 
-        from autograder.models import (
+        from autograder.core.models import (
             SubmissionGroup, Course, Semester, Project)
 
         # try:
@@ -118,7 +118,7 @@ def acquire_lock(tried_to_create, lock_acquired):
     django.setup()
 
     from django.db import connection, transaction
-    from autograder.models import SubmissionGroup
+    from autograder.core.models import SubmissionGroup
 
     print('grabbing lock for:', SubmissionGroup.objects.model._meta.db_table)
     with connection.cursor() as c, transaction.atomic():

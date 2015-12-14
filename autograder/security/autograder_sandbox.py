@@ -3,7 +3,7 @@ import subprocess
 import uuid
 import tempfile
 
-import autograder.shared.global_constants as gc
+import autograder.core.shared.global_constants as gc
 
 
 SANDBOX_HOME_DIR_NAME = '/home/autograder'

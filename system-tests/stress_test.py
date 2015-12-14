@@ -16,13 +16,13 @@ import subprocess
 import time
 import uuid
 
-from autograder.models import (
+from autograder.core.models import (
     Course, Semester, Project, AutograderTestCaseFactory,
     SubmissionGroup, Submission
     # AutograderTestCaseBase,
     # CompiledAutograderTestCase, CompilationOnlyAutograderTestCase
 )
-# import autograder.tests.dummy_object_utils as obj_ut
+# import autograder.core.tests.dummy_object_utils as obj_ut
 from django.db.models import Q
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone

@@ -9,7 +9,6 @@ Dependencies and requirements:
 - pytz
 - django-jsonfield # (will be removed once django 1.9 becomes stable)
 - django-polymorphic
-- oauth2client
 - pyOpenSSL
 - psycopg2
 - django-picklefield 0.3.2

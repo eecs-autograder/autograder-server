@@ -51,7 +51,7 @@ def main():
     django.setup()
 
     from django.core.exceptions import ObjectDoesNotExist
-    from autograder.models import Submission, Course
+    from autograder.core.models import Submission, Course
 
     try:
         try:
@@ -84,7 +84,7 @@ def initialize_objects(objects_created):
     import django
     django.setup()
 
-    from autograder.models import (
+    from autograder.core.models import (
         SubmissionGroup, Course, Semester, Project)
 
     course = Course.objects.validate_and_create(name=COURSE_NAME)
@@ -109,8 +109,8 @@ def try_to_create(submission_created):
         from django.test import RequestFactory
         from django.contrib.auth.models import User
 
-        from autograder.frontend.ajax_request_handlers.submission_request_handlers import SubmissionRequestHandler
-        from autograder.models import SubmissionGroup, Project
+        from autograder.core.frontend.ajax_request_handlers.submission_request_handlers import SubmissionRequestHandler
+        from autograder.core.models import SubmissionGroup, Project
 
         group = SubmissionGroup.get_group(
             GROUP_MEMBERS, Project.objects.get(name=PROJECT_NAME))
@@ -141,7 +141,7 @@ def acquire_lock(tried_to_create, lock_acquired):
     django.setup()
 
     from django.db import transaction
-    from autograder.models import SubmissionGroup
+    from autograder.core.models import SubmissionGroup
 
     print('grabbing lock for group')
     with transaction.atomic():
