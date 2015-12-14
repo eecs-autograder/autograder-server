@@ -315,7 +315,7 @@ class Project(ModelValidatableOnSave):
 
                 required_files_errors.append('')
             except ValidationError as e:
-                required_files_errors.append(e.message)
+                required_files_errors.append(e.messages)
                 req_files_error_found = True
 
         if req_files_error_found:
@@ -348,7 +348,7 @@ class Project(ModelValidatableOnSave):
                 if num_occurrences > 1:
                     raise ValidationError('Duplicate patterns are not allowed')
             except ValidationError as e:
-                pattern_error = e.message
+                pattern_error = e.messages
 
             cleaned_min = pattern_obj.min_num_matches
             min_error = ''

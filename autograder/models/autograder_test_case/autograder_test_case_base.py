@@ -1,9 +1,11 @@
 import os
+import copy
 
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import (
+    MinValueValidator, MaxValueValidator, RegexValidator)
 
 from autograder.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
@@ -17,14 +19,6 @@ import autograder.shared.feedback_configuration as fbc
 # TODO: for fat interface fields, give them a meaningful default so that
 # we don't have to violate the Liskov Substitution principle by making
 # certain fields required in the derived classes.
-
-
-def _validate_cmd_line_arg(arg):
-    if not arg:
-        raise ValidationError("This value can't be empty")
-
-    ut.check_values_against_whitelist(
-        [arg], gc.COMMAND_LINE_ARG_WHITELIST_REGEX)
 
 
 class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
@@ -262,12 +256,16 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
     command_line_arguments = ag_fields.StringArrayField(
         strip_strings=True, allow_empty_strings=False,
-        string_validators=[_validate_cmd_line_arg], default=list, blank=True)
+        string_validators=[
+            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
+        default=list, blank=True)
 
     standard_input = models.TextField(blank=True)
 
-    test_resource_files = ag_fields.StringArrayField(default=[], blank=True)
-    student_resource_files = ag_fields.StringArrayField(default=[], blank=True)
+    test_resource_files = ag_fields.StringArrayField(
+        default=[], blank=True, strip_strings=False)
+    student_resource_files = ag_fields.StringArrayField(
+        default=[], blank=True, strip_strings=False)
 
     time_limit = models.IntegerField(
         default=gc.DEFAULT_SUBPROCESS_TIMEOUT,
@@ -295,8 +293,11 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     _use_valgrind = models.BooleanField(default=False)
 
     valgrind_flags = ag_fields.StringArrayField(
+        null=True,
         strip_strings=True, allow_empty_strings=False,
-        string_validators=[_validate_cmd_line_arg], default=list, blank=True)
+        string_validators=[
+            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
+        default=None, blank=True)
 
     # Point distribution fields
     points_for_correct_return_code = models.IntegerField(
@@ -318,11 +319,12 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS))
 
     compiler_flags = ag_fields.StringArrayField(
-        strip_strings=True, allow_empty_strings=False,
-        string_validators=[_validate_cmd_line_arg], default=list, blank=True)
+        default=list, blank=True, string_validators=[
+            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
+        )
 
     files_to_compile_together = ag_fields.StringArrayField(
-        default=list, blank=True)
+        default=list, blank=True, strip_strings=False)
 
     executable_name = ag_fields.ShortStringField(
         blank=True, validators=[ut.check_user_provided_filename])

@@ -34,8 +34,6 @@ class CompilationOnlyAutograderTestCase(AutograderTestCaseBase):
         except ValidationError as e:
             errors = e.message_dict
 
-        errors.update(self._clean_compiler())
-        errors.update(self._clean_compiler_flags())
         errors.update(self._clean_files_to_compile_together())
 
         if errors:

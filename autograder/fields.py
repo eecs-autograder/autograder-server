@@ -103,17 +103,41 @@ class ValidatedArrayField(pg_fields.ArrayField):
     the error caused by the -5 element. This list is then thrown as
     part of a ValidationError.
     """
+    def clean(self, value, model_instance):
+        value = super().clean(value, model_instance)
+
+        errors = []
+        error_found = False
+        for item in value:
+            try:
+                self.base_field.clean(item, model_instance)
+                errors.append('')
+            except ValidationError as e:
+                errors.append(e.messages)
+                error_found = True
+
+        if error_found:
+            raise ValidationError(errors)
+
+        return value
+
     def validate(self, value, model_instance):
         # The validate() function defined in ArrayField has the
         # behavior we want to get rid of, so we instead call
         # validate() on ArrayField's base class.
         super(ArrayField, self).validate(value, model_instance)
 
-        # Run default field validation on each list item.
-        self._aggregate_errors(
-            value,
-            functools.partial(
-                self.base_field.validate, model_instance=model_instance))
+        # print('value in validate:', value)
+
+        # # Run default field validation on each list item.
+        # try:
+        #     self._aggregate_errors(
+        #         value,
+        #         functools.partial(
+        #             self.base_field.validate, model_instance=model_instance))
+        # except Exception as e:
+        #     print('waaaaah')
+        #     print(e)
 
     def run_validators(self, value):
         # The run_validators() function defined in ArrayField has the
@@ -121,25 +145,27 @@ class ValidatedArrayField(pg_fields.ArrayField):
         # run_validators() on ArrayField's base class.
         super(ArrayField, self).run_validators(value)
 
-        # Run user-specified validators on each list item.
-        self._aggregate_errors(
-            value,
-            lambda item: [
-                validator(item) for validator in self.base_field.validators])
+        # print('value in run_validators:', value)
 
-    def _aggregate_errors(self, items, func):
-        errors = []
-        error_found = False
-        for item in items:
-            try:
-                func(item)
-                errors.append('')
-            except ValidationError as e:
-                errors.append(e.message)
-                error_found = True
+        # # Run user-specified validators on each list item.
+        # self._aggregate_errors(
+        #     value,
+        #     lambda item: [
+        #         validator(item) for validator in self.base_field.validators])
 
-        if error_found:
-            raise ValidationError(errors)
+    # def _aggregate_errors(self, items, func):
+    #     errors = []
+    #     error_found = False
+    #     for item in items:
+    #         try:
+    #             func(item)
+    #             errors.append('')
+    #         except ValidationError as e:
+    #             errors.append(e.messages)
+    #             error_found = True
+
+    #     if error_found:
+    #         raise ValidationError(errors)
 
 
 class StringArrayField(ValidatedArrayField):
@@ -185,30 +211,42 @@ class StringArrayField(ValidatedArrayField):
         })
         return name, path, args, kwargs
 
-    def clean(self, value, model_instance):
-        if self.strip_strings:
-            for string in value:
-                string = string.strip()
+    def to_python(self, value):
+        value = super().to_python(value)
+        if value is None:
+            return value
 
-        return super().clean(value, model_instance)
+        if not self.strip_strings:
+            return value
+
+        stripped = [item.strip() if item is not None else item
+                    for item in value]
+
+        return stripped
+
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
 
 
 # TODO: implement
 class ShortStringField(models.CharField):
-    def __init__(self, strip=True, **kwargs):
+    def __init__(self, max_length=gc.MAX_CHAR_FIELD_LEN, strip=True, **kwargs):
         self.strip = strip
-        super().__init__(max_length=gc.MAX_CHAR_FIELD_LEN, **kwargs)
+        super().__init__(max_length=max_length, **kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        del kwargs['max_length']
+        # del kwargs['max_length']
         kwargs.update({
             'strip': self.strip
         })
         return name, path, args, kwargs
 
-    def clean(self, value, model_instance):
-        if self.strip:
+    def to_python(self, value):
+        if value is not None:
             value = value.strip()
 
-        return super().clean(value, model_instance)
+        return super().to_python(value)
+
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)

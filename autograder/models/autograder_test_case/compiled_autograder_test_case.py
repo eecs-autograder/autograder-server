@@ -25,8 +25,8 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         executable_name
 
     Overridden methods:
-        clean()
         run()
+        clean()
         test_checks_compilation()
         get_type_str()
     """
@@ -37,6 +37,19 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
     def get_type_str(self):
         return 'compiled_test_case'
+
+    def clean(self):
+        errors = {}
+
+        try:
+            super().clean()
+        except ValidationError as e:
+            errors = e.message_dict
+
+        errors.update(self._clean_files_to_compile_together())
+
+        if errors:
+            raise ValidationError(errors)
 
     # -------------------------------------------------------------------------
 
