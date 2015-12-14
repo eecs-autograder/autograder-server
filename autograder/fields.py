@@ -106,15 +106,18 @@ class ValidatedArrayField(pg_fields.ArrayField):
     def clean(self, value, model_instance):
         value = super().clean(value, model_instance)
 
+        cleaned_value = []
         errors = []
         error_found = False
         for item in value:
             try:
-                self.base_field.clean(item, model_instance)
+                item = self.base_field.clean(item, model_instance)
                 errors.append('')
             except ValidationError as e:
                 errors.append(e.messages)
                 error_found = True
+            finally:
+                cleaned_value.append(item)
 
         if error_found:
             raise ValidationError(errors)
