@@ -3,20 +3,12 @@ from django.core.exceptions import ValidationError
 from ..autograder_test_case_result import AutograderTestCaseResult
 from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
 
-from .autograder_test_case_base import AutograderTestCaseBase
+from .compiled_autograder_test_case import CompiledAutograderTestCase
 
 
-class CompilationOnlyAutograderTestCase(AutograderTestCaseBase):
+class CompilationOnlyAutograderTestCase(CompiledAutograderTestCase):
     """
-    This class defines a type of test case that involves compiling
-    a program but not running it.
-
-    This class does not define any new fields.
-    Instead, the following fields inherited from the base class
-    are now REQUIRED:
-        compiler
-        compiler_flags (This field is allowed to be empty)
-        files_to_compile_together
+    This class evaulates a program by trying to compile it from source code.
 
     Overridden methods:
         clean()

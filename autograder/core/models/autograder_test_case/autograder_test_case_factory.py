@@ -1,4 +1,4 @@
-from .compiled_autograder_test_case import CompiledAutograderTestCase
+from .compiled_and_run_autograder_test_case import CompiledAndRunAutograderTestCase
 from .compilation_only_autograder_test_case import CompilationOnlyAutograderTestCase
 
 
@@ -17,6 +17,6 @@ def _get_class(type_str):
         raise ValueError("Invalid test case type: '{}'".format(type_str))
 
 _STR_TO_CLASS_MAPPINGS = {
-    'compiled_test_case': CompiledAutograderTestCase,
+    'compiled_and_run_test_case': CompiledAndRunAutograderTestCase,
     'compilation_only_test_case': CompilationOnlyAutograderTestCase
 }

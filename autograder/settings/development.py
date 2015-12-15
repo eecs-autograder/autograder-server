@@ -47,7 +47,9 @@ INSTALLED_APPS = [
 
     'autograder.core',
     'autograder.utilities',
-    'autograder.security'
+    'autograder.security',
+
+    'autograder.core.tests.test_models.test_autograder_test_case'
 ]
 
 MIDDLEWARE_CLASSES = (
@@ -92,7 +94,7 @@ WSGI_APPLICATION = 'autograder.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'autograder-test-db',
+        'NAME': 'autograder_test_db',
     },
 
     # 'default': {

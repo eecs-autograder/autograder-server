@@ -2,13 +2,16 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 
 from autograder.core.models import (
-    Project, Semester, Course, AutograderTestCaseBase)
+    Project, Semester, Course)
 
 import autograder.core.shared.global_constants as gc
 import autograder.core.shared.feedback_configuration as fbc
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
+
+from autograder.core.tests.test_models.test_autograder_test_case.models import (
+    _DummyAutograderTestCase)
 
 
 class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
@@ -34,10 +37,10 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_valid_initialization_with_defaults(self):
-        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
+        new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project)
 
-        loaded_test_case = AutograderTestCaseBase.objects.get(
+        loaded_test_case = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
 
         self.assertEqual(new_test_case, loaded_test_case)
@@ -65,14 +68,6 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             fbc.AutograderTestCaseFeedbackConfiguration(),
             loaded_test_case.feedback_configuration)
 
-        # Fat interface fields
-        # TODO: comment out, add to docs that defaults
-        # are specified by the derived classes
-        self.assertEqual(loaded_test_case.compiler, "")
-        self.assertEqual(loaded_test_case.compiler_flags, [])
-        self.assertEqual(loaded_test_case.files_to_compile_together, [])
-        self.assertEqual(loaded_test_case.executable_name, "")
-
     # -------------------------------------------------------------------------
 
     def test_valid_initialization_custom_values(self):
@@ -86,7 +81,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         ret_code = 0
         valgrind_flags = ['--leak-check=yes', '--error-exitcode=9000']
 
-        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
+        new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             command_line_arguments=cmd_args,
             standard_input=input_stream_content,
@@ -106,7 +101,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
                 fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback())
         )
 
-        loaded_test_case = AutograderTestCaseBase.objects.get(
+        loaded_test_case = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
 
         self.assertEqual(new_test_case, loaded_test_case)
@@ -151,21 +146,21 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_on_non_unique_name_within_project(self):
-        AutograderTestCaseBase.objects.validate_and_create(
+        _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project)
 
         with self.assertRaises(ValidationError):
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project)
 
     def test_no_exception_same_name_different_project(self):
         other_project = Project.objects.validate_and_create(
             name='other_project', semester=self.semester)
 
-        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
+        new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=other_project)
 
-        loaded_test_case = AutograderTestCaseBase.objects.get(
+        loaded_test_case = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=other_project)
 
         self.assertEqual(new_test_case, loaded_test_case)
@@ -177,10 +172,10 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         other_project = Project.objects.validate_and_create(
             name=self.project.name, semester=other_semester)
 
-        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
+        new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=other_project)
 
-        loaded_test_case = AutograderTestCaseBase.objects.get(
+        loaded_test_case = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=other_project)
 
         self.assertEqual(new_test_case, loaded_test_case)
@@ -195,41 +190,41 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         other_project = Project.objects.validate_and_create(
             name=self.project.name, semester=other_semester)
 
-        new_test_case = AutograderTestCaseBase.objects.validate_and_create(
+        new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=other_project)
 
-        loaded_test_case = AutograderTestCaseBase.objects.get(
+        loaded_test_case = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=other_project)
 
         self.assertEqual(new_test_case, loaded_test_case)
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name='', project=self.project)
 
         self.assertTrue('name' in cm.exception.message_dict)
 
     def test_exception_on_null_name(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=None, project=self.project)
 
         self.assertTrue('name' in cm.exception.message_dict)
 
     def test_name_whitespace_stripped(self):
         name = 'test1'
-        AutograderTestCaseBase.objects.validate_and_create(
+        _DummyAutograderTestCase.objects.validate_and_create(
             name='     ' + name + '  ', project=self.project)
 
-        loaded_test_case = AutograderTestCaseBase.objects.get(
+        loaded_test_case = _DummyAutograderTestCase.objects.get(
             name=name, project=self.project)
 
         self.assertEqual(name, loaded_test_case.name)
 
     def test_exception_on_name_only_whitespace(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name='     ', project=self.project)
 
         self.assertTrue('name' in cm.exception.message_dict)
@@ -238,13 +233,13 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     # def test_exception_on_null_command_line_args(self):
     #     with self.assertRaises(ValidationError):
-    #         AutograderTestCaseBase.objects.validate_and_create(
+    #         _DummyAutograderTestCase.objects.validate_and_create(
     #             name=self.TEST_NAME, project=self.project,
     #             command_line_arguments=None)
 
     def test_exception_on_empty_value_in_cmd_args(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 command_line_arguments=["spam", '', '       '])
 
@@ -256,7 +251,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_invalid_chars_in_command_line_args(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 command_line_arguments=["spam", "; echo 'haxorz!'"])
 
@@ -266,11 +261,11 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(error_list[1])
 
     def test_cmd_arg_whitespace_stripped(self):
-        AutograderTestCaseBase.objects.validate_and_create(
+        _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             command_line_arguments=['  spam  ', 'eggs', '  sausage'])
 
-        loaded_test = AutograderTestCaseBase.objects.get(
+        loaded_test = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
 
         self.assertEqual(
@@ -285,7 +280,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_null_test_resource_files_list(self):
         with self.assertRaises(ValidationError):
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 test_resource_files=None)
 
@@ -293,7 +288,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         # student_file.txt is a student file, not a project file
         self.project.required_student_files.append('student_file.txt')
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 test_resource_files=['student_file.txt'])
 
@@ -303,14 +298,14 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_null_student_resource_files_list(self):
         with self.assertRaises(ValidationError):
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 student_resource_files=None)
 
     def test_exception_on_student_resource_files_has_wrong_file(self):
         # spam.txt is a project file, not a student file
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 student_resource_files=['spam.txt'])
 
@@ -322,7 +317,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_zero_time_limit(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=0)
 
@@ -330,7 +325,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_negative_time_limit(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=-1)
 
@@ -338,7 +333,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_time_limit_too_large(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=gc.MAX_SUBPROCESS_TIMEOUT + 1)
 
@@ -346,47 +341,47 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_time_limit_not_integer(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit='spam')
 
         self.assertTrue('time_limit' in cm.exception.message_dict)
 
     def test_no_exception_on_time_limit_is_parseable_int(self):
-        AutograderTestCaseBase.objects.validate_and_create(
+        _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             time_limit='2')
 
-        loaded_test = AutograderTestCaseBase.objects.get(
+        loaded_test = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
         self.assertEqual(loaded_test.time_limit, 2)
 
     # -------------------------------------------------------------------------
 
     def test_nonzero_expected_return_code(self):
-        AutograderTestCaseBase.objects.validate_and_create(
+        _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             expect_any_nonzero_return_code=True)
 
-        loaded_test_case = AutograderTestCaseBase.objects.get(
+        loaded_test_case = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
 
         self.assertTrue(loaded_test_case.expect_any_nonzero_return_code)
 
     def test_exception_on_expected_return_code_not_integer(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 expected_return_code='spam')
 
         self.assertTrue('expected_return_code' in cm.exception.message_dict)
 
     def test_no_exception_on_expected_return_code_is_parseable_int(self):
-        AutograderTestCaseBase.objects.validate_and_create(
+        _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             expected_return_code='2')
 
-        loaded_test = AutograderTestCaseBase.objects.get(
+        loaded_test = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
         self.assertEqual(loaded_test.expected_return_code, 2)
 
@@ -395,7 +390,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
     import unittest
     @unittest.skip('fixme, update valgrind handling')
     def test_exception_on_use_valgrind_with_null_flags(self):
-        ag_test = AutograderTestCaseBase.objects.validate_and_create(
+        ag_test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             use_valgrind=True)
 
@@ -406,7 +401,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_empty_value_in_valgrind_args(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 use_valgrind=True,
                 valgrind_flags=['', 'spam', '     '])
@@ -418,11 +413,11 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(error_list[2])
 
     def test_use_valgrind_default_flags(self):
-        AutograderTestCaseBase.objects.validate_and_create(
+        _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             use_valgrind=True)
 
-        loaded_test_case = AutograderTestCaseBase.objects.get(
+        loaded_test_case = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
 
         self.assertTrue(loaded_test_case.use_valgrind)
@@ -432,7 +427,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_invalid_chars_in_valgrind_flags(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 use_valgrind=True,
                 valgrind_flags=["; echo 'haxorz!'", '--leak-check=full'])
@@ -443,12 +438,12 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertFalse(error_list[1])
 
     def test_valgrind_flag_whitespace_stripped(self):
-        AutograderTestCaseBase.objects.validate_and_create(
+        _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
             use_valgrind=True,
             valgrind_flags=["      spam    ", '   eggs'])
 
-        loaded_test = AutograderTestCaseBase.objects.get(
+        loaded_test = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
         self.assertEqual(loaded_test.valgrind_flags, ['spam', 'eggs'])
 
@@ -456,7 +451,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     def test_exception_on_negative_point_distributions(self):
         with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseBase.objects.validate_and_create(
+            _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 points_for_correct_return_code=-1,
                 points_for_correct_output=-1,
@@ -475,7 +470,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_test_checks_return_code(self):
-        test = AutograderTestCaseBase.objects.validate_and_create(
+        test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project)
         self.assertFalse(test.test_checks_return_code())
 
@@ -489,7 +484,7 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(test.test_checks_return_code())
 
     def test_test_checks_output(self):
-        test = AutograderTestCaseBase.objects.validate_and_create(
+        test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project)
 
         self.assertFalse(test.test_checks_output())
@@ -514,12 +509,3 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         test.expected_standard_error_output = ''
         test.validate_and_save()
         self.assertFalse(test.test_checks_output())
-
-    def test_test_checks_compilation(self):
-        test = AutograderTestCaseBase.objects.validate_and_create(
-            name=self.TEST_NAME, project=self.project)
-
-        self.assertFalse(test.test_checks_compilation())
-
-        test.compiler = 'g++'
-        self.assertTrue(test.test_checks_compilation())

@@ -16,10 +16,6 @@ import autograder.core.shared.global_constants as gc
 import autograder.core.shared.utilities as ut
 import autograder.core.shared.feedback_configuration as fbc
 
-# TODO: for fat interface fields, give them a meaningful default so that
-# we don't have to violate the Liskov Substitution principle by making
-# certain fields required in the derived classes.
-
 
 class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     """
@@ -191,43 +187,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             Default value: default-initialized
                 AutograderTestCaseFeedbackConfiguration object
 
-    Fat interface fields:
-
-        compiler -- The program that will be used to compile the test case
-            executable.
-            Currently supported values listed in
-                autograder.shared.global_constants.SUPPORTED_COMPILERS
-            Default value: g++
-
-        compiler_flags -- A list of option flags to be passed to the compiler.
-            These flags are limited to the same character set as
-            the command_line_arguments field.
-            NOTE: This list should NOT include the names of files that
-                need to be compiled and should not include flags that affect
-                the name of the resulting executable program.
-
-            This field is allowed to be empty.
-            This field may not be None.
-            Default value: empty list
-
-        files_to_compile_together -- A list of files that need to be
-            compiled together. These filenames are restricted to those
-            in test_resource_files and student_resource_files.
-            NOTE: When a pattern is part of this list, all student-submitted
-                files matching the pattern will be compiled together.
-
-            This field is allowed to be empty.
-            This field may not be None.
-            Default value: empty list
-
-        executable_name -- The name of the executable program that should be
-            produced by the compiler. This is the program that will be tested.
-            This field is restricted to the same charset as uploaded
-            project files.
-            Default value: empty string
-
-        compilation_time_limit -- TODO
-
         interpreter -- TODO
         interpreter_flags -- TODO
         entry_point_file -- TODO
@@ -312,22 +271,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     feedback_configuration = ag_fields.JsonSerializableClassField(
         fbc.AutograderTestCaseFeedbackConfiguration,
         default=fbc.AutograderTestCaseFeedbackConfiguration)
-
-    # Fat interface fields
-    compiler = ag_fields.ShortStringField(
-        blank=True,
-        choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS))
-
-    compiler_flags = ag_fields.StringArrayField(
-        default=list, blank=True, string_validators=[
-            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
-        )
-
-    files_to_compile_together = ag_fields.StringArrayField(
-        default=list, blank=True, strip_strings=False)
-
-    executable_name = ag_fields.ShortStringField(
-        blank=True, validators=[ut.check_user_provided_filename])
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
@@ -422,43 +365,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    # def _clean_compiler(self):
-    #     if self.compiler not in AutograderTestCaseBase.SUPPORTED_COMPILERS:
-    #         return {'compiler': 'Unsupported compiler'}
-
-    #     return {}
-
-    def _clean_files_to_compile_together(self):
-        if not self.files_to_compile_together:
-            return {
-                'files_to_compile_together': [
-                    'At least one file must be specified for compilation']
-            }
-
-        errors = []
-        # patterns = [pattern_obj.pattern for pattern_obj in
-        #             self.project.expected_student_file_patterns]
-        for filename in self.files_to_compile_together:
-            valid_filename = (
-                filename in self.test_resource_files or
-                filename in self.student_resource_files
-                # filename in self.project.get_project_file_basenames() or
-                # filename in self.project.required_student_files or
-                # filename in patterns
-            )
-
-            if not valid_filename:
-                errors.append(
-                    'File {0} not a resource file for this test'.format(
-                        filename))
-
-        if errors:
-            return {'files_to_compile_together': errors}
-
-        return {}
-
-    # -------------------------------------------------------------------------
-
     # TODO: Remove "test_" prefix from these names
 
     def test_checks_return_code(self):
@@ -471,7 +377,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
                 self.expected_standard_error_output)
 
     def test_checks_compilation(self):
-        return self.compiler
+        raise NotImplementedError('Subclasses must override this method')
 
     def get_type_str(self):
         raise NotImplementedError('Subclasses must override this method')
