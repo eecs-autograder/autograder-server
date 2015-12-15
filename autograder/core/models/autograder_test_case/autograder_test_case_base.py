@@ -181,7 +181,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             awarded for the program being tested compiling successfully.
             Default value: 0
 
-
         feedback_configuration -- Specifies how much information should be
             included in serialized run results.
             Default value: default-initialized
