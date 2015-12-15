@@ -17,7 +17,7 @@ from autograder.core.frontend.json_api_serializers import (
     submission_group_to_json, submission_to_json)
 
 from autograder.core.models import (
-    CompiledAutograderTestCase, SubmissionGroup, Submission,
+    AutograderTestCaseFactory, SubmissionGroup, Submission,
     AutograderTestCaseResult)
 
 import autograder.core.shared.feedback_configuration as fbc
@@ -283,7 +283,8 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
         self.project.add_project_file(
             SimpleUploadedFile('cheese.txt', b'cheeeese'))
 
-        self.ag_test = CompiledAutograderTestCase.objects.validate_and_create(
+        self.ag_test = AutograderTestCaseFactory.validate_and_create(
+            'compiled_and_run_test_case',
             name='test',
             project=self.project,
             command_line_arguments=['argy', 'argy2'],
@@ -308,7 +309,7 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
 
     def test_serialize_test_case_all_fields(self):
         expected = {
-            'type': 'compiled_test_case',
+            'type': 'compiled_and_run_test_case',
             'id': self.ag_test.pk,
             'links': {
                 'self': reverse('ag-test-handler', args=[self.ag_test.pk])
@@ -352,7 +353,7 @@ class AutograderTestCaseSerializerTestCase(SerializerTestCase):
 
     def test_serialize_test_case_without_fields(self):
         expected = {
-            'type': 'compiled_test_case',
+            'type': 'compiled_and_run_test_case',
             'id': self.ag_test.pk,
             'links': {
                 'self': reverse('ag-test-handler', args=[self.ag_test.pk])

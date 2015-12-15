@@ -63,7 +63,7 @@ class _SetUpBase(RequestHandlerTestCase):
         self.points_for_test = 2
 
         self.visible_test = AutograderTestCaseFactory.validate_and_create(
-            'compiled_test_case',
+            'compiled_and_run_test_case',
             name='visible', project=self.project,
             expected_return_code=0,
             points_for_correct_return_code=self.points_for_test,
@@ -77,7 +77,7 @@ class _SetUpBase(RequestHandlerTestCase):
         self.visible_test.save()
 
         self.hidden_test = AutograderTestCaseFactory.validate_and_create(
-            'compiled_test_case',
+            'compiled_and_run_test_case',
             name='hidden', project=self.project,
             expected_return_code=0,
             points_for_correct_return_code=self.points_for_test,

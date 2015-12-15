@@ -124,7 +124,7 @@ class GetProjectRequestTestCase(_SetUpBase):
         for proj in (self.visible_project, self.hidden_project):
             for i in range(5):
                 AutograderTestCaseFactory.validate_and_create(
-                    'compiled_test_case',
+                    'compiled_and_run_test_case',
                     name='test{}'.format(i), project=proj,
                     compiler='g++', files_to_compile_together=['spam.cpp'],
                     student_resource_files=proj.required_student_files,

@@ -1,4 +1,4 @@
-import unittest
+# import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
@@ -81,7 +81,6 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
-    @unittest.skip('fix when hierarchy is reworked')
     def test_exception_on_empty_executable_name(self):
         self.compiled_test_kwargs['executable_name'] = ''
 
@@ -93,7 +92,6 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertTrue('executable_name' in cm.exception.message_dict)
 
-    @unittest.skip('fix when hierarchy is reworked')
     def test_exception_on_null_executable_name(self):
         self.compiled_test_kwargs['executable_name'] = None
 
@@ -105,7 +103,6 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertTrue('executable_name' in cm.exception.message_dict)
 
-    @unittest.skip('fix when hierarchy is reworked')
     def test_exception_on_invalid_chars_in_executable_name(self):
         self.compiled_test_kwargs['executable_name'] = "../haxorz"
 
@@ -129,7 +126,6 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             name=self.test_name, project=self.project)
         self.assertEqual(loaded_test.executable_name, 'spam.exe')
 
-    @unittest.skip('fix when hierarchy is reworked')
     def test_exception_on_executable_name_only_whitespace(self):
         self.compiled_test_kwargs['executable_name'] = "     "
 
@@ -585,6 +581,7 @@ class CompiledAutograderTestRunTestCase(
 
     # -------------------------------------------------------------------------
 
+    import unittest
     @unittest.skip('not implemented')
     def test_run_with_pattern_in_files_to_compile(self):
         self.fail()

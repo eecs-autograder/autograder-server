@@ -12,7 +12,8 @@ from .utils import (
 
 from autograder.core.frontend.json_api_serializers import (
     project_to_json, autograder_test_case_to_json)
-from autograder.core.models import CompiledAutograderTestCase
+from autograder.core.models import (
+    AutograderTestCaseBase, AutograderTestCaseFactory)
 
 import autograder.core.shared.feedback_configuration as fbc
 
@@ -42,7 +43,7 @@ class _SetUpBase(TemporaryFilesystemTestCase):
 
         self.ag_test_json = {
             'data': {
-                'type': 'compiled_test_case',
+                'type': 'compiled_and_run_test_case',
                 'attributes': {
                     'name': 'test',
                     'command_line_arguments': ['spam'],
@@ -76,7 +77,8 @@ class _SetUpBase(TemporaryFilesystemTestCase):
                 }
             }
         }
-        self.ag_test_starter = CompiledAutograderTestCase(
+        self.ag_test_starter = AutograderTestCaseFactory.new_instance(
+            'compiled_and_run_test_case',
             project=self.project, **self.ag_test_json['data']['attributes'])
 
 # -----------------------------------------------------------------------------
@@ -92,7 +94,7 @@ class AddAutograderTestCaseRequestTestCase(_SetUpBase):
             self.project, self.ag_test_json, self.admin)
         self.assertEqual(201, response.status_code)
 
-        loaded_test = CompiledAutograderTestCase.objects.get(
+        loaded_test = AutograderTestCaseBase.objects.get(
             name=self.ag_test_starter.name, project=self.project)
         expected = {
             'data': autograder_test_case_to_json(loaded_test)
@@ -173,7 +175,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
     def test_valid_patch_test_case_all_attributes(self):
         request_content = {
             'data': {
-                'type': 'compiled_test_case',
+                'type': 'compiled_and_run_test_case',
                 'id': self.ag_test_starter.pk,
                 'attributes': {
                     'command_line_arguments': ['eggs'],
@@ -205,7 +207,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
             self.ag_test_starter.pk, request_content, self.admin)
         self.assertEqual(204, response.status_code)
 
-        loaded_test = CompiledAutograderTestCase.objects.get(
+        loaded_test = AutograderTestCaseBase.objects.get(
             name=self.ag_test_starter.name, project=self.project)
         loaded_test_json = autograder_test_case_to_json(loaded_test)
 
@@ -216,7 +218,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
     def test_valid_patch_test_case_some_attributes(self):
         request_content = {
             'data': {
-                'type': 'compiled_test_case',
+                'type': 'compiled_and_run_test_case',
                 'id': self.ag_test_starter.pk,
                 'attributes': {
                     'time_limit': 2
@@ -228,7 +230,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
             self.ag_test_starter.pk, request_content, self.admin)
         self.assertEqual(204, response.status_code)
 
-        loaded_test = CompiledAutograderTestCase.objects.get(
+        loaded_test = AutograderTestCaseBase.objects.get(
             name=self.ag_test_starter.name, project=self.project)
 
         self.assertEqual(2, loaded_test.time_limit)
@@ -236,7 +238,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
     def test_patch_test_case_permisison_denied(self):
         request_content = {
             'data': {
-                'type': 'compiled_test_case',
+                'type': 'compiled_and_run_test_case',
                 'id': self.ag_test_starter.pk,
                 'attributes': {
                     'time_limit': 2
@@ -248,7 +250,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
                 self.ag_test_starter.pk, request_content, user)
             self.assertEqual(403, response.status_code)
 
-            loaded = CompiledAutograderTestCase.objects.get(
+            loaded = AutograderTestCaseBase.objects.get(
                 name=self.ag_test_starter.name, project=self.project)
             self.assertEqual(
                 autograder_test_case_to_json(self.ag_test_starter),
@@ -257,7 +259,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
     def test_patch_test_case_field_errors(self):
         request_content = {
             'data': {
-                'type': 'compiled_test_case',
+                'type': 'compiled_and_run_test_case',
                 'id': self.ag_test_starter.pk,
                 'attributes': {
                     'time_limit': 0
@@ -269,7 +271,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
             self.ag_test_starter.pk, request_content, self.admin)
         self.assertEqual(409, response.status_code)
 
-        loaded = CompiledAutograderTestCase.objects.get(
+        loaded = AutograderTestCaseBase.objects.get(
             name=self.ag_test_starter.name, project=self.project)
         self.assertEqual(
             autograder_test_case_to_json(self.ag_test_starter),
@@ -278,7 +280,7 @@ class PatchAutograderTestCaseRequestTestCase(_SetUpBase):
     def test_patch_test_case_not_found(self):
         request_content = {
             'data': {
-                'type': 'compiled_test_case',
+                'type': 'compiled_and_run_test_case',
                 'id': 42,
                 'attributes': {
                     'time_limit': 2
@@ -310,7 +312,7 @@ class DeleteAutograderTestCaseRequestTestCase(_SetUpBase):
         self.assertEqual(204, response.status_code)
 
         with self.assertRaises(ObjectDoesNotExist):
-            CompiledAutograderTestCase.objects.get(
+            AutograderTestCaseBase.objects.get(
                 name=self.ag_test_starter.name, project=self.project)
 
     def test_delete_project_permission_denied(self):
@@ -318,7 +320,7 @@ class DeleteAutograderTestCaseRequestTestCase(_SetUpBase):
             response = _delete_ag_test_request(self.ag_test_starter.pk, user)
             self.assertEqual(403, response.status_code)
 
-            loaded = CompiledAutograderTestCase.objects.get(
+            loaded = AutograderTestCaseBase.objects.get(
                 name=self.ag_test_starter.name, project=self.project)
 
             self.assertEqual(

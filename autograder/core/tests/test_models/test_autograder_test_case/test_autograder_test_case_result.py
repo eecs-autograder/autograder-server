@@ -7,11 +7,14 @@ from autograder.core.tests.temporary_filesystem_test_case import (
 import autograder.core.tests.dummy_object_utils as obj_ut
 
 from autograder.core.models import (
-    Project, Semester, Course, AutograderTestCaseBase,
-    CompiledAutograderTestCase, AutograderTestCaseResult,
+    Project, Semester, Course,
+    AutograderTestCaseFactory, AutograderTestCaseResult,
     SubmissionGroup, Submission)
 
 import autograder.core.shared.feedback_configuration as fbc
+
+from autograder.core.tests.test_models.test_autograder_test_case.models import (
+    _DummyAutograderTestCase, _DummyCompiledAutograderTestCase)
 
 _DIFFER = difflib.Differ()
 
@@ -34,7 +37,7 @@ class _SetUpBase(TemporaryFilesystemTestCase):
 
         self.test_name = 'my_test'
 
-        self.test_case = AutograderTestCaseBase.objects.validate_and_create(
+        self.test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.test_name, project=self.project)
 
 
@@ -180,23 +183,24 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             name='my_project', semester=self.semester,
             required_student_files=['spam.cpp', 'egg.cpp'])
 
-        self.test_case = CompiledAutograderTestCase.objects.validate_and_create(
-            name='test',
-            project=self.project,
-            expected_return_code=0,
-            expected_standard_output='stdout\nspam\n',
-            expected_standard_error_output='stderr\negg\n',
-            use_valgrind=True,
-            valgrind_flags=['--leak-check=full', '--error-exitcode=42'],
-            compiler='g++',
-            compiler_flags=['-Wall'],
-            student_resource_files=['spam.cpp', 'egg.cpp'],
-            files_to_compile_together=['spam.cpp', 'egg.cpp'],
-            executable_name='prog',
-            points_for_correct_return_code=1,
-            points_for_correct_output=2,
-            deduction_for_valgrind_errors=2,
-            points_for_compilation_success=4)
+        self.test_case = (
+            _DummyCompiledAutograderTestCase.objects.validate_and_create(
+                name='test',
+                project=self.project,
+                expected_return_code=0,
+                expected_standard_output='stdout\nspam\n',
+                expected_standard_error_output='stderr\negg\n',
+                use_valgrind=True,
+                valgrind_flags=['--leak-check=full', '--error-exitcode=42'],
+                compiler='g++',
+                compiler_flags=['-Wall'],
+                student_resource_files=['spam.cpp', 'egg.cpp'],
+                files_to_compile_together=['spam.cpp', 'egg.cpp'],
+                executable_name='prog',
+                points_for_correct_return_code=1,
+                points_for_correct_output=2,
+                deduction_for_valgrind_errors=2,
+                points_for_compilation_success=4))
 
         self.correct_test_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,

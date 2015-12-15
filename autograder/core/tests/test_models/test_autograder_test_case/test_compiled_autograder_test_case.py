@@ -14,7 +14,7 @@ from autograder.core.tests.test_models.test_autograder_test_case.models import (
     _DummyCompiledAutograderTestCase)
 
 
-class CompiledAutogradrTestCaseTestCase(TemporaryFilesystemTestCase):
+class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
@@ -61,19 +61,53 @@ class CompiledAutogradrTestCaseTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
-    @unittest.skip('todo')
     def test_valid_init_with_defaults(self):
-        self.fail()
-        # self.assertEqual(loaded_test_case.compiler, "")
-        # self.assertEqual(loaded_test_case.compiler_flags, [])
-        # self.assertEqual(loaded_test_case.files_to_compile_together, [])
-        # self.assertEqual(loaded_test_case.executable_name, "")
+        test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
+            name=self.test_name, project=self.project,
+            compiler=self.compiler,
+            files_to_compile_together=self.files_to_compile_together,
+            test_resource_files=self.compiled_test_kwargs.get(
+                'test_resource_files'),
+            student_resource_files=self.compiled_test_kwargs.get(
+                'student_resource_files')
+        )
 
-    @unittest.skip('todo')
+        loaded_test_case = _DummyCompiledAutograderTestCase.objects.get(
+            pk=test.pk)
+
+        self.assertEqual(loaded_test_case.compiler, self.compiler)
+        self.assertEqual(loaded_test_case.compiler_flags, [])
+        self.assertEqual(
+            loaded_test_case.files_to_compile_together,
+            self.files_to_compile_together)
+        self.assertEqual(loaded_test_case.executable_name, "compiled_program")
+
     def test_valid_init_no_defaults(self):
-        self.fail()
+        test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
+            name=self.test_name, project=self.project,
+            **self.compiled_test_kwargs)
 
-    @unittest.skip('fix when hierarchy is reworked')
+        loaded_test_case = _DummyCompiledAutograderTestCase.objects.get(
+            pk=test.pk)
+
+        self.assertEqual(loaded_test_case.compiler, self.compiler)
+        self.assertEqual(loaded_test_case.compiler_flags, self.compiler_flags)
+        self.assertEqual(
+            loaded_test_case.files_to_compile_together,
+            self.files_to_compile_together)
+        self.assertEqual(
+            loaded_test_case.executable_name, self.executable_name)
+
+    def test_exception_on_missing_compiler(self):
+        self.compiled_test_kwargs.pop('compiler', None)
+
+        with self.assertRaises(ValidationError) as cm:
+            _DummyCompiledAutograderTestCase.objects.validate_and_create(
+                name=self.test_name, project=self.project,
+                **self.compiled_test_kwargs)
+
+        self.assertTrue('compiler' in cm.exception.message_dict)
+
     def test_exception_on_empty_compiler(self):
         self.compiled_test_kwargs['compiler'] = ''
 
@@ -84,7 +118,6 @@ class CompiledAutogradrTestCaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertTrue('compiler' in cm.exception.message_dict)
 
-    @unittest.skip('fix when hierarchy is reworked')
     def test_exception_on_null_compiler(self):
         self.compiled_test_kwargs['compiler'] = None
 
@@ -134,7 +167,17 @@ class CompiledAutogradrTestCaseTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
-    @unittest.skip('fix when hierarchy is reworked')
+    def test_exception_on_missing_files_to_compile_together(self):
+        self.compiled_test_kwargs.pop('files_to_compile_together', None)
+
+        with self.assertRaises(ValidationError) as cm:
+            _DummyCompiledAutograderTestCase.objects.validate_and_create(
+                name=self.test_name, project=self.project,
+                **self.compiled_test_kwargs)
+
+        self.assertTrue(
+            'files_to_compile_together' in cm.exception.message_dict)
+
     def test_exception_on_empty_files_to_compile_together(self):
         self.compiled_test_kwargs['files_to_compile_together'] = []
 
@@ -146,7 +189,6 @@ class CompiledAutogradrTestCaseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(
             'files_to_compile_together' in cm.exception.message_dict)
 
-    @unittest.skip('fix when hierarchy is reworked')
     def test_exception_on_null_files_to_compile_together(self):
         self.compiled_test_kwargs['files_to_compile_together'] = None
 

@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from autograder.core.models import (
     Project, Semester, Course,
-    AutograderTestCaseFactory)
+    AutograderTestCaseFactory, AutograderTestCaseBase)
 
 from autograder.security.autograder_sandbox import AutograderSandbox
 
@@ -46,7 +46,7 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
         self.project.add_project_file(
             SimpleUploadedFile(self.cpp_filename, b''))
 
-        self.test_case_starter = AutograderTestCaseFactory.new_instance(
+        self.test_case_starter = AutograderTestCaseFactory.validate_and_create(
             self.get_ag_test_type_str_for_factory(),
             name='test1', project=self.project,
             compiler='g++',
@@ -55,6 +55,12 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
             files_to_compile_together=[self.cpp_filename],
             executable_name=self.executable_name
         )
+
+        # Reload the test case to make sure that the polymorphism is
+        # set up correctly.
+        self.test_case_starter = AutograderTestCaseBase.objects.get(
+            pk=self.test_case_starter.pk)
+        print('************', type(self.test_case_starter), '**************')
 
     def tearDown(self):
         super().tearDown()

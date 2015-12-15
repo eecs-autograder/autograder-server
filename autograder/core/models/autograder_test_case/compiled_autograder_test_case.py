@@ -74,11 +74,13 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         test_checks_compilation()
         get_type_str()
     """
+    class Meta:
+        abstract = True
+
     objects = PolymorphicManagerWithValidateOnCreate()
 
     # Fat interface fields
     compiler = ag_fields.ShortStringField(
-        blank=True,
         choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS))
 
     compiler_flags = ag_fields.StringArrayField(
@@ -90,7 +92,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         default=list, blank=True, strip_strings=False)
 
     executable_name = ag_fields.ShortStringField(
-        blank=True, validators=[ut.check_user_provided_filename],
+        validators=[ut.check_user_provided_filename],
         default="compiled_program")
 
     def test_checks_compilation(self):
