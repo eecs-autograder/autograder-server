@@ -44,7 +44,7 @@ class CourseSerializerTestCase(SerializerTestCase):
         self.course = obj_ut.create_dummy_courses()
 
     def test_serialize_course_all_fields(self):
-        user = obj_ut.create_dummy_users()
+        user = obj_ut.create_dummy_user()
         self.course.add_course_admins(user)
 
         expected = {
@@ -90,13 +90,13 @@ class SemesterSerializerTestCase(SerializerTestCase):
         self.course = obj_ut.create_dummy_courses()
         self.semester = obj_ut.create_dummy_semesters(self.course)
 
-        self.staff = obj_ut.create_dummy_users()
+        self.staff = obj_ut.create_dummy_user()
         self.semester.add_semester_staff(self.staff)
 
-        self.admin = obj_ut.create_dummy_users()
+        self.admin = obj_ut.create_dummy_user()
         self.course.add_course_admins(self.admin)
 
-        self.enrolled_student = obj_ut.create_dummy_users()
+        self.enrolled_student = obj_ut.create_dummy_user()
         self.semester.add_enrolled_students(self.enrolled_student)
 
     # def test_serialize_semester_all_fields_is_staff(self):
@@ -449,7 +449,7 @@ class SubmissionSerializerTestCase(SerializerTestCase):
         self.project = obj_ut.create_dummy_projects(self.semester)
         self.project.required_student_files = ['spam.cpp']
 
-        self.member = obj_ut.create_dummy_users()
+        self.member = obj_ut.create_dummy_user()
 
         self.semester.add_enrolled_students(self.member)
 

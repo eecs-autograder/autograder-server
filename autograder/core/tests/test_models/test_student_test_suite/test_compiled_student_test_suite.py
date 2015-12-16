@@ -43,10 +43,14 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
         super().setUp()
 
         self.test_file_pattern = 'test_*.cpp'
-        self.project = obj_ut.build_project(project_kwargs={
-            'allow_submissions_from_non_enrolled_students': True,
-            'expected_student_file_patterns': [(self.test_file_pattern, 1, 3)],
-        })
+        self.group = obj_ut.build_submission_group(
+            project_kwargs={
+                'allow_submissions_from_non_enrolled_students': True,
+                'expected_student_file_patterns': [
+                    (self.test_file_pattern, 1, 3)],
+            }
+        )
+        self.project = self.group.project
         for file_ in PROJECT_FILES:
             self.project.add_project_file(file_)
 
@@ -66,8 +70,6 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 file_.name for file_ in BUGGY_IMPLEMENTATIONS]
         )
 
-        self.group = SubmissionGroup.objects.validate_and_create(
-            members=['steve'], project=self.project)
         # self.submission = Submission.objects.validate_and_create(
         #     submission_group=self.group, submitted_files=STUDENT_TESTS)
 

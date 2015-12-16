@@ -15,7 +15,7 @@ class GetSemesterRequestTestCase(RequestHandlerTestCase):
     def setUp(self):
         super().setUp()
 
-        self.user = obj_ut.create_dummy_users()
+        self.user = obj_ut.create_dummy_user()
 
         self.course = obj_ut.create_dummy_courses()
         self.semester = obj_ut.create_dummy_semesters(self.course)
@@ -121,7 +121,7 @@ class ListSemestersRequestTestCase(RequestHandlerTestCase):
 
         self.maxDiff = None
 
-        self.user = obj_ut.create_dummy_users()
+        self.user = obj_ut.create_dummy_user()
 
         self.course1 = obj_ut.create_dummy_courses()
         self.semesters1 = obj_ut.create_dummy_semesters(self.course1, 2)
@@ -228,7 +228,7 @@ class PatchSemesterTestCase(RequestHandlerTestCase):
     def setUp(self):
         super().setUp()
 
-        self.admin = obj_ut.create_dummy_users()
+        self.admin = obj_ut.create_dummy_user()
         self.staff = obj_ut.create_dummy_users(5)
         self.students = obj_ut.create_dummy_users(4)
 
@@ -239,10 +239,10 @@ class PatchSemesterTestCase(RequestHandlerTestCase):
 
         self.course.add_course_admins(self.admin)
 
-        self.enrolled = obj_ut.create_dummy_users()
+        self.enrolled = obj_ut.create_dummy_user()
         self.semester.add_enrolled_students(self.enrolled)
 
-        self.nobody = obj_ut.create_dummy_users()
+        self.nobody = obj_ut.create_dummy_user()
 
     def test_valid_add_staff_members(self):
         new_staff = obj_ut.create_dummy_users(2)
@@ -443,7 +443,7 @@ class AddSemesterTestCase(RequestHandlerTestCase):
     def setUp(self):
         super().setUp()
 
-        self.admin = obj_ut.create_dummy_users()
+        self.admin = obj_ut.create_dummy_user()
         self.course = obj_ut.create_dummy_courses()
         self.course.add_course_admins(self.admin)
 
@@ -473,7 +473,7 @@ class AddSemesterTestCase(RequestHandlerTestCase):
         semester_name = 'spam'
 
         # Staff member (non-admin)
-        staff = obj_ut.create_dummy_users()
+        staff = obj_ut.create_dummy_user()
         new_sem = obj_ut.create_dummy_semesters(self.course)
         new_sem.add_semester_staff(staff)
 
@@ -485,7 +485,7 @@ class AddSemesterTestCase(RequestHandlerTestCase):
             Semester.objects.get(name=semester_name, course=self.course)
 
         # Enrolled student
-        student = obj_ut.create_dummy_users()
+        student = obj_ut.create_dummy_user()
         new_sem.add_enrolled_students(student)
 
         response = _add_semester_request(
@@ -496,7 +496,7 @@ class AddSemesterTestCase(RequestHandlerTestCase):
             Semester.objects.get(name=semester_name, course=self.course)
 
         # Nobody user
-        nobody = obj_ut.create_dummy_users()
+        nobody = obj_ut.create_dummy_user()
         response = _add_semester_request(
             self.course.pk, semester_name, nobody)
 

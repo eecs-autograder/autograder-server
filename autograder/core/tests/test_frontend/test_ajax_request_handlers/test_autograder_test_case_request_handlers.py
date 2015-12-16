@@ -22,10 +22,10 @@ class _SetUpBase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.admin = obj_ut.create_dummy_users()
-        self.staff = obj_ut.create_dummy_users()
-        self.enrolled = obj_ut.create_dummy_users()
-        self.nobody = obj_ut.create_dummy_users()
+        self.admin = obj_ut.create_dummy_user()
+        self.staff = obj_ut.create_dummy_user()
+        self.enrolled = obj_ut.create_dummy_user()
+        self.nobody = obj_ut.create_dummy_user()
 
         self.course = obj_ut.create_dummy_courses()
         self.semester = obj_ut.create_dummy_semesters(self.course)

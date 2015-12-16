@@ -27,7 +27,7 @@ class _SetUpBase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.admin = obj_ut.create_dummy_users()
+        self.admin = obj_ut.create_dummy_user()
 
         self.course = obj_ut.create_dummy_courses()
         self.semester = obj_ut.create_dummy_semesters(self.course)
@@ -35,13 +35,13 @@ class _SetUpBase(TemporaryFilesystemTestCase):
 
         self.course.add_course_admins(self.admin)
 
-        self.staff = obj_ut.create_dummy_users()
+        self.staff = obj_ut.create_dummy_user()
         self.project.semester.add_semester_staff(self.staff)
 
-        self.enrolled = obj_ut.create_dummy_users()
+        self.enrolled = obj_ut.create_dummy_user()
         self.project.semester.add_enrolled_students(self.enrolled)
 
-        self.nobody = obj_ut.create_dummy_users()
+        self.nobody = obj_ut.create_dummy_user()
 
 
 class AddProjectRequestTestCase(_SetUpBase):

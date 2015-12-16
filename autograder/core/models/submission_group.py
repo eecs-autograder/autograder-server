@@ -4,6 +4,7 @@ from django.db import models, transaction, connection
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 
 from autograder.core.models import Project
 from autograder.core.models.utils import (
@@ -15,14 +16,24 @@ import autograder.core.shared.utilities as ut
 class SubmissionGroupManager(ManagerWithValidateOnCreate):
     def validate_and_create(self, **kwargs):
         """
-        Overridden for thread-safety with other attempts to create
-        SubmissionGroups.
-        """
-        with transaction.atomic(), connection.cursor() as c:
-            c.execute('LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE'.format(
-                SubmissionGroup.objects.model._meta.db_table))
+        The 'members' argument to this function should be a
+        list of usernames, NOT Users.
 
-            return super().validate_and_create(**kwargs)
+        This function is concurrency-safe with other attempts
+        to create SubmissionGroups.
+        """
+        with transaction.atomic():
+            users = User.objects.select_for_update().filter(
+                username__in=kwargs.pop('members')).all()
+        # with transaction.atomic(), connection.cursor() as c:
+        #     c.execute('LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE'.format(
+        #         SubmissionGroup.objects.model._meta.db_table))
+
+            group = self.model(**kwargs)
+            group.save()
+            group.members.add(*users)
+            group.full_clean()
+            return group
 
 
 class SubmissionGroup(ModelValidatableOnSave):
@@ -31,14 +42,11 @@ class SubmissionGroup(ModelValidatableOnSave):
     to a particular project.
 
     Fields:
-        members -- The names of Users that belong to this submission group.
+        members -- The Users that belong to this submission group.
             This list must contain at least one member and no
             more than project.max_group_size members.
             A User can only be a member of one submission group per project.
-            This field is READ ONLY.
             This field is REQUIRED.
-            IMPORTANT: This field cannot be queried over directly. Use the
-                provided static methods instead.
 
         project -- The project that this SubmissionGroup belongs to.
             This field is REQUIRED.
@@ -50,8 +58,14 @@ class SubmissionGroup(ModelValidatableOnSave):
 
         num_submissions_with_full_feedback -- TODO
 
+    Related object fields:
+        submissions -- The Submissions that this group has made for the
+            associated Project.
+
+    Properties:
+        member_names -- The usernames of the members of this SubmissionGroup.
+
     Static methods:
-        get_groups_for_user()
         get_group()
 
     Overridden methods:
@@ -60,58 +74,38 @@ class SubmissionGroup(ModelValidatableOnSave):
     """
     objects = SubmissionGroupManager()
 
-    # -------------------------------------------------------------------------
-
-    @staticmethod
-    def get_groups_for_user(username):
-        """
-        Returns a queryset of all SubmissionGroups that the user
-        with the given username is a member of.
-        """
-        return SubmissionGroup.objects.filter(_members__contains=[username])
-
-    # @staticmethod
-    # def get_project_group_for_user(username, project):
-    #     """
-    #     Returns the SubmissionGroup that the user belongs to for the
-    #     given project. Raises ObjectDoesNotExist if no such SubmissionGroup
-    #     exists.
-    #     """
-    #     return SubmissionGroup.objects.get(
-    #         _members__contains=[username], project=project)
-
-    @staticmethod
-    def get_group(usernames, project):
-        """
-        Returns the SubmissionGroup that contains the specified users for
-        the given project.
-        Raises ObjectDoesNotExist if no such SubmissionGroup
-        exists.
-        """
-        return SubmissionGroup.objects.get(
-            _members__contains=usernames, project=project)
-
-    # -------------------------------------------------------------------------
-
-    @property
-    def members(self):
-        return tuple(self._members)
-
-    _members = ArrayField(models.CharField(max_length=30))
+    members = models.ManyToManyField(User, related_name="groups_is_member_of")
     project = models.ForeignKey(Project, related_name="submission_groups")
     extended_due_date = models.DateTimeField(
         null=True, default=None, blank=True)
 
+    @property
+    def member_names(self):
+        return tuple(self._members)
+
     # -------------------------------------------------------------------------
 
-    def __init__(self, *args, **kwargs):
-        members = kwargs.pop('members', None)
-        if members is None:  # and '_members' in kwargs:
-            # __init__ is being called by the actual database
-            return super().__init__(*args, **kwargs)
+    # # TODO: phase out
+    # @staticmethod
+    # def get_group(user, project):
+    #     """
+    #     Returns the SubmissionGroup that contains the specified user for
+    #     the given project.
+    #     Raises ObjectDoesNotExist if no such SubmissionGroup
+    #     exists.
+    #     """
+    #     return user.groups_is_member_of.get(project=project)
 
-        # __init__ is being called by the user
-        return super().__init__(*args, _members=members, **kwargs)
+    # -------------------------------------------------------------------------
+
+    # def __init__(self, *args, **kwargs):
+    #     members = kwargs.pop('members', None)
+    #     if members is None:  # and '_members' in kwargs:
+    #         # __init__ is being called by the actual database
+    #         return super().__init__(*args, **kwargs)
+
+    #     # __init__ is being called by the user
+    #     return super().__init__(*args, _members=members, **kwargs)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -121,10 +115,7 @@ class SubmissionGroup(ModelValidatableOnSave):
             os.makedirs(submission_group_dir)
 
     def clean(self):
-        if self.pk:
-            return
-
-        num_members = len(self._members)
+        num_members = self.members.count()
         if num_members < self.project.min_group_size:
             raise ValidationError({
                 'members': (
@@ -145,13 +136,14 @@ class SubmissionGroup(ModelValidatableOnSave):
                         num_members, self.project.name,
                         self.project.max_group_size))})
 
-        self._clean_group_members_for_enrollment(self._members)
+        self._clean_group_members_for_enrollment(self.members.all())
 
-        for member in self._members:
-            current_memberships = SubmissionGroup.objects.filter(
-                project=self.project, _members__contains=[member])
-
-            if current_memberships.count():
+        for member in self.members.all():
+            # current_memberships =
+            # SubmissionGroup.objects.filter(
+            #     project=self.project, _members__contains=[member])
+            if member.groups_is_member_of.filter(
+                    project=self.project).exclude(pk=self.pk).exists():
                 raise ValidationError({
                     'members': (
                         "User {} is already part of a submission "

@@ -59,52 +59,49 @@ class CourseAdminUserTestCase(TemporaryFilesystemTestCase):
         super().setUp()
 
         self.course = obj_ut.create_dummy_courses()
-        self.user = obj_ut.create_dummy_users()
+        self.user = obj_ut.create_dummy_user()
 
-    def test_valid_add_course_admins(self):
-        self.course.add_course_admins(self.user)
+    def test_valid_add_administrators(self):
+        self.course.add_administrators(self.user)
 
         loaded = Course.objects.get(name=self.course.name)
-        self.assertTrue(loaded.is_course_admin(self.user))
+        self.assertTrue(loaded.is_administrator(self.user))
 
-    def test_add_course_admins_merge_duplicates(self):
-        self.course.add_course_admins(self.user)
+    def test_add_administrators_merge_duplicates(self):
+        self.course.add_administrators(self.user)
 
-        user2 = obj_ut.create_dummy_users()
-        self.course.add_course_admins(self.user, user2)
+        user2 = obj_ut.create_dummy_user()
+        self.course.add_administrators(self.user, user2)
 
         loaded = Course.objects.get(name=self.course.name)
         self.assertEqual(
-            (self.user.username, user2.username), loaded.course_admin_names)
+            (self.user.username, user2.username), loaded.administrator_names)
 
-    def test_valid_remove_course_admin(self):
-        self.course.add_course_admins(self.user)
-        self.assertTrue(self.course.is_course_admin(self.user))
+    def test_valid_remove_administrator(self):
+        self.course.add_administrators(self.user)
+        self.assertTrue(self.course.is_administrator(self.user))
 
-        self.course.remove_course_admin(self.user)
+        self.course.remove_administrator(self.user)
 
         loaded = Course.objects.get(name=self.course.name)
-        self.assertFalse(loaded.is_course_admin(self.user))
+        self.assertFalse(loaded.is_administrator(self.user))
 
-    def test_exception_on_remove_non_course_admin_user(self):
-        with self.assertRaises(ValidationError):
-            self.course.remove_course_admin(self.user)
+    # def test_exception_on_remove_non_administrator_user(self):
+    #     with self.assertRaises(ValidationError):
+    #         self.course.remove_administrator(self.user)
 
-    def test_is_course_admin(self):
-        self.assertFalse(self.course.is_course_admin(self.user))
-        self.assertFalse(self.course.is_course_admin(self.user.username))
+    def test_is_administrator(self):
+        self.assertFalse(self.course.is_administrator(self.user))
 
-        self.course.add_course_admins(self.user)
-
-        self.assertTrue(self.course.is_course_admin(self.user))
-        self.assertTrue(self.course.is_course_admin(self.user.username))
+        self.course.add_administrators(self.user)
+        self.assertTrue(self.course.is_administrator(self.user))
 
     def test_get_courses_for_user(self):
         self.course.delete()
         courses = obj_ut.create_dummy_courses(10)
         subset = [courses[2], courses[5], courses[7]]
         for course in subset:
-            course.add_course_admins(self.user)
+            course.add_administrators(self.user)
 
         courses_queryset = Course.get_courses_for_user(self.user)
         self.assertCountEqual(courses_queryset, subset)

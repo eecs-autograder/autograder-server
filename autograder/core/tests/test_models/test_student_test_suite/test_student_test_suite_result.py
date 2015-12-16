@@ -18,12 +18,15 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
 
         self.maxDiff = None
 
-        self.project = obj_ut.build_project({
-            'expected_student_file_patterns': [
-                Project.FilePatternTuple('test_*.cpp', 1, 3)
-            ],
-            'allow_submissions_from_non_enrolled_students': True
-        })
+        self.group = obj_ut.build_submission_group(
+            project_kwargs={
+                'expected_student_file_patterns': [
+                    Project.FilePatternTuple('test_*.cpp', 1, 3)
+                ],
+                'allow_submissions_from_non_enrolled_students': True
+            }
+        )
+        self.project = self.group.project
 
         proj_files = [
             SimpleUploadedFile('correct.cpp', b'blah'),
@@ -32,9 +35,6 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
         ]
         for file_ in proj_files:
             self.project.add_project_file(file_)
-
-        self.group = SubmissionGroup.objects.validate_and_create(
-            members=['steve'], project=self.project)
 
         self.suite = StudentTestSuiteFactory.validate_and_create(
             'compiled_student_test_suite',

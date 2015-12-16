@@ -5,6 +5,7 @@ import functools
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.auth.models import User
 
 from autograder.core.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
@@ -22,20 +23,23 @@ class Course(ModelValidatableOnSave):
         name -- The name of this course.
                 Must be unique, non-empty and non-null.
 
-        semesters -- A django manager object that can be used to query
-            Semesters that belong to this Course.
-
-        course_admin_names -- A list of usernames that are administrators for
+        administrators -- The Users that are administrators for
             this Course.
-            This field is READ ONLY.
+
+    Related object fields:
+        semesters -- The group of Semesters that belong to this Course.
+
+    Properties:
+        administrator_names -- A list of usernames of Users
+            that are administrators for this Course.
 
     Static methods:
         get_courses_for_user()
 
     Instance methods:
-        add_course_admin()
-        remove_course_admin()
-        is_course_admin()
+        add_administrator()
+        remove_administrator()
+        is_administrator()
 
     Overridden member functions:
         save()
@@ -49,64 +53,72 @@ class Course(ModelValidatableOnSave):
     name = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, unique=True)
 
-    @property
-    def course_admin_names(self):
-        return tuple(self._course_admin_names)
+    administrators = models.ManyToManyField(
+        User, related_name='courses_is_admin_for')
 
-    _course_admin_names = ArrayField(
+    @property
+    def administrator_names(self):
+        return tuple(user.username for user in self.administrators.all())
+
+    _administrator_names = ArrayField(
         models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
         blank=True, default=list)
 
     # -------------------------------------------------------------------------
 
+    # TODO: phase out
     @staticmethod
     def get_courses_for_user(user):
         """
         Returns a QuerySet of Courses for which the given user is an
         administrator, sorted by Course name.
         """
-        return Course.objects.filter(
-            _course_admin_names__contains=[user.username]).order_by('name')
+        return user.courses_is_admin_for.order_by('name')
+        # return Course.objects.filter(
+        #     _administrator_names__contains=[user.username]).order_by('name')
 
     # -------------------------------------------------------------------------
 
-    def add_course_admins(self, *users):
+    def add_administrators(self, *users):
         """
         Adds the given Users to this Course's list of administrators.
         Users that are already in this list are ignored.
         """
-        for user in users:
-            if not self.is_course_admin(user):
-                self._course_admin_names.append(user.username)
-        self.save()
+        self.administrators.add(*users)
+        # for user in users:
+        #     if not self.is_administrator(user):
+        #         self._administrator_names.append(user.username)
+        # self.save()
 
-    def remove_course_admin(self, user):
+    def remove_administrator(self, user):
         """
         Removes the given User from this Course's list of administrators.
         Raises ValidationError if the User is not an administrator
         for this course.
         """
-        if not self.is_course_admin(user):
-            raise ValidationError(
-                "This User is not an administrator for this Course")
+        self.administrators.remove(user)
+        # if not self.is_administrator(user):
+        #     raise ValidationError(
+        #         "This User is not an administrator for this Course")
 
-        self._course_admin_names.remove(user.username)
-        self.save()
+        # self._administrator_names.remove(user.username)
+        # self.save()
 
-    def is_course_admin(self, user):
+    def is_administrator(self, user):
         """
         Returns True if the given user (can be a User object or string
         username) is an administrator for this Course, False otherwise.
         """
-        @functools.singledispatch
-        def _is_course_admin_impl(user, names):
-            return user.username in names
+        return self.administrators.filter(pk=user.pk).exists()
+        # @functools.singledispatch
+        # def _is_administrator_impl(user, names):
+        #     return user.username in names
 
-        @_is_course_admin_impl.register(str)
-        def _(username, names):
-            return username in names
+        # @_is_administrator_impl.register(str)
+        # def _(username, names):
+        #     return username in names
 
-        return _is_course_admin_impl(user, self._course_admin_names)
+        # return _is_administrator_impl(user, self._administrator_names)
 
     # -------------------------------------------------------------------------
 

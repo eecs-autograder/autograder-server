@@ -256,7 +256,7 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             compilation_standard_output='win',
             compilation_standard_error_output='')
 
-        student = obj_ut.create_dummy_users()
+        student = obj_ut.create_dummy_user()
         self.semester.add_enrolled_students(student)
         self.submission_group = SubmissionGroup.objects.validate_and_create(
             members=[student.username], project=self.project)

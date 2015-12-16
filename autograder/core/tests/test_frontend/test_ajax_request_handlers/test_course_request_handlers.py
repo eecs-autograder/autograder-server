@@ -15,7 +15,7 @@ class CourseRequestHandlerTestCase(RequestHandlerTestCase):
         self.courses = obj_ut.create_dummy_courses(5)
 
     def test_get_course_as_admin(self):
-        course_admin = obj_ut.create_dummy_users()
+        course_admin = obj_ut.create_dummy_user()
         course = self.courses[2]
 
         course.add_course_admins(course_admin)
@@ -33,7 +33,7 @@ class CourseRequestHandlerTestCase(RequestHandlerTestCase):
             })
 
     def test_get_course_that_has_semesters(self):
-        course_admin = obj_ut.create_dummy_users()
+        course_admin = obj_ut.create_dummy_user()
         course = self.courses[0]
         course.add_course_admins(course_admin)
 
@@ -57,19 +57,19 @@ class CourseRequestHandlerTestCase(RequestHandlerTestCase):
             })
 
     def test_get_course_permission_denied(self):
-        user = obj_ut.create_dummy_users()
+        user = obj_ut.create_dummy_user()
         response = _get_course_request(self.courses[0].pk, user)
 
         self.assertEqual(403, response.status_code)
 
     def test_get_course_not_found(self):
-        user = obj_ut.create_dummy_users()
+        user = obj_ut.create_dummy_user()
         response = _get_course_request(42, user)
 
         self.assertEqual(404, response.status_code)
 
     def test_list_courses_course_admin(self):
-        course_admin = obj_ut.create_dummy_users()
+        course_admin = obj_ut.create_dummy_user()
 
         subset = sorted(
             (self.courses[1], self.courses[4]), key=lambda obj: obj.name)
@@ -91,7 +91,7 @@ class CourseRequestHandlerTestCase(RequestHandlerTestCase):
         self.assertJSONObjsEqual(expected, actual)
 
     def test_list_courses_empty_list_non_admin(self):
-        user = obj_ut.create_dummy_users()
+        user = obj_ut.create_dummy_user()
 
         response = _list_courses_request(user)
 

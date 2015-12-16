@@ -91,6 +91,7 @@ class SubmissionGroupRequestHandler(LoginRequiredView):
         project = Project.objects.get(pk=project_id)
         usernames = request.GET.getlist('usernames')
 
+        # TODO: FIXME
         group = SubmissionGroup.get_group(usernames, project)
         return group
 

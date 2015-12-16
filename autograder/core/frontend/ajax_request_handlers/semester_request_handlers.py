@@ -141,12 +141,12 @@ class ListSemesters(LoginRequiredView):
         data = {
             'data': [
                 semester_to_json(semester)
-                for semester in staff_semesters.all()
+                for semester in staff_semesters
             ]
         }
 
         data['data'] += [
-            semester_to_json(semester) for semester in enrolled_semesters.all()
+            semester_to_json(semester) for semester in enrolled_semesters
         ]
 
         return JsonResponse(data)

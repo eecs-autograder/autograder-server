@@ -29,10 +29,10 @@ class _SetUpBase(RequestHandlerTestCase):
 
         self.maxDiff = None
 
-        self.admin = obj_ut.create_dummy_users()
-        self.staff = obj_ut.create_dummy_users()
-        self.enrolled = obj_ut.create_dummy_users()
-        self.nobody = obj_ut.create_dummy_users()
+        self.admin = obj_ut.create_dummy_user()
+        self.staff = obj_ut.create_dummy_user()
+        self.enrolled = obj_ut.create_dummy_user()
+        self.nobody = obj_ut.create_dummy_user()
         test_feedback_config = fbc.AutograderTestCaseFeedbackConfiguration(
             return_code_feedback_level=(
                 fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
@@ -173,7 +173,7 @@ class AddSubmissionRequestTestCase(_SetUpBase):
             self.assertJSONObjsEqual(expected, actual)
 
     def test_invalid_user_not_in_group(self):
-        new_user = obj_ut.create_dummy_users()
+        new_user = obj_ut.create_dummy_user()
         self.semester.add_enrolled_students(new_user)
         group = SubmissionGroup.objects.validate_and_create(
             members=[self.enrolled.username], project=self.project)
@@ -555,7 +555,7 @@ class GetSubmissionRequestTestCase(_SetUpBase):
         self.assertJSONObjsEqual(expected, actual)
 
     def test_permission_denied(self):
-        new_user = obj_ut.create_dummy_users()
+        new_user = obj_ut.create_dummy_user()
         self.semester.add_enrolled_students(new_user)
 
         group = SubmissionGroup.objects.validate_and_create(
@@ -615,7 +615,7 @@ def _get_submission_request(submission_id, user):
 #         self.assertEqual(404, response.status_code)
 
 #     def test_permission_denied(self):
-#         new_user = obj_ut.create_dummy_users()
+#         new_user = obj_ut.create_dummy_user()
 #         self.semester.add_enrolled_students(new_user)
 
 #         for user in (new_user, self.nobody, self.enrolled):
@@ -679,7 +679,7 @@ class GetSubmittedFileRequestTestCase(_SetUpBase):
         self.assertEqual(404, response.status_code)
 
     def test_permission_denied(self):
-        new_user = obj_ut.create_dummy_users()
+        new_user = obj_ut.create_dummy_user()
         self.semester.add_enrolled_students(new_user)
         for user in (new_user, self.nobody):
             response = _get_submitted_file_request(

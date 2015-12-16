@@ -252,11 +252,11 @@ class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
             allow_submissions_from_non_enrolled_students=True)
 
     def test_get_most_recent_submissions_normal(self):
-        usernames = ["recent_submission_user{}".format(i) for i in range(10)]
+        users = obj_ut.create_dummy_users(10)
         groups = [
             SubmissionGroup.objects.validate_and_create(
                 members=[username], project=self.project)
-            for username in usernames
+            for username in users
         ]
         expected = []
         for group in groups:
@@ -272,9 +272,15 @@ class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
             key=sort_key)
         self.assertEqual(sorted(expected, key=sort_key), actual)
 
+    import unittest
+    @unittest.skip('todo')
+    def test_get_most_recent_submissions_same_timestamp(self):
+        self.fail()
+
     def test_get_most_recent_submissions_group_has_no_submissions(self):
+        user = obj_ut.create_dummy_user()
         group = SubmissionGroup.objects.validate_and_create(
-            members=['steve'], project=self.project)
-        self.assertSequenceEqual([], group.submissions.all())
-        self.assertSequenceEqual(
+            members=[user.username], project=self.project)
+        self.assertCountEqual([], group.submissions.all())
+        self.assertCountEqual(
             [], Submission.get_most_recent_submissions(self.project))

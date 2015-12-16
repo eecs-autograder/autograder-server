@@ -3,7 +3,7 @@ import base64
 
 from django.contrib.auth.models import User
 
-from autograder.core.models import Course, Semester, Project
+from autograder.core.models import Course, Semester, Project, SubmissionGroup
 
 
 def _get_unique_id():
@@ -12,12 +12,11 @@ def _get_unique_id():
     return user_id.decode('utf-8')
 
 
-def create_dummy_users(num_users=1):
-    """
-    Returns a list containing the specified number of dummy users.
-    If num_users is 1, the dummy user is returned on its own
-    rather than as a list.
-    """
+def create_dummy_user():
+    return create_dummy_users(1)[0]
+
+
+def create_dummy_users(num_users):
     users = []
 
     for i in range(num_users):
@@ -28,8 +27,6 @@ def create_dummy_users(num_users=1):
             username='usr{}'.format(user_id),
             email='jameslp@umich.edu',
             password='pw{}'.format(user_id))
-        if num_users == 1:
-            return user
         users.append(user)
     return users
 
@@ -108,7 +105,27 @@ def build_project(project_kwargs=None, semester_kwargs=None, course_kwargs=None)
     if 'semester' not in project_kwargs:
         project_kwargs['semester'] = semester
 
-    return Project.objects.validate_and_create(**project_kwargs)
+    project = Project.objects.validate_and_create(**project_kwargs)
+    return project  # , semester, course
+
+
+def build_submission_group(num_members=1, group_kwargs=None, project_kwargs=None,
+                           semester_kwargs=None, course_kwargs=None):
+    if group_kwargs is None:
+        group_kwargs = {}
+
+    project = build_project(
+        project_kwargs=project_kwargs, semester_kwargs=semester_kwargs,
+        course_kwargs=course_kwargs)
+
+    if 'project' not in group_kwargs:
+        group_kwargs['project'] = project
+    if 'members' not in group_kwargs:
+        group_kwargs['members'] = [
+            user.username for user in create_dummy_users(num_members)]
+
+    group = SubmissionGroup.objects.validate_and_create(**group_kwargs)
+    return group
 
 # def create_dummy_compiled_autograder_tests(project, num_tests=1):
 #     """
