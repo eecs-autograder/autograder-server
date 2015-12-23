@@ -82,23 +82,47 @@ def create_dummy_projects(semester, num_projects=1):
     return projects
 
 
-def build_project(project_kwargs=None, semester_kwargs=None, course_kwargs=None):
-    if project_kwargs is None:
-        project_kwargs = {}
-    if semester_kwargs is None:
-        semester_kwargs = {}
+def build_course(course_kwargs=None):
     if course_kwargs is None:
         course_kwargs = {}
 
     if 'name' not in course_kwargs:
         course_kwargs['name'] = 'course{}'.format(_get_unique_id())
+
+    admins = course_kwargs.pop('administrators', [])
     course = Course.objects.validate_and_create(**course_kwargs)
+    course.administrators.add(*admins)
+
+    return course
+
+
+def build_semester(semester_kwargs=None, course_kwargs=None):
+    course = build_course(course_kwargs=course_kwargs)
+
+    if semester_kwargs is None:
+        semester_kwargs = {}
 
     if 'name' not in semester_kwargs:
         semester_kwargs['name'] = 'semester{}'.format(_get_unique_id())
     if 'course' not in semester_kwargs:
         semester_kwargs['course'] = course
+
+    staff = semester_kwargs.pop('staff', [])
     semester = Semester.objects.validate_and_create(**semester_kwargs)
+
+    semester.staff.add(*staff)
+
+    semester.validate_and_save()
+    return semester
+
+
+def build_project(project_kwargs=None, semester_kwargs=None,
+                  course_kwargs=None):
+    semester = build_semester(
+        semester_kwargs=semester_kwargs, course_kwargs=course_kwargs)
+
+    if project_kwargs is None:
+        project_kwargs = {}
 
     if 'name' not in project_kwargs:
         project_kwargs['name'] = 'project{}'.format(_get_unique_id())
@@ -120,9 +144,14 @@ def build_submission_group(num_members=1, group_kwargs=None, project_kwargs=None
 
     if 'project' not in group_kwargs:
         group_kwargs['project'] = project
+
     if 'members' not in group_kwargs:
-        group_kwargs['members'] = [
-            user.username for user in create_dummy_users(num_members)]
+        members = create_dummy_users(num_members)
+        project.semester.enrolled_students.add(*members)
+        group_kwargs['members'] = [user.username for user in members]
+
+    project.max_group_size = num_members
+    project.save()
 
     group = SubmissionGroup.objects.validate_and_create(**group_kwargs)
     return group

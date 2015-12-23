@@ -135,7 +135,7 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
     def test_some_buggy_implementations_exposed(self):
         self.submission = Submission.objects.validate_and_create(
             submission_group=self.group, submitted_files=[
-                STUDENT_TEST_RETURN_42])
+                STUDENT_TEST_RETURN_42, STUDENT_TEST_THAT_CATCHES_NONE])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
         result.save()
@@ -151,6 +151,7 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 STUDENT_TEST_THAT_CATCHES_NONE])
 
         result = self.suite.evaluate(self.submission, self.sandbox)
+        self.assertCountEqual(result.buggy_implementations_exposed, [])
         result.save()
         result = StudentTestSuiteResult.objects.get(pk=result.pk)
 

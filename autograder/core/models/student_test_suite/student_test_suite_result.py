@@ -131,6 +131,9 @@ class StudentTestSuiteResult(models.Model):
             ...
         ],
 
+        points_possible: <points>,
+        points_awarded: <points>,
+
         detailed_results: [
             {
                 //** NOTE: Some of the following may be ommitted **//

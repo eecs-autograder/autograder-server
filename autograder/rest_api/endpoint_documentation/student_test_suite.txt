@@ -1,0 +1,48 @@
+/student_test_suites/<id>/
+GET: Returns the specified student test suite.
+Access rules:
+    - If the user making the request is not a course administrator or semester
+        staff member, then 403 forbidden will be returned.
+
+Response format:
+{
+    "type": <polymorphic type identifier string>,
+    "id": <id>,
+
+    // These fields are present for all polymorphic types
+    "name": <string>,
+    "student_test_case_filename_pattern": <string>,
+    "correct_implementation_filename": <string>,
+    "buggy_implementation_filenames": [<string>, ...],
+    "implementation_file_alias": <string>,
+    "suite_resource_filenames": [<string>, ...],
+    "time_limit": <int>,
+    "points_per_buggy_implementation_exposed": <int>,
+
+    "feedback_configuration": <test suite feedback config object>,
+
+    // compiled_test suite fields
+    "compiler": <string>,
+    "compiler_flags": [<string>, ...],
+    "suite_resource_files_to_compile_together": [<string>, ...],
+
+    "urls": {
+        "self": "/student_test_suites/<id>/",
+        "project": "/projects/<id>/",
+    }
+}
+
+PATCH: Edits the specified student test suite.
+Access rules: 
+    - If the user making the request is not a course administrator, then 
+        403 forbidden will be returned.
+
+Request format: Same as POST /project/<id>/student_test_suites/, except that
+the "type" field may NOT be specified.
+
+Response format: Same as GET /student_test_suite/<id>/
+
+DELETE: Deletes the specified student test suite.
+Access rules: 
+    - If the user making the request is not a course administrator, then 
+        403 forbidden will be returned.

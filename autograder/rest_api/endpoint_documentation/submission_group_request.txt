@@ -1,0 +1,40 @@
+/submission_group_requests/<id>/
+GET: Returns the specified group request.
+Access rules:
+    - If the user making the request is not the request creator or one of the
+        invitees, then 403 Forbidden will be returned.
+
+Response format:
+{
+    "type": "submission_group_request",
+    "id": <id>,
+    "request_creator": <string username>,
+    "invited_members_to_acceptance": {
+        "<username>": <bool>,
+        ...
+    },
+    "project_name": <string>,
+    "urls": {
+        "self": "/submission_group_requests/<id>/",
+        "accept": "/submission_group_requests/<id>/accept/",
+        "reject": "/submission_group_requests/<id>/reject/",
+        "project": "/projects/<id>/"
+    }
+}
+
+DELETE: Rejects the submission group request by deleting it and sending
+notifications to the other users involved that the request was rejected.
+Access rules:
+    - The user making the request must either be the request creator or
+        one of the invitees, otherwise 403 Forbidden will be returned.
+
+/submission_group_requests/<id>/accept/
+POST: Marks the specified submission group request as accepted for the 
+user making the request. If all invited members have accepted the invitation,
+then the request will be deleted and replaced with a submission group.
+Notifications will also be sent to the users involved that the request was
+accepted.
+
+Access rules:
+    - If the user making this request is not one of the invited members, 
+        403 Forbidden will be returned.

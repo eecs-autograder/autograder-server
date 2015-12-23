@@ -1,0 +1,61 @@
+/submission_groups/<id>/
+Access rules for PATCH and DELETE:
+    - If the user making the request is not a course administrator, 403 
+        Forbidden will be returned.
+
+GET: Returns the submission_group with the specified id.
+Access rules:
+    - If the user making the request is not a course administrator, semester
+        staff member, or member of the group, 403 Forbidden will be returned.
+
+Response format:
+{
+    "type": "submission_group",
+    "id": <id>,
+    "members": [<username>, ...],
+    "extended_due_date": <datetime | null>,
+    "urls": {
+        "self": "/submission_groups/<id>/",
+        "project": "/projects/<id>/",
+        "submissions": "/submission_groups/<id>/submissions/"
+    }
+}
+
+PATCH: Edits the submission_group with the specified id.
+Request format:
+{
+    "members": [<username>, ...],
+    "extended_due_date": <datetime | null>,
+}
+
+Response format: Same as GET /submission_groups/<id>/
+
+DELETE: Deletes the specified submission group.
+
+--------------------------------------------------------------------------------
+
+/submission_groups/<id>/submissions/
+GET: Returns a list of submissions belonging to the specified submission_group
+Access rules:
+    - If the user making the request is not a course administrator, 
+        semester staff member, or member of the submission_group, then
+        403 Forbidden will be returned.
+
+Response format:
+{
+    "submissions": [
+        {
+            "timestamp": <timestamp>,
+            "url": "/submissions/<id>/"
+        },
+        ...
+    ]
+}
+
+POST: Adds a submission for the specified group.
+Access rules:
+    - If the user making the request is not a member of the submission_group,
+        403 Forbidden will be returned.
+
+Request format: The files being submitted should be attached to the 
+POST request. No other request content is needed.

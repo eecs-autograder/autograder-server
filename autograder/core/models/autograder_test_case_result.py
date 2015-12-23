@@ -74,6 +74,9 @@ class AutograderTestCaseResult(models.Model):
         compilation_succeeded -- Whether the program was compiled successfully.
 
     Instance methods:
+        TODO: getter functions that return points for various things,
+                have them take in a feedback configuration
+
         to_json()
     """
     # Using a string here instead of class to get around circular dependency

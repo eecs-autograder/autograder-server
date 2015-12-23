@@ -254,6 +254,13 @@ class StudentTestSuiteBaseTests(object):
 
     # -------------------------------------------------------------------------
 
+    def test_invalid_characters_in_implementation_file_alias(self):
+        # charset
+        # starts with .
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
     def test_exception_student_test_case_filename_pattern_not_in_project_expected_student_files(self):
         with self.assertRaises(ValidationError) as cm:
             StudentTestSuiteFactory.validate_and_create(

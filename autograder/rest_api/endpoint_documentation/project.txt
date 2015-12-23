@@ -1,0 +1,343 @@
+/projects/<id>/
+GET: Returns the project with the specified id.
+Access rules:
+    - If the user making the request is a course administrator or 
+        semester staff member, then all of the fields listed below
+        will be included in the response.
+    - If the user making the request is not a course administrator or
+        semester staff member and the project is marked as hidden 
+        (visible_to_students is false), then 403 Forbidden will be returned.
+    - If the user making the request is an enrolled student or
+        the user is not enrolled and the project is listed as open to 
+        non-enrolled students (allow_submissions_from_non_enrolled_students 
+        is true), then only the following fields will be included:
+            - type, id, name, closing_time, disallow_student_submissions,
+                min_group_size, max_group_size, required_student_files,
+                expected_student_file_patterns, url.self, url.semester
+
+Response format:
+{
+    "type": "project",
+    "id": <id>,
+    "name": <name>,
+    "visible_to_students": <bool>,
+    "closing_time": <timestamp>,
+    "disallow_student_submissions": <bool>,
+    "allow_submissions_from_non_enrolled_students": <bool>,
+    "min_group_size": <int>,
+    "max_group_size": <int>,
+    "required_student_files": [<filename>, ...],
+    "expected_student_file_patterns": [
+        {
+            "pattern": <string>,
+            "min_num_matches": <int>,
+            "max_num_matches": <int>
+        },
+        ...
+    ],
+    "urls": {
+        "self": "/projects/<id>/",
+        "semester": "/semesters/<semester id>/",
+        "uploaded_files": "/projects/<id>/uploaded_files/",
+    }
+}
+
+PATCH: Edits the project with the specified id.
+Access rules:
+    - If the user making the request is not a course administrator,
+        then 403 Forbidden will be returned.
+
+Request format:
+{
+    // Any of the following fields may be omitted
+    "name": <name>,
+    "visible_to_students": <bool>,
+    "closing_time": <timestamp>,
+    "disallow_student_submissions": <bool>,
+    "allow_submissions_from_non_enrolled_students": <bool>,
+    "min_group_size": <int>,
+    "max_group_size": <int>,
+    "required_student_files": [<filename>, ...],
+    "expected_student_file_patterns": [
+        {
+            "pattern": <string>,
+            "min_num_matches": <int>,
+            "max_num_matches": <int>
+        },
+        ...
+    ],
+}
+Note that if any of the above fields are omitted, their values will
+remain unchanged.
+
+--------------------------------------------------------------------------------
+
+/project/<id>/uploaded_files/
+GET: Returns a list of files that have been uploaded for this project.
+Access rules:
+    - If the user requesting the list of files is not a course
+        administrator or semester staff member, 403 Forbidden will 
+        be returned.
+
+Response format:
+{
+    "uploaded_files": [
+        {
+            "filename": <string>,
+            "size": <int>, // size is in bytes,
+            "url": "/project/<project id>/uploaded_files/<id>/"
+        },
+        ...
+    ]
+}
+
+POST: Adds the files attached to the request to the specified project.
+Access rules:
+    - If the user requesting to add the files is not a course administrator,
+        then 403 Forbidden will be returned.
+
+Response format:
+{
+    "success": [
+        {
+            "filename": <string>,
+            "size": <int>, // size is in bytes,
+            "url": "/project/<project id>/uploaded_files/<id>/"
+        }
+    ],
+    "failure": [
+        {
+            "filename": <string>,
+            "error_message": <string>
+        }
+    ]
+}
+
+
+/project/<project id>/uploaded_files/<id>/
+Access rules for PATCH and DELETE:
+    - If the user making the request is not a course administrator,
+        then 403 Forbidden will be returned.
+
+GET: Returns the the specified file.
+Access rules:
+    - If the user requesting the file contents is not a course administrator
+        or semester staff member, then 403 Forbidden will be returned.
+
+Response format:
+{
+    "type": "project_file",
+    "id": <id>,
+    "name": <string>,
+    "size": <int>, // size is in bytes
+    "content": <string>,
+    "urls": {
+        "self": "/projects/<project id>/<uploaded_files/<id>/",
+        "project": "/projects/<project id>/"
+    }    
+}
+
+PATCH: Updates the specified file.
+Request format:
+{
+    "name": <string>,
+    "content": <string>
+}
+If any of the above fields are omitted, their values will remain unchanged.
+
+DELETE: Deletes the specified file.
+
+--------------------------------------------------------------------------------
+
+/projects/<id>/autograder_test_cases/
+GET: Returns a list of autograder test cases that belong to this project.
+Access rules:
+    - If the user making this request is not a course administrator or
+        semester staff member, 403 Forbidden will be returned.
+
+Response format:
+{
+    "autograder_test_cases": [
+        {
+            "name": <string>,
+            "url": "/autograder_test_cases/<id>/"
+        },
+        ...
+    ]
+}
+
+POST: Creates a new autograder test case and adds it to this project.
+Access rules:
+    - If the user making this request is not a course administrator, 
+        403 Forbidden will be returned.
+
+Request format:
+{
+    "type": <polymorphic type identifier string>,
+
+    // These fields are present for all polymorphic types
+    "name": <string>,
+    "command_line_arguments": [<string>, ...],
+    "standard_input": <string>,
+    "test_resource_files": [<string>, ...],
+    "student_resource_files": [<string>, ...],
+    "time_limit": <int>,
+    "expected_return_code": <int>,
+    "expect_any_nonzero_return_code": <bool>,
+    "expected_standard_output": <string>,
+    "expected_standard_error_output": <string>,
+    "use_valgrind": <bool>,
+    "valgrind_flags": [<string>, ...],
+
+    "points_for_correct_return_code": <int>,
+    "points_for_correct_output": <int>,
+    "deduction_for_valgrind_errors": <int>,
+    "points_for_compilation_success": <int>,
+
+    "feedback_configuration": <test case feedback config object>,
+
+    // compiled_test_case fields
+    "compiler": <string>,
+    "compiler_flags": [<string>, ...],
+    "files_to_compile_together": [<string>, ...],
+    "executable_name": <string>,
+}
+
+Response format: Same as GET /autograder_test_cases/<id>/
+
+--------------------------------------------------------------------------------
+
+/projects/<id>/student_test_suites/
+GET: Returns a list of student test suites that belong to the specified project.
+Access rules:
+    - If the user making this request is not a course administrator or
+        semester staff member, 403 Forbidden will be returned.
+
+Response format:
+{
+    "student_test_suites": [
+        {
+            "name": <string>,
+            "url": "/student_test_suites/<id>/"
+        },
+        ...
+    ]
+}
+
+POST: Creates a new student test suite and adds it to the specified project.
+Access rules:
+    - If the user making this request is not a course administrator,
+        then 403 Forbidden will be returned.
+
+Request format:
+{
+    "type": <polymorphic type identifier string>,
+
+    "name": <string>,
+    "student_test_case_filename_pattern": <string>,
+    "correct_implementation_filename": <string>,
+    "buggy_implementation_filenames": [<string>, ...],
+    "implementation_file_alias": <string>,
+    "suite_resource_filenames": [<string>, ...],
+    "time_limit": <int>,
+    "points_per_buggy_implementation_exposed": <int>,
+
+    "feedback_configuration": <test suite feedback config object>,
+
+    // compiled_test suite fields
+    "compiler": <string>,
+    "compiler_flags": [<string>, ...],
+    "suite_resource_files_to_compile_together": [<string>, ...],
+}
+
+--------------------------------------------------------------------------------
+
+/projects/<id>/submission_groups/?page_size=<int>&page_num=<int>&group_contains=<username>, ...
+GET: The response content depends on who is making the request see below. 
+Access rules/Response content:
+    - If the user making the request is a course administrator or semester 
+        staff member, then all submission groups belonging to the project
+        as well as the submission group the user belongs to will be returned:
+    {
+        // If the user doesn't belong to a submission group for this project,
+        // "user_submission_group" will be null.
+        "user_submission_group": {
+            "type": "submission_group",
+            "id": <id>,
+            "members": [<username>, ...],
+            "extended_due_date": <datetime | null>,
+            "urls": {
+                "self": "/submission_groups/<id>/",
+                "project": "/projects/<id>/",
+                "submissions": "/submission_groups/<id>/submissions/"
+            }
+        },
+        "submission_groups": [
+            {
+                "members": [<string username>, ...],
+                "url": "/submission_groups/<group id>/"
+            }
+        ],
+        "total_num_submission_groups": <int>
+    }
+
+    - If the user making the request is an enrolled student, or if the user
+        is not enrolled but the project allows submissions from non-enrolled
+        students, the response will contain the same "user_submission_group"
+        field shown above and nothing else.
+    - In any other case, 403 Forbidden will be returned. 
+
+If the "group_contains" query parameter is specified, then the 
+"submission_groups" field will only include groups that contain all of the 
+specified usernames.
+By default, page_size is 20 and page_num is 1. These query parameters affect 
+the number of groups included in the "submission_groups" field.
+
+POST: Creates a new submission_group for this project.
+Access rules:
+    - If the user making this request is a course administrator, then
+        this request will override the project restrictions on group size.
+        Course administrators can create groups that they are not a member of.
+    - Otherwise, this request will only be accepted if the user is requesting
+        to create a group containing only themself (assuming the project 
+        allows 1-person groups)
+
+Request format:
+{
+    "members": [<string username>, ...]
+}
+
+Response format: Same as GET /submission_groups/<id>/
+
+--------------------------------------------------------------------------------
+
+/projects/<id>/submission_group_requests/
+GET: Returns a list of group requests for the specified project that involve
+the user making the request.
+Access rules: 
+    - If the user making the request doesn't have permission to view the 
+        specified project, then 403 Forbidden will be returned.
+
+Response format:
+{
+    "submission_group_requests": [
+        {
+            "request_creator": <string username>,
+            "url": "/submission_group_requests/<id>/"
+        },
+        ...
+    ]
+}
+
+POST: Creates a submission group request.
+Access rules: 
+    - If the user making the request doesn't have permission to view the 
+        specified project, then 403 Forbidden will be returned.
+
+Request format:
+{
+    "users_to_invite": [<string username>, ...]
+}
+
+Response format: Same as GET /submission_group_requests/<id>/
+

@@ -14,6 +14,7 @@ import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MEDIA_ROOT = os.path.join(BASE_DIR, 'filesystem/')
 
 _SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -44,10 +45,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'polymorphic',
+    'rest_framework',
 
     'autograder.core',
     'autograder.utilities',
     'autograder.security',
+    'autograder.rest_api',
 
     'autograder.core.tests.test_models.test_autograder_test_case'
 ]
@@ -57,8 +60,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
 
-    ('autograder.security.google_identity_toolkit_session_middleware.'
-        'GoogleIdentityToolkitSessionMiddleware'),
+    'autograder.security.authentication.google_identity_toolkit_session_middleware.GoogleIdentityToolkitSessionMiddleware',
 
     # 'django.contrib.auth.middleware.AuthenticationMiddleware',
     # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',

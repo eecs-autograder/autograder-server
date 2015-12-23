@@ -1,0 +1,52 @@
+/autograder_test_cases/<id>/
+GET: Returns the specified autograder test case.
+Access rules:
+    - If the user making the request is not a course administrator or semester
+        staff member, 403 forbidden will be returned. 
+
+Response format:
+{
+    "type": <polymorphic type identifier string>,
+    "id": <id>,
+
+    // These fields are present for all polymorphic types
+    "name": <string>,
+    "command_line_arguments": [<string>, ...],
+    "standard_input": <string>,
+    "test_resource_files": [<string>, ...],
+    "student_resource_files": [<string>, ...],
+    "time_limit": <int>,
+    "expected_return_code": <int>,
+    "expect_any_nonzero_return_code": <bool>,
+    "expected_standard_output": <string>,
+    "expected_standard_error_output": <string>,
+    "use_valgrind": <bool>,
+    "valgrind_flags": [<string>, ...],
+
+    "points_for_correct_return_code": <int>,
+    "points_for_correct_output": <int>,
+    "deduction_for_valgrind_errors": <int>,
+    "points_for_compilation_success": <int>,
+
+    "feedback_configuration": <test case feedback config object>,
+
+    // compiled_test_case fields
+    "compiler": <string>,
+    "compiler_flags": [<string>, ...],
+    "files_to_compile_together": [<string>, ...],
+    "executable_name": <string>,
+
+    "urls": {
+        "self": "autograder_test_cases/<id>/",
+        "project": "/projects/<id>/"
+    }
+}
+
+PATCH: Edits the specified autograder test case.
+Access rules: Same as POST /projects/<id>/autograder_test_cases/
+Request format: Same as POST /projects/<id>/autograder_test_cases/, except
+that the "type" field may NOT be specified.
+Response format: Same as GET /autograder_test_cases/<id>/
+
+DELETE: Deletes the specified autograder test case.
+Access rules: Same as POST /projects/<id>/autograder_test_cases/

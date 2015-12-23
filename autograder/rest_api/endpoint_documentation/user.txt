@@ -1,0 +1,119 @@
+/users/<id>/
+GET: Returns information about the specified user.
+Access rules:
+    - When an authenticated user requests information about themself, they
+        will receive the full response data shown below.
+    - In all other cases, 403 Forbidden will be returned.
+
+Response format:
+{   
+    "type": "user",
+    "id": <id>,
+    "username": <string username>,
+
+    "urls": {
+        "self": "/users/<id>/",
+
+        "courses_is_admin_for": "/users/<id>/courses_is_admin_for/",
+        "semesters_is_staff_for": "/users/<id>/semesters_is_staff_for/",
+        "semesters_is_enrolled_in": "/users/<id>/semesters_is_enrolled_in/",
+        "groups_is_member_of": "/users/<id>/groups_is_member_of/",
+
+        "pending_group_requests": "/users/<id>/pending_group_requests/",
+
+        "notifications": "/users/<id>/notifications/",
+    }
+}
+
+--------------------------------------------------------------------------------
+
+/users/<id>/courses_is_admin_for/
+GET: Returns a list of courses that the user is an administrator for.
+Access rules: Same as /users/<id>/
+
+Response format:
+{
+    "courses": [
+        {
+            "name": <string>,
+            "url": "/courses/<course id>/"
+        },
+        ...
+    ]
+}
+
+--------------------------------------------------------------------------------
+
+/users/<id>/semesters_is_staff_for/
+GET: Returns a list of semesters that the user is a staff member for.
+Access rules: Same as /users/<id>/
+
+Response format:
+{
+    "semesters": [
+        {   
+            "name": <string>,
+            "url": "/semesters/<semester id>/"
+        },
+        ...
+    ]
+}
+
+--------------------------------------------------------------------------------
+
+/users/<id>/semesters_is_enrolled_in/
+GET: Returns a list of semesters that the user is enrolled in.
+Access rules: Same as /users/<id>/
+
+Response format: Same as GET /users/<id>/semesters_is_staff_for/
+
+--------------------------------------------------------------------------------
+
+/users/<id>/groups_is_member_of/
+GET: Returns a list of submission groups that the user is a member of
+Access rules: Same as /users/<id>/
+
+Response format:
+{
+    "groups": [
+        {
+            "project_name": <string>,
+            "url": "/submission_groups/<id>/"
+        }
+    ]
+}
+
+--------------------------------------------------------------------------------
+
+/users/<id>/pending_group_requests/
+GET: Returns a list of pending group requests for the user making the request.
+Access rules: Same as /users/<id>/
+
+Response format:
+{
+    "group_requests": [
+        {
+            "project_name": <string>,
+            "request_sender": <string username>,
+            "url": "/submission_group_requests/<id>/"
+        }
+    ]
+}
+
+--------------------------------------------------------------------------------
+
+/users/<id>/notifications/
+GET: Returns a list of notifications for the user making the request.
+Access rules: Same as /users/<id>/
+
+Response format:
+{
+    "notifications": [
+        {
+            "timestamp": <timestamp>,
+            "unread": <bool>,
+            "url": "/notifications/<id>/"
+        }
+    ]
+}
+

@@ -1,0 +1,176 @@
+/semesters/<id>/
+GET: Returns the semester with the specified id.
+Access rules:
+    - If the user requesting this semester is a course admin or staff member,
+        then the full response data shown below will be
+        returned.
+    - If the user requesting this semester is an enrolled student, then only
+        type, id, name, urls.self, and urls.projects will be included.
+    - Any other requests to view this course will result in 403 Forbidden
+        being returned.
+
+Response format:
+{
+    "type": "semester",
+    "id": <id>,
+    "name": <name>,
+    "urls": {
+        "self": "/semester/<id>/",
+        "course": "/course/<course id>/",
+        "staff": "/semester/<id>/staff/",
+        "enrolled_students": "/semester/<id>/enrolled_students/",
+        "projects": "/semester/<id>/projects/"
+    }
+}
+
+PATCH: Edits the semester with the specified id.
+Access rules:
+    - If the user trying to edit the semester is not a course administrator,
+        then 403 Forbidden will be returned.
+
+Request format:
+{
+    "name": <name>    
+}
+Note that if any of the above fields are omitted, their values will
+remain unchanged.
+
+--------------------------------------------------------------------------------
+
+/semesters/<id>/staff/
+Access rules for POST and DELETE:
+    - If the user making the request is not an administrator for the 
+        specified semester's course, 403 Forbidden will be returned.
+
+GET: Returns a list of usernames that are staff members for the 
+specified semester.
+Access rules: 
+    - If the user making the request is not an administrator for the course
+        or a staff member for the semester, 403 Forbidden will be returned.
+
+Response format:
+{
+    "staff": [
+        <string username>,
+        ...
+    ]
+}
+
+POST: Adds the listed usernames to the semester's staff list.
+Request format:
+{
+    "staff": [
+        <string username>,
+        ...
+    ]
+}
+Response format: Same as GET /semesters/<id>/staff/
+
+DELETE: Removes the listed usernames from the semester's staff list.
+Request format: Same as POST
+Response format: Same as POST
+
+--------------------------------------------------------------------------------
+
+/semesters/<id>/enrolled_students/?page_size=<int>&page_number=<int>&username_starts_with=<string>
+The default page_size is 20, and the default page_number is 1. 
+username_starts_with is optional. Note that these parameters are only
+relevant for GET requests.
+
+Access rules for POST, PATCH, and DELETE:
+    - If the user making the request is not an administrator for the 
+        course, 403 Forbidden will be returned.
+
+GET: Returns a sorted, paginated list of usernames enrolled in the specified 
+semester.
+Access rules:
+    - If the user making the request is not a course administrator,
+        semester staff member, or enrolled student, then 403 Forbidden will be
+        returned.
+
+Response format:
+{
+    "enrolled_students": [
+        <string username>,
+        ...
+    ],
+    "num_enrolled_students_total": <int> 
+}
+
+POST: Adds the listed usernames to the list of enrolled students 
+for the specified semester.
+
+Request format:
+{
+    "enrolled_students": [
+        <string username>,
+        ...
+    ]
+}
+
+Response format: Same as /semesters/<id>/enrolled_students/ with default
+parameters.
+
+PATCH: Replaces the specified semester's list of enrolled students with
+the provided list of usernames.
+
+Request format: Same as POST
+Response format: Same as POST
+
+DELETE: Removes the listed usernames from the semesters list of enrolled
+students.
+
+Request format: Same as POST
+Response format: Same as POST
+
+--------------------------------------------------------------------------------
+
+/semester/<id>/projects/
+GET: Returns a list of projects that belong to this course
+Access rules:
+    - If the user making the request is a course administrator or 
+        semester staff member, then all projects associated with 
+        this semester will be returned.
+    - If the user making the request is an enrolled student, then 
+        all visible projects will be returned.
+    - In all other cases, 403 Forbidden will be returned.
+
+Response format:
+{
+    "projects": [
+        {
+            "name": <string>,
+            "url": "/projects/<project id>/"
+        },
+        ...
+    ]
+}
+
+POST: Creates a new project and adds it to the specified semester.
+Access rules:
+    - If the user making the request is not an administrator for the
+        course, 403 Forbidden will be returned.
+
+Request format:
+{
+    "name": <string>,
+
+    // Any of the following fields may be omitted
+    "visible_to_students": <bool>,
+    "closing_time": <timestamp>,
+    "disallow_student_submissions": <bool>,
+    "allow_submissions_from_non_enrolled_students": <bool>,
+    "min_group_size": <int>,
+    "max_group_size": <int>,
+    "required_student_files": [<filename>, ...],
+    "expected_student_file_patterns": [
+        {
+            "pattern": <string>,
+            "min_num_matches": <int>,
+            "max_num_matches": <int>
+        },
+        ...
+    ]
+}
+
+Response format: Same as GET /projects/<id>/

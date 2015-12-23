@@ -1,0 +1,52 @@
+/student_test_suite_results/<id>/
+GET: Returns full information about the specified student test suite result.
+Access rules: Same as GET /submissions/<id>/
+
+Response format:
+{
+    "type": "student_test_suite_result",
+    "id": <id>,
+
+    "test_suite_name": <string>,
+
+    "urls": {
+        "self": "/student_test_suite_results/<id>/"
+    },
+
+    //** NOTE: Some or all of the following may be omitted  **//
+    //** depending on the feedback level.                   **//
+
+    "buggy_implementations_exposed": [
+        <implementation filename>,
+        ...
+    ],
+
+    "points_possible": <points>,
+    "points_awarded": <points>,
+
+    "detailed_results": [
+        {
+            //** NOTE: Some of the following may be omitted  **//
+            //** depending on the feedback level and the way **//
+            //** the test suite is evaluated                 **//
+
+            "student_test_case_name": <name>,
+
+            "compilation_succeeded": <bool>,
+            "compilation_standard_output": <value>,
+            "compilation_standard_error_output": <value>,
+
+            "valid": <bool>,
+            "validity_check_standard_output": <string>,
+            "validity_check_standard_error_output": <string>,
+
+            "timed_out": <bool>,
+
+            "buggy_implementations_exposed": [
+                <implementation filename>,
+                ...
+            ]
+        },
+        ...
+    ]
+}

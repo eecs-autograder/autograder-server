@@ -20,6 +20,7 @@ class Course(ModelValidatableOnSave):
     code to an autograder.
 
     Fields:
+        TODO: restrict to filename charset
         name -- The name of this course.
                 Must be unique, non-empty and non-null.
 
@@ -59,10 +60,6 @@ class Course(ModelValidatableOnSave):
     @property
     def administrator_names(self):
         return tuple(user.username for user in self.administrators.all())
-
-    _administrator_names = ArrayField(
-        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
-        blank=True, default=list)
 
     # -------------------------------------------------------------------------
 

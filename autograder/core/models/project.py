@@ -487,6 +487,7 @@ def _validate_filename(file_obj):
     ut.check_user_provided_filename(file_obj.name)
 
 
+# TODO: make this public
 class _UploadedProjectFile(ModelValidatableOnSave):
     objects = ManagerWithValidateOnCreate()
 
