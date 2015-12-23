@@ -153,7 +153,6 @@ class AddSubmissionRequestTestCase(_SetUpBase):
         self.maxDiff = None
 
     def test_valid_student_staff_or_admin_submit(self):
-        # Feedback configuration should be set to max automatically.
         for user in (self.enrolled, self.admin, self.staff):
             group = SubmissionGroup.objects.validate_and_create(
                 members=[user.username], project=self.project)

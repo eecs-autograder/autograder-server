@@ -301,6 +301,10 @@ Access rules:
     - Otherwise, this request will only be accepted if the user is requesting
         to create a group containing only themself (assuming the project 
         allows 1-person groups)
+    - The same restrictions on group visibility apply: For non admin and staff 
+        users, the project must be visible and either the user must be an 
+        enrolled student or the project must allow submissions from 
+        non-enrolled students.
 
 Request format:
 {
@@ -311,8 +315,8 @@ Response format: Same as GET /submission_groups/<id>/
 
 --------------------------------------------------------------------------------
 
-/projects/<id>/submission_group_requests/
-GET: Returns a list of group requests for the specified project that involve
+/projects/<id>/submission_group_invitations/
+GET: Returns a list of group invitations for the specified project that involve
 the user making the request.
 Access rules: 
     - If the user making the request doesn't have permission to view the 
@@ -320,16 +324,16 @@ Access rules:
 
 Response format:
 {
-    "submission_group_requests": [
+    "submission_group_invitations": [
         {
             "request_creator": <string username>,
-            "url": "/submission_group_requests/<id>/"
+            "url": "/submission_group_invitations/<id>/"
         },
         ...
     ]
 }
 
-POST: Creates a submission group request.
+POST: Creates a submission group invitation.
 Access rules: 
     - If the user making the request doesn't have permission to view the 
         specified project, then 403 Forbidden will be returned.
@@ -339,5 +343,5 @@ Request format:
     "users_to_invite": [<string username>, ...]
 }
 
-Response format: Same as GET /submission_group_requests/<id>/
+Response format: Same as GET /submission_group_invitations/<id>/
 

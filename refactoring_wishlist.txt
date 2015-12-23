@@ -1,3 +1,19 @@
-- change 'get factory string' to 'get factory string and required args' so
-that we can have (relatively) clean test case inheritance
-- restructure autograder test case hierarchy and try to use abstract base class
+
+
+- for group registration:
+	1. user lists members, this creates SubmissionGroupInvitation
+	2. if all members accept, invitation is deleted and replaced
+		with SubmissionGroup
+	3. if any members reject, invitation is deleted and all 
+		users (or maybe just the ones who accepted the invite)
+		get a notification about the rejection
+
+- add "user" view
+	- staff can view other users in the same semester
+	- 
+
+- in ag test result and suite result, add getter functions that return points for various things, have them take in a feedback configuration
+
+X 1. switch username lists to *key fields
+LATER 2. add object level permissions?
+NO 3. switch to djangorestapi framework?

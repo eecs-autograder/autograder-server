@@ -169,10 +169,10 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
     def test_non_enrolled_student_public_project_list_groups(self):
         self.fail()
 
-    def test_hidden_project_permission_denied(self):
+    def test_list_groups_hidden_project_permission_denied(self):
         self.fail()
 
-    def test_non_enrolled_student_private_project_permission_denied(self):
+    def test_list_groups_non_enrolled_student_private_project_permission_denied(self):
         self.fail()
 
     # -------------------------------------------------------------------------
@@ -192,11 +192,61 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
     def test_course_admin_create_group_error_group_size_zero(self):
         self.fail()
 
-    # def
+    def test_enrolled_student_create_group_with_only_self(self):
+        self.fail()
+
+    def test_public_project_non_enrolled_student_create_group_with_only_self(self):
+        self.fail()
+
+    def test_create_group_hidden_project_permission_denied(self):
+        self.fail()
+
+    def test_create_group_non_enrolled_student_permission_denied(self):
+        self.fail()
+
+    def test_error_user_already_in_group(self):
+        self.fail()
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 
 class ListAddSubmissionGroupRequestTestCase(TemporaryFilesystemTestCase):
-    pass
+    def setUp(self):
+        super().setUp()
+
+    def test_course_admin_or_semester_staff_list_group_requests(self):
+        self.fail()
+
+    def test_enrolled_student_list_group_requests_visible_project(self):
+        self.fail()
+
+    def test_non_enrolled_student_public_project_list_group_requests(self):
+        self.fail()
+
+    def test_hidden_project_list_group_requests_permission_denied(self):
+        self.fail()
+
+    def test_non_enrolled_student_non_public_project_list_group_requests_permission_denied(self):
+        self.fail()
+
+    # -------------------------------------------------------------------------
+
+    def test_valid_student_create_group_request(self):
+        self.fail()
+
+    def test_valid_course_admin_or_semester_staff_create_group_request(self):
+        self.fail()
+
+    def test_error_maximum_group_size_is_one(self):
+        self.fail()
+
+    def test_user_cannot_view_project_permission_denied(self):
+        self.fail()
+
+    def test_error_create_group_request_no_invited_users(self):
+        self.fail()
+
+    def test_error_group_too_large_or_small(self):
+        self.fail()
+

@@ -7,6 +7,8 @@ GET: Returns the submission_group with the specified id.
 Access rules:
     - If the user making the request is not a course administrator, semester
         staff member, or member of the group, 403 Forbidden will be returned.
+    - If the user making the request doesn't have permission to view the 
+        project the specified group is associated with, 403 Forbidden will be returned.
 
 Response format:
 {
@@ -27,6 +29,8 @@ Request format:
     "members": [<username>, ...],
     "extended_due_date": <datetime | null>,
 }
+Note that if either of the above fields are omitted, their values will remain 
+unchanged.
 
 Response format: Same as GET /submission_groups/<id>/
 
@@ -40,6 +44,8 @@ Access rules:
     - If the user making the request is not a course administrator, 
         semester staff member, or member of the submission_group, then
         403 Forbidden will be returned.
+    - If the user making the request doesn't have permission to view the 
+        project the specified group is associated with, 403 Forbidden will be returned.
 
 Response format:
 {
@@ -56,6 +62,9 @@ POST: Adds a submission for the specified group.
 Access rules:
     - If the user making the request is not a member of the submission_group,
         403 Forbidden will be returned.
+    - If the user making the request doesn't have permission to view the 
+        project the specified group is associated with, 403 Forbidden will be returned.
+
 
 Request format: The files being submitted should be attached to the 
 POST request. No other request content is needed.

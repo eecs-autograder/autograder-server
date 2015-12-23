@@ -7,6 +7,8 @@ from django.core.urlresolvers import resolve
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
+import autograder.core.tests.dummy_object_utils as obj_ut
+
 
 class RequestHandlerTestCase(TemporaryFilesystemTestCase):
     def assertJSONObjsEqual(self, json1, json2):
@@ -52,9 +54,20 @@ class MockClient:
         resolved = resolve(request.path)
         return resolved.func(request, *resolved.args, **resolved.kwargs)
 
-    def delete(self, url):
-        request = self.request_factory.delete(url)
+    def delete(self, url, data={}):
+        request = self.request_factory.delete(
+            url, json.dumps(data, cls=DjangoJSONEncoder))
         request.user = self.user
 
         resolved = resolve(request.path)
         return resolved.func(request, *resolved.args, **resolved.kwargs)
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+
+# class TestingData:
+#     def __init__(self):
+#         self.project = obj_ut.build_project
+
+

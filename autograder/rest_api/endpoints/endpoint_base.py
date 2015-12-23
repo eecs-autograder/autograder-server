@@ -5,7 +5,7 @@ from django.core import exceptions
 from django import http
 
 
-class RequestHandlerBase(View):
+class EndpointBase(View):
     def dispatch(self, *args, **kwargs):
         try:
             return super().dispatch(*args, **kwargs)
