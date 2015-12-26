@@ -10,6 +10,15 @@ from .semester_endpoints import (
     ListAddUpdateRemoveEnrolledStudentsEndpoint,
     ListAddProjectEndpoint)
 
+from .project_endpoints import (
+    GetUpdateProjectEndpoint,
+    ListAddProjectFileEndpoint,
+    GetUpdateDeleteProjectFileEndpoint,
+    ListAddAutograderTestCaseEndpoint,
+    ListAddStudentTestSuiteEndpoint,
+    ListAddSubmissionGroupEndpoint,
+    ListAddSubmissionGroupInvitationEndpoint,
+)
 # from .user_endpoints import GetUser
 
 # from .submission_endpoints import (

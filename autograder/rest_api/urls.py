@@ -39,10 +39,33 @@ semester_patterns = [
         name='get'),
     url(r'^staff/$', endpoints.ListAddRemoveSemesterStaffEndpoint.as_view(),
         name='staff'),
-    url(r'^enrolled_students/$', endpoints.ListAddUpdateRemoveEnrolledStudentsEndpoint.as_view(),
+    url(r'^enrolled_students/$',
+        endpoints.ListAddUpdateRemoveEnrolledStudentsEndpoint.as_view(),
         name='enrolled_students'),
     url(r'^projects/$', endpoints.ListAddProjectEndpoint.as_view(),
         name='projects')
+]
+
+project_patterns = [
+    url(r'^$', endpoints.GetUpdateProjectEndpoint.as_view(),
+        name='get'),
+    url(r'^uploaded_files/$', endpoints.ListAddProjectFileEndpoint.as_view(),
+        name='files'),
+    url(r'^uploaded_files/(?P<pk>[0-9]+)/$',
+        endpoints.GetUpdateDeleteProjectFileEndpoint.as_view(),
+        name='file'),
+    url(r'^autograder_test_cases/$',
+        endpoints.ListAddAutograderTestCaseEndpoint.as_view(),
+        name='ag-tests'),
+    url(r'^student_test_suites/$',
+        endpoints.ListAddStudentTestSuiteEndpoint.as_view(),
+        name='suites'),
+    url(r'^submission_groups/$',
+        endpoints.ListAddSubmissionGroupEndpoint.as_view(),
+        name='groups'),
+    url(r'^submission_group_invitations/$',
+        endpoints.ListAddSubmissionGroupInvitationEndpoint.as_view(),
+        name='invitations'),
 ]
 
 urlpatterns = [
@@ -52,7 +75,9 @@ urlpatterns = [
     url(r'^courses/(?P<pk>[0-9]+)/',
         include(course_patterns, namespace='course')),
     url(r'^semesters/(?P<pk>[0-9]+)/',
-        include(semester_patterns, namespace='semester'))
+        include(semester_patterns, namespace='semester')),
+    url(r'^projects/(?P<pk>[0-9]+)/',
+        include(project_patterns, namespace='project'))
 
 
     # url(r'^courses/$', views.CourseList.as_view()),

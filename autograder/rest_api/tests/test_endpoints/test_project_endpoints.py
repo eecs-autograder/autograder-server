@@ -6,7 +6,7 @@ import autograder.core.tests.dummy_object_utils as obj_ut
 from .utilities import MockClient, json_load_bytes, sorted_by_pk
 
 
-class RetrieveUpdateProjectTestCase(TemporaryFilesystemTestCase):
+class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
@@ -211,7 +211,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
 # -----------------------------------------------------------------------------
 
 
-class ListAddSubmissionGroupRequestTestCase(TemporaryFilesystemTestCase):
+class ListAddSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 

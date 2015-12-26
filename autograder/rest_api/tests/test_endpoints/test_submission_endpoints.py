@@ -3,7 +3,7 @@ import itertools
 from django.core.urlresolvers import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from autograder.core.
+from autograder.core.models import Submission
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut

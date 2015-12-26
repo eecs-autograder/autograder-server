@@ -1,6 +1,6 @@
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from django.utils import timezone
 
 from autograder.core.tests.temporary_filesystem_test_case import (
@@ -239,7 +239,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
 
     def test_list_students_default(self):
         more_users = obj_ut.create_dummy_users(30)
-        self.semester.enrolled_students.add(more_users)
+        self.semester.enrolled_students.add(*more_users)
         self.enrolled_names += [user.username for user in more_users]
         self.enrolled_names.sort()
 
@@ -438,6 +438,8 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
+        _common_setup(self)
+
         self.visible_project = obj_ut.build_project(
             project_kwargs={'semester': self.semester,
                             'visible_to_students': True})
@@ -461,7 +463,8 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
                     'name': project.name,
                     'url': reverse('project:get', kwargs={'pk': project.pk})
                 }
-                for project in sorted(self.all_projects)
+                for project in sorted(
+                    self.all_projects, key=lambda obj: obj.pk)
             ]
         }
 
@@ -476,7 +479,7 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(expected_content, actual_content)
 
     def test_enrolled_student_list_projects_visible_only(self):
-        visible_projects = (project for project in self.projects
+        visible_projects = (project for project in self.all_projects
                             if project.visible_to_students)
         expected_content = {
             "projects": [
@@ -500,7 +503,7 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
     def test_other_list_projects_permission_denied(self):
         client = MockClient(self.nobody)
         response = client.get(self.projects_url)
-        self.assertEqual(403, response.content)
+        self.assertEqual(403, response.status_code)
 
     # -------------------------------------------------------------------------
 
