@@ -108,11 +108,13 @@ def build_semester(semester_kwargs=None, course_kwargs=None):
         semester_kwargs['course'] = course
 
     staff = semester_kwargs.pop('staff', [])
+    enrolled = semester_kwargs.pop('enrolled_students', [])
     semester = Semester.objects.validate_and_create(**semester_kwargs)
 
     semester.staff.add(*staff)
+    semester.enrolled_students.add(*enrolled)
 
-    semester.validate_and_save()
+    # semester.validate_and_save()
     return semester
 
 

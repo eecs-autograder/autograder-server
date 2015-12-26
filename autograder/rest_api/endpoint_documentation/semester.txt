@@ -5,7 +5,7 @@ Access rules:
         then the full response data shown below will be
         returned.
     - If the user requesting this semester is an enrolled student, then only
-        type, id, name, urls.self, and urls.projects will be included.
+        type, id, name, urls.self, urls.course, and urls.projects will be included.
     - Any other requests to view this course will result in 403 Forbidden
         being returned.
 
@@ -73,7 +73,7 @@ Response format: Same as POST
 --------------------------------------------------------------------------------
 
 /semesters/<id>/enrolled_students/?page_size=<int>&page_number=<int>&username_starts_with=<string>
-The default page_size is 20, and the default page_number is 1. 
+The default page_size is 20, and the default page_number is 0. 
 username_starts_with is optional. Note that these parameters are only
 relevant for GET requests.
 
@@ -125,7 +125,7 @@ Response format: Same as POST
 
 --------------------------------------------------------------------------------
 
-/semester/<id>/projects/
+/semesters/<id>/projects/
 GET: Returns a list of projects that belong to this course
 Access rules:
     - If the user making the request is a course administrator or 

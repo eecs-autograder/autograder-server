@@ -1,31 +1,137 @@
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.models import User
+from django.utils import timezone
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
+
+from autograder.core.models import Course, Semester, Project
+from autograder.rest_api.endpoints.semester_endpoints import (
+    DEFAULT_ENROLLED_STUDENT_PAGE_SIZE)
+
 import autograder.core.tests.dummy_object_utils as obj_ut
-from .utilities import MockClient, json_load_bytes, sorted_by_pk
+
+from .utilities import MockClient, json_load_bytes
 
 
-class RetrieveUpdateSemesterTestCase(TemporaryFilesystemTestCase):
+def _common_setup(fixture):
+    fixture.admin = obj_ut.create_dummy_user()
+    fixture.staff = obj_ut.create_dummy_users(3)
+    fixture.enrolled = obj_ut.create_dummy_users(5)
+    fixture.nobody = obj_ut.create_dummy_user()
+
+    fixture.semester = obj_ut.build_semester(
+        course_kwargs={'administrators': [fixture.admin]},
+        semester_kwargs={
+            'staff': fixture.staff, 'enrolled_students': fixture.enrolled})
+    fixture.course = fixture.semester.course
+
+    fixture.course_url = reverse(
+        'course:get', kwargs={'pk': fixture.course.pk})
+
+    fixture.semester_url = reverse(
+        'semester:get', kwargs={'pk': fixture.semester.pk})
+    fixture.staff_url = reverse(
+        'semester:staff', kwargs={'pk': fixture.semester.pk})
+    fixture.enrolled_url = reverse(
+        'semester:enrolled_students', kwargs={'pk': fixture.semester.pk})
+    fixture.projects_url = reverse(
+        'semester:projects', kwargs={'pk': fixture.semester.pk})
+
+
+class GetUpdateSemesterTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
+        _common_setup(self)
 
     def test_course_admin_or_semester_staff_get_semester(self):
-        self.fail()
+        expected_content = {
+            "type": "semester",
+            "id": self.semester.pk,
+            "name": self.semester.name,
+            "urls": {
+                "self": self.semester_url,
+                "course": self.course_url,
+                "staff": self.staff_url,
+                "enrolled_students": self.enrolled_url,
+                "projects": self.projects_url
+            }
+        }
+
+        for user in self.admin, self.staff:
+            client = MockClient(user)
+            response = client.get(self.semester_url)
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
 
     def test_enrolled_student_get_semester(self):
-        self.fail()
+        expected_content = {
+            "type": "semester",
+            "id": self.semester.pk,
+            "name": self.semester.name,
+            "urls": {
+                "self": self.semester_url,
+                "course": self.course_url,
+                "projects": self.projects_url
+            }
+        }
+
+        client = MockClient(self.enrolled[0])
+        response = client.get(self.semester_url)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            expected_content, json_load_bytes(response.content))
 
     def test_other_get_semester_permission_denied(self):
-        self.fail()
+        client = MockClient(self.nobody)
+        response = client.get(self.semester_url)
+        self.assertEqual(403, response.status_code)
 
     # -------------------------------------------------------------------------
 
     def test_course_admin_patch_semester(self):
-        self.fail()
+        new_name = 'spam'
+        old_name = self.semester.name
+        expected_content = {
+            "type": "semester",
+            "id": self.semester.pk,
+            "name": new_name,
+            "urls": {
+                "self": self.semester_url,
+                "course": self.course_url,
+                "staff": self.staff_url,
+                "enrolled_students": self.enrolled_url,
+                "projects": self.projects_url
+            }
+        }
+
+        client = MockClient(self.admin)
+        response = client.patch(self.semester_url, {'name': new_name})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(expected_content, json_load_bytes(response.content))
+
+        with self.assertRaises(ObjectDoesNotExist):
+            Semester.objects.get(name=old_name)
+
+        loaded = Semester.objects.get(pk=self.semester.pk)
+        self.assertEqual(new_name, loaded.name)
 
     def test_other_patch_semester_permission_denied(self):
-        self.fail()
+        new_name = 'spaaaam'
+        old_name = self.semester.name
+        for user in self.staff[0], self.enrolled[0], self.nobody:
+            client = MockClient(user)
+            response = client.patch(self.semester_url, {'name': new_name})
+            self.assertEqual(403, response.status_code)
+
+            with self.assertRaises(ObjectDoesNotExist):
+                Semester.objects.get(name=new_name)
+
+            loaded = Semester.objects.get(pk=self.semester.pk)
+            self.assertEqual(old_name, loaded.name)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -35,23 +141,88 @@ class ListAddRemoveSemesterStaffTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
+        _common_setup(self)
+
+        self.staff_names = list(sorted([user.username for user in self.staff]))
+
     def test_course_admin_list_staff(self):
-        self.fail()
+        expected_content = {
+            'staff': self.staff_names
+        }
+
+        client = MockClient(self.admin)
+        response = client.get(self.staff_url)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(expected_content, json_load_bytes(response.content))
 
     def test_other_list_staff_permission_denied(self):
-        self.fail()
+        for user in self.staff[0], self.enrolled[0], self.nobody:
+            client = MockClient(user)
+            response = client.get(self.staff_url)
+
+            self.assertEqual(403, response.status_code)
+
+    # -------------------------------------------------------------------------
 
     def test_course_admin_add_staff(self):
-        self.fail()
+        new_staff_names = ['staffy1', 'staffy2']
+        self.staff_names += new_staff_names
+        self.staff_names.sort()
+
+        client = MockClient(self.admin)
+        response = client.post(self.staff_url, {'staff': new_staff_names})
+        self.assertEqual(200, response.status_code)
+
+        expected_content = {
+            'staff': self.staff_names
+        }
+
+        self.assertEqual(expected_content, json_load_bytes(response.content))
+
+        self.assertEqual(
+            self.staff_names, self.semester.semester_staff_names)
 
     def test_other_add_staff_permission_denied(self):
-        self.fail()
+        for user in self.staff[0], self.enrolled[0], self.nobody:
+            client = MockClient(user)
+            response = client.post(
+                self.staff_url, {'staff': ['spam', 'steve']})
+
+            self.assertEqual(403, response.status_code)
+
+            self.assertEqual(
+                self.staff_names, self.semester.semester_staff_names)
+
+    # -------------------------------------------------------------------------
 
     def test_course_admin_remove_staff(self):
-        self.fail()
+        client = MockClient(self.admin)
+        to_remove = [user.username for user in self.staff[1:]]
+        remaining = [user.username for user in self.staff[:1]]
+
+        response = client.delete(self.staff_url, {'staff': to_remove})
+
+        self.assertEqual(200, response.status_code)
+
+        expected_content = {
+            'staff': remaining
+        }
+
+        self.assertEqual(expected_content, json_load_bytes(response.content))
+
+        self.assertCountEqual(
+            remaining, self.semester.semester_staff_names)
 
     def test_other_remove_staff_permission_denied(self):
-        self.fail()
+        for user in self.staff[0], self.enrolled[0], self.nobody:
+            client = MockClient(user)
+            response = client.delete(
+                self.staff_url,
+                {'staff': [user.username for user in self.staff]})
+            self.assertEqual(403, response.status_code)
+
+            self.assertCountEqual(
+                self.staff_names, self.semester.semester_staff_names)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -61,60 +232,360 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
+        _common_setup(self)
+
+        self.enrolled_names = list(sorted(
+            (user.username for user in self.enrolled)))
+
     def test_list_students_default(self):
-        self.fail()
+        more_users = obj_ut.create_dummy_users(30)
+        self.semester.enrolled_students.add(more_users)
+        self.enrolled_names += [user.username for user in more_users]
+        self.enrolled_names.sort()
+
+        expected_content = {
+            'enrolled_students': (
+                self.enrolled_names[:DEFAULT_ENROLLED_STUDENT_PAGE_SIZE]),
+            "num_enrolled_students_total": len(self.enrolled_names)
+        }
+
+        for user in self.enrolled[0], self.staff, self.admin:
+            client = MockClient(user)
+            response = client.get(self.enrolled_url)
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
 
     def test_list_students_first_page_custom_page_size(self):
-        self.fail()
+        size = 2
+        expected_content = {
+            'enrolled_students': self.enrolled_names[:size],
+            "num_enrolled_students_total": len(self.enrolled_names)
+        }
+
+        for user in self.enrolled[0], self.staff, self.admin:
+            client = MockClient(user)
+            response = client.get(self.enrolled_url, {'page_size': size})
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
 
     def test_list_students_middle_page_custom_page_size(self):
-        self.fail()
+        size = 2
+        page_num = 1
+        expected_content = {
+            'enrolled_students': self.enrolled_names[
+                size * page_num:size * (page_num + 1)],
+            "num_enrolled_students_total": len(self.enrolled_names)
+        }
+
+        for user in self.enrolled[0], self.staff, self.admin:
+            client = MockClient(user)
+            response = client.get(
+                self.enrolled_url,
+                {'page_size': size, 'page_number': page_num})
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
 
     def test_list_students_last_page_custom_page_size(self):
-        self.fail()
+        size = 2
+        page_num = 2
+        expected_content = {
+            'enrolled_students': self.enrolled_names[
+                size * page_num:],
+            "num_enrolled_students_total": len(self.enrolled_names)
+        }
+
+        for user in self.enrolled[0], self.staff, self.admin:
+            client = MockClient(user)
+            response = client.get(
+                self.enrolled_url,
+                {'page_size': size, 'page_number': page_num})
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
+
+    def test_list_students_filter_by_username_startswith(self):
+        self.enrolled[0].username = 'steve'
+        self.enrolled[0].save()
+        self.enrolled[-1].username = 'stove'
+        self.enrolled[-1].save()
+
+        expected_content = {
+            'enrolled_students': ['steve', 'stove'],
+            "num_enrolled_students_total": len(self.enrolled_names)
+        }
+
+        for user in self.enrolled[0], self.staff, self.admin:
+            client = MockClient(user)
+            response = client.get(
+                self.enrolled_url, {'username_starts_with': 'st'})
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
 
     def test_non_enrolled_list_students_permission_denied(self):
-        self.fail()
+        client = MockClient(self.nobody)
+        response = client.get(self.enrolled_url)
+        self.assertEqual(403, response.status_code)
 
     # -------------------------------------------------------------------------
 
     def test_admin_add_enrolled_students(self):
-        self.fail()
+        client = MockClient(self.admin)
+        new_students = ['steve', 'bill']
+
+        response = client.post(
+            self.enrolled_url, {'enrolled_students': new_students})
+
+        self.assertEqual(201, response.status_code)
+
+        self.enrolled_names.append(new_students)
+        self.enrolled_names.sort()
+
+        expected_content = {
+            'enrolled_students': (
+                self.enrolled_names[:DEFAULT_ENROLLED_STUDENT_PAGE_SIZE]),
+            'num_enrolled_students_total': len(self.enrolled_names)
+        }
+
+        self.assertEqual(expected_content, json_load_bytes(response.content))
+
+        for student in new_students:
+            self.assertTrue(student in self.semester.enrolled_student_names)
 
     def test_other_add_enrolled_students_permission_denied(self):
-        self.fail()
+        for user in self.staff[0], self.enrolled[0], self.nobody:
+            client = MockClient(user)
+            response = client.post(
+                self.enrolled_url, {'enrolled_students': ['steve']})
+            self.assertEqual(403, response.status_code)
+
+            self.assertEqual(
+                self.enrolled_names,
+                sorted(self.semester.enrolled_student_names))
 
     def test_admin_update_enrolled_students(self):
-        self.fail()
+        client = MockClient(self.admin)
+        new_students = ['steve', 'bill']
+
+        response = client.patch(
+            self.enrolled_url, {'enrolled_students': new_students})
+
+        self.assertEqual(200, response.status_code)
+
+        expected_content = {
+            'enrolled_students': list(sorted(new_students)),
+            'num_enrolled_students_total': len(new_students)
+        }
+
+        self.assertEqual(expected_content, json_load_bytes(response.content))
+
+        self.assertEqual(
+            new_students, sorted(self.semester.enrolled_student_names))
 
     def test_other_update_enrolled_students_permission_denied(self):
-        self.fail()
+        for user in self.staff[0], self.enrolled[0], self.nobody:
+            client = MockClient(user)
+            response = client.patch(
+                self.enrolled_url, {'enrolled_students': ['steve']})
+            self.assertEqual(403, response.status_code)
+
+            self.assertEqual(
+                self.enrolled_names,
+                sorted(self.semester.enrolled_student_names))
+
+    # -------------------------------------------------------------------------
 
     def test_admin_remove_enrolled_students(self):
-        self.fail()
+        client = MockClient(self.admin)
+        response = client.delete(
+            self.enrolled_url,
+            {'enrolled_students': [self.enrolled_names[0]]})
+        self.assertEqual(200, response.status_code)
+
+        self.enrolled_names = self.enrolled_names[1:]
+
+        expected_content = {
+            'enrolled_students': (
+                self.enrolled_names[:DEFAULT_ENROLLED_STUDENT_PAGE_SIZE]),
+            'num_enrolled_students_total': len(self.enrolled_names)
+        }
+
+        self.assertEqual(expected_content, json_load_bytes(expected_content))
+
+        self.assertEqual(
+            self.enrolled_names, sorted(self.semester.enrolled_student_names))
 
     def test_other_remove_enrolled_students_permission_denied(self):
-        self.fail()
+        for user in self.staff[0], self.enrolled[0], self.nobody:
+            client = MockClient(user)
+            response = client.delete(
+                self.enrolled_url,
+                {'enrolled_students': [self.enrolled_names[0]]})
+            self.assertEqual(403, response.status_code)
+
+            self.assertEqual(
+                self.enrolled_names,
+                sorted(self.semester.enrolled_student_names))
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 
-class ProjectListAddTestCase(TemporaryFilesystemTestCase):
+class ListAddProjectTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
+        self.visible_project = obj_ut.build_project(
+            project_kwargs={'semester': self.semester,
+                            'visible_to_students': True})
+
+        self.visible_project2 = obj_ut.build_project(
+            project_kwargs={'semester': self.semester,
+                            'visible_to_students': True})
+
+        self.hidden_project = obj_ut.build_project(
+            project_kwargs={'semester': self.semester,
+                            'visible_to_students': False})
+
+        self.all_projects = sorted(
+            (self.visible_project, self.visible_project2, self.hidden_project),
+            key=lambda obj: obj.pk)
+
     def test_admin_or_staff_list_projects(self):
-        self.fail()
+        expected_content = {
+            "projects": [
+                {
+                    'name': project.name,
+                    'url': reverse('project:get', kwargs={'pk': project.pk})
+                }
+                for project in sorted(self.all_projects)
+            ]
+        }
+
+        for user in self.admin, self.staff:
+            client = MockClient(user)
+            response = client.get(self.projects_url)
+
+            self.assertEqual(200, response.status_code)
+            actual_content = json_load_bytes(response.content)
+            response.content['projects'].sort(key=lambda obj: obj.pk)
+
+            self.assertEqual(expected_content, actual_content)
 
     def test_enrolled_student_list_projects_visible_only(self):
-        self.fail()
+        visible_projects = (project for project in self.projects
+                            if project.visible_to_students)
+        expected_content = {
+            "projects": [
+                {
+                    'name': project.name,
+                    'url': reverse('project:get', kwargs={'pk': project.pk})
+                }
+                for project in visible_projects
+            ]
+        }
+
+        client = MockClient(self.enrolled)
+        response = client.get(self.projects_url)
+
+        self.assertEqual(200, response.status_code)
+        actual_content = json_load_bytes(response.content)
+        response.content['projects'].sort(key=lambda obj: obj.pk)
+
+        self.assertEqual(expected_content, actual_content)
 
     def test_other_list_projects_permission_denied(self):
-        self.fail()
+        client = MockClient(self.nobody)
+        response = client.get(self.projects_url)
+        self.assertEqual(403, response.content)
 
-    def test_course_admin_add_project(self):
-        self.fail()
+    # -------------------------------------------------------------------------
+
+    def test_course_admin_add_project_default_args(self):
+        args = {'name': 'spam project'}
+        client = MockClient(self.admin)
+        response = client.post(self.projects_url, args)
+
+        self.assertEqual(201, response.status_code)
+
+        actual_content = json_load_bytes(response.content)
+
+        loaded = Project.objects.get(name=args['name'])
+
+        expected_content = {
+            "type": "project",
+            "id": loaded.pk,
+            "name": loaded.name,
+            "visible_to_students": loaded.visible_to_students,
+            "closing_time": loaded.closing_time,
+            "disallow_student_submissions": loaded.disallow_student_submissions,
+            "allow_submissions_from_non_enrolled_students": loaded.allow_submissions_from_non_enrolled_students,
+            "min_group_size": loaded.min_group_size,
+            "max_group_size": loaded.max_group_size,
+            "required_student_files": loaded.required_student_files,
+            "expected_student_file_patterns": loaded.expected_student_file_patterns,
+            "urls": {
+                "self": reverse('projects:get', kwargs={'pk': loaded.pk}),
+                "semester": self.semester_url,
+                "uploaded_files": reverse('project:files', kwargs={'pk': loaded.pk}),
+            }
+        }
+
+        self.assertEqual(expected_content, actual_content)
+
+    def test_course_admin_add_project_no_defaults(self):
+        args = {
+            'name': 'spam project',
+            "visible_to_students": True,
+            "closing_time": timezone.now(),
+            "disallow_student_submissions": True,
+            "allow_submissions_from_non_enrolled_students": True,
+            "min_group_size": 2,
+            "max_group_size": 3,
+            "required_student_files": ['spam.cpp', 'eggs.cpp'],
+            "expected_student_file_patterns": Project.FilePatternTuple(
+                'test_*.cpp', 1, 4)
+        }
+        client = MockClient(self.admin)
+        response = client.post(self.projects_url, args)
+
+        self.assertEqual(201, response.status_code)
+
+        actual_content = json_load_bytes(response.content)
+
+        loaded = Project.objects.get(name=args['name'])
+
+        for arg, value in args.items():
+            self.assertEqual(value, getattr(loaded, arg))
+
+        expected_content = {
+            "type": "project",
+            "id": loaded.pk,
+            "urls": {
+                "self": reverse('projects:get', kwargs={'pk': loaded.pk}),
+                "semester": self.semester_url,
+                "uploaded_files": reverse('project:files', kwargs={'pk': loaded.pk}),
+            }
+        }
+        expected_content.update(args)
+        expected_content['expected_student_file_patterns'] = {
+            'pattern': args['expected_student_file_patterns'].pattern,
+            'min_num_matches': args['expected_student_file_patterns'].min_num_matches,
+            'max_num_matches': args['expected_student_file_patterns'].max_num_matches,
+        }
+
+        self.assertEqual(expected_content, actual_content)
 
     def test_other_add_project_permission_denied(self):
-        self.fail()
+        project_name = 'spam_project'
+        for user in self.staff, self.enrolled, self.nobody:
+            client = MockClient(user)
+            response = client.post(self.projects_url, {'name': project_name})
+
+            self.assertEqual(403, response.status_code)
+
+            with self.assertRaises(ObjectDoesNotExist):
+                Project.objects.get(name=project_name)

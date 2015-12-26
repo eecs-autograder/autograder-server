@@ -229,7 +229,6 @@ class StringArrayField(ValidatedArrayField):
         return self.to_python(value)
 
 
-# TODO: implement
 class ShortStringField(models.CharField):
     def __init__(self, max_length=gc.MAX_CHAR_FIELD_LEN, strip=True, **kwargs):
         self.strip = strip

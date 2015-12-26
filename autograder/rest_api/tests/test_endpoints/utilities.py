@@ -30,8 +30,8 @@ class MockClient:
         self.request_factory = RequestFactory()
         self.user = user
 
-    def get(self, url):
-        request = self.request_factory.get(url)
+    def get(self, url, query_params={}):
+        request = self.request_factory.get(url, query_params)
         request.user = self.user
 
         resolved = resolve(request.path)

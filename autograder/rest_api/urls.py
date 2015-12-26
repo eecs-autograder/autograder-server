@@ -37,17 +37,13 @@ course_patterns = [
 semester_patterns = [
     url(r'^$', endpoints.GetUpdateSemesterEndpoint.as_view(),
         name='get'),
-    url(r'^$', endpoints.ListAddRemoveSemesterStaffEndpoint.as_view(),
+    url(r'^staff/$', endpoints.ListAddRemoveSemesterStaffEndpoint.as_view(),
         name='staff'),
-    url(r'^$', endpoints.ListAddUpdateRemoveEnrolledStudentsEndpoint.as_view(),
+    url(r'^enrolled_students/$', endpoints.ListAddUpdateRemoveEnrolledStudentsEndpoint.as_view(),
         name='enrolled_students'),
-    url(r'^$', endpoints.ListAddProjectEndpoint.as_view(),
-        name='project')
+    url(r'^projects/$', endpoints.ListAddProjectEndpoint.as_view(),
+        name='projects')
 ]
-
-# submission_patterns = [
-#     url(r'^$', endpoints.GetSubmissionEndpoint.as_view())
-# ]
 
 urlpatterns = [
     url(r'^users/(?P<pk>[0-9]+)/', include(user_patterns, namespace='user')),

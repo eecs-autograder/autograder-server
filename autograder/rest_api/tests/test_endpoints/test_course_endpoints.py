@@ -234,7 +234,6 @@ class ListAddRemoveCourseAdministratorsTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(200, response.status_code)
 
             actual_content = json_load_bytes(response.content)
-            actual_content['administrators'].sort()
 
             self.assertEqual(expected_content, actual_content)
 
@@ -255,7 +254,6 @@ class ListAddRemoveCourseAdministratorsTestCase(TemporaryFilesystemTestCase):
         new_admin_names = ['new_user1', 'new_user2']
         for user, new_admin_name in zip([self.superuser, self.admin], new_admin_names):
             expected_content['administrators'].append(new_admin_name)
-            expected_content['administrators'].sort()
 
             client = MockClient(user)
             response = client.post(

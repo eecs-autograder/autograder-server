@@ -152,8 +152,9 @@ class Project(ModelValidatableOnSave):
         clean()
         delete()
     """
-    # TODO: Replace with either a straight postgres JSONfield, a picklefield,
-    # or some combination of the two
+    # TODO: Replace with a ValidatedArrayField containing
+    # JSONSerializableClassFields, make this named tuple a full class
+    # that implements the JSONSerializable interface
     FilePatternTuple = collections.namedtuple(
         'FilePatternTuple',
         ['pattern', 'min_num_matches', 'max_num_matches'])

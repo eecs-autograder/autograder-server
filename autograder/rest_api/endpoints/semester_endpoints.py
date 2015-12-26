@@ -6,6 +6,8 @@ from .endpoint_base import EndpointBase
 
 from autograder.core.models import Course
 
+DEFAULT_ENROLLED_STUDENT_PAGE_SIZE = 20
+
 
 class GetUpdateSemesterEndpoint(EndpointBase):
     pass
