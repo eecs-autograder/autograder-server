@@ -19,7 +19,7 @@ Response format:
         "semesters_is_enrolled_in": "/users/<id>/semesters_is_enrolled_in/",
         "groups_is_member_of": "/users/<id>/groups_is_member_of/",
 
-        "pending_group_requests": "/users/<id>/pending_group_requests/",
+        "group_invitations_received": "/users/<id>/pending_group_requests/",
 
         "notifications": "/users/<id>/notifications/",
     }

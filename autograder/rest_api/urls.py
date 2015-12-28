@@ -2,6 +2,8 @@ from django.conf.urls import url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 from autograder.rest_api import endpoints
 
+import autograder.core.shared.global_constants as gc
+
 user_patterns = [
     # url(r'^$', endpoints.GetUser.as_view(), name='get'),
     # url(r'^courses_is_admin_for/$',
@@ -51,7 +53,8 @@ project_patterns = [
         name='get'),
     url(r'^uploaded_files/$', endpoints.ListAddProjectFileEndpoint.as_view(),
         name='files'),
-    url(r'^uploaded_files/(?P<pk>[0-9]+)/$',
+    url(r'^uploaded_files/(?P<filename>{})/$'.format(
+        gc.PROJECT_FILENAME_WHITELIST_REGEX.pattern),
         endpoints.GetUpdateDeleteProjectFileEndpoint.as_view(),
         name='file'),
     url(r'^autograder_test_cases/$',
@@ -68,6 +71,28 @@ project_patterns = [
         name='invitations'),
 ]
 
+ag_test_patterns = [
+    url(r'^$', endpoints.GetUpdateDeleteAutograderTestCaseEndpoint.as_view(),
+        name='get')
+]
+
+suite_patterns = [
+    url(r'^$', endpoints.GetUpdateDeleteStudentTestSuiteEndpoint.as_view(),
+        name='get')
+]
+
+group_patterns = [
+    url(r'^$', endpoints.GetUpdateDeleteSubmissionGroupEndpoint.as_view(),
+        name='get')
+
+]
+
+invitation_patterns = [
+    url(r'^$', endpoints.GetUpdateDeleteSubmissionGroupInvitationEndpoint.as_view(),
+        name='get')
+
+]
+
 urlpatterns = [
     url(r'^users/(?P<pk>[0-9]+)/', include(user_patterns, namespace='user')),
     url(r'^courses/$', endpoints.ListCreateCourseEndpoint.as_view(),
@@ -77,7 +102,17 @@ urlpatterns = [
     url(r'^semesters/(?P<pk>[0-9]+)/',
         include(semester_patterns, namespace='semester')),
     url(r'^projects/(?P<pk>[0-9]+)/',
-        include(project_patterns, namespace='project'))
+        include(project_patterns, namespace='project')),
+
+    url(r'^autograder_test_cases/(?P<pk>[0-9]+)/$',
+        include(ag_test_patterns, namespace='ag-test')),
+    url(r'^student_test_suites/(?P<pk>[0-9]+)/$',
+        include(suite_patterns, namespace='suites')),
+
+    url(r'^submission_groups/(?P<pk>[0-9]+)/$',
+        include(group_patterns, namespace='groups')),
+    url(r'^submission_group_invitations/(?P<pk>[0-9]+)/$',
+        include(invitation_patterns, namespace='invitations'))
 
 
     # url(r'^courses/$', views.CourseList.as_view()),

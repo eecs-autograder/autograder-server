@@ -112,7 +112,7 @@ class SubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
     #     self.assertTrue('invitation_creator' in cm.exception.message_dict)
 
     def test_exception_on_no_invitees(self):
-        self.project.min_group_size = 2
+        self.project.min_group_size = 1
         self.project.save()
 
         with self.assertRaises(ValidationError) as cm:

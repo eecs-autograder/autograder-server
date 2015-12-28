@@ -70,6 +70,27 @@ Request format:
 Note that if any of the above fields are omitted, their values will
 remain unchanged.
 
+Response format: 
+{
+    // Only the fields included in the request will be included here
+    "name": <name>,
+    "visible_to_students": <bool>,
+    "closing_time": <timestamp>,
+    "disallow_student_submissions": <bool>,
+    "allow_submissions_from_non_enrolled_students": <bool>,
+    "min_group_size": <int>,
+    "max_group_size": <int>,
+    "required_student_files": [<filename>, ...],
+    "expected_student_file_patterns": [
+        {
+            "pattern": <string>,
+            "min_num_matches": <int>,
+            "max_num_matches": <int>
+        },
+        ...
+    ],
+}
+
 --------------------------------------------------------------------------------
 
 /project/<id>/uploaded_files/
@@ -95,6 +116,11 @@ POST: Adds the files attached to the request to the specified project.
 Access rules:
     - If the user requesting to add the files is not a course administrator,
         then 403 Forbidden will be returned.
+
+Request format:
+{
+    'files': [<file>, ...]
+}
 
 Response format:
 {
@@ -127,8 +153,7 @@ Access rules:
 Response format:
 {
     "type": "project_file",
-    "id": <id>,
-    "name": <string>,
+    "filename": <string>,
     "size": <int>, // size is in bytes
     "content": <string>,
     "urls": {
@@ -144,6 +169,14 @@ Request format:
     "content": <string>
 }
 If any of the above fields are omitted, their values will remain unchanged.
+
+Response format: 
+{
+    // Only the fields that have changed will be included in the response
+    "filename": <string>,
+    "size": <int>, // size is in bytes
+    "content": <string>,
+}
 
 DELETE: Deletes the specified file.
 
@@ -175,7 +208,7 @@ Request format:
 {
     "type": <polymorphic type identifier string>,
 
-    // These fields are present for all polymorphic types
+    // These fields are exist for all polymorphic types
     "name": <string>,
     "command_line_arguments": [<string>, ...],
     "standard_input": <string>,
@@ -203,7 +236,12 @@ Request format:
     "executable_name": <string>,
 }
 
-Response format: Same as GET /autograder_test_cases/<id>/
+Response format:
+{
+    "name": <string>,
+    "type": <polymorphic type identifier string>,
+    "url": /autograder_test_cases/<id>/
+} 
 
 --------------------------------------------------------------------------------
 
@@ -250,6 +288,13 @@ Request format:
     "suite_resource_files_to_compile_together": [<string>, ...],
 }
 
+Response format:
+{
+    "type": <polymorphic type identifier string>,
+    "name": <string>,
+    "url": "/student_test_suites/<id>/"
+}
+
 --------------------------------------------------------------------------------
 
 /projects/<id>/submission_groups/?page_size=<int>&page_num=<int>&group_contains=<username>, ...
@@ -262,15 +307,8 @@ Access rules/Response content:
         // If the user doesn't belong to a submission group for this project,
         // "user_submission_group" will be null.
         "user_submission_group": {
-            "type": "submission_group",
-            "id": <id>,
-            "members": [<username>, ...],
-            "extended_due_date": <datetime | null>,
-            "urls": {
-                "self": "/submission_groups/<id>/",
-                "project": "/projects/<id>/",
-                "submissions": "/submission_groups/<id>/submissions/"
-            }
+                "members": [<string username>, ...],
+                "url": "/submission_groups/<group id>/"
         },
         "submission_groups": [
             {
@@ -290,13 +328,14 @@ Access rules/Response content:
 If the "group_contains" query parameter is specified, then the 
 "submission_groups" field will only include groups that contain all of the 
 specified usernames.
-By default, page_size is 20 and page_num is 1. These query parameters affect 
+By default, page_size is 20 and page_num is 0. These query parameters affect 
 the number of groups included in the "submission_groups" field.
 
 POST: Creates a new submission_group for this project.
 Access rules:
     - If the user making this request is a course administrator, then
-        this request will override the project restrictions on group size.
+        this request will override the project restrictions on group size
+        (groups must still have at least 1 member).
         Course administrators can create groups that they are not a member of.
     - Otherwise, this request will only be accepted if the user is requesting
         to create a group containing only themself (assuming the project 
@@ -311,22 +350,35 @@ Request format:
     "members": [<string username>, ...]
 }
 
-Response format: Same as GET /submission_groups/<id>/
+Response format: 
+{
+    "members": [<string username>, ...],
+    "url": "/submission_groups/<group id>/"   
+}
 
 --------------------------------------------------------------------------------
 
 /projects/<id>/submission_group_invitations/
-GET: Returns a list of group invitations for the specified project that involve
-the user making the request.
+GET: Returns a list of group invitations the user making the request has sent 
+and a list of group invitations that the user has received 
+for the specified project.
+
 Access rules: 
     - If the user making the request doesn't have permission to view the 
         specified project, then 403 Forbidden will be returned.
 
 Response format:
 {
-    "submission_group_invitations": [
+    "invitations_sent": [
         {
-            "request_creator": <string username>,
+            "users_invited": [<string username>, ...],
+            "url": "/submission_group_invitations/<id>/"
+        },
+        ...
+    ]
+    "invitations_received": [
+        {
+            "invitation_creator": <string username>,
             "url": "/submission_group_invitations/<id>/"
         },
         ...
@@ -343,5 +395,8 @@ Request format:
     "users_to_invite": [<string username>, ...]
 }
 
-Response format: Same as GET /submission_group_invitations/<id>/
-
+Response format: 
+{
+    "invitation_creator": <string username>,
+    "url": "/submission_group_invitations/<id>/"
+}

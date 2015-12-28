@@ -6,6 +6,8 @@ from .endpoint_base import EndpointBase
 
 from autograder.core.models import Course
 
+DEFAULT_SUBMISSION_GROUP_PAGE_SIZE = 20
+
 
 class GetUpdateProjectEndpoint(EndpointBase):
     pass

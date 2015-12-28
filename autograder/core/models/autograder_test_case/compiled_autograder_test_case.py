@@ -23,16 +23,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     This class allows evaluating a program that will be compiled
     and then run.
 
-    This class does not define any new fields.
-    Instead, the following fields inherited from the base class
-    are now REQUIRED:
-        compiler
-        compiler_flags (This field is allowed to be empty)
-        files_to_compile_together
-        executable_name
-
     Fields:
-
         compiler -- The program that will be used to compile the test case
             executable.
             Currently supported values listed in

@@ -52,9 +52,8 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
         project -- The Project this test case is associated with.
                    This field is REQUIRED.
 
-        student_test_case_filename_pattern -- A Project.FilePatternTuple
-            object that specifies a pattern used to identify files that
-            contain student test cases for this suite.
+        student_test_case_filename_pattern -- A string file pattern used to
+            identify files that contain student test cases for this suite.
             This pattern MUST be one of the patterns specified by
             Project.expected_student_file_patterns
             This field is REQUIRED.

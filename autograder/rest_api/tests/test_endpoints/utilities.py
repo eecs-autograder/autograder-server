@@ -37,10 +37,14 @@ class MockClient:
         resolved = resolve(request.path)
         return resolved.func(request, *resolved.args, **resolved.kwargs)
 
-    def post(self, url, data):
-        request = self.request_factory.post(
-            url, json.dumps(data, cls=DjangoJSONEncoder),
-            content_type='application/json')
+    def post(self, url, data, encode_data=True):
+        if encode_data:
+            data = json.dumps(data, cls=DjangoJSONEncoder)
+            request = self.request_factory.post(
+                url, data, content_type='application/json')
+        else:
+            request = self.request_factory.post(url, data)
+
         request.user = self.user
 
         resolved = resolve(request.path)

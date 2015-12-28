@@ -27,11 +27,17 @@ class SubmissionGroupInvitationManager(ManagerWithValidateOnCreate):
         actual SubmissionGroups.
         """
         with transaction.atomic():
+            invited_usernames = kwargs.pop('invited_users')
+            if not invited_usernames:
+                raise ValidationError(
+                    {'invited_users':
+                     'Group invitations must invite at least one user'})
+
             invitation_creator = User.objects.select_for_update().get(
                 username=kwargs.pop('invitation_creator'))
 
-            invited_usernames = kwargs.pop('invited_users')
             for username in invited_usernames:
+                # TODO: would select for update work here
                 User.objects.get_or_create(username=username)
 
             to_invite = User.objects.select_for_update().filter(
@@ -188,16 +194,15 @@ class SubmissionGroup(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    # # TODO: phase out
-    # @staticmethod
-    # def get_group(user, project):
-    #     """
-    #     Returns the SubmissionGroup that contains the specified user for
-    #     the given project.
-    #     Raises ObjectDoesNotExist if no such SubmissionGroup
-    #     exists.
-    #     """
-    #     return user.groups_is_member_of.get(project=project)
+    @staticmethod
+    def get_group(user, project):
+        """
+        Returns the SubmissionGroup that contains the specified user for
+        the given project.
+        Raises ObjectDoesNotExist if no such SubmissionGroup
+        exists.
+        """
+        return user.groups_is_member_of.get(project=project)
 
     # -------------------------------------------------------------------------
 
