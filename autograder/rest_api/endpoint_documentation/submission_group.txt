@@ -26,13 +26,19 @@ Response format:
 PATCH: Edits the submission_group with the specified id.
 Request format:
 {
+    // If either of these fields are omitted, their values
+    // will remain unchanged.
     "members": [<username>, ...],
     "extended_due_date": <datetime | null>,
 }
-Note that if either of the above fields are omitted, their values will remain 
-unchanged.
 
-Response format: Same as GET /submission_groups/<id>/
+Response format: 
+{
+    // Only the values listed in the patch request will
+    // be included here
+    "members": [<username>, ...],
+    "extended_due_date": <datetime | null>,    
+}
 
 DELETE: Deletes the specified submission group.
 
@@ -66,5 +72,13 @@ Access rules:
         project the specified group is associated with, 403 Forbidden will be returned.
 
 
-Request format: The files being submitted should be attached to the 
-POST request. No other request content is needed.
+Request format: 
+{
+    'files': [<file>, ...]   
+}
+
+Response format:
+{
+    "timestamp": <timestamp>,
+    "url": "/submissions/<id>/"    
+}

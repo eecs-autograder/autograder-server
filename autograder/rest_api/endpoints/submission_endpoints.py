@@ -11,15 +11,15 @@ class GetSubmissionEndpoint(EndpointBase):
     pass
 
 
-class ListSubmittedFilesTestCase(EndpointBase):
+class ListSubmittedFilesEndpoint(EndpointBase):
     pass
 
 
-class ListAutograderTestCaseResultsTestCase(EndpointBase):
+class ListAutograderTestCaseResultsEndpoint(EndpointBase):
     pass
 
 
-class ListStudentTestSuiteResultsTestCase(EndpointBase):
+class ListStudentTestSuiteResultsEndpoint(EndpointBase):
     pass
 
 

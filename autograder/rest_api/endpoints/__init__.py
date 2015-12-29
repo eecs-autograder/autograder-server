@@ -30,6 +30,7 @@ from .student_test_suite_endpoints import (
 
 from .submission_group_endpoints import (
     GetUpdateDeleteSubmissionGroupEndpoint,
+    AddListSubmissionsEndpoint
 )
 
 from .submission_group_invitation_endpoints import (

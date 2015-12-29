@@ -2,8 +2,8 @@
 GET: Returns the submission with the specified id.
 Access rules:
     - If the user making the request is not a course administrator, 
-        semester staff member, or member of the submission_group, then
-        403 Forbidden will be returned.
+        semester staff member, or member of the submission_group that
+        created the submission, then 403 Forbidden will be returned.
 
 Response format:
 {
@@ -34,7 +34,7 @@ Response format:
     "submitted_files": [
         {
             "filename": <string filename>,
-            "url": "/submitted_files/<file id>/"
+            "url": "/submissions/<id>/submitted_files/<filename>/"
         },
         ...
     ]
@@ -42,7 +42,7 @@ Response format:
 
 --------------------------------------------------------------------------------
 
-/submitted_files/<id>/
+"/submissions/<id>/submitted_files/<filename>/"
 GET: Returns the specified file.
 Access rules: Same as /submissions/<id>/
 
@@ -55,7 +55,7 @@ Response format:
     "content": <string>,
 
     "urls": {
-        "self": "/submitted_files/<id>/",
+        "self": "/submissions/<id>/submitted_files/<filename>/",
         "submission" "/submissions/<id>/"
     }
 }

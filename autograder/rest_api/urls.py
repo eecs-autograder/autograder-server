@@ -83,7 +83,10 @@ suite_patterns = [
 
 group_patterns = [
     url(r'^$', endpoints.GetUpdateDeleteSubmissionGroupEndpoint.as_view(),
-        name='get')
+        name='get'),
+    url(r'^submissions/$',
+        endpoints.AddListSubmissionsEndpoint.as_view(),
+        name='submissions')
 
 ]
 
@@ -104,15 +107,15 @@ urlpatterns = [
     url(r'^projects/(?P<pk>[0-9]+)/',
         include(project_patterns, namespace='project')),
 
-    url(r'^autograder_test_cases/(?P<pk>[0-9]+)/$',
+    url(r'^autograder_test_cases/(?P<pk>[0-9]+)/',
         include(ag_test_patterns, namespace='ag-test')),
-    url(r'^student_test_suites/(?P<pk>[0-9]+)/$',
-        include(suite_patterns, namespace='suites')),
+    url(r'^student_test_suites/(?P<pk>[0-9]+)/',
+        include(suite_patterns, namespace='suite')),
 
-    url(r'^submission_groups/(?P<pk>[0-9]+)/$',
-        include(group_patterns, namespace='groups')),
-    url(r'^submission_group_invitations/(?P<pk>[0-9]+)/$',
-        include(invitation_patterns, namespace='invitations'))
+    url(r'^submission_groups/(?P<pk>[0-9]+)/',
+        include(group_patterns, namespace='group')),
+    url(r'^submission_group_invitations/(?P<pk>[0-9]+)/',
+        include(invitation_patterns, namespace='invitation'))
 
 
     # url(r'^courses/$', views.CourseList.as_view()),
