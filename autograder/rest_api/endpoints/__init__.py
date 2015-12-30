@@ -39,8 +39,10 @@ from .submission_group_invitation_endpoints import (
 
 # from .user_endpoints import GetUser
 
-# from .submission_endpoints import (
-#     GetSubmissionEndpoint, ListSubmittedFilesTestCase,
-#     ListAutograderTestCaseResultsTestCase,
-#     ListStudentTestSuiteResultsTestCase
-# )
+from .submission_endpoints import (
+    GetSubmissionEndpoint,
+    ListSubmittedFilesEndpoint,
+    GetSubmittedFileEndpoint,
+    ListAutograderTestCaseResultsEndpoint,
+    ListStudentTestSuiteResultsEndpoint
+)

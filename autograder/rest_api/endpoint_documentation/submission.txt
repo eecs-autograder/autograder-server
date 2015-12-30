@@ -49,8 +49,7 @@ Access rules: Same as /submissions/<id>/
 Response format:
 {
     "type": "submitted_file",
-    "id": <id>,
-    "name": <string>,
+    "filename": <string>,
     "size": <int>,
     "content": <string>,
 

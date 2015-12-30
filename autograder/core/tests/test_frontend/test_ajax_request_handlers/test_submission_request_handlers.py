@@ -90,8 +90,6 @@ class _SetUpBase(RequestHandlerTestCase):
             fbc.VisibilityLevel.hide_from_students)
         self.hidden_test.save()
 
-        self.assertNotEqual(self.visible_test, self.hidden_test)
-
         self.files = [
             SimpleUploadedFile('hello.cpp', b'int main() { return 0; }')
         ]

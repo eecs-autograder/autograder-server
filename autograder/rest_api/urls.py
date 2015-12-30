@@ -96,6 +96,21 @@ invitation_patterns = [
 
 ]
 
+submission_patterns = [
+    url(r'^$', endpoints.GetSubmissionEndpoint.as_view(),
+        name='get'),
+    url(r'^submitted_files/$', endpoints.ListSubmittedFilesEndpoint.as_view(),
+        name='files'),
+    url(r'^submitted_files/(?P<filename>{})/$'.format(
+        gc.PROJECT_FILENAME_WHITELIST_REGEX.pattern),
+        endpoints.GetSubmittedFileEndpoint.as_view(),
+        name='file'),
+    url(r'^autograder_test_case_results/$', endpoints.ListAutograderTestCaseResultsEndpoint.as_view(),
+        name='test-results'),
+    url(r'^student_test_suite_results/$', endpoints.ListStudentTestSuiteResultsEndpoint.as_view(),
+        name='suite-results'),
+]
+
 urlpatterns = [
     url(r'^users/(?P<pk>[0-9]+)/', include(user_patterns, namespace='user')),
     url(r'^courses/$', endpoints.ListCreateCourseEndpoint.as_view(),
@@ -115,8 +130,10 @@ urlpatterns = [
     url(r'^submission_groups/(?P<pk>[0-9]+)/',
         include(group_patterns, namespace='group')),
     url(r'^submission_group_invitations/(?P<pk>[0-9]+)/',
-        include(invitation_patterns, namespace='invitation'))
+        include(invitation_patterns, namespace='invitation')),
 
+    url(r'^submissions/(?P<pk>[0-9]+)/',
+        include(submission_patterns, namespace='submission')),
 
     # url(r'^courses/$', views.CourseList.as_view()),
     # url(r'^courses/(?P<pk>[0-9]+)/$', views.CourseDetail.as_view()),

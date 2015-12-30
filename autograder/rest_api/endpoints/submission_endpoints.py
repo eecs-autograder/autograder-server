@@ -15,6 +15,10 @@ class ListSubmittedFilesEndpoint(EndpointBase):
     pass
 
 
+class GetSubmittedFileEndpoint(EndpointBase):
+    pass
+
+
 class ListAutograderTestCaseResultsEndpoint(EndpointBase):
     pass
 

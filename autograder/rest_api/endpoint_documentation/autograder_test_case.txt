@@ -46,7 +46,8 @@ PATCH: Edits the specified autograder test case.
 Access rules: Same as POST /projects/<id>/autograder_test_cases/
 Request format: Same as POST /projects/<id>/autograder_test_cases/, except
 that the "type" field may NOT be specified.
-Response format: Same as GET /autograder_test_cases/<id>/
+Response format: Same as GET /autograder_test_cases/<id>/, except that only the
+fields that were requested to be edited will be included.
 
 DELETE: Deletes the specified autograder test case.
 Access rules: Same as POST /projects/<id>/autograder_test_cases/
