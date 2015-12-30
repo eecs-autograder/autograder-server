@@ -77,7 +77,30 @@ class GetUpdateDeleteAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
-    def test_course_admin_edit_test_case(self):
+    def test_course_admin_edit_test_case_some_fields(self):
+        args = {
+            'files_to_compile_together': self.required_filenames[:1],
+            'name': 'westy',
+            'expected_standard_output': 'spamegg\n'
+        }
+
+        client = MockClient(self.admin)
+        response = client.patch(self.test_url, args)
+
+        self.assertEqual(200, response.status_code)
+
+        self.assertEqual(args, json_load_bytes(response.content))
+
+        loaded = AutograderTestCaseBase.objects.get(pk=self.test_case.pk)
+        for arg, value in args.items():
+            self.assertEqual(value, getattr(loaded, arg))
+
+        # sanity check that other fields weren't edited
+        self.assertEqual(
+            self.test_case.expected_return_code, loaded.expected_return_code)
+
+    def test_course_admin_edit_test_case_all_fields(self):
+        self.fail()
         args = {
             'files_to_compile_together': self.required_filenames[:1],
             'name': 'westy',

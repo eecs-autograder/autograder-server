@@ -117,7 +117,7 @@ def _get_suite_results_url(submission):
 
 
 def _get_ag_test_result_url(result):
-    return reverse('test-result:get', kwargs={'pk': result.pk})
+    return reverse('ag-test:get', kwargs={'pk': result.pk})
 
 
 def _get_suite_result_url(result):
@@ -470,8 +470,6 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
             obj['visible_result'] = visible_result
             obj['test_results'] = sorted([hidden_result, visible_result],
                                          key=lambda res: res.test_case.name)
-
-    # cross check with test_submission_request_handlers.py
 
     def test_student_list_own_test_case_results_with_points_feedback(self):
         self.visible_test.feedback_configuration.points_feedback_level = (

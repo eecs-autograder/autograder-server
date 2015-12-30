@@ -15,7 +15,7 @@ Response format:
         "submission": "/submissions/<id>/"
     },
 
-    //** NOTE: Some or all of the following may be omitted **//
+    //** NOTE: Some or all of the following may be omitted  **//
     //** depending on the feedback level and the way the    **//
     //** test case determines correctness.                  **//
 

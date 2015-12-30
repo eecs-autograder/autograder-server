@@ -89,7 +89,26 @@ class GetUpdateDeleteStudentTestSuiteTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
-    def test_course_admin_edit_suite(self):
+    def test_course_admin_edit_suite_some_fields(self):
+        args = {
+            'name': 'spammy',
+            'buggy_implementation_filenames': (
+                self.suite.buggy_implementation_filenames[:1]),
+            'compiler_flags': ['flag', 'stag']
+        }
+
+        client = MockClient(self.admin)
+        response = client.patch(self.suite_url, args)
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(args, json_load_bytes(response.content))
+
+        loaded = StudentTestSuiteBase.objects.get(pk=self.suite.pk)
+        for arg, value in args.items():
+            self.assertEqual(value, getattr(loaded, arg))
+
+    def test_course_admin_edit_suite_all_fields(self):
+        self.fail()
         args = {
             'name': 'spammy',
             'buggy_implementation_filenames': (

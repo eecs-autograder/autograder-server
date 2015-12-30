@@ -76,6 +76,11 @@ ag_test_patterns = [
         name='get')
 ]
 
+ag_test_result_patterns = [
+    url(r'^$', endpoints.GetAutograderTestCaseResultEndpoint.as_view(),
+        name='get')
+]
+
 suite_patterns = [
     url(r'^$', endpoints.GetUpdateDeleteStudentTestSuiteEndpoint.as_view(),
         name='get')
@@ -124,6 +129,9 @@ urlpatterns = [
 
     url(r'^autograder_test_cases/(?P<pk>[0-9]+)/',
         include(ag_test_patterns, namespace='ag-test')),
+    url(r'^autograder_test_case_results/(?P<pk>[0-9]+)',
+        include(ag_test_result_patterns, namespace='test-result')),
+
     url(r'^student_test_suites/(?P<pk>[0-9]+)/',
         include(suite_patterns, namespace='suite')),
 

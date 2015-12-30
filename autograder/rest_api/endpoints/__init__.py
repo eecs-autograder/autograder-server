@@ -24,6 +24,10 @@ from .autograder_test_case_endpoints import (
     GetUpdateDeleteAutograderTestCaseEndpoint,
 )
 
+from .autograder_test_case_result_endpoints import (
+    GetAutograderTestCaseResultEndpoint,
+)
+
 from .student_test_suite_endpoints import (
     GetUpdateDeleteStudentTestSuiteEndpoint,
 )

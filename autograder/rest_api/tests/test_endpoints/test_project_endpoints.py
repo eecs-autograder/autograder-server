@@ -1314,6 +1314,8 @@ class ListAddSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(
                 expected_content, json_load_bytes(response.content))
 
+            self.assertEqual(1, invitee.notifications.count())
+
     def test_student_create_invitation_hidden_project_permission_denied(self):
         self.hidden_project.allow_submissions_from_non_enrolled_students = True
         self.hidden_project.validate_and_save()
