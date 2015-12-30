@@ -32,6 +32,10 @@ from .student_test_suite_endpoints import (
     GetUpdateDeleteStudentTestSuiteEndpoint,
 )
 
+from .student_test_suite_result_endpoints import (
+    GetStudentTestSuiteResultEndpoint,
+)
+
 from .submission_group_endpoints import (
     GetUpdateDeleteSubmissionGroupEndpoint,
     AddListSubmissionsEndpoint

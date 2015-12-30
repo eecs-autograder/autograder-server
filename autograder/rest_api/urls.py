@@ -86,6 +86,11 @@ suite_patterns = [
         name='get')
 ]
 
+suite_result_patterns = [
+    url(r'^$', endpoints.GetStudentTestSuiteResultEndpoint.as_view(),
+        name='get')
+]
+
 group_patterns = [
     url(r'^$', endpoints.GetUpdateDeleteSubmissionGroupEndpoint.as_view(),
         name='get'),
@@ -134,6 +139,8 @@ urlpatterns = [
 
     url(r'^student_test_suites/(?P<pk>[0-9]+)/',
         include(suite_patterns, namespace='suite')),
+    url(r'^student_test_suite_results/(?P<pk>[0-9]+)',
+        include(suite_patterns, namespace='suite-result')),
 
     url(r'^submission_groups/(?P<pk>[0-9]+)/',
         include(group_patterns, namespace='group')),
