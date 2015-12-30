@@ -101,7 +101,8 @@ class GetUpdateDeleteAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
     def test_course_admin_edit_test_case_invalid_settings(self):
         args = {
-            'files_to_compile_together': ['not_a_student_file']
+            'files_to_compile_together': ['not_a_student_file'],
+            'name': 'oopsy'
         }
 
         client = MockClient(self.admin)
