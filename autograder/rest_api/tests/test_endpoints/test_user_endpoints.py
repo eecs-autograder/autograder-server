@@ -25,107 +25,95 @@ class UserGetRequestTestCase(TemporaryFilesystemTestCase):
         self.enrolled_users = list(self.group.members.all())
 
     def test_user_get_self_all_info_returned(self):
-        self.fail()
-        # for user in self.enrolled_users:
-        #     client = MockClient(user)
+        for user in self.enrolled_users:
+            client = MockClient(user)
 
-        #     expected_json = {
-        #         "type": "user",
-        #         "id": user.pk,
-        #         "username": user.username,
+            expected_json = {
+                "type": "user",
+                "id": user.pk,
+                "username": user.username,
 
-        #         "urls": {
-        #             "self": reverse('user:get', kwargs={'pk': user.pk}),
+                "urls": {
+                    "self": reverse('user:get', kwargs={'pk': user.pk}),
 
-        #             "courses_is_admin_for": reverse(
-        #                 'user:admin-courses', kwargs={'pk': user.pk}),
-        #             "semesters_is_staff_for": reverse(
-        #                 'user:staff-semesters', kwargs={'pk': user.pk}),
-        #             "semesters_is_enrolled_in": reverse(
-        #                 'user:enrolled-semesters', kwargs={'pk': user.pk}),
-        #             "groups_is_member_of": reverse(
-        #                 'user:submission-groups', kwargs={'pk': user.pk}),
+                    "courses_is_admin_for": reverse(
+                        'user:admin-courses', kwargs={'pk': user.pk}),
+                    "semesters_is_staff_for": reverse(
+                        'user:staff-semesters', kwargs={'pk': user.pk}),
+                    "semesters_is_enrolled_in": reverse(
+                        'user:enrolled-semesters', kwargs={'pk': user.pk}),
+                    "groups_is_member_of": reverse(
+                        'user:submission-groups', kwargs={'pk': user.pk}),
 
-        #             "pending_group_requests": reverse(
-        #                 'user:pending-group-requests', kwargs={'pk': user.pk}),
+                    "group_invitations_sent": reverse(
+                        'user:invitations-sent', kwargs={'pk': user.pk}),
 
-        #             "notifications": reverse(
-        #                 'user:notifications', kwargs={'pk': user.pk})
-        #         }
-        #     }
-        #     response = client.get(reverse('user:get', kwargs={'pk': user.pk}))
+                    "group_invitations_received": reverse(
+                        'user:invitations-received', kwargs={'pk': user.pk}),
 
-        #     self.assertEqual(200, response.status_code)
-        #     self.assertEqual(expected_json, json_load_bytes(response.content))
+                    "notifications": reverse(
+                        'user:notifications', kwargs={'pk': user.pk})
+                }
+            }
+            response = client.get(reverse('user:get', kwargs={'pk': user.pk}))
 
-    def test_other_get_user_minimum_info_returned(self):
-        self.fail()
-        # users = self.enrolled_users + [
-        #     self.administrator, self.staff, self.not_enrolled]
-        # for requester, requested in itertools.product(users, users):
-        #     if requester == requested:
-        #         continue
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(expected_json, json_load_bytes(response.content))
 
-        #     client = MockClient(requester)
+    def test_other_get_user_permission_denied(self):
+        users = self.enrolled_users + [
+            self.administrator, self.staff, self.not_enrolled]
+        for requester, requested in itertools.product(users, users):
+            if requester == requested:
+                continue
 
-        #     expected_json = {
-        #         "type": "user",
-        #         "id": requested.pk,
-        #         "username": requested.username,
+            client = MockClient(requester)
 
-        #         "urls": {
-        #             "self": reverse('user:get', kwargs={'pk': requested.pk}),
-        #         }
-        #     }
-        #     response = client.get(
-        #         reverse('user:get', kwargs={'pk': requested.pk}))
+            response = client.get(
+                reverse('user:get', kwargs={'pk': requested.pk}))
 
-        #     self.assertEqual(200, response.status_code)
-        #     self.assertEqual(expected_json, json_load_bytes(response.content))
+            self.assertEqual(403, response.status_code)
 
     def test_user_not_found(self):
-        self.fail()
-        # client = MockClient(self.administrator)
+        client = MockClient(self.administrator)
 
-        # response = client.get(
-        #     reverse('user:get', kwargs={'pk': 750}))
+        response = client.get(
+            reverse('user:get', kwargs={'pk': 750}))
 
-        # self.assertEqual(404, response.status_code)
+        self.assertEqual(404, response.status_code)
 
     # -------------------------------------------------------------------------
 
     def test_user_get_self_courses_is_admin_for(self):
         self.fail()
-        # other_course = obj_ut.build_course()
-        # other_course.administrators.add(self.administrator)
+        other_course = obj_ut.build_course()
+        other_course.administrators.add(self.administrator)
 
-        # client = MockClient(self.administrator)
+        client = MockClient(self.administrator)
 
-        # expected_json = {
-        #     "courses": [
-        #         {
-        #             "type": 'course',
-        #             'id': course.pk,
-        #             'name': course.name,
-        #             'urls': {
-        #                 'self': reverse('course:get', kwargs={'pk': course.pk})
-        #             }
-        #         }
-        #         for course in sorted_by_pk(
-        #             self.administrator.courses_is_admin_for.all())
-        #     ]
-        # }
+        expected_json = {
+            "courses": [
+                {
+                    'name': course.name,
+                    'urls': {
+                        'self': reverse('course:get', kwargs={'pk': course.pk})
+                    }
+                }
+                for course in sorted_by_pk(
+                    self.administrator.courses_is_admin_for.all())
+            ]
+        }
 
-        # response = client.get(
-        #     reverse(
-        #         'user:admin-courses', kwargs={'pk': self.administrator.pk}))
+        response = client.get(
+            reverse(
+                'user:admin-courses', kwargs={'pk': self.administrator.pk}))
 
-        # self.assertEqual(200, response.status_code)
+        self.assertEqual(200, response.status_code)
 
-        # actual_json = json_load_bytes(response.content)
-        # actual_json['courses'] = sorted_by_pk(actual_json['courses'])
+        actual_json = json_load_bytes(response.content)
+        actual_json['courses'] = sorted_by_pk(actual_json['courses'])
 
-        # self.assertEqual(expected_json, actual_json)
+        self.assertEqual(expected_json, actual_json)
 
     def test_permission_denied_get_other_courses_is_admin_for(self):
         self.fail()
@@ -158,4 +146,15 @@ class UserGetRequestTestCase(TemporaryFilesystemTestCase):
         self.fail()
 
     def test_permission_denied_get_other_notifications(self):
+        self.fail()
+
+
+class TestGetNotificationEndpoint(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_user_get_own_notification(self):
+        self.fail()
+
+    def test_user_get_other_notification_permission_denied(self):
         self.fail()

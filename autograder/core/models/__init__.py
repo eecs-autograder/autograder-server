@@ -1,5 +1,7 @@
 # Import all Model classes here.
 
+from .notification import Notification
+
 from .course import Course
 from .semester import Semester
 from .project import Project

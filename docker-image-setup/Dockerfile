@@ -2,7 +2,7 @@ FROM ubuntu
 
 RUN apt-get update
 
-RUN apt-get install -y g++ valgrind
+RUN apt-get install -y g++ valgrind clang
 
 RUN mkdir -p /home/autograder/working_dir
 

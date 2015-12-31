@@ -101,9 +101,12 @@ group_patterns = [
 ]
 
 invitation_patterns = [
-    url(r'^$', endpoints.GetUpdateDeleteSubmissionGroupInvitationEndpoint.as_view(),
-        name='get')
-
+    url(r'^$',
+        endpoints.GetRejectSubmissionGroupInvitationEndpoint.as_view(),
+        name='get'),
+    url(r'^accept/$',
+        endpoints.AcceptSubmissionGroupInvitationEndpoint.as_view(),
+        name='accept')
 ]
 
 submission_patterns = [

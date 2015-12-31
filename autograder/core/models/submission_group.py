@@ -28,29 +28,33 @@ class SubmissionGroupInvitationManager(ManagerWithValidateOnCreate):
         """
         with transaction.atomic():
             invited_usernames = kwargs.pop('invited_users')
+            invitation_creator_name = kwargs.pop('invitation_creator')
+
             if not invited_usernames:
                 raise ValidationError(
                     {'invited_users':
                      'Group invitations must invite at least one user'})
 
-            invitation_creator = User.objects.select_for_update().get(
-                username=kwargs.pop('invitation_creator'))
+            invited_users = [
+                User.objects.get_or_create(username=username)[0]
+                for username in invited_usernames
+            ]
+            invitation_creator = User.objects.get(
+                username=invitation_creator_name)
 
-            for username in invited_usernames:
-                # TODO: would select for update work here
-                User.objects.get_or_create(username=username)
-
-            to_invite = User.objects.select_for_update().filter(
-                username__in=invited_usernames)
+            # Lock all users at once to prevent deadlock
+            User.objects.select_for_update().filter(
+                pk__in=(user.pk for user in itertools.chain(
+                    invited_users, [invitation_creator])))
 
             verify_users_can_be_in_group(
-                tuple(itertools.chain(to_invite, (invitation_creator,))),
+                tuple(itertools.chain(invited_users, (invitation_creator,))),
                 kwargs['project'], 'invited_users')
 
             invitation = self.model(
                 invitation_creator=invitation_creator, **kwargs)
             invitation.save()
-            invitation.invited_users.add(*to_invite)
+            invitation.invited_users.add(*invited_users)
             invitation.full_clean()
             return invitation
 
@@ -299,7 +303,7 @@ class SubmissionGroup(ModelValidatableOnSave):
 def verify_users_can_be_in_group(users, project, error_dict_field_name):
     """
     Parameters:
-        users -- A container of User objects that will potentially be
+        users -- An iterable of User objects that will potentially be
             in a group.
 
         project -- The project the given users want to be in a group for.
@@ -319,6 +323,7 @@ def verify_users_can_be_in_group(users, project, error_dict_field_name):
 
     If these conditions are not met, then ValidationError will be thrown.
     """
+    users = tuple(users)
     semester = project.semester
 
     num_members = len(users)

@@ -15,11 +15,11 @@ Response format:
         "<username>": <bool>,
         ...
     },
+    "semester_name": <string>,
     "project_name": <string>,
     "urls": {
         "self": "/submission_group_invitations/<id>/",
         "accept": "/submission_group_invitations/<id>/accept/",
-        "reject": "/submission_group_invitations/<id>/reject/",
         "project": "/projects/<id>/"
     }
 }
@@ -44,3 +44,6 @@ Access rules:
         403 Forbidden will be returned.
     - If the user making the request doesn't have permission to view the 
         project the specified group is associated with, 403 Forbidden will be returned.
+
+The request and response have no content for this endpoint. 
+On success, 204 No content will be returned.

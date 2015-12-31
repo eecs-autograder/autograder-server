@@ -42,7 +42,8 @@ from .submission_group_endpoints import (
 )
 
 from .submission_group_invitation_endpoints import (
-    GetUpdateDeleteSubmissionGroupInvitationEndpoint,
+    GetRejectSubmissionGroupInvitationEndpoint,
+    AcceptSubmissionGroupInvitationEndpoint
 )
 
 # from .user_endpoints import GetUser
