@@ -5,25 +5,28 @@ from autograder.rest_api import endpoints
 import autograder.core.shared.global_constants as gc
 
 user_patterns = [
-    # url(r'^$', endpoints.GetUser.as_view(), name='get'),
-    # url(r'^courses_is_admin_for/$',
-    #     endpoints.GetUserCoursesIsAdminFor.as_view(),
-    #     name='admin-courses'),
-    # url(r'^semesters_is_staff_for/$',
-    #     endpoints.GetUserSemstersIsStaffFor.as_view(),
-    #     name='staff-semesters'),
-    # url(r'^semesters_is_enrolled_in/$',
-    #     endpoints.GetUserSemestersIsEnrolledIn.as_view(),
-    #     name='enrolled-semesters'),
-    # url(r'^groups_is_member_of/$',
-    #     endpoints.GetUserGroupsIsMemberOf.as_view(),
-    #     name='submission-groups'),
-    # url(r'^pending_group_requests/$',
-    #     endpoints.GetUserPendingGroupRequests.as_view(),
-    #     name='pending-group-requests'),
-    # url(r'^notifications/$',
-    #     endpoints.GetUserNotifications.as_view(),
-    #     name='notifications'),
+    url(r'^$', endpoints.GetUser.as_view(), name='get'),
+    url(r'^courses_is_admin_for/$',
+        endpoints.GetUserCoursesIsAdminForEndpoint.as_view(),
+        name='admin-courses'),
+    url(r'^semesters_is_staff_for/$',
+        endpoints.GetUserSemstersIsStaffForEndpoint.as_view(),
+        name='staff-semesters'),
+    url(r'^semesters_is_enrolled_in/$',
+        endpoints.GetUserSemestersIsEnrolledInEndpoint.as_view(),
+        name='enrolled-semesters'),
+    url(r'^groups_is_member_of/$',
+        endpoints.GetUserGroupsIsMemberOfEndpoint.as_view(),
+        name='submission-groups'),
+    url(r'^group_invitations_sent/$',
+        endpoints.GetGroupInvitationsSentEndpoint.as_view(),
+        name='invitations-sent'),
+    url(r'^group_invitations_received/$',
+        endpoints.GetGroupInvitationsReceivedEndpoint.as_view(),
+        name='invitations-received'),
+    url(r'^notifications/$',
+        endpoints.GetUserNotificationsEndpoint.as_view(),
+        name='notifications'),
 ]
 
 course_patterns = [
@@ -124,6 +127,11 @@ submission_patterns = [
         name='suite-results'),
 ]
 
+notification_patterns = [
+    url(r'^$', endpoints.GetUserNotificationEndpoint.as_view(),
+        name='get'),
+]
+
 urlpatterns = [
     url(r'^users/(?P<pk>[0-9]+)/', include(user_patterns, namespace='user')),
     url(r'^courses/$', endpoints.ListCreateCourseEndpoint.as_view(),
@@ -152,6 +160,10 @@ urlpatterns = [
 
     url(r'^submissions/(?P<pk>[0-9]+)/',
         include(submission_patterns, namespace='submission')),
+
+    url(r'^notifications/(?P<pk>[0-9]+)/',
+        include(notification_patterns, namespace='notification'))
+
 
     # url(r'^courses/$', views.CourseList.as_view()),
     # url(r'^courses/(?P<pk>[0-9]+)/$', views.CourseDetail.as_view()),

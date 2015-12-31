@@ -1,3 +1,15 @@
+from .user_endpoints import (
+    GetUser,
+    GetUserCoursesIsAdminForEndpoint,
+    GetUserSemstersIsStaffForEndpoint,
+    GetUserSemestersIsEnrolledInEndpoint,
+    GetUserGroupsIsMemberOfEndpoint,
+    GetGroupInvitationsSentEndpoint,
+    GetGroupInvitationsReceivedEndpoint,
+    GetUserNotificationsEndpoint,
+    GetUserNotificationEndpoint,
+)
+
 from .course_endpoints import (
     ListCreateCourseEndpoint,
     GetUpdateCourseEndpoint,
@@ -45,8 +57,6 @@ from .submission_group_invitation_endpoints import (
     GetRejectSubmissionGroupInvitationEndpoint,
     AcceptSubmissionGroupInvitationEndpoint
 )
-
-# from .user_endpoints import GetUser
 
 from .submission_endpoints import (
     GetSubmissionEndpoint,

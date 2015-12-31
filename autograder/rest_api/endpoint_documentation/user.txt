@@ -86,8 +86,25 @@ Response format:
 
 --------------------------------------------------------------------------------
 
-/users/<id>/pending_group_requests/
-GET: Returns a list of pending group requests for the user making the request.
+/users/<id>/group_invitations_sent/
+GET: Returns a list of sent group invitations for the user making the request.
+Access rules: Same as /users/<id>/
+
+Response format:
+{
+    "group_requests": [
+        {
+            "project_name": <string>,
+            "request_sender": <string username>,
+            "url": "/submission_group_requests/<id>/"
+        }
+    ]
+}
+
+--------------------------------------------------------------------------------
+
+/users/<id>/group_invitations_received/
+GET: Returns a list of received group invitations for the user making the request.
 Access rules: Same as /users/<id>/
 
 Response format:
@@ -112,7 +129,6 @@ Response format:
     "notifications": [
         {
             "timestamp": <timestamp>,
-            "unread": <bool>,
             "url": "/notifications/<id>/"
         }
     ]
@@ -132,7 +148,6 @@ Response format:
     "id": <id>,
     "timestamp": <timestamp>,
     "message": <string>,
-    "unread": <bool>,
 
     "urls": {
         "self": "/notifications/<id>/",
