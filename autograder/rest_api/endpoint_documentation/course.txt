@@ -61,7 +61,11 @@ Request format:
 Note that if any of the above fields are omitted, their values will 
 remain unchanged.
 
-Response format: Same as GET /courses/<id>/
+Response format: 
+{
+    // Only the fields listed in the request will be included in the response
+    "name": <string>
+}
 
 --------------------------------------------------------------------------------
 

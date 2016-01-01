@@ -111,7 +111,7 @@ class GetUpdateCourseTestCase(TemporaryFilesystemTestCase):
             "urls": {
                 "self": reverse('course:get', kwargs={'pk': self.course.pk}),
                 "administrators": reverse(
-                    'course:administrators', kwargs={'pk': self.course.pk}),
+                    'course:admins', kwargs={'pk': self.course.pk}),
                 "semesters": reverse(
                     'course:semesters', kwargs={'pk': self.course.pk})
             },
@@ -161,16 +161,7 @@ class GetUpdateCourseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded.name, new_name)
 
         expected_content = {
-            "type": "course",
-            "id": self.course.pk,
             "name": new_name,
-            "urls": {
-                "self": reverse('course:get', kwargs={'pk': self.course.pk}),
-                "administrators": reverse(
-                    'course:administrators', kwargs={'pk': self.course.pk}),
-                "semesters": reverse(
-                    'course:semesters', kwargs={'pk': self.course.pk})
-            },
         }
 
         self.assertEqual(expected_content, json_load_bytes(response.content))
@@ -183,7 +174,7 @@ class GetUpdateCourseTestCase(TemporaryFilesystemTestCase):
             reverse('course:get', kwargs={'pk': self.course.pk}),
             {"name": 'steve'})
 
-        self.assertEqual(404, response.status_code)
+        self.assertEqual(403, response.status_code)
 
         loaded = Course.objects.get(pk=self.course.pk)
         self.assertEqual(loaded.name, old_name)
@@ -234,6 +225,7 @@ class ListAddRemoveCourseAdministratorsTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(200, response.status_code)
 
             actual_content = json_load_bytes(response.content)
+            actual_content['administrators'].sort()
 
             self.assertEqual(expected_content, actual_content)
 
@@ -246,26 +238,28 @@ class ListAddRemoveCourseAdministratorsTestCase(TemporaryFilesystemTestCase):
 
     def test_superuser_or_admin_add_administrators(self):
         expected_content = {
-            "administrators": list(sorted([
+            "administrators": [
                 self.admin.username, self.admin2.username
-            ]))
+            ]
         }
 
         new_admin_names = ['new_user1', 'new_user2']
         for user, new_admin_name in zip([self.superuser, self.admin], new_admin_names):
             expected_content['administrators'].append(new_admin_name)
+            expected_content['administrators'].sort()
 
             client = MockClient(user)
             response = client.post(
                 self.course_admins_url, {"administrators": [new_admin_name]})
 
             self.assertEqual(201, response.status_code)
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            actual_content['administrators'].sort()
+            self.assertEqual(expected_content, actual_content)
 
             new_admin = User.objects.get(username=new_admin_name)
             self.course.administrators.get(username=new_admin_name)
-            new_admin.courses_is_admin_for.get(pk=self.course)
+            new_admin.courses_is_admin_for.get(pk=self.course.pk)
 
     def test_other_add_administrators_permission_denied(self):
         client = MockClient(self.nobody)
@@ -288,7 +282,7 @@ class ListAddRemoveCourseAdministratorsTestCase(TemporaryFilesystemTestCase):
         }
 
         iterable = zip(
-            [self.superuser, self.admin2],
+            [self.admin2, self.superuser],
             [self.admin.username, self.admin2.username])
         for user, admin_to_remove in iterable:
             expected_content['administrators'].remove(admin_to_remove)
@@ -395,7 +389,7 @@ class ListAddSemesterTestCase(TemporaryFilesystemTestCase):
         response = client.post(self.course_semesters_url, {'name': new_name})
         self.assertEqual(201, response.status_code)
 
-        loaded = self.course.semesters.get(name='new_name')
+        loaded = self.course.semesters.get(name=new_name)
 
         expected_content = {
             "name": new_name,
@@ -410,7 +404,7 @@ class ListAddSemesterTestCase(TemporaryFilesystemTestCase):
             client = MockClient(user)
             response = client.post(
                 self.course_semesters_url, {'name': new_name})
-            self.assertEqual(403, response.content)
+            self.assertEqual(403, response.status_code)
 
             with self.assertRaises(ObjectDoesNotExist):
                 Semester.objects.get(name=new_name)

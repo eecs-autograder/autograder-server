@@ -172,7 +172,10 @@ class GetStudentTestSuiteResultTestCase(TemporaryFilesystemTestCase):
             response = client.get(obj['result_url'])
             self.assertEqual(403, response.status_code)
 
-    def test_student_get_own_or_staff_get_other_hidden_result_post_deadline_feedback_override(self):
+    def test_student_get_own_or_staff_get_other_hidden_result_show_with_post_deadline_feedback_override(self):
+        self.fail()
+
+    def test_student_get_own_or_staff_get_other_visible_result_hide_with_post_deadline_feedback_override(self):
         self.fail()
 
     def test_student_get_own_or_staff_get_other_hidden_result_post_deadline_feedback_override_but_student_has_extension(self):
