@@ -25,16 +25,16 @@ class GetUpdateSemesterEndpoint(EndpointBase):
             "id": pk,
             "name": semester.name,
             "urls": {
-                "self": url_shortcuts.get_semester(semester),
-                "course": url_shortcuts.get_course(semester.course),
-                "projects": url_shortcuts.get_projects(semester)
+                "self": url_shortcuts.semester_url(semester),
+                "course": url_shortcuts.course_url(semester.course),
+                "projects": url_shortcuts.projects_url(semester)
             }
         }
         if semester.is_semester_staff(request.user):
             response['urls'].update({
-                "staff": url_shortcuts.get_semester_staff(semester),
+                "staff": url_shortcuts.semester_staff_url(semester),
                 "enrolled_students": (
-                    url_shortcuts.get_semester_enrolled(semester)),
+                    url_shortcuts.semester_enrolled_url(semester)),
             })
         elif not semester.is_enrolled_student(request.user):
             raise exceptions.PermissionDenied()
@@ -223,7 +223,7 @@ class ListAddProjectEndpoint(EndpointBase):
             "projects": [
                 {
                     "name": project.name,
-                    "url": url_shortcuts.get_project(project)
+                    "url": url_shortcuts.project_url(project)
                 }
                 for project in projects
             ]
@@ -243,7 +243,7 @@ class ListAddProjectEndpoint(EndpointBase):
 
         response = {
             "name": project.name,
-            "url": url_shortcuts.get_project(project)
+            "url": url_shortcuts.project_url(project)
         }
 
         return http.JsonResponse(response, status=201)

@@ -1,3 +1,4 @@
+import os
 import json
 from django import http
 from django.core import exceptions
@@ -48,9 +49,9 @@ class GetUpdateProjectEndpoint(EndpointBase):
                 for obj in project.expected_student_file_patterns
             ],
             "urls": {
-                "self": url_shortcuts.get_project(project),
-                "semester": url_shortcuts.get_semester(project.semester),
-                "uploaded_files": url_shortcuts.get_project_files(project),
+                "self": url_shortcuts.project_url(project),
+                "semester": url_shortcuts.semester_url(project.semester),
+                "uploaded_files": url_shortcuts.project_files_url(project),
             }
         }
 
@@ -81,7 +82,51 @@ class GetUpdateProjectEndpoint(EndpointBase):
 
 
 class ListAddProjectFileEndpoint(EndpointBase):
-    pass
+    def get(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_is_staff(request.user, project)
+
+        response = {
+            "uploaded_files": [
+                {
+                    "filename": os.path.basename(file_.name),
+                    "size": file_.size,
+                    "url": url_shortcuts.project_file_url(
+                        project, os.path.basename(file_.name))
+                }
+                for file_ in project.get_project_files()
+            ]
+        }
+
+        return http.JsonResponse(response)
+
+    def post(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_can_edit(request.user, project)
+
+        success = []
+        failure = []
+
+        for file_ in request.FILES.getlist('files'):
+            try:
+                project.add_project_file(file_)
+                success.append({
+                    'filename': os.path.basename(file_.name),
+                    'size': file_.size,
+                    'url': url_shortcuts.project_file_url(
+                        project, os.path.basename(file_.name))
+                })
+            except exceptions.ValidationError as e:
+                failure.append({
+                    'filename': os.path.basename(file_.name),
+                    'error_message': str(e)
+                })
+
+        response = {'success': success, 'failure': failure}
+
+        return http.JsonResponse(response)
 
 
 class GetUpdateDeleteProjectFileEndpoint(EndpointBase):
@@ -119,6 +164,11 @@ def _check_can_view(user, project):
         return
 
     if not project.allow_submissions_from_non_enrolled_students:
+        raise exceptions.PermissionDenied()
+
+
+def _check_is_staff(user, project):
+    if not project.semester.is_semester_staff(user):
         raise exceptions.PermissionDenied()
 
 

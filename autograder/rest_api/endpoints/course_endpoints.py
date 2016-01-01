@@ -19,7 +19,7 @@ class ListCreateCourseEndpoint(EndpointBase):
             'courses': [
                 {
                     'name': course.name,
-                    'url': url_shortcuts.get_course(course)
+                    'url': url_shortcuts.course_url(course)
                 }
                 for course in ag_models.Course.objects.all()
             ]
@@ -36,7 +36,7 @@ class ListCreateCourseEndpoint(EndpointBase):
 
         response = {
             'name': course.name,
-            'url': url_shortcuts.get_course(course)
+            'url': url_shortcuts.course_url(course)
         }
 
         return http.JsonResponse(response, status=201)
@@ -58,14 +58,14 @@ class GetUpdateCourseEndpoint(EndpointBase):
             "id": pk,
             "name": course.name,
             "urls": {
-                "self": url_shortcuts.get_course(course),
+                "self": url_shortcuts.course_url(course),
             }
         }
 
         if course.is_administrator(request.user):
             response['urls'].update({
-                "administrators": url_shortcuts.get_course_admins(course),
-                "semesters": url_shortcuts.get_semesters(course)
+                "administrators": url_shortcuts.course_admins_url(course),
+                "semesters": url_shortcuts.semesters_url(course)
             })
 
         return http.JsonResponse(response)
@@ -153,7 +153,7 @@ class ListAddSemesterEndpoint(EndpointBase):
             "semesters": [
                 {
                     "name": semester.name,
-                    "url": url_shortcuts.get_semester(semester)
+                    "url": url_shortcuts.semester_url(semester)
                 }
                 for semester in course.semesters.all()
             ]
@@ -173,7 +173,7 @@ class ListAddSemesterEndpoint(EndpointBase):
 
         response = {
             'name': semester.name,
-            "url": url_shortcuts.get_semester(semester)
+            "url": url_shortcuts.semester_url(semester)
         }
 
         return http.JsonResponse(response, status=201)

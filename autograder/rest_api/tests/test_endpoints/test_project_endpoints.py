@@ -340,7 +340,7 @@ class ListAddProjectFileTestCase(TemporaryFilesystemTestCase):
             self.visible_project_files_url, {'files': good_files + bad_files},
             encode_data=False)
 
-        self.assertEqual(201, response.status_code)
+        self.assertEqual(200, response.status_code)
 
         expected_success_content = [
             {
@@ -349,7 +349,7 @@ class ListAddProjectFileTestCase(TemporaryFilesystemTestCase):
                 'url': reverse(
                     'project:file',
                     kwargs={
-                        'pk': self.visible_project.get_file(file_.name).pk,
+                        'pk': self.visible_project.pk,
                         'filename': file_.name})
             }
             for file_ in good_files

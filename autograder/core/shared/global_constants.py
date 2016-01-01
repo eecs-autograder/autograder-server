@@ -24,7 +24,7 @@ FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'
 # Note that this allows the empty string, as emptiness should be specified
 # with the 'blank' argument to the respective field.
 PROJECT_FILENAME_WHITELIST_REGEX = re.compile(
-    r'^[a-zA-Z][a-zA-Z0-9-_.]*$|^$')
+    r'[a-zA-Z][a-zA-Z0-9-_.]*|^$')
 # r"[a-zA-Z0-9-_.]+")
 
 # This regular expression provides the whitelist to be used
