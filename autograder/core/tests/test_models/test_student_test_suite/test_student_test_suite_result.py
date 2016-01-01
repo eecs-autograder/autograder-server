@@ -1,5 +1,7 @@
-from django.core.files.uploadedfile import SimpleUploadedFile
+import datetime
 
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
@@ -23,7 +25,8 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
                 'expected_student_file_patterns': [
                     Project.FilePatternTuple('test_*.cpp', 1, 3)
                 ],
-                'allow_submissions_from_non_enrolled_students': True
+                'allow_submissions_from_non_enrolled_students': True,
+                'closing_time': timezone.now() + datetime.timedelta(hours=-1)
             }
         )
         self.project = self.group.project
@@ -43,7 +46,8 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
             student_test_case_filename_pattern='test_*.cpp',
             correct_implementation_filename='correct.cpp',
             buggy_implementation_filenames=['buggy1.cpp', 'buggy2.cpp'],
-            points_per_buggy_implementation_exposed=2
+            points_per_buggy_implementation_exposed=2,
+            compiler='g++',
         )
 
         submitted_files = [
@@ -68,7 +72,7 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
                 validity_check_standard_output='askdjf',
                 validity_check_standard_error_output='ajdsnf',
                 timed_out=False,
-                buggy_implementations_exposed=['buggy1.cpp']
+                buggy_implementations_exposed=['buggy1.cpp'],
             ),
             StudentTestSuiteResult.new_test_evaluation_result_instance(
                 'test_2.cpp',
@@ -79,7 +83,7 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
                 validity_check_standard_output='askdjf',
                 validity_check_standard_error_output='ajdsnf',
                 timed_out=False,
-                buggy_implementations_exposed=['buggy2.cpp']
+                buggy_implementations_exposed=['buggy2.cpp'],
             ),
             StudentTestSuiteResult.new_test_evaluation_result_instance(
                 'test_expose_none.cpp',
@@ -90,7 +94,7 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
                 validity_check_standard_output='askdjf',
                 validity_check_standard_error_output='ajdsnf',
                 timed_out=False,
-                buggy_implementations_exposed=[]
+                buggy_implementations_exposed=[],
             ),
             StudentTestSuiteResult.new_test_evaluation_result_instance(
                 'test_no_compile.cpp',
@@ -101,7 +105,7 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
                 validity_check_standard_output=None,
                 validity_check_standard_error_output=None,
                 timed_out=None,
-                buggy_implementations_exposed=[]
+                buggy_implementations_exposed=[],
             ),
             StudentTestSuiteResult.new_test_evaluation_result_instance(
                 'test_invalid.cpp',
@@ -112,7 +116,7 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
                 validity_check_standard_output='askdjf',
                 validity_check_standard_error_output='ajdsnf',
                 timed_out=False,
-                buggy_implementations_exposed=[]
+                buggy_implementations_exposed=[],
             ),
             StudentTestSuiteResult.new_test_evaluation_result_instance(
                 'test_timeout.cpp',
@@ -123,7 +127,7 @@ class _SharedSetUp(TemporaryFilesystemTestCase):
                 validity_check_standard_output='askdjf',
                 validity_check_standard_error_output='ajdsnf',
                 timed_out=True,
-                buggy_implementations_exposed=[]
+                buggy_implementations_exposed=[],
             )
         ]
 
@@ -159,6 +163,7 @@ class StudentTestSuiteResultTestCase(_SharedSetUp):
 class StudentTestSuiteResultSerializerTestCase(_SharedSetUp):
     def setUp(self):
         super().setUp()
+
         self.result = StudentTestSuiteResult.objects.create(
             test_suite=self.suite,
             submission=self.submission,
@@ -276,6 +281,56 @@ class StudentTestSuiteResultSerializerTestCase(_SharedSetUp):
         self.assertEqual(
             self.medium_feedback_result,
             self.result.to_json(self.medium_feedback_config))
+
+    def test_to_json_with_post_deadline_override(self):
+        override = self.medium_feedback_config
+
+        self.suite.post_deadline_final_submission_feedback_configuration = (
+            override)
+        self.suite.validate_and_save()
+
+        self.assertEqual(self.medium_feedback_result, self.result.to_json())
+
+        extension = timezone.now() + datetime.timedelta(minutes=-1)
+
+        self.submission.submission_group.extended_due_date = extension
+        self.submission.save()
+
+        self.assertEqual(self.medium_feedback_result, self.result.to_json())
+
+    def test_serialize_results_with_post_deadline_override_but_user_has_extension(self):
+        override = self.medium_feedback_config
+
+        self.suite.post_deadline_final_submission_feedback_configuration = (
+            override)
+        self.suite.validate_and_save()
+
+        extension = timezone.now() + datetime.timedelta(minutes=1)
+
+        self.submission.submission_group.extended_due_date = extension
+        self.submission.save()
+
+        self.assertEqual(self.low_feedback_result, self.result.to_json())
+
+    def test_serialize_results_with_post_deadline_override_not_final_submission(self):
+        old_submission = Submission.objects.get(pk=self.submission.pk)
+        new_submission = self.submission
+        new_submission.pk = None
+        new_submission.save()
+
+        self.result.submission = old_submission
+        self.result.save()
+
+        self.assertNotEqual(old_submission, new_submission)
+        self.assertGreater(new_submission.pk, old_submission.pk)
+
+        override = self.medium_feedback_config
+
+        self.suite.post_deadline_final_submission_feedback_configuration = (
+            override)
+        self.suite.validate_and_save()
+
+        self.assertEqual(self.low_feedback_result, self.result.to_json())
 
     def test_to_json_points_feedback_high_but_buggy_exposure_feedback_low(self):
         for points_level in (fbc.PointsFeedbackLevel.show_total,

@@ -579,6 +579,15 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
             self.assertEqual(
                 expected_content, json_load_bytes(response.content))
 
+    def test_post_deadline_feedback_override_see_all_tests(self):
+        self.fail()
+
+    def test_post_deadline_feedback_override_but_student_has_extension(self):
+        self.fail()
+
+    def test_post_deadline_feedback_override_but_not_final_submission(self):
+        self.fail()
+
     def test_student_list_other_user_results_permission_denied(self):
         for user in self.enrolled, self.nobody:
             client = MockClient(user)
@@ -783,6 +792,15 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
 
             self.assertEqual(
                 expected_content, json_load_bytes(response.content))
+
+    def test_post_deadline_feedback_override_see_all_suites(self):
+        self.fail()
+
+    def test_post_deadline_feedback_override_but_student_has_extension(self):
+        self.fail()
+
+    def test_post_deadline_feedback_override_but_not_final_submission(self):
+        self.fail()
 
     def test_student_list_other_user_results_permission_denied(self):
         for user in self.enrolled, self.nobody:

@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 import django.contrib.postgres.fields as pg_fields
 
 from autograder.core.models import Submission
@@ -159,10 +160,8 @@ class StudentTestSuiteResult(models.Model):
             ...
         ]
         """
-        feedback_config = (
-            feedback_config_override if feedback_config_override is not None
-            else self.test_suite.feedback_configuration)
-
+        feedback_config = self._determine_feedback_config(
+            feedback_config_override)
         result = {
             'test_suite_name': self.test_suite.name,
         }
@@ -181,6 +180,38 @@ class StudentTestSuiteResult(models.Model):
                 feedback_config.buggy_implementations_exposed_feedback_level)))
 
         return result
+
+    def _determine_feedback_config(self, feedback_config_override):
+        if feedback_config_override is not None:
+            return feedback_config_override
+
+        if (self.test_suite.
+                post_deadline_final_submission_feedback_configuration) is None:
+            return self.test_suite.feedback_configuration
+
+        if self.submission is None:
+            return self.test_suite.feedback_configuration
+
+        if self.test_suite.project.closing_time is None:
+            return self.test_suite.feedback_configuration
+
+        is_final_submission = (
+            self.submission ==
+            self.submission.submission_group.submissions.all().last())
+
+        if not is_final_submission:
+            return self.test_suite.feedback_configuration
+
+        deadline_extension = self.submission.submission_group.extended_due_date
+        project_deadline = (
+            deadline_extension if deadline_extension is not None else
+            self.test_suite.project.closing_time)
+
+        if timezone.now() > project_deadline:
+            return (self.test_suite.
+                    post_deadline_final_submission_feedback_configuration)
+
+        return self.test_suite.feedback_configuration
 
     def _compute_detailed_results(self, feedback_config):
         detailed_results = []
