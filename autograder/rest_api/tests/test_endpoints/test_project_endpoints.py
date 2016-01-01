@@ -1,3 +1,5 @@
+import datetime
+
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -137,7 +139,7 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
                 "id": self.hidden_project.pk,
                 "name": self.hidden_project.name,
                 "visible_to_students": (
-                    self.hidden_project.hidden_to_students),
+                    self.hidden_project.visible_to_students),
                 "closing_time": self.hidden_project.closing_time,
                 "disallow_student_submissions": (
                     self.hidden_project.disallow_student_submissions),
@@ -220,8 +222,7 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
 
         client = MockClient(self.admin)
         response = client.patch(self.hidden_project_url, edits)
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(edits, json_load_bytes(response.content))
+        self.assertEqual(204, response.status_code)
 
         loaded = Project.objects.get(pk=self.hidden_project.pk)
         for field_name, value in edits.items():
@@ -231,7 +232,7 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
         edits = {
             "name": 'spam test',
             "visible_to_students": True,
-            "closing_time": timezone.now(),
+            "closing_time": timezone.now().replace(microsecond=0),
             "disallow_student_submissions": True,
             "allow_submissions_from_non_enrolled_students": True,
             "min_group_size": 2,
@@ -248,8 +249,14 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
 
         client = MockClient(self.admin)
         response = client.patch(self.hidden_project_url, edits)
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(edits, json_load_bytes(response.content))
+        self.assertEqual(204, response.status_code)
+
+        edits['expected_student_file_patterns'] = [
+            Project.FilePatternTuple(
+                obj['pattern'], obj['min_num_matches'], obj['max_num_matches']
+            )
+            for obj in edits['expected_student_file_patterns']
+        ]
 
         loaded = Project.objects.get(pk=self.hidden_project.pk)
         for field_name, value in edits.items():

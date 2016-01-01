@@ -70,27 +70,6 @@ Request format:
 Note that if any of the above fields are omitted, their values will
 remain unchanged.
 
-Response format: 
-{
-    // Only the fields included in the request will be included here
-    "name": <name>,
-    "visible_to_students": <bool>,
-    "closing_time": <timestamp>,
-    "disallow_student_submissions": <bool>,
-    "allow_submissions_from_non_enrolled_students": <bool>,
-    "min_group_size": <int>,
-    "max_group_size": <int>,
-    "required_student_files": [<filename>, ...],
-    "expected_student_file_patterns": [
-        {
-            "pattern": <string>,
-            "min_num_matches": <int>,
-            "max_num_matches": <int>
-        },
-        ...
-    ],
-}
-
 --------------------------------------------------------------------------------
 
 /project/<id>/uploaded_files/

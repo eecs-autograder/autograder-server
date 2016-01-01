@@ -31,3 +31,7 @@ def get_projects(semester):
 
 def get_project(project):
     return reverse('project:get', kwargs={'pk': project.pk})
+
+
+def get_project_files(project):
+    return reverse('project:files', kwargs={'pk': project.pk})
