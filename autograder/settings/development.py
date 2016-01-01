@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'autograder.security',
     'autograder.rest_api',
 
-    'autograder.core.tests.test_models.test_autograder_test_case'
+    'autograder.core.tests.test_models.test_autograder_test_case',
+    'autograder.core.tests.test_models.test_student_test_suite',
 ]
 
 MIDDLEWARE_CLASSES = (

@@ -1,5 +1,7 @@
 import difflib
+import datetime
 
+from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from autograder.core.tests.temporary_filesystem_test_case import (
@@ -26,11 +28,13 @@ class _SetUpBase(TemporaryFilesystemTestCase):
         self.course = obj_ut.create_dummy_courses()
         self.semester = obj_ut.create_dummy_semesters(self.course)
 
+        self.closing_time = timezone.now() + datetime.timedelta(hours=-1)
         self.project = Project.objects.validate_and_create(
             name='my_project', semester=self.semester,
             required_student_files=['file1.cpp', 'file2.cpp'],
             expected_student_file_patterns=[
-                Project.FilePatternTuple('test_*.cpp', 1, 2)])
+                Project.FilePatternTuple('test_*.cpp', 1, 2)],
+            closing_time=self.closing_time)
 
         self.project.add_project_file(
             SimpleUploadedFile('spam.txt', b'hello there!'))
@@ -179,9 +183,23 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
         self.semester = Semester.objects.validate_and_create(
             name='f15', course=self.course)
 
+        self.closing_time = timezone.now() + datetime.timedelta(hours=-1)
         self.project = Project.objects.validate_and_create(
             name='my_project', semester=self.semester,
-            required_student_files=['spam.cpp', 'egg.cpp'])
+            required_student_files=['spam.cpp', 'egg.cpp'],
+            closing_time=self.closing_time)
+
+        student = obj_ut.create_dummy_user()
+        self.semester.add_enrolled_students(student)
+        self.submission_group = SubmissionGroup.objects.validate_and_create(
+            members=[student.username], project=self.project)
+
+        self.submission = Submission.objects.validate_and_create(
+            submission_group=self.submission_group,
+            submitted_files=[
+                SimpleUploadedFile('spam.cpp', b'spaaaaam'),
+                SimpleUploadedFile('egg.cpp', b'egg')]
+        )
 
         self.test_case = (
             _DummyCompiledAutograderTestCase.objects.validate_and_create(
@@ -212,13 +230,15 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             valgrind_output='clean',
             compilation_return_code=0,
             compilation_standard_output='win',
-            compilation_standard_error_output='')
+            compilation_standard_error_output='',
+            submission=self.submission)
 
         self.compile_fail_test_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
             compilation_return_code=42,
             compilation_standard_output='',
-            compilation_standard_error_output='lose')
+            compilation_standard_error_output='lose',
+            submission=self.submission)
 
         self.incorrect_test_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
@@ -230,7 +250,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             valgrind_output='error',
             compilation_return_code=0,
             compilation_standard_output='hello',
-            compilation_standard_error_output='woah')
+            compilation_standard_error_output='woah',
+            submission=self.submission)
 
         self.valgrind_error_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
@@ -242,7 +263,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             valgrind_output='error',
             compilation_return_code=0,
             compilation_standard_output='win',
-            compilation_standard_error_output='')
+            compilation_standard_error_output='',
+            submission=self.submission)
 
         self.timed_out_result = AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
@@ -254,19 +276,8 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             valgrind_output='clean',
             compilation_return_code=0,
             compilation_standard_output='win',
-            compilation_standard_error_output='')
-
-        student = obj_ut.create_dummy_user()
-        self.semester.add_enrolled_students(student)
-        self.submission_group = SubmissionGroup.objects.validate_and_create(
-            members=[student.username], project=self.project)
-
-        self.submission = Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
-            submitted_files=[
-                SimpleUploadedFile('spam.cpp', b'spaaaaam'),
-                SimpleUploadedFile('egg.cpp', b'egg')]
-        )
+            compilation_standard_error_output='',
+            submission=self.submission)
 
         self.medium_config = fbc.AutograderTestCaseFeedbackConfiguration(
             return_code_feedback_level=(
@@ -580,26 +591,6 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             },
             self.correct_test_result.to_json())
 
-    # OBSOLETE
-    # def test_serialize_results_with_submission_feedback_override(self):
-    #     override = fbc.AutograderTestCaseFeedbackConfiguration(
-    #         return_code_feedback_level=(
-    #             fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
-
-    #     self.submission.test_case_feedback_config_override = override
-    #     self.submission.save()
-
-    #     self.correct_test_result.submission = self.submission
-    #     self.correct_test_result.save()
-
-    #     self.assertEqual(
-    #         {
-    #             'test_name': self.test_case.name,
-    #             'timed_out': False,
-    #             'return_code_correct': True
-    #         },
-    #         self.correct_test_result.to_json())
-
     def test_serialize_results_with_manual_feedback_override(self):
         override = fbc.AutograderTestCaseFeedbackConfiguration(
             return_code_feedback_level=(
@@ -613,30 +604,76 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             },
             self.correct_test_result.to_json(override_feedback=override))
 
-    # OBSOLETE
-    # def test_serialize_results_with_submission_and_manual_feedback_override(self):
-    #     submission_override = fbc.AutograderTestCaseFeedbackConfiguration(
-    #         return_code_feedback_level=(
-    #             fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
+    def test_serialize_results_with_post_deadline_override(self):
+        override = fbc.AutograderTestCaseFeedbackConfiguration(
+            return_code_feedback_level=(
+                fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
 
-    #     self.submission.test_case_feedback_config_override = submission_override
-    #     self.submission.save()
+        self.test_case.post_deadline_final_submission_feedback_configuration = (
+            override)
+        self.test_case.validate_and_save()
 
-    #     self.correct_test_result.submission = self.submission
-    #     self.correct_test_result.save()
+        expected = {
+            'test_name': self.test_case.name,
+            'timed_out': False,
+            'return_code_correct': True
+        }
+        self.assertEqual(expected, self.correct_test_result.to_json())
 
-    #     manual_override = fbc.AutograderTestCaseFeedbackConfiguration(
-    #         return_code_feedback_level=(
-    #             fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
+        extension = timezone.now() + datetime.timedelta(minutes=-1)
 
-    #     self.assertEqual(
-    #         {
-    #             'test_name': self.test_case.name,
-    #             'timed_out': False,
-    #             'return_code_correct': True
-    #         },
-    #         self.correct_test_result.to_json(
-    #             override_feedback=manual_override))
+        self.submission.submission_group.extended_due_date = extension
+        self.submission.save()
+
+        self.assertEqual(expected, self.correct_test_result.to_json())
+
+    def test_serialize_results_with_post_deadline_override_but_user_has_extension(self):
+        override = fbc.AutograderTestCaseFeedbackConfiguration(
+            return_code_feedback_level=(
+                fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
+
+        self.test_case.post_deadline_final_submission_feedback_configuration = (
+            override)
+        self.test_case.validate_and_save()
+
+        extension = timezone.now() + datetime.timedelta(minutes=1)
+
+        self.submission.submission_group.extended_due_date = extension
+        self.submission.save()
+
+        self.assertEqual(
+            {
+                'test_name': self.test_case.name,
+                'timed_out': False
+            },
+            self.correct_test_result.to_json())
+
+    def test_serialize_results_with_post_deadline_override_not_final_submission(self):
+        old_submission = Submission.objects.get(pk=self.submission.pk)
+        new_submission = self.submission
+        new_submission.pk = None
+        new_submission.save()
+
+        self.correct_test_result.submission = old_submission
+        self.correct_test_result.save()
+
+        self.assertNotEqual(old_submission, new_submission)
+        self.assertGreater(new_submission.pk, old_submission.pk)
+
+        override = fbc.AutograderTestCaseFeedbackConfiguration(
+            return_code_feedback_level=(
+                fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
+
+        self.test_case.post_deadline_final_submission_feedback_configuration = (
+            override)
+        self.test_case.validate_and_save()
+
+        self.assertEqual(
+            {
+                'test_name': self.test_case.name,
+                'timed_out': False
+            },
+            self.correct_test_result.to_json())
 
     def test_checking_output_with_show_output_feedback_level(self):
         feedback = self.medium_config

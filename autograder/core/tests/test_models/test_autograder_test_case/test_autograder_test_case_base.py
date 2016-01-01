@@ -67,6 +67,9 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             fbc.AutograderTestCaseFeedbackConfiguration(),
             loaded_test_case.feedback_configuration)
+        self.assertIsNone(
+            (loaded_test_case.
+             post_deadline_final_submission_feedback_configuration))
 
     # -------------------------------------------------------------------------
 
@@ -98,6 +101,9 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             deduction_for_valgrind_errors=3,
             points_for_compilation_success=4,
             feedback_configuration=(
+                fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()
+            ),
+            post_deadline_final_submission_feedback_configuration=(
                 fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback())
         )
 
@@ -142,6 +148,10 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback(),
             loaded_test_case.feedback_configuration)
+        self.assertEqual(
+            fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback(),
+            (loaded_test_case.
+                post_deadline_final_submission_feedback_configuration))
 
     # -------------------------------------------------------------------------
 

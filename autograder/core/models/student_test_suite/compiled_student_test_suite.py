@@ -1,6 +1,10 @@
 import os
 import fnmatch
 
+from django.db import models
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+
 from .student_test_suite_base import StudentTestSuiteBase
 
 from autograder.core.models.utils import (
@@ -9,7 +13,10 @@ from autograder.core.models.utils import (
 from .student_test_suite_result import (
     StudentTestSuiteResult, StudentTestCaseEvaluationResult)
 
+import autograder.utilities.fields as ag_fields
+
 import autograder.core.shared.utilities as ut
+import autograder.core.shared.global_constants as gc
 
 
 class CompiledStudentTestSuite(StudentTestSuiteBase):
@@ -17,12 +24,64 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
     This class enables evaluating a suite of student test cases that
     are compiled and then run.
 
-    This class does not define any new fields.
+    Fields:
+        compiler -- The program that will be used to compile the test case
+            executables.
+            See autograder.shared.global_constants.SUPPORTED_COMPILERS
+            for a list of allowed values for this field.
+            This field is REQUIRED.
+
+        compiler_flags -- A list of option flags to be passed to the compiler.
+            These flags are limited to the character set specified by
+            autograder.shared.global_constants.COMMAND_LINE_ARG_WHITELIST_REGEX
+            NOTE: This list should NOT include the names of files that
+                need to be compiled and should not include flags that affect
+                the name of the resulting executable program.
+            This field is allowed to be empty.
+            This field may not be None.
+            Default value: empty list
+
+        suite_resource_files_to_compile_together -- A list of filenames
+            that will be compiled together with
+            each student test case, implementation file pair.
+            These filenames must be contained in suite_resource_filenames.
+            This field is allowed to be empty.
+            This field may not be None.
+            Default value: empty list
+
+        compile_implementation_files -- When this flag is True, the current
+            correct of buggy implementation file will be compiled together
+            with the current test case and specified resource files.
+            When this value is False, the implementation files are NOT
+            compiled together.
+            Note that this field is only considered by types of test suite
+            that use a compiler.
+            Default value: True
 
     Overridden methods:
         evaluate()
     """
     objects = PolymorphicManagerWithValidateOnCreate()
+
+    # -------------------------------------------------------------------------
+
+    compiler = models.CharField(
+        max_length=gc.MAX_CHAR_FIELD_LEN,
+        choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS))
+
+    compiler_flags = ag_fields.StringArrayField(
+        default=list, blank=True, string_validators=[
+            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)])
+
+    suite_resource_files_to_compile_together = ag_fields.StringArrayField(
+        default=list, blank=True)
+
+    compile_implementation_files = models.BooleanField(default=True)
+
+    # -------------------------------------------------------------------------
+
+    def get_type_str(self):
+        return 'compiled_student_test_suite'
 
     def evaluate(self, submission, autograder_sandbox):
         submission_dir = ut.get_submission_dir(submission)
@@ -128,3 +187,33 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
             autograder_sandbox.clear_working_dir()
 
         return eval_result
+
+    # -------------------------------------------------------------------------
+
+    def clean(self):
+        errors = {}
+        try:
+            super().clean()
+        except ValidationError as e:
+            errors = e.message_dict()
+
+        errors.update(self._clean_suite_resource_files_to_compile_together())
+
+        if errors:
+            raise ValidationError(errors)
+
+    def _clean_suite_resource_files_to_compile_together(self):
+        errors = []
+
+        for filename in self.suite_resource_files_to_compile_together:
+            if filename in self.suite_resource_filenames:
+                continue
+
+            errors.append(
+                '{} is not a suite resource file for test suite {}'.format(
+                    filename, self.name))
+
+        if errors:
+            return {'suite_resource_files_to_compile_together': errors}
+
+        return {}

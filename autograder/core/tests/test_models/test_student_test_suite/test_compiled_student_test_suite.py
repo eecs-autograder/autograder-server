@@ -1,9 +1,7 @@
 import uuid
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-
-from .student_test_suite_shared_tests_and_setup import (
-    StudentTestSuiteBaseTests)
+from django.core.exceptions import ValidationError
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -12,18 +10,116 @@ import autograder.core.tests.dummy_object_utils as obj_ut
 
 from autograder.core.models import (
     StudentTestSuiteFactory, SubmissionGroup, Submission,
-    StudentTestSuiteResult)
+    StudentTestSuiteResult, StudentTestSuiteBase)
 from autograder.security.autograder_sandbox import AutograderSandbox
 
+from .test_student_test_suite_base import SharedSetUp
 # import autograder.core.shared.utilities as ut
+import autograder.core.shared.global_constants as gc
 
 
 class CompiledStudentTestSuiteTestCase(
-        StudentTestSuiteBaseTests, TemporaryFilesystemTestCase):
+        SharedSetUp, TemporaryFilesystemTestCase):
+    def test_valid_initialization_with_defaults(self):
+        suite = StudentTestSuiteFactory.validate_and_create(
+            'compiled_student_test_suite',
+            name=self.suite_name,
+            project=self.project,
+            student_test_case_filename_pattern=self.test_file_pattern.pattern,
+            correct_implementation_filename=self.correct_impl_file.name,
+            compiler='g++')
 
-    def get_student_test_suite_type_str_for_factory(self):
-        return 'compiled_student_test_suite'
+        loaded = StudentTestSuiteBase.objects.get(pk=suite.pk)
 
+        self.assertEqual('g++', loaded.compiler)
+        self.assertEqual([], loaded.compiler_flags)
+        self.assertEqual([], loaded.suite_resource_files_to_compile_together)
+        self.assertTrue(loaded.compile_implementation_files)
+
+    def test_valid_initialization_custom_values(self):
+        compiler = 'clang++'
+        compiler_flags = ['-Wall', '-Werror', '-pedantic']
+
+        suite = StudentTestSuiteFactory.validate_and_create(
+            'compiled_student_test_suite',
+            name=self.suite_name,
+            project=self.project,
+            student_test_case_filename_pattern=self.test_file_pattern.pattern,
+            correct_implementation_filename=self.correct_impl_file.name,
+            suite_resource_filenames=self.project_filenames,
+
+            compiler=compiler,
+            compiler_flags=compiler_flags,
+            suite_resource_files_to_compile_together=self.project_filenames,
+            compile_implementation_files=False
+        )
+
+        loaded = StudentTestSuiteBase.objects.get(pk=suite.pk)
+
+        self.assertEqual(compiler, loaded.compiler)
+        self.assertEqual(compiler_flags, loaded.compiler_flags)
+        self.assertEqual(self.project_filenames,
+                         loaded.suite_resource_files_to_compile_together)
+        self.assertFalse(loaded.compile_implementation_files)
+
+    def test_exception_invalid_compiler(self):
+        with self.assertRaises(ValidationError) as cm:
+            StudentTestSuiteFactory.validate_and_create(
+                'compiled_student_test_suite',
+                name=self.suite_name,
+                project=self.project,
+                student_test_case_filename_pattern=self.test_file_pattern.pattern,
+                correct_implementation_filename=self.correct_impl_file.name,
+                compiler='not_a_compiler++')
+
+        self.assertTrue('compiler' in cm.exception.message_dict)
+
+    def test_exception_invalid_characters_in_compiler_flags(self):
+        with self.assertRaises(ValidationError) as cm:
+            StudentTestSuiteFactory.validate_and_create(
+                'compiled_student_test_suite',
+                name=self.suite_name,
+                project=self.project,
+                student_test_case_filename_pattern=(
+                    self.test_file_pattern.pattern),
+                correct_implementation_filename=self.correct_impl_file.name,
+                compiler_flags=['-Wall', ';echo "haxorz" #'])
+
+        self.assertTrue('compiler_flags' in cm.exception.message_dict)
+
+        error_list = cm.exception.message_dict['compiler_flags']
+        self.assertEqual('', error_list[0])
+        self.assertTrue(error_list[1])
+
+    def test_exception_compiler_flag_is_whitespace(self):
+        with self.assertRaises(ValidationError) as cm:
+            StudentTestSuiteFactory.validate_and_create(
+                'compiled_student_test_suite',
+                name=self.suite_name,
+                project=self.project,
+                student_test_case_filename_pattern=self.test_file_pattern.pattern,
+                correct_implementation_filename=self.correct_impl_file.name,
+                compiler_flags=['-Wall', '          '])
+
+        self.assertTrue('compiler_flags' in cm.exception.message_dict)
+
+    def test_exception_some_suite_resource_files_to_compile_together_not_suite_resource_files(self):
+        suite_resource_filenames = self.project_filenames[:1]
+        with self.assertRaises(ValidationError) as cm:
+            StudentTestSuiteFactory.validate_and_create(
+                'compiled_student_test_suite',
+                name=self.suite_name,
+                project=self.project,
+                student_test_case_filename_pattern=self.test_file_pattern.pattern,
+                suite_resource_filenames=suite_resource_filenames,
+                correct_implementation_filename=self.correct_impl_file.name,
+                suite_resource_files_to_compile_together=(
+                    suite_resource_filenames + ['not_a_suite_resource_file']))
+
+        self.assertTrue('suite_resource_files_to_compile_together'
+                        in cm.exception.message_dict)
+
+# -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 

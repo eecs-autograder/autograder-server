@@ -8,12 +8,4 @@
 		users (or maybe just the ones who accepted the invite)
 		get a notification about the rejection
 
-- add "user" view
-	- staff can view other users in the same semester
-	- 
-
 - in ag test result and suite result, add getter functions that return points for various things, have them take in a feedback configuration
-
-X 1. switch username lists to *key fields
-LATER 2. add object level permissions?
-NO 3. switch to djangorestapi framework?

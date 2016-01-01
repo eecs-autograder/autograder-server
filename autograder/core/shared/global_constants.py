@@ -18,10 +18,14 @@ FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'
 
 # This regular expression provides the whitelist to be used when validating
 # the names of user-uploaded files.
-# Filenames can contain:
+# Filenames must start with a capital or lowercase letter.
+# Filenames may contain:
 #   alphanumeric characters, hyphen, underscore, and period
+# Note that this allows the empty string, as emptiness should be specified
+# with the 'blank' argument to the respective field.
 PROJECT_FILENAME_WHITELIST_REGEX = re.compile(
-    r"[a-zA-Z0-9-_.]+")
+    r'^[a-zA-Z][a-zA-Z0-9-_.]*$|^$')
+# r"[a-zA-Z0-9-_.]+")
 
 # This regular expression provides the whitelist to be used
 # when validating shell-style file patterns.
@@ -41,4 +45,4 @@ DEFAULT_VALGRIND_FLAGS_WHEN_USED = ['--leak-check=full', '--error-exitcode=1']
 COMMAND_LINE_ARG_WHITELIST_REGEX = re.compile(
     r"^[a-zA-Z0-9-_=.]+$")
 
-SUPPORTED_COMPILERS = ['g++']
+SUPPORTED_COMPILERS = ['g++', 'clang++', 'gcc', 'clang']

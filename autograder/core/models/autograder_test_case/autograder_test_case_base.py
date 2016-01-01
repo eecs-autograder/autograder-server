@@ -186,9 +186,17 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             Default value: default-initialized
                 AutograderTestCaseFeedbackConfiguration object
 
-        interpreter -- TODO
-        interpreter_flags -- TODO
-        entry_point_file -- TODO
+        post_deadline_final_submission_feedback_configuration -- When this
+            field is not None, the feedback configuration that it stores
+            will override the value stored in self.feedback_configuration
+            for Submissions that meet the following criteria:
+                - The Submission is the most recent Submission for a given
+                    SubmissionGroup
+                - The deadline for the project has passed. If the
+                    SubmissionGroup was granted an extension, then that
+                    deadline must have passed as well.
+
+            Default value: None
 
     Instance methods:
         test_checks_return_code()
@@ -270,6 +278,13 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     feedback_configuration = ag_fields.JsonSerializableClassField(
         fbc.AutograderTestCaseFeedbackConfiguration,
         default=fbc.AutograderTestCaseFeedbackConfiguration)
+
+    post_deadline_final_submission_feedback_configuration = (
+        ag_fields.JsonSerializableClassField(
+            fbc.AutograderTestCaseFeedbackConfiguration,
+            default=None, null=True, blank=True
+        )
+    )
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------

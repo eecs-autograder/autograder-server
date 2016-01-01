@@ -145,6 +145,9 @@ class Submission(ModelValidatableOnSave):
     """
     objects = _SubmissionManager()
 
+    class Meta:
+        ordering = ['pk']
+
     # -------------------------------------------------------------------------
 
     # TODO: make this a proper enum once django ORM supports enums
@@ -202,7 +205,7 @@ class Submission(ModelValidatableOnSave):
         submissions = []
         for group in project.submission_groups.all():
             try:
-                group_sub = group.submissions.order_by('pk').last()
+                group_sub = group.submissions.last()
             except IndexError:
                 continue
             # TODO: get this query working so that we're not grabbing more

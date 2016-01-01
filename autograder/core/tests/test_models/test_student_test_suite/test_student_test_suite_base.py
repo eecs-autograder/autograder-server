@@ -1,25 +1,20 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 
-from autograder.core.models import (
-    Project, Semester, Course, StudentTestSuiteBase, StudentTestSuiteFactory)
+from autograder.core.models import Project
 # AutograderTestCaseBase, AutograderTestCaseFactory)
 
 import autograder.core.shared.global_constants as gc
 import autograder.core.shared.feedback_configuration as fbc
 
 import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.core.tests.temporary_filesystem_test_case import (
+    TemporaryFilesystemTestCase)
+
+from .models import _DummyStudentTestSuite
 
 
-class StudentTestSuiteBaseTests(object):
-    """
-    These test cases need to be run on all classes that inherit from
-    autograder.models.StudentTestSuite. In order to accomplish this,
-    the test fixture dedicated to that class should inherit FIRST from this
-    class, followed by django.test.TestCase (or a derived class thereof).
-    Then, that test fixture should override the
-    get_student_test_suite_type_str_for_factory() method from this class.
-    """
+class SharedSetUp:
     @classmethod
     def setUpClass(class_):
         super().setUpClass()
@@ -64,23 +59,16 @@ class StudentTestSuiteBaseTests(object):
 
         self.suite_name = 'my_test'
 
-    # -------------------------------------------------------------------------
 
-    def get_student_test_suite_type_str_for_factory(self):
-        raise NotImplementedError(
-            "This method must be overridden in derived test fixtures")
-
-    # -------------------------------------------------------------------------
-
+class StudentTestSuiteBaseTestCase(SharedSetUp, TemporaryFilesystemTestCase):
     def test_valid_initialization_with_defaults(self):
-        suite = StudentTestSuiteFactory.validate_and_create(
-            self.get_student_test_suite_type_str_for_factory(),
+        suite = _DummyStudentTestSuite.objects.validate_and_create(
             name=self.suite_name,
             project=self.project,
             student_test_case_filename_pattern=self.test_file_pattern.pattern,
             correct_implementation_filename=self.correct_impl_file.name)
 
-        loaded = StudentTestSuiteBase.objects.get(pk=suite.pk)
+        loaded = _DummyStudentTestSuite.objects.get(pk=suite.pk)
 
         self.assertEqual(self.suite_name, loaded.name)
         self.assertEqual(self.project, loaded.project)
@@ -102,20 +90,14 @@ class StudentTestSuiteBaseTests(object):
         self.assertEqual(
             fbc.StudentTestSuiteFeedbackConfiguration(),
             loaded.feedback_configuration)
-
-        # Fat interface fields
-        self.assertEqual('g++', loaded.compiler)
-        self.assertEqual([], loaded.compiler_flags)
-        self.assertEqual([], loaded.suite_resource_files_to_compile_together)
-        self.assertTrue(loaded.compile_implementation_files)
+        self.assertIsNone(
+            loaded.post_deadline_final_submission_feedback_configuration)
 
     def test_valid_initialization_custom_values(self):
         implementation_file_alias = 'aliuuuus.h'
         time_limit = 11
-        compiler_flags = ['-Wall', '-Werror', '-pedantic']
 
-        suite = StudentTestSuiteFactory.validate_and_create(
-            self.get_student_test_suite_type_str_for_factory(),
+        suite = _DummyStudentTestSuite.objects.validate_and_create(
             name=self.suite_name,
             project=self.project,
             student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -128,14 +110,11 @@ class StudentTestSuiteBaseTests(object):
             points_per_buggy_implementation_exposed=1,
             feedback_configuration=(
                 fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback()),
-
-            compiler='g++',
-            compiler_flags=compiler_flags,
-            suite_resource_files_to_compile_together=self.project_filenames,
-            compile_implementation_files=False
+            post_deadline_final_submission_feedback_configuration=(
+                fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback()),
         )
 
-        loaded = StudentTestSuiteBase.objects.get(pk=suite.pk)
+        loaded = _DummyStudentTestSuite.objects.get(pk=suite.pk)
 
         self.assertEqual(self.suite_name, loaded.name)
         self.assertEqual(self.project, loaded.project)
@@ -161,32 +140,26 @@ class StudentTestSuiteBaseTests(object):
         self.assertEqual(
             fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback(),
             loaded.feedback_configuration)
-
-        self.assertEqual(compiler_flags, loaded.compiler_flags)
         self.assertEqual(
-            self.project_filenames,
-            loaded.suite_resource_files_to_compile_together)
-        self.assertFalse(loaded.compile_implementation_files)
+            fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback(),
+            loaded.post_deadline_final_submission_feedback_configuration)
 
     def test_exception_on_non_unique_name_within_project(self):
-        StudentTestSuiteFactory.validate_and_create(
-            self.get_student_test_suite_type_str_for_factory(),
+        _DummyStudentTestSuite.objects.validate_and_create(
             name=self.suite_name,
             project=self.project,
             student_test_case_filename_pattern=self.test_file_pattern.pattern,
             correct_implementation_filename=self.correct_impl_file.name)
 
         with self.assertRaises(ValidationError):
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name=self.suite_name,
                 project=self.project,
                 student_test_case_filename_pattern=self.test_file_pattern.pattern,
                 correct_implementation_filename=self.correct_impl_file.name)
 
     def test_no_exception_same_name_different_project(self):
-        suite = StudentTestSuiteFactory.validate_and_create(
-            self.get_student_test_suite_type_str_for_factory(),
+        suite = _DummyStudentTestSuite.objects.validate_and_create(
             name=self.suite_name,
             project=self.project,
             student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -203,14 +176,13 @@ class StudentTestSuiteBaseTests(object):
 
         suite.validate_and_save()
 
-        loaded = StudentTestSuiteBase.objects.get(pk=suite.pk)
+        loaded = _DummyStudentTestSuite.objects.get(pk=suite.pk)
 
         self.assertEqual(new_project, loaded.project)
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name='',
                 project=self.project,
                 student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -220,8 +192,7 @@ class StudentTestSuiteBaseTests(object):
 
     def test_exception_on_null_name(self):
         with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name=None,
                 project=self.project,
                 student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -231,20 +202,18 @@ class StudentTestSuiteBaseTests(object):
 
     def test_name_whitespace_stripped(self):
         expected_name = 'eecs280'
-        suite = StudentTestSuiteFactory.validate_and_create(
-            self.get_student_test_suite_type_str_for_factory(),
+        suite = _DummyStudentTestSuite.objects.validate_and_create(
             name='     ' + expected_name + '          ',
             project=self.project,
             student_test_case_filename_pattern=self.test_file_pattern.pattern,
             correct_implementation_filename=self.correct_impl_file.name)
 
-        loaded = StudentTestSuiteBase.objects.get(pk=suite.pk)
+        loaded = _DummyStudentTestSuite.objects.get(pk=suite.pk)
         self.assertEqual(expected_name, loaded.name)
 
     def test_exception_on_name_only_whitespace(self):
         with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name='        ',
                 project=self.project,
                 student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -255,16 +224,23 @@ class StudentTestSuiteBaseTests(object):
     # -------------------------------------------------------------------------
 
     def test_invalid_characters_in_implementation_file_alias(self):
-        # charset
-        # starts with .
-        self.fail()
+        for bad_filename in ('; echo "haxorz" #', '..', '.spam'):
+            with self.assertRaises(ValidationError) as cm:
+                _DummyStudentTestSuite.objects.validate_and_create(
+                    name='spam',
+                    project=self.project,
+                    student_test_case_filename_pattern=self.test_file_pattern.pattern,
+                    correct_implementation_filename=self.correct_impl_file.name,
+                    implementation_file_alias=bad_filename)
+
+            self.assertTrue(
+                'implementation_file_alias' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 
     def test_exception_student_test_case_filename_pattern_not_in_project_expected_student_files(self):
         with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name=self.suite_name,
                 project=self.project,
                 student_test_case_filename_pattern=['not_a_pattern*.cpp'],
@@ -275,8 +251,7 @@ class StudentTestSuiteBaseTests(object):
 
     def test_exception_correct_implementation_filename_not_project_file(self):
         with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name=self.suite_name,
                 project=self.project,
                 student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -287,8 +262,7 @@ class StudentTestSuiteBaseTests(object):
 
     def test_exception_some_buggy_implementation_filenames_not_project_files(self):
         with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name='',
                 project=self.project,
                 student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -303,8 +277,7 @@ class StudentTestSuiteBaseTests(object):
 
     def test_exception_some_suite_resource_filenames_not_project_files(self):
         with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name='',
                 project=self.project,
                 student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -317,8 +290,7 @@ class StudentTestSuiteBaseTests(object):
 
     def test_exception_time_limit_out_of_bounds(self):
         with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name=self.suite_name,
                 project=self.project,
                 student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -328,8 +300,7 @@ class StudentTestSuiteBaseTests(object):
         self.assertTrue('time_limit' in cm.exception.message_dict)
 
         with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
+            _DummyStudentTestSuite.objects.validate_and_create(
                 name=self.suite_name,
                 project=self.project,
                 student_test_case_filename_pattern=self.test_file_pattern.pattern,
@@ -337,62 +308,3 @@ class StudentTestSuiteBaseTests(object):
                 time_limit=61)
 
         self.assertTrue('time_limit' in cm.exception.message_dict)
-
-    # -------------------------------------------------------------------------
-
-    def test_exception_invalid_compiler(self):
-        with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
-                name=self.suite_name,
-                project=self.project,
-                student_test_case_filename_pattern=self.test_file_pattern.pattern,
-                correct_implementation_filename=self.correct_impl_file.name,
-                compiler='not_a_compiler++')
-
-        self.assertTrue('compiler' in cm.exception.message_dict)
-
-    def test_exception_invalid_characters_in_compiler_flags(self):
-        with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
-                name=self.suite_name,
-                project=self.project,
-                student_test_case_filename_pattern=(
-                    self.test_file_pattern.pattern),
-                correct_implementation_filename=self.correct_impl_file.name,
-                compiler_flags=['-Wall', ';echo "haxorz" #'])
-
-        self.assertTrue('compiler_flags' in cm.exception.message_dict)
-
-        error_list = cm.exception.message_dict['compiler_flags']
-        self.assertEqual('', error_list[0])
-        self.assertTrue(error_list[1])
-
-    def test_exception_compiler_flag_is_whitespace(self):
-        with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
-                name=self.suite_name,
-                project=self.project,
-                student_test_case_filename_pattern=self.test_file_pattern.pattern,
-                correct_implementation_filename=self.correct_impl_file.name,
-                compiler_flags=['-Wall', '          '])
-
-        self.assertTrue('compiler_flags' in cm.exception.message_dict)
-
-    def test_exception_some_suite_resource_files_to_compile_together_not_suite_resource_files(self):
-        suite_resource_filenames = self.project_filenames[:1]
-        with self.assertRaises(ValidationError) as cm:
-            StudentTestSuiteFactory.validate_and_create(
-                self.get_student_test_suite_type_str_for_factory(),
-                name=self.suite_name,
-                project=self.project,
-                student_test_case_filename_pattern=self.test_file_pattern.pattern,
-                suite_resource_filenames=suite_resource_filenames,
-                correct_implementation_filename=self.correct_impl_file.name,
-                suite_resource_files_to_compile_together=(
-                    suite_resource_filenames + ['not_a_suite_resource_file']))
-
-        self.assertTrue('suite_resource_files_to_compile_together'
-                        in cm.exception.message_dict)

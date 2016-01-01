@@ -1,5 +1,6 @@
 import difflib
 
+from django.utils import timezone
 from django.db import models
 
 import autograder.core.shared.feedback_configuration as fbc
@@ -183,9 +184,8 @@ class AutograderTestCaseResult(models.Model):
             'timed_out': <True | False>
         }
         """
-        feedback_configuration = (
-            override_feedback if override_feedback is not None
-            else self.test_case.feedback_configuration)
+        feedback_configuration = self._determine_feedback_config(
+            override_feedback)
 
         show_points_breakdown = (
             (feedback_configuration.points_feedback_level ==
@@ -230,6 +230,38 @@ class AutograderTestCaseResult(models.Model):
         result.update(points_feedback)
 
         return result
+
+    def _determine_feedback_config(self, feedback_config_override):
+        if feedback_config_override is not None:
+            return feedback_config_override
+
+        if (self.test_case.
+                post_deadline_final_submission_feedback_configuration) is None:
+            return self.test_case.feedback_configuration
+
+        if self.submission is None:
+            return self.test_case.feedback_configuration
+
+        if self.test_case.project.closing_time is None:
+            return self.test_case.feedback_configuration
+
+        is_final_submission = (
+            self.submission ==
+            self.submission.submission_group.submissions.all().last())
+
+        if not is_final_submission:
+            return self.test_case.feedback_configuration
+
+        deadline_extension = self.submission.submission_group.extended_due_date
+        project_deadline = (
+            deadline_extension if deadline_extension is not None else
+            self.test_case.project.closing_time)
+
+        if timezone.now() > project_deadline:
+            return (self.test_case.
+                    post_deadline_final_submission_feedback_configuration)
+
+        return self.test_case.feedback_configuration
 
     def _get_compilation_feedback(self, feedback_config,
                                   show_points_breakdown):

@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.validators import (
+    MinValueValidator, MaxValueValidator, RegexValidator)
 
 import autograder.core.shared.global_constants as gc
 import autograder.core.shared.feedback_configuration as fbc
@@ -11,8 +12,6 @@ import autograder.utilities.fields as ag_fields
 from autograder.core.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
 
-
-# TODO: points configuration
 
 class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
     """
@@ -115,46 +114,24 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
             Default value: default-initialized
                 StudentTestSuiteFeedbackConfiguration object
 
-    Fat interface fields:
-        compiler -- The program that will be used to compile the test case
-            executables.
-            See autograder.shared.global_constants.SUPPORTED_COMPILERS
-            for a list of allowed values for this field.
-            Default value: g++
+        post_deadline_final_submission_feedback_configuration -- When this
+            field is not None, the feedback configuration that it stores
+            will override the value stored in self.feedback_configuration
+            for Submissions that meet the following criteria:
+                - The Submission is the most recent Submission for a given
+                    SubmissionGroup
+                - The deadline for the project has passed. If the
+                    SubmissionGroup was granted an extension, then that
+                    deadline must have passed as well.
 
-        compiler_flags -- A list of option flags to be passed to the compiler.
-            These flags are limited to the character set specified by
-            autograder.shared.global_constants.COMMAND_LINE_ARG_WHITELIST_REGEX
-            NOTE: This list should NOT include the names of files that
-                need to be compiled and should not include flags that affect
-                the name of the resulting executable program.
-            This field is allowed to be empty.
-            This field may not be None.
-            Default value: empty list
+            If this field is not None, self.feedback_configuration
+            may not be None.
 
-        suite_resource_files_to_compile_together -- A list of filenames
-            that will be compiled together with
-            each student test case, implementation file pair.
-            These filenames must be contained in suite_resource_filenames.
-            This field is allowed to be empty.
-            This field may not be None.
-            Default value: empty list
-
-        compile_implementation_files -- When this flag is True, the current
-            correct of buggy implementation file will be compiled together
-            with the current test case and specified resource files.
-            When this value is False, the implementation files are NOT
-            compiled together.
-            Note that this field is only considered by types of test suite
-            that use a compiler.
-            Default value: True
-
-        TODO
-        interpreter --
-        interpreter_flags --
+            Default value: None
 
     Abstract methods:
         evaluate()
+        get_type_str()
     """
     class Meta:
         unique_together = ('name', 'project')
@@ -176,8 +153,9 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
             blank=True),
         default=list, blank=True)
 
-    implementation_file_alias = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, blank=True)
+    implementation_file_alias = ag_fields.ShortStringField(
+        blank=True,
+        validators=[RegexValidator(gc.PROJECT_FILENAME_WHITELIST_REGEX)])
 
     suite_resource_filenames = ArrayField(
         models.CharField(
@@ -200,23 +178,18 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
         default=fbc.StudentTestSuiteFeedbackConfiguration
     )
 
-    # -------------------------------------------------------------------------
-
-    compiler = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, default='g++',
-        choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS))
-
-    compiler_flags = ag_fields.StringArrayField(
-        default=list, blank=True, string_validators=[
-            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)])
-
-    suite_resource_files_to_compile_together = ag_fields.StringArrayField(
-        default=list, blank=True)
-
-    compile_implementation_files = models.BooleanField(default=True)
+    post_deadline_final_submission_feedback_configuration = (
+        ag_fields.JsonSerializableClassField(
+            fbc.StudentTestSuiteFeedbackConfiguration,
+            default=None, null=True, blank=True
+        )
+    )
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
+
+    def get_type_str(self):
+        raise NotImplementedError("Derived classes must override this method.")
 
     def evaluate(self, submission, autograder_sandbox):
         """
@@ -266,7 +239,6 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
                     self.correct_implementation_filename,
                     self.project.name))
 
-        errors.update(self._clean_suite_resource_files_to_compile_together())
         errors.update(self._clean_buggy_implementation_filenames())
 
         if errors:
@@ -286,22 +258,6 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
 
         if errors:
             return {'suite_resource_filenames': errors}
-
-        return {}
-
-    def _clean_suite_resource_files_to_compile_together(self):
-        errors = []
-
-        for filename in self.suite_resource_files_to_compile_together:
-            if filename in self.suite_resource_filenames:
-                continue
-
-            errors.append(
-                '{} is not a suite resource file for test suite {}'.format(
-                    filename, self.name))
-
-        if errors:
-            return {'suite_resource_files_to_compile_together': errors}
 
         return {}
 
