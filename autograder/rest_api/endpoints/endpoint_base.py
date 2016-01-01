@@ -10,10 +10,10 @@ class EndpointBase(View):
         try:
             return super().dispatch(*args, **kwargs)
         except exceptions.ObjectDoesNotExist as e:
-            print(e)
+            # print(e)
             return http.HttpResponseNotFound()
         except exceptions.PermissionDenied as e:
-            print(e)
+            # print(e)
             return http.HttpResponseForbidden()
         except exceptions.ValidationError as e:
             try:

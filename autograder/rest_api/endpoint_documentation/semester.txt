@@ -35,6 +35,13 @@ Request format:
 Note that if any of the above fields are omitted, their values will
 remain unchanged.
 
+
+Response format:
+{
+    // Only fields included in the request will be listed here
+    "name": <name>    
+}
+
 --------------------------------------------------------------------------------
 
 /semesters/<id>/staff/
@@ -74,6 +81,7 @@ Response format: Same as POST
 
 /semesters/<id>/enrolled_students/?page_size=<int>&page_number=<int>&username_starts_with=<string>
 The default page_size is 20, and the default page_number is 0. 
+page_size must be at least 1, page_number must be >= 0.
 username_starts_with is optional. Note that these parameters are only
 relevant for GET requests.
 
@@ -173,4 +181,8 @@ Request format:
     ]
 }
 
-Response format: Same as GET /projects/<id>/
+Response format: 
+{
+    "name": <string>,
+    "url": "/projects/<project id>/"
+}

@@ -82,16 +82,16 @@ class Semester(ModelValidatableOnSave):
 
     @property
     def semester_staff_names(self):
-        return set(
+        return list(set(
             itertools.chain(
                 (user.username for user in self.staff.all()),
                 (user.username for user in self.course.administrators.all())
             )
-        )
+        ))
 
     @property
     def enrolled_student_names(self):
-        return set(user.username for user in self.enrolled_students.all())
+        return list(user.username for user in self.enrolled_students.all())
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------

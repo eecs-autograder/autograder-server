@@ -1,3 +1,5 @@
+import itertools
+
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 # from django.contrib.auth.models import User
@@ -59,7 +61,7 @@ class GetUpdateSemesterTestCase(TemporaryFilesystemTestCase):
             }
         }
 
-        for user in self.admin, self.staff:
+        for user in self.admin, self.staff[0]:
             client = MockClient(user)
             response = client.get(self.semester_url)
             self.assertEqual(200, response.status_code)
@@ -95,16 +97,7 @@ class GetUpdateSemesterTestCase(TemporaryFilesystemTestCase):
         new_name = 'spam'
         old_name = self.semester.name
         expected_content = {
-            "type": "semester",
-            "id": self.semester.pk,
             "name": new_name,
-            "urls": {
-                "self": self.semester_url,
-                "course": self.course_url,
-                "staff": self.staff_url,
-                "enrolled_students": self.enrolled_url,
-                "projects": self.projects_url
-            }
         }
 
         client = MockClient(self.admin)
@@ -143,7 +136,12 @@ class ListAddRemoveSemesterStaffTestCase(TemporaryFilesystemTestCase):
 
         _common_setup(self)
 
-        self.staff_names = list(sorted([user.username for user in self.staff]))
+        self.staff_names = list(sorted(set(
+            itertools.chain(
+                (user.username for user in self.staff),
+                (self.admin.username,)
+            )
+        )))
 
     def test_course_admin_list_staff(self):
         expected_content = {
@@ -153,10 +151,12 @@ class ListAddRemoveSemesterStaffTestCase(TemporaryFilesystemTestCase):
         client = MockClient(self.admin)
         response = client.get(self.staff_url)
         self.assertEqual(200, response.status_code)
-        self.assertEqual(expected_content, json_load_bytes(response.content))
+        actual_content = json_load_bytes(response.content)
+        actual_content['staff'].sort()
+        self.assertEqual(expected_content, actual_content)
 
     def test_other_list_staff_permission_denied(self):
-        for user in self.staff[0], self.enrolled[0], self.nobody:
+        for user in self.enrolled[0], self.nobody:
             client = MockClient(user)
             response = client.get(self.staff_url)
 
@@ -171,15 +171,17 @@ class ListAddRemoveSemesterStaffTestCase(TemporaryFilesystemTestCase):
 
         client = MockClient(self.admin)
         response = client.post(self.staff_url, {'staff': new_staff_names})
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(201, response.status_code)
 
         expected_content = {
             'staff': self.staff_names
         }
 
-        self.assertEqual(expected_content, json_load_bytes(response.content))
+        actual_content = json_load_bytes(response.content)
+        actual_content['staff'].sort()
+        self.assertEqual(expected_content, actual_content)
 
-        self.assertEqual(
+        self.assertCountEqual(
             self.staff_names, self.semester.semester_staff_names)
 
     def test_other_add_staff_permission_denied(self):
@@ -190,15 +192,16 @@ class ListAddRemoveSemesterStaffTestCase(TemporaryFilesystemTestCase):
 
             self.assertEqual(403, response.status_code)
 
-            self.assertEqual(
+            self.assertCountEqual(
                 self.staff_names, self.semester.semester_staff_names)
 
     # -------------------------------------------------------------------------
 
     def test_course_admin_remove_staff(self):
         client = MockClient(self.admin)
-        to_remove = [user.username for user in self.staff[1:]]
-        remaining = [user.username for user in self.staff[:1]]
+        to_remove = self.staff_names[1:]
+        remaining = self.staff_names[:1]
+        remaining.sort()
 
         response = client.delete(self.staff_url, {'staff': to_remove})
 
@@ -208,7 +211,9 @@ class ListAddRemoveSemesterStaffTestCase(TemporaryFilesystemTestCase):
             'staff': remaining
         }
 
-        self.assertEqual(expected_content, json_load_bytes(response.content))
+        actual_content = json_load_bytes(response.content)
+        actual_content['staff'].sort()
+        self.assertEqual(expected_content, actual_content)
 
         self.assertCountEqual(
             remaining, self.semester.semester_staff_names)
@@ -249,7 +254,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
             "num_enrolled_students_total": len(self.enrolled_names)
         }
 
-        for user in self.enrolled[0], self.staff, self.admin:
+        for user in self.enrolled[0], self.staff[0], self.admin:
             client = MockClient(user)
             response = client.get(self.enrolled_url)
             self.assertEqual(200, response.status_code)
@@ -263,7 +268,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
             "num_enrolled_students_total": len(self.enrolled_names)
         }
 
-        for user in self.enrolled[0], self.staff, self.admin:
+        for user in self.enrolled[0], self.staff[0], self.admin:
             client = MockClient(user)
             response = client.get(self.enrolled_url, {'page_size': size})
             self.assertEqual(200, response.status_code)
@@ -279,7 +284,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
             "num_enrolled_students_total": len(self.enrolled_names)
         }
 
-        for user in self.enrolled[0], self.staff, self.admin:
+        for user in self.enrolled[0], self.staff[0], self.admin:
             client = MockClient(user)
             response = client.get(
                 self.enrolled_url,
@@ -297,7 +302,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
             "num_enrolled_students_total": len(self.enrolled_names)
         }
 
-        for user in self.enrolled[0], self.staff, self.admin:
+        for user in self.enrolled[0], self.staff[0], self.admin:
             client = MockClient(user)
             response = client.get(
                 self.enrolled_url,
@@ -317,7 +322,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
             "num_enrolled_students_total": len(self.enrolled_names)
         }
 
-        for user in self.enrolled[0], self.staff, self.admin:
+        for user in self.enrolled[0], self.staff[0], self.admin:
             client = MockClient(user)
             response = client.get(
                 self.enrolled_url, {'username_starts_with': 'st'})
@@ -341,7 +346,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(201, response.status_code)
 
-        self.enrolled_names.append(new_students)
+        self.enrolled_names += new_students
         self.enrolled_names.sort()
 
         expected_content = {
@@ -382,8 +387,8 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(expected_content, json_load_bytes(response.content))
 
-        self.assertEqual(
-            new_students, sorted(self.semester.enrolled_student_names))
+        self.assertCountEqual(
+            sorted(new_students), sorted(self.semester.enrolled_student_names))
 
     def test_other_update_enrolled_students_permission_denied(self):
         for user in self.staff[0], self.enrolled[0], self.nobody:
@@ -413,7 +418,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
             'num_enrolled_students_total': len(self.enrolled_names)
         }
 
-        self.assertEqual(expected_content, json_load_bytes(expected_content))
+        self.assertEqual(expected_content, json_load_bytes(response.content))
 
         self.assertEqual(
             self.enrolled_names, sorted(self.semester.enrolled_student_names))
@@ -464,17 +469,17 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
                     'url': reverse('project:get', kwargs={'pk': project.pk})
                 }
                 for project in sorted(
-                    self.all_projects, key=lambda obj: obj.pk)
+                    self.all_projects, key=lambda obj: obj.name)
             ]
         }
 
-        for user in self.admin, self.staff:
+        for user in self.admin, self.staff[0]:
             client = MockClient(user)
             response = client.get(self.projects_url)
 
             self.assertEqual(200, response.status_code)
             actual_content = json_load_bytes(response.content)
-            response.content['projects'].sort(key=lambda obj: obj.pk)
+            actual_content['projects'].sort(key=lambda obj: obj['name'])
 
             self.assertEqual(expected_content, actual_content)
 
@@ -487,16 +492,17 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
                     'name': project.name,
                     'url': reverse('project:get', kwargs={'pk': project.pk})
                 }
-                for project in visible_projects
+                for project in sorted(
+                    visible_projects, key=lambda obj: obj.name)
             ]
         }
 
-        client = MockClient(self.enrolled)
+        client = MockClient(self.enrolled[0])
         response = client.get(self.projects_url)
 
         self.assertEqual(200, response.status_code)
         actual_content = json_load_bytes(response.content)
-        response.content['projects'].sort(key=lambda obj: obj.pk)
+        actual_content['projects'].sort(key=lambda obj: obj['name'])
 
         self.assertEqual(expected_content, actual_content)
 
@@ -519,22 +525,8 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
         loaded = Project.objects.get(name=args['name'])
 
         expected_content = {
-            "type": "project",
-            "id": loaded.pk,
             "name": loaded.name,
-            "visible_to_students": loaded.visible_to_students,
-            "closing_time": loaded.closing_time,
-            "disallow_student_submissions": loaded.disallow_student_submissions,
-            "allow_submissions_from_non_enrolled_students": loaded.allow_submissions_from_non_enrolled_students,
-            "min_group_size": loaded.min_group_size,
-            "max_group_size": loaded.max_group_size,
-            "required_student_files": loaded.required_student_files,
-            "expected_student_file_patterns": loaded.expected_student_file_patterns,
-            "urls": {
-                "self": reverse('projects:get', kwargs={'pk': loaded.pk}),
-                "semester": self.semester_url,
-                "uploaded_files": reverse('project:files', kwargs={'pk': loaded.pk}),
-            }
+            "url": reverse('project:get', kwargs={'pk': loaded.pk})
         }
 
         self.assertEqual(expected_content, actual_content)
@@ -543,14 +535,15 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
         args = {
             'name': 'spam project',
             "visible_to_students": True,
-            "closing_time": timezone.now(),
+            "closing_time": timezone.now().replace(microsecond=0),
             "disallow_student_submissions": True,
             "allow_submissions_from_non_enrolled_students": True,
             "min_group_size": 2,
             "max_group_size": 3,
             "required_student_files": ['spam.cpp', 'eggs.cpp'],
-            "expected_student_file_patterns": Project.FilePatternTuple(
-                'test_*.cpp', 1, 4)
+            "expected_student_file_patterns": [
+                ['test_*.cpp', 1, 4], ['cheese[0-9].txt', 0, 2]
+            ]
         }
         client = MockClient(self.admin)
         response = client.post(self.projects_url, args)
@@ -561,30 +554,24 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
 
         loaded = Project.objects.get(name=args['name'])
 
+        args['expected_student_file_patterns'] = [
+            Project.FilePatternTuple(*list_) for list_ in
+            args['expected_student_file_patterns']
+        ]
+
         for arg, value in args.items():
             self.assertEqual(value, getattr(loaded, arg))
 
         expected_content = {
-            "type": "project",
-            "id": loaded.pk,
-            "urls": {
-                "self": reverse('projects:get', kwargs={'pk': loaded.pk}),
-                "semester": self.semester_url,
-                "uploaded_files": reverse('project:files', kwargs={'pk': loaded.pk}),
-            }
-        }
-        expected_content.update(args)
-        expected_content['expected_student_file_patterns'] = {
-            'pattern': args['expected_student_file_patterns'].pattern,
-            'min_num_matches': args['expected_student_file_patterns'].min_num_matches,
-            'max_num_matches': args['expected_student_file_patterns'].max_num_matches,
+            "name": loaded.name,
+            "url": reverse('project:get', kwargs={'pk': loaded.pk})
         }
 
         self.assertEqual(expected_content, actual_content)
 
     def test_other_add_project_permission_denied(self):
         project_name = 'spam_project'
-        for user in self.staff, self.enrolled, self.nobody:
+        for user in self.staff[0], self.enrolled[0], self.nobody:
             client = MockClient(user)
             response = client.post(self.projects_url, {'name': project_name})
 

@@ -131,10 +131,8 @@ class ListAddRemoveCourseAdministratorsEndpoint(EndpointBase):
             raise exceptions.ValidationError(
                 'You may not remove yourself from a list of administrators')
 
-        users = [
-            User.objects.get_or_create(username=username)[0]
-            for username in request_content['administrators']
-        ]
+        users = User.objects.filter(
+            username__in=request_content['administrators'])
 
         course.administrators.remove(*users)
 
