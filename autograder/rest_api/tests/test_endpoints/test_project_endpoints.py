@@ -988,7 +988,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(403, response.status_code)
 
     def test_list_groups_non_enrolled_student_private_project_permission_denied(self):
-        self.visible_project.allow_submissions_from_non_enrolled_students = True
+        self.visible_project.allow_submissions_from_non_enrolled_students = False
         self.visible_project.validate_and_save()
 
         client = MockClient(self.nobody)
