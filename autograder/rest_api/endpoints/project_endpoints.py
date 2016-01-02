@@ -137,7 +137,7 @@ class GetUpdateDeleteProjectFileEndpoint(EndpointBase):
 
         response = {
             "type": "project_file",
-            "filename": os.path.basename(file_.name),
+            "filename": file_.name,
             "size": file_.size,
             "content": str(file_.read()),
             "urls": {

@@ -723,6 +723,12 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
             project.add_project_file(
                 SimpleUploadedFile("", self.sample_project_file_contents))
 
+    def test_exception_get_file_that_doesnt_exist(self):
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
+        with self.assertRaises(ObjectDoesNotExist):
+            project.get_file('not_a_file')
+
     # -------------------------------------------------------------------------
 
     def test_valid_remove_project_file(self):
@@ -730,10 +736,16 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
             name=self.PROJECT_NAME, semester=self.semester)
         project.add_project_file(self.sample_project_file)
 
+        self.assertTrue(
+            self.sample_project_filename in project.uploaded_filenames)
+        self.assertTrue(project.has_file(self.sample_project_filename))
         with ut.ChangeDirectory(ut.get_project_files_dir(project)):
             self.assertTrue(os.path.isfile(self.sample_project_filename))
 
         project.remove_project_file(self.sample_project_filename)
+        self.assertFalse(
+            self.sample_project_filename in project.uploaded_filenames)
+        self.assertFalse(project.has_file(self.sample_project_filename))
         with ut.ChangeDirectory(ut.get_project_files_dir(project)):
             self.assertFalse(os.path.isfile(self.sample_project_filename))
 
