@@ -78,3 +78,9 @@ def ag_test_results_url(submission):
 
 def suite_results_url(submission):
     return reverse('submission:suite-results', kwargs={'pk': submission.pk})
+
+
+def submitted_file_url(submission, filename):
+    return reverse(
+        'submission:file',
+        kwargs={'pk': submission.pk, 'filename': filename})

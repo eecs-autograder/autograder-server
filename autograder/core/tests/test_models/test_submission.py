@@ -66,14 +66,21 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             loaded_submission.status,
             Submission.GradingStatus.received)
         self.assertEqual(loaded_submission.invalid_reason_or_error, [])
+        self.assertCountEqual(
+            (file_.name for file_ in submit_file_data),
+            loaded_submission.submitted_filenames)
 
         self.assertTrue(os.path.isdir(ut.get_submission_dir(submission)))
         with ut.ChangeDirectory(ut.get_submission_dir(submission)):
             for name, content in submit_file_data:
+                content = content.decode('utf-8')
+                self.assertEqual(name, submission.get_file(name).name)
+                self.assertEqual(content, submission.get_file(name).read())
+
                 self.assertTrue(
                     os.path.isfile(os.path.basename(name)))
                 with open(name) as f:
-                    self.assertEqual(content.decode('utf-8'), f.read())
+                    self.assertEqual(content, f.read())
 
         iterable = enumerate(
             sorted(loaded_submission.submitted_files,
@@ -81,7 +88,8 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         for index, value in iterable:
             self.assertEqual(
                 submit_file_data[index].name, os.path.basename(value.name))
-            self.assertEqual(submit_file_data[index].content, value.read())
+            self.assertEqual(
+                submit_file_data[index].content.decode('utf-8'), value.read())
 
     def test_invalid_submission_missing_required_file(self):
         files = [
@@ -178,7 +186,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleUploadedFile('test_spam.cpp', b'cheeese'),
         ]
         illegal_files = [
-            SimpleUploadedFile('; echo "haxorz!" # ', b'merp'),
+            SimpleUploadedFile('; echo "haxorz!" #', b'merp'),
             SimpleUploadedFile('@$#%@$#^%$badfilename.bad', b'bad')]
 
         files += illegal_files

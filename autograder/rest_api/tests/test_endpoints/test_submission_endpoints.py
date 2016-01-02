@@ -235,7 +235,7 @@ class GetSubmissionTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
 # -----------------------------------------------------------------------------
 
 
-class ListSubmittedFilesTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
+class ListSubmittedFilesEndpointTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 

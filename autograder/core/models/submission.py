@@ -3,12 +3,14 @@ import fnmatch
 # import enum
 
 from django.db import models, transaction
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core import files
 from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
 
 from jsonfield import JSONField
 
+from autograder.utilities import fields as ag_fields
 from autograder.core.models import SubmissionGroup
 from autograder.core.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate,
@@ -18,53 +20,54 @@ import autograder.core.shared.global_constants as gc
 import autograder.core.shared.utilities as ut
 
 
-def _get_submission_file_upload_to_dir(instance, filename):
+def _get_submission_file_upload_to_dir(submission, filename):
     value = os.path.join(
-        ut.get_submission_relative_dir(instance.submission), filename)
+        ut.get_submission_dir(submission), filename)
     return value
 
 
-def _validate_filename(file_obj):
-    ut.check_user_provided_filename(file_obj.name)
+def _validate_filename(file_):
+    ut.check_user_provided_filename(file_.name)
 
 
 class _SubmissionManager(ManagerWithValidateOnCreate):
     @transaction.atomic
     def validate_and_create(self, **kwargs):
         files = kwargs.pop('submitted_files')
-        model = self.model(**kwargs)
-        # # Submission's save method throws an exception if the model
-        # # hasn't already been saved, so we need to call the parent
-        # # version here.
-        # super(Submission, model).save()
-        model.save()
-        for file_obj in files:
-            if file_obj.name in model.get_submitted_file_basenames():
-                model.discarded_files.append(file_obj.name)
-                continue
+        submission = self.model(**kwargs)
+        submission.save()
 
-            if model.file_is_extra(file_obj.name):
-                model.discarded_files.append(file_obj.name)
-                continue
-
+        for file_ in files:
             try:
-                # TODO optimize
-                model._submitted_files.add(
-                    _SubmittedFile.objects.validate_and_create(
-                        submitted_file=file_obj, submission=model))
+                ut.check_user_provided_filename(file_.name)
             except ValidationError:
-                model.discarded_files.append(file_obj.name)
+                submission.discarded_files.append(file_.name)
                 continue
+
+            if file_.name in submission.submitted_filenames:
+                submission.discarded_files.append(file_.name)
+                continue
+
+            if submission.file_is_extra(file_.name):
+                submission.discarded_files.append(file_.name)
+                continue
+
+            submission._submitted_filenames.append(file_.name)
+            write_dest = _get_submission_file_upload_to_dir(
+                submission, file_.name)
+            with open(write_dest, 'wb') as f:
+                for chunk in file_.chunks():
+                    f.write(chunk)
 
         try:
-            model.full_clean()
-            model._validate_submitted_files()
+            submission.full_clean()
+            submission.validate_submitted_files()
         except ValidationError as e:
-            model.status = Submission.GradingStatus.invalid
-            model.invalid_reason_or_error = e.message_dict
+            submission.status = Submission.GradingStatus.invalid
+            submission.invalid_reason_or_error = e.message_dict
 
-        model.save()
-        return model
+        submission.save()
+        return submission
 
     def create(self, *args, **kwargs):
         raise NotImplementedError(
@@ -176,11 +179,16 @@ class Submission(ModelValidatableOnSave):
 
     @property
     def submitted_files(self):
-        return [obj.submitted_file for obj in self._submitted_files.all()]
+        return (self.get_file(filename)
+                for filename in self._submitted_filenames)
 
-    discarded_files = ArrayField(
-        models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN),
-        default=list, blank=True)
+    @property
+    def submitted_filenames(self):
+        return tuple(self._submitted_filenames)
+
+    _submitted_filenames = ag_fields.StringArrayField(blank=True, default=list)
+
+    discarded_files = ag_fields.StringArrayField(default=list, blank=True)
 
     @property
     def timestamp(self):
@@ -196,6 +204,19 @@ class Submission(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
+    def get_file(self, filename):
+        self._check_file_exists(filename)
+        return files.File(
+            open(self._get_submitted_file_dir(filename)),
+            name=os.path.basename(filename))
+
+    def _check_file_exists(self, filename):
+        if filename not in self._submitted_filenames:
+            raise ObjectDoesNotExist()
+
+    def _get_submitted_file_dir(self, filename):
+        return os.path.join(ut.get_submission_dir(self), filename)
+
     @staticmethod
     def get_most_recent_submissions(project):
         """
@@ -208,11 +229,6 @@ class Submission(ModelValidatableOnSave):
                 group_sub = group.submissions.last()
             except IndexError:
                 continue
-            # TODO: get this query working so that we're not grabbing more
-            # submissions than we need:
-            # .raw(
-            #     'SELECT * FROM autograder_submission '
-            #     'ORDER BY _timestamp DESC LIMIT 1')[0]
             if group_sub:
                 submissions.append(group_sub)
 
@@ -221,9 +237,7 @@ class Submission(ModelValidatableOnSave):
     # -------------------------------------------------------------------------
 
     def get_submitted_file_basenames(self):
-        return [
-            os.path.basename(obj.submitted_file.name) for
-            obj in self._submitted_files.all()]
+        return tuple(self._submitted_filenames)
 
     # -------------------------------------------------------------------------
 
@@ -247,7 +261,7 @@ class Submission(ModelValidatableOnSave):
     # (so that if an invalid submission accidentally gets requeued,
     # it will be marked as invalid again)
 
-    def _validate_submitted_files(self):
+    def validate_submitted_files(self):
         errors = []
         submitted_filenames = self.get_submitted_file_basenames()
 
@@ -282,19 +296,7 @@ class Submission(ModelValidatableOnSave):
         if not pattern_obj:
             return filename not in required_files
 
-        submission_dir = ut.get_submission_dir(self)
         num_matches = len(fnmatch.filter(
-            os.listdir(submission_dir), pattern_obj.pattern))
+            self._submitted_filenames, pattern_obj.pattern))
 
         return num_matches == pattern_obj.max_num_matches
-
-
-class _SubmittedFile(ModelValidatableOnSave):
-    objects = ManagerWithValidateOnCreate()
-
-    submission = models.ForeignKey(Submission, related_name='_submitted_files')
-
-    submitted_file = models.FileField(
-        upload_to=_get_submission_file_upload_to_dir,
-        validators=[_validate_filename],
-        max_length=gc.MAX_CHAR_FIELD_LEN * 2)

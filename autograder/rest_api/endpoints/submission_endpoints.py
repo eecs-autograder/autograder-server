@@ -49,17 +49,49 @@ class GetSubmissionEndpoint(EndpointBase):
 
 class ListSubmittedFilesEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
-        pass
+        pk = int(pk)
+        submission = ag_models.Submission.objects.get(pk=pk)
+        check_can_view_project(
+            request.user, submission.submission_group.project)
+        check_can_view_group(request.user, submission.submission_group)
+
+        response = [
+            {
+                "filename": file_.name,
+                "urls": {
+                    "self": url_shortcuts.submitted_file_url(
+                        submission, file_.name),
+                    "submission": url_shortcuts.submission_url(submission)
+                }
+            }
+            for file_ in submission.submitted_files
+        ]
+
+        return http.JsonResponse(response)
+
 
 class GetSubmittedFileEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
-        pass
+        pk = int(pk)
+        submission = ag_models.Submission.objects.get(pk=pk)
+        check_can_view_project(
+            request.user, submission.submission_group.project)
+        check_can_view_group(request.user, submission.submission_group)
+
 
 class ListAutograderTestCaseResultsEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
-        pass
+        pk = int(pk)
+        submission = ag_models.Submission.objects.get(pk=pk)
+        check_can_view_project(
+            request.user, submission.submission_group.project)
+        check_can_view_group(request.user, submission.submission_group)
+
 
 class ListStudentTestSuiteResultsEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
-        pass
-
+        pk = int(pk)
+        submission = ag_models.Submission.objects.get(pk=pk)
+        check_can_view_project(
+            request.user, submission.submission_group.project)
+        check_can_view_group(request.user, submission.submission_group)
