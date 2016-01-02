@@ -276,7 +276,7 @@ Response format:
 
 --------------------------------------------------------------------------------
 
-/projects/<id>/submission_groups/?page_size=<int>&page_number=<int>&group_contains=<username>
+/projects/<id>/submission_groups/?page_size=<int>&page_num=<int>&group_contains=<username>
 GET: The response content depends on who is making the request see below. 
 Access rules/Response content:
     - If the user making the request is a course administrator or semester 
@@ -295,7 +295,7 @@ Access rules/Response content:
                 "url": "/submission_groups/<group id>/"
             }
         ],
-        "total_num_submission_groups": <int>
+        "total_num_groups_matching_query": <int>
     }
 
     - If the user making the request is an enrolled student, or if the user
@@ -305,11 +305,11 @@ Access rules/Response content:
     - In any other case, 403 Forbidden will be returned. 
 
 If the "group_contains" query parameter is specified, then the 
-"submission_groups" field will only include groups that contain the 
+"submission_groups" field will only include the groups that contain the 
 specified username. In this case, the response will NOT be paginated.
-By default, page_size is 20 and page_number is 0. These query parameters affect 
+By default, page_size is 20 and page_num is 0. These query parameters affect 
 the number of groups included in the "submission_groups" field.
-page_size must be at least 1, and page_number must be >= 0.
+page_size must be at least 1, and page_num must be >= 0.
 
 POST: Creates a new submission_group for this project.
 Access rules:

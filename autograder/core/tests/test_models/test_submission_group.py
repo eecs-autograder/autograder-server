@@ -363,6 +363,9 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         self.assertIsNone(loaded_group.extended_due_date)
         self.assertCountEqual(
             self.enrolled_group, loaded_group.members.all())
+        self.assertCountEqual(
+            (user.username for user in self.enrolled_group),
+            loaded_group.member_names)
         self.assertEqual(self.project, loaded_group.project)
 
         self.assertTrue(

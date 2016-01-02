@@ -788,7 +788,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                     }
                     for group in groups[:DEFAULT_SUBMISSION_GROUP_PAGE_SIZE]
                 ],
-                'total_num_submission_groups': len(groups)
+                'total_num_groups_matching_query': len(groups)
             }
 
             self.assertEqual(
@@ -817,7 +817,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                     for group in groups[
                         page_num * page_size:(page_num + 1) * page_size]
                 ],
-                'total_num_submission_groups': len(groups)
+                'total_num_groups_matching_query': len(groups)
             }
 
             self.assertEqual(
@@ -846,7 +846,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                     for group in groups[
                         page_num * page_size:(page_num + 1) * page_size]
                 ],
-                'total_num_submission_groups': len(groups)
+                'total_num_groups_matching_query': len(groups)
             }
 
             self.assertEqual(
@@ -875,14 +875,14 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                     for group in groups[
                         page_num * page_size:]
                 ],
-                'total_num_submission_groups': len(groups)
+                'total_num_groups_matching_query': len(groups)
             }
 
             self.assertEqual(
                 expected_content, json_load_bytes(response.content))
 
     def test_course_admin_or_semester_staff_filter_groups(self):
-        groups = self._add_groups_to_project(self.visible_project, 5)
+        self._add_groups_to_project(self.visible_project, 5)
         self.enrolled.username = 'steve'
         self.enrolled.save()
         other_member = obj_ut.create_dummy_user()
@@ -896,8 +896,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
             client = MockClient(user)
             response = client.get(
                 self._get_groups_url(self.visible_project),
-                {'group_contains': [
-                    self.enrolled.username, other_member.username]})
+                {'group_contains': [self.enrolled.username]})
 
             self.assertEqual(200, response.status_code)
 
@@ -912,7 +911,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                             'group:get', kwargs={'pk': group_to_find.pk})
                     }
                 ],
-                'total_num_submission_groups': len(groups)
+                'total_num_groups_matching_query': 1
             }
 
             self.assertEqual(

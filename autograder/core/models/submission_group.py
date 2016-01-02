@@ -194,7 +194,7 @@ class SubmissionGroup(ModelValidatableOnSave):
 
     @property
     def member_names(self):
-        return tuple(self._members)
+        return tuple(user.username for user in self.members.all())
 
     # -------------------------------------------------------------------------
 

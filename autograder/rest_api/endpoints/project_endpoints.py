@@ -1,8 +1,10 @@
 import itertools
 import os
 import json
+
 from django import http
 from django.core import exceptions
+from django.contrib.auth.models import User
 
 from .endpoint_base import EndpointBase
 
@@ -275,8 +277,8 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
             response = {
                 "user_submission_group": {
                     "members": group_user_is_in.member_names,
-                    "url": "/submission_groups/<group id>/"
-                },
+                    "url": url_shortcuts.group_url(group_user_is_in)
+                }
             }
         except exceptions.ObjectDoesNotExist:
             response = {'user_submission_group': None}
@@ -287,35 +289,40 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
         page_size = request.GET.get(
             'page_size', DEFAULT_SUBMISSION_GROUP_PAGE_SIZE)
         page_num = request.GET.get('page_num', 0)
-        username_filter = request.GET.get('username_filters', None)
+        username_filter = request.GET.get('group_contains', None)
 
-        # if username_filter
+        if username_filter:
+            try:
+                queryset = User.objects.get(
+                    username=username_filter
+                ).groups_is_member_of.all()
+            except exceptions.ObjectDoesNotExist:
+                queryset = project.submission_groups.none()
+        else:
+            queryset = project.submission_groups.all()
 
-        if page_size < 1:
-            raise exceptions.ValidationError('page_size must be at least 1')
-
-        if page_num < 0:
-            raise exceptions.ValidationError('page_num may not be negative')
-
-        total_num_groups = project.submission_groups.count()
+        num_groups = queryset.count()
 
         slice_start = page_num * page_size
-        slice_end = min(slice_start + page_size, total_num_groups)
+        slice_end = min(slice_start + page_size)
 
-        # if username_filters:
-        #     queryset = []
-        #     for username in username_filters:
-        #         try:
-        #             group = User.objects.get(
-        #                 username=username
-        #             ).groups_is_member_of.get(project=project)
-        #             queryset.append()
-        #         except exceptions.ObjectDoesNotExist:
-        #             continue
+        response.update({
+            "submission_groups": [
+                {
+                    "members": [group.member_names],
+                    "url": url_shortcuts.group_url(group)
+                }
+                for group in queryset[slice_start:slice_end]
+            ],
+            "total_num_groups_matching_query": num_groups
+        })
 
-        #     # queryset = itertools.chain.from_iterable(
-        #     #     User.objects.filter()
+        return http.JsonResponse(response)
 
+    def post(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_can_view(request.user, project)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
