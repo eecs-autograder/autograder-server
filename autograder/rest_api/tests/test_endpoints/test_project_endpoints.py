@@ -480,7 +480,7 @@ class ListAddAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             name='test1',
             compiler='g++',
             student_resource_files=self.visible_project.required_student_files,
-            files_to_compile_together=self.visible_project.required_student_files,
+            student_files_to_compile_together=self.visible_project.required_student_files,
             project=self.visible_project
         )
         self.ag_test2 = AutograderTestCaseFactory.validate_and_create(
@@ -488,7 +488,7 @@ class ListAddAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             name='test2',
             compiler='g++',
             student_resource_files=self.visible_project.required_student_files,
-            files_to_compile_together=self.visible_project.required_student_files,
+            student_files_to_compile_together=self.visible_project.required_student_files,
             project=self.visible_project
         )
 
@@ -528,7 +528,7 @@ class ListAddAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         response = client.post(
             self.ag_tests_url,
             {'name': name, 'type': type_str, 'compiler': 'g++',
-             'files_to_compile_together': (
+             'student_files_to_compile_together': (
                  self.visible_project.required_student_files)})
 
         self.assertEqual(201, response.status_code)
@@ -537,7 +537,7 @@ class ListAddAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual('g++', loaded.compiler)
         self.assertEqual(
             self.visible_project.required_student_files,
-            loaded.files_to_compile_together)
+            loaded.student_files_to_compile_together)
 
         expected_content = {
             'name': name,
@@ -556,7 +556,7 @@ class ListAddAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
                 self.ag_tests_url,
                 {'name': name, 'type': 'compiled_and_run_test_case',
                  'compiler': 'g++',
-                 'files_to_compile_together': (
+                 'student_files_to_compile_together': (
                      self.visible_project.required_student_files)})
             self.assertEqual(403, response.status_code)
 

@@ -33,7 +33,8 @@ Response format:
     // compiled_test_case fields
     "compiler": <string>,
     "compiler_flags": [<string>, ...],
-    "files_to_compile_together": [<string>, ...],
+    "project_files_to_compile_together": [<string>, ...],
+    "student_files_to_compile_together": [<string>, ...],
     "executable_name": <string>,
 
     "urls": {

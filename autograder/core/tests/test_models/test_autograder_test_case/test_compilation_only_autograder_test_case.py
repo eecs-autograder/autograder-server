@@ -44,8 +44,10 @@ class CompilationOnlyAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.compiler = 'g++'
         self.compiler_flags = ['--foo_arg=bar', '-s']
 
-        self.files_to_compile_together = [
-            'spam.txt',  # project file
+        self.project_files_to_compile_together = [
+            'spam.txt'
+        ]
+        self.student_files_to_compile_together = [
             'file1.cpp',  # required student file
             'test_*.cpp'  # expected student pattern
         ]
@@ -56,7 +58,8 @@ class CompilationOnlyAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             "student_resource_files": ['file1.cpp', 'test_*.cpp'],
             "compiler": self.compiler,
             "compiler_flags": self.compiler_flags,
-            "files_to_compile_together": self.files_to_compile_together,
+            "project_files_to_compile_together": self.project_files_to_compile_together,
+            "student_files_to_compile_together": self.student_files_to_compile_together,
             "executable_name": self.executable_name,
         }
 
@@ -73,8 +76,11 @@ class CompilationOnlyAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(self.compiler, loaded_test.compiler)
         self.assertEqual(self.compiler_flags, loaded_test.compiler_flags)
         self.assertEqual(
-            self.files_to_compile_together,
-            loaded_test.files_to_compile_together)
+            self.project_files_to_compile_together,
+            loaded_test.project_files_to_compile_together)
+        self.assertEqual(
+            self.student_files_to_compile_together,
+            loaded_test.student_files_to_compile_together)
 
     def test_test_checks_return_code(self):
         test = AutograderTestCaseFactory.validate_and_create(

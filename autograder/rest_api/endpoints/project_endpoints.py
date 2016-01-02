@@ -80,6 +80,9 @@ class GetUpdateProjectEndpoint(EndpointBase):
 
         return http.HttpResponse(status=204)
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 class ListAddProjectFileEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
@@ -125,6 +128,9 @@ class ListAddProjectFileEndpoint(EndpointBase):
         response = {'success': success, 'failure': failure}
 
         return http.JsonResponse(response)
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 class GetUpdateDeleteProjectFileEndpoint(EndpointBase):
@@ -172,10 +178,25 @@ class GetUpdateDeleteProjectFileEndpoint(EndpointBase):
 
         return http.HttpResponse(status=204)
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 class ListAddAutograderTestCaseEndpoint(EndpointBase):
-    pass
+    def get(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_is_staff(request.user, project)
 
+        # response = {
+        #     "autograder_test_cases": [
+        #         {
+        #             "name": ag_test.name,
+        #             "url": url_shortcuts.ag_test_url(ag_test)
+        #         }
+        #         for ag_test in project.autograde
+        #     ]
+        # }
 
 class ListAddStudentTestSuiteEndpoint(EndpointBase):
     pass

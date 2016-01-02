@@ -35,6 +35,7 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
         self.semester = Semester.objects.validate_and_create(
             name='f15', course=self.course)
 
+        self.student_filename = 'student_file.cpp'
         self.project = Project.objects.validate_and_create(
             name='my_project', semester=self.semester)
 
@@ -52,7 +53,8 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
             compiler='g++',
             compiler_flags=['-Wall', '-pedantic'],
             test_resource_files=[self.cpp_filename],
-            files_to_compile_together=[self.cpp_filename],
+            project_files_to_compile_together=[self.cpp_filename],
+            # student_files_to_compile_together=[self.student_filename],
             executable_name=self.executable_name
         )
 

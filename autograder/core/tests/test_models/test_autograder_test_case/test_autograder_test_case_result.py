@@ -213,7 +213,7 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
                 compiler='g++',
                 compiler_flags=['-Wall'],
                 student_resource_files=['spam.cpp', 'egg.cpp'],
-                files_to_compile_together=['spam.cpp', 'egg.cpp'],
+                student_files_to_compile_together=['spam.cpp', 'egg.cpp'],
                 executable_name='prog',
                 points_for_correct_return_code=1,
                 points_for_correct_output=2,

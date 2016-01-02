@@ -310,22 +310,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         """
         raise NotImplementedError("Derived classes must override this method.")
 
-    def _compile_program(self, submission, result_ref, autograder_sandbox):
-        compilation_command = (
-            [self.compiler] + self.compiler_flags +
-            self.files_to_compile_together
-        )
-
-        if self.compiler == 'g++' and self.executable_name:
-            compilation_command += ['-o', self.executable_name]
-
-        compile_result = autograder_sandbox.run_cmd_with_redirected_io(
-            compilation_command, timeout=self.time_limit)
-        result_ref.submission = submission
-        result_ref.compilation_standard_output = compile_result.stdout
-        result_ref.compilation_standard_error_output = compile_result.stderr
-        result_ref.compilation_return_code = compile_result.return_code
-
     # -------------------------------------------------------------------------
 
     def clean(self):

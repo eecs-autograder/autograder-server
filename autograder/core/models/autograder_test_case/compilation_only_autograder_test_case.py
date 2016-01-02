@@ -18,18 +18,18 @@ class CompilationOnlyAutograderTestCase(CompiledAutograderTestCase):
     """
     objects = PolymorphicManagerWithValidateOnCreate()
 
-    def clean(self):
-        errors = {}
+    # def clean(self):
+    #     errors = {}
 
-        try:
-            super().clean()
-        except ValidationError as e:
-            errors = e.message_dict
+    #     try:
+    #         super().clean()
+    #     except ValidationError as e:
+    #         errors = e.message_dict
 
-        errors.update(self._clean_files_to_compile_together())
+    #     # errors.update(self._clean_files_to_compile_together())
 
-        if errors:
-            raise ValidationError(errors)
+    #     if errors:
+    #         raise ValidationError(errors)
 
     def test_checks_compilation(self):
         return True
