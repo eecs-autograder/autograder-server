@@ -286,9 +286,9 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
         if not project.semester.is_semester_staff(request.user):
             return http.JsonResponse(response)
 
-        page_size = request.GET.get(
-            'page_size', DEFAULT_SUBMISSION_GROUP_PAGE_SIZE)
-        page_num = request.GET.get('page_num', 0)
+        page_size = int(request.GET.get(
+            'page_size', DEFAULT_SUBMISSION_GROUP_PAGE_SIZE))
+        page_num = int(request.GET.get('page_num', 0))
         username_filter = request.GET.get('group_contains', None)
 
         if username_filter:
@@ -304,7 +304,7 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
         num_groups = queryset.count()
 
         slice_start = page_num * page_size
-        slice_end = min(slice_start + page_size)
+        slice_end = slice_start + page_size
 
         response.update({
             "submission_groups": [
@@ -324,17 +324,31 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
         project = ag_models.Project.objects.get(pk=pk)
         request_content = json.loads(request.body.decode('utf-8'))
 
+        _check_can_view(request.user, project)
+
         members = request_content['members']
         is_admin = project.semester.course.is_administrator(request.user)
 
         if is_admin:
-            return self._create_group(project, members, False)
-        # if
-        # if project.semester.course.is_semester
+            return self._create_group(
+                project, members, check_project_group_limits=False)
 
-    def _create_group(self, project, members, check_project_group_limits):
+        if len(members) != 1:
+            raise exceptions.PermissionDenied(
+                'You do not have permission to create multi-member groups '
+                'directly. Please use group invitations instead.')
+
+        if request.user.username not in members:
+            raise exceptions.PermissionDenied(
+                'You do not have permission to create groups that do '
+                'not contain yourself.')
+
+        return self._create_group(project, members)
+
+    def _create_group(self, project, members, check_project_group_limits=True):
         group = ag_models.SubmissionGroup.objects.validate_and_create(
             members=members,
+            project=project,
             check_project_group_limits=check_project_group_limits)
 
         response = {

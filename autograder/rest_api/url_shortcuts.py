@@ -50,3 +50,7 @@ def ag_test_url(ag_test):
 
 def suite_url(suite):
     return reverse('suite:get', kwargs={'pk': suite.pk})
+
+
+def group_url(group):
+    return reverse('group:get', kwargs={'pk': group.pk})

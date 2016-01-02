@@ -142,8 +142,7 @@ class SubmissionGroupManager(ManagerWithValidateOnCreate):
         to create SubmissionGroups.
         """
         with transaction.atomic():
-            users = User.objects.select_for_update().filter(
-                username__in=kwargs.pop('members'))
+            users = _get_and_lock_users(kwargs.pop('members'))
             verify_users_can_be_in_group(
                 users, kwargs['project'], 'members',
                 check_project_group_limits=check_project_group_limits)
@@ -244,8 +243,7 @@ class SubmissionGroup(ModelValidatableOnSave):
         concurrency-safe and performs validation on the specified members.
         """
         with transaction.atomic():
-            users = User.objects.select_for_update().filter(
-                username__in=new_usernames)
+            users = _get_and_lock_users(new_usernames)
             verify_users_can_be_in_group(
                 users, self.project, 'members',
                 group_to_ignore=self,
@@ -401,3 +399,14 @@ def verify_users_can_be_in_group(users, project, error_dict_field_name,
     verify_at_least_one_user_in_group(users, project, error_dict_field_name)
     verify_users_not_in_other_group(
         users, project, error_dict_field_name, group_to_ignore=group_to_ignore)
+
+
+# -----------------------------------------------------------------------------
+
+
+def _get_and_lock_users(usernames):
+    users = [
+        User.objects.get_or_create(username=username)[0]
+        for username in usernames]
+    User.objects.select_for_update().filter(username__in=usernames)
+    return users

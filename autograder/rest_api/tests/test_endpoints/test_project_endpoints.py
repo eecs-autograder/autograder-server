@@ -776,14 +776,13 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
         for user in self.admin, self.staff:
             client = MockClient(user)
             response = client.get(self._get_groups_url(self.visible_project))
-            self.assertEqual(200, response.content)
+            self.assertEqual(200, response.status_code)
 
             expected_content = {
                 'user_submission_group': None,
                 'submission_groups': [
                     {
-                        'members': [
-                            member.username for member in group.member_names],
+                        'members': list(sorted(group.member_names)),
                         'url': reverse('group:get', kwargs={'pk': group.pk})
                     }
                     for group in groups[:DEFAULT_SUBMISSION_GROUP_PAGE_SIZE]
@@ -791,8 +790,10 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                 'total_num_groups_matching_query': len(groups)
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            for obj in actual_content['submission_groups']:
+                obj['members'].sort()
+            self.assertEqual(expected_content, actual_content)
 
     def test_course_admin_or_semester_staff_list_first_page_custom_page_size(self):
         groups = self._add_groups_to_project(self.visible_project, 5)
@@ -804,14 +805,13 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
             response = client.get(
                 self._get_groups_url(self.visible_project),
                 {'page_size': page_size, 'page_num': page_num})
-            self.assertEqual(200, response.content)
+            self.assertEqual(200, response.status_code)
 
             expected_content = {
                 'user_submission_group': None,
                 'submission_groups': [
                     {
-                        'members': [
-                            member.username for member in group.member_names],
+                        'members': list(sorted(group.member_names)),
                         'url': reverse('group:get', kwargs={'pk': group.pk})
                     }
                     for group in groups[
@@ -820,8 +820,10 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                 'total_num_groups_matching_query': len(groups)
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            for obj in actual_content['submission_groups']:
+                obj['members'].sort()
+            self.assertEqual(expected_content, actual_content)
 
     def test_course_admin_or_semester_staff_list_middle_page_custom_page_size(self):
         groups = self._add_groups_to_project(self.visible_project, 5)
@@ -833,14 +835,13 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
             response = client.get(
                 self._get_groups_url(self.visible_project),
                 {'page_size': page_size, 'page_num': page_num})
-            self.assertEqual(200, response.content)
+            self.assertEqual(200, response.status_code)
 
             expected_content = {
                 'user_submission_group': None,
                 'submission_groups': [
                     {
-                        'members': [
-                            member.username for member in group.member_names],
+                        'members': list(sorted(group.member_names)),
                         'url': reverse('group:get', kwargs={'pk': group.pk})
                     }
                     for group in groups[
@@ -849,8 +850,10 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                 'total_num_groups_matching_query': len(groups)
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            for obj in actual_content['submission_groups']:
+                obj['members'].sort()
+            self.assertEqual(expected_content, actual_content)
 
     def test_course_admin_or_semester_staff_list_last_page_custom_page_size(self):
         groups = self._add_groups_to_project(self.visible_project, 5)
@@ -862,14 +865,13 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
             response = client.get(
                 self._get_groups_url(self.visible_project),
                 {'page_size': page_size, 'page_num': page_num})
-            self.assertEqual(200, response.content)
+            self.assertEqual(200, response.status_code)
 
             expected_content = {
                 'user_submission_group': None,
                 'submission_groups': [
                     {
-                        'members': [
-                            member.username for member in group.member_names],
+                        'members': list(sorted(group.member_names)),
                         'url': reverse('group:get', kwargs={'pk': group.pk})
                     }
                     for group in groups[
@@ -878,8 +880,10 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                 'total_num_groups_matching_query': len(groups)
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            for obj in actual_content['submission_groups']:
+                obj['members'].sort()
+            self.assertEqual(expected_content, actual_content)
 
     def test_course_admin_or_semester_staff_filter_groups(self):
         self._add_groups_to_project(self.visible_project, 5)
@@ -904,9 +908,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                 'user_submission_group': None,
                 'submission_groups': [
                     {
-                        'members': [
-                            member.username for member in
-                            group_to_find.member_names],
+                        'members': list(sorted(group_to_find.member_names)),
                         'url': reverse(
                             'group:get', kwargs={'pk': group_to_find.pk})
                     }
@@ -914,8 +916,9 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                 'total_num_groups_matching_query': 1
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            actual_content['submission_groups'][0]['members'].sort()
+            self.assertEqual(expected_content, actual_content)
 
     def test_enrolled_student_in_submission_group_list_groups(self):
         self._add_groups_to_project(self.visible_project, 5)
@@ -997,9 +1000,10 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
     def test_course_admin_create_group_of_others(self):
         num_members = 3
         members = obj_ut.create_dummy_users(num_members)
+        self.hidden_project.semester.enrolled_students.add(*members)
         member_names = [member.username for member in members]
         self.hidden_project.max_group_size = num_members
-        self.hidden_project.validate_and_save
+        self.hidden_project.validate_and_save()
 
         client = MockClient(self.admin)
         response = client.post(
@@ -1021,7 +1025,8 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
     def test_course_admin_create_group_of_others_users_dont_exist_yet(self):
         member_names = ['steve', 'joe']
         self.hidden_project.max_group_size = len(member_names)
-        self.hidden_project.validate_and_save
+        self.hidden_project.allow_submissions_from_non_enrolled_students = True
+        self.hidden_project.validate_and_save()
 
         client = MockClient(self.admin)
         response = client.post(
@@ -1047,8 +1052,10 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
 
     def test_course_admin_create_group_of_others_override_max_size(self):
         member_names = ['steve', 'joe']
+        self.hidden_project.min_group_size = 1
         self.hidden_project.max_group_size = 1
-        self.hidden_project.validate_and_save
+        self.hidden_project.allow_submissions_from_non_enrolled_students = True
+        self.hidden_project.validate_and_save()
 
         client = MockClient(self.admin)
         response = client.post(
@@ -1076,7 +1083,8 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
         member_names = ['steve', 'joe']
         self.hidden_project.min_group_size = 3
         self.hidden_project.max_group_size = 3
-        self.hidden_project.validate_and_save
+        self.hidden_project.allow_submissions_from_non_enrolled_students = True
+        self.hidden_project.validate_and_save()
 
         client = MockClient(self.admin)
         response = client.post(
@@ -1119,7 +1127,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(201, response.status_code)
 
             loaded = SubmissionGroup.get_group(user, self.visible_project)
-            self.assertEqual([user.username], loaded.member_names)
+            self.assertCountEqual([user.username], loaded.member_names)
 
     def test_error_student_create_group_with_only_self_but_min_group_size_2(self):
         self.visible_project.allow_submissions_from_non_enrolled_students = True

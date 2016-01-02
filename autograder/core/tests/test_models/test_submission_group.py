@@ -53,15 +53,19 @@ class SubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(self.project, loaded.project)
 
     def test_invite_users_that_do_not_exist_yet(self):
-        new_usernames = ['joe', 'bob', 'steve']
+        existant_users = obj_ut.create_dummy_users(2)
+        non_existant_usernames = ['joe', 'bob', 'steve']
+        new_usernames = (non_existant_usernames +
+                         [user.username for user in existant_users])
 
         self.project.allow_submissions_from_non_enrolled_students = True
+        self.project.max_group_size = 6
         self.project.save()
 
         self.invitation_creator.semesters_is_enrolled_in.remove(
             self.project.semester)
 
-        for username in new_usernames:
+        for username in non_existant_usernames:
             with self.assertRaises(ObjectDoesNotExist):
                 User.objects.get(username=username)
 
@@ -415,6 +419,26 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         groups = list(repeated_user.groups_is_member_of.all())
         self.assertCountEqual([first_group, second_group], groups)
 
+    def test_non_existant_users_created_with_group(self):
+        existant_users = obj_ut.create_dummy_users(2)
+
+        members = [user.username for user in existant_users] + ['joe', 'bob']
+
+        self.project.allow_submissions_from_non_enrolled_students = True
+        self.project.validate_and_save()
+
+        group = SubmissionGroup.objects.validate_and_create(
+            members=members, project=self.project,
+            check_project_group_limits=False)
+
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
+
+        self.assertEqual(group, loaded_group)
+        self.assertCountEqual(members, loaded_group.member_names)
+
+        self.assertEqual(
+            len(members), User.objects.filter(username__in=members).count())
+
     def test_valid_override_group_max_size(self):
         self.enrolled_group += obj_ut.create_dummy_users(3)
         self.project.semester.enrolled_students.add(*self.enrolled_group)
@@ -447,7 +471,8 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
     def test_error_create_empty_group_with_override_size(self):
         with self.assertRaises(ValidationError):
             SubmissionGroup.objects.validate_and_create(
-                members=[], project=self.project)
+                members=[], project=self.project,
+                check_project_group_limits=False)
 
     def test_normal_update_group(self):
         group = SubmissionGroup.objects.validate_and_create(
@@ -462,6 +487,28 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         loaded_group = SubmissionGroup.objects.get(pk=group.pk)
         self.assertCountEqual(
             new_members, loaded_group.members.all())
+
+    def test_update_group_non_existant_users_created(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=(user.username for user in self.enrolled_group),
+            project=self.project)
+
+        existant_users = obj_ut.create_dummy_users(2)
+
+        members = [user.username for user in existant_users] + ['joe', 'bob']
+
+        self.project.allow_submissions_from_non_enrolled_students = True
+        self.project.validate_and_save()
+
+        group.update_group(members, check_project_group_limits=False)
+
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
+
+        self.assertEqual(group, loaded_group)
+        self.assertCountEqual(members, loaded_group.member_names)
+
+        self.assertEqual(
+            len(members), User.objects.filter(username__in=members).count())
 
     def test_update_group_error_too_many_members(self):
         group = SubmissionGroup.objects.validate_and_create(
