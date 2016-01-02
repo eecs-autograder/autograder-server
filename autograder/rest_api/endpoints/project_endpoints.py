@@ -1,3 +1,4 @@
+import itertools
 import os
 import json
 from django import http
@@ -218,6 +219,9 @@ class ListAddAutograderTestCaseEndpoint(EndpointBase):
 
         return http.JsonResponse(response, status=201)
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 class ListAddStudentTestSuiteEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
@@ -255,9 +259,66 @@ class ListAddStudentTestSuiteEndpoint(EndpointBase):
 
         return http.JsonResponse(response, status=201)
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 class ListAddSubmissionGroupEndpoint(EndpointBase):
-    pass
+    def get(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_can_view(request.user, project)
+
+        try:
+            group_user_is_in = request.user.groups_is_member_of.get(
+                project=project)
+            response = {
+                "user_submission_group": {
+                    "members": group_user_is_in.member_names,
+                    "url": "/submission_groups/<group id>/"
+                },
+            }
+        except exceptions.ObjectDoesNotExist:
+            response = {'user_submission_group': None}
+
+        if not project.semester.is_semester_staff(request.user):
+            return http.JsonResponse(response)
+
+        page_size = request.GET.get(
+            'page_size', DEFAULT_SUBMISSION_GROUP_PAGE_SIZE)
+        page_num = request.GET.get('page_num', 0)
+        username_filter = request.GET.get('username_filters', None)
+
+        # if username_filter
+
+        if page_size < 1:
+            raise exceptions.ValidationError('page_size must be at least 1')
+
+        if page_num < 0:
+            raise exceptions.ValidationError('page_num may not be negative')
+
+        total_num_groups = project.submission_groups.count()
+
+        slice_start = page_num * page_size
+        slice_end = min(slice_start + page_size, total_num_groups)
+
+        # if username_filters:
+        #     queryset = []
+        #     for username in username_filters:
+        #         try:
+        #             group = User.objects.get(
+        #                 username=username
+        #             ).groups_is_member_of.get(project=project)
+        #             queryset.append()
+        #         except exceptions.ObjectDoesNotExist:
+        #             continue
+
+        #     # queryset = itertools.chain.from_iterable(
+        #     #     User.objects.filter()
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 class ListAddSubmissionGroupInvitationEndpoint(EndpointBase):

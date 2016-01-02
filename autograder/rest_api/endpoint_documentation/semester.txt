@@ -102,7 +102,7 @@ Response format:
         <string username>,
         ...
     ],
-    "num_enrolled_students_total": <int> 
+    "total_num_students_matching_query": <int> 
 }
 
 POST: Adds the listed usernames to the list of enrolled students 

@@ -1,3 +1,4 @@
+import copy
 import itertools
 
 from django.core.urlresolvers import reverse
@@ -199,9 +200,9 @@ class ListAddRemoveSemesterStaffTestCase(TemporaryFilesystemTestCase):
 
     def test_course_admin_remove_staff(self):
         client = MockClient(self.admin)
-        to_remove = self.staff_names[1:]
-        remaining = self.staff_names[:1]
-        remaining.sort()
+        to_remove = copy.copy(self.staff_names)
+        to_remove.remove(self.admin.username)
+        remaining = [self.admin.username]
 
         response = client.delete(self.staff_url, {'staff': to_remove})
 
@@ -251,7 +252,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
         expected_content = {
             'enrolled_students': (
                 self.enrolled_names[:DEFAULT_ENROLLED_STUDENT_PAGE_SIZE]),
-            "num_enrolled_students_total": len(self.enrolled_names)
+            "total_num_students_matching_query": len(self.enrolled_names)
         }
 
         for user in self.enrolled[0], self.staff[0], self.admin:
@@ -265,7 +266,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
         size = 2
         expected_content = {
             'enrolled_students': self.enrolled_names[:size],
-            "num_enrolled_students_total": len(self.enrolled_names)
+            "total_num_students_matching_query": len(self.enrolled_names)
         }
 
         for user in self.enrolled[0], self.staff[0], self.admin:
@@ -281,7 +282,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
         expected_content = {
             'enrolled_students': self.enrolled_names[
                 size * page_num:size * (page_num + 1)],
-            "num_enrolled_students_total": len(self.enrolled_names)
+            "total_num_students_matching_query": len(self.enrolled_names)
         }
 
         for user in self.enrolled[0], self.staff[0], self.admin:
@@ -299,7 +300,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
         expected_content = {
             'enrolled_students': self.enrolled_names[
                 size * page_num:],
-            "num_enrolled_students_total": len(self.enrolled_names)
+            "total_num_students_matching_query": len(self.enrolled_names)
         }
 
         for user in self.enrolled[0], self.staff[0], self.admin:
@@ -319,13 +320,34 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
 
         expected_content = {
             'enrolled_students': ['steve', 'stove'],
-            "num_enrolled_students_total": len(self.enrolled_names)
+            "total_num_students_matching_query": 2,
         }
 
         for user in self.enrolled[0], self.staff[0], self.admin:
             client = MockClient(user)
             response = client.get(
                 self.enrolled_url, {'username_starts_with': 'st'})
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
+
+    def test_list_students_filter_by_username_startswith_with_pagination(self):
+        self.enrolled[0].username = 'steve'
+        self.enrolled[0].save()
+        self.enrolled[-1].username = 'stove'
+        self.enrolled[-1].save()
+
+        expected_content = {
+            'enrolled_students': ['stove'],
+            "total_num_students_matching_query": 2,
+        }
+
+        for user in self.enrolled[0], self.staff[0], self.admin:
+            client = MockClient(user)
+            response = client.get(
+                self.enrolled_url,
+                {'username_starts_with': 'st',
+                 'page_size': 1, 'page_number': 1})
             self.assertEqual(200, response.status_code)
             self.assertEqual(
                 expected_content, json_load_bytes(response.content))
@@ -352,7 +374,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
         expected_content = {
             'enrolled_students': (
                 self.enrolled_names[:DEFAULT_ENROLLED_STUDENT_PAGE_SIZE]),
-            'num_enrolled_students_total': len(self.enrolled_names)
+            'total_num_students_matching_query': len(self.enrolled_names)
         }
 
         self.assertEqual(expected_content, json_load_bytes(response.content))
@@ -382,7 +404,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
 
         expected_content = {
             'enrolled_students': list(sorted(new_students)),
-            'num_enrolled_students_total': len(new_students)
+            'total_num_students_matching_query': len(new_students)
         }
 
         self.assertEqual(expected_content, json_load_bytes(response.content))
@@ -415,7 +437,7 @@ class ListAddUpdateRemoveEnrolledStudentsTestCase(TemporaryFilesystemTestCase):
         expected_content = {
             'enrolled_students': (
                 self.enrolled_names[:DEFAULT_ENROLLED_STUDENT_PAGE_SIZE]),
-            'num_enrolled_students_total': len(self.enrolled_names)
+            'total_num_students_matching_query': len(self.enrolled_names)
         }
 
         self.assertEqual(expected_content, json_load_bytes(response.content))

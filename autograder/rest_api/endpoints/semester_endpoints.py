@@ -59,6 +59,9 @@ class GetUpdateSemesterEndpoint(EndpointBase):
 
         return http.JsonResponse(response)
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 class ListAddRemoveSemesterStaffEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
@@ -68,7 +71,7 @@ class ListAddRemoveSemesterStaffEndpoint(EndpointBase):
         _check_is_staff(request.user, semester)
 
         response = {
-            'staff': tuple(semester.semester_staff_names)
+            'staff': semester.semester_staff_names
         }
 
         return http.JsonResponse(response)
@@ -88,7 +91,7 @@ class ListAddRemoveSemesterStaffEndpoint(EndpointBase):
         semester.staff.add(*users)
 
         response = {
-            'staff': tuple(semester.semester_staff_names)
+            'staff': semester.semester_staff_names
         }
 
         return http.JsonResponse(response, status=201)
@@ -106,10 +109,13 @@ class ListAddRemoveSemesterStaffEndpoint(EndpointBase):
         semester.staff.remove(*users)
 
         response = {
-            'staff': tuple(semester.semester_staff_names)
+            'staff': semester.semester_staff_names
         }
 
         return http.JsonResponse(response, status=200)
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 class ListAddUpdateRemoveEnrolledStudentsEndpoint(EndpointBase):
@@ -182,29 +188,26 @@ class ListAddUpdateRemoveEnrolledStudentsEndpoint(EndpointBase):
     def _get_students(self, semester,
                       page_size=DEFAULT_ENROLLED_STUDENT_PAGE_SIZE,
                       page_number=0, username_starts_with=''):
-        if page_size < 1:
-            raise exceptions.ValidationError('page_size must be at least 1')
-
-        if page_number < 0:
-            raise exceptions.ValidationError('page_number must be >= 0')
-
         if username_starts_with:
             queryset = semester.enrolled_students.filter(
                 username__startswith=username_starts_with)
         else:
             queryset = semester.enrolled_students.all()
 
-        total_num_students = semester.enrolled_students.count()
         slice_start = page_number * page_size
-        slice_end = min(slice_start + page_size, total_num_students)
+        slice_end = slice_start + page_size
+
         users = queryset.order_by('username')[slice_start:slice_end]
 
         return {
             "enrolled_students": [
                 user.username for user in users
             ],
-            "num_enrolled_students_total": total_num_students
+            "total_num_students_matching_query": queryset.count()
         }
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 class ListAddProjectEndpoint(EndpointBase):
