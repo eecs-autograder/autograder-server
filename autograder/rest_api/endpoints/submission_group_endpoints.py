@@ -14,14 +14,16 @@ from .endpoint_base import EndpointBase
 from autograder.core import models as ag_models
 from autograder.rest_api import url_shortcuts
 
-from .utilities import check_can_view_project
+from .utilities import (
+    check_can_view_project, check_is_group_member,
+    check_can_view_group)
 
 
 class GetUpdateDeleteSubmissionGroupEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
         pk = int(pk)
         group = ag_models.SubmissionGroup.objects.get(pk=pk)
-        _check_can_view_group(request.user, group)
+        check_can_view_group(request.user, group)
         check_can_view_project(request.user, group.project)
 
         response = {
@@ -73,7 +75,7 @@ class AddListSubmissionsEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
         pk = int(pk)
         group = ag_models.SubmissionGroup.objects.get(pk=pk)
-        _check_can_view_group(request.user, group)
+        check_can_view_group(request.user, group)
         check_can_view_project(request.user, group.project)
 
         response = {
@@ -114,7 +116,7 @@ class AddListSubmissionsEndpoint(EndpointBase):
 
 
 def _check_can_submit(user, group, timestamp):
-    _check_is_group_member(user, group)
+    check_is_group_member(user, group)
     check_can_view_project(user, group.project)
 
     if _group_has_active_submission(group):
@@ -155,18 +157,6 @@ def _group_has_active_submission(group):
         Q(status=ag_models.Submission.GradingStatus.being_graded)).exists()
 
 
-def _check_can_view_group(user, group):
-    if group.project.semester.is_semester_staff(user):
-        return
-
-    _check_is_group_member(user, group)
-
-
 def _check_can_edit_group(user, group):
     if not group.project.semester.course.is_administrator(user):
-        raise exceptions.PermissionDenied()
-
-
-def _check_is_group_member(user, group):
-    if not user.groups_is_member_of.filter(pk=group.pk).exists():
         raise exceptions.PermissionDenied()

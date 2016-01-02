@@ -3,7 +3,7 @@ import datetime
 import copy
 
 from django.core.urlresolvers import reverse
-from django.utils import timezone
+from django.utils import timezone, dateparse
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -129,6 +129,8 @@ class GetSubmissionTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
+        self.maxDiff = None
+
     def test_valid_user_get_own_submission(self):
         for obj in self.submission_objs:
             client = MockClient(obj['user'])
@@ -145,9 +147,9 @@ class GetSubmissionTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
                 "type": "submission",
                 "id": submission.pk,
                 "discarded_files": [],
-                "timestamp": submission.timestamp,
+                "timestamp": submission.timestamp.replace(microsecond=0),
                 "status": submission.status,
-                "invalid_reason_or_error": '',
+                "invalid_reason_or_error": [],
 
                 "urls": {
                     "self": submission_url,
@@ -160,8 +162,10 @@ class GetSubmissionTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
                 }
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            actual_content['timestamp'] = dateparse.parse_datetime(
+                actual_content['timestamp']).replace(microsecond=0)
+            self.assertEqual(expected_content, actual_content)
 
     def test_course_admin_or_semester_staff_get_other_user_submission(self):
         for user in self.admin, self.staff:
@@ -180,9 +184,9 @@ class GetSubmissionTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
                     "type": "submission",
                     "id": submission.pk,
                     "discarded_files": [],
-                    "timestamp": submission.timestamp,
+                    "timestamp": submission.timestamp.replace(microsecond=0),
                     "status": submission.status,
-                    "invalid_reason_or_error": '',
+                    "invalid_reason_or_error": [],
 
                     "urls": {
                         "self": submission_url,
@@ -195,8 +199,10 @@ class GetSubmissionTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
                     }
                 }
 
-                self.assertEqual(
-                    expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            actual_content['timestamp'] = dateparse.parse_datetime(
+                actual_content['timestamp']).replace(microsecond=0)
+            self.assertEqual(expected_content, actual_content)
 
     def test_student_get_other_submission_permission_denied(self):
         for user in self.enrolled, self.nobody:

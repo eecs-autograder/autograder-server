@@ -66,3 +66,15 @@ def submissions_url(group):
 
 def submission_url(submission):
     return reverse('submission:get', kwargs={'pk': submission.pk})
+
+
+def submitted_files_url(submission):
+    return reverse('submission:files', kwargs={'pk': submission.pk})
+
+
+def ag_test_results_url(submission):
+    return reverse('submission:test-results', kwargs={'pk': submission.pk})
+
+
+def suite_results_url(submission):
+    return reverse('submission:suite-results', kwargs={'pk': submission.pk})
