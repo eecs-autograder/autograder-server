@@ -309,7 +309,7 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
         response.update({
             "submission_groups": [
                 {
-                    "members": [group.member_names],
+                    "members": group.member_names,
                     "url": url_shortcuts.group_url(group)
                 }
                 for group in queryset[slice_start:slice_end]
@@ -322,7 +322,27 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
     def post(self, request, pk, *args, **kwargs):
         pk = int(pk)
         project = ag_models.Project.objects.get(pk=pk)
-        _check_can_view(request.user, project)
+        request_content = json.loads(request.body.decode('utf-8'))
+
+        members = request_content['members']
+        is_admin = project.semester.course.is_administrator(request.user)
+
+        if is_admin:
+            return self._create_group(project, members, False)
+        # if
+        # if project.semester.course.is_semester
+
+    def _create_group(self, project, members, check_project_group_limits):
+        group = ag_models.SubmissionGroup.objects.validate_and_create(
+            members=members,
+            check_project_group_limits=check_project_group_limits)
+
+        response = {
+            "members": group.member_names,
+            "url": url_shortcuts.group_url(group)
+        }
+
+        return http.JsonResponse(response, status=201)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------

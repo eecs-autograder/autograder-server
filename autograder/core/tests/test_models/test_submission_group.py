@@ -354,7 +354,8 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
 
     def test_valid_initialization_with_defaults(self):
         group = SubmissionGroup.objects.validate_and_create(
-            members=self.enrolled_group, project=self.project)
+            members=(user.username for user in self.enrolled_group),
+            project=self.project)
 
         loaded_group = SubmissionGroup.objects.get(
             pk=group.pk)
@@ -374,7 +375,8 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
     def test_valid_initialization_no_defaults(self):
         extended_due_date = timezone.now() + datetime.timedelta(days=1)
         group = SubmissionGroup.objects.validate_and_create(
-            members=self.enrolled_group, project=self.project,
+            members=(user.username for user in self.enrolled_group),
+            project=self.project,
             extended_due_date=extended_due_date)
 
         loaded_group = SubmissionGroup.objects.get(pk=group.pk)
@@ -392,10 +394,11 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         repeated_user = self.enrolled_group[0]
 
         first_group = SubmissionGroup.objects.validate_and_create(
-            members=self.enrolled_group, project=self.project)
+            members=(user.username for user in self.enrolled_group),
+            project=self.project)
 
         second_group = SubmissionGroup.objects.validate_and_create(
-            members=[repeated_user], project=other_project)
+            members=[repeated_user.username], project=other_project)
 
         loaded_first_group = SubmissionGroup.objects.get(pk=first_group.pk)
         self.assertEqual(first_group, loaded_first_group)
@@ -411,6 +414,127 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
 
         groups = list(repeated_user.groups_is_member_of.all())
         self.assertCountEqual([first_group, second_group], groups)
+
+    def test_valid_override_group_max_size(self):
+        self.enrolled_group += obj_ut.create_dummy_users(3)
+        self.project.semester.enrolled_students.add(*self.enrolled_group)
+        group = SubmissionGroup.objects.validate_and_create(
+            members=(user.username for user in self.enrolled_group),
+            project=self.project,
+            check_project_group_limits=False)
+
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
+
+        self.assertEqual(group, loaded_group)
+        self.assertCountEqual(
+            self.enrolled_group, loaded_group.members.all())
+
+    def test_valid_override_group_min_size(self):
+        self.project.min_group_size = 10
+        self.project.max_group_size = 10
+        self.project.validate_and_save()
+        group = SubmissionGroup.objects.validate_and_create(
+            members=(user.username for user in self.enrolled_group),
+            project=self.project,
+            check_project_group_limits=False)
+
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
+
+        self.assertEqual(group, loaded_group)
+        self.assertCountEqual(
+            self.enrolled_group, loaded_group.members.all())
+
+    def test_error_create_empty_group_with_override_size(self):
+        with self.assertRaises(ValidationError):
+            SubmissionGroup.objects.validate_and_create(
+                members=[], project=self.project)
+
+    def test_normal_update_group(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=(user.username for user in self.enrolled_group),
+            project=self.project)
+
+        new_members = obj_ut.create_dummy_users(2)
+        self.project.semester.enrolled_students.add(*new_members)
+
+        group.update_group((user.username for user in new_members))
+
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
+        self.assertCountEqual(
+            new_members, loaded_group.members.all())
+
+    def test_update_group_error_too_many_members(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=(user.username for user in self.enrolled_group),
+            project=self.project)
+
+        new_members = obj_ut.create_dummy_users(5)
+        self.project.semester.enrolled_students.add(*new_members)
+
+        with self.assertRaises(ValidationError) as cm:
+            group.update_group((user.username for user in new_members))
+
+        self.assertTrue('members' in cm.exception.message_dict)
+
+    def test_update_group_error_too_few_members(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=(user.username for user in self.enrolled_group),
+            project=self.project)
+
+        new_members = obj_ut.create_dummy_users(2)
+        self.project.semester.enrolled_students.add(*new_members)
+
+        self.project.min_group_size = 10
+        self.project.max_group_size = 10
+        self.project.validate_and_save()
+
+        with self.assertRaises(ValidationError) as cm:
+            group.update_group((user.username for user in new_members))
+
+        self.assertTrue('members' in cm.exception.message_dict)
+
+    def test_update_group_override_min_size(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=(user.username for user in self.enrolled_group),
+            project=self.project)
+
+        self.project.min_group_size = 10
+        self.project.max_group_size = 10
+        self.project.validate_and_save()
+
+        new_members = obj_ut.create_dummy_users(2)
+        self.project.semester.enrolled_students.add(*new_members)
+        group.update_group((user.username for user in new_members),
+                           check_project_group_limits=False)
+
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
+
+        self.assertEqual(group, loaded_group)
+        self.assertCountEqual(new_members, loaded_group.members.all())
+
+    def test_update_group_override_max_size(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=(user.username for user in self.enrolled_group),
+            project=self.project)
+
+        new_members = obj_ut.create_dummy_users(5)
+        self.project.semester.enrolled_students.add(*new_members)
+
+        group.update_group((user.username for user in new_members),
+                           check_project_group_limits=False)
+
+        loaded_group = SubmissionGroup.objects.get(pk=group.pk)
+
+        self.assertEqual(group, loaded_group)
+        self.assertCountEqual(new_members, loaded_group.members.all())
+
+    def test_error_update_empty_group_with_override_size(self):
+        group = SubmissionGroup.objects.validate_and_create(
+            members=(user.username for user in self.enrolled_group),
+            project=self.project)
+
+        with self.assertRaises(ValidationError):
+            group.update_group([], check_project_group_limits=False)
 
     def test_exception_on_normal_create_method(self):
         with self.assertRaises(NotImplementedError):

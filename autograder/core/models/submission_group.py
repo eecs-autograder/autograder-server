@@ -127,8 +127,14 @@ class SubmissionGroupInvitation(ModelValidatableOnSave):
 
 
 class SubmissionGroupManager(ManagerWithValidateOnCreate):
-    def validate_and_create(self, **kwargs):
+    def validate_and_create(self, check_project_group_limits=True, **kwargs):
         """
+        Additional arguments:
+            check_project_group_limits -- When False, validation of whether
+                the number of users is within the specified project limits
+                will NOT be run.
+                Default value: True
+
         The 'members' argument to this function should be a
         list of usernames, NOT Users.
 
@@ -137,10 +143,10 @@ class SubmissionGroupManager(ManagerWithValidateOnCreate):
         """
         with transaction.atomic():
             users = User.objects.select_for_update().filter(
-                username__in=kwargs.pop('members')).all()
-        # with transaction.atomic(), connection.cursor() as c:
-        #     c.execute('LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE'.format(
-        #         SubmissionGroup.objects.model._meta.db_table))
+                username__in=kwargs.pop('members'))
+            verify_users_can_be_in_group(
+                users, kwargs['project'], 'members',
+                check_project_group_limits=check_project_group_limits)
 
             group = self.model(**kwargs)
             group.save()
@@ -160,6 +166,12 @@ class SubmissionGroup(ModelValidatableOnSave):
             more than project.max_group_size members.
             A User can only be a member of one submission group per project.
             This field is REQUIRED.
+
+            IMPORTANT: Updating this field manually is NOT concurrency-safe
+                and does NOT perform any validation.
+                To update this field when these things are important,
+                use self.update_group instead.
+
 
         project -- The project that this SubmissionGroup belongs to.
             This field is REQUIRED.
@@ -210,18 +222,6 @@ class SubmissionGroup(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    # def __init__(self, *args, **kwargs):
-    #     members = kwargs.pop('members', None)
-    #     if members is None:  # and '_members' in kwargs:
-    #         # __init__ is being called by the actual database
-    #         return super().__init__(*args, **kwargs)
-
-    #     # __init__ is being called by the user
-    #     return super().__init__(*args, _members=members, **kwargs)
-
-    # TODO: atomic, concurrency-safe member function that updates group
-    # members
-
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         submission_group_dir = ut.get_student_submission_group_dir(self)
@@ -229,78 +229,38 @@ class SubmissionGroup(ModelValidatableOnSave):
         if not os.path.isdir(submission_group_dir):
             os.makedirs(submission_group_dir)
 
-    def clean(self):
-        num_members = self.members.count()
-        if num_members < self.project.min_group_size:
-            raise ValidationError({
-                'members': (
-                    "Tried to add {} members, but the minimum "
-                    "for project '{}' is {}".format(
-                        num_members, self.project.name,
-                        self.project.min_group_size))})
+    def update_group(self, new_usernames, check_project_group_limits=True):
+        """
+        Parameters:
+            new_usernames -- The an iterable of the names of
+                the new members of this group.
 
-        if num_members < 1:
-            raise ValidationError({
-                'members': "Groups must have at least one member"})
+            check_project_group_limits -- When False, validation of
+                whether the group size is within specified project limits
+                will NOT be performed. Defaults to True.
 
-        if num_members > self.project.max_group_size:
-            raise ValidationError({
-                'members': (
-                    "Tried to add {} members, but the max "
-                    "for project '{}' is {}".format(
-                        num_members, self.project.name,
-                        self.project.max_group_size))})
+        Overwrites the current members of this group and replaces them
+        with the users listed in new_usernames. This function is
+        concurrency-safe and performs validation on the specified members.
+        """
+        with transaction.atomic():
+            users = User.objects.select_for_update().filter(
+                username__in=new_usernames)
+            verify_users_can_be_in_group(
+                users, self.project, 'members',
+                group_to_ignore=self,
+                check_project_group_limits=check_project_group_limits)
 
-        self._clean_group_members_for_enrollment(self.members.all())
-
-        for member in self.members.all():
-            # current_memberships =
-            # SubmissionGroup.objects.filter(
-            #     project=self.project, _members__contains=[member])
-            if member.groups_is_member_of.filter(
-                    project=self.project).exclude(pk=self.pk).exists():
-                raise ValidationError({
-                    'members': (
-                        "User {} is already part of a submission "
-                        "group for project '{}'".format(
-                            member, self.project.name))})
-
-    def _clean_group_members_for_enrollment(self, members):
-        semester = self.project.semester
-        num_enrolled = ut.count_if(
-            members, lambda member: semester.is_enrolled_student(member))
-
-        num_staff = ut.count_if(
-            members, lambda member: semester.is_semester_staff(member))
-
-        if num_staff:
-            if num_staff != len(members):
-                raise ValidationError({
-                    'members': (
-                        "Groups with any staff members "
-                        "must consist of only staff members")})
-            return
-
-        if not self.project.allow_submissions_from_non_enrolled_students:
-            if not num_enrolled or num_enrolled != len(members):
-                raise ValidationError({
-                    'members': (
-                        "This project only accepts submissions "
-                        "from enrolled students.")})
-            return
-
-        if num_enrolled and num_enrolled != len(members):
-            raise ValidationError({
-                'members': (
-                    "Non-enrolled students can only be in "
-                    "groups with other non-enrolled students.")})
+            self.members.set(users)
+            self.full_clean()
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 
-def verify_users_can_be_in_group(users, project, error_dict_field_name):
+def verify_users_have_same_enrollment_status(users, project,
+                                             error_dict_field_name):
     """
     Parameters:
         users -- An iterable of User objects that will potentially be
@@ -311,55 +271,21 @@ def verify_users_can_be_in_group(users, project, error_dict_field_name):
         error_dict_field_name -- The field name to use in the ValidationError
             error dictionary.
 
-    Checks to see whether the given users can be in a group together.
+    Checks to see whether the users have the same enrollment status.
     - All users must either be:
         - staff members/course administrators
         - enrolled students
         - non-enrolled students AND the project must allow submissions
             from non-enrolled students
-    - None of the users may already be in a SubmissionGroup for the
-        specified project.
-    - The size of the group must be within the limits set by the project.
 
-    If these conditions are not met, then ValidationError will be thrown.
+    If these conditions are not met, then ValidationError will be raised.
     """
     users = tuple(users)
-    semester = project.semester
-
-    num_members = len(users)
-    if num_members < project.min_group_size:
-        raise ValidationError({
-            error_dict_field_name: (
-                "Tried to add {} members, but the minimum "
-                "for project '{}' is {}".format(
-                    num_members, project.name,
-                    project.min_group_size))})
-
-    if num_members < 1:
-        raise ValidationError({
-            error_dict_field_name: "Groups must have at least one member"})
-
-    if num_members > project.max_group_size:
-        raise ValidationError({
-            error_dict_field_name: (
-                "Tried to add {} members, but the max "
-                "for project '{}' is {}".format(
-                    num_members, project.name,
-                    project.max_group_size))})
-
-    for member in users:
-        if member.groups_is_member_of.filter(
-                project=project).exists():
-            raise ValidationError({
-                error_dict_field_name: (
-                    "User {} is already part of a submission "
-                    "group for project '{}'".format(
-                        member, project.name))})
 
     num_enrolled = ut.count_if(
-        users, lambda member: semester.is_enrolled_student(member))
+        users, lambda member: project.semester.is_enrolled_student(member))
     num_staff = ut.count_if(
-        users, lambda member: semester.is_semester_staff(member))
+        users, lambda member: project.semester.is_semester_staff(member))
 
     if num_staff:
         if num_staff != len(users):
@@ -382,3 +308,96 @@ def verify_users_can_be_in_group(users, project, error_dict_field_name):
             error_dict_field_name: (
                 "Non-enrolled students can only be in "
                 "groups with other non-enrolled students.")})
+
+
+def verify_group_size_allowed_by_project(users, project,
+                                         error_dict_field_name):
+    """
+    Parameters:
+        users -- An iterable of User objects that will potentially be
+            in a group.
+
+        project -- The project the given users want to be in a group for.
+
+        error_dict_field_name -- The field name to use in the ValidationError
+            error dictionary.
+
+    Checks to make sure that the number of users is between
+    project.min_group_size and project.max_group_size.
+    ValidationError will be raised if this condition is not met.
+    """
+    users = tuple(users)
+
+    num_members = len(users)
+    if num_members < project.min_group_size:
+        raise ValidationError({
+            error_dict_field_name: (
+                "Tried to add {} members, but the minimum "
+                "for project '{}' is {}".format(
+                    num_members, project.name,
+                    project.min_group_size))})
+
+    if num_members > project.max_group_size:
+        raise ValidationError({
+            error_dict_field_name: (
+                "Tried to add {} members, but the max "
+                "for project '{}' is {}".format(
+                    num_members, project.name,
+                    project.max_group_size))})
+
+
+def verify_at_least_one_user_in_group(users, project, error_dict_field_name):
+    users = tuple(users)
+    if len(users) < 1:
+        raise ValidationError({
+            error_dict_field_name: "Groups must have at least one member"})
+
+
+def verify_users_not_in_other_group(users, project, error_dict_field_name,
+                                    group_to_ignore=None):
+    """
+    Parameters:
+        users -- An iterable of User objects that will potentially be
+            in a group.
+
+        project -- The project the given users want to be in a group for.
+
+        error_dict_field_name -- The field name to use in the ValidationError
+            error dictionary.
+
+        group_to_ignore -- If this parameter is not None, then the given
+            group will be ignored when checking to see if users are already
+            in another group.
+
+    Raises ValidationError if any of the given users are already in
+    a SubmissionGroup other than group_to_ignore.
+    """
+    users = tuple(users)
+
+    for member in users:
+        query = member.groups_is_member_of.filter(project=project)
+        if group_to_ignore:
+            query = query.exclude(pk=group_to_ignore.pk)
+
+        if query.exists():
+            raise ValidationError({
+                error_dict_field_name: (
+                    "User {} is already part of a submission "
+                    "group for project '{}'".format(
+                        member, project.name))})
+
+
+def verify_users_can_be_in_group(users, project, error_dict_field_name,
+                                 group_to_ignore=None,
+                                 check_project_group_limits=True):
+    """
+    A shortcut for calling the above 4 "verify_" functions.
+    """
+    verify_users_have_same_enrollment_status(
+        users, project, error_dict_field_name)
+    if check_project_group_limits:
+        verify_group_size_allowed_by_project(
+            users, project, error_dict_field_name)
+    verify_at_least_one_user_in_group(users, project, error_dict_field_name)
+    verify_users_not_in_other_group(
+        users, project, error_dict_field_name, group_to_ignore=group_to_ignore)
