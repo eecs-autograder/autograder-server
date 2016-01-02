@@ -271,15 +271,18 @@ class ListSubmissionTestCase(TemporaryFilesystemTestCase):
             expected_content = {
                 'submissions': [
                     {
-                        'timestamp': str(sub.timestamp),
+                        'timestamp': sub.timestamp.replace(microsecond=0),
                         'url': reverse('submission:get', kwargs={'pk': sub.pk})
                     }
                     for sub in obj['submissions']
                 ]
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            for obj in actual_content['submissions']:
+                obj['timestamp'] = dateparse.parse_datetime(
+                    obj['timestamp']).replace(microsecond=0)
+            self.assertEqual(expected_content, actual_content)
 
     def test_course_admin_or_semester_staff_list_student_submissions(self):
         for user in self.staff, self.admin:
@@ -291,7 +294,7 @@ class ListSubmissionTestCase(TemporaryFilesystemTestCase):
                 expected_content = {
                     'submissions': [
                         {
-                            'timestamp': str(sub.timestamp),
+                            'timestamp': sub.timestamp.replace(microsecond=0),
                             'url': reverse(
                                 'submission:get', kwargs={'pk': sub.pk})
                         }
@@ -299,8 +302,11 @@ class ListSubmissionTestCase(TemporaryFilesystemTestCase):
                     ]
                 }
 
-                self.assertEqual(
-                    expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            for obj in actual_content['submissions']:
+                obj['timestamp'] = dateparse.parse_datetime(
+                    obj['timestamp']).replace(microsecond=0)
+            self.assertEqual(expected_content, actual_content)
 
     def test_non_admin_non_staff_list_other_submissions_permission_denied(self):
         for user in self.enrolled, self.nobody:
@@ -354,12 +360,14 @@ class AddSubmissionTestCase(TemporaryFilesystemTestCase):
             loaded = obj['group'].submissions.all().first()
 
             expected_content = {
-                'timestamp': str(loaded.timestamp),
-                'url': reverse('submission:get', kwarge={'pk': loaded.pk})
+                'timestamp': loaded.timestamp.replace(microsecond=0),
+                'url': reverse('submission:get', kwargs={'pk': loaded.pk})
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            actual_content['timestamp'] = dateparse.parse_datetime(
+                actual_content['timestamp']).replace(microsecond=0)
+            self.assertEqual(expected_content, actual_content)
 
     def test_permission_denied_user_not_in_specified_group(self):
         new_user = obj_ut.create_dummy_user()
@@ -384,13 +392,15 @@ class AddSubmissionTestCase(TemporaryFilesystemTestCase):
                 encode_data=False)
             self.assertEqual(201, response.status_code)
 
+            received_submission = obj['group'].submissions.first()
+            self.assertEqual(
+                Submission.GradingStatus.received, received_submission.status)
+
             response = client.post(
                 obj['submissions_url'], {'files': self.files_to_submit},
                 encode_data=False)
-            self.assertEqual(403, response.status_code)
+            self.assertEqual(400, response.status_code)
 
-            # Throws an exception if more than 1 submission
-            # exists for the group
             self.assertEqual(1, obj['group'].submissions.count())
 
     def test_error_project_deadline_passed(self):
