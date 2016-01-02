@@ -144,18 +144,17 @@ Response format:
 PATCH: Updates the specified file.
 Request format:
 {
-    "name": <string>,
+    // File renaming is not yet supported // "filename": <string>,
     "content": <string>
 }
 If any of the above fields are omitted, their values will remain unchanged.
 
 Response format: 
-{
-    // Only the fields that have changed will be included in the response
-    "filename": <string>,
-    "size": <int>, // size is in bytes
-    "content": <string>,
-}
+    If the file contents changed:
+    {
+        "size": <int>, // size is in bytes
+    }
+    Otherwise, 204 No content will be returned.
 
 DELETE: Deletes the specified file.
 

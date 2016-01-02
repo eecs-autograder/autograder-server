@@ -4,16 +4,18 @@ import collections
 import json
 import copy
 
-from django.db import models
+from django.db import models, transaction
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.contrib.postgres.fields import ArrayField  # , JSONField
+from django.contrib.postgres.fields import ArrayField, JSONField
+from django.core import files
 
-from jsonfield import JSONField
+# from jsonfield import JSONField
 
 from autograder.core.models import Semester
 from autograder.core.models.utils import (
     ModelValidatableOnSave, ManagerWithValidateOnCreate)
+import autograder.utilities.fields as ag_fields
 
 from .autograder_test_case.autograder_test_case_base import (
     AutograderTestCaseBase)
@@ -135,11 +137,14 @@ class Project(ModelValidatableOnSave):
             These dictionaries are serialized in order to get around
             the limitations of using ValidaitonError.
 
+    Properties:
+        uploaded_filenames -- The names of files that have been uploaded
+            to this Project.
+
     Instance methods:
         add_project_file()
         remove_project_file()
-        rename_project_file() TODO?
-        update_project_file() TODO
+        update_project_file()
 
         get_project_file_basenames()
         get_project_files()
@@ -180,6 +185,12 @@ class Project(ModelValidatableOnSave):
         default=1, validators=[MinValueValidator(1)])
     max_group_size = models.IntegerField(
         default=1, validators=[MinValueValidator(1)])
+
+    @property
+    def uploaded_filenames(self):
+        return tuple(self._uploaded_filenames)
+
+    _uploaded_filenames = ag_fields.StringArrayField(blank=True, default=list)
 
     @property
     def required_student_files(self):
@@ -408,13 +419,28 @@ class Project(ModelValidatableOnSave):
         """
         Adds the given file to this Project.
 
-        If a file with the same name already exists, the new file is
-        renamed by adding a short, random string to the filename. (This
-        is the default behavior in django.)
+        If a file with the same name already exists, ValidationError
+        will be raised.
         """
-        self._project_files.add(
-            _UploadedProjectFile.objects.validate_and_create(
-                uploaded_file=uploaded_file, project=self))
+        with transaction.atomic():
+            Project.objects.select_for_update().get(pk=self.pk)
+            # print(uploaded_file.name)
+            ut.check_user_provided_filename(uploaded_file.name)
+            if uploaded_file.name in self._uploaded_filenames:
+                raise ValidationError(
+                    'File exists: {}'.format(uploaded_file.name))
+            self._uploaded_filenames.append(uploaded_file.name)
+
+            full_path = self._get_project_file_dir(
+                uploaded_file.name)
+            with open(full_path, 'wb') as f:
+                for chunk in uploaded_file.chunks():
+                    f.write(chunk)
+
+            self.save()
+        # self._project_files.add(
+        #     _UploadedProjectFile.objects.validate_and_create(
+        #         uploaded_file=uploaded_file, project=self))
 
     def remove_project_file(self, filename):
         """
@@ -426,78 +452,74 @@ class Project(ModelValidatableOnSave):
         cases belonging to this Project, i.e. if it is listed in
         project.test_resource_files
         """
+        self._check_file_exists(filename)
+
         tests_depend_on_file = self.autograder_test_cases.filter(
             test_resource_files__contains=[filename])
         if tests_depend_on_file:
             raise ValidationError(
                 "One or more test cases depend on file " + filename)
 
-        for file_obj in self._project_files.all():
-            if file_obj.basename == filename:
-                file_obj.delete()
+        with transaction.atomic():
+            Project.objects.select_for_update().get(pk=self.pk)
+            self._uploaded_filenames.remove(filename)
+            with ut.ChangeDirectory(ut.get_project_files_dir(self)):
+                os.remove(filename)
+            self.save()
 
-                with ut.ChangeDirectory(ut.get_project_files_dir(self)):
-                    os.remove(filename)
-                return
+    def update_project_file(self, filename, new_contents):
+        self._check_file_exists(filename)
 
-        raise ObjectDoesNotExist(
-            "File {0} for {1} {2} project {3} does not exist".format(
-                filename,
-                self.semester.course.name, self.semester.name,
-                self.name))
+        with transaction.atomic():
+            Project.objects.select_for_update().get(pk=self.pk)
+            full_path = self._get_project_file_dir(filename)
+            with open(full_path, 'w') as f:
+                f.write(new_contents)
+
+            self.save()
+        # file_ = self._get_uploaded_file(filename)
+        # print(type(file_.uploaded_file))
+        # file_.uploaded_file.open('wb')
+        # file_.uploaded_file.write(new_contents)
+
+    # def _get_uploaded_file(self, filename):
+    #     full_path = os.path.join(
+    #         ut.get_project_files_relative_dir(self), filename)
+    #     return _UploadedProjectFile.objects.get(
+    #         project=self, uploaded_file=full_path)
 
     def get_file(self, filename):
-        full_path = os.path.join(
-            ut.get_project_files_relative_dir(self), filename)
-        file_obj = _UploadedProjectFile.objects.get(
-            project=self, uploaded_file=full_path)
-        return file_obj.uploaded_file
+        self._check_file_exists(filename)
+        return files.File(
+            open(self._get_project_file_dir(filename)),
+            name=os.path.basename(filename))
 
     def get_project_files(self):
         """
-        Returns a list of this project's uploaded files
+        Returns an iterable of this project's uploaded files
         (as django-style file-like objects).
         """
-        return [obj.uploaded_file for obj in self._project_files.all()]
+        return (self.get_file(filename) for
+                filename in self._uploaded_filenames)
+        # return [obj.uploaded_file for obj in self._project_files.all()]
 
     def get_project_file_basenames(self):
         """
         Returns a list of this project's uploaded file basenames.
         """
-        return [os.path.basename(obj.uploaded_file.name)
-                for obj in self._project_files.all()]
+        return self.uploaded_filenames
 
     def has_file(self, filename):
-        for proj_file in self._project_files.all():
-            if filename == os.path.basename(proj_file.uploaded_file.name):
-                return True
+        return filename in self._uploaded_filenames
 
-        return False
+    def _get_project_file_dir(self, filename):
+        return os.path.join(
+            ut.get_project_files_dir(self), filename)
 
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-def _get_project_file_upload_to_dir(instance, filename):
-    return os.path.join(
-        ut.get_project_files_relative_dir(instance.project), filename)
-
-
-def _validate_filename(file_obj):
-    ut.check_user_provided_filename(file_obj.name)
-
-
-# TODO: make this public
-class _UploadedProjectFile(ModelValidatableOnSave):
-    objects = ManagerWithValidateOnCreate()
-
-    project = models.ForeignKey(Project, related_name='_project_files')
-    uploaded_file = models.FileField(
-        upload_to=_get_project_file_upload_to_dir,
-        validators=[_validate_filename],
-        max_length=gc.MAX_CHAR_FIELD_LEN * 2)
-
-    @property
-    def basename(self):
-        return os.path.basename(self.uploaded_file.name)
+    def _check_file_exists(self, filename):
+        if filename not in self._uploaded_filenames:
+            raise ObjectDoesNotExist(
+                "File {0} for {1} {2} project {3} does not exist".format(
+                    filename,
+                    self.semester.course.name, self.semester.name,
+                    self.name))

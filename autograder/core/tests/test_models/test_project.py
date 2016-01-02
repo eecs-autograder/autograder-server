@@ -43,7 +43,7 @@ class ProjectTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.name, self.PROJECT_NAME)
         self.assertEqual(loaded_project.semester, self.semester)
 
-        self.assertEqual(loaded_project.get_project_files(), [])
+        self.assertCountEqual(loaded_project.get_project_files(), [])
         self.assertEqual(loaded_project.visible_to_students, False)
         self.assertEqual(loaded_project.closing_time, None)
         self.assertEqual(loaded_project.disallow_student_submissions, False)
@@ -599,43 +599,54 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         project = Project.objects.validate_and_create(
             name=self.PROJECT_NAME, semester=self.semester)
 
-        self.assertEqual(project.get_project_files(), [])
+        self.assertCountEqual(project.get_project_files(), [])
 
         project.add_project_file(self.sample_project_file)
 
-        self.assertEqual(1, len(project.get_project_files()))
-        uploaded_file = project.get_project_files()[0]
+        self.assertEqual(1, len(project.uploaded_filenames))
+        uploaded_file = project.get_file(self.sample_project_filename)
 
         self.assertEqual(
             os.path.basename(uploaded_file.name), self.sample_project_filename)
         self.assertEqual(
-            uploaded_file.read(), self.sample_project_file_contents)
+            uploaded_file.read(),
+            self.sample_project_file_contents.decode('utf-8'))
 
         with ut.ChangeDirectory(ut.get_project_files_dir(project)):
             self.assertTrue(os.path.isfile(self.sample_project_filename))
 
         file_retrieved_by_name = project.get_file(self.sample_project_filename)
         self.assertEqual(
-            file_retrieved_by_name.read(), self.sample_project_file_contents)
+            file_retrieved_by_name.read(),
+            self.sample_project_file_contents.decode('utf-8'))
 
-        self.assertEqual(
+        self.assertCountEqual(
             project.get_project_file_basenames(),
             [self.sample_project_filename])
 
+    def test_update_project_file(self):
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
+
+        project.add_project_file(self.sample_project_file)
+        new_contents = 'extremely new content'
+
+        project.update_project_file(self.sample_project_filename, new_contents)
+
+        self.assertEqual(
+            str(project.get_file(self.sample_project_filename).read()),
+            new_contents)
+
     # -------------------------------------------------------------------------
 
-    # This test can probably be phased out.
-    # def test_exception_on_add_file_overwrite_not_ok(self):
-    #     project = Project.objects.validate_and_create(
-    #         name=self.PROJECT_NAME, semester=self.semester)
+    def test_exception_on_add_file_overwrite_not_ok(self):
+        project = Project.objects.validate_and_create(
+            name=self.PROJECT_NAME, semester=self.semester)
 
-    #     project.add_project_file(
-    #         self.sample_project_filename, self.sample_project_file_contents)
+        project.add_project_file(self.sample_project_file)
 
-    #     with self.assertRaises(FileExistsError):
-    #         project.add_project_file(
-    #             self.sample_project_filename,
-    #             self.sample_project_file_contents)
+        with self.assertRaises(ValidationError):
+            project.add_project_file(self.sample_project_file)
 
     # -------------------------------------------------------------------------
 
@@ -660,7 +671,7 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
 #     # -------------------------------------------------------------------------
 
-    # NOTE: Django's default storage system strips path information from
+    # NOTE: Django's uploaded file objects strip path information from
     # uploaded files
     def test_path_info_stripped_from_uploaded_filenames(self):
         # This test makes sure that add_project_file() doesn't allow
@@ -672,9 +683,16 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         project.add_project_file(
             SimpleUploadedFile('../spam/egg/cheese.txt', b"haxorz!"))
 
-        expected_name = os.path.join(
-            ut.get_project_files_relative_dir(project), "cheese.txt")
-        self.assertEqual(expected_name, project.get_project_files()[0].name)
+        expected_name = "cheese.txt"
+        self.assertEqual(expected_name, project.get_file(expected_name).name)
+
+    # def test_exception_filename_is_path(self):
+    #     project = Project.objects.validate_and_create(
+    #         name=self.PROJECT_NAME, semester=self.semester)
+
+    #     with self.assertRaises(ValidationError):
+    #         project.add_project_file(
+    #             SimpleUploadedFile('spam/egg/cheese.txt', b"haxorz!"))
 
     def test_exception_on_add_file_filename_is_dot_dot(self):
         project = Project.objects.validate_and_create(

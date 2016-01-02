@@ -1,3 +1,4 @@
+import os
 from django.core.urlresolvers import reverse
 
 
@@ -39,4 +40,5 @@ def project_files_url(project):
 
 def project_file_url(project, filename):
     return reverse(
-        'project:file', kwargs={'pk': project.pk, 'filename': filename})
+        'project:file',
+        kwargs={'pk': project.pk, 'filename': os.path.basename(filename)})

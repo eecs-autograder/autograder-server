@@ -41,6 +41,23 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
             This field may not be None.
             Default value: empty list
 
+        TODO
+        project_files_to_compile_together -- A list of uploaded project
+            filenames that need to be compiled together.
+            These filenames are restricted to those in test_resource_files.
+            NOTE: When a pattern is part of this list, all student-submitted
+                files matching the pattern will be compiled together.
+            Default value: empty list
+
+        TODO
+        student_files_to_compile_together -- A list of student-submitted
+            filenames that need to be compiled together.
+            These filenames are restricted to those in student_resource_files.
+            NOTE: When a pattern is part of this list, all student-submitted
+                files matching the pattern will be compiled together.
+            Default value: empty list
+
+        REMOVE
         files_to_compile_together -- A list of files that need to be
             compiled together. These filenames are restricted to those
             in test_resource_files and student_resource_files.

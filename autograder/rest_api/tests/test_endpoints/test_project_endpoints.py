@@ -414,7 +414,7 @@ class GetUpdateDeleteProjectFileTestCase(TemporaryFilesystemTestCase):
 
     def test_course_admin_edit_file(self):
         edits = {
-            'filename': 'new_name.txt',
+            # 'filename': 'new_name.txt', # TODO
             'content': 'new contents'
         }
         client = MockClient(self.admin)
@@ -447,7 +447,7 @@ class GetUpdateDeleteProjectFileTestCase(TemporaryFilesystemTestCase):
     def test_course_admin_delete_file(self):
         client = MockClient(self.admin)
         response = client.delete(self.file1_url)
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(204, response.status_code)
 
         with self.assertRaises(ObjectDoesNotExist):
             self.visible_project.get_file(self.file1.name)

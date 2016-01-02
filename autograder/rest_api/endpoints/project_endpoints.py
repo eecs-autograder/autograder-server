@@ -92,8 +92,7 @@ class ListAddProjectFileEndpoint(EndpointBase):
                 {
                     "filename": os.path.basename(file_.name),
                     "size": file_.size,
-                    "url": url_shortcuts.project_file_url(
-                        project, os.path.basename(file_.name))
+                    "url": url_shortcuts.project_file_url(project, file_.name)
                 }
                 for file_ in project.get_project_files()
             ]
@@ -115,8 +114,7 @@ class ListAddProjectFileEndpoint(EndpointBase):
                 success.append({
                     'filename': os.path.basename(file_.name),
                     'size': file_.size,
-                    'url': url_shortcuts.project_file_url(
-                        project, os.path.basename(file_.name))
+                    'url': url_shortcuts.project_file_url(project, file_.name)
                 })
             except exceptions.ValidationError as e:
                 failure.append({
@@ -130,7 +128,49 @@ class ListAddProjectFileEndpoint(EndpointBase):
 
 
 class GetUpdateDeleteProjectFileEndpoint(EndpointBase):
-    pass
+    def get(self, request, pk, filename, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_is_staff(request.user, project)
+
+        file_ = project.get_file(filename)
+
+        response = {
+            "type": "project_file",
+            "filename": os.path.basename(file_.name),
+            "size": file_.size,
+            "content": str(file_.read()),
+            "urls": {
+                "self": url_shortcuts.project_file_url(project, file_.name),
+                "project": url_shortcuts.project_url(project)
+            }
+        }
+
+        return http.JsonResponse(response)
+
+    def patch(self, request, pk, filename, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_can_edit(request.user, project)
+        request_content = json.loads(request.body.decode('utf-8'))
+
+        if 'content' in request_content:
+            project.update_project_file(filename, request_content['content'])
+
+        response = {
+            'size': project.get_file(filename).size
+        }
+
+        return http.JsonResponse(response)
+
+    def delete(self, request, pk, filename, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_can_edit(request.user, project)
+
+        project.remove_project_file(filename)
+
+        return http.HttpResponse(status=204)
 
 
 class ListAddAutograderTestCaseEndpoint(EndpointBase):
