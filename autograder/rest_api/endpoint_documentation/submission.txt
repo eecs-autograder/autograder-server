@@ -55,7 +55,7 @@ Response format:
 
     "urls": {
         "self": "/submissions/<id>/submitted_files/<filename>/",
-        "submission" "/submissions/<id>/"
+        "submission": "/submissions/<id>/"
     }
 }
 

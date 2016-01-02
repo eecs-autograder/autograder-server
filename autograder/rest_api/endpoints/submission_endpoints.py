@@ -70,12 +70,28 @@ class ListSubmittedFilesEndpoint(EndpointBase):
 
 
 class GetSubmittedFileEndpoint(EndpointBase):
-    def get(self, request, pk, *args, **kwargs):
+    def get(self, request, pk, filename, *args, **kwargs):
         pk = int(pk)
         submission = ag_models.Submission.objects.get(pk=pk)
         check_can_view_project(
             request.user, submission.submission_group.project)
         check_can_view_group(request.user, submission.submission_group)
+
+        file_ = submission.get_file(filename)
+        response = {
+            "type": "submitted_file",
+            "filename": file_.name,
+            "size": file_.size,
+            "content": file_.read(),
+
+            "urls": {
+                "self": url_shortcuts.submitted_file_url(
+                    submission, file_.name),
+                "submission": url_shortcuts.submission_url(submission)
+            }
+        }
+
+        return http.JsonResponse(response)
 
 
 class ListAutograderTestCaseResultsEndpoint(EndpointBase):

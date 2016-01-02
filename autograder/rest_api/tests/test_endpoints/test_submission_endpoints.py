@@ -314,6 +314,8 @@ class ListSubmittedFilesEndpointTestCase(_SharedSetUp, TemporaryFilesystemTestCa
 
         self.assertEqual(403, response.status_code)
 
+# -----------------------------------------------------------------------------
+
 
 class GetSubmittedFileTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
     def setUp(self):
@@ -333,11 +335,12 @@ class GetSubmittedFileTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
 
             self.assertEqual(200, response.status_code)
 
+            self.file_to_get.seek(0)
             expected_content = {
                 "type": "submitted_file",
                 "filename": self.file_to_get.name,
                 "size": self.file_to_get.size,
-                "content": str(self.file_to_get.read()),
+                "content": self.file_to_get.read().decode('utf-8'),
 
                 "urls": {
                     "self": obj['file_url'],
@@ -356,11 +359,12 @@ class GetSubmittedFileTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
 
                 self.assertEqual(200, response.status_code)
 
+                self.file_to_get.seek(0)
                 expected_content = {
                     "type": "submitted_file",
                     "filename": self.file_to_get.name,
                     "size": self.file_to_get.size,
-                    "content": str(self.file_to_get.read()),
+                    "content": self.file_to_get.read().decode('utf-8'),
 
                     "urls": {
                         "self": obj['file_url'],
