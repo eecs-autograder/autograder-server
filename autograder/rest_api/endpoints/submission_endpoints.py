@@ -55,17 +55,16 @@ class ListSubmittedFilesEndpoint(EndpointBase):
             request.user, submission.submission_group.project)
         check_can_view_group(request.user, submission.submission_group)
 
-        response = [
-            {
-                "filename": file_.name,
-                "urls": {
-                    "self": url_shortcuts.submitted_file_url(
+        response = {
+            'submitted_files': [
+                {
+                    "filename": file_.name,
+                    "url": url_shortcuts.submitted_file_url(
                         submission, file_.name),
-                    "submission": url_shortcuts.submission_url(submission)
                 }
-            }
-            for file_ in submission.submitted_files
-        ]
+                for file_ in submission.submitted_files
+            ]
+        }
 
         return http.JsonResponse(response)
 

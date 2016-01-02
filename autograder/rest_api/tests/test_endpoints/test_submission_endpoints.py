@@ -257,7 +257,7 @@ class ListSubmittedFilesEndpointTestCase(_SharedSetUp, TemporaryFilesystemTestCa
             }
 
             actual_content = json_load_bytes(response.content)
-            actual_content['submitted_files'].sort(key=lambda f: f.name)
+            actual_content['submitted_files'].sort(key=lambda f: f['filename'])
 
             self.assertEqual(expected_content, actual_content)
 
@@ -280,7 +280,8 @@ class ListSubmittedFilesEndpointTestCase(_SharedSetUp, TemporaryFilesystemTestCa
                 }
 
                 actual_content = json_load_bytes(response.content)
-                actual_content['submitted_files'].sort(key=lambda f: f.name)
+                actual_content['submitted_files'].sort(
+                    key=lambda f: f['filename'])
 
                 self.assertEqual(expected_content, actual_content)
 
@@ -292,23 +293,7 @@ class ListSubmittedFilesEndpointTestCase(_SharedSetUp, TemporaryFilesystemTestCa
                     continue
 
                 response = client.get(obj['files_url'])
-                self.assertEqual(200, response.status_code)
-
-                expected_content = {
-                    "submitted_files": [
-                        {
-                            "filename": file_.name,
-                            "url": _get_file_url(obj['submission'], file_.name)
-                        }
-                        for file_ in sorted(
-                            self.files_to_submit, key=lambda f: f.name)
-                    ]
-                }
-
-                actual_content = json_load_bytes(response.content)
-                actual_content['submitted_files'].sort(key=lambda f: f.name)
-
-                self.assertEqual(expected_content, actual_content)
+                self.assertEqual(403, response.status_code)
 
     def test_student_list_submitted_files_project_hidden_permission_denied(self):
         self.project.visible_to_students = False
