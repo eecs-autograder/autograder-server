@@ -1,3 +1,5 @@
+from django.core import exceptions
+
 from .compiled_student_test_suite import CompiledStudentTestSuite
 
 
@@ -13,7 +15,8 @@ def _get_class(type_str):
     try:
         return _STR_TO_CLASS_MAPPINGS[type_str]
     except KeyError:
-        raise ValueError("Invalid test suite type: '{}'".format(type_str))
+        raise exceptions.ValidationError(
+            "Invalid test suite type: '{}'".format(type_str))
 
 _STR_TO_CLASS_MAPPINGS = {
     'compiled_student_test_suite': CompiledStudentTestSuite

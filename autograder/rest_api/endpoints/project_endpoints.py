@@ -220,7 +220,40 @@ class ListAddAutograderTestCaseEndpoint(EndpointBase):
 
 
 class ListAddStudentTestSuiteEndpoint(EndpointBase):
-    pass
+    def get(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_is_staff(request.user, project)
+
+        response = {
+            "student_test_suites": [
+                {
+                    "name": suite.name,
+                    "url": url_shortcuts.suite_url(suite)
+                }
+                for suite in project.student_test_suites.all()
+            ]
+        }
+
+        return http.JsonResponse(response)
+
+    def post(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_can_edit(request.user, project)
+        request_content = json.loads(request.body.decode('utf-8'))
+        type_str = request_content.pop('type')
+
+        suite = ag_models.StudentTestSuiteFactory.validate_and_create(
+            type_str, project=project, **request_content)
+
+        response = {
+            "name": suite.name,
+            "type": suite.get_type_str(),
+            "url": url_shortcuts.suite_url(suite)
+        }
+
+        return http.JsonResponse(response, status=201)
 
 
 class ListAddSubmissionGroupEndpoint(EndpointBase):

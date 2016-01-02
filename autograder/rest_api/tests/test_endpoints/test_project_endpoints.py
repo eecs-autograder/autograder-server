@@ -617,6 +617,7 @@ class ListAddStudentTestSuiteTestCase(TemporaryFilesystemTestCase):
         self.suite1 = StudentTestSuiteFactory.validate_and_create(
             'compiled_student_test_suite',
             name='suite1',
+            compiler='clang',
             project=self.visible_project,
             student_test_case_filename_pattern=(
                 self.visible_project.expected_student_file_patterns[0].pattern
@@ -626,6 +627,7 @@ class ListAddStudentTestSuiteTestCase(TemporaryFilesystemTestCase):
         self.suite2 = StudentTestSuiteFactory.validate_and_create(
             'compiled_student_test_suite',
             name='suite2',
+            compiler='clang',
             project=self.visible_project,
             student_test_case_filename_pattern=(
                 self.visible_project.expected_student_file_patterns[0].pattern),
@@ -648,12 +650,16 @@ class ListAddStudentTestSuiteTestCase(TemporaryFilesystemTestCase):
                         'name': suite.name,
                         'url': reverse('suite:get', kwargs={'pk': suite.pk})
                     }
-                    for suite in (self.suite1, self.suite2)
+                    for suite in sorted(
+                        (self.suite1, self.suite2),
+                        key=lambda obj: obj.name)
                 ]
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            actual_content['student_test_suites'].sort(
+                key=lambda obj: obj['name'])
+            self.assertEqual(expected_content, actual_content)
 
     def test_other_list_suites_permission_denied(self):
         for user in self.enrolled, self.nobody:
@@ -666,6 +672,7 @@ class ListAddStudentTestSuiteTestCase(TemporaryFilesystemTestCase):
         args = {
             'type': 'compiled_student_test_suite',
             'name': 'suite3',
+            'compiler': 'gcc',
             'student_test_case_filename_pattern': (
                 self.visible_project.expected_student_file_patterns[0].pattern),
             'correct_implementation_filename': self.correct_impl_file.name
@@ -674,11 +681,9 @@ class ListAddStudentTestSuiteTestCase(TemporaryFilesystemTestCase):
         client = MockClient(self.admin)
         response = client.post(self.suites_url, args)
 
-        self.assertEqual(201, response.content)
+        self.assertEqual(201, response.status_code)
 
         loaded = StudentTestSuiteBase.objects.get(name=args['name'])
-        for key, value in args.items():
-            self.assertEqual(value, getattr(loaded, key))
 
         expected_content = {
             "type": args['type'],
@@ -687,6 +692,10 @@ class ListAddStudentTestSuiteTestCase(TemporaryFilesystemTestCase):
         }
 
         self.assertEqual(expected_content, json_load_bytes(response.content))
+
+        self.assertEqual(args.pop('type'), loaded.get_type_str())
+        for key, value in args.items():
+            self.assertEqual(value, getattr(loaded, key))
 
     def test_other_add_suite_permission_denied(self):
         args = {
