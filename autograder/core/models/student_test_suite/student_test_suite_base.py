@@ -6,11 +6,15 @@ from django.core.validators import (
 
 import autograder.core.shared.global_constants as gc
 import autograder.core.shared.feedback_configuration as fbc
-# import autograder.core.shared.utilities as ut
+import autograder.core.shared.utilities as ut
 
 import autograder.utilities.fields as ag_fields
 from autograder.core.models.utils import (
     PolymorphicModelValidatableOnSave, PolymorphicManagerWithValidateOnCreate)
+
+
+def _validate_implementation_file_alias(filename):
+    ut.check_user_provided_filename(filename, allow_empty=True)
 
 
 class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
@@ -154,8 +158,7 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
         default=list, blank=True)
 
     implementation_file_alias = ag_fields.ShortStringField(
-        blank=True,
-        validators=[RegexValidator(gc.PROJECT_FILENAME_WHITELIST_REGEX)])
+        blank=True, validators=[_validate_implementation_file_alias])
 
     suite_resource_filenames = ArrayField(
         models.CharField(

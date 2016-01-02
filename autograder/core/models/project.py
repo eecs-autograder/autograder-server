@@ -275,6 +275,9 @@ class Project(ModelValidatableOnSave):
             *args, _expected_student_file_patterns=patterns, **kwargs)
 
     def save(self, *args, **kwargs):
+        if self.pk is None:
+            self._uploaded_filenames = []
+
         super().save(*args, **kwargs)
 
         project_root_dir = ut.get_project_root_dir(self)

@@ -103,6 +103,17 @@ class CheckUserProvidedFilenameTest(TestCase):
         with self.assertRaises(ValidationError):
             ut.check_user_provided_filename('.spameggs')
 
+    def test_exception_null_filename(self):
+        with self.assertRaises(ValidationError):
+            ut.check_user_provided_filename(None)
+            ut.check_user_provided_filename(None, allow_empty=True)
+
+    def test_exception_empty_filename(self):
+        with self.assertRaises(ValidationError):
+            ut.check_user_provided_filename('')
+
+    def test_no_exception_empty_filename_allowed(self):
+        ut.check_user_provided_filename('', allow_empty=True)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------

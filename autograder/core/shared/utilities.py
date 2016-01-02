@@ -50,28 +50,24 @@ def check_values_against_whitelist(values, whitelist):
                     value, whitelist))
 
 
-def check_user_provided_filename(filename):
+def check_user_provided_filename(filename, allow_empty=False):
     """
     Verifies whether the given filename is valid according to the
     following requirements:
         - Filenames must be non-empty and non-null
         - Filenames must only contain the characters specified in
           autograder.shared.global_constants.PROJECT_FILENAME_WHITELIST_REGEX
-        - Filenames cannot be the string ".."
-        - Filenames cannot start with '.'
+        - Filenames must start with an alphabetic character.
 
     If the given filename does not meet these requirements, ValidationError
     is raised. These restrictions are placed on filenames for security
     purposes.
     """
-    if not filename:
+    if filename is None:
+        raise ValidationError("Filenames must be non-null")
+
+    if not filename and not allow_empty:
         raise ValidationError("Filenames must be non-empty")
-
-    if filename.startswith('.'):
-        raise ValidationError("Filenames cannot start with '.'")
-
-    if filename == "..":
-        raise ValidationError("'..' is not a valid filename")
 
     if not gc.PROJECT_FILENAME_WHITELIST_REGEX.fullmatch(filename):
         raise ValidationError(
