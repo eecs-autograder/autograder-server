@@ -16,6 +16,7 @@ class EndpointBase(View):
             # print(e)
             return http.HttpResponseForbidden()
         except exceptions.ValidationError as e:
+            # print(e)
             try:
                 return http.JsonResponse(
                     e.message_dict, status=400)

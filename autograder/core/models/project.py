@@ -137,6 +137,12 @@ class Project(ModelValidatableOnSave):
             These dictionaries are serialized in order to get around
             the limitations of using ValidaitonError.
 
+    Related object fields:
+        autograder_test_cases -- The autograder test cases that belong to
+            this Project.
+        student_test_suites -- The student test suites that belong to
+            this Project.
+
     Properties:
         uploaded_filenames -- The names of files that have been uploaded
             to this Project.

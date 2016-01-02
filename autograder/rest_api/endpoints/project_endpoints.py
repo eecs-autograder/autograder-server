@@ -188,15 +188,36 @@ class ListAddAutograderTestCaseEndpoint(EndpointBase):
         project = ag_models.Project.objects.get(pk=pk)
         _check_is_staff(request.user, project)
 
-        # response = {
-        #     "autograder_test_cases": [
-        #         {
-        #             "name": ag_test.name,
-        #             "url": url_shortcuts.ag_test_url(ag_test)
-        #         }
-        #         for ag_test in project.autograde
-        #     ]
-        # }
+        response = {
+            "autograder_test_cases": [
+                {
+                    "name": ag_test.name,
+                    "url": url_shortcuts.ag_test_url(ag_test)
+                }
+                for ag_test in project.autograder_test_cases.all()
+            ]
+        }
+
+        return http.JsonResponse(response)
+
+    def post(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_can_edit(request.user, project)
+        request_content = json.loads(request.body.decode('utf-8'))
+        type_str = request_content.pop('type')
+
+        ag_test = ag_models.AutograderTestCaseFactory.validate_and_create(
+            type_str, project=project, **request_content)
+
+        response = {
+            "name": ag_test.name,
+            "type": ag_test.get_type_str(),
+            "url": url_shortcuts.ag_test_url(ag_test)
+        }
+
+        return http.JsonResponse(response, status=201)
+
 
 class ListAddStudentTestSuiteEndpoint(EndpointBase):
     pass

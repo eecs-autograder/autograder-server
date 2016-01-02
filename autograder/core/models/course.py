@@ -20,7 +20,6 @@ class Course(ModelValidatableOnSave):
     code to an autograder.
 
     Fields:
-        TODO: restrict to filename charset
         name -- The name of this course.
                 Must be unique, non-empty and non-null.
 

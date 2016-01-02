@@ -42,3 +42,7 @@ def project_file_url(project, filename):
     return reverse(
         'project:file',
         kwargs={'pk': project.pk, 'filename': os.path.basename(filename)})
+
+
+def ag_test_url(ag_test):
+    return reverse('ag-test:get', kwargs={'pk': ag_test.pk})

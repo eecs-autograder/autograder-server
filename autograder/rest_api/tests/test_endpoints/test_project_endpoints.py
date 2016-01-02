@@ -466,9 +466,11 @@ class GetUpdateDeleteProjectFileTestCase(TemporaryFilesystemTestCase):
 # -----------------------------------------------------------------------------
 
 
-class ListAddAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
+class ListAddAutograderTestCaseEndpointTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
+
+        self.maxDiff = None
 
         _common_setup(self)
 
@@ -506,12 +508,17 @@ class ListAddAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
                         'name': test.name,
                         'url': reverse('ag-test:get', kwargs={'pk': test.pk})
                     }
-                    for test in (self.ag_test1, self.ag_test2)
+                    for test in sorted(
+                        (self.ag_test1, self.ag_test2),
+                        key=lambda obj: obj.name)
                 ]
             }
 
+            actual_content = json_load_bytes(response.content)
+            actual_content['autograder_test_cases'].sort(
+                key=lambda obj: obj['name'])
             self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+                expected_content, actual_content)
 
     def test_other_list_tests_permission_denied(self):
         for user in self.enrolled, self.nobody:
@@ -528,6 +535,8 @@ class ListAddAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         response = client.post(
             self.ag_tests_url,
             {'name': name, 'type': type_str, 'compiler': 'g++',
+             'student_resource_files': (
+                 self.visible_project.required_student_files),
              'student_files_to_compile_together': (
                  self.visible_project.required_student_files)})
 
