@@ -2,7 +2,7 @@ import itertools
 import datetime
 
 from django.core.urlresolvers import reverse
-from django.utils import timezone
+from django.utils import timezone, dateparse
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -11,6 +11,7 @@ from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
 from .utilities import MockClient, json_load_bytes, sorted_by_pk
+from autograder.rest_api import url_shortcuts
 
 
 def _common_setup(fixture):
@@ -100,7 +101,7 @@ class GetUpdateDeleteSubmissionGroupTestCase(TemporaryFilesystemTestCase):
             expected_content = {
                 "type": "submission_group",
                 "id": obj['group'].pk,
-                "members": [obj['group'].member_names],
+                "members": list(obj['group'].member_names),
                 "extended_due_date": None,
                 "urls": {
                     "self": obj['url'],
@@ -130,11 +131,12 @@ class GetUpdateDeleteSubmissionGroupTestCase(TemporaryFilesystemTestCase):
                 expected_content = {
                     "type": "submission_group",
                     "id": group_obj['group'].pk,
-                    "members": [group_obj['group'].member_names],
+                    "members": list(group_obj['group'].member_names),
                     "extended_due_date": None,
                     "urls": {
                         "self": group_obj['url'],
-                        "project": self.visible_project_url,
+                        "project": url_shortcuts.project_url(
+                            group_obj['group'].project),
                         "submissions": reverse(
                             'group:submissions',
                             kwargs={'pk': group_obj['group'].pk})
@@ -191,7 +193,7 @@ class GetUpdateDeleteSubmissionGroupTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(expected_content, actual_content)
 
-        new_due_date = timezone.now()
+        new_due_date = timezone.now().replace(microsecond=0)
         response = client.patch(
             self.enrolled_group_obj['url'],
             {'members': [new_member.username],
@@ -200,11 +202,14 @@ class GetUpdateDeleteSubmissionGroupTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(200, response.status_code)
 
         expected_content = {
-            'members': [self.enrolled],
-            'extended_due_date': str(new_due_date)
+            'members': [new_member.username],
+            'extended_due_date': new_due_date
         }
 
-        self.assertEqual(expected_content, json_load_bytes(response.content))
+        actual_content = json_load_bytes(response.content)
+        actual_content['extended_due_date'] = dateparse.parse_datetime(
+            actual_content['extended_due_date'])
+        self.assertEqual(expected_content, actual_content)
 
     def test_other_edit_group_permission_denied(self):
         for user in self.enrolled, self.nobody, self.staff:
@@ -212,7 +217,7 @@ class GetUpdateDeleteSubmissionGroupTestCase(TemporaryFilesystemTestCase):
             for group_obj in self.users_and_groups_visible_proj:
                 response = client.patch(
                     group_obj['url'], {'extended_due_date': timezone.now()})
-                self.assertEqual(403, response.content)
+                self.assertEqual(403, response.status_code)
 
                 loaded = SubmissionGroup.objects.get(pk=group_obj['group'].pk)
                 self.assertIsNone(loaded.extended_due_date)
@@ -222,7 +227,7 @@ class GetUpdateDeleteSubmissionGroupTestCase(TemporaryFilesystemTestCase):
     def test_course_admin_delete_group(self):
         client = MockClient(self.admin)
         response = client.delete(self.enrolled_group_obj['url'])
-        self.assertEqual(204, response.content)
+        self.assertEqual(204, response.status_code)
 
         with self.assertRaises(ObjectDoesNotExist):
             SubmissionGroup.objects.get(pk=self.enrolled_group_obj['group'].pk)

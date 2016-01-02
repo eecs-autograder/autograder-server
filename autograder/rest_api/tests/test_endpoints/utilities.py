@@ -65,13 +65,3 @@ class MockClient:
 
         resolved = resolve(request.path)
         return resolved.func(request, *resolved.args, **resolved.kwargs)
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-
-# class TestingData:
-#     def __init__(self):
-#         self.project = obj_ut.build_project
-
-

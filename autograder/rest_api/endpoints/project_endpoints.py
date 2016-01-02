@@ -11,6 +11,8 @@ from .endpoint_base import EndpointBase
 from autograder.core import models as ag_models
 from autograder.rest_api import url_shortcuts
 
+from .utilities import check_can_view_project
+
 DEFAULT_SUBMISSION_GROUP_PAGE_SIZE = 20
 
 
@@ -30,7 +32,7 @@ class GetUpdateProjectEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
         pk = int(pk)
         project = ag_models.Project.objects.get(pk=pk)
-        _check_can_view(request.user, project)
+        check_can_view_project(request.user, project)
 
         response = {
             "type": "project",
@@ -269,7 +271,7 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
         pk = int(pk)
         project = ag_models.Project.objects.get(pk=pk)
-        _check_can_view(request.user, project)
+        check_can_view_project(request.user, project)
 
         try:
             group_user_is_in = request.user.groups_is_member_of.get(
@@ -324,7 +326,7 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
         project = ag_models.Project.objects.get(pk=pk)
         request_content = json.loads(request.body.decode('utf-8'))
 
-        _check_can_view(request.user, project)
+        check_can_view_project(request.user, project)
 
         members = request_content['members']
         is_admin = project.semester.course.is_administrator(request.user)
@@ -366,7 +368,7 @@ class ListAddSubmissionGroupInvitationEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
         pk = int(pk)
         project = ag_models.Project.objects.get(pk=pk)
-        _check_can_view(request.user, project)
+        check_can_view_project(request.user, project)
 
         response = {
             "invitations_sent": [
@@ -393,7 +395,7 @@ class ListAddSubmissionGroupInvitationEndpoint(EndpointBase):
     def post(self, request, pk, *args, **kwargs):
         pk = int(pk)
         project = ag_models.Project.objects.get(pk=pk)
-        _check_can_view(request.user, project)
+        check_can_view_project(request.user, project)
         request_content = json.loads(request.body.decode('utf-8'))
 
         to_invite = request_content['users_to_invite']
@@ -423,21 +425,6 @@ class ListAddSubmissionGroupInvitationEndpoint(EndpointBase):
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-
-
-def _check_can_view(user, project):
-    if project.semester.is_semester_staff(user):
-        return
-
-    if not project.visible_to_students:
-        raise exceptions.PermissionDenied()
-
-    if project.semester.is_enrolled_student(user):
-        return
-
-    if not project.allow_submissions_from_non_enrolled_students:
-        raise exceptions.PermissionDenied()
-
 
 def _check_is_staff(user, project):
     if not project.semester.is_semester_staff(user):
