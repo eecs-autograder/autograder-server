@@ -54,3 +54,7 @@ def suite_url(suite):
 
 def group_url(group):
     return reverse('group:get', kwargs={'pk': group.pk})
+
+
+def invitation_url(invitation):
+    return reverse('invitation:get', kwargs={'pk': invitation.pk})

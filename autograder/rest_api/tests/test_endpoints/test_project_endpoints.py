@@ -315,8 +315,10 @@ class ListAddProjectFileTestCase(TemporaryFilesystemTestCase):
                 ]
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            actual_content['uploaded_files'].sort(
+                key=lambda obj: obj['filename'])
+            self.assertEqual(expected_content, actual_content)
 
     def test_other_list_files_permission_denied(self):
         for user in self.enrolled, self.nobody:
@@ -1246,8 +1248,8 @@ class ListAddSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
         self.visible_project.validate_and_save()
 
         iterable = zip(
-            (self.admin, self.staff, self.staff, self.enrolled, self.nobody),
-            (self.admin_invitee, self.staff_invitee, self.admin_invitee,
+            (self.admin, self.staff, self.enrolled, self.nobody),
+            (self.admin_invitee, self.staff_invitee,
              self.enrolled_invitee, self.nobody_invitee)
         )
         for invitor, invitee in iterable:
@@ -1274,26 +1276,35 @@ class ListAddSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
             expected_content = {
                 'invitations_sent': [
                     {
-                        'users_invited': [invitation_sent.invited_usernames],
+                        'users_invited': list(sorted(
+                            invitation_sent.invited_usernames)),
                         'url': reverse(
-                            'invitations:get',
+                            'invitation:get',
                             kwargs={'pk': invitation_sent.pk})
                     }
-                    for invitation_sent in invitations_sent
+                    for invitation_sent in sorted_by_pk(invitations_sent)
                 ],
                 'invitations_received': [
                     {
                         'invitation_creator': (
                             invitation_received.invitation_creator.username),
-                        'url': reverse('invitations:get',
+                        'url': reverse('invitation:get',
                                        kwargs={'pk': invitation_received.pk})
                     }
-                    for invitation_received in invitations_received
+                    for invitation_received in sorted_by_pk(
+                        invitations_received)
                 ]
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            self.assertEqual(expected_content, actual_content)
+            expected_content['invitations_sent'].sort(
+                key=lambda obj: obj['url'])
+            expected_content['invitations_received'].sort(
+                key=lambda obj: obj['url'])
+
+            for obj in expected_content['invitations_sent']:
+                obj['users_invited'].sort()
 
     def test_student_list_group_invitations_hidden_project_permission_denied(self):
         self.hidden_project.allow_submissions_from_non_enrolled_students = True
@@ -1324,8 +1335,8 @@ class ListAddSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
         self.visible_project.validate_and_save()
 
         iterable = zip(
-            (self.admin, self.staff, self.staff, self.enrolled, self.nobody),
-            (self.admin_invitee, self.staff_invitee, self.admin_invitee,
+            (self.admin, self.staff, self.enrolled, self.nobody),
+            (self.admin_invitee, self.staff_invitee,
              self.enrolled_invitee, self.nobody_invitee)
         )
         for invitor, invitee in iterable:
@@ -1338,11 +1349,11 @@ class ListAddSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
             loaded = SubmissionGroupInvitation.objects.get(
                 invitation_creator=invitor)
 
-            self.assertEqual([invitee.username], loaded.invited_usernames)
+            self.assertCountEqual([invitee.username], loaded.invited_usernames)
 
             expected_content = {
                 'invitation_creator': invitor.username,
-                'url': reverse('invitations:get', kwargs={'pk': loaded.pk})
+                'url': reverse('invitation:get', kwargs={'pk': loaded.pk})
             }
 
             self.assertEqual(

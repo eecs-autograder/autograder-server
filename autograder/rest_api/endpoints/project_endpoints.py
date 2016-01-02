@@ -363,7 +363,62 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
 
 
 class ListAddSubmissionGroupInvitationEndpoint(EndpointBase):
-    pass
+    def get(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_can_view(request.user, project)
+
+        response = {
+            "invitations_sent": [
+                {
+                    "users_invited": tuple(invitation.invited_usernames),
+                    "url": url_shortcuts.invitation_url(invitation)
+                }
+                for invitation in
+                request.user.group_invitations_sent.filter(project=project)
+            ],
+            "invitations_received": [
+                {
+                    "invitation_creator": (
+                        invitation.invitation_creator.username),
+                    "url": url_shortcuts.invitation_url(invitation)
+                }
+                for invitation in
+                request.user.group_invitations_received.filter(project=project)
+            ]
+        }
+
+        return http.JsonResponse(response)
+
+    def post(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        project = ag_models.Project.objects.get(pk=pk)
+        _check_can_view(request.user, project)
+        request_content = json.loads(request.body.decode('utf-8'))
+
+        to_invite = request_content['users_to_invite']
+
+        invitation = (
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invitation_creator=request.user.username,
+                invited_users=to_invite,
+                project=project))
+
+        response = {
+            "invitation_creator": invitation.invitation_creator.username,
+            "url": url_shortcuts.invitation_url(invitation)
+        }
+
+        for user in User.objects.filter(username__in=to_invite):
+            user.notifications.create(
+                message='{} has invited you to be in '
+                        'a group for {} - {} - {}'.format(
+                            request.user.username,
+                            project.semester.course.name,
+                            project.semester.name,
+                            project.name))
+
+        return http.JsonResponse(response, status=201)
 
 
 # -----------------------------------------------------------------------------

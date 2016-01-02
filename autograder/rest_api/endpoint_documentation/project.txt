@@ -355,7 +355,7 @@ Response format:
             "url": "/submission_group_invitations/<id>/"
         },
         ...
-    ]
+    ],
     "invitations_received": [
         {
             "invitation_creator": <string username>,
