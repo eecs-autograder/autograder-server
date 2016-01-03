@@ -105,6 +105,9 @@ class GetAutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
         return obj
 
     def test_student_get_own_visible_result(self):
+        self.test_case.feedback_configuration.visibility_level = (
+            fbc.VisibilityLevel.show_to_students)
+        self.test_case.validate_and_save()
         for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
             client = MockClient(obj['user'])
             response = client.get(obj['result_url'])
@@ -124,6 +127,9 @@ class GetAutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
                 expected_content, json_load_bytes(response.content))
 
     def test_course_admin_or_semester_staff_get_other_user_visible_result(self):
+        self.test_case.feedback_configuration.visibility_level = (
+            fbc.VisibilityLevel.show_to_students)
+        self.test_case.validate_and_save()
         # should get max feedback on result
         for user in self.admin, self.staff:
             client = MockClient(user)
@@ -154,6 +160,8 @@ class GetAutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
         for user in self.admin, self.staff:
             client = MockClient(user)
             for obj in self.submission_objs:
+                if obj['user'] == user:
+                    continue
                 response = client.get(obj['result_url'])
                 self.assertEqual(403, response.status_code)
 
@@ -167,26 +175,39 @@ class GetAutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
             response = client.get(obj['result_url'])
             self.assertEqual(403, response.status_code)
 
+    import unittest
+    @unittest.skip('todo')
     def test_student_get_own_or_staff_get_other_hidden_result_shown_with_post_deadline_feedback_override(self):
         self.fail()
 
+    @unittest.skip('todo')
     def test_student_get_own_or_staff_get_other_visible_result_hidden_with_post_deadline_feedback_override(self):
         self.fail()
 
+    @unittest.skip('todo')
     def test_student_get_own_or_staff_get_other_hidden_result_post_deadline_feedback_override_but_student_has_extension(self):
         self.fail()
 
+    @unittest.skip('todo')
     def test_student_get_own_or_staff_get_other_hidden_result_post_deadline_feedback_override_but_not_final_submission(self):
         self.fail()
 
     def test_student_get_other_student_result_permission_denied(self):
+        self.test_case.feedback_configuration.visibility_level = (
+            fbc.VisibilityLevel.show_to_students)
+        self.test_case.validate_and_save()
         for user in self.enrolled, self.nobody:
             client = MockClient(user)
             for obj in self.submission_objs:
+                if obj['user'] == user:
+                    continue
                 response = client.get(obj['result_url'])
                 self.assertEqual(403, response.status_code)
 
     def test_student_get_own_visible_result_project_hidden_permission_denied(self):
+        self.test_case.feedback_configuration.visibility_level = (
+            fbc.VisibilityLevel.show_to_students)
+        self.test_case.validate_and_save()
         self.project.visible_to_students = False
         self.project.validate_and_save()
 
@@ -196,6 +217,9 @@ class GetAutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
             self.assertEqual(403, response.status_code)
 
     def test_non_enrolled_student_non_public_project_get_own_visible_result_permission_denied(self):
+        self.test_case.feedback_configuration.visibility_level = (
+            fbc.VisibilityLevel.show_to_students)
+        self.test_case.validate_and_save()
         self.project.allow_submissions_from_non_enrolled_students = False
         self.project.validate_and_save()
 

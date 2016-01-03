@@ -1,4 +1,5 @@
 from .user_endpoints import (
+    GetCurrentUserEndpoint,
     GetUser,
     GetUserCoursesIsAdminForEndpoint,
     GetUserSemstersIsStaffForEndpoint,

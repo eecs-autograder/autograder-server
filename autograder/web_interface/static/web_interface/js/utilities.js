@@ -46,7 +46,7 @@ function lazy_get_template(name)
     }
     else
     {
-        var url = '/static/autograder/jsrender-templates/' + name + '.tmpl';
+        var url = '/static/web_interface/jsrender-templates/' + name + '.tmpl';
         $.get(url).done(function(data) {
             // console.log(data);
             $.templates(name, data);

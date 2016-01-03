@@ -15,24 +15,24 @@
     <!-- Boostrap -->
     <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"> -->
     <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css"> -->
-    <link rel="stylesheet" href="{% static 'autograder/bootstrap/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'autograder/bootstrap/css/bootstrap-theme.min.css' %}">
+    <link rel="stylesheet" href="{% static 'web_interface/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'web_interface/bootstrap/css/bootstrap-theme.min.css' %}">
 
 
     <!-- File Upload -->
     <!-- Generic page styles -->
-    <link rel="stylesheet" href="{% static 'autograder/file-upload/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'web_interface/file-upload/css/style.css' %}">
     <!-- blueimp Gallery styles -->
     <!--<link rel="stylesheet" href="//blueimp.github.io/Gallery/css/blueimp-gallery.min.css">-->
     <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
-    <link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload.css' %}">
-    <link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-ui.css' %}">
+    <link rel="stylesheet" href="{% static 'web_interface/file-upload/css/jquery.fileupload.css' %}">
+    <link rel="stylesheet" href="{% static 'web_interface/file-upload/css/jquery.fileupload-ui.css' %}">
     <!-- CSS adjustments for browsers with JavaScript disabled -->
-    <noscript><link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-noscript.css' %}"></noscript>
-    <noscript><link rel="stylesheet" href="{% static 'autograder/file-upload/css/jquery.fileupload-ui-noscript.css' %}"></noscript>
+    <noscript><link rel="stylesheet" href="{% static 'web_interface/file-upload/css/jquery.fileupload-noscript.css' %}"></noscript>
+    <noscript><link rel="stylesheet" href="{% static 'web_interface/file-upload/css/jquery.fileupload-ui-noscript.css' %}"></noscript>
 
     <!-- Datetime input field -->
-    <link rel="stylesheet" href="{% static 'autograder/third-party/datetime-widget/bootstrap-datetimepicker.min.css' %}">
+    <link rel="stylesheet" href="{% static 'web_interface/third-party/datetime-widget/bootstrap-datetimepicker.min.css' %}">
 
 
     <!-- <link href="https://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet"> -->
@@ -43,7 +43,7 @@
     <link type=text/css rel=stylesheet href="//www.gstatic.com/authtoolkit/css/gitkit.css" />
 
     <!-- Autograder CSS -->
-    <link rel="stylesheet" href="{% static 'autograder/css/main_app.css' %}">
+    <link rel="stylesheet" href="{% static 'web_interface/css/main_app.css' %}">
 
 </head>
 <body>
@@ -86,7 +86,7 @@
 
 <!-- JQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-<!-- <script src="{% static 'autograder/third-party/jquery.min.js' %}"></script> -->
+<!-- <script src="{% static 'web_interface/third-party/jquery.min.js' %}"></script> -->
 
 <script type="text/javascript">
 'use strict';
@@ -133,56 +133,56 @@ $(document).ready(function () {
 </script>
 
 <!-- JQuery Cookie -->
-<script src="{% static 'autograder/jquery-cookie/jquery.cookie.js' %}"></script>
+<script src="{% static 'web_interface/jquery-cookie/jquery.cookie.js' %}"></script>
 
 <!-- Boostrap -->
 <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> -->
-<script src="{% static 'autograder/bootstrap/js/bootstrap.min.js' %}"></script>
+<script src="{% static 'web_interface/bootstrap/js/bootstrap.min.js' %}"></script>
 
 <!-- File Upload -->
 
 <!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
-<script src="{% static 'autograder/file-upload/js/vendor/jquery.ui.widget.js' %}"></script>
+<script src="{% static 'web_interface/file-upload/js/vendor/jquery.ui.widget.js' %}"></script>
 <!-- The Templates plugin is included to render the upload/download listings -->
-<script src="{% static 'autograder/file-upload/js/tmpl.min.js' %}"></script>
+<script src="{% static 'web_interface/file-upload/js/tmpl.min.js' %}"></script>
 <!-- The Load Image plugin is included for the preview images and image resizing functionality -->
-<!-- <script src="{% static 'autograder/file-upload/js/load-image.all.min.js' %}"></script> -->
+<!-- <script src="{% static 'web_interface/file-upload/js/load-image.all.min.js' %}"></script> -->
 <!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
-<script src="{% static 'autograder/file-upload/js/jquery.iframe-transport.js' %}"></script>
+<script src="{% static 'web_interface/file-upload/js/jquery.iframe-transport.js' %}"></script>
 <!-- The basic File Upload plugin -->
-<script src="{% static 'autograder/file-upload/js/jquery.fileupload.js' %}"></script>
+<script src="{% static 'web_interface/file-upload/js/jquery.fileupload.js' %}"></script>
 <!-- The File Upload processing plugin -->
-<script src="{% static 'autograder/file-upload/js/jquery.fileupload-process.js' %}"></script>
+<script src="{% static 'web_interface/file-upload/js/jquery.fileupload-process.js' %}"></script>
 <!-- The File Upload validation plugin -->
-<script src="{% static 'autograder/file-upload/js/jquery.fileupload-validate.js' %}"></script>
+<script src="{% static 'web_interface/file-upload/js/jquery.fileupload-validate.js' %}"></script>
 <!-- The File Upload user interface plugin -->
-<script src="{% static 'autograder/file-upload/js/jquery.fileupload-ui.js' %}"></script>
+<script src="{% static 'web_interface/file-upload/js/jquery.fileupload-ui.js' %}"></script>
 
 <!-- /File Upload -->
 
 <!-- jsrender -->
 <!-- <script src='https://www.jsviews.com/download/jsrender.min.js'></script> -->
 <!-- <script src="https://www.jsviews.com/download/sample-tag-controls/range/range.js"></script> -->
-<script src='{% static "autograder/third-party/jsrender.min.js" %}'></script>
-<script src="{% static 'autograder/third-party/range.js' %}"></script>
+<script src='{% static "web_interface/third-party/jsrender.min.js" %}'></script>
+<script src="{% static 'web_interface/third-party/range.js' %}"></script>
 
 <!-- Datetime input field -->
-<script type="text/javascript" src="{% static 'autograder/third-party/datetime-widget/moment.min.js' %}"></script>
-<script type="text/javascript" src="{% static 'autograder/third-party/datetime-widget/bootstrap-datetimepicker.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'web_interface/third-party/datetime-widget/moment.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'web_interface/third-party/datetime-widget/bootstrap-datetimepicker.min.js' %}"></script>
 
 
 <!-- Google Identity Toolkit -->
 <script type="text/javascript" src="//www.gstatic.com/authtoolkit/js/gitkit.js"></script>
 
 <!-- Autograder -->
-<script src="{% static 'autograder/js/utilities.js' %}"></script>
-<script src="{% static 'autograder/js/converters.js' %}"></script>
-<script src="{% static 'autograder/js/main_app.js' %}"></script>
-<script src="{% static 'autograder/js/landing-page.js' %}"></script>
-<script src="{% static 'autograder/js/view-semester.js' %}"></script>
-<script src="{% static 'autograder/js/view-project.js' %}"></script>
-<script src="{% static 'autograder/js/edit_project_view.js' %}"></script>
-<script src="{% static 'autograder/js/register-group-view.js' %}"></script>
+<script src="{% static 'web_interface/js/utilities.js' %}"></script>
+<script src="{% static 'web_interface/js/converters.js' %}"></script>
+<script src="{% static 'web_interface/js/main_app.js' %}"></script>
+<script src="{% static 'web_interface/js/landing-page.js' %}"></script>
+<script src="{% static 'web_interface/js/view-semester.js' %}"></script>
+<script src="{% static 'web_interface/js/view-project.js' %}"></script>
+<script src="{% static 'web_interface/js/edit_project_view.js' %}"></script>
+<script src="{% static 'web_interface/js/register-group-view.js' %}"></script>
 
 </body>
 </html>

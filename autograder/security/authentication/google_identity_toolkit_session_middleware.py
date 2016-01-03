@@ -25,8 +25,9 @@ class GoogleIdentityToolkitSessionMiddleware(object):
     def process_request(self, request):
         # logger.info('process_request, GITkit middleware')
 
+        print(request.path)
         if request.path == '/callback/':
-            # logger.info('login page requested. setting anonymous user')
+            print('login page requested. setting anonymous user')
             request.user = AnonymousUser()
             return None
 

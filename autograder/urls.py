@@ -13,16 +13,27 @@ Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
+# import functools
+
 from django.conf.urls import include, url
-from django.contrib import admin
-from django.contrib.auth import views as auth_views
+# from django.contrib import admin
+# from django.contrib.auth import views as auth_views
 
-from autograder.core.frontend import views, ajax_request_handlers
+from autograder.web_interface import views
+# from autograder.core.frontend import views, ajax_request_handlers
 
-import autograder.core.shared.global_constants as gc
+# import autograder.core.shared.global_constants as gc
+from django.contrib.auth.decorators import login_required
+# from django.core.urlresolvers import RegexURLPattern, RegexURLResolver
+from django.views.generic.base import RedirectView
 
 urlpatterns = [
-    url(r'^', include('autograder.rest_api.urls')),
+    url(r'^login/$', views.LoginView.as_view(), name='login'),
+    url(r'^callback/$', views.LoginView.as_view(), name='callback'),
+    url(r'^api/', include('autograder.rest_api.urls')),
+    url(r'^$',
+        login_required(views.MainAppPage.as_view()), name='main-app-page'),
+    # url(r'^$', RedirectView.as_view(url='/app/'))
 ]
 
 

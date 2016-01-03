@@ -4,8 +4,10 @@ from django.views.generic import View
 from django.core import exceptions
 from django import http
 
+from autograder.security.views import LoginRequiredView
 
-class EndpointBase(View):
+
+class EndpointBase(LoginRequiredView):
     def dispatch(self, *args, **kwargs):
         try:
             return super().dispatch(*args, **kwargs)

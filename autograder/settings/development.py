@@ -36,6 +36,8 @@ GOOGLE_IDENTITY_TOOLKIT_APPS_DOMAIN_NAMES = ['umich.edu']
 GOOGLE_IDENTITY_TOOLKIT_CONFIG_FILE = os.path.join(
     _SETTINGS_DIR, 'gitkit-server-config.json')
 
+
+LOGIN_URL = '/callback/?mode=select'
 # Application definition
 
 INSTALLED_APPS = [
@@ -45,12 +47,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'polymorphic',
-    'rest_framework',
 
     'autograder.core',
     'autograder.utilities',
     'autograder.security',
     'autograder.rest_api',
+    'autograder.web_interface',
 
     'autograder.core.tests.test_models.test_autograder_test_case',
     'autograder.core.tests.test_models.test_student_test_suite',

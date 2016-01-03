@@ -135,7 +135,10 @@ notification_patterns = [
 ]
 
 urlpatterns = [
+    url(r'^user/$',
+        endpoints.GetCurrentUserEndpoint.as_view(), name='current-user'),
     url(r'^users/(?P<pk>[0-9]+)/', include(user_patterns, namespace='user')),
+
     url(r'^courses/$', endpoints.ListCreateCourseEndpoint.as_view(),
         name='courses'),
     url(r'^courses/(?P<pk>[0-9]+)/',

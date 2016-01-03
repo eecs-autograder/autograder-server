@@ -10,6 +10,45 @@ import autograder.core.tests.dummy_object_utils as obj_ut
 from .utilities import MockClient, json_load_bytes
 
 
+class GetCurrentUserEndpointTestCase(TemporaryFilesystemTestCase):
+    def test_get_current_user(self):
+        for user in obj_ut.create_dummy_users(2):
+            client = MockClient(user)
+
+            expected_content = {
+                "type": "user",
+                "id": user.pk,
+                "username": user.username,
+
+                "urls": {
+                    "self": reverse('user:get', kwargs={'pk': user.pk}),
+
+                    "courses_is_admin_for": reverse(
+                        'user:admin-courses', kwargs={'pk': user.pk}),
+                    "semesters_is_staff_for": reverse(
+                        'user:staff-semesters', kwargs={'pk': user.pk}),
+                    "semesters_is_enrolled_in": reverse(
+                        'user:enrolled-semesters', kwargs={'pk': user.pk}),
+                    "groups_is_member_of": reverse(
+                        'user:submission-groups', kwargs={'pk': user.pk}),
+
+                    "group_invitations_sent": reverse(
+                        'user:invitations-sent', kwargs={'pk': user.pk}),
+
+                    "group_invitations_received": reverse(
+                        'user:invitations-received', kwargs={'pk': user.pk}),
+
+                    "notifications": reverse(
+                        'user:notifications', kwargs={'pk': user.pk})
+                }
+            }
+            response = client.get(reverse('current-user'))
+
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
+
+
 class GetUserEndpointTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()

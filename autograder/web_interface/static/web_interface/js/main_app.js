@@ -3,6 +3,7 @@ function load_view()
     console.log('load_view');
     // var pageName = getPageName();
     var current_path = window.location.pathname;
+    console.log(current_path);
     // Offset the split and substring indices by one to ignore the leading
     // slash.
     var view_name = current_path.split('/')[1];

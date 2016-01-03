@@ -8,6 +8,38 @@ from autograder.core import models as ag_models
 from autograder.rest_api import url_shortcuts
 
 
+class GetCurrentUserEndpoint(EndpointBase):
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        response = {
+            "type": "user",
+            "id": user.pk,
+            "username": user.username,
+            "urls": {
+                "self": reverse('user:get', kwargs={'pk': user.pk}),
+                "courses_is_admin_for": reverse(
+                    'user:admin-courses', kwargs={'pk': user.pk}),
+                "semesters_is_staff_for": reverse(
+                    'user:staff-semesters', kwargs={'pk': user.pk}),
+                "semesters_is_enrolled_in": reverse(
+                    'user:enrolled-semesters', kwargs={'pk': user.pk}),
+                "groups_is_member_of": reverse(
+                    'user:submission-groups', kwargs={'pk': user.pk}),
+
+                "group_invitations_sent": reverse(
+                    'user:invitations-sent', kwargs={'pk': user.pk}),
+                "group_invitations_received": reverse(
+                    'user:invitations-received', kwargs={'pk': user.pk}),
+
+                "notifications": reverse(
+                    'user:notifications', kwargs={'pk': user.pk})
+            }
+        }
+
+        return http.JsonResponse(response)
+
+
 class GetUser(EndpointBase):
     def get(self, request, pk, *args, **kwargs):
         pk = int(pk)
