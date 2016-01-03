@@ -9,6 +9,7 @@ from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
 from .utilities import MockClient, json_load_bytes, sorted_by_pk
+from autograder.rest_api import url_shortcuts
 
 
 class GetAcceptRejectSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
@@ -72,7 +73,7 @@ class GetAcceptRejectSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCa
             expected_content = {
                 "type": "submission_group_invitation",
                 "id": value['invitation'].pk,
-                "request_creator": value['invitor'].username,
+                "invitation_creator": value['invitor'].username,
                 "invited_members_to_acceptance": {
                     user.username: user == acceptor
                     for user in value['invitees']
@@ -101,7 +102,7 @@ class GetAcceptRejectSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCa
             expected_content = {
                 "type": "submission_group_invitation",
                 "id": value['invitation'].pk,
-                "request_creator": value['invitor'].username,
+                "invitation_creator": value['invitor'].username,
                 "invited_members_to_acceptance": {
                     user.username: user == acceptor
                     for user in value['invitees']
@@ -171,7 +172,15 @@ class GetAcceptRejectSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCa
             for user in invitees:
                 client = MockClient(user)
                 response = client.post(obj['accept_url'], {})
-                self.assertEqual(204, response.status_code)
+                if user == invitees[-1]:
+                    self.assertEqual(201, response.status_code)
+                    group = SubmissionGroup.get_group(
+                        invitees[0], self.project)
+                    self.assertEqual(
+                        response.content.decode('utf-8'),
+                        url_shortcuts.group_url(group))
+                else:
+                    self.assertEqual(204, response.status_code)
 
             with self.assertRaises(ObjectDoesNotExist):
                 SubmissionGroupInvitation.objects.get(pk=obj['invitation'].pk)
@@ -184,9 +193,8 @@ class GetAcceptRejectSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCa
 
             self.assertEqual(2, invitor.notifications.count())
 
-            group = SubmissionGroup.get_group(invitees[0], self.project)
             self.assertCountEqual(
-                group.members.all(), itertools.chain(invitor, invitees))
+                group.members.all(), itertools.chain([invitor], invitees))
 
     def test_invitee_reject_invitation(self):
         # make sure notifications are sent and invitation is deleted
@@ -210,12 +218,11 @@ class GetAcceptRejectSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCa
             with self.assertRaises(ObjectDoesNotExist):
                 SubmissionGroupInvitation.objects.get(pk=obj['invitation'].pk)
 
-            other_invitation = SubmissionGroupInvitation.objects.get(
-                pk=other_invitation.pk)
+            SubmissionGroupInvitation.objects.get(pk=other_invitation.pk)
 
     def test_some_invitees_accept_one_rejects(self):
         # make sure notifications are sent and invitation is deleted
-        # make sure other invitations are not deleted
+        # make sure other invitations are NOT deleted
         for obj in self.invitations.values():
             invitor = obj['invitor']
             invitees = obj['invitees']
@@ -249,7 +256,7 @@ class GetAcceptRejectSubmissionGroupInvitationTestCase(TemporaryFilesystemTestCa
 
     def test_invitation_creator_revokes_invitation(self):
         # make sure notifications are sent and invitation is deleted
-        # make sure other invitations are not deleted
+        # make sure other invitations are NOT deleted
         for obj in self.invitations.values():
             invitor = obj['invitor']
             invitees = obj['invitees']

@@ -27,7 +27,7 @@ class SubmissionGroupInvitationManager(ManagerWithValidateOnCreate):
         actual SubmissionGroups.
         """
         with transaction.atomic():
-            invited_usernames = kwargs.pop('invited_users')
+            invited_usernames = kwargs.pop('invited_users', None)
             invitation_creator_name = kwargs.pop('invitation_creator')
 
             if not invited_usernames:
@@ -116,6 +116,9 @@ class SubmissionGroupInvitation(ModelValidatableOnSave):
         Marks the user with the given name as having accepted the group
         invitation.
         """
+        if username == self.invitation_creator.username:
+            return
+
         if username in self.invitees_who_accepted:
             return
 

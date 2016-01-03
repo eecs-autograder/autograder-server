@@ -10,7 +10,7 @@ Response format:
 {
     "type": "submission_group_invitation",
     "id": <id>,
-    "request_creator": <string username>,
+    "invitation_creator": <string username>,
     "invited_members_to_acceptance": {
         "<username>": <bool>,
         ...
@@ -45,5 +45,9 @@ Access rules:
     - If the user making the request doesn't have permission to view the 
         project the specified group is associated with, 403 Forbidden will be returned.
 
-The request and response have no content for this endpoint. 
-On success, 204 No content will be returned.
+The request has no content for this endpoint. 
+Response content:
+If all invited users have accepted the invitation, then the response
+will have status 201 and contain a url pointing to the newly created
+SubmissionGroup.
+Otherwise, 204 No content will be returned.

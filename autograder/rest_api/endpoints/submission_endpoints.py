@@ -7,7 +7,7 @@ from django import http
 from django.core import exceptions
 from django.contrib.auth.models import User
 
-from django.db.models import When, Case, Q, Value, BooleanField
+from django.db.models import Q
 
 from .endpoint_base import EndpointBase
 

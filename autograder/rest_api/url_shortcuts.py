@@ -60,6 +60,10 @@ def invitation_url(invitation):
     return reverse('invitation:get', kwargs={'pk': invitation.pk})
 
 
+def invitation_accept_url(invitation):
+    return reverse('invitation:accept', kwargs={'pk': invitation.pk})
+
+
 def submissions_url(group):
     return reverse('group:submissions', kwargs={'pk': group.pk})
 
