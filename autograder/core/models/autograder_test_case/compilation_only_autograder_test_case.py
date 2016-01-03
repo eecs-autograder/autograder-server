@@ -41,7 +41,8 @@ class CompilationOnlyAutograderTestCase(CompiledAutograderTestCase):
 
     def run(self, submission, autograder_sandbox):
         print('running test: ' + self.name)
-        result = AutograderTestCaseResult(test_case=self)
+        result = AutograderTestCaseResult(
+            test_case=self, submission=submission)
         self._compile_program(submission, result, autograder_sandbox)
 
         return result

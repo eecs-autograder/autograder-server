@@ -84,7 +84,7 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
 
 
 class CppProgramStrs(object):
-    PRINT_TO_STDOUT_TEMPLATE = r"""#include <iostream>
+    PRINT_TO_STDOUT_TEMPLATE = """#include <iostream>
 
 using namespace std;
 

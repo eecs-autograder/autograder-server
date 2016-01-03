@@ -46,3 +46,5 @@ COMMAND_LINE_ARG_WHITELIST_REGEX = re.compile(
     r"^[a-zA-Z0-9-_=.]+$")
 
 SUPPORTED_COMPILERS = ['g++', 'clang++', 'gcc', 'clang']
+
+SUPPORTED_INTERPRETERS = ['python', 'python3']

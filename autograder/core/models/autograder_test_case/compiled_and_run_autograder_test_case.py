@@ -17,7 +17,8 @@ class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
 
     def run(self, submission, autograder_sandbox):
         print('running test: ' + self.name)
-        result = AutograderTestCaseResult(test_case=self)
+        result = AutograderTestCaseResult(
+            test_case=self, submission=submission)
 
         # result is modified by reference in this function
         self._compile_program(submission, result, autograder_sandbox)
