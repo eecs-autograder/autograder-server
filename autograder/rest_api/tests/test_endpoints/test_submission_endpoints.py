@@ -621,6 +621,8 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
     def setUp(self):
         super().setUp()
 
+        self.maxDiff = None
+
         self.project.closing_time = (
             timezone.now() + timezone.timedelta(hours=-1))
         self.project.expected_student_file_patterns = [
@@ -638,11 +640,15 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
 
         self.visible_config = fbc.StudentTestSuiteFeedbackConfiguration(
             visibility_level=fbc.VisibilityLevel.show_to_students,
-            points_feedback_level=fbc.PointsFeedbackLevel.show_breakdown)
+            # points_feedback_level=fbc.PointsFeedbackLevel.show_breakdown,
+            buggy_implementations_exposed_feedback_level=(
+                (fbc.BuggyImplementationsExposedFeedbackLevel.
+                    list_implementations_exposed_overall)))
 
         self.visible_suite = StudentTestSuiteFactory.validate_and_create(
             'compiled_student_test_suite',
             name='visible_suite',
+            compiler='clang++',
             project=self.project,
             student_test_case_filename_pattern='test_*.cpp',
             correct_implementation_filename='correct.cpp',
@@ -653,11 +659,15 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
 
         self.hidden_config = fbc.StudentTestSuiteFeedbackConfiguration(
             visibility_level=fbc.VisibilityLevel.hide_from_students,
-            points_feedback_level=fbc.PointsFeedbackLevel.show_breakdown)
+            # points_feedback_level=fbc.PointsFeedbackLevel.show_breakdown,
+            buggy_implementations_exposed_feedback_level=(
+                (fbc.BuggyImplementationsExposedFeedbackLevel.
+                    list_implementations_exposed_overall)))
 
         self.hidden_suite = StudentTestSuiteFactory.validate_and_create(
             'compiled_student_test_suite',
             name='hidden_suite',
+            compiler='clang++',
             project=self.project,
             student_test_case_filename_pattern='test_*.cpp',
             buggy_implementation_filenames=['buggy1.cpp', 'buggy2.cpp'],
@@ -756,6 +766,8 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
             client = MockClient(user)
 
             for obj in self.submission_objs:
+                if obj['user'] == user:
+                    continue
                 response = client.get(obj['suite_results_url'])
 
                 self.assertEqual(200, response.status_code)
@@ -803,11 +815,11 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                 ]
             }
 
-            self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+            actual_content = json_load_bytes(response.content)
+            actual_content['student_test_suite_results'].sort(
+                key=lambda r: r['test_suite_name'])
+            self.assertEqual(expected_content, actual_content)
 
-    import unittest
-    @unittest.skip('todo')
     def test_post_deadline_feedback_override_show_hidden_suite_hide_visible_suite(self):
         self.visible_suite.post_deadline_final_submission_feedback_configuration = (
             self.hidden_config
@@ -820,29 +832,33 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
         self.hidden_suite.validate_and_save()
 
         for user in self.admin, self.staff:
-            client = MockClient(user)
             for obj in (self.enrolled_submission_obj,
                         self.nobody_submission_obj):
+                client = MockClient(user)
                 expected_content = {
                     "student_test_suite_results": [
                         {
                             "test_suite_name": (
-                                obj['visible_result'].test_suite.name),
+                                obj['hidden_result'].test_suite.name),
                             "points_awarded": self.points_for_suite,
                             "points_possible": self.points_for_suite,
                             "urls": {
                                 "self": _get_suite_result_url(
-                                    obj['visible_result'])
+                                    obj['hidden_result'])
                             }
                         }
                     ]
                 }
 
-                client = MockClient(obj['user'])
                 response = client.get(obj['suite_results_url'])
                 self.assertEqual(200, response.status_code)
                 self.assertEqual(
                     expected_content, json_load_bytes(response.content))
+
+                (self.hidden_suite.
+                    post_deadline_final_submission_feedback_configuration.
+                    points_feedback_level) = fbc.PointsFeedbackLevel.show_total
+                self.hidden_suite.validate_and_save()
 
                 client = MockClient(obj['user'])
                 response = client.get(obj['suite_results_url'])
@@ -850,7 +866,6 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                 self.assertEqual(
                     expected_content, json_load_bytes(response.content))
 
-    @unittest.skip('todo')
     def test_post_deadline_feedback_override_but_student_has_extension(self):
         self.visible_suite.post_deadline_final_submission_feedback_configuration = (
             self.hidden_config
@@ -864,7 +879,7 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
 
         for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
             obj['group'].extended_due_date = (
-                timezone.now() + datetime.timedelta(minutes=-1))
+                timezone.now() + datetime.timedelta(minutes=1))
             obj['group'].save()
 
             expected_content = {
@@ -898,7 +913,6 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                 self.assertEqual(
                     expected_content, json_load_bytes(response.content))
 
-    @unittest.skip('todo')
     def test_post_deadline_feedback_override_but_not_final_submission(self):
         self.visible_suite.post_deadline_final_submission_feedback_configuration = (
             self.hidden_config
@@ -949,11 +963,60 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                 self.assertEqual(
                     expected_content, json_load_bytes(response.content))
 
+    def test_post_deadline_feedback_override_but_deadline_not_passed(self):
+        self.visible_suite.post_deadline_final_submission_feedback_configuration = (
+            self.hidden_config
+        )
+        self.visible_suite.validate_and_save()
+
+        self.hidden_suite.post_deadline_final_submission_feedback_configuration = (
+            self.visible_config
+        )
+        self.hidden_suite.validate_and_save()
+
+        self.project.closing_time = (
+            timezone.now() + datetime.timedelta(hours=1))
+        self.project.validate_and_save()
+
+        for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
+            expected_content = {
+                "student_test_suite_results": [
+                    {
+                        "test_suite_name": (
+                            obj['visible_result'].test_suite.name),
+                        "urls": {
+                            "self": _get_suite_result_url(
+                                obj['visible_result'])
+                        }
+                    }
+                ]
+            }
+
+            client = MockClient(obj['user'])
+            response = client.get(obj['suite_results_url'])
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
+
+            expected_content['student_test_suite_results'][0].update({
+                "points_awarded": self.points_for_suite,
+                "points_possible": self.points_for_suite,
+            })
+
+            for user in self.admin, self.staff:
+                client = MockClient(user)
+                response = client.get(obj['suite_results_url'])
+                self.assertEqual(200, response.status_code)
+                self.assertEqual(
+                    expected_content, json_load_bytes(response.content))
+
     def test_student_list_other_user_results_permission_denied(self):
         for user in self.enrolled, self.nobody:
             client = MockClient(user)
 
             for obj in self.submission_objs:
+                if obj['user'] == user:
+                    continue
                 response = client.get(obj['suite_results_url'])
 
                 self.assertEqual(403, response.status_code)
@@ -968,6 +1031,8 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
             self.assertEqual(403, response.status_code)
 
     def test_non_enrolled_student_non_public_project_list_results_permission_denied(self):
+        self.project.allow_submissions_from_non_enrolled_students = False
+        self.project.validate_and_save()
         client = MockClient(self.nobody)
         response = client.get(self.nobody_submission_obj['suite_results_url'])
         self.assertEqual(403, response.status_code)

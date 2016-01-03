@@ -5,6 +5,7 @@ import django.contrib.postgres.fields as pg_fields
 from autograder.core.models import Submission
 import autograder.utilities.fields as ag_fields
 
+import autograder.core.shared.feedback_configuration as fbc
 from autograder.core.shared.feedback_configuration import (
     StudentTestCaseValidityFeedbackLevel,
     BuggyImplementationsExposedFeedbackLevel,
@@ -100,8 +101,7 @@ class StudentTestSuiteResult(models.Model):
     Instance methods:
         to_json()
     """
-    test_suite = models.ForeignKey(
-        'StudentTestSuiteBase')
+    test_suite = models.ForeignKey('StudentTestSuiteBase')
 
     submission = models.ForeignKey(
         Submission, null=True, blank=True, default=None,
@@ -116,6 +116,17 @@ class StudentTestSuiteResult(models.Model):
     def new_test_evaluation_result_instance(student_test_case_name, **kwargs):
         return StudentTestCaseEvaluationResult(
             student_test_case_name, **kwargs)
+
+    def total_points_as_dict(self, feedback_config_override=None,
+                             max_feedback=False):
+        if max_feedback:
+            fb = fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback()
+        else:
+            fb = self._determine_feedback_config(feedback_config_override)
+
+        return self._compute_points_feedback(
+            fb.points_feedback_level,
+            fb.buggy_implementations_exposed_feedback_level)
 
     def to_json(self, feedback_config_override=None):
         """

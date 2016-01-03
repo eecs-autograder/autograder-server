@@ -84,3 +84,7 @@ def submitted_file_url(submission, filename):
     return reverse(
         'submission:file',
         kwargs={'pk': submission.pk, 'filename': filename})
+
+
+def suite_result_url(result):
+    return reverse('suite-result:get', kwargs={'pk': result.pk})
