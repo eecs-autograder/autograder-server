@@ -133,6 +133,9 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
 
             Default value: None
 
+    Instance methods:
+        to_dict()
+
     Abstract methods:
         evaluate()
         get_type_str()
@@ -280,3 +283,25 @@ class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
             return {'buggy_implementation_filenames': errors}
 
         return {}
+
+    # -------------------------------------------------------------------------
+
+    def to_dict(self):
+        return {
+            "type": self.get_type_str(),
+            "id": self.pk,
+
+            "name": self.name,
+            "student_test_case_filename_pattern": self.student_test_case_filename_pattern,
+            "correct_implementation_filename": self.correct_implementation_filename,
+            "buggy_implementation_filenames": self.buggy_implementation_filenames,
+            "implementation_file_alias": self.implementation_file_alias,
+            "suite_resource_filenames": self.suite_resource_filenames,
+            "time_limit": self.time_limit,
+            "points_per_buggy_implementation_exposed": self.points_per_buggy_implementation_exposed,
+
+            "feedback_configuration": self.feedback_configuration.to_json(),
+            "post_deadline_final_submission_feedback_configuration": (
+                None if self.post_deadline_final_submission_feedback_configuration is None else
+                self.post_deadline_final_submission_feedback_configuration.to_json())
+        }

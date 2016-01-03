@@ -60,6 +60,7 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
 
     Overridden methods:
         evaluate()
+        to_dict()
     """
     objects = PolymorphicManagerWithValidateOnCreate()
 
@@ -195,7 +196,7 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
         try:
             super().clean()
         except ValidationError as e:
-            errors = e.message_dict()
+            errors = e.message_dict
 
         errors.update(self._clean_suite_resource_files_to_compile_together())
 
@@ -217,3 +218,15 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
             return {'suite_resource_files_to_compile_together': errors}
 
         return {}
+
+    # -------------------------------------------------------------------------
+
+    def to_dict(self):
+        value = super().to_dict()
+        value.update({
+            "compiler": self.compiler,
+            "compiler_flags": self.compiler_flags,
+            "suite_resource_files_to_compile_together": self.suite_resource_files_to_compile_together,
+        })
+
+        return value

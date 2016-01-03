@@ -20,7 +20,8 @@ Response format:
     "points_per_buggy_implementation_exposed": <int>,
 
     "feedback_configuration": <test suite feedback config object>,
-
+    "post_deadline_final_submission_feedback_configuration": <test suite feedback config object>,
+    
     // compiled_test suite fields
     "compiler": <string>,
     "compiler_flags": [<string>, ...],
