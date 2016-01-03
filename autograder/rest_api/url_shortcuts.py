@@ -96,3 +96,11 @@ def suite_result_url(result):
 
 def ag_test_result_url(result):
     return reverse('test-result:get', kwargs={'pk': result.pk})
+
+
+def notification_url(notification):
+    return reverse('notification:get', kwargs={'pk': notification.pk})
+
+
+def user_url(user):
+    return reverse('user:get', kwargs={'pk': user.pk})

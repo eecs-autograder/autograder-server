@@ -10,6 +10,7 @@ class EndpointBase(View):
         try:
             return super().dispatch(*args, **kwargs)
         except exceptions.ObjectDoesNotExist as e:
+            # traceback.print_exc()
             # print(e)
             return http.HttpResponseNotFound()
         except exceptions.PermissionDenied as e:

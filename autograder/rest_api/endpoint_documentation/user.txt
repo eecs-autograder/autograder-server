@@ -97,7 +97,8 @@ Response format:
             "project_name": <string>,
             "request_sender": <string username>,
             "url": "/submission_group_requests/<id>/"
-        }
+        },
+        ...
     ]
 }
 
@@ -114,7 +115,8 @@ Response format:
             "project_name": <string>,
             "request_sender": <string username>,
             "url": "/submission_group_requests/<id>/"
-        }
+        },
+        ...
     ]
 }
 
@@ -130,7 +132,8 @@ Response format:
         {
             "timestamp": <timestamp>,
             "url": "/notifications/<id>/"
-        }
+        },
+        ...
     ]
 }
 

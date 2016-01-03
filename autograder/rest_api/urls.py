@@ -121,9 +121,11 @@ submission_patterns = [
         gc.PROJECT_FILENAME_WHITELIST_REGEX.pattern),
         endpoints.GetSubmittedFileEndpoint.as_view(),
         name='file'),
-    url(r'^autograder_test_case_results/$', endpoints.ListAutograderTestCaseResultsEndpoint.as_view(),
+    url(r'^autograder_test_case_results/$',
+        endpoints.ListAutograderTestCaseResultsEndpoint.as_view(),
         name='test-results'),
-    url(r'^student_test_suite_results/$', endpoints.ListStudentTestSuiteResultsEndpoint.as_view(),
+    url(r'^student_test_suite_results/$',
+        endpoints.ListStudentTestSuiteResultsEndpoint.as_view(),
         name='suite-results'),
 ]
 
@@ -150,8 +152,8 @@ urlpatterns = [
 
     url(r'^student_test_suites/(?P<pk>[0-9]+)/',
         include(suite_patterns, namespace='suite')),
-    url(r'^student_test_suite_results/(?P<pk>[0-9]+)',
-        include(suite_patterns, namespace='suite-result')),
+    url(r'^student_test_suite_results/(?P<pk>[0-9]+)/',
+        include(suite_result_patterns, namespace='suite-result')),
 
     url(r'^submission_groups/(?P<pk>[0-9]+)/',
         include(group_patterns, namespace='group')),

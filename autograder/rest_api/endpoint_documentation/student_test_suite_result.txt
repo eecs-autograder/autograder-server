@@ -10,7 +10,8 @@ Response format:
     "test_suite_name": <string>,
 
     "urls": {
-        "self": "/student_test_suite_results/<id>/"
+        "self": "/student_test_suite_results/<id>/",
+        "submission": "/submissions/<id>/"
     },
 
     //** NOTE: Some or all of the following may be omitted  **//

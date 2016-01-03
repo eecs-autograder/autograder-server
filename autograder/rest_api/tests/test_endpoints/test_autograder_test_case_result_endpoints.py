@@ -61,7 +61,7 @@ class GetAutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
             expected_return_code=0,
             points_for_correct_return_code=self.points_for_test,
             compiler='g++',
-            files_to_compile_together=self.filenames_to_submit,
+            student_files_to_compile_together=self.filenames_to_submit,
             student_resource_files=self.filenames_to_submit,
             executable_name='prog')
 

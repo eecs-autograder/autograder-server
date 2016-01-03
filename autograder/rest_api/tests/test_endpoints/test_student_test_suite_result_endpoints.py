@@ -58,6 +58,7 @@ class GetStudentTestSuiteResultTestCase(TemporaryFilesystemTestCase):
 
         self.suite = StudentTestSuiteFactory.validate_and_create(
             'compiled_student_test_suite',
+            compiler='clang++',
             name='suitey',
             project=self.project,
             student_test_case_filename_pattern='test_*.cpp',
@@ -145,7 +146,7 @@ class GetStudentTestSuiteResultTestCase(TemporaryFilesystemTestCase):
                     }
                 }
                 expected_content.update(obj['result'].to_json(
-                    (fbc.AutograderTestCaseFeedbackConfiguration.
+                    (fbc.StudentTestSuiteFeedbackConfiguration.
                         get_max_feedback())))
 
                 self.assertEqual(
