@@ -201,6 +201,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         test_checks_return_code()
         test_checks_output()
         test_checks_compilation()
+        to_dict()
 
     Abstract methods:
         run()
@@ -378,3 +379,34 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
     def get_type_str(self):
         raise NotImplementedError('Subclasses must override this method')
+
+    # -------------------------------------------------------------------------
+
+    def to_dict(self):
+        return {
+            "type": self.get_type_str(),
+            "id": self.pk,
+            "name": self.name,
+            "command_line_arguments": self.command_line_arguments,
+            "standard_input": self.standard_input,
+            "test_resource_files": self.test_resource_files,
+            "student_resource_files": self.student_resource_files,
+            "time_limit": self.time_limit,
+            "expected_return_code": self.expected_return_code,
+            "expect_any_nonzero_return_code": self.expect_any_nonzero_return_code,
+            "expected_standard_output": self.expected_standard_output,
+            "expected_standard_error_output": self.expected_standard_error_output,
+            "use_valgrind": self.use_valgrind,
+            "valgrind_flags": self.valgrind_flags,
+
+            "points_for_correct_return_code": self.points_for_correct_return_code,
+            "points_for_correct_output": self.points_for_correct_output,
+            "deduction_for_valgrind_errors": self.deduction_for_valgrind_errors,
+            "points_for_compilation_success": self.points_for_compilation_success,
+
+            "feedback_configuration": self.feedback_configuration.to_json(),
+            "post_deadline_final_submission_feedback_configuration": (
+                None if self.post_deadline_final_submission_feedback_configuration is None else
+                self.post_deadline_final_submission_feedback_configuration.to_json())
+        }
+

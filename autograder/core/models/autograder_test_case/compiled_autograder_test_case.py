@@ -80,6 +80,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         clean()
         test_checks_compilation()
         get_type_str()
+        to_dict()
     """
     class Meta:
         abstract = True
@@ -166,3 +167,16 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         result_ref.compilation_standard_output = compile_result.stdout
         result_ref.compilation_standard_error_output = compile_result.stderr
         result_ref.compilation_return_code = compile_result.return_code
+
+    # -------------------------------------------------------------------------
+
+    def to_dict(self):
+        value = super().to_dict()
+        value.update({
+            "compiler": self.compiler,
+            "compiler_flags": self.compiler_flags,
+            "project_files_to_compile_together": self.project_files_to_compile_together,
+            "student_files_to_compile_together": self.student_files_to_compile_together,
+            "executable_name": self.executable_name,
+        })
+        return value
