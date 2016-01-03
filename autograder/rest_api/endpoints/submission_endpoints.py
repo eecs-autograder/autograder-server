@@ -106,6 +106,48 @@ class ListAutograderTestCaseResultsEndpoint(EndpointBase):
             request.user, submission.submission_group.project)
         check_can_view_group(request.user, submission.submission_group)
 
+        queryset = self._get_queryset(request, submission)
+        is_staff = submission.submission_group.project.semester.is_semester_staff(
+            request.user)
+
+        response = {
+            'autograder_test_case_results': []
+        }
+
+        for result in queryset:
+            data = {
+                "test_case_name": result.test_case.name,
+                "urls": {
+                    "self": url_shortcuts.ag_test_result_url(result)
+                }
+            }
+            data.update(result.total_points_as_dict(max_feedback=is_staff))
+            response['autograder_test_case_results'].append(data)
+
+        return http.JsonResponse(response)
+
+    def _get_queryset(self, request, submission):
+        if (submission.submission_group.project.semester.is_semester_staff(
+                request.user) and
+                request.user.username in submission.submission_group.member_names):
+            return submission.results.all()
+
+        deadline = (submission.submission_group.extended_due_date if
+                    submission.submission_group.extended_due_date is not None else
+                    submission.submission_group.project.closing_time)
+
+        if (timezone.now() < deadline or submission !=
+                submission.submission_group.submissions.last()):
+            return submission.results.filter(
+                test_case__feedback_configuration__visibility_level=fbc.VisibilityLevel.show_to_students.value)
+
+        return submission.results.filter(
+            (Q(test_case__post_deadline_final_submission_feedback_configuration__isnull=False) &
+             Q(test_case__post_deadline_final_submission_feedback_configuration__visibility_level=fbc.VisibilityLevel.show_to_students.value)) |
+            (Q(test_case__post_deadline_final_submission_feedback_configuration=None) &
+             Q(test_case__feedback_configuration__visibility_level=fbc.VisibilityLevel.show_to_students.value)),
+        )
+
 
 class ListStudentTestSuiteResultsEndpoint(EndpointBase):
     def get(self, request, pk, *args, **kwargs):

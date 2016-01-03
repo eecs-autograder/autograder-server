@@ -132,6 +132,21 @@ class AutograderTestCaseResult(models.Model):
     compilation_standard_output = models.TextField()
     compilation_standard_error_output = models.TextField()
 
+    def total_points_as_dict(self, feedback_config_override=None,
+                             max_feedback=False):
+        if max_feedback:
+            fb = fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()
+        else:
+            fb = self._determine_feedback_config(feedback_config_override)
+
+        data = self.to_json(override_feedback=fb)
+        result = {}
+
+        if 'total_points_possible' in data and 'total_points_awarded' in data:
+            result['points_possible'] = data['total_points_possible']
+            result['points_awarded'] = data['total_points_awarded']
+        return result
+
     def to_json(self, override_feedback=None):
         """
         Returns a JSON representation of this autograder test case result

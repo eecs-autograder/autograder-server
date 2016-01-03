@@ -118,7 +118,7 @@ def _get_suite_results_url(submission):
 
 
 def _get_ag_test_result_url(result):
-    return reverse('ag-test:get', kwargs={'pk': result.pk})
+    return reverse('test-result:get', kwargs={'pk': result.pk})
 
 
 def _get_suite_result_url(result):
@@ -412,9 +412,15 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
     def setUp(self):
         super().setUp()
 
-        test_feedback_config = fbc.AutograderTestCaseFeedbackConfiguration(
+        self.visible_config = fbc.AutograderTestCaseFeedbackConfiguration(
             return_code_feedback_level=(
-                fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only))
+                fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only),
+            visibility_level=fbc.VisibilityLevel.show_to_students)
+
+        self.hidden_config = fbc.AutograderTestCaseFeedbackConfiguration(
+            return_code_feedback_level=(
+                fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only),
+            visibility_level=fbc.VisibilityLevel.hide_from_students)
 
         self.points_for_test = 2
 
@@ -424,13 +430,10 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
             expected_return_code=0,
             points_for_correct_return_code=self.points_for_test,
             compiler='g++',
-            files_to_compile_together=self.filenames_to_submit,
+            student_files_to_compile_together=self.filenames_to_submit,
             student_resource_files=self.filenames_to_submit,
             executable_name='prog',
-            feedback_configuration=copy.copy(test_feedback_config))
-        self.visible_test.feedback_configuration.visibility_level = (
-            fbc.VisibilityLevel.show_to_students)
-        self.visible_test.save()
+            feedback_configuration=self.visible_config)
 
         self.hidden_test = AutograderTestCaseFactory.validate_and_create(
             'compiled_and_run_test_case',
@@ -438,13 +441,10 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
             expected_return_code=0,
             points_for_correct_return_code=self.points_for_test,
             compiler='g++',
-            files_to_compile_together=self.filenames_to_submit,
+            student_files_to_compile_together=self.filenames_to_submit,
             student_resource_files=self.filenames_to_submit,
             executable_name='prog',
-            feedback_configuration=copy.copy(test_feedback_config))
-        self.hidden_test.feedback_configuration.visibility_level = (
-            fbc.VisibilityLevel.hide_from_students)
-        self.hidden_test.save()
+            feedback_configuration=self.hidden_config)
 
         for obj in self.submission_objs:
             obj['test_results_url'] = _get_ag_test_results_url(
@@ -526,6 +526,8 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
         for user in self.admin, self.staff:
             client = MockClient(user)
             for obj in self.submission_objs:
+                if obj['user'] == user:
+                    continue
                 response = client.get(obj['test_results_url'])
 
                 self.assertEqual(200, response.status_code)
@@ -575,23 +577,202 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
             self.assertEqual(
                 expected_content, json_load_bytes(response.content))
 
-    import unittest
-    @unittest.skip('todo')
     def test_post_deadline_feedback_override_show_hidden_test_hide_visible_test(self):
-        self.fail()
+        self.visible_test.post_deadline_final_submission_feedback_configuration = (
+            self.hidden_config
+        )
+        self.visible_test.validate_and_save()
 
-    @unittest.skip('todo')
+        self.hidden_test.post_deadline_final_submission_feedback_configuration = (
+            self.visible_config
+        )
+        self.hidden_test.validate_and_save()
+
+        for user in self.admin, self.staff:
+            for obj in (self.enrolled_submission_obj,
+                        self.nobody_submission_obj):
+                client = MockClient(user)
+                expected_content = {
+                    "autograder_test_case_results": [
+                        {
+                            "test_case_name": (
+                                obj['hidden_result'].test_case.name),
+                            "points_awarded": self.points_for_test,
+                            "points_possible": self.points_for_test,
+                            "urls": {
+                                "self": _get_ag_test_result_url(
+                                    obj['hidden_result'])
+                            }
+                        }
+                    ]
+                }
+
+                response = client.get(obj['test_results_url'])
+                self.assertEqual(200, response.status_code)
+                self.assertEqual(
+                    expected_content, json_load_bytes(response.content))
+
+                (self.hidden_test.
+                    post_deadline_final_submission_feedback_configuration.
+                    points_feedback_level) = fbc.PointsFeedbackLevel.show_total
+                self.hidden_test.validate_and_save()
+
+                client = MockClient(obj['user'])
+                response = client.get(obj['test_results_url'])
+                self.assertEqual(200, response.status_code)
+                self.assertEqual(
+                    expected_content, json_load_bytes(response.content))
+
     def test_post_deadline_feedback_override_but_student_has_extension(self):
-        self.fail()
+        self.visible_test.post_deadline_final_submission_feedback_configuration = (
+            self.hidden_config
+        )
+        self.visible_test.validate_and_save()
 
-    @unittest.skip('todo')
+        self.hidden_test.post_deadline_final_submission_feedback_configuration = (
+            self.visible_config
+        )
+        self.hidden_test.validate_and_save()
+
+        for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
+            obj['group'].extended_due_date = (
+                timezone.now() + datetime.timedelta(minutes=1))
+            obj['group'].save()
+
+            expected_content = {
+                "autograder_test_case_results": [
+                    {
+                        "test_case_name": (
+                            obj['visible_result'].test_case.name),
+                        "urls": {
+                            "self": _get_ag_test_result_url(
+                                obj['visible_result'])
+                        }
+                    }
+                ]
+            }
+
+            client = MockClient(obj['user'])
+            response = client.get(obj['test_results_url'])
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
+
+            expected_content['autograder_test_case_results'][0].update({
+                "points_awarded": self.points_for_test,
+                "points_possible": self.points_for_test,
+            })
+
+            for user in self.admin, self.staff:
+                client = MockClient(user)
+                response = client.get(obj['test_results_url'])
+                self.assertEqual(200, response.status_code)
+                self.assertEqual(
+                    expected_content, json_load_bytes(response.content))
+
     def test_post_deadline_feedback_override_but_not_final_submission(self):
-        self.fail()
+        self.visible_test.post_deadline_final_submission_feedback_configuration = (
+            self.hidden_config
+        )
+        self.visible_test.validate_and_save()
+
+        self.hidden_test.post_deadline_final_submission_feedback_configuration = (
+            self.visible_config
+        )
+        self.hidden_test.validate_and_save()
+
+        for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
+            old_submission = Submission.objects.get(pk=obj['submission'].pk)
+            new_submission = obj['submission']
+            new_submission.pk = None
+            new_submission.save()
+            obj['submission'] = old_submission
+            obj['submission'].group = obj['group']
+
+            expected_content = {
+                "autograder_test_case_results": [
+                    {
+                        "test_case_name": (
+                            obj['visible_result'].test_case.name),
+                        "urls": {
+                            "self": _get_ag_test_result_url(
+                                obj['visible_result'])
+                        }
+                    }
+                ]
+            }
+
+            client = MockClient(obj['user'])
+            response = client.get(obj['test_results_url'])
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
+
+            expected_content['autograder_test_case_results'][0].update({
+                "points_awarded": self.points_for_test,
+                "points_possible": self.points_for_test,
+            })
+
+            for user in self.admin, self.staff:
+                client = MockClient(user)
+                response = client.get(obj['test_results_url'])
+                self.assertEqual(200, response.status_code)
+                self.assertEqual(
+                    expected_content, json_load_bytes(response.content))
+
+    def test_post_deadline_feedback_override_but_deadline_not_passed(self):
+        self.visible_test.post_deadline_final_submission_feedback_configuration = (
+            self.hidden_config
+        )
+        self.visible_test.validate_and_save()
+
+        self.hidden_test.post_deadline_final_submission_feedback_configuration = (
+            self.visible_config
+        )
+        self.hidden_test.validate_and_save()
+
+        self.project.closing_time = (
+            timezone.now() + datetime.timedelta(hours=1))
+        self.project.validate_and_save()
+
+        for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
+            expected_content = {
+                "autograder_test_case_results": [
+                    {
+                        "test_case_name": (
+                            obj['visible_result'].test_case.name),
+                        "urls": {
+                            "self": _get_ag_test_result_url(
+                                obj['visible_result'])
+                        }
+                    }
+                ]
+            }
+
+            client = MockClient(obj['user'])
+            response = client.get(obj['test_results_url'])
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
+
+            expected_content['autograder_test_case_results'][0].update({
+                "points_awarded": self.points_for_test,
+                "points_possible": self.points_for_test,
+            })
+
+            for user in self.admin, self.staff:
+                client = MockClient(user)
+                response = client.get(obj['test_results_url'])
+                self.assertEqual(200, response.status_code)
+                self.assertEqual(
+                    expected_content, json_load_bytes(response.content))
 
     def test_student_list_other_user_results_permission_denied(self):
         for user in self.enrolled, self.nobody:
             client = MockClient(user)
             for obj in self.submission_objs:
+                if obj['user'] == user:
+                    continue
                 response = client.get(obj['test_results_url'])
                 self.assertEqual(403, response.status_code)
 
