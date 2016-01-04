@@ -149,6 +149,7 @@ Response format:
     "projects": [
         {
             "name": <string>,
+            "can_edit": <bool>,
             "url": "/projects/<project id>/"
         },
         ...

@@ -486,20 +486,22 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
             key=lambda obj: obj.pk)
 
     def test_admin_or_staff_list_projects(self):
-        expected_content = {
-            "projects": [
-                {
-                    'name': project.name,
-                    'url': reverse('project:get', kwargs={'pk': project.pk})
-                }
-                for project in sorted(
-                    self.all_projects, key=lambda obj: obj.name)
-            ]
-        }
-
         for user in self.admin, self.staff[0]:
             client = MockClient(user)
             response = client.get(self.projects_url)
+
+            expected_content = {
+                "projects": [
+                    {
+                        'name': project.name,
+                        'can_edit': user == self.admin,
+                        'url': reverse(
+                            'project:get', kwargs={'pk': project.pk})
+                    }
+                    for project in sorted(
+                        self.all_projects, key=lambda obj: obj.name)
+                ]
+            }
 
             self.assertEqual(200, response.status_code)
             actual_content = json_load_bytes(response.content)
@@ -514,6 +516,7 @@ class ListAddProjectTestCase(TemporaryFilesystemTestCase):
             "projects": [
                 {
                     'name': project.name,
+                    'can_edit': False,
                     'url': reverse('project:get', kwargs={'pk': project.pk})
                 }
                 for project in sorted(

@@ -227,6 +227,7 @@ class ListAddProjectEndpoint(EndpointBase):
             "projects": [
                 {
                     "name": project.name,
+                    'can_edit': semester.course.is_administrator(request.user),
                     "url": url_shortcuts.project_url(project)
                 }
                 for project in projects
