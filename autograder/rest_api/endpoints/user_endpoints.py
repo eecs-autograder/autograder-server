@@ -109,9 +109,11 @@ class GetUserSemstersIsStaffForEndpoint(EndpointBase):
             "semesters": [
                 {
                     "name": semester.name,
+                    'course_name': semester.course.name,
                     "url": url_shortcuts.semester_url(semester)
                 }
-                for semester in user.semesters_is_staff_for.all()
+                for semester in
+                ag_models.Semester.get_staff_semesters_for_user(user)
             ]
         }
 
@@ -130,6 +132,7 @@ class GetUserSemestersIsEnrolledInEndpoint(EndpointBase):
             "semesters": [
                 {
                     "name": semester.name,
+                    'course_name': semester.course.name,
                     "url": url_shortcuts.semester_url(semester)
                 }
                 for semester in user.semesters_is_enrolled_in.all()
@@ -151,6 +154,8 @@ class GetUserGroupsIsMemberOfEndpoint(EndpointBase):
             "groups": [
                 {
                     "project_name": group.project.name,
+                    'semester_name': group.project.semester.name,
+                    'course_name': group.project.semester.course.name,
                     "url": url_shortcuts.group_url(group)
                 }
                 for group in user.groups_is_member_of.all()

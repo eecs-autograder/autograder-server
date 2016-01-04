@@ -3,7 +3,8 @@ import itertools
 from django.core.urlresolvers import reverse
 from django.utils import dateparse
 
-from autograder.core.models import SubmissionGroupInvitation, Notification
+from autograder.core.models import (
+    SubmissionGroupInvitation, Notification, Semester)
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
@@ -174,7 +175,7 @@ class GetSemestersIsStaffForTestCase(TemporaryFilesystemTestCase):
         self.staff = obj_ut.create_dummy_user()
         self.other = obj_ut.create_dummy_user()
 
-        self.courses = [
+        self.semesters = [
             obj_ut.build_semester(
                 semester_kwargs={'staff': [self.staff]})
             for i in range(2)
@@ -190,6 +191,7 @@ class GetSemestersIsStaffForTestCase(TemporaryFilesystemTestCase):
                 'semesters': [
                     {
                         'name': semester.name,
+                        'course_name': semester.course.name,
                         'url': reverse(
                             'semester:get', kwargs={'pk': semester.pk})
                     }
@@ -209,6 +211,35 @@ class GetSemestersIsStaffForTestCase(TemporaryFilesystemTestCase):
                 actual_content['semesters'], key=lambda obj: obj['name'])
 
             self.assertEqual(expected_content, actual_content)
+
+    def test_semesters_from_admin_course_included(self):
+        admin = obj_ut.create_dummy_user()
+        self.semesters[0].course.administrators.add(admin)
+        expected_content = {
+            'semesters': [
+                {
+                    'name': semester.name,
+                    'course_name': semester.course.name,
+                    'url': reverse(
+                        'semester:get', kwargs={'pk': semester.pk})
+                }
+                for semester in sorted(
+                    Semester.get_staff_semesters_for_user(admin),
+                    key=lambda obj: obj.name)
+            ]
+        }
+
+        client = MockClient(admin)
+        response = client.get(
+            reverse('user:staff-semesters', kwargs={'pk': admin.pk}))
+
+        self.assertEqual(200, response.status_code)
+        actual_content = json_load_bytes(response.content)
+
+        actual_content['semesters'] = sorted(
+            actual_content['semesters'], key=lambda obj: obj['name'])
+
+        self.assertEqual(expected_content, actual_content)
 
     def test_permission_denied_get_other_semesters_is_staff_for(self):
         pairs = (
@@ -246,6 +277,7 @@ class GetSemestersIsEnrolledInTestCase(TemporaryFilesystemTestCase):
                 'semesters': [
                     {
                         'name': semester.name,
+                        'course_name': semester.course.name,
                         'url': reverse(
                             'semester:get', kwargs={'pk': semester.pk})
                     }
@@ -305,6 +337,8 @@ class GetGroupsIsMemberOfTestCase(TemporaryFilesystemTestCase):
                 'groups': [
                     {
                         'project_name': group.project.name,
+                        'semester_name': group.project.semester.name,
+                        'course_name': group.project.semester.course.name,
                         'url': reverse(
                             'group:get', kwargs={'pk': group.pk})
                     }
