@@ -1,36 +1,36 @@
 <div id='submission'>
-<!--     <h3>Submitted at: {{to_local_date:data.attributes.timestamp}}</h3>
+<!--     <h3>Submitted at: {{to_local_date:timestamp}}</h3>
  -->
-    <h4>Status: {{> data.attributes.status}}</h4>
+    <h4>Status: {{> status}}</h4>
     {{if invalid_reason_or_error !== undefined}}
-        {{if data.attributes.status === 'invalid'}}
+        {{if status === 'invalid'}}
         <div>Reason(s): </div>
         <ul>
-            {{for data.attributes.invalid_reason_or_error.submitted_files}}
+            {{for invalid_reason_or_error.submitted_files}}
             <li>{{>}}</li>
             {{/for}}
         </ul>
-        {{else data.attributes.status === 'error'}}
+        {{else status === 'error'}}
         <div>Please contact your administrator</div>
         {{/if}}
     {{/if}}
 
     <div>Files submitted: </div>
     <ul>
-    {{for data.attributes.submitted_files}}
+    {{for submitted_files}}
         <li><a href="{{: file_url}}" target='_blank'>{{>filename}}</a></li>
     {{/for}}
     </ul>
 
-    {{if data.attributes.discarded_files.length}}
+    {{if discarded_files.length}}
     <div>The following files were discarded due to being unnecessary: </div>
     <ul>
-    {{for data.attributes.discarded_files}}
+    {{for discarded_files}}
         <li><i>{{>}}</i></li>
     {{/for}}
     </ul>
     {{/if}}
-
+{{!--
     <div>Results: </div>
     <ul>
         {{for meta.suite_results}}
@@ -140,4 +140,5 @@
         {{/for}}
     </ul>
     <div><b>Total score: {{> meta.total_points_awarded}}/{{> meta.total_points_possible}}</b></div>
+--}}
 </div>

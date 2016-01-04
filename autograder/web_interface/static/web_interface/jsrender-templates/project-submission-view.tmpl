@@ -1,22 +1,22 @@
 <div id='project'>
-    <h2>Project: {{>project.data.attributes.name}}</h2>
+    <h2>Project: {{>project.name}}</h2>
 
-    {{if project.data.attributes.closing_time}}
-    <h3>Due date: {{to_local_date:project.data.attributes.closing_time}}</h3>
-    {{/if}}
-    {{if group.data.attributes.extended_due_date}}
+    {{!-- {{if project.closing_time}}
+    <h3>Due date: {{to_local_date:project.closing_time}}</h3>
+    {{/if}} --}}
+    {{if group.extended_due_date}}
     <div><i>You have been granted an extension for this project.
-        Your due date is:</i> <b>{{to_local_date:group.data.attributes.extended_due_date}}</b></div>
+        Your due date is:</i> <b>{{to_local_date:group.extended_due_date}}</b></div>
     {{/if}}
 
     <div id='submit-files'>
         <h2 class="lead">Submit Files</h2>
         <div><i>Please submit the following files: </i></div>
         <ul>
-        {{for project.data.attributes.required_student_files}}
+        {{for project.required_student_files}}
             <li><b>{{>}}</b></li>
         {{/for}}
-        {{for project.data.attributes.expected_student_file_patterns}}
+        {{for project.expected_student_file_patterns}}
             <li>{{> #data[1]}} - {{> #data[2]}} files matching the pattern: <b>{{> #data[0]}}</b>
         {{/for}}
         </ul>
@@ -25,7 +25,7 @@
         <form id="fileupload" method="POST" enctype="multipart/form-data">
             <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
 
-            <input type='hidden' name='submission_group_id' value='{{:group.data.id}}'>
+            <input type='hidden' name='submission_group_id' value='{{:group.id}}'>
             <div class="row fileupload-buttonbar">
                 <div class="col-lg-7">
                     <!-- The fileinput-button span is used to style the file input field as button -->
@@ -68,13 +68,13 @@
         <br>
     </div>
 </div>
-{{if project.meta.permissions.is_staff}}
+{{!-- {{if project.meta.permissions.is_staff}}
 <span id='view-student-submissions'>
     <h3>Student Submissions</h3>
     <span id='student-submission-view'>Student email: <input id='requested-email' type='text'> <button id='load-student-submissions-button' type='button'>Search</button></span>
     <div id='student-submissions'></div>
 </span>
-{{/if}}
+{{/if}} --}}
 <span id='view-submissions'>
     <h3>Your Submissions</h3>
     <div id='own-submissions'>

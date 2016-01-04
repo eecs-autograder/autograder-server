@@ -1,12 +1,15 @@
+{{* uuid = guid()}}
 <div class='panel-heading'>
     <h4 class='panel-title'>
-        <a data-toggle='collapse' class='collapsible-link' href="#submission-{{:id}}{{if ~panel_id_suffix}}-{{: ~panel_id_suffix}}{{/if}}">
-            {{to_local_date:attributes.timestamp }}
+        <a data-toggle='collapse' class='collapsible-link' 
+           href="#submission-{{:uuid}}">
+            {{to_local_date:timestamp }}
         </a>
     </h4>
 </div>
-<div id='submission-{{:id}}{{if ~panel_id_suffix}}-{{: ~panel_id_suffix}}{{/if}}' class='panel-collapse collapse submission-collapse'>
-    <a href="{{:links.self}}" style='display:none'></a>
+<div id='submission-{{:uuid}}' 
+     class='panel-collapse collapse submission-collapse'>
+    <a href="{{:url}}" style='display:none'></a>
     <div class="panel-body">
         <div class="row">
             <div class="col-sm-3"></div>

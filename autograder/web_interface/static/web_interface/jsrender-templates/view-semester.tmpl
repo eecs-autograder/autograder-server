@@ -1,17 +1,17 @@
 <div id='semester'>
-    <h2>{{>data.relationships.course.data.attributes.name}} - {{>data.attributes.name}}</h2>
+    <h2>{{>semester.course_name}} - {{>semester.name}}</h2>
     <ul>
-        {{for included}}
+        {{for projects}}
             <ul>
             <div class='row'>
                 <div class='col-sm-2'>
-                    <a href="/project{{:links.self}}" data-role='ajax'>
-                        {{>attributes.name}}
+                    <a href="/project{{:url}}" data-role='ajax'>
+                        {{>name}}
                     </a>
                 </div>
-            {{if ~root.meta.permissions.can_edit}}
+            {{if can_edit}}
                 <div class='col-sm-1'>
-                    <a href="/edit-project{{:links.self}}" data-role='ajax'>
+                    <a href="/edit-project{{:url}}" data-role='ajax'>
                         (edit)
                     </a>
                 </div>

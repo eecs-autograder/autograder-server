@@ -4,9 +4,9 @@ function register_group(project)
     console.log(project);
     var registered = $.Deferred();
 
-    if (project.data.attributes.max_group_size === 1)
+    if (project.max_group_size === 1)
     {
-        var members = [project.meta.username];
+        var members = [g_username];
         submit_group_request(
             members, project
         ).done(function(group) {
@@ -15,13 +15,14 @@ function register_group(project)
     }
     else
     {
-        lazy_get_template(
-            'register-group-view'
-        ).then(function(template) {
-            return _render_and_process_group_registration_view(project, template);
-        }).done(function(group) {
-            registered.resolve(group);
-        });
+        registered.reject("This feature has been temporarily disabled.");
+        // lazy_get_template(
+        //     'register-group-view'
+        // ).then(function(template) {
+        //     return _render_and_process_group_registration_view(project, template);
+        // }).done(function(group) {
+        //     registered.resolve(group);
+        // });
     }
 
     return registered.promise();
@@ -30,29 +31,30 @@ function register_group(project)
 function submit_group_request(members, project)
 {
     console.log('submit_group_members');
-
+    console.log(project);
     var group_registered = $.Deferred();
     // console.log(members);
     // console.log(project);
     var request_data = {
-        'data': {
-            'type': 'submission_group',
-            'attributes': {
-                'members': members,
-            },
-            'relationships': {
-                'project': {
-                    'data': {
-                        'type': 'project',
-                        'id': project.data.id
-                    }
-                }
-            }
-        }
+        'members': members
+        // 'data': {
+        //     'type': 'submission_group',
+        //     'attributes': {
+        //         'members': members,
+        //     },
+        //     'relationships': {
+        //         'project': {
+        //             'data': {
+        //                 'type': 'project',
+        //                 'id': project.data.id
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     $.postJSON(
-        "/submission-groups/submission-group/", request_data
+        project.urls.submission_groups, request_data
     ).done(function(group) {
         console.log('resolving');
         group_registered.resolve(group);

@@ -9,6 +9,14 @@ function load_view()
     var view_name = current_path.split('/')[1];
     var resource_url = current_path.substring(view_name.length + 1);
 
+    // $.views.helpers({generate_guid: guid});
+
+    // HACK
+    $.get('/user/').done(function(user_json) {
+        g_username = user_json.username;
+    });
+
+
     $('#loading-bar').show();
 
     var loaded = null;

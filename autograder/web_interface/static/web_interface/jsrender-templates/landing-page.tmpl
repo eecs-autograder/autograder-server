@@ -1,11 +1,10 @@
 <div id='courses' class='container'>
-    {{if courses.data && courses.data.length}}
+    {{if courses.courses && courses.courses.length}}
         <h4>Courses: </h4>
         <ul>
-            {{for courses.data}}
+            {{for courses.courses}}
                 <li>
-                <div>{{>attributes.name}}</div>
-                <div>Admins: {{>attributes.course_admin_names}}</div>
+                <div>{{>name}}</div>
                 </li>
             {{/for}}
         </ul>
@@ -13,14 +12,32 @@
 </div>
 
 <div id='semesters' class='container'>
-    {{if semesters.data && semesters.data.length}}
-        <h4>Semesters: </h4>
+    {{if staff_semesters.semesters && staff_semesters.semesters.length}}
+        <h4>Staff Semesters: </h4>
         <ul>
-            {{for semesters.data}}
+            {{for staff_semesters.semesters}}
                 <li>
                     <div>
-                        <a href="/semester{{:links.self}}" data-role='ajax'>
-                            {{>relationships.course.data.attributes.name}} - {{>attributes.name}}
+                        <a href="/semester{{:url}}" data-role='ajax'>
+                            {{>course_name}} - {{>name}}
+                        </a>
+                    </div>
+                </li>
+            {{/for}}
+        </ul>
+    {{/if}}
+</div>
+
+
+<div id='semesters' class='container'>
+    {{if enrolled_semesters.semesters && enrolled_semesters.semesters.length}}
+        <h4>Enrolled Semesters: </h4>
+        <ul>
+            {{for enrolled_semesters.semesters}}
+                <li>
+                    <div>
+                        <a href="/semester{{:url}}" data-role='ajax'>
+                            {{>course_name}} - {{>name}}
                         </a>
                     </div>
                 </li>
