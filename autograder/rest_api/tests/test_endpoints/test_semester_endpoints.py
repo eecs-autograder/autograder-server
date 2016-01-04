@@ -53,6 +53,7 @@ class GetUpdateSemesterTestCase(TemporaryFilesystemTestCase):
             "type": "semester",
             "id": self.semester.pk,
             "name": self.semester.name,
+            "course_name": self.semester.course.name,
             "urls": {
                 "self": self.semester_url,
                 "course": self.course_url,
@@ -74,6 +75,7 @@ class GetUpdateSemesterTestCase(TemporaryFilesystemTestCase):
             "type": "semester",
             "id": self.semester.pk,
             "name": self.semester.name,
+            "course_name": self.semester.course.name,
             "urls": {
                 "self": self.semester_url,
                 "course": self.course_url,

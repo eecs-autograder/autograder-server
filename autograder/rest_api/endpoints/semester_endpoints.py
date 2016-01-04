@@ -24,6 +24,7 @@ class GetUpdateSemesterEndpoint(EndpointBase):
             "type": "semester",
             "id": pk,
             "name": semester.name,
+            "course_name": semester.course.name,
             "urls": {
                 "self": url_shortcuts.semester_url(semester),
                 "course": url_shortcuts.course_url(semester.course),

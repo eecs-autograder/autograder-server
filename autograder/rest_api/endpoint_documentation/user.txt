@@ -54,6 +54,7 @@ Response format:
     "semesters": [
         {   
             "name": <string>,
+            "course_name": <string>,
             "url": "/semesters/<semester id>/"
         },
         ...
@@ -79,6 +80,8 @@ Response format:
     "groups": [
         {
             "project_name": <string>,
+            "semester_name": <string>,
+            "course_name": <string>,
             "url": "/submission_groups/<id>/"
         }
     ]
