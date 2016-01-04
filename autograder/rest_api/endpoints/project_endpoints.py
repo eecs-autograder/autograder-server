@@ -38,10 +38,11 @@ class GetUpdateProjectEndpoint(EndpointBase):
             "type": "project",
             "id": pk,
             "name": project.name,
-            "visible_to_students": project.visible_to_students,
             "closing_time": project.closing_time,
-            "disallow_student_submissions": project.disallow_student_submissions,
-            "allow_submissions_from_non_enrolled_students": project.allow_submissions_from_non_enrolled_students,
+            "disallow_student_submissions": (
+                project.disallow_student_submissions),
+            "allow_submissions_from_non_enrolled_students": (
+                project.allow_submissions_from_non_enrolled_students),
             "min_group_size": project.min_group_size,
             "max_group_size": project.max_group_size,
             "required_student_files": project.required_student_files,
@@ -56,9 +57,20 @@ class GetUpdateProjectEndpoint(EndpointBase):
             "urls": {
                 "self": url_shortcuts.project_url(project),
                 "semester": url_shortcuts.semester_url(project.semester),
-                "uploaded_files": url_shortcuts.project_files_url(project),
             }
         }
+
+        if project.semester.is_semester_staff(request.user):
+            response['visible_to_students'] = project.visible_to_students
+
+            response['urls'].update({
+                "uploaded_files": url_shortcuts.project_files_url(project),
+                "autograder_test_cases": url_shortcuts.ag_tests_url(project),
+                "student_test_suites": url_shortcuts.suites_url(project),
+                "submission_groups": url_shortcuts.groups_url(project),
+                "submission_group_invitations": (
+                    url_shortcuts.invitations_url(project))
+            })
 
         return http.JsonResponse(response)
 

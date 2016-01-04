@@ -39,6 +39,10 @@ Response format:
         "self": "/projects/<id>/",
         "semester": "/semesters/<semester id>/",
         "uploaded_files": "/projects/<id>/uploaded_files/",
+        "autograder_test_cases": "/projects/<id>/autograder_test_cases/",
+        "student_test_suites": "/projects/<id>/student_test_suites/",
+        "submission_groups": "/projects/<id>/submission_groups/",
+        "submission_group_invitations": "/projects/<id>/submission_group_invitations/",
     }
 }
 

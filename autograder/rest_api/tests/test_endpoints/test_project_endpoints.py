@@ -15,6 +15,8 @@ from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
 from .utilities import MockClient, json_load_bytes, sorted_by_pk
+from autograder.rest_api import url_shortcuts
+
 
 from autograder.rest_api.endpoints.project_endpoints import (
     DEFAULT_SUBMISSION_GROUP_PAGE_SIZE
@@ -122,6 +124,10 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
                     "self": self.visible_project_url,
                     "semester": self.semester_url,
                     "uploaded_files": self.visible_project_files_url,
+                    "autograder_test_cases": url_shortcuts.ag_tests_url(self.visible_project),
+                    "student_test_suites": url_shortcuts.suites_url(self.visible_project),
+                    "submission_groups": url_shortcuts.groups_url(self.visible_project),
+                    "submission_group_invitations": url_shortcuts.invitations_url(self.visible_project),
                 }
             }
 
@@ -156,6 +162,14 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
                     "self": self.hidden_project_url,
                     "semester": self.semester_url,
                     "uploaded_files": self.hidden_project_files_url,
+                    "autograder_test_cases": (
+                        url_shortcuts.ag_tests_url(self.hidden_project)),
+                    "student_test_suites": (
+                        url_shortcuts.suites_url(self.hidden_project)),
+                    "submission_groups": (
+                        url_shortcuts.groups_url(self.hidden_project)),
+                    "submission_group_invitations": (
+                        url_shortcuts.invitations_url(self.hidden_project)),
                 }
             }
 
@@ -182,8 +196,6 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
                 "type": "project",
                 "id": self.visible_project.pk,
                 "name": self.visible_project.name,
-                "visible_to_students": (
-                    self.visible_project.visible_to_students),
                 "closing_time": self.visible_project.closing_time,
                 "disallow_student_submissions": (
                     self.visible_project.disallow_student_submissions),
@@ -199,7 +211,6 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
                 "urls": {
                     "self": self.visible_project_url,
                     "semester": self.semester_url,
-                    "uploaded_files": self.visible_project_files_url,
                 }
             }
 

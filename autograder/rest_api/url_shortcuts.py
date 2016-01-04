@@ -38,6 +38,22 @@ def project_files_url(project):
     return reverse('project:files', kwargs={'pk': project.pk})
 
 
+def ag_tests_url(project):
+    return reverse('project:ag-tests', kwargs={'pk': project.pk})
+
+
+def suites_url(project):
+    return reverse('project:suites', kwargs={'pk': project.pk})
+
+
+def groups_url(project):
+    return reverse('project:groups', kwargs={'pk': project.pk})
+
+
+def invitations_url(project):
+    return reverse('project:invitations', kwargs={'pk': project.pk})
+
+
 def project_file_url(project, filename):
     return reverse(
         'project:file',
