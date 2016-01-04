@@ -30,7 +30,7 @@ from django.views.generic.base import RedirectView
 urlpatterns = [
     url(r'^login/$', views.LoginView.as_view(), name='login'),
     url(r'^callback/$', views.LoginView.as_view(), name='callback'),
-    url(r'^api/', include('autograder.rest_api.urls')),
+    url(r'^', include('autograder.rest_api.urls')),
     url(r'^$|^semester/.*|^project/.*|^edit-project/.*',
         login_required(views.MainAppPage.as_view()), name='main-app-page'),
     # url(r'^$', RedirectView.as_view(url='/app/'))

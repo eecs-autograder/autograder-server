@@ -28,6 +28,12 @@ Response format:
 
 --------------------------------------------------------------------------------
 
+/user/
+GET: Returns information about the currently authenticated user.
+Response format: Same as /users/<id>/
+
+--------------------------------------------------------------------------------
+
 /users/<id>/courses_is_admin_for/
 GET: Returns a list of courses that the user is an administrator for.
 Access rules: Same as /users/<id>/
