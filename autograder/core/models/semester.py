@@ -104,9 +104,13 @@ class Semester(ModelValidatableOnSave):
         Note that if user is an administrator for this Semester's Course,
         all Semesters for that Course will be returned.
         """
+        staff_semesters = user.semesters_is_staff_for.all()
+        staff_semester_pks = (semester.pk for semester in staff_semesters)
         return itertools.chain(
-            user.courses_is_admin_for.all(),
-            user.semesters_is_staff_for.all()
+            user.semesters_is_staff_for.all(),
+            itertools.chain.from_iterable(
+                (course.semesters.exclude(pk__in=staff_semester_pks)
+                    for course in user.courses_is_admin_for.all()))
         )
         # return Semester.objects.filter(
         #     Q(_semester_staff_names__contains=[user.username]) |

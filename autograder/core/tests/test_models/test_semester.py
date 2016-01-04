@@ -192,13 +192,23 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
         # self.assertTrue(self.semester.is_enrolled_student(self.user.username))
 
     def test_get_staff_semesters_for_user(self):
-        semesters = obj_ut.create_dummy_semesters(self.course, 10)
-        subset = [semesters[1], semesters[6]]
-        for semester in subset:
-            semester.add_semester_staff(self.user)
+        # Staff only
+        expected_semesters = [
+            obj_ut.build_semester(semester_kwargs={'staff': [self.user]})
+            for i in range(4)
+        ]
+        # Staff and admin
+        expected_semesters.append(obj_ut.build_semester(
+            course_kwargs={'administrators': [self.user]},
+            semester_kwargs={'staff': [self.user]}))
+        # Admin only
+        expected_semesters.append(obj_ut.build_semester(
+            course_kwargs={'administrators': [self.user]}))
+        # Nothing
+        obj_ut.build_semester()
 
-        semesters = Semester.get_staff_semesters_for_user(self.user)
-        self.assertCountEqual(list(semesters), subset)
+        actual_semesters = Semester.get_staff_semesters_for_user(self.user)
+        self.assertCountEqual(expected_semesters, actual_semesters)
 
     def test_get_enrolled_semesters_for_user(self):
         semesters = obj_ut.create_dummy_semesters(self.course, 10)
