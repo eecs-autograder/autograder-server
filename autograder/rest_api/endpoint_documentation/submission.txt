@@ -74,9 +74,7 @@ Response format:
             "points_awarded": <int>,
             "points_possible": <int>,
 
-            "urls": {
-                "self": "/autograder_test_case_results/<id>/"
-            }
+            "url": "/autograder_test_case_results/<id>/"
         },
         ...
     ]
@@ -97,9 +95,7 @@ Response format:
             "points_awarded": <int>,
             "points_possible": <int>,
 
-            "urls": {
-                "self": "/student_test_suite_results/<id>/"
-            }
+            "url": "/student_test_suite_results/<id>/"
         },
         ...
     ]

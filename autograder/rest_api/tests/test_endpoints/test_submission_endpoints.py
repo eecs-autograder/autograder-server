@@ -486,10 +486,7 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
                         "points_awarded": self.points_for_test,
                         "points_possible": self.points_for_test,
 
-                        "urls": {
-                            "self": _get_ag_test_result_url(
-                                obj['visible_result'])
-                        }
+                        "url": _get_ag_test_result_url(obj['visible_result'])
                     }
                 ]
             }
@@ -510,10 +507,7 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
                     {
                         "test_case_name": obj['visible_result'].test_case.name,
 
-                        "urls": {
-                            "self": _get_ag_test_result_url(
-                                obj['visible_result'])
-                        }
+                        "url": _get_ag_test_result_url(obj['visible_result'])
                     }
                 ]
             }
@@ -540,10 +534,8 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
                             "points_awarded": self.points_for_test,
                             "points_possible": self.points_for_test,
 
-                            "urls": {
-                                "self": _get_ag_test_result_url(
-                                    obj['visible_result'])
-                            }
+                            "url": _get_ag_test_result_url(
+                                obj['visible_result'])
                         }
                     ]
                 }
@@ -566,9 +558,7 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
                         "points_awarded": self.points_for_test,
                         "points_possible": self.points_for_test,
 
-                        "urls": {
-                            "self": _get_ag_test_result_url(res)
-                        }
+                        "url": _get_ag_test_result_url(res)
                     }
                     for res in obj['test_results']
                 ]
@@ -599,10 +589,7 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
                                 obj['hidden_result'].test_case.name),
                             "points_awarded": self.points_for_test,
                             "points_possible": self.points_for_test,
-                            "urls": {
-                                "self": _get_ag_test_result_url(
-                                    obj['hidden_result'])
-                            }
+                            "url": _get_ag_test_result_url(obj['hidden_result'])
                         }
                     ]
                 }
@@ -644,10 +631,7 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
                     {
                         "test_case_name": (
                             obj['visible_result'].test_case.name),
-                        "urls": {
-                            "self": _get_ag_test_result_url(
-                                obj['visible_result'])
-                        }
+                        "url": _get_ag_test_result_url(obj['visible_result'])
                     }
                 ]
             }
@@ -694,10 +678,7 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
                     {
                         "test_case_name": (
                             obj['visible_result'].test_case.name),
-                        "urls": {
-                            "self": _get_ag_test_result_url(
-                                obj['visible_result'])
-                        }
+                        "url": _get_ag_test_result_url(obj['visible_result'])
                     }
                 ]
             }
@@ -741,10 +722,7 @@ class ListAutograderTestCaseResultsTestCase(_SharedSetUp, TemporaryFilesystemTes
                     {
                         "test_case_name": (
                             obj['visible_result'].test_case.name),
-                        "urls": {
-                            "self": _get_ag_test_result_url(
-                                obj['visible_result'])
-                        }
+                        "url": _get_ag_test_result_url(obj['visible_result'])
                     }
                 ]
             }
@@ -906,10 +884,7 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                         "points_awarded": self.points_for_suite,
                         "points_possible": self.points_for_suite,
 
-                        "urls": {
-                            "self": _get_suite_result_url(
-                                obj['visible_result'])
-                        }
+                        "url": _get_suite_result_url(obj['visible_result'])
                     }
                 ]
             }
@@ -930,10 +905,7 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                         "test_suite_name": (
                             obj['visible_result'].test_suite.name),
 
-                        "urls": {
-                            "self": _get_suite_result_url(
-                                obj['visible_result'])
-                        }
+                        "url": _get_suite_result_url(obj['visible_result'])
                     }
                 ]
             }
@@ -961,10 +933,7 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                             "points_awarded": self.points_for_suite,
                             "points_possible": self.points_for_suite,
 
-                            "urls": {
-                                "self": _get_suite_result_url(
-                                    obj['visible_result'])
-                            }
+                            "url": _get_suite_result_url(obj['visible_result'])
                         }
                     ]
                 }
@@ -987,9 +956,7 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                         "points_awarded": self.points_for_suite,
                         "points_possible": self.points_for_suite,
 
-                        "urls": {
-                            "self": _get_suite_result_url(res)
-                        }
+                        "url": _get_suite_result_url(res)
                     }
                     for res in sorted(
                         obj['suite_results'], key=lambda r: r.test_suite.name)
@@ -1023,10 +990,7 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                                 obj['hidden_result'].test_suite.name),
                             "points_awarded": self.points_for_suite,
                             "points_possible": self.points_for_suite,
-                            "urls": {
-                                "self": _get_suite_result_url(
-                                    obj['hidden_result'])
-                            }
+                            "url": _get_suite_result_url(obj['hidden_result'])
                         }
                     ]
                 }
@@ -1068,10 +1032,7 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                     {
                         "test_suite_name": (
                             obj['visible_result'].test_suite.name),
-                        "urls": {
-                            "self": _get_suite_result_url(
-                                obj['visible_result'])
-                        }
+                        "url":  _get_suite_result_url(obj['visible_result'])
                     }
                 ]
             }
@@ -1118,10 +1079,7 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                     {
                         "test_suite_name": (
                             obj['visible_result'].test_suite.name),
-                        "urls": {
-                            "self": _get_suite_result_url(
-                                obj['visible_result'])
-                        }
+                        "url": _get_suite_result_url(obj['visible_result'])
                     }
                 ]
             }
@@ -1165,10 +1123,7 @@ class ListStudentTestSuiteResultsTestCase(_SharedSetUp, TemporaryFilesystemTestC
                     {
                         "test_suite_name": (
                             obj['visible_result'].test_suite.name),
-                        "urls": {
-                            "self": _get_suite_result_url(
-                                obj['visible_result'])
-                        }
+                        "url": _get_suite_result_url(obj['visible_result'])
                     }
                 ]
             }

@@ -117,9 +117,7 @@ class ListAutograderTestCaseResultsEndpoint(EndpointBase):
         for result in queryset:
             data = {
                 "test_case_name": result.test_case.name,
-                "urls": {
-                    "self": url_shortcuts.ag_test_result_url(result)
-                }
+                "url": url_shortcuts.ag_test_result_url(result)
             }
             data.update(result.total_points_as_dict(max_feedback=is_staff))
             response['autograder_test_case_results'].append(data)
@@ -168,9 +166,7 @@ class ListStudentTestSuiteResultsEndpoint(EndpointBase):
         for result in queryset:
             data = {
                 "test_suite_name": result.test_suite.name,
-                "urls": {
-                    "self": url_shortcuts.suite_result_url(result)
-                }
+                "url": url_shortcuts.suite_result_url(result)
             }
             data.update(result.total_points_as_dict(max_feedback=is_staff))
             response['student_test_suite_results'].append(data)
