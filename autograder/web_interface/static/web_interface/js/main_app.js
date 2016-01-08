@@ -9,8 +9,6 @@ function load_view()
     var view_name = current_path.split('/')[1];
     var resource_url = current_path.substring(view_name.length + 1);
 
-    // $.views.helpers({generate_guid: guid});
-
     // HACK
     $.get('/user/').done(function(user_json) {
         g_username = user_json.username;
@@ -37,10 +35,15 @@ function load_view()
     {
         loaded = load_edit_project_view(resource_url);
     }
-    // else if (view_name === 'submission')
-    // {
-    //     loaded = load_submission_view(resource_url);
-    // }
+    else if (view_name === 'ag-test')
+    {
+        console.log('yeah!');
+        loaded = load_edit_ag_test_view(resource_url);
+    }
+    else if (view_name === 'submission')
+    {
+        loaded = load_submission_view(resource_url);
+    }
     else
     {
         history.replaceState(null, '', '/');

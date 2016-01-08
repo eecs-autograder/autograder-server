@@ -1,39 +1,74 @@
 <div id='submission'>
-<!--     <h3>Submitted at: {{to_local_date:timestamp}}</h3>
- -->
-    <h4>Status: {{> status}}</h4>
-    {{if invalid_reason_or_error !== undefined}}
-        {{if status === 'invalid'}}
+    <h3>Submitted at: {{to_local_date:submission.timestamp}}</h3>
+
+    <h4>Status: {{> submission.status}}</h4>
+    {{if submission.invalid_reason_or_error !== undefined}}
+        {{if submission.status === 'invalid'}}
         <div>Reason(s): </div>
         <ul>
-            {{for invalid_reason_or_error.submitted_files}}
+            {{for submission.invalid_reason_or_error.submitted_files}}
             <li>{{>}}</li>
             {{/for}}
         </ul>
-        {{else status === 'error'}}
+        {{else submission.status === 'error'}}
         <div>Please contact your administrator</div>
         {{/if}}
     {{/if}}
 
     <div>Files submitted: </div>
     <ul>
-    {{for submitted_files}}
-        <li><a href="{{: file_url}}" target='_blank'>{{>filename}}</a></li>
+    {{for submitted_files.submitted_files}}
+        <li><a href="{{:url}}" target='_blank'>{{>filename}}</a></li>
     {{/for}}
     </ul>
 
-    {{if discarded_files.length}}
+    {{if submission.discarded_files.length}}
     <div>The following files were discarded due to being unnecessary: </div>
     <ul>
-    {{for discarded_files}}
+    {{for submission.discarded_files}}
         <li><i>{{>}}</i></li>
     {{/for}}
     </ul>
     {{/if}}
-{{!--
     <div>Results: </div>
+    {{* total_points_awarded = 0; total_points_possible = 0;}}
+    <div class='panel-group' id='test-result-list'>
+        <div class='panel panel-default'>
+        {{for test_results.autograder_test_case_results}}
+            <div class='panel-heading'>
+                <h4 class='panel-title'>
+                    <a data-toggle='collapse' class='collapsible-link' 
+                       href="#test-result-{{:test_case_name}}">{{>test_case_name}}</a>
+                    {{if points_awarded !== undefined}}
+                        ({{:points_awarded}}/{{:points_possible}})
+                        {{* total_points_awarded += data.points_awarded; total_points_possible += data.points_possible}}
+                    {{/if}}
+                </h4>
+            </div>
+            <div id='test-result-{{:test_case_name}}' 
+                 class='panel-collapse collapse test-result-collapse'>
+                <a href="{{:url}}" style='display:none'></a>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-sm-3"></div>
+                        <div class='col-sm-6'>
+                            <div class="progress" >
+                                <div class="progress-bar progress-bar-striped active" role="progressbar"
+                                     aria-valuenow="1" aria-valuemin="0" aria-valuemax="1" style="width:100%">
+                                    Loading...
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-3"></div>
+                    </div>
+                </div>
+            </div>        
+        {{/for}}
+        </div>
+    </div>
+    <div><b>Total score: {{*: total_points_awarded}}/{{*: total_points_possible}}</b></div>
     <ul>
-        {{for meta.suite_results}}
+       {{!-- {{for meta.suite_results}}
         <li>
             <h4>READ THIS SECTION</h4>
             <h5>Student test suite: {{> test_suite_name}}</h5>
@@ -63,82 +98,11 @@
                 <br>
             {{/for}}
         </li>
-        {{/for}}
-        {{for meta.results}}
+        {{/for}} 
+        {{for test_results}}
         <li>
-            <h5>{{> test_name}}</h5>
-            {{if compilation_succeeded !== undefined}}
-                <div>
-                    Compilation: {{if compilation_succeeded}}SUCCESS{{else}}FAILURE{{/if}}
-                </div>
-            {{/if}}
-            {{if compilation_stdout !== undefined}}
-                Compilation standard output: <pre>{{> compilation_stdout}}</pre>
-            {{/if}}
-            {{if compilation_stderr !== undefined}}
-                Compilation error output:  <pre>{{> compilation_stderr}}</pre>
-            {{/if}}
-
-            {{if timed_out}}
-                <div>Your program exceeded the time limit and was terminated</div>
-            {{else}}
-                {{if return_code_correct !== undefined}}
-                    <div>
-                        Return code: {{if return_code_correct}}CORRECT{{else}}INCORRECT{{/if}}
-                    </div>
-                {{/if}}
-
-                {{if output_correct !== undefined}}
-                    <div>
-                        Output: {{if output_correct}}CORRECT{{else}}INCORRECT{{/if}}
-                    </div>
-                {{/if}}
-                {{if stdout_diff !== undefined}}
-                    <div>
-                        Standard output diff:
-                        <div style='overflow: scroll'>
-                            {{format_diff:stdout_diff}}
-                        </div>
-                    </div>
-                {{/if}}
-                {{if stderr_diff !== undefined}}
-                    <div>
-                        Standard error diff:
-                        <div style='overflow: scroll'>
-                            {{format_diff:stderr_diff}}
-                        </div>
-                    </div>
-                {{/if}}
-
-                {{if valgrind_errors_present !== undefined}}
-                    <div>Valgrind: {{if valgrind_errors_present}}ERRORS{{else}}CLEAN{{/if}}</div>
-                {{/if}}
-                {{if valgrind_output !== undefined}}
-                    Valgrind output: <pre>{{>valgrind_output}}</pre>
-                {{/if}}
-
-                {{if total_points_awarded !== undefined}}
-                    <div>Score for {{>test_name}}:</div>
-                    <ul>
-                    {{if compilation_points_awarded !== undefined}}
-                        <li>Compilation points: {{> compilation_points_awarded}}/{{>compilation_points_possible}}</li>
-                    {{/if}}
-                    {{if return_code_points_awarded !== undefined}}
-                        <li>Return code points: {{> return_code_points_awarded}}/{{>return_code_points_possible}}</li>
-                    {{/if}}
-                    {{if output_points_awarded !== undefined}}
-                        <li>Output points: {{> output_points_awarded}}/{{>output_points_possible}}</li>
-                    {{/if}}
-                    {{if valgrind_points_awarded !== undefined}}
-                        <li>Valgrind points: {{> valgrind_points_awarded}}/{{>valgrind_points_possible}}</li>
-                    {{/if}}
-                        <li>Total: {{> total_points_awarded}}/{{> total_points_possible}}</li>
-                    </ul>
-                {{/if}}
-            {{/if}}
         </li>
         {{/for}}
     </ul>
-    <div><b>Total score: {{> meta.total_points_awarded}}/{{> meta.total_points_possible}}</b></div>
---}}
+     --}}
 </div>

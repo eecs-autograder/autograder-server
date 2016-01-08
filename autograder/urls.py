@@ -31,7 +31,7 @@ urlpatterns = [
     url(r'^login/$', views.LoginView.as_view(), name='login'),
     url(r'^callback/$', views.LoginView.as_view(), name='callback'),
     url(r'^', include('autograder.rest_api.urls')),
-    url(r'^$|^semester/.*|^project/.*|^edit-project/.*',
+    url(r'^$|^semester/.*|^project/.*|^edit-project/.*|^submission/.*|^ag-test/.*',
         login_required(views.MainAppPage.as_view()), name='main-app-page'),
     # url(r'^$', RedirectView.as_view(url='/app/'))
 ]

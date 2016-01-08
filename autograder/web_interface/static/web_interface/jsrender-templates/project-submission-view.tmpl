@@ -68,17 +68,25 @@
         <br>
     </div>
 </div>
-{{!-- {{if project.meta.permissions.is_staff}}
+{{if project.permissions.is_staff}}
 <span id='view-student-submissions'>
     <h3>Student Submissions</h3>
-    <span id='student-submission-view'>Student email: <input id='requested-email' type='text'> <button id='load-student-submissions-button' type='button'>Search</button></span>
+    <span id='student-submission-view'>Student email: <input id='requested-email' type='text'> 
+    <button id='load-student-submissions-button' type='button'>Search</button></span>
     <div id='student-submissions'></div>
 </span>
-{{/if}} --}}
+{{/if}}
+{{* idd = guid()}}
 <span id='view-submissions'>
     <h3>Your Submissions</h3>
     <div id='own-submissions'>
-        {{include tmpl=~submission_panel_list /}}
+    {{for  submissions.submissions}}
+        <div><a href="/submission{{:url}}" data-role='ajax'>
+            {{to_local_date:timestamp}}
+        </a></div>
+    {{/for}}
+
+        {{!--{{include tmpl=~submission_panel_list /}}--}}
     </div>
 </span>
 

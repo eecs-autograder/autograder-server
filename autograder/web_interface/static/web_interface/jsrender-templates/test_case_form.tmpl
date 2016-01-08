@@ -1,14 +1,14 @@
-<form role='form' class='test_case_form' {{if ~populate_fields}}patch_url="{{:links.self}}"{{/if}}>
-    {{if ~populate_fields}}<input type='hidden' name='test_type' value='{{:type}}'>{{/if}}
+<form role='form' class='test_case_form' {{if populate_fields}}patch_url="{{:project.urls.self}}"{{/if}}>
+    {{!--{{if populate_fields}}<input type='hidden' name='test_type' value='{{:ag_test.type}}'>{{/if}}--}}
     <div class='form-group'>
         <label for="name">Name: </label>
-        <input name='name' type="text" class="form-control" value='{{if ~populate_fields}}{{: attributes.name}}{{/if}}'>
+        <input name='name' type="text" class="form-control" value='{{if populate_fields}}{{: ag_test.name}}{{/if}}'>
     </div>
 
     <div class='checkbox'>
         <label>
             <input type='checkbox' name='hide_from_students'
-                   {{if ~populate_fields && attributes.hide_from_students || !~populate_fields}}
+                   {{if populate_fields && ag_test.hide_from_students || !populate_fields}}
                     checked{{/if}}>
             <b>Hide this test from students</b>
         </label>
@@ -17,21 +17,21 @@
     <div class='form-group'>
         <label for='command_line_arguments'>Command line arguments to be passed to the program:</label>
         <input type='text' name='command_line_arguments' class="form-control"
-               value='{{if ~populate_fields}}{{for attributes.command_line_arguments}}{{:}} {{/for}}{{/if}}'>
+               value='{{if populate_fields}}{{for ag_test.command_line_arguments}}{{:}} {{/for}}{{/if}}'>
     </div>
 
     <div class='form-group'>
         <label for='standard_input'>Standard input to be sent to the program (whitespace is preserved):</label>
-        <textarea name='standard_input' class='form-control'>{{if ~populate_fields}}{{:attributes.standard_input}}{{/if}}</textarea>
+        <textarea name='standard_input' class='form-control'>{{if populate_fields}}{{:ag_test.standard_input}}{{/if}}</textarea>
     </div>
 
     <label>Project files needed for this test:</label>
-        {{for ~root.project.data.attributes.project_files ~test_data=#data}}
+        {{for ~root.project_files ~test_data=#data.ag_test}}
         <div class='checkbox'>
             <label>
                 <input type='checkbox' value='{{: filename}}' name='test_resource_files'
-                        {{if ~populate_fields}}
-                            {{if ~in_array(filename, ~test_data.attributes.test_resource_files) }}checked{{/if}}
+                        {{if populate_fields}}
+                            {{if ~in_array(filename, ~test_data.test_resource_files) }}checked{{/if}}
                         {{/if}}>
                 {{> filename}}
             </label>
@@ -42,23 +42,23 @@
 
     <div class='form-group'>
         <label>Student files needed for this test:</label>
-        {{for ~root.project.data.attributes.required_student_files ~test_data=#data}}
+        {{for ~root.project.required_student_files ~test_data=#data.ag_test}}
         <div class='checkbox'>
             <label>
                 <input type='checkbox' value='{{:}}' name='student_resource_files'
-                        {{if ~populate_fields}}
-                            {{if ~in_array(#data, ~test_data.attributes.student_resource_files) }}checked{{/if}}
+                        {{if populate_fields}}
+                            {{if ~in_array(#data, ~test_data.student_resource_files) }}checked{{/if}}
                         {{/if}}>
                 {{>}}
             </label>
         </div>
         {{/for}}
-        {{for ~root.project.data.attributes.expected_student_file_patterns ~test_data=#data}}
+        {{for ~root.project.expected_student_file_patterns ~test_data=#data.ag_test}}
         <div class='checkbox'>
             <label>
                 <input type='checkbox' value='{{:#data[0]}}' name='student_resource_files'
-                    {{if ~populate_fields}}
-                            {{if ~in_array(#data[0], ~test_data.attributes.student_resource_files) }}checked{{/if}}
+                    {{if populate_fields}}
+                            {{if ~in_array(#data[0], ~test_data.student_resource_files) }}checked{{/if}}
                     {{/if}}>
                 {{> #data[0]}}
             </label>
@@ -70,47 +70,50 @@
         <label for='compiler'>Compiler:</label>
         <select id='compiler' class='form-control' name='compiler'>
             <option value='g++'>g++</option>
+            <option value='clang++'>clang++</option>
+            <option value='gcc'>gcc</option>
+            <option value='clang'>clang</option>
         </select>
     </div>
     <div class='form-group'>
         <label for='compiler_flags'>Compiler flags: </label>
         <input type='text' name='compiler_flags' class='form-control'
-               value='{{if ~populate_fields}}{{for attributes.compiler_flags}}{{:}} {{/for}}{{/if}}'>
+               value='{{if populate_fields}}{{for ag_test.compiler_flags}}{{:}} {{/for}}{{/if}}'>
     </div>
     <div class='form-group'>
         <label>Files to compile together (files checked here must also be checked for Project files or Student files above): </label>
         <div><i>Project files: </i></div>
-        {{for ~root.project.data.attributes.project_files ~test_data=#data}}
+        {{for ~root.project_files ~test_data=#data}}
         <div class='checkbox'>
             <label>
-                <input type='checkbox' value='{{:filename}}' name='files_to_compile_together'
-                    {{if ~populate_fields}}
-                            {{if ~in_array(filename, ~test_data.attributes.files_to_compile_together) &&
-                                 ~in_array(filename, ~test_data.attributes.test_resource_files) }}checked{{/if}}
+                <input type='checkbox' value='{{:filename}}' name='project_files_to_compile_together'
+                    {{if populate_fields}}
+                            {{if ~in_array(filename, ~test_data.project_files_to_compile_together) &&
+                                 ~in_array(filename, ~test_data.test_resource_files) }}checked{{/if}}
                     {{/if}}>
                 {{> #data.filename}}
             </label>
         </div>
         {{/for}}
         <div><i>Student files: </i></div>
-        {{for ~root.project.data.attributes.required_student_files ~test_data=#data}}
+        {{for ~root.project.required_student_files ~test_data=#data.ag_test}}
         <div class='checkbox'>
             <label>
-                <input type='checkbox' value='{{:#data}}' name='files_to_compile_together'
-                    {{if ~populate_fields}}
-                            {{if ~in_array(#data, ~test_data.attributes.files_to_compile_together) &&
-                                 ~in_array(#data, ~test_data.attributes.student_resource_files) }}checked{{/if}}
+                <input type='checkbox' value='{{:#data}}' name='student_files_to_compile_together'
+                    {{if populate_fields}}
+                            {{if ~in_array(#data, ~test_data.student_files_to_compile_together) &&
+                                 ~in_array(#data, ~test_data.student_resource_files) }}checked{{/if}}
                     {{/if}}>
                 {{> #data}}
             </label>
         </div>
         {{/for}}
-        {{for ~root.project.data.attributes.expected_student_file_patterns ~test_data=#data}}
+        {{for ~root.project.expected_student_file_patterns ~test_data=#data}}
         <div class='checkbox'>
             <label>
                 <input type='checkbox' value='{{:#data[0]}}' name='files_to_compile_together'
-                    {{if ~populate_fields}}
-                            {{if ~in_array(#data[0], ~test_data.attributes.files_to_compile_together) }}checked{{/if}}
+                    {{if populate_fields}}
+                            {{if ~in_array(#data[0], ~test_data.files_to_compile_together) }}checked{{/if}}
                     {{/if}}>
                 {{> #data[0]}}
             </label>
@@ -119,17 +122,17 @@
     </div>
     <div class='form-group'>
         <label for="executable_name">Executable program name: </label>
-        <input name='executable_name' type="text" class="form-control" value='{{if ~populate_fields}}{{: attributes.executable_name}}{{/if}}'>
+        <input name='executable_name' type="text" class="form-control" value='{{if populate_fields}}{{: executable_name}}{{/if}}'>
     </div>
 
     <div class='form-group'>
         <label for='time_limit'>Time limit (seconds): </label>
         <input type='text' name='time_limit'
-               value="{{if ~populate_fields}}{{:attributes.time_limit}}{{else}}5{{/if}}" class='form-control'>
+               value="{{if populate_fields}}{{:time_limit}}{{else}}5{{/if}}" class='form-control'>
     </div>
     <div class='form-group'>
         <label for='expected_return_code'>Expected program return code: </label>
-        <input type='text' name='expected_return_code' value='{{if ~populate_fields}}{{: attributes.expected_return_code}}{{/if}}' class='form-control'>
+        <input type='text' name='expected_return_code' value='{{if populate_fields}}{{: expected_return_code}}{{/if}}' class='form-control'>
     </div>
     <div class='checkbox'>
         <label>
@@ -139,42 +142,42 @@
     </div>
     <div class='form-group'>
         <label for='expected_standard_output'>Expected program standard output (whitespace is preserved): </label>
-        <textarea name='expected_standard_output' class='form-control'>{{if ~populate_fields}}{{: attributes.expected_standard_output}}{{/if}}</textarea>
+        <textarea name='expected_standard_output' class='form-control'>{{if populate_fields}}{{: expected_standard_output}}{{/if}}</textarea>
     </div>
     <div class='form-group'>
         <label for='expected_standard_error_output'>Expected program standard error output (whitespace is preserved): </label>
-        <textarea name='expected_standard_error_output' class='form-control'>{{if ~populate_fields}}{{: attributes.expected_standard_error_output}}{{/if}}</textarea>
+        <textarea name='expected_standard_error_output' class='form-control'>{{if populate_fields}}{{: expected_standard_error_output}}{{/if}}</textarea>
     </div>
     <div class='checkbox'>
         <label>
-            <input type='checkbox' name='use_valgrind' {{if ~populate_fields && attributes.use_valgrind}}checked{{/if}}>
+            <input type='checkbox' name='use_valgrind' {{if populate_fields && use_valgrind}}checked{{/if}}>
             <b>Use Valgrind</b>
         </label>
     </div>
     <div class='form-group'>
         <label for='valgrind_flags'>Valgrind flags: </label>
         <input type='text' name='valgrind_flags' class='form-control'
-               value='{{if ~populate_fields}}{{for attributes.valgrind_flags}}{{:}} {{/for}}{{else}}--leak-check=full --error-exitcode=1{{/if}}'>
+               value='{{if populate_fields}}{{for valgrind_flags}}{{:}} {{/for}}{{else}}--leak-check=full --error-exitcode=1{{/if}}'>
     </div>
     <div class='form-group'>
         <label for='points_for_correct_return_code'>Points for correct return code: </label>
         <input type='text' name='points_for_correct_return_code'
-                value='{{if ~populate_fields}}{{: attributes.points_for_correct_return_code}}{{else}}0{{/if}}' class='form-control'>
+                value='{{if populate_fields}}{{: points_for_correct_return_code}}{{else}}0{{/if}}' class='form-control'>
     </div>
     <div class='form-group'>
         <label for='points_for_correct_output'>Points for correct output: </label>
         <input type='text' name='points_for_correct_output'
-                value='{{if ~populate_fields}}{{: attributes.points_for_correct_output}}{{else}}0{{/if}}' class='form-control'>
+                value='{{if populate_fields}}{{: points_for_correct_output}}{{else}}0{{/if}}' class='form-control'>
     </div>
     <div class='form-group'>
         <label for='deduction_for_valgrind_errors'>Deduction for Valgrind errors: </label>
         <input type='text' name='deduction_for_valgrind_errors'
-                value='{{if ~populate_fields}}{{: attributes.deduction_for_valgrind_errors}}{{else}}0{{/if}}' class='form-control'>
+                value='{{if populate_fields}}{{: deduction_for_valgrind_errors}}{{else}}0{{/if}}' class='form-control'>
     </div>
     <div class='form-group'>
         <label for='points_for_compilation_success'>Points for compilation success: </label>
         <input type='text' name='points_for_compilation_success'
-                value='{{if ~populate_fields}}{{: attributes.points_for_compilation_success}}{{else}}0{{/if}}' class='form-control'>
+                value='{{if populate_fields}}{{: points_for_compilation_success}}{{else}}0{{/if}}' class='form-control'>
     </div>
-    {{if ~populate_fields}}<button type="submit" data-loading-text='Saving...' autocomplete='off' class="btn btn-default btn-success">Save Test</button>{{/if}}
+    {{if populate_fields}}<button type="submit" data-loading-text='Saving...' autocomplete='off' class="btn btn-default btn-success">Save Test</button>{{/if}}
 </form>

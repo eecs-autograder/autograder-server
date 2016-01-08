@@ -11,11 +11,21 @@ SANDBOX_WORKING_DIR_NAME = os.path.join(SANDBOX_HOME_DIR_NAME, 'working_dir')
 
 
 class AutograderSandbox(object):
-    def __init__(self, name):  # , linux_user_id):
+    def __init__(self, name, enable_networking=False):  # , linux_user_id):
         self.name = name
         # self._linux_user_id = linux_user_id
         # self._linux_username = 'worker{}'.format(self._linux_user_id)
         self._linux_username = 'autograder'
+
+        self.create_args = [
+            'docker', 'create', '--name=' + self.name,
+            '-a', 'STDOUT', '-a', 'STDERR', '-a', 'STDIN',  # Attach streams
+            '-i',  # Run in interactive mode (needed for input redirection)
+            '-t',  # Allocate psuedo tty
+            # Allow or disallow networking
+            '--net', ('default' if enable_networking else 'none'),
+            self._linux_username, 'bash'
+        ]
 
     def __enter__(self):
         self.start()
@@ -27,11 +37,7 @@ class AutograderSandbox(object):
     def start(self):
         print('starting container: ' + self.name)
         subprocess.check_call(
-            ['docker', 'create', '--name=' + self.name,
-             '-a', 'STDOUT', '-a', 'STDERR', '-a', 'STDIN',  # Attach streams
-             '-i',  # Run in interactive mode (needed for input redirection)
-             '-t',  # Allocate psuedo tty
-             'autograder', 'bash'],
+            self.create_args,
             timeout=10
         )
         try:

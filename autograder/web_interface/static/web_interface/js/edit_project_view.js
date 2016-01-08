@@ -3,16 +3,23 @@ function load_edit_project_view(project_url)
     console.log('load_edit_project_view');
 
     var loaded = $.Deferred();
-
+    var project = null;
     $.when(
-        $.get(project_url),
-        lazy_get_template('edit_project_view'),
-        lazy_get_template('test_case_panel'),
-        lazy_get_template('test_case_form')
-    ).done(function(project_ajax, project_tmpl,
+        $.get(project_url)
+    ).then(function(project_json) {
+        project = project_json;
+        return $.when(
+            $.get(project.urls.autograder_test_cases),
+            $.get(project.urls.uploaded_files),
+            lazy_get_template('edit_project_view'),
+            lazy_get_template('test_case_panel'),
+            lazy_get_template('test_case_form')
+        )
+    }).done(function(ag_tests_ajax, project_files_ajax, project_tmpl,
                     test_panel_tmpl, test_form_tmpl) {
-        var widget = _render_edit_project_view(
-            project_ajax[0], project_tmpl, test_panel_tmpl, test_form_tmpl);
+        _render_edit_project_view(
+            project, ag_tests_ajax[0], project_files_ajax[0],
+            project_tmpl, test_panel_tmpl, test_form_tmpl);
         loaded.resolve();
     });
 
@@ -20,11 +27,13 @@ function load_edit_project_view(project_url)
 }
 
 function _render_edit_project_view(
-    project, project_tmpl, test_panel_tmpl, test_form_tmpl)
+    project, ag_tests, project_files, project_tmpl, test_panel_tmpl, test_form_tmpl)
 {
     console.log(project);
     var tmpl_context = {
-        project: project
+        project: project,
+        ag_tests: ag_tests,
+        project_files: project_files,
     };
     var tmpl_helpers = {
         test_case_panel: test_panel_tmpl,
@@ -40,7 +49,7 @@ function _render_edit_project_view(
         lazy_get_template('download-ready-project-file')
     ).done(function(upload_tmpl, download_tmpl) {
         $('#project_file_upload').fileupload({
-            url: project.data.links.self + 'add-file/',
+            url: project.urls.uploaded_files,
             uploadTemplateId: null,
             downloadTemplateId: null,
             uploadTemplate: function(data) {
@@ -69,7 +78,7 @@ function _render_edit_project_view(
         });
 
         $('#file_list .files').append(download_tmpl.render({
-            files: project.data.attributes.project_files
+            files: project_files
         }));
 
         // $.each(project.data.attributes.project_files, function(index, value) {
@@ -79,7 +88,7 @@ function _render_edit_project_view(
 
     // settings set-up
     $('#datetimepicker').datetimepicker({
-        defaultDate: project.data.attributes.closing_time
+        defaultDate: project.closing_time
     });
 
     $('#add_required_file_slot_button').click(function() {
@@ -108,6 +117,7 @@ function _render_edit_project_view(
         populate_fields: false
     };
 
+    console.log(tmpl_context);
     var add_test_fields = $(
         test_form_tmpl.render(tmpl_context, add_test_fields_tmpl_helpers));
     $('#add_test_fields').append(add_test_fields.html());
@@ -115,9 +125,11 @@ function _render_edit_project_view(
     $('#add_test_form').submit(function(e) {
         e.preventDefault();
         var new_test = _extract_test_case_form_fields($(this));
-        new_test.data.relationships = {
-            'project': project
-        };
+        new_test['type'] = _extract_single_text_field($(this), 'test_type'),
+
+        // new_test.data.relationships = {
+        //     'project': project
+        // };
         _add_test_case_button_handler(
             project, new_test, test_panel_tmpl, test_form_tmpl);
     });
@@ -149,7 +161,7 @@ function _add_test_case_button_handler(
     };
 
     $.postJSON(
-        '/ag-test-cases/ag-test-case/', new_test
+        project.urls.autograder_test_cases, new_test
     ).done(function(test_response) {
         var tmpl_context = test_response.data;
         tmpl_context.project = project;
@@ -181,34 +193,38 @@ function _delete_test_button_handler()
 function _extract_test_case_form_fields(form)
 {
     var test_case = {
-        'data': {
-            'type': _extract_single_text_field(form, 'test_type'),
-            'attributes': {
-                'name': _extract_single_text_field(form, 'name', true),
-                'hide_from_students': _extract_checkbox_bool(form, 'hide_from_students'),
-                'command_line_arguments': _extract_delimited_text_field(form, 'command_line_arguments'),
-                'standard_input': _extract_single_text_field(form, 'standard_input'),
-                'test_resource_files': _extract_checkbox_group_vals(form, 'test_resource_files'),
-                'student_resource_files': _extract_checkbox_group_vals(form, 'student_resource_files'),
-                'time_limit': _extract_single_text_field(form, 'time_limit', true, null),
-                'expected_return_code': _extract_single_text_field(form, 'expected_return_code', true, null),
-                'expect_any_nonzero_return_code': _extract_checkbox_bool(form, 'expect_any_nonzero_return_code'),
-                'expected_standard_output': _extract_single_text_field(form, 'expected_standard_output'),
-                'expected_standard_error_output': _extract_single_text_field(form, 'expected_standard_error_output'),
-                'use_valgrind': _extract_checkbox_bool(form, 'use_valgrind'),
-                'valgrind_flags': _extract_delimited_text_field(form, 'valgrind_flags'),
-                'compiler': _extract_single_text_field(form, 'compiler'),
-                'compiler_flags': _extract_delimited_text_field(form, 'compiler_flags'),
-                'files_to_compile_together': _extract_checkbox_group_vals(form, 'files_to_compile_together'),
-                'executable_name': _extract_single_text_field(form, 'executable_name'),
+        'name': _extract_single_text_field(form, 'name', true),
+        'hide_from_students': _extract_checkbox_bool(form, 'hide_from_students'),
+        'command_line_arguments': _extract_delimited_text_field(form, 'command_line_arguments'),
+        'standard_input': _extract_single_text_field(form, 'standard_input'),
+        'test_resource_files': _extract_checkbox_group_vals(form, 'test_resource_files'),
+        'student_resource_files': _extract_checkbox_group_vals(form, 'student_resource_files'),
+        'time_limit': _extract_single_text_field(form, 'time_limit', true, null),
+        'expected_return_code': _extract_single_text_field(form, 'expected_return_code', true, null),
+        'expect_any_nonzero_return_code': _extract_checkbox_bool(form, 'expect_any_nonzero_return_code'),
+        'expected_standard_output': _extract_single_text_field(form, 'expected_standard_output'),
+        'expected_standard_error_output': _extract_single_text_field(form, 'expected_standard_error_output'),
+        'use_valgrind': _extract_checkbox_bool(form, 'use_valgrind'),
+        'valgrind_flags': _extract_delimited_text_field(form, 'valgrind_flags'),
 
-                'points_for_correct_return_code': _extract_single_text_field(form, 'points_for_correct_return_code', true, 0),
-                'points_for_correct_output': _extract_single_text_field(form, 'points_for_correct_output', true, 0),
-                'deduction_for_valgrind_errors': _extract_single_text_field(form, 'deduction_for_valgrind_errors', true, 0),
-                'points_for_compilation_success': _extract_single_text_field(form, 'points_for_compilation_success', true, 0)
-            }
-        }
+        'points_for_correct_return_code': _extract_single_text_field(form, 'points_for_correct_return_code', true, 0),
+        'points_for_correct_output': _extract_single_text_field(form, 'points_for_correct_output', true, 0),
+        'deduction_for_valgrind_errors': _extract_single_text_field(form, 'deduction_for_valgrind_errors', true, 0),
+        'points_for_compilation_success': _extract_single_text_field(form, 'points_for_compilation_success', true, 0)
     };
+    if (test_case.type === 'interpreted_test_case')
+    {
+        test_case.interpreter = _extract_single_text_field(form, 'interpreter')
+        test_case.interpreter_flags = _extract_delimited_text_field(form, 'interpreter_flags')
+        test_case.entry_point_filename = _extract_single_text_field(form, 'entry_point_filename')
+    }
+    else
+    {
+        test_case.compiler = _extract_single_text_field(form, 'compiler')
+        test_case.compiler_flags = _extract_delimited_text_field(form, 'compiler_flags')
+        test_case.files_to_compile_together = _extract_checkbox_group_vals(form, 'files_to_compile_together')
+        test_case.executable_name = _extract_single_text_field(form, 'executable_name')
+    }
     console.log(test_case);
     return test_case;
 }
@@ -269,20 +285,19 @@ function _save_project_settings(e, project)
 {
     console.log(project);
     e.preventDefault();
-    var new_feedback_config = {
-        return_code_feedback_level: $('#return_code_feedback_level').val(),
-        output_feedback_level: $('#output_feedback_level').val(),
-        compilation_feedback_level: $('#compilation_feedback_level').val(),
-        valgrind_feedback_level: $('#valgrind_feedback_level').val(),
-        points_feedback_level: $('#points_feedback_level').val()
-    };
-    project.data.attributes.test_case_feedback_configuration = new_feedback_config;
+    // var new_feedback_config = {
+    //     return_code_feedback_level: $('#return_code_feedback_level').val(),
+    //     output_feedback_level: $('#output_feedback_level').val(),
+    //     compilation_feedback_level: $('#compilation_feedback_level').val(),
+    //     valgrind_feedback_level: $('#valgrind_feedback_level').val(),
+    //     points_feedback_level: $('#points_feedback_level').val()
+    // };
+    // project.data.attributes.test_case_feedback_configuration = new_feedback_config;
 
-    project.data.attributes.visible_to_students = (
-        $('#visible_to_students').is(':checked'));
-    project.data.attributes.disallow_student_submissions = (
+    project.visible_to_students = ($('#visible_to_students').is(':checked'));
+    project.disallow_student_submissions = (
         $('#disallow_student_submissions').is(':checked'));
-    project.data.attributes.allow_submissions_from_non_enrolled_students = (
+    project.allow_submissions_from_non_enrolled_students = (
         $('#allow_submissions_from_non_enrolled_students').is(':checked'));
 
     var closing_time = $('#datetimepicker').data(
@@ -292,9 +307,9 @@ function _save_project_settings(e, project)
         closing_time = null;
     }
     console.log(closing_time);
-    project.data.attributes.closing_time = closing_time;
-    project.data.attributes.min_group_size = $('#min_group_size').val().trim();
-    project.data.attributes.max_group_size = $('#max_group_size').val().trim();
+    project.closing_time = closing_time;
+    project.min_group_size = $('#min_group_size').val().trim();
+    project.max_group_size = $('#max_group_size').val().trim();
 
     var required_files = [];
     $(':input[name="required_student_files"]').each(function() {
@@ -305,10 +320,10 @@ function _save_project_settings(e, project)
         }
     });
     console.log(required_files);
-    project.data.attributes.required_student_files = required_files;
+    project.required_student_files = required_files;
 
     $.patchJSON(
-        project.data.links.self, project
+        project.urls.self, project
     ).done(function() {
         console.log('save successful');
     });

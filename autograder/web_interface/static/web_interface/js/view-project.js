@@ -141,6 +141,7 @@ function _get_or_register_group(project)
 function _render_project_view(group, project, submissions, template, template_helpers)
 {
     console.log('_render_project_view');
+    console.log(submissions);
     var project_render_data = {
         'project': project,
         'group': group,
@@ -157,8 +158,8 @@ function _initialize_project_submission_view(group, project)
 {
     // console.log(group.included);
     _initialize_submit_widget(group, project);
-    $('.submission-collapse').on('show.bs.collapse', _load_submission);
-    // _initialize_view_student_submissions_widget(project);
+    // $('.submission-collapse').on('show.bs.collapse', _load_submission);
+    _initialize_view_student_submissions_widget(project);
 }
 
 function _initialize_submit_widget(group, project)
@@ -267,19 +268,37 @@ function _initialize_view_student_submissions_widget(project)
                 '<span class="error">Please enter a valid umich.edu email address</span>');
             return;
         }
-        $.when(
-            $.get(_get_submission_group_url(project.data.id, [email])),
-            lazy_get_template('submission-panel-list'),
-            lazy_get_template('submission-collapse-panel')
-        ).done(function(group_response, panel_list_tmpl, collapse_panel_tmpl) {
-            var template_context = {
-                submission_collapse_panel: collapse_panel_tmpl,
-                panel_id_suffix: 'student'
-            };
-            var rendered = panel_list_tmpl.render(
-                {group: group_response[0]}, template_context);
-            $('#student-submissions').html(rendered);
-            $('#student-submissions .collapse').on('show.bs.collapse', _load_submission);
+
+        $.get(
+            project.urls.submission_groups, {'group_contains': email}
+        ).then(function(group_query_json) {
+            console.log(group_query_json);
+            return $.get(group_query_json.submission_groups[0].url);
+        }).then(function(group_json) {
+            return $.get(group_json.urls.submissions);   
+        }).done(function(submissions_json) {
+            $.each(submissions_json.submissions, function(index, value) {
+                $('#student-submissions').append(
+                    $('<div><a href="/submission' + value.url + '" data-role="ajax">' +
+                      to_local_date(value.timestamp) + '</a></div>')
+                );
+            });
+        //     return $.when(
+
+
+        //         $.get(_get_submission_group_url(project.id, [email])),
+        //         lazy_get_template('submission-panel-list'),
+        //         lazy_get_template('submission-collapse-panel')
+        // }
+        // ).done(function(group_response, panel_list_tmpl, collapse_panel_tmpl) {
+        //     var template_context = {
+        //         submission_collapse_panel: collapse_panel_tmpl,
+        //         panel_id_suffix: 'student'
+        //     };
+        //     var rendered = panel_list_tmpl.render(
+        //         {group: group_response[0]}, template_context);
+        //     $('#student-submissions').html(rendered);
+        //     $('#student-submissions .collapse').on('show.bs.collapse', _load_submission);
         }).fail(function() {
             $('#requested-email').after(
                 '<span class="error">No submissions found for this student</span>');
@@ -300,65 +319,69 @@ function _on_submit_success(event, response, group_id)
     console.log('_on_submit_success');
     console.log(response);
     var submission = response.result;
+    console.log(submission);
     $('#upload-progress').empty();
     $('#fileupload .error').remove();
 
-    lazy_get_template('submission-collapse-panel').done(function(template) {
-        var rendered = $.parseHTML(template.render(submission));
-        $('#own-submissions #submission-list .panel').prepend(rendered);
+    var link = $('<div><a href=/submission' + submission.url + ' data-role="ajax">' + to_local_date(submission.timestamp) + '</a></div>')
+    $('#own-submissions').prepend(link);
 
-        var collapsible = $('#submission-' + String(submission.id));
-        collapsible.on('show.bs.collapse', _load_submission);
-        collapsible.collapse();
-    });
+    // lazy_get_template('submission-collapse-panel').done(function(template) {
+    //     var rendered = $.parseHTML(template.render(submission));
+    //     $('#own-submissions #submission-list .panel').prepend(rendered);
+
+    //     var collapsible = $('#submission-' + String(submission.id));
+    //     collapsible.on('show.bs.collapse', _load_submission);
+    //     collapsible.collapse();
+    // });
 }
 
-function _load_submission(event, url, render_location)
-{
-    console.log(url);
-    if (url === undefined)
-    {
-        url = $('a', this).attr('href');
-    }
-    if (render_location === undefined)
-    {
-        render_location = $('.panel-body', this);
-    }
+// function _load_submission(event, url, render_location)
+// {
+//     console.log(url);
+//     if (url === undefined)
+//     {
+//         url = $('a', this).attr('href');
+//     }
+//     if (render_location === undefined)
+//     {
+//         render_location = $('.panel-body', this);
+//     }
 
-    $.get(
-        url
-    ).then(function(submission) {
-        console.log(submission);
-        return _render_submission(submission, render_location)
-    }).then(function(submission) {
-        var status = submission.data.attributes.status;
-        if (status === 'being_graded' || status === 'received' ||
-            status === 'queued')
-        {
-            var old_url = window.location.pathname;
-            console.log('will try again a few seconds');
-            setTimeout(function() {
-                var current_url = window.location.pathname;
-                if (current_url === old_url)
-                {
-                    _load_submission(event, url, render_location);
-                }
-            }, 5000);
-        }
-    });
-}
+//     $.get(
+//         url
+//     ).then(function(submission) {
+//         console.log(submission);
+//         return _render_submission(submission, render_location)
+//     }).then(function(submission) {
+//         var status = submission.status;
+//         if (status === 'being_graded' || status === 'received' ||
+//             status === 'queued')
+//         {
+//             var old_url = window.location.pathname;
+//             console.log('will try again a few seconds');
+//             setTimeout(function() {
+//                 var current_url = window.location.pathname;
+//                 if (current_url === old_url)
+//                 {
+//                     _load_submission(event, url, render_location);
+//                 }
+//             }, 5000);
+//         }
+//     });
+// }
 
-function _render_submission(submission, render_location)
-{
-    var finished_rendering = $.Deferred();
+// function _render_submission(submission, render_location)
+// {
+//     var finished_rendering = $.Deferred();
 
-    lazy_get_template('view-submission').done(function(template) {
-        render_location.html(template.render(submission));
-        finished_rendering.resolve(submission);
-    });
+//     lazy_get_template('view-submission').done(function(template) {
+//         render_location.html(template.render(submission));
+//         finished_rendering.resolve(submission);
+//     });
 
-    return finished_rendering.promise();
-}
+//     return finished_rendering.promise();
+// }
 
 function _get_submission_group_url(project_id, usernames)
 {

@@ -125,7 +125,8 @@ $(document).ready(function () {
         },
         format_diff: diff_to_table
     });
-
+    $.views.settings.allowCode=true;
+    
     load_view();
 
     // console.log(window.google.identitytoolkit);
@@ -182,6 +183,8 @@ $(document).ready(function () {
 <script src="{% static 'web_interface/js/view-semester.js' %}"></script>
 <script src="{% static 'web_interface/js/view-project.js' %}"></script>
 <script src="{% static 'web_interface/js/edit_project_view.js' %}"></script>
+<script src="{% static 'web_interface/js/edit-ag-test-view.js' %}"></script>
+<script src="{% static 'web_interface/js/view-submission.js' %}"></script>
 <script src="{% static 'web_interface/js/register-group-view.js' %}"></script>
 
 </body>
