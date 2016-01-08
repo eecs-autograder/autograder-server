@@ -19,10 +19,9 @@ function load_submission_view(url)
         var rendered = template.render(render_data);
         $('#main-area').html(rendered);
         $('#test-result-list .collapse').on('show.bs.collapse', _load_result);
-        loaded.resolve();
 
-        if (status === 'being_graded' || status === 'received' ||
-            status === 'queued')
+        if (submission.status === 'being_graded' || submission.status === 'received' ||
+            submission.status === 'queued')
         {
             var old_url = window.location.pathname;
             console.log('will try again a few seconds');
@@ -34,6 +33,7 @@ function load_submission_view(url)
                 }
             }, 5000);
         }
+        loaded.resolve();
     }).fail(function(error_message, data) {
         loaded.reject(error_message, data.statusText);
     });

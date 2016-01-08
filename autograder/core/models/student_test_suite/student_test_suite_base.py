@@ -19,7 +19,7 @@ def _validate_implementation_file_alias(filename):
 
 class StudentTestSuiteBase(PolymorphicModelValidatableOnSave):
     """
-    This base class provides a fat interface for evaluating student-submitted
+    This base class provides an interface for evaluating student-submitted
     unit tests. To avoid dependencies with any particular unit testing
     framework, we've established a format for student test suites that
     can accomplish the same goals but is better suited to grading.
