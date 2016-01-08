@@ -43,6 +43,9 @@ Response format:
         "student_test_suites": "/projects/<id>/student_test_suites/",
         "submission_groups": "/projects/<id>/submission_groups/",
         "submission_group_invitations": "/projects/<id>/submission_group_invitations/",
+    },
+    "permissions": {
+        "is_staff": <bool>
     }
 }
 

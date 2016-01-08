@@ -375,7 +375,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
                 self.expected_standard_error_output)
 
     def test_checks_compilation(self):
-        raise NotImplementedError('Subclasses must override this method')
+        return False
+        # raise NotImplementedError('Subclasses must override this method')
 
     def get_type_str(self):
         raise NotImplementedError('Subclasses must override this method')
@@ -409,4 +410,3 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
                 None if self.post_deadline_final_submission_feedback_configuration is None else
                 self.post_deadline_final_submission_feedback_configuration.to_json())
         }
-

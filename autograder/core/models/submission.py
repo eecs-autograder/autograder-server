@@ -149,7 +149,7 @@ class Submission(ModelValidatableOnSave):
     objects = _SubmissionManager()
 
     class Meta:
-        ordering = ['pk']
+        ordering = ['-pk']
 
     # -------------------------------------------------------------------------
 
@@ -226,7 +226,7 @@ class Submission(ModelValidatableOnSave):
         submissions = []
         for group in project.submission_groups.all():
             try:
-                group_sub = group.submissions.last()
+                group_sub = group.submissions.first()
             except IndexError:
                 continue
             if group_sub:

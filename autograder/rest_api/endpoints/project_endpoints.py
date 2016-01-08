@@ -57,6 +57,9 @@ class GetUpdateProjectEndpoint(EndpointBase):
             "urls": {
                 "self": url_shortcuts.project_url(project),
                 "semester": url_shortcuts.semester_url(project.semester),
+            },
+            "permissions": {
+                "is_staff": project.semester.is_semester_staff(request.user)
             }
         }
 

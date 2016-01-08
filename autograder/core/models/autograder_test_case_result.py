@@ -6,6 +6,13 @@ from django.db import models
 import autograder.core.shared.feedback_configuration as fbc
 
 
+# TODO: "feedback" classes (i.e. CompilationFeedback, ReturnCodeFeedback, OutputFeedback)
+# TODO: "feedback generator" class, ctor takes in feedback level override, pulls from
+#       test case by default
+# TODO: refactor into class hierarchy that mirrors that of autograder test case?
+# TODO: test cases that involve interpreted test cases
+
+
 class AutograderTestCaseResult(models.Model):
     """
     This class stores the data from an autograder test case
@@ -214,10 +221,14 @@ class AutograderTestCaseResult(models.Model):
         result.update(feedback)
         pts_data['compilation_points_awarded'] = pts_awarded
 
-        if self.compilation_succeeded:
+        if self.test_case.test_checks_compilation():
+            if self.compilation_succeeded:
+                result['timed_out'] = self.timed_out
+        else:
             result['timed_out'] = self.timed_out
 
-        if not self.compilation_succeeded or self.timed_out:
+        if ((self.test_case.test_checks_compilation() and
+                not self.compilation_succeeded) or self.timed_out):
             # print('compilation_succeeded: ', self.compilation_succeeded)
             # print('timed_out')
             result.update(self._get_points_feedback(
@@ -262,7 +273,7 @@ class AutograderTestCaseResult(models.Model):
 
         is_final_submission = (
             self.submission ==
-            self.submission.submission_group.submissions.all().last())
+            self.submission.submission_group.submissions.first())
 
         if not is_final_submission:
             return self.test_case.feedback_configuration
@@ -326,7 +337,11 @@ class AutograderTestCaseResult(models.Model):
 
         show_program_output = (
             (feedback_config.output_feedback_level ==
-                fbc.OutputFeedbackLevel.show_program_output))
+                fbc.OutputFeedbackLevel.show_program_output) or
+            (feedback_config.output_feedback_level ==
+                fbc.OutputFeedbackLevel.show_expected_and_actual_values and
+                not self.test_case.test_checks_output()))
+
         if show_program_output:
             result['standard_output'] = self.standard_output
             result['standard_error_output'] = self.standard_error_output

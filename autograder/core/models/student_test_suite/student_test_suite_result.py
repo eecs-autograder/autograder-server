@@ -208,7 +208,7 @@ class StudentTestSuiteResult(models.Model):
 
         is_final_submission = (
             self.submission ==
-            self.submission.submission_group.submissions.all().last())
+            self.submission.submission_group.submissions.first())
 
         if not is_final_submission:
             return self.test_suite.feedback_configuration

@@ -244,7 +244,7 @@ class GetUpdateDeleteSubmissionGroupTestCase(TemporaryFilesystemTestCase):
 # -----------------------------------------------------------------------------
 
 
-class ListSubmissionTestCase(TemporaryFilesystemTestCase):
+class ListSubmissionsTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
@@ -260,7 +260,7 @@ class ListSubmissionTestCase(TemporaryFilesystemTestCase):
                     submission_group=obj['group'],
                     status=Submission.GradingStatus.finished_grading)
                 new_submission.save()
-                obj['submissions'].append(new_submission)
+                obj['submissions'].insert(0, new_submission)
 
     def test_user_list_own_submissions(self):
         for obj in self.users_and_groups_visible_proj:

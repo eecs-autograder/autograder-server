@@ -128,6 +128,9 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
                     "student_test_suites": url_shortcuts.suites_url(self.visible_project),
                     "submission_groups": url_shortcuts.groups_url(self.visible_project),
                     "submission_group_invitations": url_shortcuts.invitations_url(self.visible_project),
+                },
+                "permissions": {
+                    "is_staff": True
                 }
             }
 
@@ -170,6 +173,9 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
                         url_shortcuts.groups_url(self.hidden_project)),
                     "submission_group_invitations": (
                         url_shortcuts.invitations_url(self.hidden_project)),
+                },
+                "permissions": {
+                    "is_staff": True
                 }
             }
 
@@ -211,6 +217,9 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
                 "urls": {
                     "self": self.visible_project_url,
                     "semester": self.semester_url,
+                },
+                "permissions": {
+                    "is_staff": False
                 }
             }
 

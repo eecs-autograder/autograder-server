@@ -39,7 +39,9 @@ class GetAutograderTestCaseResultEndpoint(EndpointBase):
         feedback_override = (
             fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback() if
             is_staff else None)
-        response.update(result.to_json(feedback_override))
+
+        data = result.to_json(feedback_override)
+        response.update(data)
 
         return http.JsonResponse(response)
 

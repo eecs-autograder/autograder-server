@@ -918,6 +918,9 @@ class CompiledAutograderTestCaseResultSerializerTestCase(
             'compilation_stdout': 'win',
             'compilation_stderr': '',
 
+            'standard_error_output': 'stderr\negg\n',
+            'standard_output': 'stdout\nspam\n',
+
             'return_code_points_awarded': 1,
             'return_code_points_possible': 1,
             'valgrind_points_deducted': 0,
