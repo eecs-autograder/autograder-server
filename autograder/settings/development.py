@@ -11,20 +11,50 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
 import os
+import json
+
+from django.utils.crypto import get_random_string
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MEDIA_ROOT = os.path.join(BASE_DIR, 'filesystem/')
 
-_SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
+SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
+
+def generate_secrets(overwrite_prompt=True):
+    """
+    Generates an app secret key and a database password and writes
+    them to a json file.
+    """
+    secrets_file = os.path.join(SETTINGS_DIR, 'secrets.json')
+    if os.path.exists(secrets_file) and overwrite_prompt:
+        choice = input(
+            'Secrets file already exists. Overwrite? [y/N]'
+        ).strip().lower()
+        if choice != "y":
+            print('Exiting')
+            raise SystemExit()
+
+    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+    secrets = {
+        'secret_key': get_random_string(50, chars),
+        'db_password': get_random_string(50, chars)
+    }
+
+    with open(secrets_file, 'w') as f:
+        json.dump(secrets, f)
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
+_secrets_filename = os.path.join(SETTINGS_DIR, 'secrets.json')
+if not os.path.exists(_secrets_filename):
+    generate_secrets(overwrite_prompt=False)
+
 SECRET_KEY = ''
-with open(os.path.join(_SETTINGS_DIR, 'secret_key')) as f:
-    SECRET_KEY = f.read()
+with open(_secrets_filename) as f:
+    secrets = json.load(f)
+    SECRET_KEY = secrets.pop('secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -34,7 +64,7 @@ ALLOWED_HOSTS = []
 # A list of domain names that users are allowed to authenitcate from.
 GOOGLE_IDENTITY_TOOLKIT_APPS_DOMAIN_NAMES = ['umich.edu']
 GOOGLE_IDENTITY_TOOLKIT_CONFIG_FILE = os.path.join(
-    _SETTINGS_DIR, 'gitkit-server-config.json')
+    SETTINGS_DIR, 'gitkit-server-config.json')
 
 
 LOGIN_URL = '/callback/?mode=select'
@@ -127,9 +157,3 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
-
-# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-# STATICFILES_DIRS = (
-#     os.path.join(BASE_DIR, 'autograder', 'frontend', 'static'),
-# )

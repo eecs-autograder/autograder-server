@@ -10,25 +10,23 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
-import os
-
 from .development import *
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['g280-1.eecs.umich.edu']
-
-
-# Application definition
+ALLOWED_HOSTS = ['class1.eecs.umich.edu']
 
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
-# FIXME
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'autograder_db',
+        'USER': 'autograder',
+        'PASSWORD': secrets.pop('db_password')
     }
 }
+
+STATIC_ROOT = '/home/nginx/static'
