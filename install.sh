@@ -46,6 +46,7 @@ sudo cp ./server_config/nginx_autograder.conf /etc/nginx/sites-enabled/
 # https://uwsgi-docs.readthedocs.org/en/latest/tutorials/Django_and_nginx.html
 
 echo "You must now take the following steps to complete installation:\n"
+echo "Set the invironment variable DJANGO_SETTINGS_MODULE to autograder.settings.production"
 echo "Run: sudo service nginx start"
 echo "Run: uwsgi --ini ./server_config/uwsgi_autograder.ini"
 echo "Run: python3 manage.py test --failfast autograder"
