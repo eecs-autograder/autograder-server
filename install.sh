@@ -37,21 +37,26 @@ python3 manage.py --help > /dev/null
 
 
 # Nginx setup
+openssl dhparam -out /usr/share/nginx/certs/dhparams.pem
+
 mkdir -p ./static
 python3 manage.py collectstatic
 
 sudo mkdir -p /etc/nginx/sites-enabled
 sudo mkdir -p /etc/nginx/sites-available
 sudo cp ./server_config/nginx_autograder.conf /etc/nginx/sites-available/
-sudo ln -s /etc/nginx/sites-available/nginx_autograder.conf /etc/nginx/sites-enabled/
-
+nginx_site_enabled=/etc/nginx/sites-enabled/nginx_autograder.conf
+test -f $nginx_site_enabled && \
+	sudo ln -s /etc/nginx/sites-available/nginx_autograder.conf $nginx_site_enabled
 
 # uwsgi setup
 # If /etc/nginx/uwsgi_params doesn't exist, put it there manually
 sudo mkdir -p /etc/uwsgi/apps-available
 sudo mkdir -p /etc/uwsgi/apps-enabled
 sudo cp ./server_config/uwsgi_autograder.ini /etc/uwsgi/apps-available
-sudo ln -s /etc/uwsgi/apps-available/uwsgi_autograder.ini /etc/uwsgi/apps-enabled
+uwsgi_app_enabled=/etc/uwsgi/apps-enabled/uwsgi_autograder.ini
+test -f $uwsgi_app_enabled && \
+	sudo ln -s /etc/uwsgi/apps-available/uwsgi_autograder.ini $uwsgi_app_enabled
 
 # Look here for final steps with uwsgi and nginx config
 # https://uwsgi-docs.readthedocs.org/en/latest/tutorials/Django_and_nginx.html
