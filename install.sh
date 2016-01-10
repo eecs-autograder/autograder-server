@@ -30,10 +30,10 @@ pip install -r requirements.txt
 python3 manage.py --help > /dev/null
 
 
-Database setup
-sudo -u postgres createuser -P autograder
-echo "Enter the db_password found in autograder/settings/secrets.json"
-sudo -u postgres createdb --owner=autograder autograder_db
+# # Database setup
+# sudo -u postgres createuser -P autograder
+# echo "Enter the db_password found in autograder/settings/secrets.json"
+# sudo -u postgres createdb --owner=autograder autograder_db
 
 
 # Nginx setup
@@ -45,7 +45,13 @@ sudo mkdir -p /etc/nginx/sites-available
 sudo cp ./server_config/nginx_autograder.conf /etc/nginx/sites-available/
 sudo ln -s /etc/nginx/sites-available/nginx_autograder.conf /etc/nginx/sites-enabled/
 
-# If /etc/nginx/uwsgi_params doesn't exist, put it there.
+
+# uwsgi setup
+# If /etc/nginx/uwsgi_params doesn't exist, put it there manually
+sudo mkdir -p /etc/uwsgi/apps-available
+sudo mkdir -p /etc/uwsgi/apps-enabled
+sudo cp ./server_config/uwsgi_autograder.ini /etc/uwsgi/apps-available
+sudo ln -s /etc/uwsgi/apps-available/uwsgi_autograder.ini /etc/uwsgi/apps-enabled
 
 # Look here for final steps with uwsgi and nginx config
 # https://uwsgi-docs.readthedocs.org/en/latest/tutorials/Django_and_nginx.html
