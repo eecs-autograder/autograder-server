@@ -1,6 +1,8 @@
 #! /bin/bash
 # Requires Ubuntu 14.04
 
+export DJANGO_SETTINGS_MODULE="autograder.settings.production"
+
 sudo apt-get install -y nginx uwsgi postgresql postgresql-contrib python3-pip python3.4-venv
 
 # Docker installation 
@@ -29,14 +31,20 @@ python3 manage.py --help > /dev/null
 
 
 # Database setup
-sudo -u postgres createuser -P autograder
-echo "Enter the db_password found in autograder/settings/secrets.json"
-sudo -u postgres createdb --owner=autograder autograder_db
+# sudo -u postgres createuser -P autograder
+# echo "Enter the db_password found in autograder/settings/secrets.json"
+# sudo -u postgres createdb --owner=autograder autograder_db
 
 
 # Nginx setup
+nginx_home=/home/nginx
+static_files_dir=$nginx_home/static
+sudo mkdir -p $static_files_dir
+useradd -d $nginx_home
+usermod -aG nginx jameslp
 python3 manage.py collectstatic
-sudo chmod -R nginx:nginx /home/nginx
+sudo chown -R nginx:nginx $static_files_dir
+
 sudo mkdir -p /etc/nginx/sites-enabled
 sudo cp ./server_config/nginx_autograder.conf /etc/nginx/sites-enabled/
 
