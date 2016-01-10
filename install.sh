@@ -15,6 +15,8 @@ sudo apt-get install -y docker-engine
 sudo service docker start
 sudo usermod -aG docker $(whoami)
 docker run hello-world
+docker build -t autograder ./docker-image-setup
+
 
 # Python setup
 mkdir -p $HOME/python_venvs
@@ -27,8 +29,25 @@ python3 manage.py --help > /dev/null
 
 deactivate
 
+
+# Database setup
 sudo -u postgres createuser -P autograder
 echo "Enter the db_password found in autograder/settings/secrets.json"
 sudo -u postgres createdb --owner=autograder autograder_db
 
-echo "You must now take the following steps to complete installation:"
+
+# Nginx setup
+python3 manage.py collectstatic
+sudo chmod -R nginx:nginx /home/nginx
+
+sudo service nginx start
+# If /etc/nginx/uwsgi_params doesn't exist, put it there.
+
+# Look here for final steps with uwsgi and nginx config
+# https://uwsgi-docs.readthedocs.org/en/latest/tutorials/Django_and_nginx.html
+
+# Start uwsgi
+uwsgi --ini ./server_config/uwsgi_autograder.ini
+
+echo "You must now take the following steps to complete installation:\n"
+echo ""
