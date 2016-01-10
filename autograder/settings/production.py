@@ -24,9 +24,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'autograder_db',
-        'USER': 'autograder',
+        # 'USER': 'autograder',
         'PASSWORD': secrets.pop('db_password')
     }
 }
 
-STATIC_ROOT = '/home/nginx/static'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')

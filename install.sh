@@ -8,7 +8,7 @@ sudo apt-get install -y nginx uwsgi postgresql postgresql-contrib python3-pip py
 # Docker installation 
 # See: https://docs.docker.com/engine/installation/ubuntulinux/
 sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
-sudo cat "deb https://apt.dockerproject.org/repo ubuntu-trusty main" > /etc/apt/sources.list.d/docker.list
+echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | sudo tee /etc/apt/sources.list.d/docker.list
 sudo apt-get update
 sudo apt-get purge lxc-docker
 sudo apt-cache policy docker-engine
@@ -30,23 +30,20 @@ pip install -r requirements.txt
 python3 manage.py --help > /dev/null
 
 
-# Database setup
-# sudo -u postgres createuser -P autograder
-# echo "Enter the db_password found in autograder/settings/secrets.json"
-# sudo -u postgres createdb --owner=autograder autograder_db
+Database setup
+sudo -u postgres createuser -P autograder
+echo "Enter the db_password found in autograder/settings/secrets.json"
+sudo -u postgres createdb --owner=autograder autograder_db
 
 
 # Nginx setup
-nginx_home=/home/nginx
-static_files_dir=$nginx_home/static
-sudo mkdir -p $static_files_dir
-useradd -d $nginx_home
-usermod -aG nginx jameslp
+mkdir -p ./static
 python3 manage.py collectstatic
-sudo chown -R nginx:nginx $static_files_dir
 
 sudo mkdir -p /etc/nginx/sites-enabled
-sudo cp ./server_config/nginx_autograder.conf /etc/nginx/sites-enabled/
+sudo mkdir -p /etc/nginx/sites-available
+sudo cp ./server_config/nginx_autograder.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/nginx_autograder.conf /etc/nginx/sites-enabled/
 
 # If /etc/nginx/uwsgi_params doesn't exist, put it there.
 
