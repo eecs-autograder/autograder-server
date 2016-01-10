@@ -39,15 +39,15 @@ sudo -u postgres createdb --owner=autograder autograder_db
 # Nginx setup
 python3 manage.py collectstatic
 sudo chmod -R nginx:nginx /home/nginx
+sudo mkdir -p /etc/nginx/sites-enabled
+sudo cp ./server_config/nginx_autograder.conf /etc/nginx/sites-enabled/
 
-sudo service nginx start
 # If /etc/nginx/uwsgi_params doesn't exist, put it there.
 
 # Look here for final steps with uwsgi and nginx config
 # https://uwsgi-docs.readthedocs.org/en/latest/tutorials/Django_and_nginx.html
 
-# Start uwsgi
-uwsgi --ini ./server_config/uwsgi_autograder.ini
-
 echo "You must now take the following steps to complete installation:\n"
-echo ""
+echo "Run: sudo service nginx start"
+echo "Run: uwsgi --ini ./server_config/uwsgi_autograder.ini"
+echo "Run: python3 manage.py test --failfast autograder"
