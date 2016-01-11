@@ -70,3 +70,4 @@ secret_key
 **/settings/*
 !**/settings/*.py
 secrets.json
+/autograder/static

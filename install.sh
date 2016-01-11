@@ -3,13 +3,22 @@
 
 export DJANGO_SETTINGS_MODULE="autograder.settings.production"
 
-sudo apt-get install -y nginx uwsgi postgresql postgresql-contrib python3-pip python3.4-venv
+# Add postgres and docker repos
+sudo touch /etc/apt/sources.list.d/pgdg.list
+echo "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+  sudo apt-key add -
+
+sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | sudo tee /etc/apt/sources.list.d/docker.list
+
+sudo apt-get update
+sudo apt-get install -y nginx postgresql-9.4 postgresql-contrib-9.4 python3-pip python3.4-venv
+# Install uwsgi through pip, NOT apt-get
+sudo pip3 install uwsgi
 
 # Docker installation 
 # See: https://docs.docker.com/engine/installation/ubuntulinux/
-sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
-echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | sudo tee /etc/apt/sources.list.d/docker.list
-sudo apt-get update
 sudo apt-get purge lxc-docker
 sudo apt-cache policy docker-engine
 sudo apt-get install linux-image-extra-$(uname -r)
@@ -30,38 +39,34 @@ pip install -r requirements.txt
 python3 manage.py --help > /dev/null
 
 
-# # Database setup
-# sudo -u postgres createuser -P autograder
-# echo "Enter the db_password found in autograder/settings/secrets.json"
-# sudo -u postgres createdb --owner=autograder autograder_db
+# Database setup
+echo "Enter the db_password found in autograder/settings/secrets.json"
+cat ./autograder/settings/secrets.json
+sudo -u postgres createuser -P jameslp  # Replace with username
+sudo -u postgres createdb --owner=jameslp autograder_db
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE autograder_db TO jameslp;"
+sudo -u postgres psql -c "ALTER USER jameslp CREATEDB;"
 
 
 # Nginx setup
 sudo mkdir -p /etc/nginx/ssl
 sudo openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048
 
-mkdir -p ./static
 python3 manage.py collectstatic
 
 sudo mkdir -p /etc/nginx/sites-enabled
-sudo mkdir -p /etc/nginx/sites-available
-sudo cp ./server_config/nginx_autograder.conf /etc/nginx/sites-available/
-nginx_site_enabled=/etc/nginx/sites-enabled/nginx_autograder.conf
+nginx_site_enabled=/etc/nginx/sites-enabled/django_autograder.conf
 test -f $nginx_site_enabled && \
-	sudo ln -s /etc/nginx/sites-available/nginx_autograder.conf $nginx_site_enabled
+	sudo ln -s $PWD/server_config/nginx_autograder.conf $nginx_site_enabled
 
 # uwsgi setup
-# If /etc/nginx/uwsgi_params doesn't exist, put it there manually
-sudo mkdir -p /etc/uwsgi/apps-available
-sudo mkdir -p /etc/uwsgi/apps-enabled
-sudo cp ./server_config/uwsgi_autograder.ini /etc/uwsgi/apps-available
-uwsgi_app_enabled=/etc/uwsgi/apps-enabled/uwsgi_autograder.ini
-test -f $uwsgi_app_enabled && \
-	sudo ln -s /etc/uwsgi/apps-available/uwsgi_autograder.ini $uwsgi_app_enabled
+uwsgi_upstart_conf=/etc/init/uwsgi.conf
+test -f $uwsgi_upstart_conf && sudo \
+	ln -s $PWD/server_config/uwsgi_upstart.conf $uwsgi_upstart_conf
+sudo initctl reload-configuration
 
-# Look here for final steps with uwsgi and nginx config
-# https://uwsgi-docs.readthedocs.org/en/latest/tutorials/Django_and_nginx.html
 
-# echo "You must now take the following steps to complete installation:\n"
-# echo "Set the invironment variable DJANGO_SETTINGS_MODULE to autograder.settings.production"
-# echo "Run: python3 manage.py test --failfast autograder"
+echo "You must now take the following steps to complete installation:\n"
+echo "Run the unit tests"
+echo "Run: sudo service nginx restart"
+echo "Run: sudo start uwsgi"

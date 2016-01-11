@@ -24,7 +24,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'autograder_db',
-        # 'USER': 'autograder',
+        'USER': 'jameslp',
         'PASSWORD': secrets.pop('db_password')
     }
 }
