@@ -13,7 +13,7 @@ import subprocess
 def main():
     args = parse_args()
 
-    subprocess.call(['service', 'mysql', 'start'])
+    subprocess.call(['service', 'mysql', 'start'], timeout=10)
     _DB_HANDLERS[args.database_backend](args.database_name)
 
 

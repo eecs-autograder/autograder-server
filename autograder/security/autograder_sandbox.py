@@ -11,21 +11,42 @@ SANDBOX_WORKING_DIR_NAME = os.path.join(SANDBOX_HOME_DIR_NAME, 'working_dir')
 
 
 class AutograderSandbox(object):
-    def __init__(self, name, enable_networking=False):  # , linux_user_id):
-        self.name = name
+    def __init__(self, name, enable_networking=False,
+                 environment_variables_to_set=None,
+                 database_backend_to_use=None,
+                 database_name=''):
+        self._name = name
         # self._linux_user_id = linux_user_id
         # self._linux_username = 'worker{}'.format(self._linux_user_id)
         self._linux_username = 'autograder'
+        self._networking_enabled = enable_networking
 
-        self.create_args = [
+        self._environment_variables = environment_variables_to_set
+
+        self._database_backend_to_use = database_backend_to_use
+        self._database_name = database_name
+
+        self._create_args = [
             'docker', 'create', '--name=' + self.name,
             '-a', 'STDOUT', '-a', 'STDERR', '-a', 'STDIN',  # Attach streams
             '-i',  # Run in interactive mode (needed for input redirection)
             '-t',  # Allocate psuedo tty
+            '--ulimit', 'nproc=4000',  # Limit number of user processes
             # Allow or disallow networking
             '--net', ('default' if enable_networking else 'none'),
-            self._linux_username, 'bash'
         ]
+        if self.environment_variables:
+            for key, value in self.environment_variables.items():
+                self._create_args += [
+                    '-e', "{}={}".format(key, value)
+                ]
+
+        self._create_args += [
+            'autograder',  # Image to use
+            'bash',  # Command to be run in the container
+        ]
+
+        subprocess.check_call(self.create_args, timeout=10)
 
     def __enter__(self):
         self.start()
@@ -36,19 +57,41 @@ class AutograderSandbox(object):
 
     def start(self):
         print('starting container: ' + self.name)
-        subprocess.check_call(
-            self.create_args,
-            timeout=10
-        )
         try:
             subprocess.check_call(['docker', 'start', self.name], timeout=10)
         except subprocess.CalledProcessError:
             self.stop()
             raise
 
+        self.initialize_database()
+
     def stop(self):
         print('stopping container: ' + self.name)
         subprocess.check_call(['docker', 'stop', self.name])
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def networking_enabled(self):
+        return self._networking_enabled
+
+    @property
+    def environment_variables(self):
+        return self._environment_variables
+
+    @property
+    def database_backend_to_use(self):
+        return self._database_backend_to_use
+
+    @property
+    def database_name(self):
+        return self._database_name
+
+    @property
+    def create_args(self):
+        return self._create_args
 
     def copy_into_sandbox(self, *filenames):
         """
@@ -105,8 +148,7 @@ class AutograderSandbox(object):
         print('running: {}'.format(args))
 
         runner = _SubprocessRunner(
-            args, timeout=timeout * 2,
-            stdin_content=stdin_content)
+            args, timeout=timeout * 2, stdin_content=stdin_content)
         return runner
 
     def run_cmd_success_required(self, cmd_exec_args, as_root=False,
@@ -139,18 +181,30 @@ class AutograderSandbox(object):
         self.run_cmd_success_required(
             ["mv"] + working_dir_contents + [backup_dirname])
 
+    def initialize_database(self):
+        if not self.database_backend_to_use:
+            return
 
-# TODO: Once upgraded to Python 3.5 and Django 1.9, replace call() with the
+        self.run_cmd_success_required(
+            ['initialize_db', self.database_backend_to_use,
+             self.database_name], as_root=True)
+
+    def reinitialize_database(self):
+        if not self.database_backend_to_use:
+            return
+
+        self.run_cmd_success_required(
+            ['reinitialize_db', self.database_backend_to_use,
+             self.database_name], as_root=True)
+
+
+# TODO: Once upgraded to Python 3.5, replace call() with the
 # new subprocess.run() method.
 class _SubprocessRunner(object):
     """
     Convenience wrapper for calling a subprocess and retrieving the data
     we usually need.
     """
-    # HACK: Currently, this class assumes that the command called inside
-    # Docker is wrapped in a linux timeout call. This is to get around the
-    # fact that we can't directly kill exec instances.
-    # See http://linux.die.net/man/1/timeout
     _TIMEOUT_RETURN_CODE = 124
 
     def __init__(self, program_args, **kwargs):
