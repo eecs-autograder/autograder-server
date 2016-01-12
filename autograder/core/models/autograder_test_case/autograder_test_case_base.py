@@ -212,6 +212,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             be created. If database_backend_to_use is False, this field
             will be ignored. If database_backend_to_use is True, this
             field is REQUIRED.
+            This field may only contain alphabetic characters.
             Default value: empty string
 
     Instance methods:
@@ -307,7 +308,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     database_backend_to_use = ag_fields.ShortStringField(
         blank=True, default=str)
     database_name = ag_fields.ShortStringField(
-        blank=True, default=str)
+        blank=True, default=str, validators=[RegexValidator('^[a-zA-z]*$')])
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------

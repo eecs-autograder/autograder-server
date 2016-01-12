@@ -491,6 +491,15 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertTrue('database_name' in cm.exception.message_dict)
 
+    def test_error_database_name_has_invalid_chars(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                database_backend_to_use='mysql',
+                database_name='bad_db_name; some bad sql --')
+
+        self.assertTrue('database_name' in cm.exception.message_dict)
+
     # -------------------------------------------------------------------------
 
     def test_exception_on_negative_point_distributions(self):
