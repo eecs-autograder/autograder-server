@@ -48,3 +48,5 @@ COMMAND_LINE_ARG_WHITELIST_REGEX = re.compile(
 SUPPORTED_COMPILERS = ['g++', 'clang++', 'gcc', 'clang']
 
 SUPPORTED_INTERPRETERS = ['python', 'python3']
+
+SUPPORTED_DB_BACKENDS = ['mysql']

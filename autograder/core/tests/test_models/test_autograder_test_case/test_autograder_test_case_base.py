@@ -71,6 +71,10 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             (loaded_test_case.
              post_deadline_final_submission_feedback_configuration))
 
+        self.assertFalse(loaded_test_case.allow_network_connections)
+        self.assertEqual('', loaded_test_case.database_backend_to_use)
+        self.assertEqual('', loaded_test_case.database_name)
+
     # -------------------------------------------------------------------------
 
     def test_valid_initialization_custom_values(self):
@@ -83,6 +87,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         time = 5
         ret_code = 0
         valgrind_flags = ['--leak-check=yes', '--error-exitcode=9000']
+
+        database_name = 'spam_db'
 
         new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
@@ -104,7 +110,11 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
                 fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()
             ),
             post_deadline_final_submission_feedback_configuration=(
-                fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback())
+                fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()
+            ),
+            allow_network_connections=True,
+            database_backend_to_use='mysql',
+            database_name=database_name
         )
 
         loaded_test_case = _DummyAutograderTestCase.objects.get(
@@ -152,6 +162,11 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback(),
             (loaded_test_case.
                 post_deadline_final_submission_feedback_configuration))
+
+        self.assertTrue(loaded_test_case.allow_network_connections)
+
+        self.assertEqual('mysql', loaded_test_case.database_backend_to_use)
+        self.assertEqual(database_name, loaded_test_case.database_name)
 
     # -------------------------------------------------------------------------
 
@@ -456,6 +471,25 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         loaded_test = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
         self.assertEqual(loaded_test.valgrind_flags, ['spam', 'eggs'])
+
+    # -------------------------------------------------------------------------
+
+    def test_error_invalid_database_backend_to_use(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                database_backend_to_use='not_a_database_backend',
+                database_name='spam')
+
+        self.assertTrue('database_backend_to_use' in cm.exception.message_dict)
+
+    def test_error_no_database_name_when_database_backend_to_use_set(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                database_backend_to_use='mysql')
+
+        self.assertTrue('database_name' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 

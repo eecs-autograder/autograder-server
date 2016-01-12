@@ -197,6 +197,23 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
             Default value: None
 
+        allow_network_connections -- Whether to allow the program being
+            tested to make network connections.
+            Default value: False
+
+        database_backend_to_use -- A string identifying which database backend
+            to use, if any.
+            See autograder.core.shared.global_constants.SUPPORTED_DB_BACKENDS
+            for a list of supported backends.
+            An empty string indicates that no database should be set up.
+            Default value: empty string.
+
+        database_name -- A string specifying the name of the database to
+            be created. If database_backend_to_use is False, this field
+            will be ignored. If database_backend_to_use is True, this
+            field is REQUIRED.
+            Default value: empty string
+
     Instance methods:
         test_checks_return_code()
         test_checks_output()
@@ -286,6 +303,12 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         )
     )
 
+    allow_network_connections = models.BooleanField(default=False)
+    database_backend_to_use = ag_fields.ShortStringField(
+        blank=True, default=str)
+    database_name = ag_fields.ShortStringField(
+        blank=True, default=str)
+
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
 
@@ -326,6 +349,8 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         if student_resource_file_errors:
             errors['student_resource_files'] = student_resource_file_errors
 
+        errors.update(self._clean_db_fields())
+
         if errors:
             raise ValidationError(errors)
 
@@ -360,6 +385,19 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
                         filename, self.project.name))
 
         return resource_file_errors
+
+    def _clean_db_fields(self):
+        if not self.database_backend_to_use:
+            return {}
+
+        if self.database_backend_to_use not in gc.SUPPORTED_DB_BACKENDS:
+            return {'database_backend_to_use': 'Invalid db backend choice'}
+
+        if not self.database_name:
+            return {'database_name':
+                    'A value must be provided when a db backend is specified'}
+
+        return {}
 
     # -------------------------------------------------------------------------
 
