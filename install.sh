@@ -65,8 +65,14 @@ test -f $uwsgi_upstart_conf && sudo \
 	ln -s $PWD/server_config/uwsgi_upstart.conf $uwsgi_upstart_conf
 sudo initctl reload-configuration
 
+# Fix permissions for secrets file
+chmod 660 $PWD/autograder/settings/secrets.json
 
 echo "You must now take the following steps to complete installation:\n"
+echo "Add the autograder-e16e96fda61b.p12 file for gitkit to the settings dir"
+echo "Add and update the paths in gitkit-server-config.json to the settings dir"
+echo "Register the server url with gitkit in the dev console"
 echo "Run the unit tests"
 echo "Run: sudo service nginx restart"
 echo "Run: sudo start uwsgi"
+echo "Start the submission listener"
