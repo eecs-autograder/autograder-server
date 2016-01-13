@@ -34,10 +34,10 @@ function load_submission_view(url)
             }, 5000);
         }
         loaded.resolve();
-    }).fail(function(error_message, data) {
-        loaded.reject(error_message, data.statusText);
+    }).fail(function(data, status) {
+        console.log('error loading project');
+        loaded.reject("Error loading submission", data.statusText);
     });
-
     return loaded.promise();
 }
 
