@@ -18,7 +18,7 @@
     <div>Files submitted: </div>
     <ul>
     {{for submitted_files.submitted_files}}
-        <li><a href="{{:url}}" target='_blank'>{{>filename}}</a></li>
+        <li><a href="/submitted-file{{:url}}">{{>filename}}</a></li>
     {{/for}}
     </ul>
 

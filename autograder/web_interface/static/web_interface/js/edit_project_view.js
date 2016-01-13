@@ -52,6 +52,7 @@ function _render_edit_project_view(
             url: project.urls.uploaded_files,
             uploadTemplateId: null,
             downloadTemplateId: null,
+            paramName: 'files',
             uploadTemplate: function(data) {
                 return upload_tmpl.render(data);
             },
@@ -77,9 +78,8 @@ function _render_edit_project_view(
             }
         });
 
-        $('#file_list .files').append(download_tmpl.render({
-            files: project_files
-        }));
+        $('#file_list .files').append(
+            download_tmpl.render(project_files));
 
         // $.each(project.data.attributes.project_files, function(index, value) {
         //     $('#file_list .files').append(download_tmpl.render(value));
@@ -163,17 +163,20 @@ function _add_test_case_button_handler(
     $.postJSON(
         project.urls.autograder_test_cases, new_test
     ).done(function(test_response) {
-        var tmpl_context = test_response.data;
-        tmpl_context.project = project;
-        console.log(tmpl_context);
-        var new_test_panel = test_panel_tmpl.render(tmpl_context, tmpl_helpers);
-        $('#test_cases .panel').append(new_test_panel);
-        var forms = $('#test_cases form');
-        $(forms[forms.length - 1]).submit(_save_test_form_handler);
-        var delete_buttons = $('#test_cases .delete-test-btn');
-        $(delete_buttons[delete_buttons.length - 1]).click(
-            _delete_test_button_handler);
-        $('#add_test_case').collapse();
+        var new_link = $('<a href=/ag-test' + test_response.url + ' data-role="ajax"></a>');
+        new_link.text(test_response.name);
+        var divvy = $('<div></div>');
+        divvy.html(new_link);
+        $('#test_cases').append(divvy);
+
+        // var new_test_panel = test_panel_tmpl.render(tmpl_context, tmpl_helpers);
+        // $('#test_cases .panel').append(new_test_panel);
+        // var forms = $('#test_cases form');
+        // $(forms[forms.length - 1]).submit(_save_test_form_handler);
+        // var delete_buttons = $('#test_cases .delete-test-btn');
+        // $(delete_buttons[delete_buttons.length - 1]).click(
+        //     _delete_test_button_handler);
+        // $('#add_test_case').collapse();
     });
 }
 
@@ -192,9 +195,10 @@ function _delete_test_button_handler()
 
 function _extract_test_case_form_fields(form)
 {
+    console.log(form);
     var test_case = {
         'name': _extract_single_text_field(form, 'name', true),
-        'hide_from_students': _extract_checkbox_bool(form, 'hide_from_students'),
+        // 'hide_from_students': _extract_checkbox_bool(form, 'hide_from_students'),
         'command_line_arguments': _extract_delimited_text_field(form, 'command_line_arguments'),
         'standard_input': _extract_single_text_field(form, 'standard_input'),
         'test_resource_files': _extract_checkbox_group_vals(form, 'test_resource_files'),
@@ -222,7 +226,8 @@ function _extract_test_case_form_fields(form)
     {
         test_case.compiler = _extract_single_text_field(form, 'compiler')
         test_case.compiler_flags = _extract_delimited_text_field(form, 'compiler_flags')
-        test_case.files_to_compile_together = _extract_checkbox_group_vals(form, 'files_to_compile_together')
+        test_case.student_files_to_compile_together = _extract_checkbox_group_vals(form, 'student_files_to_compile_together')
+        test_case.project_files_to_compile_together = _extract_checkbox_group_vals(form, 'project_files_to_compile_together')
         test_case.executable_name = _extract_single_text_field(form, 'executable_name')
     }
     console.log(test_case);
@@ -231,6 +236,7 @@ function _extract_test_case_form_fields(form)
 
 function _extract_single_text_field(form, name, trim_whitespace, default_val)
 {
+    console.log(name);
     var selector = $(':input[name="' + name + '"]', form);
     var value = selector.val();
     if (trim_whitespace)

@@ -1,8 +1,8 @@
-{{for files}}
+{{for uploaded_files}}
 <tr class="template-download">
     <td>
         <p class="name">
-            <a href="{{: file_url}}" title="{{:filename}}" target='_blank'>{{> filename}}</a>
+            <a href="{{: url}}" title="{{:filename}}" target='_blank'>{{> filename}}</a>
         </p>
     </td>
 <!--     <td>
@@ -10,7 +10,7 @@
     </td> -->
     <td>
         <button class="btn btn-danger delete"
-                onclick='$.ajax("{{: file_url}}", {method: "DELETE"});'>
+                onclick='$.ajax("{{: url}}", {method: "DELETE"});'>
             <i class="glyphicon glyphicon-trash"></i>
             <span>Delete</span>
         </button>

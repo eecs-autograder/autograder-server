@@ -25,13 +25,13 @@ from autograder.web_interface import views
 # import autograder.core.shared.global_constants as gc
 from django.contrib.auth.decorators import login_required
 # from django.core.urlresolvers import RegexURLPattern, RegexURLResolver
-from django.views.generic.base import RedirectView
+# from django.views.generic.base import RedirectView
 
 urlpatterns = [
     url(r'^login/$', views.LoginView.as_view(), name='login'),
     url(r'^callback/$', views.LoginView.as_view(), name='callback'),
     url(r'^', include('autograder.rest_api.urls')),
-    url(r'^$|^semester/.*|^project/.*|^edit-project/.*|^submission/.*|^ag-test/.*',
+    url(r'^$|^semester/.*|^project/.*|^edit-project/.*|^submission/.*|^ag-test/.*|^submitted-file/.*',
         login_required(views.MainAppPage.as_view()), name='main-app-page'),
     # url(r'^$', RedirectView.as_view(url='/app/'))
 ]

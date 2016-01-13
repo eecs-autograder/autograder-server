@@ -69,6 +69,7 @@ class GetUpdateDeleteAutograderTestCaseEndpoint(EndpointBase):
         _check_can_edit(request.user, ag_test)
 
         request_content = json.loads(request.body.decode('utf-8'))
+        print(request_content)
 
         response = {}
 

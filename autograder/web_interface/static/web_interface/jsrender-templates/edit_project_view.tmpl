@@ -233,13 +233,11 @@
 
 <div id='test_cases'>
     <h4>Test Cases</h4>
+    {{for ag_tests.autograder_test_cases}}
     <div>
-        {{for ag_tests.autograder_test_cases}}
         <a href=/ag-test{{:url}} data-role='ajax'>{{>name}}</a>
-        {{/for}}
-
-        {{!--{{for project.included tmpl=~test_case_panel /}}--}}
     </div>
+    {{/for}}
 </div>
 
 <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#add_test_case">

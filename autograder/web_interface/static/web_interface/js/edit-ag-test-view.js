@@ -7,6 +7,7 @@ function load_edit_ag_test_view(url)
     $.when(
         $.get(url)
     ).then(function(ag_test_json){
+        console.log(ag_test_json);
         ag_test_json_ = ag_test_json;
         return $.get(ag_test_json_.urls.project);
     }).then(function(project_json) {
@@ -18,7 +19,11 @@ function load_edit_ag_test_view(url)
     }).done(function(project_files_ajax, template) {
         _render_ag_test_view(
             ag_test_json_, project_json_, project_files_ajax[0], template);
+
+        $('#save-button').click(_save_test_form_handler);
         loaded.resolve();
+    }).fail(function(error_message, data) {
+        loaded.reject(error_message, data.statusText);
     });
 
     return loaded.promise();
@@ -34,17 +39,19 @@ function _render_ag_test_view(ag_test_json, project, project_files, template)
     };
     console.log(context);
 
-    $('#main-area').html(template.render(context));    
+    $('#main-area').html(template.render(context, {in_array: in_array}));    
 }
 
 function _save_test_form_handler(e)
 {
     console.log('saving');
     e.preventDefault();
-    var button = $('button', this);
+    var button = $(this);
     button.button('loading');
-    var url = $(this).attr('patch_url');
-    var patch_data = _extract_test_case_form_fields($(this));
+    var form = $('#test_case_form');
+    var url = form.attr('patch_url');
+    console.log(url);
+    var patch_data = _extract_test_case_form_fields();
     $.patchJSON(url, patch_data).done(function() {
         button.button('reset');
     }).fail(function(response) {

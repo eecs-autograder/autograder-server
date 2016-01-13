@@ -44,6 +44,10 @@ function load_view()
     {
         loaded = load_submission_view(resource_url);
     }
+    else if (view_name === 'submitted-file')
+    {
+        loaded = load_submitted_file_view(resource_url);
+    }
     else
     {
         history.replaceState(null, '', '/');

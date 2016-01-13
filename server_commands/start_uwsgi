@@ -1,3 +1,0 @@
-#! /usr/bin/env sh
-
-uwsgi --ini autograder_uwsgi.ini
