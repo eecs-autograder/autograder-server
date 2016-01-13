@@ -66,7 +66,7 @@
         {{/for}}
         </div>
     </div>
-    <div><b>Total score: {{*: total_points_awarded}}/{{*: total_points_possible}}</b></div>
+    {{if submission.status === 'finished_grading'}}<div><b>Total score: {{*: total_points_awarded}}/{{*: total_points_possible}}</b></div>{{/if}}
     <ul>
        {{!-- {{for meta.suite_results}}
         <li>
