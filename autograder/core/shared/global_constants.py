@@ -41,9 +41,9 @@ DEFAULT_VALGRIND_FLAGS_WHEN_USED = ['--leak-check=full', '--error-exitcode=1']
 # This regular expression provides the whitelist to be used when validating
 # command line arguments used in an autograder test case.
 # Command line arguments can contain:
-#   alphanumeric characters, hyphen, underscore, equals, period
+#   alphanumeric characters, hyphen, underscore, equals, period, plus
 COMMAND_LINE_ARG_WHITELIST_REGEX = re.compile(
-    r"^[a-zA-Z0-9-_=.]+$")
+    r"^[a-zA-Z0-9-_=.+]+$")
 
 SUPPORTED_COMPILERS = ['g++', 'clang++', 'gcc', 'clang']
 
