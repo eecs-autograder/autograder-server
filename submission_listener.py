@@ -178,7 +178,7 @@ def prepare_and_run_tests(submission):
             result.save()
 
             sandbox.clear_working_dir()
-            sandbox.reinitialize_db()
+            sandbox.reinitialize_database()
 
         for test_suite in group.project.student_test_suites.all():
             print('test_suite: ', test_suite.name)
