@@ -17,7 +17,7 @@ class EndpointBase(LoginRequiredView):
             return http.HttpResponseNotFound()
         except exceptions.PermissionDenied as e:
             # print(e)
-            return http.HttpResponseForbidden()
+            return http.HttpResponseForbidden(e)
         except exceptions.ValidationError as e:
             # print(e)
             try:

@@ -194,15 +194,15 @@ function _initialize_submit_widget(group, project)
         },
         fail: function(event, response) {
             console.log('error')
+            console.log(response);
             $('#upload-progress').empty();
             $('#fileupload .error').remove();
 
-            var error_dict = $.parseJSON(response._response.jqXHR.responseText);
-            console.log(error_dict)
+            // var error_dict = $.parseJSON(response._response.jqXHR.responseText);
+            // console.log(error_dict)
             var error = $('<div class="error">');
-            console.log(response);
             console.log(event);
-            error.text('ERROR: ' + error_dict.errors.meta);
+            error.text('ERROR: ' + response._response.jqXHR.responseText);
             $('#fileupload').append(error);
         },
     });
