@@ -97,6 +97,7 @@ function _poll_for_new_submissions(group)
 function _get_or_register_group(project)
 {
     console.log('_get_or_register_group');
+    console.log(project);
     var group_loaded = $.Deferred();
 
     // var url = _get_submission_group_url(project.data.id, [project.meta.username]);
@@ -116,6 +117,7 @@ function _get_or_register_group(project)
     $.get(
         project.urls.submission_groups
     ).then(function(groups_json) {
+        console.log(groups_json);
         if (groups_json.user_submission_group === null)
         {
             return register_group(project);

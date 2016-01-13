@@ -217,6 +217,8 @@ class GetUpdateProjectTestCase(TemporaryFilesystemTestCase):
                 "urls": {
                     "self": self.visible_project_url,
                     "semester": self.semester_url,
+                    "submission_groups": url_shortcuts.groups_url(self.visible_project),
+                    "submission_group_invitations": url_shortcuts.invitations_url(self.visible_project),
                 },
                 "permissions": {
                     "is_staff": False

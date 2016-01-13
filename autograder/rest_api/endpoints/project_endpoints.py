@@ -57,6 +57,9 @@ class GetUpdateProjectEndpoint(EndpointBase):
             "urls": {
                 "self": url_shortcuts.project_url(project),
                 "semester": url_shortcuts.semester_url(project.semester),
+                "submission_groups": url_shortcuts.groups_url(project),
+                "submission_group_invitations": (
+                    url_shortcuts.invitations_url(project))
             },
             "permissions": {
                 "is_staff": project.semester.is_semester_staff(request.user)
@@ -70,9 +73,6 @@ class GetUpdateProjectEndpoint(EndpointBase):
                 "uploaded_files": url_shortcuts.project_files_url(project),
                 "autograder_test_cases": url_shortcuts.ag_tests_url(project),
                 "student_test_suites": url_shortcuts.suites_url(project),
-                "submission_groups": url_shortcuts.groups_url(project),
-                "submission_group_invitations": (
-                    url_shortcuts.invitations_url(project))
             })
 
         return http.JsonResponse(response)
