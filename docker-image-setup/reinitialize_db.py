@@ -3,7 +3,11 @@
 import argparse
 import MySQLdb
 
-# This script drops and re-creates the specified database
+"""
+This script drops and re-creates the specified database
+"""
+
+DB_USERNAME = 'autograder'
 
 
 def main():
@@ -27,7 +31,8 @@ def _reinitialize_mysql(db_name):
     # contain alphabetic characters.
     server_cursor.execute('DROP DATABASE {}'.format(db_name))
     server_cursor.execute('CREATE DATABASE {}'.format(db_name))
-    server_cursor.execute('GRANT ALL ON {}.* to "autograder"'.format(db_name))
+    server_cursor.execute(
+        'GRANT ALL ON {}.* to "{}"'.format(db_name, DB_USERNAME))
     server_cursor.close()
     server_connection.commit()
 

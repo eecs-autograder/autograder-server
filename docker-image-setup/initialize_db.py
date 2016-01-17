@@ -4,10 +4,15 @@ import argparse
 import MySQLdb
 import subprocess
 
-# This script does the following:
-#   1. Starts the appropriate database server
-#   2. Creates a database with the specified name
-#   3. Creates a user that has full permissions on the database
+"""
+This script does the following:
+    1. Starts the appropriate database server
+    2. Creates a database with the specified name
+    3. Creates a user that has full permissions on the database
+"""
+
+
+DB_USERNAME = 'autograder'
 
 
 def main():
@@ -31,9 +36,12 @@ def _init_mysql(db_name):
     # NOTE: The autograder database API ensures that db_name will only
     # contain alphabetic characters.
     server_cursor.execute('CREATE DATABASE {}'.format(db_name))
-    server_cursor.execute('GRANT ALL ON {}.* to "autograder"'.format(db_name))
+    server_cursor.execute('CREATE USER "{}"@"localhost"'.format(DB_USERNAME))
+    server_cursor.execute(
+        'GRANT ALL ON {}.* to "{}"'.format(db_name, DB_USERNAME))
     server_cursor.close()
     server_connection.commit()
+
 
 # Map of string identifiers to handler functions
 _DB_HANDLERS = {
