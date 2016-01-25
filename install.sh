@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 # Requires Ubuntu 14.04
 
 export DJANGO_SETTINGS_MODULE="autograder.settings.production"
@@ -13,11 +13,13 @@ sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58
 echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | sudo tee /etc/apt/sources.list.d/docker.list
 
 sudo apt-get update
-sudo apt-get install -y nginx postgresql-9.4 postgresql-contrib-9.4 python3-pip python3.4-venv
+sudo apt-get install -y nginx \
+    postgresql-9.4 postgresql-contrib-9.4 postgresql-server-dev-9.4 \
+    python3-pip python3.4-venv libncurses5-dev
 # Install uwsgi through pip, NOT apt-get
 sudo pip3 install uwsgi
 
-# Docker installation 
+# Docker installation
 # See: https://docs.docker.com/engine/installation/ubuntulinux/
 sudo apt-get purge lxc-docker
 sudo apt-cache policy docker-engine
@@ -42,10 +44,10 @@ python3 manage.py --help > /dev/null
 # Database setup
 echo "Enter the db_password found in autograder/settings/secrets.json"
 cat ./autograder/settings/secrets.json
-sudo -u postgres createuser -P jameslp  # Replace with username
-sudo -u postgres createdb --owner=jameslp autograder_db
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE autograder_db TO jameslp;"
-sudo -u postgres psql -c "ALTER USER jameslp CREATEDB;"
+sudo -u postgres createuser -P $(whoami) # Replace with username
+sudo -u postgres createdb --owner=$(whoami) autograder_db
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE autograder_db TO $(whoami);"
+sudo -u postgres psql -c "ALTER USER $(whoami) CREATEDB;"
 
 
 # Nginx setup
