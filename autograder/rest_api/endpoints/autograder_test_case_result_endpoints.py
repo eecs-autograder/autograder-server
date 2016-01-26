@@ -50,6 +50,31 @@ def _check_visibility(user, result, is_staff):
     if is_staff and user in result.submission.submission_group.members.all():
         return
 
-    visibility_level = result.test_case.feedback_configuration.visibility_level
+    visibility_level = _get_visibility_level(user, result)
     if visibility_level != fbc.VisibilityLevel.show_to_students:
         raise exceptions.PermissionDenied()
+
+
+def _get_visibility_level(user, result):
+    if (result.test_case.post_deadline_final_submission_feedback_configuration
+            is None):
+        return result.test_case.feedback_configuration.visibility_level
+
+    is_final_submission = (
+        result.submission ==
+        result.submission.submission_group.submissions.first())
+
+    extended_due_date = result.submission.submission_group.extended_due_date
+    if extended_due_date is not None:
+        is_after_closing_time = timezone.now() > extended_due_date
+    else:
+        is_after_closing_time = (
+            timezone.now() >
+            result.submission.submission_group.project.closing_time)
+
+    if is_final_submission and is_after_closing_time:
+        return (result.test_case.
+                post_deadline_final_submission_feedback_configuration.
+                visibility_level)
+
+    return result.test_case.feedback_configuration.visibility_level

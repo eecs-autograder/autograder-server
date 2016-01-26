@@ -1,7 +1,9 @@
 import itertools
+import datetime
 
 from django.core.urlresolvers import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 from autograder.core.models import (
     AutograderTestCaseFactory, SubmissionGroup, Submission, Project,
@@ -48,7 +50,9 @@ class GetAutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
             project_kwargs={
                 'allow_submissions_from_non_enrolled_students': True,
                 'visible_to_students': True,
-                'required_student_files': self.filenames_to_submit})
+                'required_student_files': self.filenames_to_submit,
+                'closing_time':
+                    timezone.now() + datetime.timedelta(minutes=-1)})
 
         self.semester = self.project.semester
         self.course = self.semester.course
@@ -175,22 +179,109 @@ class GetAutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
             response = client.get(obj['result_url'])
             self.assertEqual(403, response.status_code)
 
-    import unittest
-    @unittest.skip('todo')
     def test_student_get_own_or_staff_get_other_hidden_result_shown_with_post_deadline_feedback_override(self):
-        self.fail()
+        (self.test_case.
+            post_deadline_final_submission_feedback_configuration) = (
+            fbc.AutograderTestCaseFeedbackConfiguration(
+                visibility_level=fbc.VisibilityLevel.show_to_students))
+        self.test_case.validate_and_save()
+        for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
+            user = obj['user']
+            client = MockClient(user)
+            response = client.get(obj['result_url'])
+            self.assertEqual(200, response.status_code)
+            expected_content = {
+                'type': 'autograder_test_case_result',
+                'id': obj['result'].pk,
+                'urls': {
+                    "self": obj['result_url'],
+                    "submission": obj['submission_url']
+                }
+            }
+            expected_content.update(obj['result'].to_json(
+                (self.test_case.
+                    post_deadline_final_submission_feedback_configuration)))
+            self.assertEqual(
+                expected_content, json_load_bytes(response.content))
 
-    @unittest.skip('todo')
+        for user in self.admin, self.staff:
+            client = MockClient(user)
+            for obj in self.submission_objs:
+                response = client.get(obj['result_url'])
+                self.assertEqual(200, response.status_code)
+                expected_content = {
+                    'type': 'autograder_test_case_result',
+                    'id': obj['result'].pk,
+                    'urls': {
+                        "self": obj['result_url'],
+                        "submission": obj['submission_url']
+                    }
+                }
+                expected_content.update(obj['result'].to_json(
+                    (fbc.AutograderTestCaseFeedbackConfiguration.
+                        get_max_feedback())))
+                self.assertEqual(
+                    expected_content, json_load_bytes(response.content))
+
     def test_student_get_own_or_staff_get_other_visible_result_hidden_with_post_deadline_feedback_override(self):
-        self.fail()
+        self.test_case.feedback_configuration.visibility_level = (
+            fbc.VisibilityLevel.show_to_students)
+        (self.test_case.
+            post_deadline_final_submission_feedback_configuration) = (
+            fbc.AutograderTestCaseFeedbackConfiguration(
+                visibility_level=fbc.VisibilityLevel.hide_from_students))
 
-    @unittest.skip('todo')
+        for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
+            user = obj['user']
+            client = MockClient(user)
+            response = client.get(obj['result_url'])
+            self.assertEqual(403, response.status_code)
+
+            for user in self.admin, self.staff:
+                client = MockClient(user)
+                response = client.get(obj['result_url'])
+                self.assertEqual(403, response.status_code)
+
     def test_student_get_own_or_staff_get_other_hidden_result_post_deadline_feedback_override_but_student_has_extension(self):
-        self.fail()
+        (self.test_case.
+            post_deadline_final_submission_feedback_configuration) = (
+            fbc.AutograderTestCaseFeedbackConfiguration(
+                visibility_level=fbc.VisibilityLevel.show_to_students))
+        self.test_case.validate_and_save()
+        for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
+            user = obj['user']
+            obj['submission'].submission_group.extended_due_date = (
+                timezone.now() + datetime.timedelta(hours=1))
+            obj['submission'].submission_group.save()
+            client = MockClient(user)
+            response = client.get(obj['result_url'])
+            self.assertEqual(403, response.status_code)
 
-    @unittest.skip('todo')
+            for user in self.admin, self.staff:
+                client = MockClient(user)
+                response = client.get(obj['result_url'])
+                self.assertEqual(403, response.status_code)
+
     def test_student_get_own_or_staff_get_other_hidden_result_post_deadline_feedback_override_but_not_final_submission(self):
-        self.fail()
+        (self.test_case.
+            post_deadline_final_submission_feedback_configuration) = (
+            fbc.AutograderTestCaseFeedbackConfiguration(
+                visibility_level=fbc.VisibilityLevel.show_to_students))
+        self.test_case.validate_and_save()
+        for obj in self.enrolled_submission_obj, self.nobody_submission_obj:
+            Submission.objects.validate_and_create(
+                submitted_files=self.files_to_submit,
+                submission_group=obj['group']
+            )
+            user = obj['user']
+            client = MockClient(user)
+            response = client.get(obj['result_url'])
+            self.assertEqual(403, response.status_code)
+
+            for user in self.admin, self.staff:
+                client = MockClient(user)
+                response = client.get(obj['result_url'])
+                self.assertEqual(403, response.status_code)
 
     def test_student_get_other_student_result_permission_denied(self):
         self.test_case.feedback_configuration.visibility_level = (
