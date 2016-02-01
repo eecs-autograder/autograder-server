@@ -911,6 +911,7 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
 
     def test_course_admin_or_semester_staff_filter_groups(self):
         self._add_groups_to_project(self.visible_project, 5)
+
         self.enrolled.username = 'steve'
         self.enrolled.save()
         other_member = obj_ut.create_dummy_user()
@@ -919,6 +920,11 @@ class ListAddSubmissionGroupTestCase(TemporaryFilesystemTestCase):
         group_to_find = obj_ut.build_submission_group(
             group_kwargs={'members': [self.enrolled.username, other_member],
                           'project': self.visible_project})
+
+        # Make sure we only get groups from the right project
+        group_to_not_find = obj_ut.build_submission_group(
+            group_kwargs={'members': [self.enrolled.username, other_member],
+                          'project': self.hidden_project})
 
         for user in self.admin, self.staff:
             client = MockClient(user)

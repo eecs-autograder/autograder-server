@@ -279,6 +279,7 @@ function _initialize_view_student_submissions_widget(project)
         }).then(function(group_json) {
             return $.get(group_json.urls.submissions);   
         }).done(function(submissions_json) {
+            $('#student-submissions').empty();
             $.each(submissions_json.submissions, function(index, value) {
                 $('#student-submissions').append(
                     $('<div><a href="/submission' + value.url + '" data-role="ajax">' +

@@ -312,7 +312,7 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
             try:
                 queryset = User.objects.get(
                     username=username_filter
-                ).groups_is_member_of.all()
+                ).groups_is_member_of.filter(project=project)
             except exceptions.ObjectDoesNotExist:
                 queryset = project.submission_groups.none()
         else:

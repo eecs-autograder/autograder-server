@@ -130,6 +130,7 @@ class SubmissionGroupInvitation(ModelValidatableOnSave):
 
 
 class SubmissionGroupManager(ManagerWithValidateOnCreate):
+    # TODO: rename check_project_group_limits to check_project_group_size_limits
     def validate_and_create(self, check_project_group_limits=True, **kwargs):
         """
         Additional arguments:
