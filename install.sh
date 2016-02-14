@@ -27,8 +27,9 @@ sudo apt-get install linux-image-extra-$(uname -r)
 sudo apt-get install -y docker-engine
 sudo service docker start
 sudo usermod -aG docker $(whoami)
-docker run hello-world
-docker build -t autograder ./docker-image-setup
+sudo docker run hello-world
+sudo docker build -t autograder ./docker-image-setup
+sudo docker pull mysql
 
 
 # Python setup
@@ -54,16 +55,17 @@ sudo -u postgres psql -c "ALTER USER $(whoami) CREATEDB;"
 sudo mkdir -p /etc/nginx/ssl
 sudo openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048
 
+python3 manage.py migrate
 python3 manage.py collectstatic
 
 sudo mkdir -p /etc/nginx/sites-enabled
 nginx_site_enabled=/etc/nginx/sites-enabled/django_autograder.conf
-test -f $nginx_site_enabled && \
+test -f $nginx_site_enabled || \
 	sudo ln -s $PWD/server_config/nginx_autograder.conf $nginx_site_enabled
 
 # uwsgi setup
 uwsgi_upstart_conf=/etc/init/uwsgi.conf
-test -f $uwsgi_upstart_conf && sudo \
+test -f $uwsgi_upstart_conf || sudo \
 	ln -s $PWD/server_config/uwsgi_upstart.conf $uwsgi_upstart_conf
 sudo initctl reload-configuration
 
