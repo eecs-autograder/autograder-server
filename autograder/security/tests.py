@@ -1,6 +1,8 @@
 import unittest
 import subprocess
+import uuid
 
+from autograder.security import autograder_sandbox
 from .autograder_sandbox import AutograderSandbox
 
 
@@ -10,36 +12,31 @@ class AutograderSandboxInitTestCase(unittest.TestCase):
     def setUp(self):
         self.name = 'awexome_container'
         self.ip_whitelist = ['35.2.65.126']
-        self.num_processes_soft = 4
-        self.num_processes_hard = 6
-        self.stack_size_soft = 20000
-        self.stack_size_hard = 40000
-        self.virtual_memory_soft = 500000
-        self.virtual_memory_hard = 1000000
+        self.max_num_processes = 2
+        self.max_stack_size = 60000000
+        self.max_virtual_memory = 1000000000000
         self.environment_variables = {'spam': 'egg', 'sausage': 42}
 
     def test_default_init(self):
         sandbox = AutograderSandbox()
-        self.assertIsNone(sandbox.name)
+        self.assertIsNotNone(sandbox.name)
         self.assertCountEqual([], sandbox.ip_address_whitelist)
-        self.assertIsNone(sandbox.num_processes_soft_limit)
-        self.assertIsNone(sandbox.num_processes_hard_limit)
-        self.assertIsNone(sandbox.stack_size_soft_limit)
-        self.assertIsNone(sandbox.stack_size_hard_limit)
-        self.assertIsNone(sandbox.virtual_memory_soft_limit)
-        self.assertIsNone(sandbox.virtual_memory_hard_limit)
+        self.assertEqual(autograder_sandbox.DEFAULT_PROCESS_LIMIT,
+                         sandbox.max_num_processes)
+        self.assertEqual(autograder_sandbox.DEFAULT_STACK_LIMIT,
+                         sandbox.max_stack_size)
+        self.assertEqual(autograder_sandbox.DEFAULT_VIRTUAL_MEM_LIMIT,
+                         sandbox.max_virtual_memory)
+
         self.assertIsNone(sandbox.environment_variables)
 
     def test_non_default_init(self):
         sandbox = AutograderSandbox(
             name=self.name,
             ip_address_whitelist=self.ip_whitelist,
-            num_processes_soft_limit=self.num_processes_soft,
-            num_processes_hard_limit=self.num_processes_hard,
-            stack_size_soft_limit=self.stack_size_soft,
-            stack_size_hard_limit=self.stack_size_hard,
-            virtual_memory_soft_limit=self.virtual_memory_soft,
-            virtual_memory_hard_limit=self.virtual_memory_hard,
+            max_num_processes=self.max_num_processes,
+            max_stack_size=self.max_stack_size,
+            max_virtual_memory=self.max_virtual_memory,
             environment_variables=self.environment_variables
         )
 
@@ -47,43 +44,11 @@ class AutograderSandboxInitTestCase(unittest.TestCase):
                          sandbox.name)
         self.assertEqual(self.ip_whitelist,
                          sandbox.ip_address_whitelist)
-        self.assertEqual(self.num_processes_soft,
-                         sandbox.num_processes_soft_limit)
-        self.assertEqual(self.num_processes_hard,
-                         sandbox.num_processes_hard_limit)
-        self.assertEqual(self.stack_size_soft,
-                         sandbox.stack_size_soft_limit)
-        self.assertEqual(self.stack_size_hard,
-                         sandbox.stack_size_hard_limit)
-        self.assertEqual(self.virtual_memory_soft,
-                         sandbox.virtual_memory_soft_limit)
-        self.assertEqual(self.virtual_memory_hard,
-                         sandbox.virtual_memory_hard_limit)
+        self.assertEqual(self.max_num_processes, sandbox.max_num_processes)
+        self.assertEqual(self.max_stack_size, sandbox.max_stack_size)
+        self.assertEqual(self.max_virtual_memory, sandbox.max_virtual_memory)
         self.assertEqual(self.environment_variables,
                          sandbox.environment_variables)
-
-    def test_init_soft_limits_only(self):
-        """
-        Makes sure that when only soft limits are specified, the hard limits
-        are given the same values.
-        """
-        sandbox = AutograderSandbox(
-            num_processes_soft_limit=self.num_processes_soft,
-            stack_size_soft_limit=self.stack_size_soft,
-            virtual_memory_soft_limit=self.virtual_memory_soft)
-
-        self.assertEqual(self.num_processes_soft,
-                         sandbox.num_processes_soft_limit)
-        self.assertEqual(self.num_processes_hard,
-                         sandbox.num_processes_hard_limit)
-        self.assertEqual(self.stack_size_soft,
-                         sandbox.stack_size_soft_limit)
-        self.assertEqual(self.stack_size_hard,
-                         sandbox.stack_size_hard_limit)
-        self.assertEqual(self.virtual_memory_soft,
-                         sandbox.virtual_memory_soft_limit)
-        self.assertEqual(self.virtual_memory_hard,
-                         sandbox.virtual_memory_hard_limit)
 
 
 class AutograderSandboxBasicRunCommandTestCase(unittest.TestCase):
@@ -97,7 +62,7 @@ class AutograderSandboxBasicRunCommandTestCase(unittest.TestCase):
         with self.sandbox:
             cmd_result = self.sandbox.run_command(["echo", stdout_content])
             self.assertEqual(0, cmd_result.return_code)
-            self.assertEqual(stdout_content, cmd_result.stdout)
+            self.assertEqual(stdout_content + '\n', cmd_result.stdout)
 
     def test_run_illegal_command_non_root(self):
         with self.sandbox:
@@ -107,12 +72,14 @@ class AutograderSandboxBasicRunCommandTestCase(unittest.TestCase):
 
     def test_run_command_as_root(self):
         with self.sandbox:
-            cmd_result = self.sandbox.run_command(self.root_cmd)
+            cmd_result = self.sandbox.run_command(self.root_cmd, as_root=True)
             self.assertEqual(0, cmd_result.return_code)
             self.assertEqual("", cmd_result.stderr)
 
     def test_run_command_timeout_exceeded(self):
-        self.fail()
+        with self.sandbox:
+            cmd_result = self.sandbox.run_command(["sleep", "10"], timeout=1)
+            self.assertTrue(cmd_result.timed_out)
 
     def test_run_command_raise_on_error(self):
         """
@@ -166,7 +133,19 @@ class AutograderSandboxMiscTestCase(unittest.TestCase):
         self.fail()
 
     def test_context_manager(self):
-        self.fail()
+        name = 'container-{}'.format(uuid.uuid4().hex)
+        with AutograderSandbox(name=name):
+            # If the container was created successfully, we
+            # should get an error if we try to create another
+            # container with the same name.
+            with self.assertRaises(subprocess.CalledProcessError):
+                with AutograderSandbox(name=name):
+                    pass
+
+        # The container should have been deleted at this point,
+        # so we should be able to create another with the same name.
+        with AutograderSandbox(name=name):
+            pass
 
     def test_sandbox_environment_variables_set(self):
         self.fail()

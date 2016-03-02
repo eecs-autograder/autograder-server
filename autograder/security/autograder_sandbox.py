@@ -3,10 +3,15 @@ import subprocess
 import uuid
 import tempfile
 
-import autograder.core.shared.global_constants as gc
-
 
 SANDBOX_HOME_DIR_NAME = '/home/autograder'
+SANDBOX_WORKING_DIR_NAME = os.path.join(SANDBOX_HOME_DIR_NAME, 'working_dir')
+LINUX_USERNAME = 'autograder'
+
+DEFAULT_PROCESS_LIMIT = 0
+DEFAULT_STACK_LIMIT = 8000000  # 8 MB
+DEFAULT_VIRTUAL_MEM_LIMIT = 500000000  # 500 MB
+DEFAULT_TIMEOUT = 10  # seconds
 
 
 class AutograderSandbox:
@@ -20,67 +25,72 @@ class AutograderSandbox:
     Instances of this class are intended to be used with a context manager.
     """
     def __init__(self, name=None, ip_address_whitelist=[],
-                 num_processes_soft_limit=None, num_processes_hard_limit=None,
-                 stack_size_soft_limit=None, stack_size_hard_limit=None,
-                 virtual_memory_soft_limit=None,
-                 virtual_memory_hard_limit=None,
+                 max_num_processes=DEFAULT_PROCESS_LIMIT,
+                 max_stack_size=DEFAULT_STACK_LIMIT,
+                 max_virtual_memory=DEFAULT_VIRTUAL_MEM_LIMIT,
                  environment_variables=None):
         """
         Params:
             name -- A human-readable name that can be used to identify
                 this sandbox instance. This value must be unique across
                 all sandbox instances, otherwise starting the sandbox
-                will fail.
+                will fail. If no value is specified, a random name will
+                be generated automatically.
 
             ip_address_whitelist -- A list of IP addresses that programs
                 running inside this container should be allowed to access.
                 Access to all other IP addresses will be blocked.
 
-            ## The following fields set linux ulimit values inside the
-            ## sandbox. See the Linux ulimit documentation for more info.
+            max_num_processes -- The maximum number of processes a program
+                run inside the sandbox is allowed to spawn.
 
-            num_processes_soft_limit -- The soft limit for ulimit -u
+            max_stack_size -- The maximum stack size, in bytes, allowed for
+                programs run inside the sandbox.
 
-            num_processes_hard_limit -- The hard limit for ulimit -u
-                If this value is not specified, then the soft limit
-                (if any) will be used.
-
-            stack_size_soft_limit -- The soft limit for ulimit -s
-                This value is in kilobytes.
-
-            stack_size_hard_limit -- The hard limit for ulimit -s
-                This value is in kilobytes.
-                If this value is not specified, then the soft limit
-                (if any) will be used.
-
-            virtual_memory_soft_limit -- The soft limit for ulimit -v
-                This value is in kilobytes.
-
-            virtual_memory_hard_limit -- The hard limit for ulimit -v
-                This value is in kilobytes.
-                If this value is not specified, then the soft limit
-                (if any) will be used.
+            max_virtual_memory -- The maximum amount of memory, in bytes,
+                allowed for programs run inside the sandbox.
 
             environment_variables -- A dictionary of variable_name: value
                 pairs that should be set as environment variables inside
                 the sandbox.
         """
-        self._name = name
+        if name is None:
+            self._name = 'sandbox-{}'.format(uuid.uuid4().hex)
+        else:
+            self._name = name
+
         self._ip_address_whitelist = ip_address_whitelist
 
-        self._num_processes_soft_limit = num_processes_soft_limit
-        self._num_processes_hard_limit = num_processes_hard_limit
-
-        self._stack_size_soft_limit = stack_size_soft_limit
-        self._stack_size_hard_limit = stack_size_hard_limit
-
-        self._virtual_memory_soft_limit = virtual_memory_soft_limit
-        self._virtual_memory_hard_limit = virtual_memory_hard_limit
+        self._max_num_processes = max_num_processes
+        self._max_stack_size = max_stack_size
+        self._max_virtual_memory = max_virtual_memory
 
         self._environment_variables = environment_variables
 
     def __enter__(self):
-        pass
+        create_args = [
+            'docker', 'run',
+            '--name=' + self.name,
+            # '-a', 'STDOUT', '-a', 'STDERR', '-a', 'STDIN',  # Attach streams
+            '-i',  # Run in interactive mode (needed for input redirection)
+            '-t',  # Allocate psuedo tty
+            '-d',  # Detached
+            # Create the container with no network stack
+            '--net', 'none',
+        ]
+
+        if self.environment_variables:
+            for key, value in self.environment_variables.items():
+                create_args += [
+                    '-e', "{}={}".format(key, value)
+                ]
+
+        create_args += [
+            'autograder',  # Image to use
+            # 'bash',  # Command to be run in the container
+        ]
+
+        subprocess.check_call(create_args, timeout=10)
 
     def __exit__(self, *args):
         pass
@@ -94,42 +104,39 @@ class AutograderSandbox:
         return self._ip_address_whitelist
 
     @property
-    def num_processes_soft_limit(self):
-        return self._num_processes_soft_limit
+    def max_num_processes(self):
+        return self._max_num_processes
 
     @property
-    def num_processes_hard_limit(self):
-        if self._num_processes_hard_limit is not None:
-            return self._num_processes_hard_limit
-
-        return self.num_processes_soft_limit
+    def max_stack_size(self):
+        return self._max_stack_size
 
     @property
-    def stack_size_soft_limit(self):
-        return self._stack_size_soft_limit
-
-    @property
-    def stack_size_hard_limit(self):
-        if self._stack_size_hard_limit is not None:
-            return self._stack_size_hard_limit
-
-        return self._stack_size_soft_limit
-
-    @property
-    def virtual_memory_soft_limit(self):
-        return self._virtual_memory_soft_limit
-
-    @property
-    def virtual_memory_hard_limit(self):
-        if self._virtual_memory_hard_limit is not None:
-            return self._virtual_memory_hard_limit
-
-        return self._virtual_memory_soft_limit
+    def max_virtual_memory(self):
+        return self._max_virtual_memory
 
     @property
     def environment_variables(self):
         return self._environment_variables
 
+    def run_command(self, args, input_content=None, timeout=DEFAULT_TIMEOUT,
+                    as_root=False, raise_on_failure=False):
+        cmd = ['docker', 'exec', '-i']
+        if not as_root:
+            cmd.append('--user={}'.format(LINUX_USERNAME))
+        cmd.append(self.name)
+        cmd += [
+            'timeout_script.py', str(timeout), str(self.max_num_processes),
+            str(self.max_stack_size), str(self.max_virtual_memory)
+        ]
+        cmd += args
+
+        print('running: {}'.format(cmd))
+
+        if input_content is None:
+            input_content = ''
+        return _SubprocessRunner(cmd, raise_on_failure=raise_on_failure,
+                                 stdin_content=input_content)
 
 
 # class AutograderSandbox:
@@ -331,10 +338,14 @@ class _SubprocessRunner(object):
 
     def __init__(self, program_args, **kwargs):
         self._args = program_args
-        self._timeout = kwargs.get('timeout', gc.DEFAULT_SUBPROCESS_TIMEOUT)
+        self._timeout = kwargs.get('timeout', None)
         self._stdin_content = kwargs.get('stdin_content', '')
         self._merge_stdout_and_stderr = kwargs.get(
             'merge_stdout_and_stderr', False)
+        if kwargs.get('raise_on_failure', False):
+            self._subprocess_method = subprocess.check_call
+        else:
+            self._subprocess_method = subprocess.call
 
         self._timed_out = False
         self._return_code = None
@@ -371,12 +382,12 @@ class _SubprocessRunner(object):
                     tempfile.TemporaryFile() as stdout_dest, \
                     tempfile.TemporaryFile() as stderr_dest:
 
-                print("Created temp files")
+                # print("Created temp files")
                 stdin_content.write(self._stdin_content.encode('utf-8'))
                 stdin_content.seek(0)
 
                 try:
-                    self._return_code = subprocess.call(
+                    self._return_code = self._subprocess_method(
                         self._args,
                         stdin=stdin_content,
                         stdout=stdout_dest,
