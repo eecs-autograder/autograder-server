@@ -93,7 +93,8 @@ class AutograderSandbox:
         subprocess.check_call(create_args, timeout=10)
 
     def __exit__(self, *args):
-        pass
+        subprocess.check_call(['docker', 'stop', self.name])
+        subprocess.check_call(['docker', 'rm', self.name])
 
     @property
     def name(self):
