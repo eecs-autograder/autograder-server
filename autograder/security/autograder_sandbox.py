@@ -2,11 +2,12 @@ import os
 import subprocess
 import uuid
 import tempfile
+import tarfile
 
 
 SANDBOX_HOME_DIR_NAME = '/home/autograder'
 SANDBOX_WORKING_DIR_NAME = os.path.join(SANDBOX_HOME_DIR_NAME, 'working_dir')
-LINUX_USERNAME = 'autograder'
+SANDBOX_USERNAME = 'autograder'
 
 DEFAULT_PROCESS_LIMIT = 0
 DEFAULT_STACK_LIMIT = 8000000  # 8 MB
@@ -91,6 +92,7 @@ class AutograderSandbox:
         ]
 
         subprocess.check_call(create_args, timeout=10)
+        return self
 
     def __exit__(self, *args):
         subprocess.check_call(['docker', 'stop', self.name])
@@ -124,7 +126,7 @@ class AutograderSandbox:
                     as_root=False, raise_on_failure=False):
         cmd = ['docker', 'exec', '-i']
         if not as_root:
-            cmd.append('--user={}'.format(LINUX_USERNAME))
+            cmd.append('--user={}'.format(SANDBOX_USERNAME))
         cmd.append(self.name)
         cmd += [
             'timeout_script.py', str(timeout), str(self.max_num_processes),
@@ -138,6 +140,122 @@ class AutograderSandbox:
             input_content = ''
         return _SubprocessRunner(cmd, raise_on_failure=raise_on_failure,
                                  stdin_content=input_content)
+
+    def add_files(self, *filenames):
+        """
+        Copies the specified files into the working directory of this
+        sandbox.
+        The filenames specified can be absolute paths or relative paths
+        to the current working directory.
+        """
+        with tempfile.TemporaryFile() as f, \
+                tarfile.TarFile(fileobj=f, mode='w') as tar_file:
+            for filename in filenames:
+                tar_file.add(filename, arcname=os.path.basename(filename))
+
+            f.seek(0)
+            subprocess.check_call(
+                ['docker', 'cp', '-',
+                 self.name + ':' + SANDBOX_WORKING_DIR_NAME],
+                stdin=f)
+            chown_cmd = [
+                'chown', '{}:{}'.format(SANDBOX_USERNAME, SANDBOX_USERNAME)]
+            chown_cmd += [os.path.basename(filename) for filename in filenames]
+            self.run_command(chown_cmd, as_root=True)
+
+
+
+
+# TODO: Once upgraded to Python 3.5, replace call() with the
+# new subprocess.run() method.
+class _SubprocessRunner(object):
+    """
+    Convenience wrapper for calling a subprocess and retrieving the data
+    we usually need.
+    """
+    _TIMEOUT_RETURN_CODE = 124
+
+    def __init__(self, program_args, **kwargs):
+        self._args = program_args
+        self._timeout = kwargs.get('timeout', None)
+        self._stdin_content = kwargs.get('stdin_content', '')
+        self._merge_stdout_and_stderr = kwargs.get(
+            'merge_stdout_and_stderr', False)
+        if kwargs.get('raise_on_failure', False):
+            self._subprocess_method = subprocess.check_call
+        else:
+            self._subprocess_method = subprocess.call
+
+        self._timed_out = False
+        self._return_code = None
+        self._stdout = None
+        self._stderr = None
+
+        self._process = None
+
+        self._run()
+
+    @property
+    def timed_out(self):
+        return self._timed_out
+
+    @property
+    def return_code(self):
+        return self._return_code
+
+    @property
+    def stdout(self):
+        return self._stdout
+
+    @property
+    def stderr(self):
+        return self._stderr
+
+    @property
+    def process(self):
+        return self._process
+
+    def _run(self):
+        try:
+            with tempfile.TemporaryFile() as stdin_content, \
+                    tempfile.TemporaryFile() as stdout_dest, \
+                    tempfile.TemporaryFile() as stderr_dest:
+
+                # print("Created temp files")
+                stdin_content.write(self._stdin_content.encode('utf-8'))
+                stdin_content.seek(0)
+
+                try:
+                    self._return_code = self._subprocess_method(
+                        self._args,
+                        stdin=stdin_content,
+                        stdout=stdout_dest,
+                        stderr=stderr_dest,
+                        timeout=self._timeout
+                    )
+                    print("Finished running: ", self._args)
+                    if (self._return_code ==
+                            _SubprocessRunner._TIMEOUT_RETURN_CODE):
+                        self._timed_out = True
+                finally:
+                    stdout_dest.seek(0)
+                    stderr_dest.seek(0)
+                    self._stdout = stdout_dest.read().decode('utf-8')
+                    self._stderr = stderr_dest.read().decode('utf-8')
+
+                    print("Return code: ", self._return_code)
+                    print(self._stdout)
+                    print(self._stderr)
+        except UnicodeDecodeError:
+            msg = ("Error reading program output: "
+                   "non-unicode characters detected")
+            self._stdout = msg
+            self._stderr = msg
+
+
+
+
+
 
 
 # class AutograderSandbox:
@@ -328,88 +446,3 @@ class AutograderSandbox:
 #              self.database_name], as_root=True)
 
 
-# TODO: Once upgraded to Python 3.5, replace call() with the
-# new subprocess.run() method.
-class _SubprocessRunner(object):
-    """
-    Convenience wrapper for calling a subprocess and retrieving the data
-    we usually need.
-    """
-    _TIMEOUT_RETURN_CODE = 124
-
-    def __init__(self, program_args, **kwargs):
-        self._args = program_args
-        self._timeout = kwargs.get('timeout', None)
-        self._stdin_content = kwargs.get('stdin_content', '')
-        self._merge_stdout_and_stderr = kwargs.get(
-            'merge_stdout_and_stderr', False)
-        if kwargs.get('raise_on_failure', False):
-            self._subprocess_method = subprocess.check_call
-        else:
-            self._subprocess_method = subprocess.call
-
-        self._timed_out = False
-        self._return_code = None
-        self._stdout = None
-        self._stderr = None
-
-        self._process = None
-
-        self._run()
-
-    @property
-    def timed_out(self):
-        return self._timed_out
-
-    @property
-    def return_code(self):
-        return self._return_code
-
-    @property
-    def stdout(self):
-        return self._stdout
-
-    @property
-    def stderr(self):
-        return self._stderr
-
-    @property
-    def process(self):
-        return self._process
-
-    def _run(self):
-        try:
-            with tempfile.TemporaryFile() as stdin_content, \
-                    tempfile.TemporaryFile() as stdout_dest, \
-                    tempfile.TemporaryFile() as stderr_dest:
-
-                # print("Created temp files")
-                stdin_content.write(self._stdin_content.encode('utf-8'))
-                stdin_content.seek(0)
-
-                try:
-                    self._return_code = self._subprocess_method(
-                        self._args,
-                        stdin=stdin_content,
-                        stdout=stdout_dest,
-                        stderr=stderr_dest,
-                        timeout=self._timeout
-                    )
-                    print("Finished running: ", self._args)
-                    if (self._return_code ==
-                            _SubprocessRunner._TIMEOUT_RETURN_CODE):
-                        self._timed_out = True
-                finally:
-                    stdout_dest.seek(0)
-                    stderr_dest.seek(0)
-                    self._stdout = stdout_dest.read().decode('utf-8')
-                    self._stderr = stderr_dest.read().decode('utf-8')
-
-                    print("Return code: ", self._return_code)
-                    print(self._stdout)
-                    print(self._stderr)
-        except UnicodeDecodeError:
-            msg = ("Error reading program output: "
-                   "non-unicode characters detected")
-            self._stdout = msg
-            self._stderr = msg

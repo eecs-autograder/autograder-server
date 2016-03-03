@@ -1,20 +1,32 @@
+import os
 import unittest
 import subprocess
 import uuid
+import tempfile
 
 from autograder.security import autograder_sandbox
 from .autograder_sandbox import AutograderSandbox
 
 
-# class AutograderSandboxTestCase(unittest.TestCase):
+def kb_to_bytes(num_kb):
+    return 1000 * num_kb
+
+
+def mb_to_bytes(num_mb):
+    return 1000 * kb_to_bytes(num_mb)
+
+
+def gb_to_bytes(num_gb):
+    return 1000 * mb_to_bytes(num_gb)
+
 
 class AutograderSandboxInitTestCase(unittest.TestCase):
     def setUp(self):
         self.name = 'awexome_container'
         self.ip_whitelist = ['35.2.65.126']
         self.max_num_processes = 2
-        self.max_stack_size = 60000000
-        self.max_virtual_memory = 1000000000000
+        self.max_stack_size = mb_to_bytes(60)
+        self.max_virtual_memory = gb_to_bytes(1)
         self.environment_variables = {'spam': 'egg', 'sausage': 42}
 
     def test_default_init(self):
@@ -76,11 +88,6 @@ class AutograderSandboxBasicRunCommandTestCase(unittest.TestCase):
             self.assertEqual(0, cmd_result.return_code)
             self.assertEqual("", cmd_result.stderr)
 
-    def test_run_command_timeout_exceeded(self):
-        with self.sandbox:
-            cmd_result = self.sandbox.run_command(["sleep", "10"], timeout=1)
-            self.assertTrue(cmd_result.timed_out)
-
     def test_run_command_raise_on_error(self):
         """
         Tests that an exception is thrown only when raise_on_failure is True
@@ -97,8 +104,34 @@ class AutograderSandboxBasicRunCommandTestCase(unittest.TestCase):
                 self.sandbox.run_command(self.root_cmd, raise_on_failure=True)
 
 
-class AutograderSandboxUlimitTestCase(unittest.TestCase):
-    def test_non_root_command_exceeds_ulimit(self):
+class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
+    def setUp(self):
+        self.sandbox = AutograderSandbox()
+
+        self.strict_process_limit = 0
+        self.larger_processes_limit = 5
+
+        self.small_stack_size_limit = mb_to_bytes(5)
+        self.large_stack_size_limit = mb_to_bytes(100)
+
+        self.small_virtual_mem_limit = mb_to_bytes(100)
+        self.large_virtual_mem_limit = gb_to_bytes(1)
+
+    def test_run_command_timeout_exceeded(self):
+        with self.sandbox:
+            cmd_result = self.sandbox.run_command(["sleep", "10"], timeout=1)
+            self.assertTrue(cmd_result.timed_out)
+
+    def test_command_exceeds_process_limit(self):
+        self.fail()
+
+    def test_command_exceeds_stack_size_limit(self):
+        self.fail()
+
+    def test_command_exceeds_virtual_mem_limit(self):
+        self.fail()
+
+    def test_command_runs_correctly_with_raised_limits(self):
         self.fail()
 
     def test_multiple_containers_dont_exceed_ulimits(self):
@@ -106,15 +139,20 @@ class AutograderSandboxUlimitTestCase(unittest.TestCase):
         One quirk of docker containers is that if there are multiple users
         created in different containers but with the same UID, the resource
         usage of all those users will contribute to hitting the same ulimits.
-        This test makes sure that users are created with different UIDs
-        and don't step on each others' resource limits.
+        This test makes sure that the ulimits are set high enough that
+        valid processes aren't randomly cut off.
         """
         self.fail()
 
 
+_GOOGLE_IP_ADDR = "216.58.214.196"
+
+
 class AutograderSandboxNetworkAccessTestCase(unittest.TestCase):
     def test_networking_disabled(self):
-        self.fail()
+        with AutograderSandbox() as sandbox:
+            result = sandbox.run_command(['ping', '-c', '5', _GOOGLE_IP_ADDR])
+            self.assertNotEqual(0, result.return_code)
 
     def test_run_command_access_ip_address_whitelist(self):
         self.fail()
@@ -122,19 +160,48 @@ class AutograderSandboxNetworkAccessTestCase(unittest.TestCase):
 
 class AutograderSandboxCopyFilesTestCase(unittest.TestCase):
     def test_copy_files_into_sandbox(self):
-        self.fail()
+        files = []
+        try:
+            for i in range(10):
+                f = tempfile.NamedTemporaryFile(mode='w+')
+                f.write('this is file {}'.format(i))
+                f.seek(0)
+                files.append(f)
+
+            filenames = [file_.name for file_ in files]
+
+            with AutograderSandbox() as sandbox:
+                sandbox.add_files(*filenames)
+
+                ls_result = sandbox.run_command(['ls'])
+                actual_filenames = [
+                    filename.strip() for filename in ls_result.stdout.split()]
+                expected_filenames = [
+                    os.path.basename(filename) for filename in filenames]
+                self.assertCountEqual(expected_filenames, actual_filenames)
+
+                for file_ in files:
+                    file_.seek(0)
+                    expected_content = file_.read()
+                    actual_content = sandbox.run_command(
+                        ['cat', os.path.basename(file_.name)]).stdout
+                    self.assertEqual(expected_content, actual_content)
+        finally:
+            for file_ in files:
+                file_.close()
 
     def test_copy_and_rename_file_into_sandbox(self):
         self.fail()
 
 
 class AutograderSandboxMiscTestCase(unittest.TestCase):
-    def test_reset(self):
-        self.fail()
+    # def test_reset(self):
+    #     self.fail()
 
     def test_context_manager(self):
         name = 'container-{}'.format(uuid.uuid4().hex)
-        with AutograderSandbox(name=name):
+        with AutograderSandbox(name=name) as sandbox:
+            self.assertEqual(name, sandbox.name)
             # If the container was created successfully, we
             # should get an error if we try to create another
             # container with the same name.
