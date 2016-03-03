@@ -106,7 +106,7 @@ using namespace std;
 
 int main()
 {{
-    char* heapy = new int[{num_bytes_on_heap}];
+    char* heapy = new char[{num_bytes_on_heap}];
     cout << heapy << endl;
     return 0;
 }}
@@ -132,12 +132,6 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
     def setUp(self):
         self.sandbox = AutograderSandbox()
 
-        self.strict_process_limit = 0
-        self.larger_processes_limit = 5
-
-        self.small_stack_size_limit = mb_to_bytes(5)
-        self.large_stack_size_limit = mb_to_bytes(100)
-
         self.small_virtual_mem_limit = mb_to_bytes(100)
         self.large_virtual_mem_limit = gb_to_bytes(1)
 
@@ -147,8 +141,9 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
             self.assertTrue(cmd_result.timed_out)
 
     def test_command_exceeds_process_limit(self):
+        process_limit = 0
         prog = _PROCESS_SPAWN_PROG_TMPL.format(
-            num_processes=self.strict_process_limit + 2)
+            num_processes=process_limit + 2)
         with self.sandbox, tempfile.NamedTemporaryFile('w+') as f:
             f.write(prog)
             f.seek(0)
@@ -156,12 +151,27 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
 
             result = self.sandbox.run_command(
                 ['python3', os.path.basename(f.name)],
-                max_num_processes=self.strict_process_limit)
+                max_num_processes=process_limit)
             self.assertNotEqual(0, result.return_code)
 
+    def test_command_doesnt_exceed_process_limit(self):
+        process_limit = 10
+        prog = _PROCESS_SPAWN_PROG_TMPL.format(
+            num_processes=process_limit // 2)
+        with self.sandbox, tempfile.NamedTemporaryFile('w+') as f:
+            f.write(prog)
+            f.seek(0)
+            self.sandbox.add_files(f.name)
+
+            result = self.sandbox.run_command(
+                ['python3', os.path.basename(f.name)],
+                max_num_processes=process_limit)
+            self.assertEqual(0, result.return_code)
+
     def test_command_exceeds_stack_size_limit(self):
+        stack_size_limit = mb_to_bytes(5)
         prog = _STACK_USAGE_PROG_TMPL.format(
-            num_bytes_on_stack=self.small_stack_size_limit * 2)
+            num_bytes_on_stack=stack_size_limit * 2)
         with self.sandbox, \
                 tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
             f.write(prog)
@@ -173,12 +183,31 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
                 ['g++', '-Wall', '-pedantic',
                  os.path.basename(f.name), '-o', exe_name])
             result = self.sandbox.run_command(
-                ['./' + exe_name], max_stack_size=self.small_stack_size_limit)
+                ['./' + exe_name], max_stack_size=stack_size_limit)
             self.assertNotEqual(0, result.return_code)
 
+    def test_command_doesnt_exceed_stack_size_limit(self):
+        stack_size_limit = mb_to_bytes(30)
+        prog = _STACK_USAGE_PROG_TMPL.format(
+            num_bytes_on_stack=stack_size_limit // 2)
+        with self.sandbox, \
+                tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
+            f.write(prog)
+            f.seek(0)
+            self.sandbox.add_files(f.name)
+
+            exe_name = 'stacky'
+            self.sandbox.run_command(
+                ['g++', '-Wall', '-pedantic',
+                 os.path.basename(f.name), '-o', exe_name])
+            result = self.sandbox.run_command(
+                ['./' + exe_name], max_stack_size=stack_size_limit)
+            self.assertEqual(0, result.return_code)
+
     def test_command_exceeds_virtual_mem_limit(self):
+        virtual_mem_limit = mb_to_bytes(100)
         prog = _HEAP_USAGE_PROG_TMPL.format(
-            num_bytes_on_heap=self.small_virtual_mem_limit * 2)
+            num_bytes_on_heap=virtual_mem_limit * 2)
         with self.sandbox, \
                 tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
             f.write(prog)
@@ -191,12 +220,29 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
                  os.path.basename(f.name), '-o', exe_name])
             result = self.sandbox.run_command(
                 ['./' + exe_name],
-                max_virtual_memory=self.small_virtual_mem_limit)
+                max_virtual_memory=virtual_mem_limit)
 
             self.assertNotEqual(0, result.return_code)
 
-    def test_command_runs_correctly_with_raised_limits(self):
-        self.fail()
+    def test_command_doesnt_exceed_virtual_mem_limit(self):
+        virtual_mem_limit = mb_to_bytes(100)
+        prog = _HEAP_USAGE_PROG_TMPL.format(
+            num_bytes_on_heap=virtual_mem_limit // 2)
+        with self.sandbox, \
+                tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
+            f.write(prog)
+            f.seek(0)
+            self.sandbox.add_files(f.name)
+
+            exe_name = 'heapy'
+            self.sandbox.run_command(
+                ['g++', '-Wall', '-pedantic',
+                 os.path.basename(f.name), '-o', exe_name])
+            result = self.sandbox.run_command(
+                ['./' + exe_name],
+                max_virtual_memory=virtual_mem_limit)
+
+            self.assertEqual(0, result.return_code)
 
     def test_run_subsequent_commands_with_different_resource_limits(self):
         self.fail()

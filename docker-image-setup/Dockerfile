@@ -15,8 +15,6 @@ RUN useradd autograder && \
    mkdir -p /home/autograder/working_dir && \
    chown -R autograder:autograder /home/autograder
 
-COPY limits.conf /etc/security/limits.conf
-
 COPY timeout_script.py /usr/local/bin/timeout_script.py
 RUN chmod 555 /usr/local/bin/timeout_script.py
 
