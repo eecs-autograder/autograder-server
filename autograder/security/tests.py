@@ -4,6 +4,8 @@ import subprocess
 import uuid
 import tempfile
 
+from collections import OrderedDict
+
 from .autograder_sandbox import AutograderSandbox
 
 
@@ -23,7 +25,8 @@ class AutograderSandboxInitTestCase(unittest.TestCase):
     def setUp(self):
         self.name = 'awexome_container'
         self.ip_whitelist = ['35.2.65.126']
-        self.environment_variables = {'spam': 'egg', 'sausage': 42}
+        self.environment_variables = OrderedDict(
+            {'spam': 'egg', 'sausage': 42})
 
     def test_default_init(self):
         sandbox = AutograderSandbox()
@@ -44,6 +47,37 @@ class AutograderSandboxInitTestCase(unittest.TestCase):
                          sandbox.ip_address_whitelist)
         self.assertEqual(self.environment_variables,
                          sandbox.environment_variables)
+
+    def test_context_manager(self):
+        with AutograderSandbox(name=self.name) as sandbox:
+            self.assertEqual(self.name, sandbox.name)
+            # If the container was created successfully, we
+            # should get an error if we try to create another
+            # container with the same name.
+            with self.assertRaises(subprocess.CalledProcessError):
+                with AutograderSandbox(name=self.name):
+                    pass
+
+        # The container should have been deleted at this point,
+        # so we should be able to create another with the same name.
+        with AutograderSandbox(name=self.name):
+            pass
+
+    def test_sandbox_environment_variables_set(self):
+        print_env_var_script = "echo ${}".format(
+            ' $'.join(self.environment_variables))
+
+        sandbox = AutograderSandbox(
+            environment_variables=self.environment_variables)
+        with sandbox, tempfile.NamedTemporaryFile('w+') as f:
+            f.write(print_env_var_script)
+            f.seek(0)
+            sandbox.add_files(f.name)
+            result = sandbox.run_command(['bash', os.path.basename(f.name)])
+            expected_output = ' '.join(
+                str(val) for val in self.environment_variables.values())
+            expected_output += '\n'
+            self.assertEqual(expected_output, result.stdout)
 
 
 class AutograderSandboxBasicRunCommandTestCase(unittest.TestCase):
@@ -304,28 +338,4 @@ class AutograderSandboxCopyFilesTestCase(unittest.TestCase):
                 file_.close()
 
     def test_copy_and_rename_file_into_sandbox(self):
-        self.fail()
-
-
-class AutograderSandboxMiscTestCase(unittest.TestCase):
-    # def test_reset(self):
-    #     self.fail()
-
-    def test_context_manager(self):
-        name = 'container-{}'.format(uuid.uuid4().hex)
-        with AutograderSandbox(name=name) as sandbox:
-            self.assertEqual(name, sandbox.name)
-            # If the container was created successfully, we
-            # should get an error if we try to create another
-            # container with the same name.
-            with self.assertRaises(subprocess.CalledProcessError):
-                with AutograderSandbox(name=name):
-                    pass
-
-        # The container should have been deleted at this point,
-        # so we should be able to create another with the same name.
-        with AutograderSandbox(name=name):
-            pass
-
-    def test_sandbox_environment_variables_set(self):
         self.fail()
