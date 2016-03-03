@@ -9,11 +9,6 @@ SANDBOX_HOME_DIR_NAME = '/home/autograder'
 SANDBOX_WORKING_DIR_NAME = os.path.join(SANDBOX_HOME_DIR_NAME, 'working_dir')
 SANDBOX_USERNAME = 'autograder'
 
-DEFAULT_PROCESS_LIMIT = 0
-DEFAULT_STACK_LIMIT = 8000000  # 8 MB
-DEFAULT_VIRTUAL_MEM_LIMIT = 500000000  # 500 MB
-DEFAULT_TIMEOUT = 10  # seconds
-
 
 class AutograderSandbox:
     """
@@ -26,9 +21,6 @@ class AutograderSandbox:
     Instances of this class are intended to be used with a context manager.
     """
     def __init__(self, name=None, ip_address_whitelist=[],
-                 max_num_processes=DEFAULT_PROCESS_LIMIT,
-                 max_stack_size=DEFAULT_STACK_LIMIT,
-                 max_virtual_memory=DEFAULT_VIRTUAL_MEM_LIMIT,
                  environment_variables=None):
         """
         Params:
@@ -42,15 +34,6 @@ class AutograderSandbox:
                 running inside this container should be allowed to access.
                 Access to all other IP addresses will be blocked.
 
-            max_num_processes -- The maximum number of processes a program
-                run inside the sandbox is allowed to spawn.
-
-            max_stack_size -- The maximum stack size, in bytes, allowed for
-                programs run inside the sandbox.
-
-            max_virtual_memory -- The maximum amount of memory, in bytes,
-                allowed for programs run inside the sandbox.
-
             environment_variables -- A dictionary of variable_name: value
                 pairs that should be set as environment variables inside
                 the sandbox.
@@ -61,10 +44,6 @@ class AutograderSandbox:
             self._name = name
 
         self._ip_address_whitelist = ip_address_whitelist
-
-        self._max_num_processes = max_num_processes
-        self._max_stack_size = max_stack_size
-        self._max_virtual_memory = max_virtual_memory
 
         self._environment_variables = environment_variables
 
@@ -107,31 +86,60 @@ class AutograderSandbox:
         return self._ip_address_whitelist
 
     @property
-    def max_num_processes(self):
-        return self._max_num_processes
-
-    @property
-    def max_stack_size(self):
-        return self._max_stack_size
-
-    @property
-    def max_virtual_memory(self):
-        return self._max_virtual_memory
-
-    @property
     def environment_variables(self):
         return self._environment_variables
 
-    def run_command(self, args, input_content=None, timeout=DEFAULT_TIMEOUT,
+    def run_command(self, args, input_content=None,
+                    timeout=None,
+                    max_num_processes=None,
+                    max_stack_size=None,
+                    max_virtual_memory=None,
                     as_root=False, raise_on_failure=False):
+        """
+        Runs a command inside the sandbox.
+
+        Params:
+            args -- A list of strings that specify which command should
+                be run inside the sandbox.
+
+            input_content -- A string whose contents should be passed to
+                the command's standard input stream.
+
+            timeout -- A time limit in seconds.
+
+            max_num_processes -- The maximum number of processes the
+                command is allowed to spawn.
+
+            max_stack_size -- The maximum stack size, in bytes, allowed for
+                the command.
+
+            max_virtual_memory -- The maximum amount of memory, in bytes,
+                allowed for the command.
+
+            as_root -- Whether to run the command as a root user.
+
+            raise_on_failure -- If True, subprocess.CalledProcessError will
+                be raised if the command exits with nonzero status.
+        """
         cmd = ['docker', 'exec', '-i']
         if not as_root:
             cmd.append('--user={}'.format(SANDBOX_USERNAME))
         cmd.append(self.name)
-        cmd += [
-            'timeout_script.py', str(timeout), str(self.max_num_processes),
-            str(self.max_stack_size), str(self.max_virtual_memory)
-        ]
+
+        cmd.append('timeout_script.py')
+
+        if timeout is not None:
+            cmd += ['--timeout', str(timeout)]
+
+        if max_num_processes is not None:
+            cmd += ['--max_num_processes', str(max_num_processes)]
+
+        if max_stack_size is not None:
+            cmd += ['--max_stack_size', str(max_stack_size)]
+
+        if max_virtual_memory is not None:
+            cmd += ['--max_virtual_memory', str(max_virtual_memory)]
+
         cmd += args
 
         print('running: {}'.format(cmd))

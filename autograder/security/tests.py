@@ -4,7 +4,6 @@ import subprocess
 import uuid
 import tempfile
 
-from autograder.security import autograder_sandbox
 from .autograder_sandbox import AutograderSandbox
 
 
@@ -24,31 +23,18 @@ class AutograderSandboxInitTestCase(unittest.TestCase):
     def setUp(self):
         self.name = 'awexome_container'
         self.ip_whitelist = ['35.2.65.126']
-        self.max_num_processes = 2
-        self.max_stack_size = mb_to_bytes(60)
-        self.max_virtual_memory = gb_to_bytes(1)
         self.environment_variables = {'spam': 'egg', 'sausage': 42}
 
     def test_default_init(self):
         sandbox = AutograderSandbox()
         self.assertIsNotNone(sandbox.name)
         self.assertCountEqual([], sandbox.ip_address_whitelist)
-        self.assertEqual(autograder_sandbox.DEFAULT_PROCESS_LIMIT,
-                         sandbox.max_num_processes)
-        self.assertEqual(autograder_sandbox.DEFAULT_STACK_LIMIT,
-                         sandbox.max_stack_size)
-        self.assertEqual(autograder_sandbox.DEFAULT_VIRTUAL_MEM_LIMIT,
-                         sandbox.max_virtual_memory)
-
         self.assertIsNone(sandbox.environment_variables)
 
     def test_non_default_init(self):
         sandbox = AutograderSandbox(
             name=self.name,
             ip_address_whitelist=self.ip_whitelist,
-            max_num_processes=self.max_num_processes,
-            max_stack_size=self.max_stack_size,
-            max_virtual_memory=self.max_virtual_memory,
             environment_variables=self.environment_variables
         )
 
@@ -56,9 +42,6 @@ class AutograderSandboxInitTestCase(unittest.TestCase):
                          sandbox.name)
         self.assertEqual(self.ip_whitelist,
                          sandbox.ip_address_whitelist)
-        self.assertEqual(self.max_num_processes, sandbox.max_num_processes)
-        self.assertEqual(self.max_stack_size, sandbox.max_stack_size)
-        self.assertEqual(self.max_virtual_memory, sandbox.max_virtual_memory)
         self.assertEqual(self.environment_variables,
                          sandbox.environment_variables)
 
@@ -104,6 +87,37 @@ class AutograderSandboxBasicRunCommandTestCase(unittest.TestCase):
                 self.sandbox.run_command(self.root_cmd, raise_on_failure=True)
 
 
+_STACK_USAGE_PROG_TMPL = """int main()
+{{
+    char stacky[{num_bytes_on_stack}];
+    return 0;
+}}
+"""
+
+
+_HEAP_USAGE_PROG_TMPL = """int main()
+{{
+    char* heapy = new int[{num_bytes_on_heap}];
+    return 0;
+}}
+"""
+
+
+_PROCESS_SPAWN_PROG_TMPL = """
+import time
+from multiprocessing import Pool
+
+def f(x):
+    print('function called')
+    time.sleep(1)
+    return x * x
+
+if __name__ == '__main__':
+    with Pool({num_processes}) as p:
+        print(p.map(f, range({num_processes})))
+"""
+
+
 class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
     def setUp(self):
         self.sandbox = AutograderSandbox()
@@ -123,7 +137,17 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
             self.assertTrue(cmd_result.timed_out)
 
     def test_command_exceeds_process_limit(self):
-        self.fail()
+        with AutograderSandbox() as sandbox, \
+                tempfile.NamedTemporaryFile('w+') as f:
+            f.write(_PROCESS_SPAWN_PROG_TMPL.format(
+                num_processes=self.strict_process_limit + 2))
+            f.seek(0)
+            sandbox.add_files(f.name)
+
+            result = sandbox.run_command(
+                ['python3', os.path.basename(f.name)],
+                max_num_processes=self.strict_process_limit)
+            self.assertNotEqual(0, result.return_code)
 
     def test_command_exceeds_stack_size_limit(self):
         self.fail()
