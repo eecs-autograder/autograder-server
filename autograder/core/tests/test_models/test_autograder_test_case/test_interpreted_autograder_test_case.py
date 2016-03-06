@@ -109,11 +109,11 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTe
         name = 'unit-test-sandbox-{}'.format(uuid.uuid4().hex)
 
         class_.sandbox = AutograderSandbox(name=name)
-        class_.sandbox.start()
+        class_.sandbox.__enter__()
 
     @classmethod
     def tearDownClass(class_):
-        class_.sandbox.stop()
+        class_.sandbox.__exit__()
 
     def setUp(self):
         super().setUp()
@@ -131,8 +131,7 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTe
         with open(self.submitted_filename, 'w') as f:
             f.write(PyProgs.normal_exit)
 
-        self.sandbox.copy_into_sandbox(
-            self.project_filename, self.submitted_filename)
+        self.sandbox.add_files(self.project_filename, self.submitted_filename)
         result = self.test.run(None, self.sandbox)
 
         self.assertEqual(0, result.return_code)
@@ -143,13 +142,28 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTe
         with open(self.submitted_filename, 'w') as f:
             f.write(PyProgs.bad_exit)
 
-        self.sandbox.copy_into_sandbox(
+        self.sandbox.add_files(
             self.project_filename, self.submitted_filename)
         result = self.test.run(None, self.sandbox)
 
         self.assertEqual(0, result.return_code)
         self.assertEqual('waluigi\n', result.standard_output)
         self.assertEqual('lulz\n', result.standard_error_output)
+
+    def test_program_with_cmd_args(self):
+        with open(self.submitted_filename, 'w') as f:
+            f.write(PyProgs.with_cmd_args)
+
+        self.sandbox.add_files(self.project_filename, self.submitted_filename)
+        self.test.command_line_arguments = ['spam', 'egg', 'sausage']
+        self.test.validate_and_save()
+        result = self.test.run(None, self.sandbox)
+        self.assertEqual(0, result.return_code)
+        expected_output = (self.project_filename + '\n' +
+                           '\n'.join(self.test.command_line_arguments) +
+                           '\nwaluigi\n')
+
+        self.assertEqual(expected_output, result.standard_output)
 
 # -----------------------------------------------------------------------------
 
@@ -168,4 +182,11 @@ print('lulz', file=sys.stderr)
 import my_file
 
 print('waluigi')
+"""
+
+    with_cmd_args = """
+import sys
+
+for arg in sys.argv:
+    print(arg)
 """

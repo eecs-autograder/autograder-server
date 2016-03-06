@@ -58,11 +58,11 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
             test_case=self, submission=submission)
         run_program_cmd = (
             [self.interpreter] + self.interpreter_flags +
-            [self.entry_point_filename])
+            [self.entry_point_filename] + self.command_line_arguments)
 
-        runner = autograder_sandbox.run_cmd_with_redirected_io(
+        runner = autograder_sandbox.run_command(
             run_program_cmd, timeout=self.time_limit,
-            stdin_content=self.standard_input)
+            input_content=self.standard_input)
 
         result.return_code = runner.return_code
         result.standard_output = runner.stdout
