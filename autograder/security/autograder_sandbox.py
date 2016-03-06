@@ -52,7 +52,6 @@ class AutograderSandbox:
         create_args = [
             'docker', 'run',
             '--name=' + self.name,
-            # '-a', 'STDOUT', '-a', 'STDERR', '-a', 'STDIN',  # Attach streams
             '-i',  # Run in interactive mode (needed for input redirection)
             '-t',  # Allocate psuedo tty
             '-d',  # Detached
@@ -70,7 +69,6 @@ class AutograderSandbox:
 
         create_args += [
             'autograder',  # Image to use
-            # 'bash',  # Command to be run in the container
         ]
 
         subprocess.check_call(create_args, timeout=10)

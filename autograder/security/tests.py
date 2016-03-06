@@ -4,7 +4,7 @@ import subprocess
 import uuid
 import tempfile
 
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 
 from .autograder_sandbox import AutograderSandbox
 
@@ -24,7 +24,6 @@ def gb_to_bytes(num_gb):
 class AutograderSandboxInitTestCase(unittest.TestCase):
     def setUp(self):
         self.name = 'awexome_container'
-        self.ip_whitelist = ['35.2.65.126']
         self.environment_variables = OrderedDict(
             {'spam': 'egg', 'sausage': 42})
 
@@ -147,16 +146,16 @@ int main()
 
 _PROCESS_SPAWN_PROG_TMPL = """
 import time
-from multiprocessing import Pool
+import subprocess
 
-def f(x):
-    print('function called')
-    time.sleep(1)
-    return x * x
 
-if __name__ == '__main__':
-    with Pool({num_processes}) as p:
-        print(p.map(f, range({num_processes})))
+processes = []
+for i in range({num_processes}):
+    proc = subprocess.Popen(['sleep', '2'])
+    processes.append(proc)
+
+for proc in processes:
+    proc.communicate()
 """
 
 
@@ -174,110 +173,141 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
 
     def test_command_exceeds_process_limit(self):
         process_limit = 0
-        prog = _PROCESS_SPAWN_PROG_TMPL.format(
-            num_processes=process_limit + 2)
-        with self.sandbox, tempfile.NamedTemporaryFile('w+') as f:
-            f.write(prog)
-            f.seek(0)
-            self.sandbox.add_files(f.name)
+        processes_to_spawn = process_limit + 2
 
-            result = self.sandbox.run_command(
-                ['python3', os.path.basename(f.name)],
-                max_num_processes=process_limit)
-            self.assertNotEqual(0, result.return_code)
+        with self.sandbox:
+            self._do_process_resource_limit_test(
+                processes_to_spawn, process_limit, self.sandbox)
 
     def test_command_doesnt_exceed_process_limit(self):
         process_limit = 10
-        prog = _PROCESS_SPAWN_PROG_TMPL.format(
-            num_processes=process_limit // 2)
-        with self.sandbox, tempfile.NamedTemporaryFile('w+') as f:
-            f.write(prog)
-            f.seek(0)
-            self.sandbox.add_files(f.name)
+        processes_to_spawn = process_limit // 2
 
-            result = self.sandbox.run_command(
-                ['python3', os.path.basename(f.name)],
-                max_num_processes=process_limit)
-            self.assertEqual(0, result.return_code)
+        with self.sandbox:
+            self._do_process_resource_limit_test(
+                processes_to_spawn, process_limit, self.sandbox)
 
     def test_command_exceeds_stack_size_limit(self):
         stack_size_limit = mb_to_bytes(5)
-        prog = _STACK_USAGE_PROG_TMPL.format(
-            num_bytes_on_stack=stack_size_limit * 2)
-        with self.sandbox, \
-                tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
-            f.write(prog)
-            f.seek(0)
-            self.sandbox.add_files(f.name)
-
-            exe_name = 'stacky'
-            self.sandbox.run_command(
-                ['g++', '-Wall', '-pedantic',
-                 os.path.basename(f.name), '-o', exe_name])
-            result = self.sandbox.run_command(
-                ['./' + exe_name], max_stack_size=stack_size_limit)
-            self.assertNotEqual(0, result.return_code)
+        mem_to_use = stack_size_limit * 2
+        with self.sandbox:
+            self._do_stack_resource_limit_test(
+                mem_to_use, stack_size_limit, self.sandbox)
 
     def test_command_doesnt_exceed_stack_size_limit(self):
         stack_size_limit = mb_to_bytes(30)
-        prog = _STACK_USAGE_PROG_TMPL.format(
-            num_bytes_on_stack=stack_size_limit // 2)
-        with self.sandbox, \
-                tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
-            f.write(prog)
-            f.seek(0)
-            self.sandbox.add_files(f.name)
-
-            exe_name = 'stacky'
-            self.sandbox.run_command(
-                ['g++', '-Wall', '-pedantic',
-                 os.path.basename(f.name), '-o', exe_name])
-            result = self.sandbox.run_command(
-                ['./' + exe_name], max_stack_size=stack_size_limit)
-            self.assertEqual(0, result.return_code)
+        mem_to_use = stack_size_limit // 2
+        with self.sandbox:
+            self._do_stack_resource_limit_test(
+                mem_to_use, stack_size_limit, self.sandbox)
 
     def test_command_exceeds_virtual_mem_limit(self):
         virtual_mem_limit = mb_to_bytes(100)
-        prog = _HEAP_USAGE_PROG_TMPL.format(
-            num_bytes_on_heap=virtual_mem_limit * 2)
-        with self.sandbox, \
-                tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
-            f.write(prog)
-            f.seek(0)
-            self.sandbox.add_files(f.name)
-
-            exe_name = 'heapy'
-            self.sandbox.run_command(
-                ['g++', '-Wall', '-pedantic',
-                 os.path.basename(f.name), '-o', exe_name])
-            result = self.sandbox.run_command(
-                ['./' + exe_name],
-                max_virtual_memory=virtual_mem_limit)
-
-            self.assertNotEqual(0, result.return_code)
+        mem_to_use = virtual_mem_limit * 2
+        with self.sandbox:
+            self._do_heap_resource_limit_test(
+                mem_to_use, virtual_mem_limit, self.sandbox)
 
     def test_command_doesnt_exceed_virtual_mem_limit(self):
         virtual_mem_limit = mb_to_bytes(100)
-        prog = _HEAP_USAGE_PROG_TMPL.format(
-            num_bytes_on_heap=virtual_mem_limit // 2)
-        with self.sandbox, \
-                tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
-            f.write(prog)
-            f.seek(0)
-            self.sandbox.add_files(f.name)
-
-            exe_name = 'heapy'
-            self.sandbox.run_command(
-                ['g++', '-Wall', '-pedantic',
-                 os.path.basename(f.name), '-o', exe_name])
-            result = self.sandbox.run_command(
-                ['./' + exe_name],
-                max_virtual_memory=virtual_mem_limit)
-
-            self.assertEqual(0, result.return_code)
+        mem_to_use = virtual_mem_limit // 2
+        with self.sandbox:
+            self._do_heap_resource_limit_test(
+                mem_to_use, virtual_mem_limit, self.sandbox)
 
     def test_run_subsequent_commands_with_different_resource_limits(self):
-        self.fail()
+        with self.sandbox:
+            # Under limit
+            self._do_stack_resource_limit_test(
+                mb_to_bytes(1), mb_to_bytes(10), self.sandbox)
+            # Over previous limit
+            self._do_stack_resource_limit_test(
+                mb_to_bytes(20), mb_to_bytes(10), self.sandbox)
+            # Limit raised
+            self._do_stack_resource_limit_test(
+                mb_to_bytes(20), mb_to_bytes(50), self.sandbox)
+            # Over new limit
+            self._do_stack_resource_limit_test(
+                mb_to_bytes(40), mb_to_bytes(30), self.sandbox)
+
+            # Under limit
+            self._do_heap_resource_limit_test(
+                mb_to_bytes(10), mb_to_bytes(100), self.sandbox)
+            # Over previous limit
+            self._do_heap_resource_limit_test(
+                mb_to_bytes(200), mb_to_bytes(100), self.sandbox)
+            # Limit raised
+            self._do_heap_resource_limit_test(
+                mb_to_bytes(200), mb_to_bytes(300), self.sandbox)
+            # Over new limit
+            self._do_heap_resource_limit_test(
+                mb_to_bytes(250), mb_to_bytes(200), self.sandbox)
+
+            # Under limit
+            self._do_process_resource_limit_test(0, 0, self.sandbox)
+            # Over previous limit
+            self._do_process_resource_limit_test(2, 0, self.sandbox)
+            # Limit raised
+            self._do_process_resource_limit_test(2, 5, self.sandbox)
+            # Over new limit
+            self._do_process_resource_limit_test(10, 7, self.sandbox)
+
+    def _do_stack_resource_limit_test(self, mem_to_use, mem_limit, sandbox):
+        prog = _STACK_USAGE_PROG_TMPL.format(num_bytes_on_stack=mem_to_use)
+        with tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
+            f.write(prog)
+            f.seek(0)
+            sandbox.add_files(f.name)
+
+            exe_name = 'stacky'
+            sandbox.run_command(
+                ['g++', '-Wall', '-pedantic',
+                 os.path.basename(f.name), '-o', exe_name])
+            result = sandbox.run_command(
+                ['./' + exe_name], max_stack_size=mem_limit)
+
+            if mem_to_use > mem_limit:
+                self.assertNotEqual(0, result.return_code)
+            else:
+                self.assertEqual(0, result.return_code)
+
+    def _do_heap_resource_limit_test(self, mem_to_use, mem_limit, sandbox):
+        prog = _HEAP_USAGE_PROG_TMPL.format(num_bytes_on_heap=mem_to_use)
+        with tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
+            f.write(prog)
+            f.seek(0)
+            sandbox.add_files(f.name)
+
+            exe_name = 'heapy'
+            sandbox.run_command(
+                ['g++', '-Wall', '-pedantic',
+                 os.path.basename(f.name), '-o', exe_name])
+            result = sandbox.run_command(
+                ['./' + exe_name],
+                max_virtual_memory=mem_limit)
+
+            if mem_to_use > mem_limit:
+                self.assertNotEqual(0, result.return_code)
+            else:
+                self.assertEqual(0, result.return_code)
+
+    def _do_process_resource_limit_test(self, processes_to_spawn,
+                                        process_limit, sandbox):
+        prog = _PROCESS_SPAWN_PROG_TMPL.format(
+            num_processes=processes_to_spawn)
+        with tempfile.NamedTemporaryFile('w+') as f:
+            f.write(prog)
+            f.seek(0)
+            sandbox.add_files(f.name)
+
+            result = sandbox.run_command(
+                ['python3', os.path.basename(f.name)],
+                max_num_processes=process_limit)
+
+            if processes_to_spawn > process_limit:
+                self.assertNotEqual(0, result.return_code)
+            else:
+                self.assertEqual(0, result.return_code)
 
     def test_multiple_containers_dont_exceed_ulimits(self):
         """
