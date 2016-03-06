@@ -20,7 +20,7 @@ class AutograderSandbox:
 
     Instances of this class are intended to be used with a context manager.
     """
-    def __init__(self, name=None, ip_address_whitelist=[],
+    def __init__(self, name=None, allow_network_access=False,
                  environment_variables=None):
         """
         Params:
@@ -30,9 +30,10 @@ class AutograderSandbox:
                 will fail. If no value is specified, a random name will
                 be generated automatically.
 
-            ip_address_whitelist -- A list of IP addresses that programs
-                running inside this container should be allowed to access.
-                Access to all other IP addresses will be blocked.
+            allow_network_access -- When True, programs running inside
+                the sandbox will have unrestricted access to external
+                IP addresses. When False, programs will not be able
+                to contact any external IPs.
 
             environment_variables -- A dictionary of variable_name: value
                 pairs that should be set as environment variables inside
@@ -43,7 +44,7 @@ class AutograderSandbox:
         else:
             self._name = name
 
-        self._ip_address_whitelist = ip_address_whitelist
+        self._allow_network_access = allow_network_access
 
         self._environment_variables = environment_variables
 
@@ -55,9 +56,11 @@ class AutograderSandbox:
             '-i',  # Run in interactive mode (needed for input redirection)
             '-t',  # Allocate psuedo tty
             '-d',  # Detached
-            # Create the container with no network stack
-            '--net', 'none',
         ]
+
+        if not self.allow_network_access:
+            # Create the container without a network stack.
+            create_args += ['--net', 'none']
 
         if self.environment_variables:
             for key, value in self.environment_variables.items():
@@ -82,8 +85,8 @@ class AutograderSandbox:
         return self._name
 
     @property
-    def ip_address_whitelist(self):
-        return self._ip_address_whitelist
+    def allow_network_access(self):
+        return self._allow_network_access
 
     @property
     def environment_variables(self):
@@ -166,12 +169,25 @@ class AutograderSandbox:
                 ['docker', 'cp', '-',
                  self.name + ':' + SANDBOX_WORKING_DIR_NAME],
                 stdin=f)
-            chown_cmd = [
-                'chown', '{}:{}'.format(SANDBOX_USERNAME, SANDBOX_USERNAME)]
-            chown_cmd += [os.path.basename(filename) for filename in filenames]
-            self.run_command(chown_cmd, as_root=True)
+            self._chown_files(
+                [os.path.basename(filename) for filename in filenames])
 
+    def add_and_rename_file(self, filename, new_filename):
+        """
+        Copies the specified file into the working directory of this
+        sandbox and renames it to new_filename.
+        """
+        dest = os.path.join(
+            self.name + ':' + SANDBOX_WORKING_DIR_NAME,
+            new_filename)
+        subprocess.check_call(['docker', 'cp', filename, dest])
+        self._chown_files([new_filename])
 
+    def _chown_files(self, filenames):
+        chown_cmd = [
+            'chown', '{}:{}'.format(SANDBOX_USERNAME, SANDBOX_USERNAME)]
+        chown_cmd += filenames
+        self.run_command(chown_cmd, as_root=True)
 
 
 # TODO: Once upgraded to Python 3.5, replace call() with the

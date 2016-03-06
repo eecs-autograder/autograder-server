@@ -31,20 +31,18 @@ class AutograderSandboxInitTestCase(unittest.TestCase):
     def test_default_init(self):
         sandbox = AutograderSandbox()
         self.assertIsNotNone(sandbox.name)
-        self.assertCountEqual([], sandbox.ip_address_whitelist)
+        self.assertFalse(sandbox.allow_network_access)
         self.assertIsNone(sandbox.environment_variables)
 
     def test_non_default_init(self):
         sandbox = AutograderSandbox(
             name=self.name,
-            ip_address_whitelist=self.ip_whitelist,
+            allow_network_access=True,
             environment_variables=self.environment_variables
         )
-
         self.assertEqual(self.name,
                          sandbox.name)
-        self.assertEqual(self.ip_whitelist,
-                         sandbox.ip_address_whitelist)
+        self.assertTrue(sandbox.allow_network_access)
         self.assertEqual(self.environment_variables,
                          sandbox.environment_variables)
 
@@ -301,8 +299,10 @@ class AutograderSandboxNetworkAccessTestCase(unittest.TestCase):
             result = sandbox.run_command(['ping', '-c', '5', _GOOGLE_IP_ADDR])
             self.assertNotEqual(0, result.return_code)
 
-    def test_run_command_access_ip_address_whitelist(self):
-        self.fail()
+    def test_networking_enabled(self):
+        with AutograderSandbox() as sandbox:
+            result = sandbox.run_command(['ping', '-c', '5', _GOOGLE_IP_ADDR])
+            self.assertEqual(0, result.return_code)
 
 
 class AutograderSandboxCopyFilesTestCase(unittest.TestCase):
@@ -338,4 +338,20 @@ class AutograderSandboxCopyFilesTestCase(unittest.TestCase):
                 file_.close()
 
     def test_copy_and_rename_file_into_sandbox(self):
-        self.fail()
+        expected_content = 'this is a file'
+        with tempfile.NamedTemporaryFile(mode='w+') as f:
+            f.write(expected_content)
+            f.seek(0)
+
+            with AutograderSandbox() as sandbox:
+                new_name = 'new_filename.txt'
+                sandbox.add_and_rename_file(f.name, new_name)
+
+                ls_result = sandbox.run_command(['ls'])
+                actual_filenames = [
+                    filename.strip() for filename in ls_result.stdout.split()]
+                expected_filenames = [new_name]
+                self.assertCountEqual(expected_filenames, actual_filenames)
+
+                actual_content = sandbox.run_command(['cat', new_name]).stdout
+                self.assertEqual(expected_content, actual_content)
