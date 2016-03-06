@@ -12,19 +12,11 @@ from autograder.security.autograder_sandbox import AutograderSandbox
 
 
 class SharedSetUpTearDownForRunTestsWithCompilation(object):
-    @classmethod
-    def setUpClass(class_):
-        name = 'unit-test-sandbox-{}'.format(uuid.uuid4().hex)
-
-        class_.sandbox = AutograderSandbox(name=name)  # , linux_user_id=2001)
-        class_.sandbox.start()
-
-    @classmethod
-    def tearDownClass(class_):
-        class_.sandbox.stop()
-
     def setUp(self):
         super().setUp()
+
+        self.sandbox = AutograderSandbox()
+        self.sandbox.__enter__()
 
         self.original_dir = os.getcwd()
         self.new_dir = os.path.join(settings.MEDIA_ROOT, 'working_dir')
@@ -67,12 +59,8 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
     def tearDown(self):
         super().tearDown()
 
+        self.sandbox.__exit__()
         os.chdir(self.original_dir)
-
-        self.sandbox.clear_working_dir()
-        print('verifying working dir was cleared')
-        ls_result = self.sandbox.run_cmd_with_redirected_io(['ls'])
-        self.assertEqual(ls_result.stdout, '')
 
     def get_ag_test_type_str_for_factory(self):
         raise NotImplementedError(
