@@ -1,10 +1,9 @@
 import os
 import unittest
 import subprocess
-import uuid
 import tempfile
 
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 
 from .autograder_sandbox import AutograderSandbox
 
