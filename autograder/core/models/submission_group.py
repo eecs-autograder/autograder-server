@@ -409,8 +409,10 @@ def verify_users_can_be_in_group(users, project, error_dict_field_name,
 
 
 def _get_and_lock_users(usernames):
+    usernames = list(usernames)
     users = [
         User.objects.get_or_create(username=username)[0]
-        for username in usernames]
-    User.objects.select_for_update().filter(username__in=usernames)
+                                    for username in usernames]
+    users = User.objects.select_for_update().filter(username__in=usernames)
     return users
+

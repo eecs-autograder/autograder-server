@@ -81,21 +81,8 @@ class GetSubmittedFileEndpoint(EndpointBase):
             request.user, submission.submission_group.project)
         check_can_view_group(request.user, submission.submission_group)
 
-        file_ = submission.get_file(filename)
-        response = {
-            "type": "submitted_file",
-            "filename": file_.name,
-            "size": file_.size,
-            "content": file_.read(),
-
-            "urls": {
-                "self": url_shortcuts.submitted_file_url(
-                    submission, file_.name),
-                "submission": url_shortcuts.submission_url(submission)
-            }
-        }
-
-        return http.JsonResponse(response)
+        return http.FileResponse(
+            submission.get_file(filename, binary_mode=True))
 
 
 class ListAutograderTestCaseResultsEndpoint(EndpointBase):

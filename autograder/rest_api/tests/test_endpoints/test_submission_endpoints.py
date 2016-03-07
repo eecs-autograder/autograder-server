@@ -336,20 +336,9 @@ class GetSubmittedFileTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
             self.assertEqual(200, response.status_code)
 
             self.file_to_get.seek(0)
-            expected_content = {
-                "type": "submitted_file",
-                "filename": self.file_to_get.name,
-                "size": self.file_to_get.size,
-                "content": self.file_to_get.read().decode('utf-8'),
-
-                "urls": {
-                    "self": obj['file_url'],
-                    "submission": obj['submission_url']
-                }
-            }
-
+            expected_content = self.file_to_get.read()
             self.assertEqual(
-                expected_content, json_load_bytes(response.content))
+                expected_content, b''.join(response.streaming_content))
 
     def test_course_admin_or_semester_staff_get_other_user_submitted_file(self):
         for user in self.staff, self.admin:
@@ -360,20 +349,9 @@ class GetSubmittedFileTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
                 self.assertEqual(200, response.status_code)
 
                 self.file_to_get.seek(0)
-                expected_content = {
-                    "type": "submitted_file",
-                    "filename": self.file_to_get.name,
-                    "size": self.file_to_get.size,
-                    "content": self.file_to_get.read().decode('utf-8'),
-
-                    "urls": {
-                        "self": obj['file_url'],
-                        "submission": obj['submission_url']
-                    }
-                }
-
+                expected_content = self.file_to_get.read()
                 self.assertEqual(
-                    expected_content, json_load_bytes(response.content))
+                    expected_content, b''.join(response.streaming_content))
 
     def test_student_get_other_submitted_file_permission_denied(self):
         for user in self.enrolled, self.nobody:

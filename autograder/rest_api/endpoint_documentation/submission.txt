@@ -43,21 +43,8 @@ Response format:
 --------------------------------------------------------------------------------
 
 "/submissions/<id>/submitted_files/<filename>/"
-GET: Returns the specified file.
+GET: Returns the contents of the specified file.
 Access rules: Same as /submissions/<id>/
-
-Response format:
-{
-    "type": "submitted_file",
-    "filename": <string>,
-    "size": <int>,
-    "content": <string>,
-
-    "urls": {
-        "self": "/submissions/<id>/submitted_files/<filename>/",
-        "submission": "/submissions/<id>/"
-    }
-}
 
 --------------------------------------------------------------------------------
 

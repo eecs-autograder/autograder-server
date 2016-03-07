@@ -204,10 +204,11 @@ class Submission(ModelValidatableOnSave):
 
     # -------------------------------------------------------------------------
 
-    def get_file(self, filename):
+    def get_file(self, filename, binary_mode=False):
         self._check_file_exists(filename)
+        mode = 'rb' if binary_mode else 'r'
         return files.File(
-            open(self._get_submitted_file_dir(filename)),
+            open(self._get_submitted_file_dir(filename), mode),
             name=os.path.basename(filename))
 
     def _check_file_exists(self, filename):
