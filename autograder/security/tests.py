@@ -2,6 +2,8 @@ import os
 import unittest
 import subprocess
 import tempfile
+import multiprocessing
+import itertools
 
 from collections import OrderedDict
 
@@ -310,10 +312,39 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
             else:
                 self.assertEqual(0, result.return_code)
 
-    def _do_process_resource_limit_test(self, processes_to_spawn,
+    def _do_process_resource_limit_test(self, num_processes_to_spawn,
                                         process_limit, sandbox):
+        prog_ret_code = _run_process_spawning_prog(
+            num_processes_to_spawn, process_limit, sandbox)
+
+        if num_processes_to_spawn > process_limit:
+            self.assertNotEqual(0, prog_ret_code)
+        else:
+            self.assertEqual(0, prog_ret_code)
+
+    def test_multiple_containers_dont_exceed_ulimits(self):
+        """
+        One quirk of docker containers is that if there are multiple users
+        created in different containers but with the same UID, the resource
+        usage of all those users will contribute to hitting the same ulimits.
+        This test makes sure that valid processes aren't randomly cut off.
+        """
+        num_containers = 4
+        with multiprocessing.Pool(processes=num_containers) as p:
+            return_codes = p.starmap(
+                _run_process_spawning_prog,
+                itertools.repeat((1, 1, None), num_containers))
+
+        print(return_codes)
+        for ret_code in return_codes:
+            self.assertEqual(0, ret_code)
+
+
+def _run_process_spawning_prog(num_processes_to_spawn, process_limit,
+                               sandbox):
+    def _run_prog(sandbox):
         prog = _PROCESS_SPAWN_PROG_TMPL.format(
-            num_processes=processes_to_spawn)
+            num_processes=num_processes_to_spawn)
         with tempfile.NamedTemporaryFile('w+') as f:
             f.write(prog)
             f.seek(0)
@@ -322,21 +353,14 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
             result = sandbox.run_command(
                 ['python3', os.path.basename(f.name)],
                 max_num_processes=process_limit)
+            return result.return_code
 
-            if processes_to_spawn > process_limit:
-                self.assertNotEqual(0, result.return_code)
-            else:
-                self.assertEqual(0, result.return_code)
-
-    def test_multiple_containers_dont_exceed_ulimits(self):
-        """
-        One quirk of docker containers is that if there are multiple users
-        created in different containers but with the same UID, the resource
-        usage of all those users will contribute to hitting the same ulimits.
-        This test makes sure that the ulimits are set high enough that
-        valid processes aren't randomly cut off.
-        """
-        self.fail()
+    if sandbox is None:
+        sandbox = AutograderSandbox()
+        with sandbox:
+            return _run_prog(sandbox)
+    else:
+        return _run_prog(sandbox)
 
 
 _GOOGLE_IP_ADDR = "216.58.214.196"

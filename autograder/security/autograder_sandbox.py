@@ -3,6 +3,7 @@ import subprocess
 import uuid
 import tempfile
 import tarfile
+import sqlite3
 
 
 SANDBOX_HOME_DIR_NAME = '/home/autograder'
@@ -44,6 +45,8 @@ class AutograderSandbox:
         else:
             self._name = name
 
+        self._linux_uid = _get_next_linux_uid()
+
         self._allow_network_access = allow_network_access
 
         self._environment_variables = environment_variables
@@ -72,6 +75,9 @@ class AutograderSandbox:
         ]
 
         subprocess.check_call(create_args, timeout=10)
+        self.run_command(
+            ['usermod', '-u', str(self._linux_uid), SANDBOX_USERNAME],
+            as_root=True, raise_on_failure=True)
 
     def _destroy(self):
         subprocess.check_call(['docker', 'stop', self.name])
@@ -288,8 +294,40 @@ class _SubprocessRunner(object):
             self._stderr = msg
 
 
+_UID_DB_NAME = 'linux_uid.db'
+_UID_TABLE_NAME = 'uid_table'
+_UID_COLUMN_NAME = 'linux_uid'
+_UID_START_VALUE = 2000
 
 
+def _get_next_linux_uid():
+    with sqlite3.connect(_UID_DB_NAME) as conn:
+        select_stmt = 'SELECT {} FROM {} LIMIT 1;'.format(
+            _UID_COLUMN_NAME, _UID_TABLE_NAME)
+
+        def _get_and_update():
+            cur = conn.cursor()
+            cur.execute('BEGIN EXCLUSIVE TRANSACTION;')
+            cur.execute(select_stmt)
+            uid = cur.fetchone()
+            cur.execute('UPDATE {} SET {}=?'.format(
+                _UID_TABLE_NAME, _UID_COLUMN_NAME), uid + 1)
+            cur.execute('COMMIT TRANSACTION;')
+            cur.commit()
+
+            return uid
+
+        try:
+            return _get_and_update()
+        except sqlite3.OperationalError:
+            cur = conn.cursor()
+            cur.execute('CREATE TABLE {} ({});'.format(
+                _UID_TABLE_NAME, _UID_COLUMN_NAME))
+            cur.execute('INSERT INTO {}({}) VALUES ({})'.format(
+                _UID_TABLE_NAME, _UID_COLUMN_NAME, _UID_START_VALUE))
+            cur.execute(select_stmt)
+
+            return _get_and_update()
 
 
 
