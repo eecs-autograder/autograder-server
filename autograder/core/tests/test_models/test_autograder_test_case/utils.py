@@ -1,5 +1,4 @@
 import os
-import uuid
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -14,9 +13,6 @@ from autograder.security.autograder_sandbox import AutograderSandbox
 class SharedSetUpTearDownForRunTestsWithCompilation(object):
     def setUp(self):
         super().setUp()
-
-        self.sandbox = AutograderSandbox()
-        self.sandbox.__enter__()
 
         self.original_dir = os.getcwd()
         self.new_dir = os.path.join(settings.MEDIA_ROOT, 'working_dir')
@@ -55,6 +51,9 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
         self.test_case_starter = AutograderTestCaseBase.objects.get(
             pk=self.test_case_starter.pk)
         print('************', type(self.test_case_starter), '**************')
+
+        self.sandbox = AutograderSandbox()
+        self.sandbox.__enter__()
 
     def tearDown(self):
         super().tearDown()

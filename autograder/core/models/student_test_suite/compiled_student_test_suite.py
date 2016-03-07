@@ -115,20 +115,20 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
             project_dir, self.correct_implementation_filename)
         test_file_abspath = os.path.join(submission_dir, test_file)
 
-        autograder_sandbox.copy_into_sandbox(
+        autograder_sandbox.add_files(
             test_file_abspath, *resource_file_abspaths)
 
         impl_name = (
             self.implementation_file_alias if self.implementation_file_alias
             else self.correct_implementation_filename)
-        autograder_sandbox.copy_and_rename_into_sandbox(
+        autograder_sandbox.add_and_rename_file(
             impl_abspath, impl_name)
 
         exe_name = 'prog'
         files_to_compile = self.suite_resource_filenames + [test_file]
         if self.compile_implementation_files:
             files_to_compile.append(impl_name)
-        validity_compilation_result = autograder_sandbox.run_cmd_with_redirected_io(
+        validity_compilation_result = autograder_sandbox.run_command(
             [self.compiler] + self.compiler_flags + files_to_compile +
             ['-o', exe_name],
             timeout=self.time_limit)
@@ -142,7 +142,7 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
         if validity_compilation_result.return_code != 0:
             return eval_result
 
-        validity_run_result = autograder_sandbox.run_cmd_with_redirected_io(
+        validity_run_result = autograder_sandbox.run_command(
             ['./' + exe_name], timeout=self.time_limit)
 
         eval_result.valid = (
@@ -152,7 +152,7 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
         eval_result.validity_check_standard_error_output = validity_run_result.stderr
         eval_result.timed_out = validity_run_result.timed_out
 
-        autograder_sandbox.clear_working_dir()
+        autograder_sandbox.reset()
 
         if not eval_result.valid:
             return eval_result
@@ -160,18 +160,18 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
         for buggy_impl in self.buggy_implementation_filenames:
             print('evaluating buggy impl:', buggy_impl)
             buggy_impl_abspath = os.path.join(project_dir, buggy_impl)
-            autograder_sandbox.copy_into_sandbox(
+            autograder_sandbox.add_files(
                 test_file_abspath, *resource_file_abspaths)
             impl_name = (
                 self.implementation_file_alias if
                 self.implementation_file_alias else buggy_impl)
-            autograder_sandbox.copy_and_rename_into_sandbox(
+            autograder_sandbox.add_and_rename_file(
                 buggy_impl_abspath, impl_name)
 
             files_to_compile = self.suite_resource_filenames + [test_file]
             if self.compile_implementation_files:
                 files_to_compile.append(impl_name)
-            compile_result = autograder_sandbox.run_cmd_with_redirected_io(
+            compile_result = autograder_sandbox.run_command(
                 [self.compiler] + self.compiler_flags +
                 files_to_compile + ['-o', exe_name],
                 timeout=self.time_limit)
@@ -179,13 +179,13 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
             if compile_result.return_code != 0:
                 continue
 
-            run_result = autograder_sandbox.run_cmd_with_redirected_io(
+            run_result = autograder_sandbox.run_command(
                 ['./' + exe_name], timeout=self.time_limit)
 
             if run_result.return_code != 0:
                 eval_result.buggy_implementations_exposed.append(buggy_impl)
 
-            autograder_sandbox.clear_working_dir()
+            autograder_sandbox.reset()
 
         return eval_result
 

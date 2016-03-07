@@ -124,17 +124,6 @@ class CompiledStudentTestSuiteTestCase(
 
 
 class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
-    @classmethod
-    def setUpClass(class_):
-        name = 'unit-test-sandbox-{}'.format(uuid.uuid4().hex)
-
-        class_.sandbox = AutograderSandbox(name=name)
-        class_.sandbox.start()
-
-    @classmethod
-    def tearDownClass(class_):
-        class_.sandbox.stop()
-
     def setUp(self):
         super().setUp()
 
@@ -168,6 +157,13 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
 
         # self.submission = Submission.objects.validate_and_create(
         #     submission_group=self.group, submitted_files=STUDENT_TESTS)
+
+        self.sandbox = AutograderSandbox()
+        self.sandbox.__enter__()
+
+    def tearDown(self):
+        super().tearDown()
+        self.sandbox.__exit__()
 
     # -------------------------------------------------------------------------
 

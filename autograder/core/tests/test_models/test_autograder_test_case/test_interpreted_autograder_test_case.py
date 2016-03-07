@@ -1,4 +1,3 @@
-import uuid
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 
@@ -104,17 +103,6 @@ class InterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTestC
 
 
 class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTestCase):
-    @classmethod
-    def setUpClass(class_):
-        name = 'unit-test-sandbox-{}'.format(uuid.uuid4().hex)
-
-        class_.sandbox = AutograderSandbox(name=name)
-        class_.sandbox.__enter__()
-
-    @classmethod
-    def tearDownClass(class_):
-        class_.sandbox.__exit__()
-
     def setUp(self):
         super().setUp()
 
@@ -126,6 +114,12 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTe
             interpreter='python3',
             entry_point_filename=self.project_filename,
             **self.starter_args)
+
+        self.sandbox = AutograderSandbox()
+        self.sandbox.__enter__()
+
+    def tearDown(self):
+        self.sandbox.__exit__()
 
     def test_zero_return_code_and_stdout(self):
         with open(self.submitted_filename, 'w') as f:

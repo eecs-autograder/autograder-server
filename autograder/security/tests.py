@@ -44,6 +44,13 @@ class AutograderSandboxInitTestCase(unittest.TestCase):
         self.assertEqual(self.environment_variables,
                          sandbox.environment_variables)
 
+
+class AutograderSandboxMiscTestCase(unittest.TestCase):
+    def setUp(self):
+        self.name = 'awexome_container'
+        self.environment_variables = OrderedDict(
+            {'spam': 'egg', 'sausage': 42})
+
     def test_context_manager(self):
         with AutograderSandbox(name=self.name) as sandbox:
             self.assertEqual(self.name, sandbox.name)
@@ -74,6 +81,19 @@ class AutograderSandboxInitTestCase(unittest.TestCase):
                 str(val) for val in self.environment_variables.values())
             expected_output += '\n'
             self.assertEqual(expected_output, result.stdout)
+
+    def test_reset(self):
+        with AutograderSandbox() as sandbox:
+            file_to_add = os.path.abspath(__file__)
+            sandbox.add_files(file_to_add)
+
+            ls_result = sandbox.run_command(['ls']).stdout
+            self.assertEqual(os.path.basename(file_to_add) + '\n', ls_result)
+
+            sandbox.reset()
+
+            ls_result = sandbox.run_command(['ls']).stdout
+            self.assertEqual('', ls_result)
 
 
 class AutograderSandboxBasicRunCommandTestCase(unittest.TestCase):
@@ -329,7 +349,7 @@ class AutograderSandboxNetworkAccessTestCase(unittest.TestCase):
             self.assertNotEqual(0, result.return_code)
 
     def test_networking_enabled(self):
-        with AutograderSandbox() as sandbox:
+        with AutograderSandbox(allow_network_access=True) as sandbox:
             result = sandbox.run_command(['ping', '-c', '5', _GOOGLE_IP_ADDR])
             self.assertEqual(0, result.return_code)
 

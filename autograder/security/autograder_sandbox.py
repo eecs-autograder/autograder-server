@@ -48,7 +48,7 @@ class AutograderSandbox:
 
         self._environment_variables = environment_variables
 
-    def __enter__(self):
+    def _create_and_start(self):
         create_args = [
             'docker', 'run',
             '--name=' + self.name,
@@ -72,11 +72,24 @@ class AutograderSandbox:
         ]
 
         subprocess.check_call(create_args, timeout=10)
+
+    def _destroy(self):
+        subprocess.check_call(['docker', 'stop', self.name])
+        subprocess.check_call(['docker', 'rm', self.name])
+
+    def __enter__(self):
+        self._create_and_start()
         return self
 
     def __exit__(self, *args):
-        subprocess.check_call(['docker', 'stop', self.name])
-        subprocess.check_call(['docker', 'rm', self.name])
+        self._destroy()
+
+    def reset(self):
+        """
+        Destroys, re-creates, and restarts the sandbox.
+        """
+        self._destroy()
+        self._create_and_start()
 
     @property
     def name(self):
