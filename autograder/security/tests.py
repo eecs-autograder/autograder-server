@@ -139,47 +139,6 @@ class AutograderSandboxBasicRunCommandTestCase(unittest.TestCase):
                 self.sandbox.run_command(self.root_cmd, raise_on_failure=True)
 
 
-_STACK_USAGE_PROG_TMPL = """#include <iostream>
-
-using namespace std;
-
-int main()
-{{
-    char stacky[{num_bytes_on_stack}];
-    cout << stacky << endl;
-    return 0;
-}}
-"""
-
-
-_HEAP_USAGE_PROG_TMPL = """#include <iostream>
-
-using namespace std;
-
-int main()
-{{
-    char* heapy = new char[{num_bytes_on_heap}];
-    cout << heapy << endl;
-    return 0;
-}}
-"""
-
-
-_PROCESS_SPAWN_PROG_TMPL = """
-import time
-import subprocess
-
-
-processes = []
-for i in range({num_processes}):
-    proc = subprocess.Popen(['sleep', '2'])
-    processes.append(proc)
-
-for proc in processes:
-    proc.communicate()
-"""
-
-
 class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
     def setUp(self):
         self.sandbox = AutograderSandbox()
@@ -202,11 +161,15 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
 
     def test_command_doesnt_exceed_process_limit(self):
         process_limit = 10
-        processes_to_spawn = process_limit // 2
+        processes_to_spawn = process_limit - 2
 
         with self.sandbox:
             self._do_process_resource_limit_test(
                 processes_to_spawn, process_limit, self.sandbox)
+
+    def test_command_spawns_no_processes_with_limit_zero(self):
+        with self.sandbox:
+            self._do_process_resource_limit_test(0, 0, self.sandbox)
 
     def test_command_exceeds_stack_size_limit(self):
         stack_size_limit = mb_to_bytes(5)
@@ -274,53 +237,30 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
             self._do_process_resource_limit_test(10, 7, self.sandbox)
 
     def _do_stack_resource_limit_test(self, mem_to_use, mem_limit, sandbox):
-        prog = _STACK_USAGE_PROG_TMPL.format(num_bytes_on_stack=mem_to_use)
-        with tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
-            f.write(prog)
-            f.seek(0)
-            sandbox.add_files(f.name)
+        prog_ret_code = _run_stack_usage_prog(mem_to_use, mem_limit, sandbox)
 
-            exe_name = 'stacky'
-            sandbox.run_command(
-                ['g++', '-Wall', '-pedantic',
-                 os.path.basename(f.name), '-o', exe_name])
-            result = sandbox.run_command(
-                ['./' + exe_name], max_stack_size=mem_limit)
-
-            if mem_to_use > mem_limit:
-                self.assertNotEqual(0, result.return_code)
-            else:
-                self.assertEqual(0, result.return_code)
+        self._check_resource_limit_test_result(
+            prog_ret_code, mem_to_use, mem_limit)
 
     def _do_heap_resource_limit_test(self, mem_to_use, mem_limit, sandbox):
-        prog = _HEAP_USAGE_PROG_TMPL.format(num_bytes_on_heap=mem_to_use)
-        with tempfile.NamedTemporaryFile('w+', suffix='.cpp') as f:
-            f.write(prog)
-            f.seek(0)
-            sandbox.add_files(f.name)
-
-            exe_name = 'heapy'
-            sandbox.run_command(
-                ['g++', '-Wall', '-pedantic',
-                 os.path.basename(f.name), '-o', exe_name])
-            result = sandbox.run_command(
-                ['./' + exe_name],
-                max_virtual_memory=mem_limit)
-
-            if mem_to_use > mem_limit:
-                self.assertNotEqual(0, result.return_code)
-            else:
-                self.assertEqual(0, result.return_code)
+        prog_ret_code = _run_heap_usage_prog(mem_to_use, mem_limit, sandbox)
+        self._check_resource_limit_test_result(
+            prog_ret_code, mem_to_use, mem_limit)
 
     def _do_process_resource_limit_test(self, num_processes_to_spawn,
                                         process_limit, sandbox):
         prog_ret_code = _run_process_spawning_prog(
             num_processes_to_spawn, process_limit, sandbox)
 
-        if num_processes_to_spawn > process_limit:
-            self.assertNotEqual(0, prog_ret_code)
+        self._check_resource_limit_test_result(
+            prog_ret_code, num_processes_to_spawn, process_limit)
+
+    def _check_resource_limit_test_result(self, ret_code, resource_used,
+                                          resource_limit):
+        if resource_used > resource_limit:
+            self.assertNotEqual(0, ret_code)
         else:
-            self.assertEqual(0, prog_ret_code)
+            self.assertEqual(0, ret_code)
 
     def test_multiple_containers_dont_exceed_ulimits(self):
         """
@@ -329,15 +269,112 @@ class AutograderSandboxResourceLimitTestCase(unittest.TestCase):
         usage of all those users will contribute to hitting the same ulimits.
         This test makes sure that valid processes aren't randomly cut off.
         """
-        num_containers = 4
+        self._do_parallel_container_stack_limit_test(
+            16, mb_to_bytes(20), mb_to_bytes(30))
+
+        self._do_parallel_container_heap_limit_test(
+            16, mb_to_bytes(300), mb_to_bytes(500))
+
+        self._do_parallel_container_process_limit_test(16, 3, 5)
+        self._do_parallel_container_process_limit_test(15, 0, 0)
+
+    def _do_parallel_container_stack_limit_test(self, num_containers,
+                                                mem_to_use, mem_limit):
+        self._do_parallel_container_resource_limit_test(
+            _run_stack_usage_prog, num_containers, mem_to_use, mem_limit)
+
+    def _do_parallel_container_heap_limit_test(self, num_containers,
+                                               mem_to_use, mem_limit):
+        self._do_parallel_container_resource_limit_test(
+            _run_heap_usage_prog, num_containers, mem_to_use, mem_limit)
+
+    def _do_parallel_container_process_limit_test(self, num_containers,
+                                                  num_processes_to_spawn,
+                                                  process_limit):
+        self._do_parallel_container_resource_limit_test(
+            _run_process_spawning_prog, num_containers,
+            num_processes_to_spawn, process_limit)
+
+    def _do_parallel_container_resource_limit_test(self, func_to_run,
+                                                   num_containers,
+                                                   amount_to_use,
+                                                   resource_limit):
         with multiprocessing.Pool(processes=num_containers) as p:
             return_codes = p.starmap(
-                _run_process_spawning_prog,
-                itertools.repeat((1, 1, None), num_containers))
+                func_to_run,
+                itertools.repeat((amount_to_use, resource_limit, None),
+                                 num_containers))
 
         print(return_codes)
         for ret_code in return_codes:
             self.assertEqual(0, ret_code)
+
+
+def _run_stack_usage_prog(mem_to_use, mem_limit, sandbox):
+    def _run_prog(sandbox):
+        prog = _STACK_USAGE_PROG_TMPL.format(num_bytes_on_stack=mem_to_use)
+        filename = _add_string_to_sandbox_as_file(prog, '.cpp', sandbox)
+        exe_name = _compile_in_sandbox(sandbox, filename)
+        result = sandbox.run_command(
+            ['./' + exe_name], max_stack_size=mem_limit)
+        return result.return_code
+
+    return _call_function_and_allocate_sandbox_if_needed(_run_prog, sandbox)
+
+
+_STACK_USAGE_PROG_TMPL = """#include <iostream>
+#include <thread>
+
+using namespace std;
+
+int main()
+{{
+    char stacky[{num_bytes_on_stack}];
+
+    this_thread::sleep_for(chrono::seconds(2));
+
+    cout << stacky << endl;
+    return 0;
+}}
+"""
+
+
+def _run_heap_usage_prog(mem_to_use, mem_limit, sandbox):
+    def _run_prog(sandbox):
+        prog = _HEAP_USAGE_PROG_TMPL.format(num_bytes_on_heap=mem_to_use)
+        filename = _add_string_to_sandbox_as_file(prog, '.cpp', sandbox)
+        exe_name = _compile_in_sandbox(sandbox, filename)
+        result = result = sandbox.run_command(
+            ['./' + exe_name], max_virtual_memory=mem_limit)
+
+        return result.return_code
+
+    return _call_function_and_allocate_sandbox_if_needed(_run_prog, sandbox)
+
+
+_HEAP_USAGE_PROG_TMPL = """#include <iostream>
+#include <thread>
+
+using namespace std;
+
+int main()
+{{
+    char* heapy = new char[{num_bytes_on_heap}];
+
+    this_thread::sleep_for(chrono::seconds(2));
+
+    cout << heapy << endl;
+    return 0;
+}}
+"""
+
+
+def _compile_in_sandbox(sandbox, *files_to_compile):
+    exe_name = 'prog'
+    sandbox.run_command(
+        ['g++', '--std=c++11'] + list(files_to_compile) +
+        ['-o', exe_name], raise_on_failure=True)
+    return exe_name
 
 
 def _run_process_spawning_prog(num_processes_to_spawn, process_limit,
@@ -345,22 +382,52 @@ def _run_process_spawning_prog(num_processes_to_spawn, process_limit,
     def _run_prog(sandbox):
         prog = _PROCESS_SPAWN_PROG_TMPL.format(
             num_processes=num_processes_to_spawn)
-        with tempfile.NamedTemporaryFile('w+') as f:
-            f.write(prog)
-            f.seek(0)
-            sandbox.add_files(f.name)
+        filename = _add_string_to_sandbox_as_file(prog, '.py', sandbox)
 
-            result = sandbox.run_command(
-                ['python3', os.path.basename(f.name)],
-                max_num_processes=process_limit)
-            return result.return_code
+        result = sandbox.run_command(['python3', filename],
+                                     max_num_processes=process_limit)
+        return result.return_code
 
+    return _call_function_and_allocate_sandbox_if_needed(_run_prog, sandbox)
+
+
+_PROCESS_SPAWN_PROG_TMPL = """
+import time
+import subprocess
+
+
+processes = []
+for i in range({num_processes}):
+    proc = subprocess.Popen(['sleep', '2'])
+    processes.append(proc)
+
+time.sleep(2)
+
+for proc in processes:
+    proc.communicate()
+"""
+
+
+def _add_string_to_sandbox_as_file(string, file_extension, sandbox):
+    with tempfile.NamedTemporaryFile('w+', suffix=file_extension) as f:
+        f.write(string)
+        f.seek(0)
+        sandbox.add_files(f.name)
+
+        return os.path.basename(f.name)
+
+
+def _call_function_and_allocate_sandbox_if_needed(func, sandbox):
     if sandbox is None:
         sandbox = AutograderSandbox()
         with sandbox:
-            return _run_prog(sandbox)
+            return func(sandbox)
     else:
-        return _run_prog(sandbox)
+        return func(sandbox)
+
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 _GOOGLE_IP_ADDR = "216.58.214.196"

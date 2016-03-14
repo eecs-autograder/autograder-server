@@ -302,33 +302,33 @@ _UID_START_VALUE = 2000
 
 def _get_next_linux_uid():
     with sqlite3.connect(_UID_DB_NAME) as conn:
-        select_stmt = 'SELECT {} FROM {} LIMIT 1;'.format(
-            _UID_COLUMN_NAME, _UID_TABLE_NAME)
+        cur = conn.cursor()
+        cur.execute('BEGIN EXCLUSIVE TRANSACTION;')
+        return _init_db_and_get_id(cur)
 
-        def _get_and_update():
-            cur = conn.cursor()
-            cur.execute('BEGIN EXCLUSIVE TRANSACTION;')
-            cur.execute(select_stmt)
-            uid = cur.fetchone()
-            cur.execute('UPDATE {} SET {}=?'.format(
-                _UID_TABLE_NAME, _UID_COLUMN_NAME), uid + 1)
-            cur.execute('COMMIT TRANSACTION;')
-            cur.commit()
 
-            return uid
+def _init_db_and_get_id(cur):
+    try:
+        return _get_and_update(cur)
+    except sqlite3.OperationalError:
+        cur.execute('CREATE TABLE {} ({});'.format(
+            _UID_TABLE_NAME, _UID_COLUMN_NAME))
+        cur.execute('INSERT INTO {}({}) VALUES ({})'.format(
+            _UID_TABLE_NAME, _UID_COLUMN_NAME, _UID_START_VALUE))
 
-        try:
-            return _get_and_update()
-        except sqlite3.OperationalError:
-            cur = conn.cursor()
-            cur.execute('CREATE TABLE {} ({});'.format(
-                _UID_TABLE_NAME, _UID_COLUMN_NAME))
-            cur.execute('INSERT INTO {}({}) VALUES ({})'.format(
-                _UID_TABLE_NAME, _UID_COLUMN_NAME, _UID_START_VALUE))
-            cur.execute(select_stmt)
+        return _get_and_update(cur)
 
-            return _get_and_update()
 
+def _get_and_update(cur):
+    select_stmt = 'SELECT {} FROM {} LIMIT 1;'.format(
+        _UID_COLUMN_NAME, _UID_TABLE_NAME)
+    cur.execute(select_stmt)
+    uid = int(cur.fetchone()[0])
+    update_stmt = 'UPDATE {} SET {}=?'.format(
+        _UID_TABLE_NAME, _UID_COLUMN_NAME)
+    cur.execute(update_stmt, ((uid + 1),))
+
+    return uid
 
 
 # class AutograderSandbox:
