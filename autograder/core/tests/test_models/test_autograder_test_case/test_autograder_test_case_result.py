@@ -21,6 +21,52 @@ from autograder.core.tests.test_models.test_autograder_test_case.models import (
 _DIFFER = difflib.Differ()
 
 
+class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
+    @classmethod
+    def setUpClass(class_):
+        class_.project = obj_ut.build_project()
+        class_.test_case = _DummyAutograderTestCase(
+            name='testy', project=class_.project)
+
+    def setUp(self):
+        pass
+
+    def test_no_feedback(self):
+        self.fail()
+
+    def test_fdbk_not_applicable_return_code_not_checked(self):
+        self.fail()
+
+    def test_correct_or_incorrect_only_fdbk(self):
+        self.fail()
+
+    def test_show_expected_and_actual_values_fdbk(self):
+        self.fail()
+
+
+class ReturnCodeFdbkOverrideTesCase(TemporaryFilesystemTestCase):
+    def test_manual_override(self):
+        self.fail()
+
+    def test_ultimate_submission_fdbk_override(self):
+        self.fail()
+
+    def test_ultimate_submission_fdbk_and_manual_override(self):
+        self.fail()
+
+    def test_reduced_submission_fdbk_override(self):
+        self.fail()
+
+    def test_reduced_submission_fdbk_and_manual_override(self):
+        self.fail()
+
+    def test_reduced_and_ultimate_submission_fdbk_override(self):
+        self.fail()
+
+    def test_reduced_and_ultimate_submission_fdbk_and_manual_override(self):
+        self.fail()
+
+
 class _SetUpBase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()

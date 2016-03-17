@@ -139,6 +139,74 @@ class AutograderTestCaseResult(models.Model):
     compilation_standard_output = models.TextField()
     compilation_standard_error_output = models.TextField()
 
+    class FeedbackCalculator:
+        def __init(self, return_code_fdbk_override=None,
+                   stdout_fdbk_override=None,
+                   stderr_fdbk_override=None,
+                   compilation_fdbk_override=None,
+                   valgrind_feedback_override=None):
+            raise NotImplementedError()
+
+        @property
+        def return_code_correct(self):
+            raise NotImplementedError()
+
+        @property
+        def expected_and_actual_return_code(self):
+            raise NotImplementedError()
+
+        @property
+        def return_code_points(self):
+            raise NotImplementedError()
+
+        @property
+        def stdout_correct(self):
+            raise NotImplementedError()
+
+        @property
+        def stdout_content(self):
+            raise NotImplementedError()
+
+        @property
+        def stdout_points(self):
+            raise NotImplementedError()
+
+        @property
+        def stderr_correct(self):
+            raise NotImplementedError()
+
+        @property
+        def stderr_content(self):
+            raise NotImplementedError()
+
+        @property
+        def stderr_points(self):
+            raise NotImplementedError()
+
+        @property
+        def compilation_succeeded(self):
+            raise NotImplementedError()
+
+        @property
+        def compilation_output(self):
+            raise NotImplementedError()
+
+        @property
+        def compilation_points(self):
+            raise NotImplementedError()
+
+        @property
+        def valgrind_errors_reported(self):
+            raise NotImplementedError()
+
+        @property
+        def valgrind_output(self):
+            raise NotImplementedError()
+
+        @property
+        def valgrind_points_deducted(self):
+            raise NotImplementedError()
+
     def total_points_as_dict(self, feedback_config_override=None,
                              max_feedback=False):
         if max_feedback:
