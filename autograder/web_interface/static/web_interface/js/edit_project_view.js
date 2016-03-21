@@ -185,11 +185,9 @@ function _delete_test_button_handler()
     var delete_url = $(this).attr('delete_url');
     var button = $(this);
     $.ajax(delete_url, {method: 'DELETE'}).done(function() {
-        var panel_id = button.attr('panel_id');
-        var panel_head = $('.panel-heading').has(button);
-        var panel = $('#' + panel_id);
-        panel_head.remove();
-        panel.remove();
+        var span_id = button.attr('span_id');
+        var span = $('#' + span_id);
+        span.remove();
     });
 }
 
@@ -197,6 +195,7 @@ function _extract_test_case_form_fields(form)
 {
     console.log(form);
     var test_case = {
+        'type': _extract_single_text_field(form, 'test_type', true),
         'name': _extract_single_text_field(form, 'name', true),
         // 'hide_from_students': _extract_checkbox_bool(form, 'hide_from_students'),
         'command_line_arguments': _extract_delimited_text_field(form, 'command_line_arguments'),

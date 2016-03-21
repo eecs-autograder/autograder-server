@@ -66,7 +66,7 @@
         {{/for}}--}}
     </div>
 
-    {{if ag_test.type !== 'interpreted_test_case'}}
+    {{if !populate_fields || ag_test.type !== 'interpreted_test_case'}}
     <div class='form-group'>
         <label for='compiler'>Compiler:</label>
         <select id='compiler' class='form-control' name='compiler'>
@@ -123,11 +123,12 @@
         <label for="executable_name">Executable program name: </label>
         <input name='executable_name' type="text" class="form-control" value='{{if populate_fields}}{{: ag_test.executable_name}}{{/if}}'>
     </div>
-    {{else}}
+    {{/if}}
+    {{if !populate_fields || ag_test.type === 'interpreted_test_case'}}
     <div class='form-group'>
         <label for='interpreter'>Interpreter:</label>
         <select id='interpreter' class='form-control' name='interpreter'>
-            <option value='g++'{{if populate_fields && ag_test.interpreter === 'python3'}}selected{{/if}}>g++</option>
+            <option value='python3'{{if populate_fields && ag_test.interpreter === 'python3'}}selected{{/if}}>python3</option>
         </select>
     </div>
     <div class='form-group'>
