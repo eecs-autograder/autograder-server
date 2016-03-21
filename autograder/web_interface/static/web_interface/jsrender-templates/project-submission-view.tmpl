@@ -1,6 +1,13 @@
 <div id='project'>
     <h2>Project: {{>project.name}}</h2>
 
+    <h2>Group members: </h2>
+    <ul>
+    {{for group.members}}
+        <li>{{>}}</li>
+    {{/for}}
+    </ul>
+
     {{!-- {{if project.closing_time}}
     <h3>Due date: {{to_local_date:project.closing_time}}</h3>
     {{/if}} --}}
@@ -76,7 +83,6 @@
     <div id='student-submissions'></div>
 </span>
 {{/if}}
-{{* idd = guid()}}
 <span id='view-submissions'>
     <h3>Your Submissions</h3>
     <div id='own-submissions'>
@@ -85,8 +91,6 @@
             {{to_local_date:timestamp}}
         </a></div>
     {{/for}}
-
-        {{!--{{include tmpl=~submission_panel_list /}}--}}
     </div>
 </span>
 

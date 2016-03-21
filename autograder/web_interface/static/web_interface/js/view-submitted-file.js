@@ -4,10 +4,15 @@ function load_submitted_file_view(resource_url)
 	$.when(
 		$.get(resource_url),
 		lazy_get_template('view-submitted-file')
-	).done(function(file_json, template) {
-		// console.log(file_json);
-        var rendered = template.render(file_json);
-        // console.log(rendered);
+	).done(function(file_content, template) {
+        var file_data = String(file_content[0]);
+        console.log(file_data);
+        var render_data = {
+            'content': file_data
+        };
+        // console.log(render_data.content);
+        var rendered = template.render(render_data);
+        console.log(rendered);
         $('#main-area').html(rendered);
 
         loaded.resolve();

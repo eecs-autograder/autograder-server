@@ -234,9 +234,14 @@
 <div id='test_cases'>
     <h4>Test Cases</h4>
     {{for ag_tests.autograder_test_cases}}
-    <div>
+    <span id='test-{{:id}}'>
+        <div>
         <a href=/ag-test{{:url}} data-role='ajax'>{{>name}}</a>
-    </div>
+        <button type='button' span_id='test-{{:id}}' delete_url='{{:url}}'
+                class='btn btn-danger btn-default pull-right delete-test-btn btn-xs'
+                onclick='_delete_test_button_handler();'>DELETE</button>
+        </div>
+    </span>
     {{/for}}
 </div>
 

@@ -33,6 +33,8 @@ function load_submission_view(url)
                 }
             }, 5000);
         }
+
+        _init_remove_button(submission);
         loaded.resolve();
     }).fail(function(data, status) {
         console.log('error loading project');
@@ -65,6 +67,32 @@ function _load_result(event, url, render_location)
     ).done(function(result_ajax, template) {
         console.log(result_ajax[0]);
         render_location.html(template.render(result_ajax[0]));
+    });
+}
+
+function _init_remove_button(submission_json)
+{
+    $('#remove-from-queue-button').click(function(event) {
+        event.preventDefault();
+        var confirmed = window.confirm("Are you sure you want to remove your submission from the queue?\nClick OK to REMOVE, CANCEL to keep it in the queue");
+        if (!confirmed)
+        {
+            return false;
+        }
+        _remove_from_queue(submission_json);
+    });
+}
+
+function _remove_from_queue(submission_json)
+{
+    console.log(submission_json);
+    $.post(submission_json.urls.remove_from_queue).done(function() {
+        $('#remove-from-queue-button').hide();
+        $('#remove-from-queue-error').hide();
+        $('#status-header').text('Status: removed_from_queue');
+    }).fail(function(response) {
+        console.log(response);
+        $('#remove-from-queue-error').text(response);
     });
 }
 
