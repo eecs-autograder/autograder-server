@@ -110,7 +110,7 @@ def initialize_process(django_settings_module):
 
 
 def grade_submission(submission_id, log_dirname):
-    with get_worker_log_file(log_dirname) as f:#, \
+    with get_worker_log_file(log_dirname):  # as f:  # , \
             # contextlib.redirect_stdout(f):
         # contextlib.redirect_stderr(f):
         from autograder.core.models import Submission
@@ -163,24 +163,24 @@ def prepare_and_run_tests(submission):
     }
     sandbox = AutograderSandbox(
         name=sandbox_name, environment_variables_to_set=sandbox_environment)
-    with sandbox:
-        for test_case in group.project.autograder_test_cases.all():
+    for test_case in group.project.autograder_test_cases.all():
+        # FIXME: add proper access to interface
+        sandbox._allow_network_access = test_case.allow_network_connections
+        with sandbox:
             print(test_case.name)
             files_to_copy = (
                 test_case.student_resource_files +
                 [os.path.join(project_files_dir, filename) for
                  filename in test_case.test_resource_files])
-            sandbox.copy_into_sandbox(*files_to_copy)
+            sandbox.add_files(*files_to_copy)
 
             result = test_case.run(
                 submission=submission, autograder_sandbox=sandbox)
             print('finished_running')
             result.save()
 
-            sandbox.clear_working_dir()
-            sandbox.reinitialize_database()
-
-        for test_suite in group.project.student_test_suites.all():
+    for test_suite in group.project.student_test_suites.all():
+        with sandbox:
             print('test_suite: ', test_suite.name)
             result = test_suite.evaluate(
                 submission=submission, autograder_sandbox=sandbox)

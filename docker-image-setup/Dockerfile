@@ -1,11 +1,11 @@
 FROM ubuntu:trusty
 
-RUN apt-get update
+RUN apt-get update --fix-missing
 
-RUN apt-get install -y g++ 
+RUN apt-get install -y g++
 RUN apt-get install -y valgrind
-RUN apt-get install -y clang 
-    # mysql-server python3-pip 
+RUN apt-get install -y clang
+    # mysql-server python3-pip
 # RUN apt-get install -y libmysqlclient-dev
 # RUN apt-get install -y python3-dev
 
@@ -24,8 +24,8 @@ WORKDIR /home/autograder/working_dir
 # RUN apt-get install -y firefox
 # RUN apt-get install -y dbus
 # RUN apt-get install -y python3-lxml
-# RUN pip3 install mysqlclient 
-# RUN pip3 install requests 
-# RUN pip3 install beautifulsoup4 
+# RUN pip3 install mysqlclient
+# RUN pip3 install requests
+# RUN pip3 install beautifulsoup4
 # RUN pip3 install selenium
 # RUN pip3 install pyvirtualdisplay

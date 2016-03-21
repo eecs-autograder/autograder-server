@@ -119,6 +119,7 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTe
         self.sandbox.__enter__()
 
     def tearDown(self):
+        super().tearDown()
         self.sandbox.__exit__()
 
     def test_zero_return_code_and_stdout(self):
