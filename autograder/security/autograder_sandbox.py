@@ -52,6 +52,22 @@ class AutograderSandbox:
 
         self._environment_variables = environment_variables
 
+        self._is_running = False
+
+    def __enter__(self):
+        self._create_and_start()
+        return self
+
+    def __exit__(self, *args):
+        self._destroy()
+
+    def reset(self):
+        """
+        Destroys, re-creates, and restarts the sandbox.
+        """
+        self._destroy()
+        self._create_and_start()
+
     def _create_and_start(self):
         create_args = [
             'docker', 'run',
@@ -76,27 +92,20 @@ class AutograderSandbox:
         ]
 
         subprocess.check_call(create_args, timeout=10)
-        self.run_command(
-            ['usermod', '-u', str(self._linux_uid), SANDBOX_USERNAME],
-            as_root=True, raise_on_failure=True)
+        try:
+            self.run_command(
+                ['usermod', '-u', str(self._linux_uid), SANDBOX_USERNAME],
+                as_root=True, raise_on_failure=True)
+        except subprocess.CalledProcessError:
+            self._destroy()
+            raise
+
+        self._is_running = True
 
     def _destroy(self):
         subprocess.check_call(['docker', 'stop', self.name])
+        self._is_running = False
         subprocess.check_call(['docker', 'rm', self.name])
-
-    def __enter__(self):
-        self._create_and_start()
-        return self
-
-    def __exit__(self, *args):
-        self._destroy()
-
-    def reset(self):
-        """
-        Destroys, re-creates, and restarts the sandbox.
-        """
-        self._destroy()
-        self._create_and_start()
 
     @property
     def name(self):
@@ -105,6 +114,17 @@ class AutograderSandbox:
     @property
     def allow_network_access(self):
         return self._allow_network_access
+
+    @allow_network_access.setter
+    def allow_network_access(self, value):
+        """
+        Raises ValueError if this sandbox instance is currently running.
+        """
+        if self._is_running:
+            raise ValueError(
+                "Cannot change network access settings on a running sandbox")
+
+        self._allow_network_access = value
 
     @property
     def environment_variables(self):

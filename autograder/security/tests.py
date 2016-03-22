@@ -434,15 +434,48 @@ _GOOGLE_IP_ADDR = "216.58.214.196"
 
 
 class AutograderSandboxNetworkAccessTestCase(unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.google_ping_cmd = ['ping', '-c', '5', _GOOGLE_IP_ADDR]
+
     def test_networking_disabled(self):
         with AutograderSandbox() as sandbox:
-            result = sandbox.run_command(['ping', '-c', '5', _GOOGLE_IP_ADDR])
+            result = sandbox.run_command(self.google_ping_cmd)
             self.assertNotEqual(0, result.return_code)
 
     def test_networking_enabled(self):
         with AutograderSandbox(allow_network_access=True) as sandbox:
-            result = sandbox.run_command(['ping', '-c', '5', _GOOGLE_IP_ADDR])
+            result = sandbox.run_command(self.google_ping_cmd)
             self.assertEqual(0, result.return_code)
+
+    def test_set_allow_network_access(self):
+        sandbox = AutograderSandbox()
+        self.assertFalse(sandbox.allow_network_access)
+        with sandbox:
+            result = sandbox.run_command(self.google_ping_cmd)
+            self.assertNotEqual(0, result.return_code)
+
+        sandbox.allow_network_access = True
+        self.assertTrue(sandbox.allow_network_access)
+        with sandbox:
+            result = sandbox.run_command(self.google_ping_cmd)
+            self.assertEqual(0, result.return_code)
+
+        sandbox.allow_network_access = False
+        self.assertFalse(sandbox.allow_network_access)
+        with sandbox:
+            result = sandbox.run_command(self.google_ping_cmd)
+            self.assertNotEqual(0, result.return_code)
+
+    def test_error_set_allow_network_access_while_running(self):
+        with AutograderSandbox() as sandbox:
+            with self.assertRaises(ValueError):
+                sandbox.allow_network_access = True
+
+            self.assertFalse(sandbox.allow_network_access)
+            result = sandbox.run_command(self.google_ping_cmd)
+            self.assertNotEqual(0, result.return_code)
 
 
 class AutograderSandboxCopyFilesTestCase(unittest.TestCase):
