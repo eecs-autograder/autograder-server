@@ -51,7 +51,16 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_test_case.standard_input, "")
         self.assertEqual(loaded_test_case.test_resource_files, [])
         self.assertEqual(loaded_test_case.student_resource_files, [])
+
         self.assertEqual(loaded_test_case.time_limit, 10)
+        self.assertFalse(loaded_test_case.allow_network_connections)
+        self.assertEqual(loaded_test_case.stack_size_limit,
+                         gc.DEFAULT_STACK_SIZE_LIMIT)
+        self.assertEqual(loaded_test_case.virtual_memory_limit,
+                         gc.DEFAULT_VIRTUAL_MEM_LIMIT)
+        self.assertEqual(loaded_test_case.process_spawn_limit,
+                         gc.DEFAULT_PROCESS_LIMIT)
+
         self.assertIsNone(loaded_test_case.expected_return_code)
         self.assertFalse(loaded_test_case.expect_any_nonzero_return_code)
         self.assertEqual("", loaded_test_case.expected_standard_output)
@@ -71,8 +80,6 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             (loaded_test_case.
              post_deadline_final_submission_feedback_configuration))
 
-        self.assertFalse(loaded_test_case.allow_network_connections)
-
     # -------------------------------------------------------------------------
 
     def test_valid_initialization_custom_values(self):
@@ -83,6 +90,9 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         project_resource_files = ['spam.txt']
         student_resource_files = ['file1.cpp', 'file2.cpp']
         time = 5
+        stack_limit = gc.MAX_STACK_SIZE_LIMIT
+        virtual_mem_limit = gc.MAX_VIRTUAL_MEM_LIMIT
+        process_limit = gc.MAX_PROCESS_LIMIT
         ret_code = 0
         valgrind_flags = ['--leak-check=yes', '--error-exitcode=9000']
 
@@ -93,6 +103,10 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             test_resource_files=project_resource_files,
             student_resource_files=student_resource_files,
             time_limit=time,
+            allow_network_connections=True,
+            stack_size_limit=stack_limit,
+            virtual_memory_limit=virtual_mem_limit,
+            process_spawn_limit=process_limit,
             expected_return_code=ret_code,
             expected_standard_output=out_stream_content,
             expected_standard_error_output=err_stream_content,
@@ -108,7 +122,6 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             post_deadline_final_submission_feedback_configuration=(
                 fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback()
             ),
-            allow_network_connections=True,
         )
 
         loaded_test_case = _DummyAutograderTestCase.objects.get(
@@ -130,6 +143,13 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             loaded_test_case.student_resource_files, student_resource_files)
 
         self.assertEqual(loaded_test_case.time_limit, time)
+        self.assertTrue(loaded_test_case.allow_network_connections)
+        self.assertEqual(loaded_test_case.stack_size_limit,
+                         stack_limit)
+        self.assertEqual(loaded_test_case.virtual_memory_limit,
+                         virtual_mem_limit)
+        self.assertEqual(loaded_test_case.process_spawn_limit,
+                         process_limit)
 
         self.assertEqual(
             loaded_test_case.expected_return_code, ret_code)
@@ -156,8 +176,6 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback(),
             (loaded_test_case.
                 post_deadline_final_submission_feedback_configuration))
-
-        self.assertTrue(loaded_test_case.allow_network_connections)
 
     # -------------------------------------------------------------------------
 
@@ -371,6 +389,76 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         loaded_test = _DummyAutograderTestCase.objects.get(
             name=self.TEST_NAME, project=self.project)
         self.assertEqual(loaded_test.time_limit, 2)
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_negative_stack_size_limit(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                stack_size_limit=-1)
+
+        self.assertTrue('stack_size_limit' in cm.exception.message_dict)
+
+    def test_exception_zero_stack_size_limit(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                stack_size_limit=0)
+
+        self.assertTrue('stack_size_limit' in cm.exception.message_dict)
+
+    def test_exception_stack_size_limit_too_large(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                stack_size_limit=gc.MAX_STACK_SIZE_LIMIT + 1)
+
+        self.assertTrue('stack_size_limit' in cm.exception.message_dict)
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_negative_virtual_memory_limit(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                virtual_memory_limit=-1)
+
+        self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
+
+    def test_exception_zero_virtual_memory_limit(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                virtual_memory_limit=0)
+
+        self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
+
+    def test_exception_virtual_mem_limit_too_large(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                virtual_memory_limit=gc.MAX_VIRTUAL_MEM_LIMIT + 1)
+
+        self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
+
+    # -------------------------------------------------------------------------
+
+    def test_exception_negative_process_limit(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                process_spawn_limit=-1)
+
+        self.assertTrue('process_spawn_limit' in cm.exception.message_dict)
+
+    def test_exception_process_limit_too_large(self):
+        with self.assertRaises(ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name=self.TEST_NAME, project=self.project,
+                process_spawn_limit=gc.MAX_PROCESS_LIMIT + 1)
+
+        self.assertTrue('process_spawn_limit' in cm.exception.message_dict)
 
     # -------------------------------------------------------------------------
 

@@ -91,9 +91,41 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             compilation, running the program, and running the program
             with Valgrind (the timeout is applied separately to each).
             Must be > 0
-            Must be <= 60 TODO: add test and validation for this
+            Must be <= autograder.shared.global_constants
+                                 .MAX_SUBPROCESS_TIMEOUT
             Default value: autograder.shared.global_constants
                                      .DEFAULT_SUBPROCESS_TIMEOUT seconds
+
+        allow_network_connections -- Whether to allow the program being
+            tested to make network connections.
+            Default value: False
+
+        stack_size_limit -- The maximum stack size in bytes.
+            Must be > 0
+            Must be <= autograder.shared.global_constants.MAX_STACK_SIZE_LIMIT
+            NOTE: Setting this value too low may cause the program being
+                    tested to crash prematurely.
+            Default value: autograder.shared.global_constants
+                                     .DEFAULT_STACK_SIZE_LIMIT bytes
+
+        virtual_memory_limit -- The maximum amount of virtual memory
+            (in bytes) the program being tested can use.
+            Must be > 0
+            Must be <= autograder.shared.global_constants.MAX_VIRTUAL_MEM_LIMIT
+            NOTE: Setting this value too low may cause the program being
+                    tested to crash prematurely.
+            Default value: AutograderTestCaseBase.DEFAULT_VIRTUAL_MEM_LIMIT
+
+        process_spawn_limit -- The maximum number of processes that the
+            program being tested is allowed to spawn.
+            Must be >= 0
+            Must be <= autograder.shared.global_constants.MAX_PROCESS_LIMIT
+            NOTE: This limit applies cumulatively to the processes spawned
+                    by the main program being run. i.e. If a spawned
+                    process spawns it's own child process, both of those
+                    processes will count towards the main program's
+                    process limit.
+            Default value: AutograderTestCaseBase.DEFAULT_PROCESS_LIMIT
 
         expected_return_code -- The return code that the
             program being tested should exit with in order to pass
@@ -139,6 +171,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             Default value: False
 
         TODO: always use --error-exitcode=<something>, get rid of default values
+                alternatively, specify xml output and parse it
         valgrind_flags -- If use_valgrind is True, this field should
             contain a list of command line arguments to be passed to the
             valgrind program.
@@ -195,10 +228,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
             Default value: None
 
-        allow_network_connections -- Whether to allow the program being
-            tested to make network connections.
-            Default value: False
-
     Instance methods:
         test_checks_return_code()
         test_checks_output()
@@ -239,6 +268,21 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         default=gc.DEFAULT_SUBPROCESS_TIMEOUT,
         validators=[MinValueValidator(1),
                     MaxValueValidator(gc.MAX_SUBPROCESS_TIMEOUT)])
+
+    allow_network_connections = models.BooleanField(default=False)
+
+    stack_size_limit = models.IntegerField(
+        default=gc.DEFAULT_STACK_SIZE_LIMIT,
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(gc.MAX_STACK_SIZE_LIMIT)])
+    virtual_memory_limit = models.IntegerField(
+        default=gc.DEFAULT_VIRTUAL_MEM_LIMIT,
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(gc.MAX_VIRTUAL_MEM_LIMIT)])
+    process_spawn_limit = models.IntegerField(
+        default=gc.DEFAULT_PROCESS_LIMIT,
+        validators=[MinValueValidator(0),
+                    MaxValueValidator(gc.MAX_PROCESS_LIMIT)])
 
     expected_return_code = models.IntegerField(
         null=True, default=None, blank=True)
@@ -287,8 +331,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             default=None, null=True, blank=True
         )
     )
-
-    allow_network_connections = models.BooleanField(default=False)
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
