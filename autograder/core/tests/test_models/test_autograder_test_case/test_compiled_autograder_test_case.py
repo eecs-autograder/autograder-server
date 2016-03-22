@@ -4,9 +4,6 @@ from django.core.exceptions import ValidationError
 from autograder.core.models import (
     Project, Semester, Course)
 
-
-import unittest
-
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 

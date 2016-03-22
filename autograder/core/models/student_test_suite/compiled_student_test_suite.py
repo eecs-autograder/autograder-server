@@ -144,8 +144,11 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
             return eval_result
 
         validity_run_result = autograder_sandbox.run_command(
-            ['./' + exe_name], timeout=self.time_limit,
-            # resource args
+            ['./' + exe_name],
+            timeout=self.time_limit,
+            max_num_processes=gc.DEFAULT_PROCESS_LIMIT,
+            max_stack_size=gc.DEFAULT_STACK_SIZE_LIMIT,
+            max_virtual_memory=gc.DEFAULT_VIRTUAL_MEM_LIMIT
         )
 
         eval_result.valid = (
@@ -186,7 +189,11 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
                 continue
 
             run_result = autograder_sandbox.run_command(
-                ['./' + exe_name], timeout=self.time_limit)
+                ['./' + exe_name],
+                timeout=self.time_limit,
+                max_num_processes=gc.DEFAULT_PROCESS_LIMIT,
+                max_stack_size=gc.DEFAULT_STACK_SIZE_LIMIT,
+                max_virtual_memory=gc.DEFAULT_VIRTUAL_MEM_LIMIT)
 
             if run_result.return_code != 0:
                 eval_result.buggy_implementations_exposed.append(buggy_impl)
