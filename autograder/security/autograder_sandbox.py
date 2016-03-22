@@ -3,7 +3,8 @@ import subprocess
 import uuid
 import tempfile
 import tarfile
-import sqlite3
+
+import redis
 
 
 SANDBOX_HOME_DIR_NAME = '/home/autograder'
@@ -294,38 +295,9 @@ class _SubprocessRunner(object):
             self._stderr = msg
 
 
-_UID_DB_NAME = 'linux_uid.db'
-_UID_TABLE_NAME = 'uid_table'
-_UID_COLUMN_NAME = 'linux_uid'
-_UID_START_VALUE = 2000
+_NEXT_UID_KEY = 'sandbox_next_uid'
 
 
 def _get_next_linux_uid():
-    with sqlite3.connect(_UID_DB_NAME) as conn:
-        cur = conn.cursor()
-        cur.execute('BEGIN EXCLUSIVE TRANSACTION;')
-        return _init_db_and_get_id(cur)
-
-
-def _init_db_and_get_id(cur):
-    try:
-        return _get_and_update(cur)
-    except sqlite3.OperationalError:
-        cur.execute('CREATE TABLE {} ({});'.format(
-            _UID_TABLE_NAME, _UID_COLUMN_NAME))
-        cur.execute('INSERT INTO {}({}) VALUES ({})'.format(
-            _UID_TABLE_NAME, _UID_COLUMN_NAME, _UID_START_VALUE))
-
-        return _get_and_update(cur)
-
-
-def _get_and_update(cur):
-    select_stmt = 'SELECT {} FROM {} LIMIT 1;'.format(
-        _UID_COLUMN_NAME, _UID_TABLE_NAME)
-    cur.execute(select_stmt)
-    uid = int(cur.fetchone()[0])
-    update_stmt = 'UPDATE {} SET {}=?'.format(
-        _UID_TABLE_NAME, _UID_COLUMN_NAME)
-    cur.execute(update_stmt, ((uid + 1),))
-
-    return uid
+    redis_conn = redis.StrictRedis()
+    return redis_conn.incr(_NEXT_UID_KEY)

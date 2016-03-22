@@ -24,6 +24,7 @@ pyOpenSSL==0.15.1
 pyasn1==0.1.9
 pyasn1-modules==0.0.8
 pycparser==2.14
+redis==2.10.5
 requests==2.9.0
 rsa==3.2.3
 simplegeneric==0.8.1

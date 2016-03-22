@@ -14,6 +14,7 @@ echo "deb https://apt.dockerproject.org/repo ubuntu-trusty main" | sudo tee /etc
 
 sudo apt-get update
 sudo apt-get install -y nginx \
+    redis-server \
     postgresql-9.4 postgresql-contrib-9.4 postgresql-server-dev-9.4 \
     python3-pip python3.4-venv libncurses5-dev
 # Install uwsgi through pip, NOT apt-get
@@ -50,6 +51,9 @@ sudo -u postgres createdb --owner=$(whoami) autograder_db
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE autograder_db TO $(whoami);"
 sudo -u postgres psql -c "ALTER USER $(whoami) CREATEDB;"
 
+# Redis setup
+sudo service redis-server start
+redis-cli setnx sandbox_next_uid
 
 # Nginx setup
 sudo mkdir -p /etc/nginx/ssl
