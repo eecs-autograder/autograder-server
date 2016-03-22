@@ -144,7 +144,9 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
             return eval_result
 
         validity_run_result = autograder_sandbox.run_command(
-            ['./' + exe_name], timeout=self.time_limit)
+            ['./' + exe_name], timeout=self.time_limit,
+            # resource args
+        )
 
         eval_result.valid = (
             validity_run_result.return_code == 0 and

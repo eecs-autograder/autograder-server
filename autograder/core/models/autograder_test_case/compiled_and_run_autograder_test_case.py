@@ -29,11 +29,12 @@ class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
             return result
 
         run_program_cmd = (
-            ['./' + self.executable_name] + self.command_line_arguments
+            ['./' + self.executable_name] + self.command_line_arguments,
         )
 
         runner = autograder_sandbox.run_command(
             run_program_cmd, timeout=self.time_limit,
+            # resource args
             input_content=self.standard_input)
 
         result.return_code = runner.return_code
@@ -48,6 +49,7 @@ class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
 
         runner = autograder_sandbox.run_command(
             valgrind_run_cmd, timeout=self.time_limit,
+            # resource args
             input_content=self.standard_input)
 
         result.valgrind_return_code = runner.return_code

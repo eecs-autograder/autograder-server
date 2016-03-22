@@ -1,3 +1,6 @@
+import random
+from unittest import mock
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 
@@ -159,6 +162,39 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTe
                            '\nwaluigi\n')
 
         self.assertEqual(expected_output, result.standard_output)
+
+
+class InterpretedAutograderTestCaseResourceLimitTestCase(_SetUpBase, TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.interpreter = 'python3'
+        self.stack_limit = random.randint(1000, 8000)
+        self.virtual_mem_limit = random.randint(100000000, 200000000)
+        self.process_limit = random.randint(1, 5)
+        self.test = ag_models.AutograderTestCaseFactory.validate_and_create(
+            'interpreted_test_case',
+            interpreter=self.interpreter,
+            entry_point_filename=self.project_filename,
+            stack_size_limit=self.stack_limit,
+            virtual_memory_limit=self.virtual_mem_limit,
+            process_spawn_limit=self.process_limit,
+            **self.starter_args)
+
+    @mock.patch('autograder.security.autograder_sandbox.AutograderSandbox',
+                autospec=True)
+    def test_resource_limits_set(self, MockSandbox):
+        sandbox = MockSandbox()
+        self.test.run(None, sandbox)
+
+        sandbox.run_command.assert_called_once_with(
+            [self.interpreter, self.project_filename],
+            input_content='',
+            timeout=self.test.time_limit,
+            max_num_processes=self.process_limit,
+            max_stack_size=self.stack_limit,
+            max_virtual_memory=self.virtual_mem_limit)
+
 
 # -----------------------------------------------------------------------------
 
