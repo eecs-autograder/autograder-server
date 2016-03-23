@@ -149,7 +149,7 @@ class ListAutograderTestCaseResultsEndpoint(EndpointBase):
                     submission.submission_group.extended_due_date is not None else
                     submission.submission_group.project.closing_time)
 
-        if (timezone.now() < deadline or submission !=
+        if (deadline is None or timezone.now() < deadline or submission !=
                 submission.submission_group.submissions.first()):
             return submission.results.filter(
                 test_case__feedback_configuration__visibility_level=fbc.VisibilityLevel.show_to_students.value)
@@ -198,7 +198,7 @@ class ListStudentTestSuiteResultsEndpoint(EndpointBase):
                     submission.submission_group.extended_due_date is not None else
                     submission.submission_group.project.closing_time)
 
-        if (timezone.now() < deadline or submission !=
+        if (deadline is None or timezone.now() < deadline or submission !=
                 submission.submission_group.submissions.first()):
             return submission.suite_results.filter(
                 test_suite__feedback_configuration__visibility_level=fbc.VisibilityLevel.show_to_students.value)

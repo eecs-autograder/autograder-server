@@ -185,7 +185,7 @@ def prepare_and_run_tests(submission):
     }
 
     sandbox = AutograderSandbox(
-        name=sandbox_name, environment_variables_to_set=sandbox_environment)
+        name=sandbox_name, environment_variables=sandbox_environment)
     for test_case in group.project.autograder_test_cases.all():
         sandbox.allow_network_access = test_case.allow_network_connections
         with sandbox:
@@ -194,15 +194,12 @@ def prepare_and_run_tests(submission):
                 test_case.student_resource_files +
                 [os.path.join(project_files_dir, filename) for
                  filename in test_case.test_resource_files])
-            sandbox.copy_into_sandbox(*files_to_copy)
+            sandbox.add_files(*files_to_copy)
 
             result = test_case.run(
                 submission=submission, autograder_sandbox=sandbox)
             print('finished_running')
             result.save()
-
-            sandbox.clear_working_dir()
-            sandbox.reinitialize_database()
 
         for test_suite in group.project.student_test_suites.all():
             print('test_suite: ', test_suite.name)
