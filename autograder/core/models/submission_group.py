@@ -412,7 +412,6 @@ def _get_and_lock_users(usernames):
     usernames = list(usernames)
     users = [
         User.objects.get_or_create(username=username)[0]
-                                    for username in usernames]
+        for username in usernames]
     users = User.objects.select_for_update().filter(username__in=usernames)
     return users
-
