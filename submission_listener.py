@@ -164,8 +164,7 @@ def prepare_and_run_tests(submission):
     sandbox = AutograderSandbox(
         name=sandbox_name, environment_variables_to_set=sandbox_environment)
     for test_case in group.project.autograder_test_cases.all():
-        # FIXME: add proper access to interface
-        sandbox._allow_network_access = test_case.allow_network_connections
+        sandbox.allow_network_access = test_case.allow_network_connections
         with sandbox:
             print(test_case.name)
             files_to_copy = (
