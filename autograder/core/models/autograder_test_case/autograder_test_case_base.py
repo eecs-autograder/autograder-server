@@ -438,6 +438,10 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             "test_resource_files": self.test_resource_files,
             "student_resource_files": self.student_resource_files,
             "time_limit": self.time_limit,
+            "stack_size_limit": self.stack_size_limit,
+            "process_spawn_limit": self.process_spawn_limit,
+            "virtual_memory_limit": self.virtual_memory_limit,
+
             "expected_return_code": self.expected_return_code,
             "expect_any_nonzero_return_code": self.expect_any_nonzero_return_code,
             "expected_standard_output": self.expected_standard_output,
