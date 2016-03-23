@@ -196,5 +196,162 @@
         <input type='text' name='points_for_compilation_success'
                 value='{{if populate_fields}}{{: ag_test.points_for_compilation_success}}{{else}}0{{/if}}' class='form-control'>
     </div>
+
+    <div id='feedback_levels'>
+        <div class='form-group'>
+            <label>Visibility level</label>
+            <select id='visibility_level' class='form-control'
+                    name='visibility_level'>
+                <option value='hide_from_students'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.visibility_level ===
+                         'hide_from_students'}} selected{{/if}}>
+                    Hide from students</option>
+                <option value='show_to_students'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.visibility_level ===
+                         'show_to_students'}} selected{{/if}}>
+                    Show to students
+                </option>
+            </select>
+        </div>
+        <div class='form-group'>
+            <label>Return code feedback level</label>
+            <select id='return_code_feedback_level' class='form-control'
+                    name='return_code_feedback_level'>
+                <option value='no_feedback'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.return_code_feedback_level ===
+                         'no_feedback'}} selected{{/if}}>
+                    No feedback</option>
+                <option value='correct_or_incorrect_only'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.return_code_feedback_level ===
+                         'correct_or_incorrect_only'}} selected{{/if}}>
+                    Indicate correct or incorrect
+                </option>
+                <option value='show_expected_and_actual_values'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.return_code_feedback_level ===
+                         'show_expected_and_actual_values'}} selected{{/if}}>
+                    Show expected and actual values
+                </option>
+            </select>
+        </div>
+       <div class='form-group'>
+            <label>Output feedback level</label>
+            <select id='output_feedback_level' class='form-control'
+                    name='output_feedback_level'>
+                <option value='no_feedback'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.output_feedback_level ===
+                         'no_feedback'}} selected{{/if}}>
+                    No feedback</option>
+                <option value='correct_or_incorrect_only'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.output_feedback_level ===
+                         'correct_or_incorrect_only'}} selected{{/if}}>
+                    Indicate correct or incorrect
+                </option>
+                <option value='show_expected_and_actual_values'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.output_feedback_level ===
+                         'show_expected_and_actual_values'}} selected{{/if}}>
+                    Show expected and actual values (diff)
+                </option>
+            </select>
+        </div>
+        <div class='form-group'>
+            <label>Compilation feedback level</label>
+            <select id='compilation_feedback_level' class='form-control'
+                    name='compilation_feedback_level'>
+                <option value='no_feedback'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.compilation_feedback_level ===
+                         'no_feedback'}} selected{{/if}}>
+                    No feedback</option>
+                <option value='success_or_failure_only'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.compilation_feedback_level ===
+                         'success_or_failure_only'}} selected{{/if}}>
+                    Indicate success or failure
+                </option>
+                <option value='show_compiler_output'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.compilation_feedback_level ===
+                         'show_compiler_output'}} selected{{/if}}>
+                    Show compiler output
+                </option>
+            </select>
+        </div>
+        <div class='form-group'>
+            <label>Valgrind feedback level</label>
+            <select id='valgrind_feedback_level' class='form-control'
+                    name='valgrind_feedback_level'>
+                <option value='no_feedback'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.valgrind_feedback_level ===
+                         'no_feedback'}} selected{{/if}}>
+                    No feedback</option>
+                <option value='errors_or_no_errors_only'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.valgrind_feedback_level ===
+                         'errors_or_no_errors_only'}} selected{{/if}}>
+                    Indicate clean or errors present
+                </option>
+                <option value='show_valgrind_output'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.valgrind_feedback_level ===
+                         'show_valgrind_output'}} selected{{/if}}>
+                    Show valgrind output
+                </option>
+            </select>
+        </div>
+        <div class='form-group'>
+            <label>Points feedback level</label>
+            <select id='points_feedback_level' class='form-control'
+                    name='points_feedback_level'>
+                <option value='hide'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.points_feedback_level ===
+                         'hide'}} selected{{/if}}>
+                    Hide</option>
+                <option value='show_total'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.points_feedback_level ===
+                         'show_total'}} selected{{/if}}>
+                    Show total points
+                </option>
+                <option value='show_breakdown'
+                    {{if populate_fields &&
+                         ag_test.feedback_configuration.points_feedback_level ===
+                         'show_breakdown'}} selected{{/if}}>
+                    Show points breakdown
+                </option>
+            </select>
+        </div>
+    </div>
+
+    <div class='checkbox'>
+        <label>
+            <input type='checkbox' name='allow_network_connections' {{if populate_fields && ag_test.allow_network_connections}}checked{{/if}}>
+            <b>Allow network connections</b>
+        </label>
+    </div>
+    <div class='form-group'>
+        <label for='stack_size_limit'>Stack size limit: </label>
+        <input type='text' name='stack_size_limit'
+                value='{{if populate_fields}}{{: ag_test.stack_size_limit}}{{else}}10000000{{/if}}' class='form-control'>
+    </div>
+    <div class='form-group'>
+        <label for='virtual_memory_limit'>Virtual memory limit: </label>
+        <input type='text' name='virtual_memory_limit'
+                value='{{if populate_fields}}{{: ag_test.virtual_memory_limit}}{{else}}500000000{{/if}}' class='form-control'>
+    </div>
+    <div class='form-group'>
+        <label for='process_spawn_limit'>Process spawn limit: </label>
+        <input type='text' name='process_spawn_limit'
+                value='{{if populate_fields}}{{: ag_test.process_spawn_limit}}{{else}}0{{/if}}' class='form-control'>
+    </div>
     {{if populate_fields}}<button type="submit" data-loading-text='Saving...' autocomplete='off' class="btn btn-default btn-success" id='save-button'>Save Test</button>{{/if}}
 </form>
