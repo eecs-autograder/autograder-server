@@ -64,5 +64,6 @@ from .submission_endpoints import (
     ListSubmittedFilesEndpoint,
     GetSubmittedFileEndpoint,
     ListAutograderTestCaseResultsEndpoint,
-    ListStudentTestSuiteResultsEndpoint
+    ListStudentTestSuiteResultsEndpoint,
+    RemoveSubmissionFromQueue
 )

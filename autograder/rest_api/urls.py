@@ -127,6 +127,9 @@ submission_patterns = [
     url(r'^student_test_suite_results/$',
         endpoints.ListStudentTestSuiteResultsEndpoint.as_view(),
         name='suite-results'),
+    url(r'^remove_from_queue/$',
+        endpoints.RemoveSubmissionFromQueue.as_view(),
+        name='remove-from-queue')
 ]
 
 notification_patterns = [

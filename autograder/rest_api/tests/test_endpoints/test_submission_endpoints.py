@@ -125,6 +125,70 @@ def _get_suite_result_url(result):
     return reverse('suite-result:get', kwargs={'pk': result.pk})
 
 
+def _get_remove_from_queue_url(submission):
+    return reverse('submission:remove-from-queue', kwargs={'pk': submission.pk})
+
+
+class RemoveSubmissionFromQueueTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
+    def test_valid_student_remove_submission_from_queue(self):
+        for obj in self.submission_objs:
+            client = MockClient(obj['user'])
+            submission = Submission.objects.validate_and_create(
+                submitted_files=self.files_to_submit,
+                submission_group=obj['group']
+            )
+            removable_statuses = (
+                Submission.GradingStatus.queued,
+                Submission.GradingStatus.received)
+            for status in removable_statuses:
+                submission.status = status
+                submission.save()
+
+                self.assertNotEqual(Submission.GradingStatus.removed_from_queue,
+                                    submission.status)
+
+                response = client.post(_get_remove_from_queue_url(submission), {})
+                self.assertEqual(204, response.status_code)
+
+                submission.refresh_from_db()
+                self.assertEqual(Submission.GradingStatus.removed_from_queue,
+                                 submission.status)
+
+    def test_remove_other_users_submission_permission_denied(self):
+        for user in self.enrolled, self.nobody, self.admin, self.staff:
+            client = MockClient(user)
+            for obj in self.submission_objs:
+                if obj['user'] == user:
+                    continue
+                response = client.post(
+                    _get_remove_from_queue_url(obj['submission']), {})
+                self.assertEqual(403, response.status_code)
+
+    def test_error_remove_submission_not_in_queue(self):
+        obj = self.enrolled_submission_obj
+        client = MockClient(obj['user'])
+        submission = Submission.objects.validate_and_create(
+            submitted_files=self.files_to_submit,
+            submission_group=obj['group'],
+        )
+        unremovable_statuses = (
+            Submission.GradingStatus.being_graded,
+            Submission.GradingStatus.finished_grading,
+            Submission.GradingStatus.error,
+            Submission.GradingStatus.invalid)
+        for status in unremovable_statuses:
+            self.assertNotEqual(Submission.GradingStatus.removed_from_queue,
+                                submission.status)
+            submission.status = status
+            submission.save()
+
+            response = client.post(_get_remove_from_queue_url(submission), {})
+            self.assertEqual(400, response.status_code)
+
+            submission.refresh_from_db()
+            self.assertEqual(status, submission.status)
+
+
 class GetSubmissionTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
@@ -158,7 +222,9 @@ class GetSubmissionTestCase(_SharedSetUp, TemporaryFilesystemTestCase):
                     "autograder_test_case_results": (
                         _get_ag_test_results_url(submission)),
                     "student_test_suite_results": (
-                        _get_suite_results_url(submission))
+                        _get_suite_results_url(submission)),
+                    "remove_from_queue": (
+                        _get_remove_from_queue_url(submission))
                 }
             }
 

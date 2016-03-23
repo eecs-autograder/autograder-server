@@ -6,7 +6,9 @@ from django.utils import timezone
 from django import http
 from django.core import exceptions
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 
+from django.db import transaction
 from django.db.models import Q
 
 from .endpoint_base import EndpointBase
@@ -17,6 +19,26 @@ from autograder.rest_api import url_shortcuts
 from .utilities import check_can_view_project, check_can_view_group
 
 import autograder.core.shared.feedback_configuration as fbc
+
+
+class RemoveSubmissionFromQueue(EndpointBase):
+    def post(self, request, pk, *args, **kwargs):
+        pk = int(pk)
+        with transaction.atomic():
+            submission = ag_models.Submission.objects.select_for_update().get(pk=pk)
+            is_own_submission = (
+                request.user in submission.submission_group.members.all())
+            if not is_own_submission:
+                raise exceptions.PermissionDenied()
+
+            if (submission.status != ag_models.Submission.GradingStatus.received and
+                    submission.status != ag_models.Submission.GradingStatus.queued):
+                raise exceptions.ValidationError('Submission is not currently queued')
+
+            submission.status = ag_models.Submission.GradingStatus.removed_from_queue
+            submission.save()
+
+            return http.HttpResponse(status=204)
 
 
 class GetSubmissionEndpoint(EndpointBase):
@@ -47,6 +69,12 @@ class GetSubmissionEndpoint(EndpointBase):
                     url_shortcuts.suite_results_url(submission))
             }
         }
+
+        is_own_submission = (
+            request.user in submission.submission_group.members.all())
+        if is_own_submission:
+            response['urls']['remove_from_queue'] = reverse(
+                'submission:remove-from-queue', kwargs={'pk': submission.pk})
 
         return http.JsonResponse(response)
 
