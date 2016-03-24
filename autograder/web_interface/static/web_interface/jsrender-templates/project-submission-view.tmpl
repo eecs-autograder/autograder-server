@@ -24,7 +24,7 @@
             <li><b>{{>}}</b></li>
         {{/for}}
         {{for project.expected_student_file_patterns}}
-            <li>{{> #data[1]}} - {{> #data[2]}} files matching the pattern: <b>{{> #data[0]}}</b>
+            <li>{{> min_num_matches}} - {{> max_num_matches}} files matching the pattern: <b>{{> pattern}}</b></li>
         {{/for}}
         </ul>
 
@@ -78,7 +78,7 @@
 {{if project.permissions.is_staff}}
 <span id='view-student-submissions'>
     <h3>Student Submissions</h3>
-    <span id='student-submission-view'>Student email: <input id='requested-email' type='text'> 
+    <span id='student-submission-view'>Student email: <input id='requested-email' type='text'>
     <button id='load-student-submissions-button' type='button'>Search</button></span>
     <div id='student-submissions'></div>
 </span>

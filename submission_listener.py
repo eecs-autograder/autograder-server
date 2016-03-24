@@ -201,7 +201,8 @@ def prepare_and_run_tests(submission):
             print('finished_running')
             result.save()
 
-        for test_suite in group.project.student_test_suites.all():
+    for test_suite in group.project.student_test_suites.all():
+        with sandbox:
             print('test_suite: ', test_suite.name)
             result = test_suite.evaluate(
                 submission=submission, autograder_sandbox=sandbox)

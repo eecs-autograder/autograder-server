@@ -7,12 +7,15 @@ function load_submission_view(url)
         return $.when(
             $.get(submission.urls.submitted_files),
             $.get(submission.urls.autograder_test_case_results),
+            $.get(submission.urls.student_test_suite_results),
             lazy_get_template('view-submission'))
-    }).done(function(submitted_files_ajax, test_results_ajax, template) {
+    }).done(function(submitted_files_ajax, test_results_ajax,
+                     suite_results_ajax, template) {
         var render_data = {
             'submission': submission,
             'submitted_files': submitted_files_ajax[0],
-            'test_results': test_results_ajax[0]
+            'test_results': test_results_ajax[0],
+            'suite_results': suite_results_ajax[0]
         };
         console.log(render_data);
 
@@ -51,7 +54,7 @@ function _load_result(event, url, render_location)
     {
         // console.log('waluiiiigi');
         // console.log($('a', this)[0]);
-        url = $('a', this).attr('href');        
+        url = $('a', this).attr('href');
     }
 
     if (render_location === undefined)
