@@ -183,6 +183,7 @@ function _add_test_case_button_handler(
 function _delete_test_button_handler()
 {
     var delete_url = $(this).attr('delete_url');
+    console.log(delete_url);
     var button = $(this);
     $.ajax(delete_url, {method: 'DELETE'}).done(function() {
         var span_id = button.attr('span_id');

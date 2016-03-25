@@ -53,7 +53,7 @@ sudo -u postgres psql -c "ALTER USER $(whoami) CREATEDB;"
 
 # Redis setup
 sudo service redis-server start
-redis-cli setnx sandbox_next_uid
+redis-cli setnx sandbox_next_uid 2000
 
 # Nginx setup
 sudo mkdir -p /etc/nginx/ssl

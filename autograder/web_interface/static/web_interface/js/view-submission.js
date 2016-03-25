@@ -2,6 +2,10 @@ function load_submission_view(url)
 {
     var loaded = $.Deferred();
     var submission = null;
+    var submitted_files = null;
+    var test_results = null;
+    var template = null;
+    var suite_result_promises = [];
     $.get(url).then(function(submission_json){
         submission = submission_json;
         return $.when(
@@ -9,13 +13,32 @@ function load_submission_view(url)
             $.get(submission.urls.autograder_test_case_results),
             $.get(submission.urls.student_test_suite_results),
             lazy_get_template('view-submission'))
-    }).done(function(submitted_files_ajax, test_results_ajax,
-                     suite_results_ajax, template) {
+    }).then(function(submitted_files_ajax, test_results_ajax,
+                     suite_results_ajax, page_template) {
+        submitted_files = submitted_files_ajax[0];
+        test_results = test_results_ajax[0];
+        template = page_template;
+
+        var suite_results = suite_results_ajax[0].student_test_suite_results;
+        console.log(suite_results);
+        for (var i = 0; i < suite_results.length; ++i)
+        {
+            suite_result_promises.push($.get(suite_results[i].url));
+        }
+
+        return $.when.apply($, suite_result_promises);
+    }).then(function() {
+        console.log(suite_result_promises);
+        var full_suite_results = [];
+        for (var i = 0; i < suite_result_promises.length; ++i)
+        {
+            full_suite_results.push(suite_result_promises[i].responseJSON);
+        }
         var render_data = {
             'submission': submission,
-            'submitted_files': submitted_files_ajax[0],
-            'test_results': test_results_ajax[0],
-            'suite_results': suite_results_ajax[0]
+            'submitted_files': submitted_files,
+            'test_results': test_results,
+            'suite_results': full_suite_results
         };
         console.log(render_data);
 
