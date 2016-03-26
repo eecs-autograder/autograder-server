@@ -70,8 +70,10 @@
                     {{/if}}
                 {{/if}}
                 {{if valid !== undefined}}
-                    {{if not valid}}
+                    {{if !valid}}
                     <span><b>!!! WARNING: This test incorrectly flagged the correct solution as buggy !!!</b></span>
+                    {{else}}
+                    <span>Test is valid</span>
                     {{/if}}
                 {{/if}}
                 <br>
