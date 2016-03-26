@@ -53,8 +53,8 @@
                 {{/for}}
             {{/if}}
             {{for detailed_results}}
-                {{if compilation_succeeded !== undefined}}
                 <span>Student test case "<i>{{> student_test_case_name}}</i>":</span>
+                {{if compilation_succeeded !== undefined}}
                     {{if compilation_succeeded}}
                     <span>compilation success</span>
                     {{else}}
@@ -67,6 +67,11 @@
                     {{if compilation_standard_error_output !== undefined}}
                     <div>Compiler error output:</div>
                     <pre>{{> compilation_standard_error_output}}</pre>
+                    {{/if}}
+                {{/if}}
+                {{if valid !=== undefined}}
+                    {{if not valid}}
+                    <span><b>!!! WARNING: This test incorrectly flagged the correct solution as buggy !!!</b></span>
                     {{/if}}
                 {{/if}}
                 <br>
