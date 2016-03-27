@@ -160,14 +160,14 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def expected_return_code(self):
-            if not self._show_ret_code_diff():
+            if not self._ret_code_checked() or not self._show_ret_code_diff():
                 return None
 
             return self._result.test_case.expected_return_code
 
         @property
         def actual_return_code(self):
-            if not self._show_ret_code_diff():
+            if not self._ret_code_checked() or not self._show_ret_code_diff():
                 return None
 
             return self._result.return_code
