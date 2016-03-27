@@ -298,6 +298,7 @@ class CompilationFeedbackLevel(Enum):
 class ReturnCodeFeedbackLevel(Enum):
     no_feedback = 'no_feedback'
     correct_or_incorrect_only = 'correct_or_incorrect_only'
+    show_program_return_code = 'show_program_return_code'
     show_expected_and_actual_values = 'show_expected_and_actual_values'
 
 

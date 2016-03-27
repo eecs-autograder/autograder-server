@@ -5,7 +5,8 @@ RUN apt-get update --fix-missing
 RUN apt-get install -y g++
 RUN apt-get install -y valgrind
 RUN apt-get install -y clang
-    # mysql-server python3-pip
+RUN apt-get install -y build-essential
+# mysql-server python3-pip
 # RUN apt-get install -y libmysqlclient-dev
 # RUN apt-get install -y python3-dev
 

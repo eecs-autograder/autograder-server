@@ -6,10 +6,8 @@ from django.db import models
 import autograder.core.shared.feedback_configuration as fbc
 
 
-# TODO: "feedback" classes (i.e. CompilationFeedback, ReturnCodeFeedback, OutputFeedback)
 # TODO: "feedback generator" class, ctor takes in feedback level override, pulls from
 #       test case by default
-# TODO: refactor into class hierarchy that mirrors that of autograder test case?
 # TODO: test cases that involve interpreted test cases
 
 
@@ -139,25 +137,64 @@ class AutograderTestCaseResult(models.Model):
     compilation_standard_output = models.TextField()
     compilation_standard_error_output = models.TextField()
 
-    class FeedbackCalculator:
-        def __init(self, return_code_fdbk_override=None,
-                   stdout_fdbk_override=None,
-                   stderr_fdbk_override=None,
-                   compilation_fdbk_override=None,
-                   valgrind_feedback_override=None):
-            raise NotImplementedError()
+    @property
+    def feedback(self):
+        return AutograderTestCaseResult._FeedbackCalculator(self)
+
+    class _FeedbackCalculator:
+        def __init__(self, result,
+                     return_code_fdbk_override=None,
+                     stdout_fdbk_override=None,
+                     stderr_fdbk_override=None,
+                     compilation_fdbk_override=None,
+                     valgrind_feedback_override=None):
+            self._fdbk = result.test_case.feedback_configuration
+            self._result = result
 
         @property
         def return_code_correct(self):
-            raise NotImplementedError()
+            if not self._ret_code_checked() or self._no_ret_code_fdbk():
+                return None
+
+            return self._result.return_code_correct
 
         @property
-        def expected_and_actual_return_code(self):
-            raise NotImplementedError()
+        def expected_return_code(self):
+            if not self._show_ret_code_diff():
+                return None
+
+            return self._result.test_case.expected_return_code
+
+        @property
+        def actual_return_code(self):
+            if not self._show_ret_code_diff():
+                return None
+
+            return self._result.return_code
+
+        def _show_ret_code_diff(self):
+            return (
+                self._fdbk.return_code_feedback_level ==
+                fbc.ReturnCodeFeedbackLevel.show_expected_and_actual_values)
 
         @property
         def return_code_points(self):
-            raise NotImplementedError()
+            if (not self._ret_code_checked() or
+                    self._no_ret_code_fdbk() or
+                    self._no_pts_fdbk()):
+                return None
+
+            if not self.return_code_correct:
+                return 0
+
+            return self._result.test_case.points_for_correct_return_code
+
+        def _no_ret_code_fdbk(self):
+            return (self._fdbk.return_code_feedback_level ==
+                    fbc.ReturnCodeFeedbackLevel.no_feedback)
+
+        def _ret_code_checked(self):
+            return self._result.test_case.test_checks_return_code()
 
         @property
         def stdout_correct(self):
@@ -165,6 +202,10 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def stdout_content(self):
+            raise NotImplementedError()
+
+        @property
+        def stdout_diff(self):
             raise NotImplementedError()
 
         @property
@@ -177,6 +218,10 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def stderr_content(self):
+            raise NotImplementedError()
+
+        @property
+        def stderr_diff(self):
             raise NotImplementedError()
 
         @property
@@ -206,6 +251,10 @@ class AutograderTestCaseResult(models.Model):
         @property
         def valgrind_points_deducted(self):
             raise NotImplementedError()
+
+        def _no_pts_fdbk(self):
+            return (self._fdbk.points_feedback_level ==
+                    fbc.PointsFeedbackLevel.hide)
 
     def total_points_as_dict(self, feedback_config_override=None,
                              max_feedback=False):

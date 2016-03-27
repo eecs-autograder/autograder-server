@@ -31,13 +31,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         project -- The Project this test case is associated with.
                    This field is REQUIRED.
 
-        hide_from_students -- When this field is True, students will not
-            receive feedback about this test case.
-            Note: Staff members will still receive feedback on this
-                test case for their own submissions, but when viewing
-                a student submission, this test case will still be hidden.
-            Default value: True
-
         command_line_arguments -- A list of arguments to be passed
             to the program being tested.
             This list is allowed to be empty.
