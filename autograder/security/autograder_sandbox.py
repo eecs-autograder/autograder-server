@@ -3,7 +3,8 @@ import subprocess
 import uuid
 import tempfile
 import tarfile
-import sqlite3
+
+import redis
 
 
 SANDBOX_HOME_DIR_NAME = '/home/autograder'
@@ -51,6 +52,22 @@ class AutograderSandbox:
 
         self._environment_variables = environment_variables
 
+        self._is_running = False
+
+    def __enter__(self):
+        self._create_and_start()
+        return self
+
+    def __exit__(self, *args):
+        self._destroy()
+
+    def reset(self):
+        """
+        Destroys, re-creates, and restarts the sandbox.
+        """
+        self._destroy()
+        self._create_and_start()
+
     def _create_and_start(self):
         create_args = [
             'docker', 'run',
@@ -75,27 +92,20 @@ class AutograderSandbox:
         ]
 
         subprocess.check_call(create_args, timeout=10)
-        self.run_command(
-            ['usermod', '-u', str(self._linux_uid), SANDBOX_USERNAME],
-            as_root=True, raise_on_failure=True)
+        try:
+            self.run_command(
+                ['usermod', '-u', str(self._linux_uid), SANDBOX_USERNAME],
+                as_root=True, raise_on_failure=True)
+        except subprocess.CalledProcessError:
+            self._destroy()
+            raise
+
+        self._is_running = True
 
     def _destroy(self):
         subprocess.check_call(['docker', 'stop', self.name])
+        self._is_running = False
         subprocess.check_call(['docker', 'rm', self.name])
-
-    def __enter__(self):
-        self._create_and_start()
-        return self
-
-    def __exit__(self, *args):
-        self._destroy()
-
-    def reset(self):
-        """
-        Destroys, re-creates, and restarts the sandbox.
-        """
-        self._destroy()
-        self._create_and_start()
 
     @property
     def name(self):
@@ -104,6 +114,17 @@ class AutograderSandbox:
     @property
     def allow_network_access(self):
         return self._allow_network_access
+
+    @allow_network_access.setter
+    def allow_network_access(self, value):
+        """
+        Raises ValueError if this sandbox instance is currently running.
+        """
+        if self._is_running:
+            raise ValueError(
+                "Cannot change network access settings on a running sandbox")
+
+        self._allow_network_access = value
 
     @property
     def environment_variables(self):
@@ -294,228 +315,9 @@ class _SubprocessRunner(object):
             self._stderr = msg
 
 
-_UID_DB_NAME = 'linux_uid.db'
-_UID_TABLE_NAME = 'uid_table'
-_UID_COLUMN_NAME = 'linux_uid'
-_UID_START_VALUE = 2000
+_NEXT_UID_KEY = 'sandbox_next_uid'
 
 
 def _get_next_linux_uid():
-    with sqlite3.connect(_UID_DB_NAME) as conn:
-        cur = conn.cursor()
-        cur.execute('BEGIN EXCLUSIVE TRANSACTION;')
-        return _init_db_and_get_id(cur)
-
-
-def _init_db_and_get_id(cur):
-    try:
-        return _get_and_update(cur)
-    except sqlite3.OperationalError:
-        cur.execute('CREATE TABLE {} ({});'.format(
-            _UID_TABLE_NAME, _UID_COLUMN_NAME))
-        cur.execute('INSERT INTO {}({}) VALUES ({})'.format(
-            _UID_TABLE_NAME, _UID_COLUMN_NAME, _UID_START_VALUE))
-
-        return _get_and_update(cur)
-
-
-def _get_and_update(cur):
-    select_stmt = 'SELECT {} FROM {} LIMIT 1;'.format(
-        _UID_COLUMN_NAME, _UID_TABLE_NAME)
-    cur.execute(select_stmt)
-    uid = int(cur.fetchone()[0])
-    update_stmt = 'UPDATE {} SET {}=?'.format(
-        _UID_TABLE_NAME, _UID_COLUMN_NAME)
-    cur.execute(update_stmt, ((uid + 1),))
-
-    return uid
-
-
-# class AutograderSandbox:
-#     def __init__(self, name, enable_networking=False,
-#                  environment_variables_to_set=None,
-#                  database_backend_to_use=None,
-#                  database_name=''):
-#         self._name = name
-#         # self._linux_user_id = linux_user_id
-#         # self._linux_username = 'worker{}'.format(self._linux_user_id)
-#         self._linux_username = 'autograder'
-#         self._networking_enabled = enable_networking
-
-#         self._environment_variables = environment_variables_to_set
-
-#         self._database_backend_to_use = database_backend_to_use
-#         self._database_name = database_name
-
-#         self._create_args = [
-#             'docker', 'create', '--name=' + self.name,
-#             '-a', 'STDOUT', '-a', 'STDERR', '-a', 'STDIN',  # Attach streams
-#             '-i',  # Run in interactive mode (needed for input redirection)
-#             '-t',  # Allocate psuedo tty
-#             '--ulimit', 'nproc=4000',  # Limit number of user processes
-#             # Allow or disallow networking
-#             '--net', ('default' if enable_networking else 'none'),
-#         ]
-#         if self.environment_variables:
-#             for key, value in self.environment_variables.items():
-#                 self._create_args += [
-#                     '-e', "{}={}".format(key, value)
-#                 ]
-
-#         self._create_args += [
-#             'autograder',  # Image to use
-#             'bash',  # Command to be run in the container
-#         ]
-
-#         subprocess.check_call(self.create_args, timeout=10)
-
-#     def __enter__(self):
-#         self.start()
-#         return self
-
-#     def __exit__(self, *args):
-#         self.stop()
-
-#     def start(self):
-#         print('starting container: ' + self.name)
-#         try:
-#             subprocess.check_call(['docker', 'start', self.name], timeout=10)
-#         except subprocess.CalledProcessError:
-#             self.stop()
-#             raise
-
-#         self.initialize_database()
-
-#     def stop(self):
-#         print('stopping container: ' + self.name)
-#         subprocess.check_call(['docker', 'stop', self.name])
-
-#     @property
-#     def name(self):
-#         return self._name
-
-#     @property
-#     def networking_enabled(self):
-#         return self._networking_enabled
-
-#     @property
-#     def environment_variables(self):
-#         return self._environment_variables
-
-#     @property
-#     def database_backend_to_use(self):
-#         return self._database_backend_to_use
-
-#     @property
-#     def database_name(self):
-#         return self._database_name
-
-#     @property
-#     def create_args(self):
-#         return self._create_args
-
-#     def copy_into_sandbox(self, *filenames):
-#         """
-#         Copies the specified files into the working directory of this
-#         sandbox.
-#         The filenames specified can be absolute paths or relative paths
-#         to the current working directory.
-#         """
-#         for filename in filenames:
-#             subprocess.check_call(
-#                 ['docker', 'cp', filename,
-#                  self.name + ':' + SANDBOX_WORKING_DIR_NAME],
-#                 timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT
-#             )
-
-#         basenames = [os.path.basename(filename) for filename in filenames]
-
-#         self.run_cmd_success_required(
-#             ['chown', self._linux_username + ':' + self._linux_username] +
-#             basenames, as_root=True)
-
-#     def copy_and_rename_into_sandbox(self, filename, new_name):
-#         """
-#         Copies the specified file into the working directory of this sandbox
-#         and renames the copy to new_name.
-#         new_name must consist of only a filename. Any other path information
-#         will be stripped.
-#         The filename specified can be an absolute path or a relative path
-#         to the current working directory.
-#         """
-#         copy_destination = self.name + ':' + os.path.join(
-#             SANDBOX_WORKING_DIR_NAME, os.path.basename(new_name))
-
-#         print(copy_destination)
-
-#         subprocess.check_call(
-#             ['docker', 'cp', filename, copy_destination],
-#             timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT)
-
-#         self.run_cmd_success_required(
-#             ['chown', self._linux_username + ':' + self._linux_username,
-#              new_name], as_root=True)
-
-#     def run_cmd_with_redirected_io(self, cmd_exec_args,
-#                                    as_root=False,
-#                                    timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT,
-#                                    stdin_content=''):
-#         args = ['docker', 'exec', '-i']
-#         if not as_root:
-#             args.append('--user={}'.format(self._linux_username))
-#         args.append(self.name)
-#         args += ['timeout_script.py', str(timeout)] + cmd_exec_args
-
-#         print('running: {}'.format(args))
-
-#         runner = _SubprocessRunner(
-#             args, timeout=timeout * 2, stdin_content=stdin_content)
-#         return runner
-
-#     def run_cmd_success_required(self, cmd_exec_args, as_root=False,
-#                                  timeout=gc.DEFAULT_SUBPROCESS_TIMEOUT,
-#                                  return_output=True):
-#         args = ['docker', 'exec']
-#         if not as_root:
-#             args.append('--user={}'.format(self._linux_username))
-#         args.append(self.name)
-#         args += cmd_exec_args
-
-#         if return_output:
-#             return subprocess.check_output(
-#                 args, timeout=timeout, universal_newlines=True)
-
-#         subprocess.check_call(args, timeout=timeout)
-
-#     def clear_working_dir(self):
-#         working_dir_contents = self.run_cmd_success_required(
-#             ['ls', SANDBOX_WORKING_DIR_NAME]
-#         ).split()
-#         working_dir_contents = [
-#             os.path.join(SANDBOX_WORKING_DIR_NAME, filename)
-#             for filename in working_dir_contents]
-
-#         backup_dirname = os.path.join(
-#             SANDBOX_HOME_DIR_NAME, "old-" + uuid.uuid4().hex)
-#         self.run_cmd_success_required(["mkdir", "-p", backup_dirname])
-
-#         self.run_cmd_success_required(
-#             ["mv"] + working_dir_contents + [backup_dirname])
-
-#     def initialize_database(self):
-#         if not self.database_backend_to_use:
-#             return
-
-#         self.run_cmd_success_required(
-#             ['initialize_db', self.database_backend_to_use,
-#              self.database_name], as_root=True)
-
-#     def reinitialize_database(self):
-#         if not self.database_backend_to_use:
-#             return
-
-#         self.run_cmd_success_required(
-#             ['reinitialize_db', self.database_backend_to_use,
-#              self.database_name], as_root=True)
-
-
+    redis_conn = redis.StrictRedis()
+    return redis_conn.incr(_NEXT_UID_KEY)

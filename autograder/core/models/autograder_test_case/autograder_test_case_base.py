@@ -2,7 +2,6 @@ import os
 import copy
 
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, RegexValidator)
@@ -91,9 +90,41 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             compilation, running the program, and running the program
             with Valgrind (the timeout is applied separately to each).
             Must be > 0
-            Must be <= 60 TODO: add test and validation for this
+            Must be <= autograder.shared.global_constants
+                                 .MAX_SUBPROCESS_TIMEOUT
             Default value: autograder.shared.global_constants
                                      .DEFAULT_SUBPROCESS_TIMEOUT seconds
+
+        allow_network_connections -- Whether to allow the program being
+            tested to make network connections.
+            Default value: False
+
+        stack_size_limit -- The maximum stack size in bytes.
+            Must be > 0
+            Must be <= autograder.shared.global_constants.MAX_STACK_SIZE_LIMIT
+            NOTE: Setting this value too low may cause the program being
+                    tested to crash prematurely.
+            Default value: autograder.shared.global_constants
+                                     .DEFAULT_STACK_SIZE_LIMIT bytes
+
+        virtual_memory_limit -- The maximum amount of virtual memory
+            (in bytes) the program being tested can use.
+            Must be > 0
+            Must be <= autograder.shared.global_constants.MAX_VIRTUAL_MEM_LIMIT
+            NOTE: Setting this value too low may cause the program being
+                    tested to crash prematurely.
+            Default value: AutograderTestCaseBase.DEFAULT_VIRTUAL_MEM_LIMIT
+
+        process_spawn_limit -- The maximum number of processes that the
+            program being tested is allowed to spawn.
+            Must be >= 0
+            Must be <= autograder.shared.global_constants.MAX_PROCESS_LIMIT
+            NOTE: This limit applies cumulatively to the processes spawned
+                    by the main program being run. i.e. If a spawned
+                    process spawns it's own child process, both of those
+                    processes will count towards the main program's
+                    process limit.
+            Default value: AutograderTestCaseBase.DEFAULT_PROCESS_LIMIT
 
         expected_return_code -- The return code that the
             program being tested should exit with in order to pass
@@ -139,6 +170,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             Default value: False
 
         TODO: always use --error-exitcode=<something>, get rid of default values
+                alternatively, specify xml output and parse it
         valgrind_flags -- If use_valgrind is True, this field should
             contain a list of command line arguments to be passed to the
             valgrind program.
@@ -156,8 +188,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             each flag in this field. The strings will contain an error
             message for their corresponding flag or be empty if their
             corresponding flag did not cause an error.
-
-        valgrind_time_limit -- TODO
 
         points_for_correct_return_code -- The number of points to be awarded
             for the program being tested exiting with the correct return_code.
@@ -196,24 +226,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
                     deadline must have passed as well.
 
             Default value: None
-
-        allow_network_connections -- Whether to allow the program being
-            tested to make network connections.
-            Default value: False
-
-        database_backend_to_use -- A string identifying which database backend
-            to use, if any.
-            See autograder.core.shared.global_constants.SUPPORTED_DB_BACKENDS
-            for a list of supported backends.
-            An empty string indicates that no database should be set up.
-            Default value: empty string.
-
-        database_name -- A string specifying the name of the database to
-            be created. If database_backend_to_use is False, this field
-            will be ignored. If database_backend_to_use is True, this
-            field is REQUIRED.
-            This field may only contain alphabetic characters.
-            Default value: empty string
 
     Instance methods:
         test_checks_return_code()
@@ -255,6 +267,21 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         default=gc.DEFAULT_SUBPROCESS_TIMEOUT,
         validators=[MinValueValidator(1),
                     MaxValueValidator(gc.MAX_SUBPROCESS_TIMEOUT)])
+
+    allow_network_connections = models.BooleanField(default=False)
+
+    stack_size_limit = models.IntegerField(
+        default=gc.DEFAULT_STACK_SIZE_LIMIT,
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(gc.MAX_STACK_SIZE_LIMIT)])
+    virtual_memory_limit = models.IntegerField(
+        default=gc.DEFAULT_VIRTUAL_MEM_LIMIT,
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(gc.MAX_VIRTUAL_MEM_LIMIT)])
+    process_spawn_limit = models.IntegerField(
+        default=gc.DEFAULT_PROCESS_LIMIT,
+        validators=[MinValueValidator(0),
+                    MaxValueValidator(gc.MAX_PROCESS_LIMIT)])
 
     expected_return_code = models.IntegerField(
         null=True, default=None, blank=True)
@@ -304,12 +331,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         )
     )
 
-    allow_network_connections = models.BooleanField(default=False)
-    database_backend_to_use = ag_fields.ShortStringField(
-        blank=True, default=str)
-    database_name = ag_fields.ShortStringField(
-        blank=True, default=str, validators=[RegexValidator('^[a-zA-z]*$')])
-
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
 
@@ -350,8 +371,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
         if student_resource_file_errors:
             errors['student_resource_files'] = student_resource_file_errors
 
-        errors.update(self._clean_db_fields())
-
         if errors:
             raise ValidationError(errors)
 
@@ -387,19 +406,6 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
         return resource_file_errors
 
-    def _clean_db_fields(self):
-        if not self.database_backend_to_use:
-            return {}
-
-        if self.database_backend_to_use not in gc.SUPPORTED_DB_BACKENDS:
-            return {'database_backend_to_use': 'Invalid db backend choice'}
-
-        if not self.database_name:
-            return {'database_name':
-                    'A value must be provided when a db backend is specified'}
-
-        return {}
-
     # -------------------------------------------------------------------------
 
     # TODO: Remove "test_" prefix from these names
@@ -432,6 +438,11 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             "test_resource_files": self.test_resource_files,
             "student_resource_files": self.student_resource_files,
             "time_limit": self.time_limit,
+            "allow_network_connections": self.allow_network_connections,
+            "stack_size_limit": self.stack_size_limit,
+            "process_spawn_limit": self.process_spawn_limit,
+            "virtual_memory_limit": self.virtual_memory_limit,
+
             "expected_return_code": self.expected_return_code,
             "expect_any_nonzero_return_code": self.expect_any_nonzero_return_code,
             "expected_standard_output": self.expected_standard_output,

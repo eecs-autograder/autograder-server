@@ -1,10 +1,13 @@
 import itertools
+import random
 
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 
 from autograder.core.models import (
     AutograderTestCaseFactory, AutograderTestCaseBase)
+
+import autograder.core.shared.feedback_configuration as fbc
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -99,14 +102,41 @@ class GetUpdateDeleteAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(
             self.test_case.expected_return_code, loaded.expected_return_code)
 
-    import unittest
-    @unittest.skip('todo')
     def test_course_admin_edit_test_case_all_fields(self):
-        self.fail()
+        fdbk = fbc.AutograderTestCaseFeedbackConfiguration(
+            visibility_level=fbc.VisibilityLevel.show_to_students,
+            points_feedback_level=fbc.PointsFeedbackLevel.show_total
+        )
+        post_deadline_fdbk = (
+            fbc.AutograderTestCaseFeedbackConfiguration.get_max_feedback())
         args = {
-            'student_files_to_compile_together': self.required_filenames[:1],
-            'name': 'westy',
-            'expected_standard_output': 'spamegg\n'
+            "name": 'westy',
+            "command_line_arguments": ['cheese', 'bjarnolf'],
+            "standard_input": 'some stuffs things\n',
+            "test_resource_files": list(self.project.uploaded_filenames),
+            "student_resource_files": list(self.project.required_student_files),
+            "time_limit": random.randint(1, 20),
+            "stack_size_limit": random.randint(10000, 20000),
+            "process_spawn_limit": random.randint(2, 4),
+            "virtual_memory_limit": random.randint(200000000, 300000000),
+            "allow_network_connections": True,
+
+            "expected_return_code": None,
+            "expect_any_nonzero_return_code": True,
+            "expected_standard_output": "asdfasdf",
+            "expected_standard_error_output": "ajsdkjfhlqkwfkds",
+            "use_valgrind": True,
+            "valgrind_flags": ['spam', 'ergs'],
+
+            "points_for_correct_return_code": random.randint(1, 4),
+            "points_for_correct_output": random.randint(1, 4),
+            "deduction_for_valgrind_errors": random.randint(1, 4),
+            "points_for_compilation_success": random.randint(1, 4),
+
+            "feedback_configuration": fdbk.to_json(),
+            "post_deadline_final_submission_feedback_configuration": (
+                post_deadline_fdbk.to_json()
+            )
         }
 
         client = MockClient(self.admin)
@@ -114,11 +144,17 @@ class GetUpdateDeleteAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(200, response.status_code)
 
-        self.assertEqual(args, json_load_bytes(response.content))
-
+        response_content = json_load_bytes(response.content)
         loaded = AutograderTestCaseBase.objects.get(pk=self.test_case.pk)
         for arg, value in args.items():
-            self.assertEqual(value, getattr(loaded, arg))
+            if (arg == "feedback_configuration"):
+                value = fdbk
+
+            if arg == "post_deadline_final_submission_feedback_configuration":
+                value = post_deadline_fdbk
+
+            self.assertEqual(value, getattr(loaded, arg), msg=arg)
+            self.assertEqual(args[arg], response_content[arg], msg=arg)
 
     def test_course_admin_edit_test_case_invalid_settings(self):
         args = {

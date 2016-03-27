@@ -1,7 +1,7 @@
 <div id='submission'>
     <h3>Submitted at: {{to_local_date:submission.timestamp}}</h3>
 
-    <h4>Status: {{> submission.status}}</h4>
+    <h4 id='status-header'>Status: {{> submission.status}}</h4>
     {{if submission.invalid_reason_or_error !== undefined}}
         {{if submission.status === 'invalid'}}
         <div>Reason(s): </div>
@@ -18,7 +18,10 @@
     <div>Files submitted: </div>
     <ul>
     {{for submitted_files.submitted_files}}
-        <li><a href="/submitted-file{{:url}}">{{>filename}}</a></li>
+        <li>
+            <a href="/submitted-file{{:url}}" data-role='ajax'>{{>filename}}</a>
+            <a href="{{:url}}" download="{{>filename}}"> (download) </a>
+        </li>
     {{/for}}
     </ul>
 
@@ -30,6 +33,59 @@
     {{/for}}
     </ul>
     {{/if}}
+
+    {{if submission.status === 'received' || submission.status === 'queued'}}
+    <button id='remove-from-queue-button'>REMOVE ME FROM QUEUE</button>
+    <div id='remove-from-queue-error'></div>
+    {{/if}}
+
+    {{if suite_results.length !== 0}}
+    <h4>READ THIS SECTION (Student test case evaluation)</h4>
+    {{/if}}
+    <ul>
+       {{for suite_results}}
+        <li>
+            <h5>Student test suite: {{> test_suite_name}}</h5>
+            {{if buggy_implementations_exposed !== undefined}}
+                <div>Buggy solutions exposed:</div>
+                {{for buggy_implementations_exposed}}
+                    <div>{{>}}</div>
+                {{/for}}
+            {{/if}}
+            {{for detailed_results}}
+                <span>Student test case "<i>{{> student_test_case_name}}</i>":</span>
+                {{if compilation_succeeded !== undefined}}
+                    {{if compilation_succeeded}}
+                    <span>compilation success</span>
+                    {{else}}
+                    <span><b>COMPILATION FAILURE</b></span>
+                    {{/if}}
+                    {{if compilation_standard_output !== undefined}}
+                    <div>Compiler standard output:</div>
+                    <pre>{{> compilation_standard_output}}</pre>
+                    {{/if}}
+                    {{if compilation_standard_error_output !== undefined}}
+                    <div>Compiler error output:</div>
+                    <pre>{{> compilation_standard_error_output}}</pre>
+                    {{/if}}
+                {{/if}}
+                {{if valid !== undefined && valid !== null}}
+                    {{if !valid}}
+                    <span><b>!!! WARNING: This test incorrectly flagged the correct solution as buggy !!!</b></span>
+                    {{else}}
+                    <span>Test is valid</span>
+                    {{/if}}
+                {{/if}}
+                <br>
+            {{/for}}
+        </li>
+        {{/for}} 
+        {{for test_results}}
+        <li>
+        </li>
+        {{/for}}
+    </ul>
+
     <div>Results: </div>
     {{* total_points_awarded = 0; total_points_possible = 0;}}
     <div class='panel-group' id='test-result-list'>
@@ -67,42 +123,4 @@
         </div>
     </div>
     {{if submission.status === 'finished_grading'}}<div><b>Total score: {{*: total_points_awarded}}/{{*: total_points_possible}}</b></div>{{/if}}
-    <ul>
-       {{!-- {{for meta.suite_results}}
-        <li>
-            <h4>READ THIS SECTION</h4>
-            <h5>Student test suite: {{> test_suite_name}}</h5>
-            {{if buggy_implementations_exposed !== undefined}}
-                <div>Buggy solutions exposed:</div>
-                {{for buggy_implementations_exposed}}
-                    <div>{{>}}</div>
-                {{/for}}
-            {{/if}}
-            {{for detailed_results}}
-                {{if compilation_succeeded !== undefined}}
-                <span>Student test case "<i>{{> student_test_case_name}}</i>":</span>
-                    {{if compilation_succeeded}}
-                    <span>compilation success</span>
-                    {{else}}
-                    <span><b>COMPILATION FAILURE</b></span>
-                    {{/if}}
-                    {{if compilation_standard_output !== undefined}}
-                    <div>Compiler standard output:</div>
-                    <pre>{{> compilation_standard_output}}</pre>
-                    {{/if}}
-                    {{if compilation_standard_error_output !== undefined}}
-                    <div>Compiler error output:</div>
-                    <pre>{{> compilation_standard_error_output}}</pre>
-                    {{/if}}
-                {{/if}}
-                <br>
-            {{/for}}
-        </li>
-        {{/for}} 
-        {{for test_results}}
-        <li>
-        </li>
-        {{/for}}
-    </ul>
-     --}}
 </div>

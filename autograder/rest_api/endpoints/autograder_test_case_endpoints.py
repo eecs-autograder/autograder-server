@@ -25,6 +25,11 @@ class GetUpdateDeleteAutograderTestCaseEndpoint(EndpointBase):
         "test_resource_files",
         "student_resource_files",
         "time_limit",
+        "process_spawn_limit",
+        "stack_size_limit",
+        "virtual_memory_limit",
+        "allow_network_connections",
+
         "expected_return_code",
         "expect_any_nonzero_return_code",
         "expected_standard_output",

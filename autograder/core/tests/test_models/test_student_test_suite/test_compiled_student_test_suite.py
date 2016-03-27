@@ -1,4 +1,5 @@
-import uuid
+import itertools
+from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
@@ -123,7 +124,7 @@ class CompiledStudentTestSuiteTestCase(
 # -----------------------------------------------------------------------------
 
 
-class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
+class _EvaluateTestCaseSetUpBase:
     def setUp(self):
         super().setUp()
 
@@ -155,14 +156,18 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
                 file_.name for file_ in BUGGY_IMPLEMENTATIONS]
         )
 
-        # self.submission = Submission.objects.validate_and_create(
-        #     submission_group=self.group, submitted_files=STUDENT_TESTS)
+
+class CompiledStudentTestSuiteEvaluationTestCase(_EvaluateTestCaseSetUpBase,
+                                                 TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
 
         self.sandbox = AutograderSandbox()
         self.sandbox.__enter__()
 
     def tearDown(self):
         super().tearDown()
+
         self.sandbox.__exit__()
 
     # -------------------------------------------------------------------------
@@ -329,6 +334,53 @@ class CompiledStudentTestSuiteEvaluationTestCase(TemporaryFilesystemTestCase):
         self.assertSetEqual(
             result.buggy_implementations_exposed,
             set([BUGGY_IMPLEMENTATION_RETURN_42.name]))
+
+# -----------------------------------------------------------------------------
+
+
+class CompiledStudentTestSuiteEvaluateResourceLimitTestCase(
+        _EvaluateTestCaseSetUpBase, TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.suite.buggy_implementation_filenames = (
+            self.suite.buggy_implementation_filenames[:1])
+        self.suite.validate_and_save()
+
+        self.submission = Submission.objects.validate_and_create(
+            submission_group=self.group, submitted_files=[
+                STUDENT_TEST_RETURN_42])
+
+    @mock.patch('autograder.security.autograder_sandbox.AutograderSandbox',
+                autospec=True)
+    def test_resource_limits_applied(self, MockSandbox):
+        run_cmd_mock_result = mock.Mock()
+        type(run_cmd_mock_result).return_code = (
+            mock.PropertyMock(return_value=0))
+        type(run_cmd_mock_result).timed_out = (
+            mock.PropertyMock(return_value=False))
+
+        sandbox = MockSandbox()
+        sandbox.run_command.return_value = run_cmd_mock_result
+        self.suite.evaluate(self.submission, sandbox)
+
+        print(sandbox.run_command.mock_calls)
+        assert len(self.submission.submitted_filenames) == 1
+        assert len(self.suite.buggy_implementation_filenames) == 1
+        expected_num_progs_run = 2
+        calls = list(itertools.repeat(
+            mock.call(
+                ['./prog'],
+                timeout=self.suite.time_limit,
+                max_num_processes=gc.DEFAULT_PROCESS_LIMIT,
+                max_stack_size=gc.DEFAULT_STACK_SIZE_LIMIT,
+                max_virtual_memory=gc.DEFAULT_VIRTUAL_MEM_LIMIT
+            ),
+            expected_num_progs_run
+        ))
+
+        sandbox.run_command.assert_has_calls(calls, any_order=True)
+
 
 # -----------------------------------------------------------------------------
 

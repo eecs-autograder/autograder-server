@@ -95,7 +95,8 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
 
         for test_file in test_files:
             test_result = self._evaluate_test_case(
-                submission_dir, test_file, autograder_sandbox)
+                submission_dir, test_file, autograder_sandbox,
+                results.buggy_implementations_exposed)
             results.detailed_results.append(test_result)
             results.buggy_implementations_exposed.update(
                 test_result.buggy_implementations_exposed)
@@ -103,7 +104,7 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
         return results
 
     def _evaluate_test_case(self, submission_dir, test_file,
-                            autograder_sandbox):
+                            autograder_sandbox, impls_exposed_so_far):
         print('evaluating test: ', test_file)
         project_dir = ut.get_project_files_dir(self.project)
         resource_file_abspaths = [
@@ -143,7 +144,12 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
             return eval_result
 
         validity_run_result = autograder_sandbox.run_command(
-            ['./' + exe_name], timeout=self.time_limit)
+            ['./' + exe_name],
+            timeout=self.time_limit,
+            max_num_processes=gc.DEFAULT_PROCESS_LIMIT,
+            max_stack_size=gc.DEFAULT_STACK_SIZE_LIMIT,
+            max_virtual_memory=gc.DEFAULT_VIRTUAL_MEM_LIMIT
+        )
 
         eval_result.valid = (
             validity_run_result.return_code == 0 and
@@ -158,6 +164,9 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
             return eval_result
 
         for buggy_impl in self.buggy_implementation_filenames:
+            if buggy_impl in impls_exposed_so_far:
+                continue
+
             print('evaluating buggy impl:', buggy_impl)
             buggy_impl_abspath = os.path.join(project_dir, buggy_impl)
             autograder_sandbox.add_files(
@@ -180,7 +189,11 @@ class CompiledStudentTestSuite(StudentTestSuiteBase):
                 continue
 
             run_result = autograder_sandbox.run_command(
-                ['./' + exe_name], timeout=self.time_limit)
+                ['./' + exe_name],
+                timeout=self.time_limit,
+                max_num_processes=gc.DEFAULT_PROCESS_LIMIT,
+                max_stack_size=gc.DEFAULT_STACK_SIZE_LIMIT,
+                max_virtual_memory=gc.DEFAULT_VIRTUAL_MEM_LIMIT)
 
             if run_result.return_code != 0:
                 eval_result.buggy_implementations_exposed.append(buggy_impl)

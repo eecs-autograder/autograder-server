@@ -61,7 +61,11 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
             [self.entry_point_filename] + self.command_line_arguments)
 
         runner = autograder_sandbox.run_command(
-            run_program_cmd, timeout=self.time_limit,
+            run_program_cmd,
+            timeout=self.time_limit,
+            max_num_processes=self.process_spawn_limit,
+            max_stack_size=self.stack_size_limit,
+            max_virtual_memory=self.virtual_memory_limit,
             input_content=self.standard_input)
 
         result.return_code = runner.return_code

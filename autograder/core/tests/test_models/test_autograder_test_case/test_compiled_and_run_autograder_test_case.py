@@ -1,4 +1,5 @@
-# import unittest
+import random
+from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
@@ -16,7 +17,7 @@ from .utils import (
     CppProgramStrs)
 
 
-class CompiledAndRunAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
+class _SetUpBase:
     def setUp(self):
         super().setUp()
 
@@ -64,8 +65,11 @@ class CompiledAndRunAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
             "executable_name": self.executable_name,
         }
 
-    # -------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
+
+class CompiledAndRunAutograderTestCaseTestCase(_SetUpBase,
+                                               TemporaryFilesystemTestCase):
     def test_valid_create_custom_values(self):
         AutograderTestCaseFactory.validate_and_create(
             'compiled_and_run_test_case',
@@ -591,3 +595,66 @@ class CompiledAutograderTestRunTestCase(
     @unittest.skip('not implemented')
     def test_run_with_pattern_in_files_to_compile(self):
         self.fail()
+
+# -----------------------------------------------------------------------------
+
+
+class CompiledAutograderTestCaseResourceLimitTestCase(_SetUpBase, TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.stack_limit = random.randint(1000, 8000)
+        self.virtual_mem_limit = random.randint(100000000, 200000000)
+        self.process_limit = random.randint(1, 5)
+
+        self.test = AutograderTestCaseFactory.validate_and_create(
+            'compiled_and_run_test_case',
+            name=self.test_name,
+            project=self.project,
+            process_spawn_limit=self.process_limit,
+            stack_size_limit=self.stack_limit,
+            virtual_memory_limit=self.virtual_mem_limit,
+            **self.compiled_test_kwargs)
+
+    @mock.patch('autograder.security.autograder_sandbox.AutograderSandbox',
+                autospec=True)
+    def test_resource_limits_set(self, MockSandbox):
+        run_cmd_mock_result = mock.Mock()
+        type(run_cmd_mock_result).return_code = (
+            mock.PropertyMock(return_value=0))
+
+        sandbox = MockSandbox()
+        sandbox.run_command.return_value = run_cmd_mock_result
+        self.test.run(None, sandbox)
+
+        sandbox.run_command.assert_called_with(
+            ['./' + self.test.executable_name],
+            input_content='',
+            timeout=self.test.time_limit,
+            max_num_processes=self.process_limit,
+            max_stack_size=self.stack_limit,
+            max_virtual_memory=self.virtual_mem_limit)
+
+    @mock.patch('autograder.security.autograder_sandbox.AutograderSandbox',
+                autospec=True)
+    def test_resource_limits_used_with_valgrind(self, MockSandbox):
+        self.test.use_valgrind = True
+        self.test.valgrind_flags = ['asdf']
+        self.test.save()
+
+        run_cmd_mock_result = mock.Mock()
+        type(run_cmd_mock_result).return_code = (
+            mock.PropertyMock(return_value=0))
+
+        sandbox = MockSandbox()
+        sandbox.run_command.return_value = run_cmd_mock_result
+        self.test.run(None, sandbox)
+
+        sandbox.run_command.assert_called_with(
+            ['valgrind'] + self.test.valgrind_flags +
+            ['./' + self.test.executable_name],
+            input_content='',
+            timeout=self.test.time_limit,
+            max_num_processes=self.process_limit,
+            max_stack_size=self.stack_limit,
+            max_virtual_memory=self.virtual_mem_limit)

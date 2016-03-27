@@ -13,7 +13,7 @@ import multiprocessing
 import contextlib
 
 DIVIDER = '=' * 79 + '\n'
-DEFAULT_LOG_DIRNAME = 'worker_logs'
+DEFAULT_LOG_DIRNAME = 'listener_logs'
 
 
 def main():
@@ -64,12 +64,22 @@ def listen_for_and_grade_received_submissions(num_workers,
     #     )
 
     print(num_workers)
-    with multiprocessing.Pool(processes=num_workers,
-                              initializer=initialize_process,
-                              initargs=[django_settings_module],
-                              maxtasksperchild=100) as workers:
+    # HAAAAAAAAAACK
+    eecs280_pool = multiprocessing.Pool(processes=num_workers,
+                                        initializer=initialize_process,
+                                        initargs=[django_settings_module],
+                                        maxtasksperchild=100)
+    # HAAAAAAAAAACK
+    eecs485_pool = multiprocessing.Pool(processes=num_workers,
+                                        initializer=initialize_process,
+                                        initargs=[django_settings_module],
+                                        maxtasksperchild=100)
+    with eecs280_pool, eecs485_pool:
         while True:
-            submission_ids = []
+            # HAAAAAAAAAACK
+            eecs280_submission_ids = []
+            # HAAAAAAAAAACK
+            eecs485_submission_ids = []
             with transaction.atomic():
                 received_submissions = Submission.objects.select_for_update(
                 ).filter(
@@ -83,10 +93,17 @@ def listen_for_and_grade_received_submissions(num_workers,
                 for submission in received_submissions:
                     submission.status = Submission.GradingStatus.queued
                     submission.save()
-                    submission_ids.append(submission.pk)
+                    # HAAAAAAAAAACK
+                    if submission.submission_group.project.semester.course.name == 'eecs280':
+                        eecs280_submission_ids.append(submission.pk)
+                    # HAAAAAAAAAACK
+                    if submission.submission_group.project.semester.course.name == 'eecs485':
+                        eecs485_submission_ids.append(submission.pk)
 
-            for sub_id in submission_ids:
-                workers.apply_async(grade_submission, [sub_id, log_dirname])
+            for sub_id in eecs280_submission_ids:
+                eecs280_pool.apply_async(grade_submission, [sub_id, log_dirname])
+            for sub_id in eecs485_submission_ids:
+                eecs485_pool.apply_async(grade_submission, [sub_id, log_dirname])
 
             # submission_ids = (
             #     (sub.pk, log_dirname) for sub in received_submissions)
@@ -110,17 +127,22 @@ def initialize_process(django_settings_module):
 
 
 def grade_submission(submission_id, log_dirname):
-    with get_worker_log_file(log_dirname) as f:#, \
-            # contextlib.redirect_stdout(f):
+    with get_worker_log_file(log_dirname) as f, \
+            contextlib.redirect_stdout(f):
         # contextlib.redirect_stderr(f):
         from autograder.core.models import Submission
         import autograder.core.shared.utilities as ut
+        from django.db import transaction
 
         print('grade_submission:', submission_id, flush=True)
         try:
-            submission = Submission.objects.get(pk=submission_id)
-            submission.status = Submission.GradingStatus.being_graded
-            submission.save()
+            with transaction.atomic():
+                submission = Submission.objects.select_for_update().get(pk=submission_id)
+                if submission.status == Submission.GradingStatus.removed_from_queue:
+                    print('submission {} has been removed from the queue'.format(submission.pk))
+                    return
+                submission.status = Submission.GradingStatus.being_graded
+                submission.save()
 
             with ut.ChangeDirectory(ut.get_submission_dir(submission)):
                 prepare_and_run_tests(submission)
@@ -161,26 +183,26 @@ def prepare_and_run_tests(submission):
     sandbox_environment = {
         'usernames': ' '.join(sorted(group.member_names))
     }
+
     sandbox = AutograderSandbox(
-        name=sandbox_name, environment_variables_to_set=sandbox_environment)
-    with sandbox:
-        for test_case in group.project.autograder_test_cases.all():
+        name=sandbox_name, environment_variables=sandbox_environment)
+    for test_case in group.project.autograder_test_cases.all():
+        sandbox.allow_network_access = test_case.allow_network_connections
+        with sandbox:
             print(test_case.name)
             files_to_copy = (
                 test_case.student_resource_files +
                 [os.path.join(project_files_dir, filename) for
                  filename in test_case.test_resource_files])
-            sandbox.copy_into_sandbox(*files_to_copy)
+            sandbox.add_files(*files_to_copy)
 
             result = test_case.run(
                 submission=submission, autograder_sandbox=sandbox)
             print('finished_running')
             result.save()
 
-            sandbox.clear_working_dir()
-            sandbox.reinitialize_database()
-
-        for test_suite in group.project.student_test_suites.all():
+    for test_suite in group.project.student_test_suites.all():
+        with sandbox:
             print('test_suite: ', test_suite.name)
             result = test_suite.evaluate(
                 submission=submission, autograder_sandbox=sandbox)

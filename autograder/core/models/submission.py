@@ -161,6 +161,7 @@ class Submission(ModelValidatableOnSave):
         finished_grading = 'finished_grading'
         invalid = 'invalid'
         error = 'error'
+        removed_from_queue = 'removed_from_queue'
 
     # !!!! IMPORTANT: UPDATE THESE WHENEVER GradingStatus IS CHANGED !!!!
     _GRADING_STATUS_CHOICES = (
@@ -169,7 +170,8 @@ class Submission(ModelValidatableOnSave):
         ('being_graded', 'Being graded'),
         ('finished_grading', 'Finished grading'),
         ('invalid', 'Invalid'),
-        ('error', 'Error')
+        ('error', 'Error'),
+        ('removed_from_queue', "Removed from queue")
     )
 
     # -------------------------------------------------------------------------

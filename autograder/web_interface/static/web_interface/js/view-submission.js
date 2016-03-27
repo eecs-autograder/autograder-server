@@ -2,17 +2,43 @@ function load_submission_view(url)
 {
     var loaded = $.Deferred();
     var submission = null;
+    var submitted_files = null;
+    var test_results = null;
+    var template = null;
+    var suite_result_promises = [];
     $.get(url).then(function(submission_json){
         submission = submission_json;
         return $.when(
             $.get(submission.urls.submitted_files),
             $.get(submission.urls.autograder_test_case_results),
+            $.get(submission.urls.student_test_suite_results),
             lazy_get_template('view-submission'))
-    }).done(function(submitted_files_ajax, test_results_ajax, template) {
+    }).then(function(submitted_files_ajax, test_results_ajax,
+                     suite_results_ajax, page_template) {
+        submitted_files = submitted_files_ajax[0];
+        test_results = test_results_ajax[0];
+        template = page_template;
+
+        var suite_results = suite_results_ajax[0].student_test_suite_results;
+        console.log(suite_results);
+        for (var i = 0; i < suite_results.length; ++i)
+        {
+            suite_result_promises.push($.get(suite_results[i].url));
+        }
+
+        return $.when.apply($, suite_result_promises);
+    }).then(function() {
+        console.log(suite_result_promises);
+        var full_suite_results = [];
+        for (var i = 0; i < suite_result_promises.length; ++i)
+        {
+            full_suite_results.push(suite_result_promises[i].responseJSON);
+        }
         var render_data = {
             'submission': submission,
-            'submitted_files': submitted_files_ajax[0],
-            'test_results': test_results_ajax[0]
+            'submitted_files': submitted_files,
+            'test_results': test_results,
+            'suite_results': full_suite_results
         };
         console.log(render_data);
 
@@ -33,6 +59,8 @@ function load_submission_view(url)
                 }
             }, 5000);
         }
+
+        _init_remove_button(submission);
         loaded.resolve();
     }).fail(function(data, status) {
         console.log('error loading project');
@@ -49,7 +77,7 @@ function _load_result(event, url, render_location)
     {
         // console.log('waluiiiigi');
         // console.log($('a', this)[0]);
-        url = $('a', this).attr('href');        
+        url = $('a', this).attr('href');
     }
 
     if (render_location === undefined)
@@ -65,6 +93,32 @@ function _load_result(event, url, render_location)
     ).done(function(result_ajax, template) {
         console.log(result_ajax[0]);
         render_location.html(template.render(result_ajax[0]));
+    });
+}
+
+function _init_remove_button(submission_json)
+{
+    $('#remove-from-queue-button').click(function(event) {
+        event.preventDefault();
+        var confirmed = window.confirm("Are you sure you want to remove your submission from the queue?\nClick OK to REMOVE, CANCEL to keep it in the queue");
+        if (!confirmed)
+        {
+            return false;
+        }
+        _remove_from_queue(submission_json);
+    });
+}
+
+function _remove_from_queue(submission_json)
+{
+    console.log(submission_json);
+    $.post(submission_json.urls.remove_from_queue).done(function() {
+        $('#remove-from-queue-button').hide();
+        $('#remove-from-queue-error').hide();
+        $('#status-header').text('Status: removed_from_queue');
+    }).fail(function(response) {
+        console.log(response);
+        $('#remove-from-queue-error').text(response);
     });
 }
 
