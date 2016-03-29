@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+import os
 import sys
 import subprocess
 import argparse
@@ -12,6 +13,9 @@ def main():
 
     def set_subprocess_rlimits():
         try:
+            if args.linux_user_id is not None:
+                os.setuid(args.linux_user_id)
+
             if args.max_num_processes is not None:
                 resource.setrlimit(
                     resource.RLIMIT_NPROC,
@@ -37,7 +41,8 @@ def main():
             traceback.print_exc()
 
     try:
-        return_code = subprocess.call(args.cmd_args, timeout=args.timeout,
+        return_code = subprocess.call(args.cmd_args,
+                                      # timeout=args.timeout,
                                       preexec_fn=set_subprocess_rlimits)
         sys.exit(return_code)
     except subprocess.TimeoutExpired:
@@ -51,6 +56,7 @@ def parse_args():
     parser.add_argument("--max_num_processes", nargs='?', type=int)
     parser.add_argument("--max_stack_size", nargs='?', type=int)
     parser.add_argument("--max_virtual_memory", nargs='?', type=int)
+    parser.add_argument("--linux_user_id", nargs='?', type=int)
     parser.add_argument("cmd_args", nargs=argparse.REMAINDER)
 
     return parser.parse_args()

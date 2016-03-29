@@ -163,14 +163,12 @@ class AutograderSandbox:
                 be raised if the command exits with nonzero status.
         """
         cmd = ['docker', 'exec', '-i']
-        if not as_root:
-            cmd.append('--user={}'.format(SANDBOX_USERNAME))
         cmd.append(self.name)
 
         cmd.append('timeout_script.py')
 
-        if timeout is not None:
-            cmd += ['--timeout', str(timeout)]
+        # if timeout is not None:
+        #     cmd += ['--timeout', str(timeout)]
 
         if max_num_processes is not None:
             cmd += ['--max_num_processes', str(max_num_processes)]
@@ -181,13 +179,18 @@ class AutograderSandbox:
         if max_virtual_memory is not None:
             cmd += ['--max_virtual_memory', str(max_virtual_memory)]
 
+        if not as_root:
+            cmd += ['--linux_user_id', str(self._linux_uid)]
+
         cmd += args
 
-        print('running: {}'.format(cmd))
+        print('running: {}'.format(cmd), flush=True)
 
         if input_content is None:
             input_content = ''
-        return _SubprocessRunner(cmd, raise_on_failure=raise_on_failure,
+        return _SubprocessRunner(cmd,
+                                 timeout=timeout,
+                                 raise_on_failure=raise_on_failure,
                                  stdin_content=input_content)
 
     def add_files(self, *filenames):
@@ -283,7 +286,7 @@ class _SubprocessRunner(object):
                     tempfile.TemporaryFile() as stdout_dest, \
                     tempfile.TemporaryFile() as stderr_dest:
 
-                # print("Created temp files")
+                # print("Created temp files", flush=True)
                 stdin_content.write(self._stdin_content.encode('utf-8'))
                 stdin_content.seek(0)
 
@@ -295,19 +298,21 @@ class _SubprocessRunner(object):
                         stderr=stderr_dest,
                         timeout=self._timeout
                     )
-                    print("Finished running: ", self._args)
-                    if (self._return_code ==
-                            _SubprocessRunner._TIMEOUT_RETURN_CODE):
-                        self._timed_out = True
+                    print("Finished running: ", self._args, flush=True)
+                    # if (self._return_code ==
+                    #         _SubprocessRunner._TIMEOUT_RETURN_CODE):
+                    #     self._timed_out = True
                 finally:
                     stdout_dest.seek(0)
                     stderr_dest.seek(0)
                     self._stdout = stdout_dest.read().decode('utf-8')
                     self._stderr = stderr_dest.read().decode('utf-8')
 
-                    print("Return code: ", self._return_code)
-                    print(self._stdout)
-                    print(self._stderr)
+                    print("Return code: ", self._return_code, flush=True)
+                    print(self._stdout, flush=True)
+                    print(self._stderr, flush=True)
+        except subprocess.TimeoutExpired:
+            self._timed_out = True
         except UnicodeDecodeError:
             msg = ("Error reading program output: "
                    "non-unicode characters detected")
