@@ -186,9 +186,14 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
             for the program being tested exiting with the correct return_code.
             Default value: 0
 
-        points_for_correct_output -- The number of points to be awarded
+        points_for_correct_stdout -- The number of points to be awarded
             for the program being tested producing the correct output
-            (standard out and standard error).
+            to the stdout stream.
+            Default value: 0
+
+        points_for_correct_stderr -- The number of points to be awarded
+            for the program being tested producing the correct output
+            to the stderr stream.
             Default value: 0
 
         deduction_for_valgrind_errors -- The number of points to be deducted
@@ -306,7 +311,9 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     # Point distribution fields
     points_for_correct_return_code = models.IntegerField(
         default=0, validators=[MinValueValidator(0)])
-    points_for_correct_output = models.IntegerField(
+    points_for_correct_stdout = models.IntegerField(
+        default=0, validators=[MinValueValidator(0)])
+    points_for_correct_stderr = models.IntegerField(
         default=0, validators=[MinValueValidator(0)])
     deduction_for_valgrind_errors = models.IntegerField(
         default=0, validators=[MinValueValidator(0)])

@@ -153,10 +153,12 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def return_code_correct(self):
-            if not self._ret_code_checked() or self._no_ret_code_fdbk():
+            if (not self._ret_code_checked() or
+                    self._no_ret_code_correctness_fdbk()):
                 return None
 
-            return self._result.return_code_correct
+            return (self._result.return_code ==
+                    self._result.test_case.expected_return_code)
 
         @property
         def expected_return_code(self):
@@ -167,6 +169,9 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def actual_return_code(self):
+            if self._fdbk.show_return_code:
+                return self._result.return_code
+
             if not self._ret_code_checked() or not self._show_ret_code_diff():
                 return None
 
@@ -180,7 +185,7 @@ class AutograderTestCaseResult(models.Model):
         @property
         def return_code_points(self):
             if (not self._ret_code_checked() or
-                    self._no_ret_code_fdbk() or
+                    self._no_ret_code_correctness_fdbk() or
                     self._no_pts_fdbk()):
                 return None
 
@@ -189,7 +194,7 @@ class AutograderTestCaseResult(models.Model):
 
             return self._result.test_case.points_for_correct_return_code
 
-        def _no_ret_code_fdbk(self):
+        def _no_ret_code_correctness_fdbk(self):
             return (self._fdbk.return_code_feedback_level ==
                     fbc.ReturnCodeFeedbackLevel.no_feedback)
 
@@ -198,19 +203,52 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def stdout_correct(self):
-            raise NotImplementedError()
+            if (self._no_stdout_correctness_fdbk() or
+                    not self._stdout_checked()):
+                return None
+
+            return (self._result.standard_output ==
+                    self._result.test_case.expected_standard_output)
 
         @property
         def stdout_content(self):
-            raise NotImplementedError()
+            if not self._fdbk.show_stdout_content:
+                return None
+
+            return self._result.standard_output
 
         @property
         def stdout_diff(self):
-            raise NotImplementedError()
+            if not self._show_stdout_diff() or not self._stdout_checked():
+                return None
+
+            if self.stdout_correct:
+                return ''
+
+            return _get_diff(self._result.test_case.expected_standard_output,
+                             self._result.standard_output)
 
         @property
         def stdout_points(self):
-            raise NotImplementedError()
+            if (not self._stdout_checked() or
+                    self._no_stdout_correctness_fdbk() or
+                    self._no_pts_fdbk()):
+                return None
+
+            return (0 if not self.stdout_correct
+                    else self._result.test_case.points_for_correct_stdout)
+
+        def _no_stdout_correctness_fdbk(self):
+            return (self._fdbk.standard_output_feedback_level ==
+                    fbc.StandardOutputFeedbackLevel.no_feedback)
+
+        def _show_stdout_diff(self):
+            return (self._fdbk.standard_output_feedback_level ==
+                    (fbc.StandardOutputFeedbackLevel
+                        .show_expected_and_actual_values))
+
+        def _stdout_checked(self):
+            return self._result.test_case.expected_standard_output
 
         @property
         def stderr_correct(self):

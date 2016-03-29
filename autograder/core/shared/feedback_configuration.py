@@ -30,9 +30,19 @@ class AutograderTestCaseFeedbackConfiguration(JsonSerializable):
             'return_code_feedback_level',
             ReturnCodeFeedbackLevel.no_feedback)
 
-        self.output_feedback_level = kwargs.get(
-            'output_feedback_level',
-            OutputFeedbackLevel.no_feedback)
+        self.show_return_code = kwargs.get('show_return_code', False)
+
+        self.standard_output_feedback_level = kwargs.get(
+            'standard_output_feedback_level',
+            StandardOutputFeedbackLevel.no_feedback)
+
+        self.show_stdout_content = kwargs.get('show_stdout_content', False)
+
+        self.standard_error_output_feedback_level = kwargs.get(
+            'standard_error_output_feedback_level',
+            StandardErrorOutputFeedbackLevel.no_feedback)
+
+        self.show_stderr_content = kwargs.get('show_stderr_content', False)
 
         self.compilation_feedback_level = kwargs.get(
             'compilation_feedback_level',
@@ -68,8 +78,10 @@ class AutograderTestCaseFeedbackConfiguration(JsonSerializable):
             visibility_level=VisibilityLevel.show_to_students,
             return_code_feedback_level=(
                 ReturnCodeFeedbackLevel.show_expected_and_actual_values),
-            output_feedback_level=(
-                OutputFeedbackLevel.show_expected_and_actual_values),
+            standard_output_feedback_level=(
+                StandardOutputFeedbackLevel.show_expected_and_actual_values),
+            standard_error_output_feedback_level=(
+                StandardErrorOutputFeedbackLevel.show_expected_and_actual_values),
             compilation_feedback_level=(
                 CompilationFeedbackLevel.show_compiler_output),
             valgrind_feedback_level=(
@@ -114,12 +126,22 @@ class AutograderTestCaseFeedbackConfiguration(JsonSerializable):
         self._return_code_feedback_level = ReturnCodeFeedbackLevel(value)
 
     @property
-    def output_feedback_level(self):
-        return self._output_feedback_level
+    def standard_output_feedback_level(self):
+        return self._standard_output_feedback_level
 
-    @output_feedback_level.setter
-    def output_feedback_level(self, value):
-        self._output_feedback_level = OutputFeedbackLevel(value)
+    @standard_output_feedback_level.setter
+    def standard_output_feedback_level(self, value):
+        self._standard_output_feedback_level = StandardOutputFeedbackLevel(
+            value)
+
+    @property
+    def standard_error_output_feedback_level(self):
+        return self._standard_error_output_feedback_level
+
+    @standard_error_output_feedback_level.setter
+    def standard_error_output_feedback_level(self, value):
+        self._standard_error_output_feedback_level = (
+            StandardErrorOutputFeedbackLevel(value))
 
     @property
     def compilation_feedback_level(self):
@@ -280,6 +302,8 @@ class StudentTestSuiteFeedbackConfiguration(JsonSerializable):
 
 
 class VisibilityLevel(Enum):
+    hide_from_students_and_staff_viewers = (
+        'hide_from_students_and_staff_viewers')
     hide_from_students = 'hide_from_students'
     show_to_students = 'show_to_students'
 
@@ -301,10 +325,15 @@ class ReturnCodeFeedbackLevel(Enum):
     show_expected_and_actual_values = 'show_expected_and_actual_values'
 
 
-class OutputFeedbackLevel(Enum):
+class StandardOutputFeedbackLevel(Enum):
     no_feedback = 'no_feedback'
     correct_or_incorrect_only = 'correct_or_incorrect_only'
-    show_program_output = 'show_program_output'
+    show_expected_and_actual_values = 'show_expected_and_actual_values'
+
+
+class StandardErrorOutputFeedbackLevel(Enum):
+    no_feedback = 'no_feedback'
+    correct_or_incorrect_only = 'correct_or_incorrect_only'
     show_expected_and_actual_values = 'show_expected_and_actual_values'
 
 

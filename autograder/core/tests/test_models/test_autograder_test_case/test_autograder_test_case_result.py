@@ -1,6 +1,5 @@
 import difflib
 import datetime
-import random
 
 from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile

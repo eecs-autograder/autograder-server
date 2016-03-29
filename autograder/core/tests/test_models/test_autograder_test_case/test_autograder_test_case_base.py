@@ -1,3 +1,5 @@
+import random
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 
@@ -69,7 +71,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertIsNone(loaded_test_case.valgrind_flags)
 
         self.assertEqual(0, loaded_test_case.points_for_correct_return_code)
-        self.assertEqual(0, loaded_test_case.points_for_correct_output)
+        self.assertEqual(0, loaded_test_case.points_for_correct_stdout)
+        self.assertEqual(0, loaded_test_case.points_for_correct_stderr)
         self.assertEqual(0, loaded_test_case.deduction_for_valgrind_errors)
         self.assertEqual(0, loaded_test_case.points_for_compilation_success)
 
@@ -95,6 +98,9 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         process_limit = gc.MAX_PROCESS_LIMIT
         ret_code = 0
         valgrind_flags = ['--leak-check=yes', '--error-exitcode=9000']
+        stdout_points = random.randint(1, 6)
+        stderr_points = random.randint(1, 7)
+
 
         new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
@@ -113,7 +119,8 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             use_valgrind=True,
             valgrind_flags=valgrind_flags,
             points_for_correct_return_code=1,
-            points_for_correct_output=2,
+            points_for_correct_stdout=stdout_points,
+            points_for_correct_stderr=stderr_points,
             deduction_for_valgrind_errors=3,
             points_for_compilation_success=4,
             feedback_configuration=(
@@ -165,7 +172,10 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_test_case.valgrind_flags, valgrind_flags)
 
         self.assertEqual(1, loaded_test_case.points_for_correct_return_code)
-        self.assertEqual(2, loaded_test_case.points_for_correct_output)
+        self.assertEqual(stdout_points,
+                         loaded_test_case.points_for_correct_stdout)
+        self.assertEqual(stderr_points,
+                         loaded_test_case.points_for_correct_stderr)
         self.assertEqual(3, loaded_test_case.deduction_for_valgrind_errors)
         self.assertEqual(4, loaded_test_case.points_for_compilation_success)
 
@@ -558,14 +568,17 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 points_for_correct_return_code=-1,
-                points_for_correct_output=-1,
+                points_for_correct_stdout=-1,
+                points_for_correct_stderr=-1,
                 deduction_for_valgrind_errors=-1,
                 points_for_compilation_success=-1)
 
         self.assertTrue(
             'points_for_correct_return_code' in cm.exception.message_dict)
         self.assertTrue(
-            'points_for_correct_output' in cm.exception.message_dict)
+            'points_for_correct_stdout' in cm.exception.message_dict)
+        self.assertTrue(
+            'points_for_correct_stderr' in cm.exception.message_dict)
         self.assertTrue(
             'deduction_for_valgrind_errors' in cm.exception.message_dict)
         self.assertTrue(

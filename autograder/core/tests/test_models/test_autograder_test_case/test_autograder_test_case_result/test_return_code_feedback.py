@@ -4,15 +4,12 @@ from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
 
-from autograder.core.models import (
-    Project, Semester, Course,
-    AutograderTestCaseFactory, AutograderTestCaseResult,
-    SubmissionGroup, Submission)
+import autograder.core.models as ag_models
 
 import autograder.core.shared.feedback_configuration as fbc
 
 from autograder.core.tests.test_models.test_autograder_test_case.models import (
-    _DummyAutograderTestCase, _DummyCompiledAutograderTestCase)
+    _DummyAutograderTestCase)
 
 
 class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
@@ -28,11 +25,11 @@ class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
                 expected_return_code=expected_ret_code,
                 points_for_correct_return_code=random.randint(1, 5)))
         self.expected_ret_code_correct_result = (
-            AutograderTestCaseResult(
+            ag_models.AutograderTestCaseResult(
                 test_case=self.expected_ret_code_ag_test,
                 return_code=expected_ret_code))
         self.expected_ret_code_incorrect_result = (
-            AutograderTestCaseResult(
+            ag_models.AutograderTestCaseResult(
                 test_case=self.expected_ret_code_ag_test,
                 return_code=expected_ret_code + 2))
 
@@ -42,11 +39,11 @@ class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
                 expect_any_nonzero_return_code=True,
                 points_for_correct_return_code=random.randint(1, 5)))
         self.expect_nonzero_ret_code_correct_result = (
-            AutograderTestCaseResult(
+            ag_models.AutograderTestCaseResult(
                 test_case=self.expect_nonzero_ret_code_ag_test,
                 return_code=random.randint(1, 5)))
         self.expect_nonzero_ret_code_incorrect_result = (
-            AutograderTestCaseResult(
+            ag_models.AutograderTestCaseResult(
                 test_case=self.expect_nonzero_ret_code_ag_test,
                 return_code=0))
 
@@ -154,11 +151,20 @@ class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
             self.assertIsNone(incorrect.feedback.return_code_points,
                               msg=test.name)
 
+    def test_show_return_code(self):
+        for test, correct, incorrect in self.tests_and_results:
+            test.feedback_configuration.show_return_code = True
+
+            self.assertEqual(correct.return_code,
+                             correct.feedback.actual_return_code)
+            self.assertEqual(incorrect.return_code,
+                             incorrect.feedback.actual_return_code)
+
     def test_fdbk_not_applicable_return_code_not_checked(self):
         no_ret_code_check_ag_test = _DummyAutograderTestCase(
             name='no_ret_code_check_ag_test', project=self.project,
             points_for_correct_return_code=random.randint(1, 5))
-        no_ret_code_check_result = AutograderTestCaseResult(
+        no_ret_code_check_result = ag_models.AutograderTestCaseResult(
             test_case=no_ret_code_check_ag_test,
             return_code=42)
 
@@ -174,9 +180,18 @@ class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
         self.assertIsNone(
             no_ret_code_check_result.feedback.expected_return_code)
         self.assertIsNone(
-            no_ret_code_check_result.feedback.actual_return_code)
-        self.assertIsNone(
             no_ret_code_check_result.feedback.return_code_points)
+
+        # Hide return code
+        self.assertIsNone(
+            no_ret_code_check_result.feedback.actual_return_code)
+
+        # Show return code
+        (no_ret_code_check_ag_test.feedback_configuration
+                                  .show_return_code) = True
+
+        self.assertEqual(no_ret_code_check_result.return_code,
+                         no_ret_code_check_result.feedback.actual_return_code)
 
 
 class ReturnCodeFdbkOverrideTesCase(TemporaryFilesystemTestCase):
