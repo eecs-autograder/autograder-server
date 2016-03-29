@@ -41,7 +41,8 @@ def main():
             traceback.print_exc()
 
     try:
-        return_code = subprocess.call(args.cmd_args, timeout=args.timeout,
+        return_code = subprocess.call(args.cmd_args,
+                                      # timeout=args.timeout,
                                       preexec_fn=set_subprocess_rlimits)
         sys.exit(return_code)
     except subprocess.TimeoutExpired:

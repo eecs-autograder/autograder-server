@@ -167,8 +167,8 @@ class AutograderSandbox:
 
         cmd.append('timeout_script.py')
 
-        if timeout is not None:
-            cmd += ['--timeout', str(timeout)]
+        # if timeout is not None:
+        #     cmd += ['--timeout', str(timeout)]
 
         if max_num_processes is not None:
             cmd += ['--max_num_processes', str(max_num_processes)]
@@ -188,7 +188,9 @@ class AutograderSandbox:
 
         if input_content is None:
             input_content = ''
-        return _SubprocessRunner(cmd, raise_on_failure=raise_on_failure,
+        return _SubprocessRunner(cmd,
+                                 timeout=timeout,
+                                 raise_on_failure=raise_on_failure,
                                  stdin_content=input_content)
 
     def add_files(self, *filenames):
@@ -297,9 +299,9 @@ class _SubprocessRunner(object):
                         timeout=self._timeout
                     )
                     print("Finished running: ", self._args, flush=True)
-                    if (self._return_code ==
-                            _SubprocessRunner._TIMEOUT_RETURN_CODE):
-                        self._timed_out = True
+                    # if (self._return_code ==
+                    #         _SubprocessRunner._TIMEOUT_RETURN_CODE):
+                    #     self._timed_out = True
                 finally:
                     stdout_dest.seek(0)
                     stderr_dest.seek(0)
@@ -309,6 +311,8 @@ class _SubprocessRunner(object):
                     print("Return code: ", self._return_code, flush=True)
                     print(self._stdout, flush=True)
                     print(self._stderr, flush=True)
+        except subprocess.TimeoutExpired:
+            self._timed_out = True
         except UnicodeDecodeError:
             msg = ("Error reading program output: "
                    "non-unicode characters detected")
