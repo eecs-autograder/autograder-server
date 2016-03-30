@@ -195,7 +195,8 @@ class StderrFdbkTestCase(TemporaryFilesystemTestCase):
         diff = _DIFFER.compare(
             self.stderr_ag_test.expected_standard_error_output.splitlines(
                 keepends=True),
-            self.incorrect_result.standard_error_output.splitlines(keepends=True))
+            self.incorrect_result.standard_error_output.splitlines(
+                keepends=True))
         self.assertEqual(list(diff),
                          self.incorrect_result.feedback.stderr_diff)
 
@@ -216,7 +217,8 @@ class StderrFdbkTestCase(TemporaryFilesystemTestCase):
             points_for_correct_stderr=random.randint(1, 9))
         result = ag_models.AutograderTestCaseResult(
             test_case=no_stderr_check_ag_test,
-            standard_error_output=self.stderr_ag_test.expected_standard_error_output)
+            standard_error_output=(
+                self.stderr_ag_test.expected_standard_error_output))
 
         (no_stderr_check_ag_test.feedback_configuration
                                 .standard_error_output_feedback_level) = (

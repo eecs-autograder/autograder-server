@@ -252,23 +252,41 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def stderr_correct(self):
-            if self._no_stderr_correctness_fdbk():
+            if (self._no_stderr_correctness_fdbk() or
+                    not self._stderr_checked()):
                 return None
 
-            return (self._result.standard_output ==
+            return (self._result.standard_error_output ==
                     self._result.test_case.expected_standard_error_output)
 
         @property
         def stderr_content(self):
-            raise NotImplementedError()
+            if not self._fdbk.show_stderr_content:
+                return None
+
+            return self._result.standard_error_output
 
         @property
         def stderr_diff(self):
-            raise NotImplementedError()
+            if not self._stderr_checked() or not self._show_stderr_diff():
+                return None
+
+            if self.stderr_correct:
+                return ''
+
+            return _get_diff(
+                self._result.test_case.expected_standard_error_output,
+                self._result.standard_error_output)
 
         @property
         def stderr_points(self):
-            raise NotImplementedError()
+            if (not self._stderr_checked() or
+                    self._no_stderr_correctness_fdbk() or
+                    self._no_pts_fdbk()):
+                return None
+
+            return (0 if not self.stderr_correct
+                    else self._result.test_case.points_for_correct_stderr)
 
         def _no_stderr_correctness_fdbk(self):
             return (self._fdbk.standard_error_output_feedback_level ==
