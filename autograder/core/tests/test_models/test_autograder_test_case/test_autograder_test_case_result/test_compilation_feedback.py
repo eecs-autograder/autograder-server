@@ -1,10 +1,8 @@
 import random
-import difflib
 import string
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
 
 import autograder.core.models as ag_models
 
@@ -12,8 +10,6 @@ import autograder.core.shared.feedback_configuration as fbc
 
 from autograder.core.tests.test_models.test_autograder_test_case.models import (
     _DummyAutograderTestCase, _DummyCompiledAutograderTestCase)
-
-_DIFFER = difflib.Differ()
 
 
 class CompilationFdbkTestCase(TemporaryFilesystemTestCase):

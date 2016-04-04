@@ -6,8 +6,6 @@ from django.db import models
 import autograder.core.shared.feedback_configuration as fbc
 
 
-# TODO: "feedback generator" class, ctor takes in feedback level override, pulls from
-#       test case by default
 # TODO: test cases that involve interpreted test cases
 
 
@@ -34,18 +32,14 @@ class AutograderTestCaseResult(models.Model):
             of the program that was tested.
             Default value: empty string
 
-        time_elapsed -- TODO The amount of time it took to run the program
-            being tested.
-
         timed_out -- Whether the program exceeded the time limit.
 
         valgrind_return_code -- The return code of the program valgrind
             when run against the program being tested.
             Default value: None
 
-        valgrind_output -- The output (standard out and standard error)
-            of the program valgrind when run against the program being
-            tested.
+        valgrind_output -- The stderr contents of the program
+            valgrind when run against the program being tested.
             Default value: empty string
 
     Compilation-related fields:
@@ -157,6 +151,9 @@ class AutograderTestCaseResult(models.Model):
                     self._no_ret_code_correctness_fdbk()):
                 return None
 
+            if self._result.test_case.expect_any_nonzero_return_code:
+                return self._result.return_code != 0
+
             return (self._result.return_code ==
                     self._result.test_case.expected_return_code)
 
@@ -200,6 +197,8 @@ class AutograderTestCaseResult(models.Model):
 
         def _ret_code_checked(self):
             return self._result.test_case.test_checks_return_code()
+
+        # ---------------------------------------------------------------------
 
         @property
         def stdout_correct(self):
@@ -249,6 +248,8 @@ class AutograderTestCaseResult(models.Model):
 
         def _stdout_checked(self):
             return self._result.test_case.expected_standard_output
+
+        # ---------------------------------------------------------------------
 
         @property
         def stderr_correct(self):
@@ -300,6 +301,8 @@ class AutograderTestCaseResult(models.Model):
         def _stderr_checked(self):
             return self._result.test_case.expected_standard_error_output
 
+        # ---------------------------------------------------------------------
+
         @property
         def compilation_succeeded(self):
             if (self._no_compiler_fdbk() or
@@ -344,17 +347,45 @@ class AutograderTestCaseResult(models.Model):
                                 .compilation_feedback_level ==
                     fbc.CompilationFeedbackLevel.show_compiler_output)
 
+        # ---------------------------------------------------------------------
+
         @property
         def valgrind_errors_reported(self):
-            raise NotImplementedError()
+            if (self._no_valgrind_fdbk() or
+                    not self._result.test_case.use_valgrind):
+                return None
+
+            return self._result.valgrind_return_code != 0
 
         @property
         def valgrind_output(self):
-            raise NotImplementedError()
+            if (not self._show_valgrind_output() or
+                    not self._result.test_case.use_valgrind):
+                return None
+
+            return self._result.valgrind_output
 
         @property
         def valgrind_points_deducted(self):
-            raise NotImplementedError()
+            if (self._no_valgrind_fdbk() or
+                    self._no_pts_fdbk() or
+                    not self._result.test_case.use_valgrind):
+                return None
+
+            return (0 if not self.valgrind_errors_reported
+                    else self._result.test_case.deduction_for_valgrind_errors)
+
+        def _no_valgrind_fdbk(self):
+            return (self._result.test_case.feedback_configuration
+                                .valgrind_feedback_level ==
+                    fbc.ValgrindFeedbackLevel.no_feedback)
+
+        def _show_valgrind_output(self):
+            return (self._result.test_case.feedback_configuration
+                                .valgrind_feedback_level ==
+                    fbc.ValgrindFeedbackLevel.show_valgrind_output)
+
+        # ---------------------------------------------------------------------
 
         def _no_pts_fdbk(self):
             return (self._fdbk.points_feedback_level ==

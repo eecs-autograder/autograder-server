@@ -3,7 +3,6 @@ import difflib
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
 
 import autograder.core.models as ag_models
 
