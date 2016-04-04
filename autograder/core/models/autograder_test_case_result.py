@@ -302,15 +302,47 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def compilation_succeeded(self):
-            raise NotImplementedError()
+            if (self._no_compiler_fdbk() or
+                    not self._result.test_case.test_checks_compilation()):
+                return None
+
+            return self._result.compilation_return_code == 0
 
         @property
-        def compilation_output(self):
-            raise NotImplementedError()
+        def compilation_stdout(self):
+            if (not self._show_compiler_output() or
+                    not self._result.test_case.test_checks_compilation()):
+                return None
+
+            return self._result.compilation_standard_output
+
+        @property
+        def compilation_stderr(self):
+            if (not self._show_compiler_output() or
+                    not self._result.test_case.test_checks_compilation()):
+                return None
+
+            return self._result.compilation_standard_error_output
 
         @property
         def compilation_points(self):
-            raise NotImplementedError()
+            if (self._no_compiler_fdbk() or
+                    self._no_pts_fdbk() or
+                    not self._result.test_case.test_checks_compilation()):
+                return None
+
+            return (0 if not self.compilation_succeeded
+                    else self._result.test_case.points_for_compilation_success)
+
+        def _no_compiler_fdbk(self):
+            return (self._result.test_case.feedback_configuration
+                                .compilation_feedback_level ==
+                    fbc.CompilationFeedbackLevel.no_feedback)
+
+        def _show_compiler_output(self):
+            return (self._result.test_case.feedback_configuration
+                                .compilation_feedback_level ==
+                    fbc.CompilationFeedbackLevel.show_compiler_output)
 
         @property
         def valgrind_errors_reported(self):
