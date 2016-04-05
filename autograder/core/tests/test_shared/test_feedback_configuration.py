@@ -8,21 +8,30 @@ class AutograderFeedbackConfigurationTestCase(TestCase):
         self.maxDiff = None
         self.json_starter = {
             'visibility_level': 'show_to_students',
+            'name_level': 'deterministically_obfuscate_name',
             'return_code_feedback_level': 'correct_or_incorrect_only',
-            'output_feedback_level': 'correct_or_incorrect_only',
+            'standard_output_feedback_level': 'correct_or_incorrect_only',
+            'standard_error_output_feedback_level': (
+                'correct_or_incorrect_only'),
             'compilation_feedback_level': 'success_or_failure_only',
             'valgrind_feedback_level': 'errors_or_no_errors_only',
             'points_feedback_level': 'show_total',
         }
 
+        # Do NOT initialize this with self.json_starter
         self.medium_feedback = fbc.AutograderTestCaseFeedbackConfiguration(
             visibility_level=fbc.VisibilityLevel.show_to_students,
+            name_level=(fbc.AutograderTestCaseNameFeedbackLevel
+                           .deterministically_obfuscate_name),
             compilation_feedback_level=(
                 fbc.CompilationFeedbackLevel.success_or_failure_only),
             return_code_feedback_level=(
                 fbc.ReturnCodeFeedbackLevel.correct_or_incorrect_only),
-            output_feedback_level=(
-                fbc.OutputFeedbackLevel.correct_or_incorrect_only),
+            standard_output_feedback_level=(
+                fbc.StandardOutputFeedbackLevel.correct_or_incorrect_only),
+            standard_error_output_feedback_level=(
+                fbc.StandardErrorOutputFeedbackLevel.correct_or_incorrect_only
+            ),
             valgrind_feedback_level=(
                 fbc.ValgrindFeedbackLevel.errors_or_no_errors_only),
             points_feedback_level=fbc.PointsFeedbackLevel.show_total
@@ -31,10 +40,14 @@ class AutograderFeedbackConfigurationTestCase(TestCase):
     def test_valid_init_all_defaults(self):
         expected = fbc.AutograderTestCaseFeedbackConfiguration(
             visibility_level=fbc.VisibilityLevel.hide_from_students,
+            name_level=fbc.AutograderTestCaseNameFeedbackLevel.show_real_name,
             compilation_feedback_level=(
                 fbc.CompilationFeedbackLevel.no_feedback),
             return_code_feedback_level=fbc.ReturnCodeFeedbackLevel.no_feedback,
-            output_feedback_level=fbc.OutputFeedbackLevel.no_feedback,
+            standard_output_feedback_level=(
+                fbc.StandardOutputFeedbackLevel.no_feedback),
+            standard_error_output_feedback_level=(
+                fbc.StandardErrorOutputFeedbackLevel.no_feedback),
             valgrind_feedback_level=fbc.ValgrindFeedbackLevel.no_feedback,
             points_feedback_level=fbc.PointsFeedbackLevel.hide
         )
@@ -76,8 +89,12 @@ class AutograderFeedbackConfigurationTestCase(TestCase):
                 fbc.CompilationFeedbackLevel.show_compiler_output),
             return_code_feedback_level=(
                 fbc.ReturnCodeFeedbackLevel.show_expected_and_actual_values),
-            output_feedback_level=(
-                fbc.OutputFeedbackLevel.show_expected_and_actual_values),
+            standard_output_feedback_level=(
+                fbc.StandardOutputFeedbackLevel
+                   .show_expected_and_actual_values),
+            standard_error_output_feedback_level=(
+                fbc.StandardErrorOutputFeedbackLevel
+                   .show_expected_and_actual_values),
             valgrind_feedback_level=(
                 fbc.ValgrindFeedbackLevel.show_valgrind_output),
             points_feedback_level=fbc.PointsFeedbackLevel.show_breakdown
@@ -106,7 +123,8 @@ class StudentTestSuiteFeedbackConfigurationTestCase(TestCase):
             compilation_feedback_level=(
                 fbc.CompilationFeedbackLevel.success_or_failure_only),
             student_test_validity_feedback_level=(
-                fbc.StudentTestCaseValidityFeedbackLevel.show_valid_or_invalid),
+                fbc.StudentTestCaseValidityFeedbackLevel
+                   .show_valid_or_invalid),
             buggy_implementations_exposed_feedback_level=(
                 (fbc.BuggyImplementationsExposedFeedbackLevel
                     .list_implementations_exposed_overall)),
@@ -172,4 +190,3 @@ class StudentTestSuiteFeedbackConfigurationTestCase(TestCase):
         actual = fbc.StudentTestSuiteFeedbackConfiguration.get_max_feedback()
 
         self.assertEqual(expected, actual)
-

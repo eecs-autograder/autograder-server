@@ -20,11 +20,16 @@ class AutograderTestCaseFeedbackConfiguration(JsonSerializable):
         compilation_feedback_level
         valgrind_feedback_level
         points_feedback_level
+        name_level
     """
     def __init__(self, **kwargs):
         self.visibility_level = kwargs.get(
             'visibility_level',
             VisibilityLevel.hide_from_students)
+
+        self.name_level = kwargs.get(
+            'name_level',
+            AutograderTestCaseNameFeedbackLevel.show_real_name)
 
         self.return_code_feedback_level = kwargs.get(
             'return_code_feedback_level',
@@ -63,9 +68,13 @@ class AutograderTestCaseFeedbackConfiguration(JsonSerializable):
     def to_json(self):
         return {
             'visibility_level': self.visibility_level.value,
+            'name_level': self.name_level.value,
             'return_code_feedback_level': (
                 self.return_code_feedback_level.value),
-            'output_feedback_level': self.output_feedback_level.value,
+            'standard_output_feedback_level': (
+                self.standard_output_feedback_level.value),
+            'standard_error_output_feedback_level': (
+                self.standard_error_output_feedback_level.value),
             'compilation_feedback_level': (
                 self.compilation_feedback_level.value),
             'valgrind_feedback_level': self.valgrind_feedback_level.value,
@@ -76,12 +85,15 @@ class AutograderTestCaseFeedbackConfiguration(JsonSerializable):
     def get_max_feedback(class_):
         return class_(
             visibility_level=VisibilityLevel.show_to_students,
+            name_level=(
+                AutograderTestCaseNameFeedbackLevel.show_real_name.value),
             return_code_feedback_level=(
                 ReturnCodeFeedbackLevel.show_expected_and_actual_values),
             standard_output_feedback_level=(
                 StandardOutputFeedbackLevel.show_expected_and_actual_values),
             standard_error_output_feedback_level=(
-                StandardErrorOutputFeedbackLevel.show_expected_and_actual_values),
+                StandardErrorOutputFeedbackLevel
+                .show_expected_and_actual_values),
             compilation_feedback_level=(
                 CompilationFeedbackLevel.show_compiler_output),
             valgrind_feedback_level=(
@@ -97,9 +109,13 @@ class AutograderTestCaseFeedbackConfiguration(JsonSerializable):
         return (
             (self.visibility_level ==
                 other.visibility_level) and
+            self.name_level == other.name_level and
             (self.return_code_feedback_level ==
                 other.return_code_feedback_level) and
-            self.output_feedback_level == other.output_feedback_level and
+            (self.standard_output_feedback_level ==
+                other.standard_output_feedback_level) and
+            (self.standard_error_output_feedback_level ==
+                other.standard_error_output_feedback_level) and
             (self.compilation_feedback_level ==
                 other.compilation_feedback_level) and
             (self.valgrind_feedback_level ==
@@ -116,6 +132,14 @@ class AutograderTestCaseFeedbackConfiguration(JsonSerializable):
     @visibility_level.setter
     def visibility_level(self, value):
         self._visibility_level = VisibilityLevel(value)
+
+    @property
+    def name_level(self):
+        return self._name_level
+
+    @name_level.setter
+    def name_level(self, value):
+        self._name_level = AutograderTestCaseNameFeedbackLevel(value)
 
     @property
     def return_code_feedback_level(self):
@@ -312,6 +336,12 @@ class CompilationFeedbackLevel(Enum):
     no_feedback = 'no_feedback'
     success_or_failure_only = 'success_or_failure_only'
     show_compiler_output = 'show_compiler_output'
+
+
+class AutograderTestCaseNameFeedbackLevel(Enum):
+    randomly_obfuscate_name = 'randomly_obfuscate_name'
+    deterministically_obfuscate_name = 'deterministically_obfuscate_name'
+    show_real_name = 'show_real_name'
 
 
 # TODO
