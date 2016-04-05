@@ -1,4 +1,5 @@
 import difflib
+import uuid
 
 from django.utils import timezone
 from django.db import models
@@ -144,6 +145,20 @@ class AutograderTestCaseResult(models.Model):
                      valgrind_feedback_override=None):
             self._fdbk = result.test_case.feedback_configuration
             self._result = result
+
+        @property
+        def ag_test_name(self):
+            random = (fbc.AutograderTestCaseNameFeedbackLevel
+                         .randomly_obfuscate_name)
+            if self._fdbk.name_level == random:
+                return 'test{}'.format(uuid.uuid4().hex)
+
+            deterministic = (fbc.AutograderTestCaseNameFeedbackLevel
+                                .deterministically_obfuscate_name)
+            if self._fdbk.name_level == deterministic:
+                return 'test{}'.format(self._result.test_case.pk)
+
+            return self._result.test_case.name
 
         @property
         def return_code_correct(self):
