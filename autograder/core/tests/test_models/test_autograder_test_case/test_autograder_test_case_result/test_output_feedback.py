@@ -37,28 +37,28 @@ class StdoutFdbkTestCase(TemporaryFilesystemTestCase):
         self.stdout_ag_test.feedback_configuration.points_feedback_level = (
             fbc.PointsFeedbackLevel.show_breakdown)
 
-        self.assertIsNone(self.correct_result.feedback.stdout_correct)
-        self.assertIsNone(self.correct_result.feedback.stdout_content)
-        self.assertIsNone(self.correct_result.feedback.stdout_diff)
-        self.assertIsNone(self.correct_result.feedback.stdout_points)
+        self.assertIsNone(self.correct_result.get_feedback().stdout_correct)
+        self.assertIsNone(self.correct_result.get_feedback().stdout_content)
+        self.assertIsNone(self.correct_result.get_feedback().stdout_diff)
+        self.assertIsNone(self.correct_result.get_feedback().stdout_points)
 
-        self.assertIsNone(self.incorrect_result.feedback.stdout_correct)
-        self.assertIsNone(self.incorrect_result.feedback.stdout_content)
-        self.assertIsNone(self.incorrect_result.feedback.stdout_diff)
-        self.assertIsNone(self.incorrect_result.feedback.stdout_points)
+        self.assertIsNone(self.incorrect_result.get_feedback().stdout_correct)
+        self.assertIsNone(self.incorrect_result.get_feedback().stdout_content)
+        self.assertIsNone(self.incorrect_result.get_feedback().stdout_diff)
+        self.assertIsNone(self.incorrect_result.get_feedback().stdout_points)
 
     def test_correct_or_incorrect_only_fdbk(self):
         (self.stdout_ag_test.feedback_configuration
                             .standard_output_feedback_level) = (
             fbc.StandardOutputFeedbackLevel.correct_or_incorrect_only)
 
-        self.assertTrue(self.correct_result.feedback.stdout_correct)
-        self.assertIsNone(self.correct_result.feedback.stdout_content)
-        self.assertIsNone(self.correct_result.feedback.stdout_diff)
+        self.assertTrue(self.correct_result.get_feedback().stdout_correct)
+        self.assertIsNone(self.correct_result.get_feedback().stdout_content)
+        self.assertIsNone(self.correct_result.get_feedback().stdout_diff)
 
-        self.assertFalse(self.incorrect_result.feedback.stdout_correct)
-        self.assertIsNone(self.incorrect_result.feedback.stdout_content)
-        self.assertIsNone(self.incorrect_result.feedback.stdout_diff)
+        self.assertFalse(self.incorrect_result.get_feedback().stdout_correct)
+        self.assertIsNone(self.incorrect_result.get_feedback().stdout_content)
+        self.assertIsNone(self.incorrect_result.get_feedback().stdout_diff)
 
         self._check_points_shown_and_hidden()
 
@@ -67,18 +67,18 @@ class StdoutFdbkTestCase(TemporaryFilesystemTestCase):
                             .standard_output_feedback_level) = (
             fbc.StandardOutputFeedbackLevel.show_expected_and_actual_values)
 
-        self.assertTrue(self.correct_result.feedback.stdout_correct)
-        self.assertIsNone(self.correct_result.feedback.stdout_content)
-        self.assertEqual('', self.correct_result.feedback.stdout_diff)
+        self.assertTrue(self.correct_result.get_feedback().stdout_correct)
+        self.assertIsNone(self.correct_result.get_feedback().stdout_content)
+        self.assertEqual('', self.correct_result.get_feedback().stdout_diff)
 
-        self.assertFalse(self.incorrect_result.feedback.stdout_correct)
-        self.assertIsNone(self.correct_result.feedback.stdout_content)
+        self.assertFalse(self.incorrect_result.get_feedback().stdout_correct)
+        self.assertIsNone(self.correct_result.get_feedback().stdout_content)
         diff = _DIFFER.compare(
             self.stdout_ag_test.expected_standard_output.splitlines(
                 keepends=True),
             self.incorrect_result.standard_output.splitlines(keepends=True))
         self.assertEqual(list(diff),
-                         self.incorrect_result.feedback.stdout_diff)
+                         self.incorrect_result.get_feedback().stdout_diff)
 
         self._check_points_shown_and_hidden()
 
@@ -86,10 +86,10 @@ class StdoutFdbkTestCase(TemporaryFilesystemTestCase):
         self.stdout_ag_test.feedback_configuration.show_stdout_content = True
 
         self.assertEqual(self.correct_result.standard_output,
-                         self.correct_result.feedback.stdout_content)
+                         self.correct_result.get_feedback().stdout_content)
 
         self.assertEqual(self.incorrect_result.standard_output,
-                         self.incorrect_result.feedback.stdout_content)
+                         self.incorrect_result.get_feedback().stdout_content)
 
     def test_fdbk_not_applicable_stdout_not_checked_fdbk(self):
         no_stdout_check_ag_test = _DummyAutograderTestCase(
@@ -103,32 +103,32 @@ class StdoutFdbkTestCase(TemporaryFilesystemTestCase):
                                 .standard_output_feedback_level) = (
             fbc.StandardOutputFeedbackLevel.show_expected_and_actual_values)
 
-        self.assertIsNone(result.feedback.stdout_correct)
-        self.assertIsNone(result.feedback.stdout_diff)
-        self.assertIsNone(result.feedback.stdout_points)
+        self.assertIsNone(result.get_feedback().stdout_correct)
+        self.assertIsNone(result.get_feedback().stdout_diff)
+        self.assertIsNone(result.get_feedback().stdout_points)
 
         # Hide stdout
-        self.assertIsNone(result.feedback.stdout_content)
+        self.assertIsNone(result.get_feedback().stdout_content)
 
         # Show stdout
         no_stdout_check_ag_test.feedback_configuration.show_stdout_content = (
             True)
         self.assertEqual(result.standard_output,
-                         result.feedback.stdout_content)
+                         result.get_feedback().stdout_content)
 
     def _check_points_shown_and_hidden(self):
         # Show points
         self.stdout_ag_test.feedback_configuration.points_feedback_level = (
             fbc.PointsFeedbackLevel.show_breakdown)
         self.assertEqual(self.stdout_ag_test.points_for_correct_stdout,
-                         self.correct_result.feedback.stdout_points)
-        self.assertEqual(0, self.incorrect_result.feedback.stdout_points)
+                         self.correct_result.get_feedback().stdout_points)
+        self.assertEqual(0, self.incorrect_result.get_feedback().stdout_points)
 
         # Hide points
         self.stdout_ag_test.feedback_configuration.points_feedback_level = (
             fbc.PointsFeedbackLevel.hide)
-        self.assertIsNone(self.correct_result.feedback.stdout_points)
-        self.assertIsNone(self.incorrect_result.feedback.stdout_points)
+        self.assertIsNone(self.correct_result.get_feedback().stdout_points)
+        self.assertIsNone(self.incorrect_result.get_feedback().stdout_points)
 
 
 class StderrFdbkTestCase(TemporaryFilesystemTestCase):
@@ -154,28 +154,28 @@ class StderrFdbkTestCase(TemporaryFilesystemTestCase):
         self.stderr_ag_test.feedback_configuration.points_feedback_level = (
             fbc.PointsFeedbackLevel.show_breakdown)
 
-        self.assertIsNone(self.correct_result.feedback.stderr_correct)
-        self.assertIsNone(self.correct_result.feedback.stderr_content)
-        self.assertIsNone(self.correct_result.feedback.stderr_diff)
-        self.assertIsNone(self.correct_result.feedback.stderr_points)
+        self.assertIsNone(self.correct_result.get_feedback().stderr_correct)
+        self.assertIsNone(self.correct_result.get_feedback().stderr_content)
+        self.assertIsNone(self.correct_result.get_feedback().stderr_diff)
+        self.assertIsNone(self.correct_result.get_feedback().stderr_points)
 
-        self.assertIsNone(self.incorrect_result.feedback.stderr_correct)
-        self.assertIsNone(self.incorrect_result.feedback.stderr_content)
-        self.assertIsNone(self.incorrect_result.feedback.stderr_diff)
-        self.assertIsNone(self.incorrect_result.feedback.stderr_points)
+        self.assertIsNone(self.incorrect_result.get_feedback().stderr_correct)
+        self.assertIsNone(self.incorrect_result.get_feedback().stderr_content)
+        self.assertIsNone(self.incorrect_result.get_feedback().stderr_diff)
+        self.assertIsNone(self.incorrect_result.get_feedback().stderr_points)
 
     def test_correct_or_incorrect_only_fdbk(self):
         (self.stderr_ag_test.feedback_configuration
                             .standard_error_output_feedback_level) = (
             fbc.StandardErrorOutputFeedbackLevel.correct_or_incorrect_only)
 
-        self.assertTrue(self.correct_result.feedback.stderr_correct)
-        self.assertIsNone(self.correct_result.feedback.stderr_content)
-        self.assertIsNone(self.correct_result.feedback.stderr_diff)
+        self.assertTrue(self.correct_result.get_feedback().stderr_correct)
+        self.assertIsNone(self.correct_result.get_feedback().stderr_content)
+        self.assertIsNone(self.correct_result.get_feedback().stderr_diff)
 
-        self.assertFalse(self.incorrect_result.feedback.stderr_correct)
-        self.assertIsNone(self.incorrect_result.feedback.stderr_content)
-        self.assertIsNone(self.incorrect_result.feedback.stderr_diff)
+        self.assertFalse(self.incorrect_result.get_feedback().stderr_correct)
+        self.assertIsNone(self.incorrect_result.get_feedback().stderr_content)
+        self.assertIsNone(self.incorrect_result.get_feedback().stderr_diff)
 
         self._check_points_shown_and_hidden()
 
@@ -185,19 +185,19 @@ class StderrFdbkTestCase(TemporaryFilesystemTestCase):
             (fbc.StandardErrorOutputFeedbackLevel
                 .show_expected_and_actual_values))
 
-        self.assertTrue(self.correct_result.feedback.stderr_correct)
-        self.assertIsNone(self.correct_result.feedback.stderr_content)
-        self.assertEqual('', self.correct_result.feedback.stderr_diff)
+        self.assertTrue(self.correct_result.get_feedback().stderr_correct)
+        self.assertIsNone(self.correct_result.get_feedback().stderr_content)
+        self.assertEqual('', self.correct_result.get_feedback().stderr_diff)
 
-        self.assertFalse(self.incorrect_result.feedback.stderr_correct)
-        self.assertIsNone(self.correct_result.feedback.stderr_content)
+        self.assertFalse(self.incorrect_result.get_feedback().stderr_correct)
+        self.assertIsNone(self.correct_result.get_feedback().stderr_content)
         diff = _DIFFER.compare(
             self.stderr_ag_test.expected_standard_error_output.splitlines(
                 keepends=True),
             self.incorrect_result.standard_error_output.splitlines(
                 keepends=True))
         self.assertEqual(list(diff),
-                         self.incorrect_result.feedback.stderr_diff)
+                         self.incorrect_result.get_feedback().stderr_diff)
 
         self._check_points_shown_and_hidden()
 
@@ -205,10 +205,10 @@ class StderrFdbkTestCase(TemporaryFilesystemTestCase):
         self.stderr_ag_test.feedback_configuration.show_stderr_content = True
 
         self.assertEqual(self.correct_result.standard_error_output,
-                         self.correct_result.feedback.stderr_content)
+                         self.correct_result.get_feedback().stderr_content)
 
         self.assertEqual(self.incorrect_result.standard_error_output,
-                         self.incorrect_result.feedback.stderr_content)
+                         self.incorrect_result.get_feedback().stderr_content)
 
     def test_fdbk_not_applicable_stderr_not_checked_fdbk(self):
         no_stderr_check_ag_test = _DummyAutograderTestCase(
@@ -224,29 +224,29 @@ class StderrFdbkTestCase(TemporaryFilesystemTestCase):
             (fbc.StandardErrorOutputFeedbackLevel
                 .show_expected_and_actual_values))
 
-        self.assertIsNone(result.feedback.stderr_correct)
-        self.assertIsNone(result.feedback.stderr_diff)
-        self.assertIsNone(result.feedback.stderr_points)
+        self.assertIsNone(result.get_feedback().stderr_correct)
+        self.assertIsNone(result.get_feedback().stderr_diff)
+        self.assertIsNone(result.get_feedback().stderr_points)
 
         # Hide stderr
-        self.assertIsNone(result.feedback.stderr_content)
+        self.assertIsNone(result.get_feedback().stderr_content)
 
         # Show stderr
         no_stderr_check_ag_test.feedback_configuration.show_stderr_content = (
             True)
         self.assertEqual(result.standard_error_output,
-                         result.feedback.stderr_content)
+                         result.get_feedback().stderr_content)
 
     def _check_points_shown_and_hidden(self):
         # Show points
         self.stderr_ag_test.feedback_configuration.points_feedback_level = (
             fbc.PointsFeedbackLevel.show_breakdown)
         self.assertEqual(self.stderr_ag_test.points_for_correct_stderr,
-                         self.correct_result.feedback.stderr_points)
-        self.assertEqual(0, self.incorrect_result.feedback.stderr_points)
+                         self.correct_result.get_feedback().stderr_points)
+        self.assertEqual(0, self.incorrect_result.get_feedback().stderr_points)
 
         # Hide points
         self.stderr_ag_test.feedback_configuration.points_feedback_level = (
             fbc.PointsFeedbackLevel.hide)
-        self.assertIsNone(self.correct_result.feedback.stderr_points)
-        self.assertIsNone(self.incorrect_result.feedback.stderr_points)
+        self.assertIsNone(self.correct_result.get_feedback().stderr_points)
+        self.assertIsNone(self.incorrect_result.get_feedback().stderr_points)

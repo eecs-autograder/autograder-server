@@ -41,36 +41,36 @@ class CompilationFdbkTestCase(TemporaryFilesystemTestCase):
              .compilation_feedback_level) = (
             fbc.CompilationFeedbackLevel.no_feedback)
 
-        self.assertIsNone(self.correct_result.feedback.compilation_stdout)
-        self.assertIsNone(self.correct_result.feedback.compilation_stderr)
-        self.assertIsNone(self.correct_result.feedback.compilation_succeeded)
+        self.assertIsNone(self.correct_result.get_feedback().compilation_stdout)
+        self.assertIsNone(self.correct_result.get_feedback().compilation_stderr)
+        self.assertIsNone(self.correct_result.get_feedback().compilation_succeeded)
 
-        self.assertIsNone(self.incorrect_result.feedback.compilation_stdout)
-        self.assertIsNone(self.incorrect_result.feedback.compilation_stderr)
-        self.assertIsNone(self.incorrect_result.feedback.compilation_succeeded)
+        self.assertIsNone(self.incorrect_result.get_feedback().compilation_stdout)
+        self.assertIsNone(self.incorrect_result.get_feedback().compilation_stderr)
+        self.assertIsNone(self.incorrect_result.get_feedback().compilation_succeeded)
 
         # Hide points
-        self.assertIsNone(self.correct_result.feedback.compilation_points)
-        self.assertIsNone(self.incorrect_result.feedback.compilation_points)
+        self.assertIsNone(self.correct_result.get_feedback().compilation_points)
+        self.assertIsNone(self.incorrect_result.get_feedback().compilation_points)
 
         # Show points set (but still not shown)
         self.compilation_ag_test.feedback_configuration.points_feedback_level = (
             fbc.PointsFeedbackLevel.show_breakdown)
-        self.assertIsNone(self.correct_result.feedback.compilation_points)
-        self.assertIsNone(self.incorrect_result.feedback.compilation_points)
+        self.assertIsNone(self.correct_result.get_feedback().compilation_points)
+        self.assertIsNone(self.incorrect_result.get_feedback().compilation_points)
 
     def test_success_or_failure_only(self):
         (self.compilation_ag_test.feedback_configuration
              .compilation_feedback_level) = (
             fbc.CompilationFeedbackLevel.success_or_failure_only)
 
-        self.assertIsNone(self.correct_result.feedback.compilation_stdout)
-        self.assertIsNone(self.correct_result.feedback.compilation_stderr)
-        self.assertTrue(self.correct_result.feedback.compilation_succeeded)
+        self.assertIsNone(self.correct_result.get_feedback().compilation_stdout)
+        self.assertIsNone(self.correct_result.get_feedback().compilation_stderr)
+        self.assertTrue(self.correct_result.get_feedback().compilation_succeeded)
 
-        self.assertIsNone(self.incorrect_result.feedback.compilation_stdout)
-        self.assertIsNone(self.incorrect_result.feedback.compilation_stderr)
-        self.assertFalse(self.incorrect_result.feedback.compilation_succeeded)
+        self.assertIsNone(self.incorrect_result.get_feedback().compilation_stdout)
+        self.assertIsNone(self.incorrect_result.get_feedback().compilation_stderr)
+        self.assertFalse(self.incorrect_result.get_feedback().compilation_succeeded)
 
         self._check_points_shown_and_hidden()
 
@@ -80,16 +80,16 @@ class CompilationFdbkTestCase(TemporaryFilesystemTestCase):
             fbc.CompilationFeedbackLevel.show_compiler_output)
 
         self.assertEqual(self.compiler_stdout,
-                         self.correct_result.feedback.compilation_stdout)
+                         self.correct_result.get_feedback().compilation_stdout)
         self.assertEqual(self.compiler_stderr,
-                         self.correct_result.feedback.compilation_stderr)
-        self.assertTrue(self.correct_result.feedback.compilation_succeeded)
+                         self.correct_result.get_feedback().compilation_stderr)
+        self.assertTrue(self.correct_result.get_feedback().compilation_succeeded)
 
         self.assertEqual(self.compiler_stdout,
-                         self.incorrect_result.feedback.compilation_stdout)
+                         self.incorrect_result.get_feedback().compilation_stdout)
         self.assertEqual(self.compiler_stderr,
-                         self.incorrect_result.feedback.compilation_stderr)
-        self.assertFalse(self.incorrect_result.feedback.compilation_succeeded)
+                         self.incorrect_result.get_feedback().compilation_stderr)
+        self.assertFalse(self.incorrect_result.get_feedback().compilation_succeeded)
 
         self._check_points_shown_and_hidden()
 
@@ -105,20 +105,20 @@ class CompilationFdbkTestCase(TemporaryFilesystemTestCase):
         non_compiled_ag_test.feedback_configuration.points_feedback_level = (
             fbc.PointsFeedbackLevel.show_breakdown)
 
-        self.assertIsNone(result.feedback.compilation_stdout)
-        self.assertIsNone(result.feedback.compilation_stderr)
-        self.assertIsNone(result.feedback.compilation_succeeded)
-        self.assertIsNone(result.feedback.compilation_points)
+        self.assertIsNone(result.get_feedback().compilation_stdout)
+        self.assertIsNone(result.get_feedback().compilation_stderr)
+        self.assertIsNone(result.get_feedback().compilation_succeeded)
+        self.assertIsNone(result.get_feedback().compilation_points)
 
     def _check_points_shown_and_hidden(self):
         # Hide points
-        self.assertIsNone(self.correct_result.feedback.compilation_points)
-        self.assertIsNone(self.incorrect_result.feedback.compilation_points)
+        self.assertIsNone(self.correct_result.get_feedback().compilation_points)
+        self.assertIsNone(self.incorrect_result.get_feedback().compilation_points)
 
         # Show points
         self.compilation_ag_test.feedback_configuration.points_feedback_level = (
             fbc.PointsFeedbackLevel.show_breakdown)
         self.assertEqual(
             self.compilation_ag_test.points_for_compilation_success,
-            self.correct_result.feedback.compilation_points)
-        self.assertEqual(0, self.incorrect_result.feedback.compilation_points)
+            self.correct_result.get_feedback().compilation_points)
+        self.assertEqual(0, self.incorrect_result.get_feedback().compilation_points)

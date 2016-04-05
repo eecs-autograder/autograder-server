@@ -8,8 +8,8 @@ import autograder.core.models as ag_models
 
 import autograder.core.shared.feedback_configuration as fbc
 
-from autograder.core.tests.test_models.test_autograder_test_case.models import (
-    _DummyAutograderTestCase)
+from autograder.core.tests.test_models.test_autograder_test_case.models \
+    import _DummyAutograderTestCase
 
 
 class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
@@ -62,22 +62,22 @@ class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
             test.feedback_configuration.points_feedback_level = (
                 fbc.PointsFeedbackLevel.show_breakdown)
 
-            self.assertIsNone(correct.feedback.return_code_correct,
+            self.assertIsNone(correct.get_feedback().return_code_correct,
                               msg=test.name)
-            self.assertIsNone(correct.feedback.expected_return_code,
+            self.assertIsNone(correct.get_feedback().expected_return_code,
                               msg=test.name)
-            self.assertIsNone(correct.feedback.actual_return_code,
+            self.assertIsNone(correct.get_feedback().actual_return_code,
                               msg=test.name)
-            self.assertIsNone(correct.feedback.return_code_points,
+            self.assertIsNone(correct.get_feedback().return_code_points,
                               msg=test.name)
 
-            self.assertIsNone(incorrect.feedback.return_code_correct,
+            self.assertIsNone(incorrect.get_feedback().return_code_correct,
                               msg=test.name)
-            self.assertIsNone(incorrect.feedback.expected_return_code,
+            self.assertIsNone(incorrect.get_feedback().expected_return_code,
                               msg=test.name)
-            self.assertIsNone(incorrect.feedback.actual_return_code,
+            self.assertIsNone(incorrect.get_feedback().actual_return_code,
                               msg=test.name)
-            self.assertIsNone(incorrect.feedback.return_code_points,
+            self.assertIsNone(incorrect.get_feedback().return_code_points,
                               msg=test.name)
 
     def test_correct_or_incorrect_only_fdbk(self):
@@ -89,26 +89,26 @@ class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
             test.feedback_configuration.points_feedback_level = (
                 fbc.PointsFeedbackLevel.show_breakdown)
 
-            self.assertTrue(correct.feedback.return_code_correct,
+            self.assertTrue(correct.get_feedback().return_code_correct,
                             msg=test.name)
             self.assertEqual(test.points_for_correct_return_code,
-                             correct.feedback.return_code_points,
+                             correct.get_feedback().return_code_points,
                              msg=test.name)
-            self.assertIsNone(correct.feedback.expected_return_code)
-            self.assertIsNone(correct.feedback.actual_return_code)
+            self.assertIsNone(correct.get_feedback().expected_return_code)
+            self.assertIsNone(correct.get_feedback().actual_return_code)
 
-            self.assertFalse(incorrect.feedback.return_code_correct,
+            self.assertFalse(incorrect.get_feedback().return_code_correct,
                              msg=test.name)
-            self.assertEqual(0, incorrect.feedback.return_code_points)
-            self.assertIsNone(incorrect.feedback.expected_return_code)
-            self.assertIsNone(incorrect.feedback.actual_return_code)
+            self.assertEqual(0, incorrect.get_feedback().return_code_points)
+            self.assertIsNone(incorrect.get_feedback().expected_return_code)
+            self.assertIsNone(incorrect.get_feedback().actual_return_code)
 
             # Hide points
             test.feedback_configuration.points_feedback_level = (
                 fbc.PointsFeedbackLevel.hide)
-            self.assertIsNone(correct.feedback.return_code_points,
+            self.assertIsNone(correct.get_feedback().return_code_points,
                               msg=test.name)
-            self.assertIsNone(incorrect.feedback.return_code_points,
+            self.assertIsNone(incorrect.get_feedback().return_code_points,
                               msg=test.name)
 
     def test_show_expected_and_actual_values_fdbk(self):
@@ -121,34 +121,34 @@ class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
                 fbc.PointsFeedbackLevel.show_breakdown)
 
             self.assertEqual(test.expected_return_code,
-                             correct.feedback.expected_return_code,
+                             correct.get_feedback().expected_return_code,
                              msg=test.name)
             self.assertEqual(correct.return_code,
-                             correct.feedback.actual_return_code,
+                             correct.get_feedback().actual_return_code,
                              msg=test.name)
             self.assertEqual(test.points_for_correct_return_code,
-                             correct.feedback.return_code_points,
+                             correct.get_feedback().return_code_points,
                              msg=test.name)
-            self.assertTrue(correct.feedback.return_code_correct,
+            self.assertTrue(correct.get_feedback().return_code_correct,
                             msg=test.name)
 
             self.assertEqual(test.expected_return_code,
-                             incorrect.feedback.expected_return_code,
+                             incorrect.get_feedback().expected_return_code,
                              msg=test.name)
             self.assertEqual(incorrect.return_code,
-                             incorrect.feedback.actual_return_code,
+                             incorrect.get_feedback().actual_return_code,
                              msg=test.name)
-            self.assertEqual(0, incorrect.feedback.return_code_points,
+            self.assertEqual(0, incorrect.get_feedback().return_code_points,
                              msg=test.name)
-            self.assertFalse(incorrect.feedback.return_code_correct,
+            self.assertFalse(incorrect.get_feedback().return_code_correct,
                              msg=test.name)
 
             # Hide points
             test.feedback_configuration.points_feedback_level = (
                 fbc.PointsFeedbackLevel.hide)
-            self.assertIsNone(correct.feedback.return_code_points,
+            self.assertIsNone(correct.get_feedback().return_code_points,
                               msg=test.name)
-            self.assertIsNone(incorrect.feedback.return_code_points,
+            self.assertIsNone(incorrect.get_feedback().return_code_points,
                               msg=test.name)
 
     def test_show_return_code(self):
@@ -156,9 +156,9 @@ class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
             test.feedback_configuration.show_return_code = True
 
             self.assertEqual(correct.return_code,
-                             correct.feedback.actual_return_code)
+                             correct.get_feedback().actual_return_code)
             self.assertEqual(incorrect.return_code,
-                             incorrect.feedback.actual_return_code)
+                             incorrect.get_feedback().actual_return_code)
 
     def test_fdbk_not_applicable_return_code_not_checked(self):
         no_ret_code_check_ag_test = _DummyAutograderTestCase(
@@ -176,22 +176,23 @@ class ReturnCodeFdbkTestCase(TemporaryFilesystemTestCase):
             fbc.PointsFeedbackLevel.show_breakdown)
 
         self.assertIsNone(
-            no_ret_code_check_result.feedback.return_code_correct)
+            no_ret_code_check_result.get_feedback().return_code_correct)
         self.assertIsNone(
-            no_ret_code_check_result.feedback.expected_return_code)
+            no_ret_code_check_result.get_feedback().expected_return_code)
         self.assertIsNone(
-            no_ret_code_check_result.feedback.return_code_points)
+            no_ret_code_check_result.get_feedback().return_code_points)
 
         # Hide return code
         self.assertIsNone(
-            no_ret_code_check_result.feedback.actual_return_code)
+            no_ret_code_check_result.get_feedback().actual_return_code)
 
         # Show return code
         (no_ret_code_check_ag_test.feedback_configuration
                                   .show_return_code) = True
 
-        self.assertEqual(no_ret_code_check_result.return_code,
-                         no_ret_code_check_result.feedback.actual_return_code)
+        self.assertEqual(
+            no_ret_code_check_result.return_code,
+            no_ret_code_check_result.get_feedback().actual_return_code)
 
 
 # class ReturnCodeFdbkOverrideTesCase(TemporaryFilesystemTestCase):

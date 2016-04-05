@@ -8,8 +8,8 @@ import autograder.core.models as ag_models
 
 import autograder.core.shared.feedback_configuration as fbc
 
-from autograder.core.tests.test_models.test_autograder_test_case.models import (
-    _DummyAutograderTestCase)
+from autograder.core.tests.test_models.test_autograder_test_case.models \
+    import _DummyAutograderTestCase
 
 
 class AgTestNameFdbkTestCase(TemporaryFilesystemTestCase):
@@ -29,7 +29,7 @@ class AgTestNameFdbkTestCase(TemporaryFilesystemTestCase):
 
         generated_names = []
         for i in range(1000):
-            name = self.result.feedback.ag_test_name
+            name = self.result.get_feedback().ag_test_name
             self.assertNotEqual(name, self.ag_test_name)
             self.assertTrue(name.startswith('test'))
             generated_names.append(name)
@@ -44,7 +44,9 @@ class AgTestNameFdbkTestCase(TemporaryFilesystemTestCase):
         self.ag_test.pk = random.randint(1, 1000)
         expected_name = 'test{}'.format(self.ag_test.pk)
         for i in range(100):
-            self.assertEqual(expected_name, self.result.feedback.ag_test_name)
+            self.assertEqual(expected_name,
+                             self.result.get_feedback().ag_test_name)
 
     def test_show_real_name(self):
-        self.assertEqual(self.ag_test_name, self.result.feedback.ag_test_name)
+        self.assertEqual(self.ag_test_name,
+                         self.result.get_feedback().ag_test_name)

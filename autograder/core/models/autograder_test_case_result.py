@@ -132,12 +132,12 @@ class AutograderTestCaseResult(models.Model):
     compilation_standard_output = models.TextField()
     compilation_standard_error_output = models.TextField()
 
-    @property
-    def feedback(self):
+    def get_feedback(self):
         return AutograderTestCaseResult._FeedbackCalculator(self)
 
     class _FeedbackCalculator:
         def __init__(self, result,
+                     ag_test_name_fdbk_override=None,
                      return_code_fdbk_override=None,
                      stdout_fdbk_override=None,
                      stderr_fdbk_override=None,
