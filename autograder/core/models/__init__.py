@@ -1,5 +1,7 @@
 # Import all Model classes here.
 
+from .ag_model_base import AutograderModel
+
 from .notification import Notification
 
 from .course import Course

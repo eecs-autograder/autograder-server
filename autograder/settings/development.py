@@ -84,6 +84,8 @@ INSTALLED_APPS = [
     'autograder.rest_api',
     'autograder.web_interface',
 
+    # Dummy testing models
+    'autograder.core.tests.test_models',
     'autograder.core.tests.test_models.test_autograder_test_case',
     'autograder.core.tests.test_models.test_student_test_suite',
 ]
