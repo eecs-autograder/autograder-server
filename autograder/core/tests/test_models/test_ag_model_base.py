@@ -4,7 +4,7 @@ import string
 from django.core import exceptions
 from django.test import TestCase
 
-from .models import _DummyAutograderModel
+from .models import _DummyAutograderModel, _DummyForeignAutograderModel
 
 
 class AGModelBaseToDictTest(TestCase):
@@ -60,6 +60,19 @@ class AGModelBaseToDictTest(TestCase):
         expected = {
             'non_empty_str_val': self.ag_model.non_empty_str_val
         }
+        self.assertEqual(expected, result)
+
+    def test_to_one_serialized_as_pk(self):
+        self.ag_model.save()
+        related = _DummyForeignAutograderModel(
+            name='steve', one_to_one=self.ag_model)
+
+        expected = {
+            'name': related.name,
+            'one_to_one': self.ag_model.pk
+        }
+        result = related.to_dict()
+
         self.assertEqual(expected, result)
 
 

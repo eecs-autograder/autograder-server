@@ -24,14 +24,14 @@ class Course(AutograderModel):
     name = models.CharField(
         max_length=gc.MAX_CHAR_FIELD_LEN, unique=True,
         validators=[validators.MinLengthValidator(1)],
-        help_text='The name of this course. '
-                  'Must be unique, non-empty and non-null.')
+        help_text='''The name of this course.
+                  Must be unique, non-empty and non-null.''')
 
     administrators = models.ManyToManyField(
         User, related_name='courses_is_admin_for',
-        help_text='The Users that are administrators for '
-                  'this Course. Administrators have edit access '
-                  'to this Course and its Semesters.')
+        help_text='''The Users that are administrators for
+                  this Course. Administrators have edit access
+                  to this Course and its Semesters.''')
 
     @property
     def administrator_names(self):

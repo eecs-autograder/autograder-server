@@ -17,6 +17,8 @@ class _AutograderModelManagerMixin:
 class _AutograderModelMixin:
     # This set can include model fields, properties, member variables,
     # "-to-one" relationships, etc.
+    # By default, "-to-one" relationships will be represented as the
+    # primary key of the related object.
     # In order to include "-to-many" relationships, you must override
     # the default behavior of this function to handle them correctly.
     DEFAULT_INCLUDE_FIELDS = frozenset()
@@ -80,6 +82,10 @@ class _AutograderModelMixin:
 
         for field_name in to_include:
             result[field_name] = getattr(self, field_name)
+            if field_name in self._meta.get_all_field_names():
+                field = self._meta.get_field(field_name)
+                if field.one_to_many or field.one_to_one:
+                    result[field_name] = getattr(self, field_name).pk
 
         return result
 

@@ -47,7 +47,7 @@ class CourseTestCase(TemporaryFilesystemTestCase):
         self.course.administrators.add(self.user)
         self.assertTrue(self.course.is_administrator(self.user))
 
-    def test_to_dict_fields(self):
+    def test_to_dict_default_fields(self):
         course = Course.objects.validate_and_create(name='spammy')
 
         expected_fields = [

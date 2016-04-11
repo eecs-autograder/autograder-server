@@ -18,8 +18,18 @@ class _DummyAutograderModel(AutograderModel):
     def the_answer(self):
         return 42
 
-    DEFAULT_INCLUDE_FIELDS = [
+    DEFAULT_INCLUDE_FIELDS = frozenset([
         'pos_num_val',
         'non_empty_str_val',
         'the_answer',
-    ]
+    ])
+
+
+class _DummyForeignAutograderModel(AutograderModel):
+    name = models.CharField(max_length=255)
+    one_to_one = models.OneToOneField(_DummyAutograderModel)
+
+    DEFAULT_INCLUDE_FIELDS = frozenset([
+        'name',
+        'one_to_one'
+    ])
