@@ -30,8 +30,11 @@ class _AutograderModelMixin:
         and calling full_clean() because this method can perform
         extra validation that depends on the old and new values of
         fields.
+        Raises AttributeError if any specified field doesn't exist.
         """
         for field_name, val in kwargs.items():
+            if not hasattr(self, field_name):
+                raise AttributeError('Field not found: {}'.format(field_name))
             setattr(self, field_name, val)
 
         self.full_clean()

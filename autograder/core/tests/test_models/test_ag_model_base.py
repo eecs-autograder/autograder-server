@@ -111,7 +111,7 @@ class AGModelValidateAndUpdateTestCase(TestCase):
         self.ag_model.refresh_from_db()
         self.assertEqual(second_new_num, self.ag_model.pos_num_val)
 
-    def test_invalid_update(self):
+    def test_invalid_update_bad_values(self):
         old_vals = self.ag_model.to_dict()
 
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -123,3 +123,7 @@ class AGModelValidateAndUpdateTestCase(TestCase):
 
         self.ag_model.refresh_from_db()
         self.assertEqual(old_vals, self.ag_model.to_dict())
+
+    def test_invalid_update_nonexistant_field(self):
+        with self.assertRaises(AttributeError):
+            self.ag_model.validate_and_update(not_a_field_name='spam')
