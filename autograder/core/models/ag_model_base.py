@@ -19,7 +19,7 @@ class _AutograderModelMixin:
     # "-to-one" relationships, etc.
     # In order to include "-to-many" relationships, you must override
     # the default behavior of this function to handle them correctly.
-    DEFAULT_INCLUDE_FIELDS = set()
+    DEFAULT_INCLUDE_FIELDS = frozenset()
 
     def validate_and_update(self, **kwargs):
         """
@@ -60,7 +60,7 @@ class _AutograderModelMixin:
             or include_fields will be ignored.
         :type exclude_fields: list or None
         """
-        default_fields = set(self.DEFAULT_INCLUDE_FIELDS)
+        default_fields = frozenset(self.DEFAULT_INCLUDE_FIELDS)
         if include_fields is None:
             include_fields = default_fields
 

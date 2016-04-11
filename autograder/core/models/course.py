@@ -1,120 +1,53 @@
 import os
 import shutil
-import functools
 
 from django.db import models
-from django.core.exceptions import ValidationError
-from django.contrib.postgres.fields import ArrayField
+from django.core import validators
 from django.contrib.auth.models import User
 
-from autograder.core.models.utils import (
-    ModelValidatableOnSave, ManagerWithValidateOnCreate)
+from .ag_model_base import AutograderModel
 
 import autograder.core.shared.global_constants as gc
 import autograder.core.shared.utilities as ut
 
 
-class Course(ModelValidatableOnSave):
+class Course(AutograderModel):
     """
     Represents a programming course for which students will be submitting
     code to an autograder.
 
-    Fields:
-        name -- The name of this course.
-                Must be unique, non-empty and non-null.
-
-        administrators -- The Users that are administrators for
-            this Course.
-
     Related object fields:
         semesters -- The group of Semesters that belong to this Course.
-
-    Properties:
-        administrator_names -- A list of usernames of Users
-            that are administrators for this Course.
-
-    Static methods:
-        get_courses_for_user()
-
-    Instance methods:
-        add_administrator()
-        remove_administrator()
-        is_administrator()
-
-    Overridden member functions:
-        save()
-        clean()
-        delete()
     """
-    objects = ManagerWithValidateOnCreate()
-
-    # -------------------------------------------------------------------------
+    DEFAULT_INCLUDE_FIELDS = ['name']
 
     name = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, unique=True)
+        max_length=gc.MAX_CHAR_FIELD_LEN, unique=True,
+        validators=[validators.MinLengthValidator(1)],
+        help_text='The name of this course. '
+                  'Must be unique, non-empty and non-null.')
 
     administrators = models.ManyToManyField(
-        User, related_name='courses_is_admin_for')
+        User, related_name='courses_is_admin_for',
+        help_text='The Users that are administrators for '
+                  'this Course. Administrators have edit access '
+                  'to this Course and its Semesters.')
 
     @property
     def administrator_names(self):
+        """
+        The usernames of Users that are administrators for this Course.
+        """
         return tuple(user.username for user in self.administrators.all())
 
     # -------------------------------------------------------------------------
 
-    # TODO: phase out
-    @staticmethod
-    def get_courses_for_user(user):
-        """
-        Returns a QuerySet of Courses for which the given user is an
-        administrator, sorted by Course name.
-        """
-        return user.courses_is_admin_for.order_by('name')
-        # return Course.objects.filter(
-        #     _administrator_names__contains=[user.username]).order_by('name')
-
-    # -------------------------------------------------------------------------
-
-    def add_administrators(self, *users):
-        """
-        Adds the given Users to this Course's list of administrators.
-        Users that are already in this list are ignored.
-        """
-        self.administrators.add(*users)
-        # for user in users:
-        #     if not self.is_administrator(user):
-        #         self._administrator_names.append(user.username)
-        # self.save()
-
-    def remove_administrator(self, user):
-        """
-        Removes the given User from this Course's list of administrators.
-        Raises ValidationError if the User is not an administrator
-        for this course.
-        """
-        self.administrators.remove(user)
-        # if not self.is_administrator(user):
-        #     raise ValidationError(
-        #         "This User is not an administrator for this Course")
-
-        # self._administrator_names.remove(user.username)
-        # self.save()
-
     def is_administrator(self, user):
         """
-        Returns True if the given user (can be a User object or string
-        username) is an administrator for this Course, False otherwise.
+        Convenience method for determining if the given user
+        is an administrator.
         """
         return self.administrators.filter(pk=user.pk).exists()
-        # @functools.singledispatch
-        # def _is_administrator_impl(user, names):
-        #     return user.username in names
-
-        # @_is_administrator_impl.register(str)
-        # def _(username, names):
-        #     return username in names
-
-        # return _is_administrator_impl(user, self._administrator_names)
 
     # -------------------------------------------------------------------------
 
@@ -129,19 +62,7 @@ class Course(ModelValidatableOnSave):
             # this will be considered a more severe error, and the OSError
             # thrown by os.makedirs will be handled at a higher level.
 
-            # print('creating: ' + course_root_dir)
             os.makedirs(course_root_dir)
-
-    def clean(self):
-        if self.name:
-            self.name = self.name.strip()
-
-        errors = {}
-        if not self.name:
-            errors['name'] = "Name can't be empty"
-
-        if errors:
-            raise ValidationError(errors)
 
     def delete(self, *args, **kwargs):
         course_root_dir = ut.get_course_root_dir(self)
