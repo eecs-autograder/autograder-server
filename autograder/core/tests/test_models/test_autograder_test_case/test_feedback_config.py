@@ -15,14 +15,8 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        project = obj_ut.build_project()
-
-        self.ag_test = _DummyAutograderTestCase.objects.validate_and_create(
-            name='testy', project=project)
-
     def test_valid_create_with_defaults(self):
-        fdbk_conf = ag_models.FeedbackConfig.objects.validate_and_create(
-            ag_test=self.ag_test)
+        fdbk_conf = ag_models.FeedbackConfig.objects.validate_and_create()
 
         fdbk_conf.refresh_from_db()
 
@@ -61,7 +55,7 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
             }
 
             fdbk_conf = ag_models.FeedbackConfig.objects.validate_and_create(
-                ag_test=self.ag_test, **vals)
+                **vals)
 
             fdbk_conf.refresh_from_db()
 
@@ -74,7 +68,6 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
     def test_exception_invalid_values(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.FeedbackConfig.objects.validate_and_create(
-                ag_test=self.ag_test,
                 ag_test_name_fdbk='not_a_value',
                 return_code_fdbk='not_a_value',
                 stdout_fdbk='not_a_value',
@@ -93,7 +86,6 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
 
     def test_to_dict_default_fields(self):
         field_names = [
-            'ag_test',
             'ag_test_name_fdbk',
             'return_code_fdbk',
             'stdout_fdbk',

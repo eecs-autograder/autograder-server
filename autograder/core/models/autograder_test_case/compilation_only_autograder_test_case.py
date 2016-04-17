@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 
 from ..autograder_test_case_result import AutograderTestCaseResult
-from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
+# from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
 
 from .compiled_autograder_test_case import CompiledAutograderTestCase
 
@@ -16,7 +16,9 @@ class CompilationOnlyAutograderTestCase(CompiledAutograderTestCase):
         get_type_str()
         run()
     """
-    objects = PolymorphicManagerWithValidateOnCreate()
+    class Meta:
+        proxy = True
+    # objects = PolymorphicManagerWithValidateOnCreate()
 
     # def clean(self):
     #     errors = {}

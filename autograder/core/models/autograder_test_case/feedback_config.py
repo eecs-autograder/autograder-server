@@ -1,7 +1,6 @@
 from django.db import models
 
 from ..ag_model_base import AutograderModel
-from .autograder_test_case_base import AutograderTestCaseBase
 
 import autograder.utilities.fields as ag_fields
 
@@ -75,7 +74,6 @@ class PointsFdbkLevel:
 
 class FeedbackConfig(AutograderModel):
     DEFAULT_INCLUDE_FIELDS = [
-        'ag_test',
         'ag_test_name_fdbk',
         'return_code_fdbk',
         'stdout_fdbk',
@@ -84,9 +82,6 @@ class FeedbackConfig(AutograderModel):
         'valgrind_fdbk',
         'points_fdbk',
     ]
-
-    ag_test = models.OneToOneField(AutograderTestCaseBase)
-
     ag_test_name_fdbk = ag_fields.ShortStringField(
         choices=zip(AGTestNameFdbkLevel.values, AGTestNameFdbkLevel.values),
         default=AGTestNameFdbkLevel.show_real_name)

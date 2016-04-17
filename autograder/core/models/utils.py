@@ -37,21 +37,21 @@ class ManagerWithValidateOnCreate(models.Manager):
             'Please use validate_and_create() instead.')
 
 
-class PolymorphicManagerWithValidateOnCreate(PolymorphicManager):
-    """
-    Same as ManagerWithValidateOnCreate, but to be used with
-    PolymorphicModels.
-    """
-    def validate_and_create(self, **kwargs):
-        model = self.model(**kwargs)
-        model.full_clean()
-        model.save()
-        return model
+# class PolymorphicManagerWithValidateOnCreate(PolymorphicManager):
+#     """
+#     Same as ManagerWithValidateOnCreate, but to be used with
+#     PolymorphicModels.
+#     """
+#     def validate_and_create(self, **kwargs):
+#         model = self.model(**kwargs)
+#         model.full_clean()
+#         model.save()
+#         return model
 
-    def create(self, **kwargs):
-        raise NotImplementedError(
-            'create() is unsupported for this model. '
-            'Please use validate_and_create() instead.')
+#     def create(self, **kwargs):
+#         raise NotImplementedError(
+#             'create() is unsupported for this model. '
+#             'Please use validate_and_create() instead.')
 
 
 class ModelValidatableOnSave(models.Model):
@@ -72,10 +72,10 @@ class ModelValidatableOnSave(models.Model):
         self.save()
 
 
-class PolymorphicModelValidatableOnSave(PolymorphicModel):
-    """
-    Same as ModelValidatableOnSave, but to be used with polymorphic models.
-    """
-    def validate_and_save(self):
-        self.full_clean()
-        self.save()
+# class PolymorphicModelValidatableOnSave(PolymorphicModel):
+#     """
+#     Same as ModelValidatableOnSave, but to be used with polymorphic models.
+#     """
+#     def validate_and_save(self):
+#         self.full_clean()
+#         self.save()

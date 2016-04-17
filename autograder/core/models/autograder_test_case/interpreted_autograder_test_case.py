@@ -1,6 +1,6 @@
 from django.core.validators import RegexValidator
 
-from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
+# from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
 from django.core import exceptions
 
 from autograder.utilities import fields as ag_fields
@@ -15,21 +15,15 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
     This class evaluates a program by using an interpreter to run it.
 
     Fields:
-        interpreter -- The interpreter used to run the program. Currently
+        interpreter --  Currently
             supported values listed in
             autograder.shared.global_constants.SUPPORTED_INTERPRETERS
             This field is REQUIRED.
 
-        interpreter_flags -- A list of objtion flags to be passed to the
-            interpreter. These flags are limited to the same character set
-            as the command_line_argument_field.
+        interpreter_flags --
             Default value: empty list
 
-        entry_point_filename -- The name of a file that should be given
-            to the interpreter as the program to be run, i.e. the main
-            source module.
-            This field is restricted to filenames listed in
-            self.test_resource_files and self.student_resource_files.
+        entry_point_filename --
             This field is REQUIRED.
 
     Overridden methods:
@@ -38,17 +32,19 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
         get_type_str()
         clean()
     """
-    objects = PolymorphicManagerWithValidateOnCreate()
+    class Meta:
+        proxy = True
+    # objects = PolymorphicManagerWithValidateOnCreate()
 
-    interpreter = ag_fields.ShortStringField(
-        choices=zip(gc.SUPPORTED_INTERPRETERS, gc.SUPPORTED_INTERPRETERS))
+    # interpreter = ag_fields.ShortStringField(
+    #     choices=zip(gc.SUPPORTED_INTERPRETERS, gc.SUPPORTED_INTERPRETERS))
 
-    interpreter_flags = ag_fields.StringArrayField(
-        blank=True, default=list,
-        string_validators=[
-            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)])
+    # interpreter_flags = ag_fields.StringArrayField(
+    #     blank=True, default=list,
+    #     string_validators=[
+    #         RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)])
 
-    entry_point_filename = ag_fields.ShortStringField()
+    # entry_point_filename = ag_fields.ShortStringField()
 
     # -------------------------------------------------------------------------
 

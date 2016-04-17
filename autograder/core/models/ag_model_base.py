@@ -1,5 +1,7 @@
 from django.db import models
 
+from polymorphic.models import PolymorphicManager, PolymorphicModel
+
 
 class _AutograderModelManagerMixin:
     def validate_and_create(self, **kwargs):
@@ -107,3 +109,23 @@ class AutograderModel(_AutograderModelMixin, models.Model):
         abstract = True
 
     objects = AutograderModelManager()
+
+
+class PolymorphicAutograderModelManager(_AutograderModelManagerMixin,
+                                        PolymorphicManager):
+    """
+    Similar to AutograderModelManager, but is to be used for polymorphic
+    models instead.
+    """
+    pass
+
+
+class PolymorphicAutograderModel(_AutograderModelMixin, PolymorphicModel):
+    """
+    Similar to AutograderModel, but is to be used for polymorphic
+    models instead.
+    """
+    class Meta:
+        abstract = True
+
+    objects = PolymorphicAutograderModelManager()

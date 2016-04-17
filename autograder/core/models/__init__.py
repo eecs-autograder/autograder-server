@@ -1,6 +1,6 @@
 # Import all Model classes here.
 
-from .ag_model_base import AutograderModel
+from .ag_model_base import AutograderModel, PolymorphicAutograderModel
 
 from .notification import Notification
 

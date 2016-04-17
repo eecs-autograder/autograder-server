@@ -38,6 +38,12 @@ class AutograderTestCaseBaseTestCase(TemporaryFilesystemTestCase):
 
     # -------------------------------------------------------------------------
 
+    def test_to_dict_default_fields(self):
+        self.fail()
+
+    def test_to_dict_feedback_expanded(self):
+        self.fail()
+
     def test_valid_initialization_with_defaults(self):
         new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project)

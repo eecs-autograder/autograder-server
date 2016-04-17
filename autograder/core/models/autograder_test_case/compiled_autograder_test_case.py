@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, RegexValidator)
 
-from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
+# from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
 
 from .autograder_test_case_base import AutograderTestCaseBase
 
@@ -24,45 +24,9 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     and then run.
 
     Fields:
-        compiler -- The program that will be used to compile the test case
-            executable.
-            Currently supported values listed in
-                autograder.shared.global_constants.SUPPORTED_COMPILERS
+        compiler --
             This field is REQUIRED
 
-        compiler_flags -- A list of option flags to be passed to the compiler.
-            These flags are limited to the same character set as
-            the command_line_arguments field.
-            NOTE: This list should NOT include the names of files that
-                need to be compiled and should not include flags that affect
-                the name of the resulting executable program.
-
-            This field is allowed to be empty.
-            This field may not be None.
-            Default value: empty list
-
-        project_files_to_compile_together -- A list of uploaded project
-            filenames that need to be compiled together.
-            These filenames are restricted to those in test_resource_files.
-            Default value: empty list
-
-        student_files_to_compile_together -- A list of student-submitted
-            filenames that need to be compiled together.
-            These filenames are restricted to those in student_resource_files
-            as well as patterns in expected_student_file_patterns.
-            NOTE: When a pattern is part of this list, all student-submitted
-                files matching the pattern will be compiled together.
-            Default value: empty list
-
-        executable_name -- The name of the executable program that should be
-            produced by the compiler. This is the program that will be tested.
-            This field is restricted to the same charset as uploaded
-            project files.
-
-            Default value: "compiled_program"
-
-
-        compilation_time_limit -- TODO
 
     Overridden methods:
         run()
@@ -72,71 +36,69 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         to_dict()
     """
     class Meta:
-        abstract = True
-
-    objects = PolymorphicManagerWithValidateOnCreate()
+        proxy = True
 
     # Fat interface fields
-    compiler = ag_fields.ShortStringField(
-        choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS))
+    # compiler = ag_fields.ShortStringField(
+    #     choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS))
 
-    compiler_flags = ag_fields.StringArrayField(
-        default=list, blank=True, string_validators=[
-            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
-        )
+    # compiler_flags = ag_fields.StringArrayField(
+    #     default=list, blank=True, string_validators=[
+    #         RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
+    #     )
 
-    project_files_to_compile_together = ag_fields.StringArrayField(
-        default=list, blank=True, strip_strings=False)
+    # project_files_to_compile_together = ag_fields.StringArrayField(
+    #     default=list, blank=True, strip_strings=False)
 
-    student_files_to_compile_together = ag_fields.StringArrayField(
-        default=list, blank=True, strip_strings=False)
+    # student_files_to_compile_together = ag_fields.StringArrayField(
+    #     default=list, blank=True, strip_strings=False)
 
-    executable_name = ag_fields.ShortStringField(
-        validators=[ut.check_user_provided_filename],
-        default="compiled_program")
+    # executable_name = ag_fields.ShortStringField(
+    #     validators=[ut.check_user_provided_filename],
+    #     default="compiled_program")
 
     def test_checks_compilation(self):
         return True
 
-    def clean(self):
-        errors = {}
+    # def clean(self):
+    #     errors = {}
 
-        try:
-            super().clean()
-        except ValidationError as e:
-            errors = e.message_dict
+    #     try:
+    #         super().clean()
+    #     except ValidationError as e:
+    #         errors = e.message_dict
 
-        errors.update(self._clean_project_files_to_compile_together())
-        errors.update(self._clean_student_files_to_compile_together())
+    #     errors.update(self._clean_project_files_to_compile_together())
+    #     errors.update(self._clean_student_files_to_compile_together())
 
-        if errors:
-            raise ValidationError(errors)
+    #     if errors:
+    #         raise ValidationError(errors)
 
-    def _clean_project_files_to_compile_together(self):
-        errors = []
-        for filename in self.project_files_to_compile_together:
-            if filename not in self.test_resource_files:
-                errors.append(
-                    'File {0} not a resource file for this test'.format(
-                        filename))
+    # def _clean_project_files_to_compile_together(self):
+    #     errors = []
+    #     for filename in self.project_files_to_compile_together:
+    #         if filename not in self.test_resource_files:
+    #             errors.append(
+    #                 'File {0} not a resource file for this test'.format(
+    #                     filename))
 
-        if errors:
-            return {'project_files_to_compile_together': errors}
+    #     if errors:
+    #         return {'project_files_to_compile_together': errors}
 
-        return {}
+    #     return {}
 
-    def _clean_student_files_to_compile_together(self):
-        errors = []
-        for filename in self.student_files_to_compile_together:
-            if filename not in self.student_resource_files:
-                errors.append(
-                    'File {0} not a resource file for this test'.format(
-                        filename))
+    # def _clean_student_files_to_compile_together(self):
+    #     errors = []
+    #     for filename in self.student_files_to_compile_together:
+    #         if filename not in self.student_resource_files:
+    #             errors.append(
+    #                 'File {0} not a resource file for this test'.format(
+    #                     filename))
 
-        if errors:
-            return {'student_files_to_compile_together': errors}
+    #     if errors:
+    #         return {'student_files_to_compile_together': errors}
 
-        return {}
+    #     return {}
 
     # -------------------------------------------------------------------------
 
@@ -159,13 +121,13 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
     # -------------------------------------------------------------------------
 
-    def to_dict(self):
-        value = super().to_dict()
-        value.update({
-            "compiler": self.compiler,
-            "compiler_flags": self.compiler_flags,
-            "project_files_to_compile_together": self.project_files_to_compile_together,
-            "student_files_to_compile_together": self.student_files_to_compile_together,
-            "executable_name": self.executable_name,
-        })
-        return value
+    # def to_dict(self):
+    #     value = super().to_dict()
+    #     value.update({
+    #         "compiler": self.compiler,
+    #         "compiler_flags": self.compiler_flags,
+    #         "project_files_to_compile_together": self.project_files_to_compile_together,
+    #         "student_files_to_compile_together": self.student_files_to_compile_together,
+    #         "executable_name": self.executable_name,
+    #     })
+    #     return value
