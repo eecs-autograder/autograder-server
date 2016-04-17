@@ -7,8 +7,10 @@ from autograder.core.models import (
 
 
 class _DummyAutograderTestCase(AutograderTestCaseBase):
-    pass
+    class Meta:
+        proxy = True
 
 
 class _DummyCompiledAutograderTestCase(CompiledAutograderTestCase):
-    pass
+    class Meta:
+        proxy = True

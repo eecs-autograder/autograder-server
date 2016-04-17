@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, RegexValidator)
 
-from ..ag_model_base import PolymorphicAutograderModel
+from ..ag_model_base import PolymorphicAutograderModel, PolymorphicAutograderModelManager
 from ..project import Project, UploadedFile, ExpectedStudentFilePattern
 from .feedback_config import FeedbackConfig
 
@@ -23,6 +23,35 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     """
     class Meta:
         unique_together = ('name', 'project')
+
+    objects = PolymorphicAutograderModelManager()
+
+    DEFAULT_INCLUDE_FIELDS = [
+        'name',
+        'project',
+        'command_line_arguments',
+        'standard_input',
+        'test_resource_files',
+        'student_resource_files',
+        'time_limit',
+        'allow_network_connections',
+        'stack_size_limit',
+        'virtual_memory_limit',
+        'process_spawn_limit',
+        'expected_return_code',
+        'expect_any_nonzero_return_code',
+        'expected_standard_output',
+        'expected_standard_error_output',
+        'use_valgrind',
+        'valgrind_flags',
+        'points_for_correct_return_code',
+        'points_for_correct_stdout',
+        'points_for_correct_stderr',
+        'deduction_for_valgrind_errors',
+        'feedback_configuration',
+        'post_deadline_final_submission_feedback_configuration',
+        'points_for_compilation_success',
+    ]
 
     # BASE FIELDS
 
@@ -302,6 +331,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             set as the command_line_argument_field.''')
 
     entry_point_filename = ag_fields.ShortStringField(
+        blank=True,
         help_text='''The name of a file that should be given to the
             interpreter as the program to be run, i.e. the main source
             module.
@@ -316,6 +346,18 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         super().__init__(*args, **kwargs)
         if self.use_valgrind and self.valgrind_flags is None:
             self.valgrind_flags = gc.DEFAULT_VALGRIND_FLAGS_WHEN_USED
+
+    def to_dict(self, **kwargs):
+        result = super().to_dict(**kwargs)
+        if 'feedback_configuration' in result:
+            result['feedback_configuration'] = (
+                self.feedback_configuration.to_dict())
+
+        if 'post_deadline_final_submission_feedback_configuration' in result:
+            result['post_deadline_final_submission_feedback_configuration'] = (
+                self.post_deadline_final_submission_feedback_configuration.to_dict())
+
+        return result
 
     # -------------------------------------------------------------------------
 
@@ -387,15 +429,6 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     # -------------------------------------------------------------------------
 
     # TODO: Remove "test_" prefix from these names
-
-    def test_checks_return_code(self):
-        return (
-            self.expected_return_code is not None or
-            self.expect_any_nonzero_return_code)
-
-    def test_checks_output(self):
-        return (self.expected_standard_output or
-                self.expected_standard_error_output)
 
     def test_checks_compilation(self):
         return False

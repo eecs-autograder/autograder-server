@@ -15,7 +15,7 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
     This class evaluates a program by using an interpreter to run it.
 
     Fields:
-        interpreter --  Currently
+        interpreter -- Currently
             supported values listed in
             autograder.shared.global_constants.SUPPORTED_INTERPRETERS
             This field is REQUIRED.

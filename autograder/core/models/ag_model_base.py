@@ -1,6 +1,6 @@
 from django.db import models
 
-from polymorphic.models import PolymorphicManager, PolymorphicModel
+import polymorphic.models as poly_models
 
 
 class _AutograderModelManagerMixin:
@@ -84,7 +84,7 @@ class _AutograderModelMixin:
 
         for field_name in to_include:
             result[field_name] = getattr(self, field_name)
-            if field_name in self._meta.get_all_field_names():
+            if field_name in self._meta.get_fields():
                 field = self._meta.get_field(field_name)
                 if field.many_to_one or field.one_to_one:
                     result[field_name] = getattr(self, field_name).pk
@@ -112,7 +112,7 @@ class AutograderModel(_AutograderModelMixin, models.Model):
 
 
 class PolymorphicAutograderModelManager(_AutograderModelManagerMixin,
-                                        PolymorphicManager):
+                                        poly_models.PolymorphicManager):
     """
     Similar to AutograderModelManager, but is to be used for polymorphic
     models instead.
@@ -120,7 +120,8 @@ class PolymorphicAutograderModelManager(_AutograderModelManagerMixin,
     pass
 
 
-class PolymorphicAutograderModel(_AutograderModelMixin, PolymorphicModel):
+class PolymorphicAutograderModel(_AutograderModelMixin,
+                                 poly_models.PolymorphicModel):
     """
     Similar to AutograderModel, but is to be used for polymorphic
     models instead.
@@ -128,4 +129,6 @@ class PolymorphicAutograderModel(_AutograderModelMixin, PolymorphicModel):
     class Meta:
         abstract = True
 
-    objects = PolymorphicAutograderModelManager()
+    # For some reason, the polymorphic manager needs to be set in the
+    # first concrete class.
+    # objects = PolymorphicAutograderModelManager()
