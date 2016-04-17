@@ -1,19 +1,16 @@
-import os
-import copy
-
 from django.db import models, transaction
 from django.core import exceptions
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, RegexValidator)
 
-from ..ag_model_base import PolymorphicAutograderModel, PolymorphicAutograderModelManager
+from ..ag_model_base import (
+    PolymorphicAutograderModel, PolymorphicAutograderModelManager)
 from ..project import Project, UploadedFile, ExpectedStudentFilePattern
 from .feedback_config import FeedbackConfig
 
 import autograder.utilities.fields as ag_fields
 
 import autograder.core.shared.global_constants as gc
-import autograder.core.shared.utilities as ut
 
 
 class AutograderTestCaseBase(PolymorphicAutograderModel):
@@ -61,7 +58,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             cases associated with a given project.
             This field is REQUIRED.''')
     project = models.ForeignKey(
-        'Project',
+        Project,
         related_name='autograder_test_cases',
         help_text='''The Project this test case is associated with.
             This field is REQUIRED.''')

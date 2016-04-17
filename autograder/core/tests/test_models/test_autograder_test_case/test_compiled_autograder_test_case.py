@@ -124,17 +124,7 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertTrue(test.test_checks_compilation())
 
-    # def test_compiler_flag_whitespace_stripped(self):
-    #     self.compiled_test_kwargs['compiler_flags'] = [
-    #         '     spam    ', '   egg  ']
-
-    #     _DummyCompiledAutograderTestCase.objects.validate_and_create(
-    #         name=self.test_name, project=self.project,
-    #         **self.compiled_test_kwargs)
-
-    #     loaded_test = _DummyCompiledAutograderTestCase.objects.get(
-    #         name=self.test_name, project=self.project)
-    #     self.assertEqual(loaded_test.compiler_flags, ['spam', 'egg'])
+    # --- MOVE THESE TESTS TO REST API --- #
 
     # -------------------------------------------------------------------------
 

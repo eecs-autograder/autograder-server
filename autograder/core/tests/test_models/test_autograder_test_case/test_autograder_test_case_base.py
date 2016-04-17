@@ -52,8 +52,6 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
 
         self.assertEqual(new_test_case.command_line_arguments, [])
         self.assertEqual(new_test_case.standard_input, "")
-        # self.assertEqual(new_test_case.test_resource_files, [])
-        # self.assertEqual(new_test_case.student_resource_files, [])
 
         self.assertEqual(new_test_case.time_limit, 10)
         self.assertFalse(new_test_case.allow_network_connections)
@@ -240,12 +238,6 @@ class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
 
 
 class AGTestCmdArgErrorTestCase(_Shared, TemporaryFilesystemTestCase):
-    # def test_exception_on_null_command_line_args(self):
-    #     with self.assertRaises(ValidationError):
-    #         _DummyAutograderTestCase.objects.validate_and_create(
-    #             name=self.TEST_NAME, project=self.project,
-    #             command_line_arguments=None)
-
     def test_exception_on_empty_value_in_cmd_args(self):
         with self.assertRaises(ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
@@ -499,15 +491,3 @@ class AGTestValgrindSettingsTestCase(_Shared, TemporaryFilesystemTestCase):
         error_list = cm.exception.message_dict['valgrind_flags']
         self.assertTrue(error_list[0])
         self.assertFalse(error_list[1])
-
-    # def test_valgrind_flag_whitespace_stripped(self):
-    #     _DummyAutograderTestCase.objects.validate_and_create(
-    #         name=self.TEST_NAME, project=self.project,
-    #         use_valgrind=True,
-    #         valgrind_flags=["      spam    ", '   eggs'])
-
-    #     loaded_test = _DummyAutograderTestCase.objects.get(
-    #         name=self.TEST_NAME, project=self.project)
-    #     self.assertEqual(loaded_test.valgrind_flags, ['spam', 'eggs'])
-
-    # -------------------------------------------------------------------------
