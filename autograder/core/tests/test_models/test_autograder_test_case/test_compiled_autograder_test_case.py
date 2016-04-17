@@ -30,40 +30,25 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
             name=self.test_name, project=self.project,
             compiler=self.compiler,
-            feedback_configuration=self.fdbk,
         )
 
-        loaded_test_case = _DummyCompiledAutograderTestCase.objects.get(
-            pk=test.pk)
+        test.refresh_from_db()
 
-        self.assertEqual(loaded_test_case.compiler, self.compiler)
-        self.assertEqual(loaded_test_case.compiler_flags, [])
-        self.assertEqual(
-            loaded_test_case.project_files_to_compile_together,
-            self.project_files_to_compile_together)
-        self.assertEqual(
-            loaded_test_case.student_files_to_compile_together,
-            self.student_files_to_compile_together)
-        self.assertEqual(loaded_test_case.executable_name, "compiled_program")
+        self.assertEqual(test.compiler, self.compiler)
+        self.assertEqual(test.compiler_flags, [])
+        self.assertEqual(test.executable_name, '')
 
     def test_valid_init_no_defaults(self):
         test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
             name=self.test_name, project=self.project,
             **self.compiled_test_kwargs)
 
-        loaded_test_case = _DummyCompiledAutograderTestCase.objects.get(
-            pk=test.pk)
+        test.refresh_from_db()
 
-        self.assertEqual(loaded_test_case.compiler, self.compiler)
-        self.assertEqual(loaded_test_case.compiler_flags, self.compiler_flags)
+        self.assertEqual(test.compiler, self.compiler)
+        self.assertEqual(test.compiler_flags, self.compiler_flags)
         self.assertEqual(
-            loaded_test_case.project_files_to_compile_together,
-            self.project_files_to_compile_together)
-        self.assertEqual(
-            loaded_test_case.student_files_to_compile_together,
-            self.student_files_to_compile_together)
-        self.assertEqual(
-            loaded_test_case.executable_name, self.executable_name)
+            test.executable_name, self.executable_name)
 
     def test_exception_on_missing_compiler(self):
         self.compiled_test_kwargs.pop('compiler', None)

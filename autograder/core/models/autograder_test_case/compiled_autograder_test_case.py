@@ -1,21 +1,21 @@
-import uuid
+# import uuid
 
-from django.core.exceptions import ValidationError
+from django.core import exceptions
 
-from django.core.validators import (
-    MinValueValidator, MaxValueValidator, RegexValidator)
+# from django.core.validators import (
+#     MinValueValidator, MaxValueValidator, RegexValidator)
 
 # from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
 
 from .autograder_test_case_base import AutograderTestCaseBase
 
-import autograder.utilities.fields as ag_fields
-import autograder.core.shared.global_constants as gc
-import autograder.core.shared.utilities as ut
+# import autograder.utilities.fields as ag_fields
+# import autograder.core.shared.global_constants as gc
+# import autograder.core.shared.utilities as ut
 # import autograder.core.shared.feedback_configuration as fbc
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+# from autograder.core.tests.temporary_filesystem_test_case import (
+#     TemporaryFilesystemTestCase)
 
 
 class CompiledAutograderTestCase(AutograderTestCaseBase):
@@ -23,17 +23,8 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     This class allows evaluating a program that will be compiled
     and then run.
 
-    Fields:
-        compiler --
-            This field is REQUIRED
-
-
-    Overridden methods:
-        run()
-        clean()
-        test_checks_compilation()
-        get_type_str()
-        to_dict()
+    Field changes:
+        compiler -- This field is REQUIRED
     """
     class Meta:
         proxy = True
@@ -60,7 +51,11 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     def test_checks_compilation(self):
         return True
 
-    # def clean(self):
+    def clean(self):
+        if not self.compiler:
+            raise exceptions.ValidationError(
+                {'compiler': 'The "compiler" field must be '
+                             'specified for this AG test type'})
     #     errors = {}
 
     #     try:

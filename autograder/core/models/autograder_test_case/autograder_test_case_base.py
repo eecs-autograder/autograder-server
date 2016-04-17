@@ -282,8 +282,8 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     # COMPILED AUTOGRADER TEST CASE FIELDS -----------------------------
 
     compiler = ag_fields.ShortStringField(
+        blank=True,
         choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS),
-        default=gc.SUPPORTED_COMPILERS[0],
         help_text='''The program that will be used to compile the test
             case executable.''')
 
@@ -314,7 +314,8 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         blank=True,
         help_text='''The name of the executable program that should be
             produced by the compiler. This is the program that will be
-            tested.''')
+            tested. If empty, the executable will be arbitrarily
+            named.''')
     # validators=[ut.check_user_provided_filename],
     # default="compiled_program")
 
