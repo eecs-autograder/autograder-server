@@ -84,7 +84,7 @@ class _AutograderModelMixin:
             result[field_name] = getattr(self, field_name)
             if field_name in self._meta.get_all_field_names():
                 field = self._meta.get_field(field_name)
-                if field.one_to_many or field.one_to_one:
+                if field.many_to_one or field.one_to_one:
                     result[field_name] = getattr(self, field_name).pk
 
         return result

@@ -64,12 +64,16 @@ class AGModelBaseToDictTest(TestCase):
 
     def test_to_one_serialized_as_pk(self):
         self.ag_model.save()
+
         related = _DummyForeignAutograderModel(
-            name='steve', one_to_one=self.ag_model)
+            name='steve',
+            one_to_one=self.ag_model,
+            foreign_key=self.ag_model)
 
         expected = {
             'name': related.name,
-            'one_to_one': self.ag_model.pk
+            'one_to_one': self.ag_model.pk,
+            'foreign_key': self.ag_model.pk
         }
         result = related.to_dict()
 

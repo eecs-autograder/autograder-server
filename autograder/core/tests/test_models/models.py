@@ -28,8 +28,11 @@ class _DummyAutograderModel(AutograderModel):
 class _DummyForeignAutograderModel(AutograderModel):
     name = models.CharField(max_length=255)
     one_to_one = models.OneToOneField(_DummyAutograderModel)
+    foreign_key = models.ForeignKey(_DummyAutograderModel,
+                                    related_name='dummies')
 
     DEFAULT_INCLUDE_FIELDS = frozenset([
         'name',
-        'one_to_one'
+        'one_to_one',
+        'foreign_key'
     ])
