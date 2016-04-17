@@ -4,7 +4,7 @@ from django.core import validators, exceptions
 from ..ag_model_base import AutograderModel
 from .project import Project
 
-import autograder.core.shared.global_constants as gc
+import autograder.core.shared.utilities as ut
 import autograder.utilities.fields as ag_fields
 
 
@@ -16,11 +16,11 @@ class ExpectedStudentFilePattern(AutograderModel):
     class Meta:
         unique_together = ('pattern', 'project')
 
-    project = models.ForeignKey(Project)
+    project = models.ForeignKey(Project,
+                                related_name='expected_student_file_patterns')
 
     pattern = ag_fields.ShortStringField(
-        validators=[validators.RegexValidator(
-            gc.PROJECT_FILE_PATTERN_WHITELIST_REGEX)],
+        validators=[ut.check_shell_style_file_pattern],
         help_text='''A shell-style file pattern suitable for
             use with Python's fnmatch.fnmatch()
             function (https://docs.python.org/3.4/library/fnmatch.html)

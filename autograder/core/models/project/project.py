@@ -195,88 +195,88 @@ class Project(AutograderModel):
 
     _uploaded_filenames = ag_fields.StringArrayField(blank=True, default=list)
 
-    @property
-    def required_student_files(self):
-        return copy.deepcopy(self._required_student_files)
+    # @property
+    # def required_student_files(self):
+    #     return copy.deepcopy(self._required_student_files)
 
-    @required_student_files.setter
-    def required_student_files(self, value):
-        files_removed = set(self._required_student_files) - set(value)
+    # @required_student_files.setter
+    # def required_student_files(self, value):
+    #     files_removed = set(self._required_student_files) - set(value)
 
-        for file_ in files_removed:
-            tests_that_depend = AutograderTestCaseBase.objects.filter(
-                student_resource_files__contains=[file_])
-            if tests_that_depend:
-                error_msg = (
-                    'Cannot remove the required file: "{}". '
-                    'The test cases {} depend on it.'.format(
-                        file_,
-                        ', '.join((test.name for test in tests_that_depend))
-                    )
-                )
-                raise exceptions.ValidationError(
-                    {'required_student_files': error_msg})
+    #     for file_ in files_removed:
+    #         tests_that_depend = AutograderTestCaseBase.objects.filter(
+    #             student_resource_files__contains=[file_])
+    #         if tests_that_depend:
+    #             error_msg = (
+    #                 'Cannot remove the required file: "{}". '
+    #                 'The test cases {} depend on it.'.format(
+    #                     file_,
+    #                     ', '.join((test.name for test in tests_that_depend))
+    #                 )
+    #             )
+    #             raise exceptions.ValidationError(
+    #                 {'required_student_files': error_msg})
 
-        self._required_student_files = value
+    #     self._required_student_files = value
 
-    _required_student_files = psql_fields.ArrayField(
-        models.CharField(
-            max_length=gc.MAX_CHAR_FIELD_LEN,
-            blank=True  # We are setting this here so that the clean method
-                        # can check for emptiness and throw a more specific
-                        # error. This lets us send ValidationErrors
-                        # to the GUI side in a more convenient format.
-        ),
-        default=list, blank=True
-    )
+    # _required_student_files = psql_fields.ArrayField(
+    #     models.CharField(
+    #         max_length=gc.MAX_CHAR_FIELD_LEN,
+    #         blank=True  # We are setting this here so that the clean method
+    #                     # can check for emptiness and throw a more specific
+    #                     # error. This lets us send ValidationErrors
+    #                     # to the GUI side in a more convenient format.
+    #     ),
+    #     default=list, blank=True
+    # )
 
-    # TODO: fix this field so that there's a way to edit with the public
-    # interface
-    @property
-    def expected_student_file_patterns(self):
-        return [
-            Project.FilePatternTuple(obj[0], obj[1], obj[2])
-            for obj in self._expected_student_file_patterns]
+    # # TODO: fix this field so that there's a way to edit with the public
+    # # interface
+    # @property
+    # def expected_student_file_patterns(self):
+    #     return [
+    #         Project.FilePatternTuple(obj[0], obj[1], obj[2])
+    #         for obj in self._expected_student_file_patterns]
 
-    @expected_student_file_patterns.setter
-    def expected_student_file_patterns(self, value):
-        old_patterns = {
-            pat_obj.pattern for pat_obj in self.expected_student_file_patterns
-        }
+    # @expected_student_file_patterns.setter
+    # def expected_student_file_patterns(self, value):
+    #     old_patterns = {
+    #         pat_obj.pattern for pat_obj in self.expected_student_file_patterns
+    #     }
 
-        new_patterns = {
-            pat_obj.pattern if isinstance(pat_obj, Project.FilePatternTuple)
-            else pat_obj[0]
-            for pat_obj in value
-        }
+    #     new_patterns = {
+    #         pat_obj.pattern if isinstance(pat_obj, Project.FilePatternTuple)
+    #         else pat_obj[0]
+    #         for pat_obj in value
+    #     }
 
-        removed_patterns = old_patterns - new_patterns
+    #     removed_patterns = old_patterns - new_patterns
 
-        for pattern in removed_patterns:
-            tests_that_depend = AutograderTestCaseBase.objects.filter(
-                student_resource_files__contains=[pattern])
-            if tests_that_depend:
-                error_msg = (
-                    'Cannot remove the expected pattern: "{}". '
-                    'The test cases {} depend on it.'.format(
-                        pattern,
-                        ', '.join((test.name for test in tests_that_depend))
-                    )
-                )
-                raise exceptions.ValidationError(
-                    {'expected_student_file_patterns': error_msg})
+    #     for pattern in removed_patterns:
+    #         tests_that_depend = AutograderTestCaseBase.objects.filter(
+    #             student_resource_files__contains=[pattern])
+    #         if tests_that_depend:
+    #             error_msg = (
+    #                 'Cannot remove the expected pattern: "{}". '
+    #                 'The test cases {} depend on it.'.format(
+    #                     pattern,
+    #                     ', '.join((test.name for test in tests_that_depend))
+    #                 )
+    #             )
+    #             raise exceptions.ValidationError(
+    #                 {'expected_student_file_patterns': error_msg})
 
-        self._expected_student_file_patterns = value
+    #     self._expected_student_file_patterns = value
 
-    _expected_student_file_patterns = psql_fields.JSONField(
-        default=list, blank=True)
+    # _expected_student_file_patterns = psql_fields.JSONField(
+    #     default=list, blank=True)
 
     # -------------------------------------------------------------------------
 
-    def __init__(self, *args, **kwargs):
-        patterns = kwargs.pop('expected_student_file_patterns', [])
-        super().__init__(
-            *args, _expected_student_file_patterns=patterns, **kwargs)
+    # def __init__(self, *args, **kwargs):
+    #     patterns = kwargs.pop('expected_student_file_patterns', [])
+    #     super().__init__(
+    #         *args, _expected_student_file_patterns=patterns, **kwargs)
 
     def save(self, *args, **kwargs):
         if self.pk is None:
@@ -318,101 +318,101 @@ class Project(AutograderModel):
                 'Maximum group size must be greater than '
                 'or equal to minimum group size']
 
-        self.required_student_files = [
-            filename.strip() for filename in self.required_student_files]
+        # self.required_student_files = [
+        #     filename.strip() for filename in self.required_student_files]
 
-        required_files_errors = []
-        req_files_error_found = False
-        for filename in self.required_student_files:
-            try:
-                ut.check_user_provided_filename(filename)
+        # required_files_errors = []
+        # req_files_error_found = False
+        # for filename in self.required_student_files:
+        #     try:
+        #         ut.check_user_provided_filename(filename)
 
-                num_occurrences = ut.count_if(
-                    self.required_student_files, lambda f: f == filename)
-                if num_occurrences > 1:
-                    raise exceptions.ValidationError(
-                        'Duplicates are not allowed')
+        #         num_occurrences = ut.count_if(
+        #             self.required_student_files, lambda f: f == filename)
+        #         if num_occurrences > 1:
+        #             raise exceptions.ValidationError(
+        #                 'Duplicates are not allowed')
 
-                required_files_errors.append('')
-            except exceptions.ValidationError as e:
-                required_files_errors.append(e.messages)
-                req_files_error_found = True
+        #         required_files_errors.append('')
+        #     except exceptions.ValidationError as e:
+        #         required_files_errors.append(e.messages)
+        #         req_files_error_found = True
 
-        if req_files_error_found:
-            errors['required_student_files'] = required_files_errors
+        # if req_files_error_found:
+        #     errors['required_student_files'] = required_files_errors
 
-        file_pattern_errors = self._clean_expected_student_file_patterns()
-        if file_pattern_errors:
-            errors['expected_student_file_patterns'] = file_pattern_errors
+        # file_pattern_errors = self._clean_expected_student_file_patterns()
+        # if file_pattern_errors:
+        #     errors['expected_student_file_patterns'] = file_pattern_errors
 
         if errors:
             raise exceptions.ValidationError(errors)
 
-    def _clean_expected_student_file_patterns(self):
-        """
-        Cleans self.expected_student_file_patterns and returns a
-        dictionary of errors, if any. Returns None if no errors
-        were found.
-        """
-        cleaned_patterns = []
-        pattern_obj_errors = []
-        pat_obj_err_found = False
-        for pattern_obj in self.expected_student_file_patterns:
-            cleaned_pattern = pattern_obj.pattern.strip()
-            pattern_error = ''
-            try:
-                ut.check_shell_style_file_pattern(cleaned_pattern)
-                num_occurrences = ut.count_if(
-                    self.expected_student_file_patterns,
-                    lambda pat_tup: pat_tup.pattern == cleaned_pattern)
-                if num_occurrences > 1:
-                    raise exceptions.ValidationError(
-                        'Duplicate patterns are not allowed')
-            except exceptions.ValidationError as e:
-                pattern_error = e.messages
+    # def _clean_expected_student_file_patterns(self):
+    #     """
+    #     Cleans self.expected_student_file_patterns and returns a
+    #     dictionary of errors, if any. Returns None if no errors
+    #     were found.
+    #     """
+    #     cleaned_patterns = []
+    #     pattern_obj_errors = []
+    #     pat_obj_err_found = False
+    #     for pattern_obj in self.expected_student_file_patterns:
+    #         cleaned_pattern = pattern_obj.pattern.strip()
+    #         pattern_error = ''
+    #         try:
+    #             ut.check_shell_style_file_pattern(cleaned_pattern)
+    #             num_occurrences = ut.count_if(
+    #                 self.expected_student_file_patterns,
+    #                 lambda pat_tup: pat_tup.pattern == cleaned_pattern)
+    #             if num_occurrences > 1:
+    #                 raise exceptions.ValidationError(
+    #                     'Duplicate patterns are not allowed')
+    #         except exceptions.ValidationError as e:
+    #             pattern_error = e.messages
 
-            cleaned_min = pattern_obj.min_num_matches
-            min_error = ''
-            try:
-                cleaned_min = int(pattern_obj.min_num_matches)
+    #         cleaned_min = pattern_obj.min_num_matches
+    #         min_error = ''
+    #         try:
+    #             cleaned_min = int(pattern_obj.min_num_matches)
 
-                if cleaned_min < 0:
-                    min_error = 'This value cannot be negative'
-            except ValueError as e:
-                min_error = 'This value must be an integer'
+    #             if cleaned_min < 0:
+    #                 min_error = 'This value cannot be negative'
+    #         except ValueError as e:
+    #             min_error = 'This value must be an integer'
 
-            cleaned_max = pattern_obj.max_num_matches
-            max_error = ''
-            try:
-                cleaned_max = int(pattern_obj.max_num_matches)
+    #         cleaned_max = pattern_obj.max_num_matches
+    #         max_error = ''
+    #         try:
+    #             cleaned_max = int(pattern_obj.max_num_matches)
 
-                if cleaned_max < 0:
-                    max_error = 'This value cannot be negative'
+    #             if cleaned_max < 0:
+    #                 max_error = 'This value cannot be negative'
 
-                if not min_error and cleaned_max < cleaned_min:
-                    max_error = (
-                        'Maximum number of matches must be less than or '
-                        'equal to minimum number of matches')
-            except ValueError as e:
-                max_error = 'This value must be an integer'
+    #             if not min_error and cleaned_max < cleaned_min:
+    #                 max_error = (
+    #                     'Maximum number of matches must be less than or '
+    #                     'equal to minimum number of matches')
+    #         except ValueError as e:
+    #             max_error = 'This value must be an integer'
 
-            cleaned_patterns.append(
-                [cleaned_pattern, cleaned_min, cleaned_max])
-            if pattern_error or min_error or max_error:
-                pat_obj_err_found = True
-                pattern_obj_errors.append(
-                    json.dumps(
-                        {'pattern': pattern_error,
-                         'min_num_matches': min_error,
-                         'max_num_matches': max_error}))
-            else:
-                pattern_obj_errors.append(json.dumps({}))
+    #         cleaned_patterns.append(
+    #             [cleaned_pattern, cleaned_min, cleaned_max])
+    #         if pattern_error or min_error or max_error:
+    #             pat_obj_err_found = True
+    #             pattern_obj_errors.append(
+    #                 json.dumps(
+    #                     {'pattern': pattern_error,
+    #                      'min_num_matches': min_error,
+    #                      'max_num_matches': max_error}))
+    #         else:
+    #             pattern_obj_errors.append(json.dumps({}))
 
-        self._expected_student_file_patterns = cleaned_patterns
-        if pat_obj_err_found:
-            return pattern_obj_errors
+    #     self._expected_student_file_patterns = cleaned_patterns
+    #     if pat_obj_err_found:
+    #         return pattern_obj_errors
 
-        return None
+    #     return None
 
     # -------------------------------------------------------------------------
 
