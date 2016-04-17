@@ -62,7 +62,7 @@ class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
         super().setUp()
         self.COURSE_NAME = 'eecs280'
 
-    def test_course_root_dir_created_and_removed(self):
+    def test_course_root_dir_created(self):
         course = Course(name=self.COURSE_NAME)
 
         self.assertFalse(
@@ -72,6 +72,3 @@ class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
         expected_course_root_dir = ut.get_course_root_dir(course)
 
         self.assertTrue(os.path.isdir(expected_course_root_dir))
-
-        course.delete()
-        self.assertFalse(os.path.exists(expected_course_root_dir))

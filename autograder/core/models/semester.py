@@ -125,9 +125,3 @@ class Semester(AutograderModel):
             # thrown by os.makedirs will be handled at a higher level.
 
             os.makedirs(semester_root_dir)
-
-    def delete(self, *args, **kwargs):
-        semester_root_dir = ut.get_semester_root_dir(self)
-        super().delete(*args, **kwargs)
-
-        shutil.rmtree(semester_root_dir)

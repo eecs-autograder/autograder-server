@@ -63,9 +63,3 @@ class Course(AutograderModel):
             # thrown by os.makedirs will be handled at a higher level.
 
             os.makedirs(course_root_dir)
-
-    def delete(self, *args, **kwargs):
-        course_root_dir = ut.get_course_root_dir(self)
-        super().delete(*args, **kwargs)
-
-        shutil.rmtree(course_root_dir)
