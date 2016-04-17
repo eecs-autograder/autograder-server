@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('core', '0001_initial'),
+        ('core', '0001_squashed_0025_auto_20160417_1628'),
     ]
 
     operations = [

@@ -87,30 +87,30 @@ class FeedbackConfig(AutograderModel):
 
     ag_test = models.OneToOneField(AutograderTestCaseBase)
 
-    ag_test_name_fdbk = ag_fields.StringChoiceField(
-        choices=AGTestNameFdbkLevel.values,
+    ag_test_name_fdbk = ag_fields.ShortStringField(
+        choices=zip(AGTestNameFdbkLevel.values, AGTestNameFdbkLevel.values),
         default=AGTestNameFdbkLevel.show_real_name)
 
-    return_code_fdbk = ag_fields.StringChoiceField(
-        choices=ReturnCodeFdbkLevel.values,
+    return_code_fdbk = ag_fields.ShortStringField(
+        choices=zip(ReturnCodeFdbkLevel.values, ReturnCodeFdbkLevel.values),
         default=ReturnCodeFdbkLevel.no_feedback)
 
-    stdout_fdbk = ag_fields.StringChoiceField(
-        choices=StdoutFdbkLevel.values,
+    stdout_fdbk = ag_fields.ShortStringField(
+        choices=zip(StdoutFdbkLevel.values, StdoutFdbkLevel.values),
         default=StdoutFdbkLevel.no_feedback)
 
-    stderr_fdbk = ag_fields.StringChoiceField(
-        choices=StderrFdbkLevel.values,
+    stderr_fdbk = ag_fields.ShortStringField(
+        choices=zip(StderrFdbkLevel.values, StderrFdbkLevel.values),
         default=StderrFdbkLevel.no_feedback)
 
-    compilation_fdbk = ag_fields.StringChoiceField(
-        choices=CompilationFdbkLevel.values,
+    compilation_fdbk = ag_fields.ShortStringField(
+        choices=zip(CompilationFdbkLevel.values, CompilationFdbkLevel.values),
         default=CompilationFdbkLevel.no_feedback)
 
-    valgrind_fdbk = ag_fields.StringChoiceField(
-        choices=ValgrindFdbkLevel.values,
+    valgrind_fdbk = ag_fields.ShortStringField(
+        choices=zip(ValgrindFdbkLevel.values, ValgrindFdbkLevel.values),
         default=ValgrindFdbkLevel.no_feedback)
 
-    points_fdbk = ag_fields.StringChoiceField(
-        choices=PointsFdbkLevel.values,
+    points_fdbk = ag_fields.ShortStringField(
+        choices=zip(PointsFdbkLevel.values, PointsFdbkLevel.values),
         default=PointsFdbkLevel.hide)

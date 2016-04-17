@@ -5,10 +5,8 @@ import fnmatch
 from django.db import models, transaction
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core import files
-from django.contrib.postgres.fields import ArrayField
+import django.contrib.postgres.fields as pg_fields
 from django.utils import timezone
-
-from jsonfield import JSONField
 
 from autograder.utilities import fields as ag_fields
 from autograder.core.models import SubmissionGroup
@@ -202,7 +200,7 @@ class Submission(ModelValidatableOnSave):
         max_length=gc.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
         choices=_GRADING_STATUS_CHOICES)
 
-    invalid_reason_or_error = JSONField(default=list)
+    invalid_reason_or_error = pg_fields.JSONField(default=list)
 
     # -------------------------------------------------------------------------
 

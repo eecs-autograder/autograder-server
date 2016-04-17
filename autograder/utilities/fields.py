@@ -222,5 +222,18 @@ class ShortStringField(models.CharField):
 
 
 class StringChoiceField(ShortStringField):
-    def __init__(self, choices=[], **kwargs):
+    def __init__(self, choices=None, **kwargs):
+        if choices is None:
+            choices = []
+            # raise ValueError('"choices" parameter cannot not be None')
+
+        self.choices = choices
+
         super().__init__(choices=zip(choices, choices), **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.update({
+            'choices': self.choices,
+        })
+        return name, path, args, kwargs
