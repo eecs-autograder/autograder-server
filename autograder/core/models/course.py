@@ -7,8 +7,8 @@ from django.contrib.auth.models import User
 
 from .ag_model_base import AutograderModel
 
-import autograder.core.shared.global_constants as gc
 import autograder.core.shared.utilities as ut
+import autograder.utilities.fields as ag_fields
 
 
 class Course(AutograderModel):
@@ -21,8 +21,8 @@ class Course(AutograderModel):
     """
     DEFAULT_INCLUDE_FIELDS = ['name']
 
-    name = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, unique=True,
+    name = ag_fields.ShortStringField(
+        unique=True,
         validators=[validators.MinLengthValidator(1)],
         help_text='''The name of this course.
                   Must be unique, non-empty and non-null.''')

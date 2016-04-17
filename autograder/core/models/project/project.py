@@ -5,26 +5,26 @@ import json
 import copy
 
 from django.db import models, transaction
-from django.core.validators import MinValueValidator
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.contrib.postgres.fields import ArrayField, JSONField
+from django.core import validators
+from django.core import exceptions
+import django.contrib.postgres.fields as psql_fields
 from django.core import files
 
 # from jsonfield import JSONField
 
-from autograder.core.models import Semester
-from autograder.core.models.utils import (
-    ModelValidatableOnSave, ManagerWithValidateOnCreate)
+from ..ag_model_base import AutograderModel
+from ..semester import Semester
+
 import autograder.utilities.fields as ag_fields
 
-from .autograder_test_case.autograder_test_case_base import (
+from ..autograder_test_case.autograder_test_case_base import (
     AutograderTestCaseBase)
 
 import autograder.core.shared.global_constants as gc
 import autograder.core.shared.utilities as ut
 
 
-class Project(ModelValidatableOnSave):
+class Project(AutograderModel):
     """
     Represents a programming project for which students can
     submit solutions and have them evaluated.
@@ -100,10 +100,7 @@ class Project(ModelValidatableOnSave):
             Default value: empty list
 
             The pattern objects have the following fields:
-                pattern -- A string containing the actual pattern.
-                    This should be a shell-style file pattern suitable for
-                    use with Python's fnmatch.fnmatch()
-                    function (https://docs.python.org/3.4/library/fnmatch.html)
+                pattern --
 
                 min_num_matches -- The minimum number of files students are
                     required to submit that match file_pattern.
@@ -143,6 +140,8 @@ class Project(ModelValidatableOnSave):
         student_test_suites -- The student test suites that belong to
             this Project.
 
+        expected_student_file_patterns --
+
     Properties:
         uploaded_filenames -- The names of files that have been uploaded
             to this Project.
@@ -173,8 +172,6 @@ class Project(ModelValidatableOnSave):
     class Meta:
         unique_together = ('name', 'semester')
 
-    objects = ManagerWithValidateOnCreate()
-
     # -------------------------------------------------------------------------
 
     name = models.CharField(max_length=gc.MAX_CHAR_FIELD_LEN)
@@ -188,9 +185,9 @@ class Project(ModelValidatableOnSave):
         default=False)
 
     min_group_size = models.IntegerField(
-        default=1, validators=[MinValueValidator(1)])
+        default=1, validators=[validators.MinValueValidator(1)])
     max_group_size = models.IntegerField(
-        default=1, validators=[MinValueValidator(1)])
+        default=1, validators=[validators.MinValueValidator(1)])
 
     @property
     def uploaded_filenames(self):
@@ -217,11 +214,12 @@ class Project(ModelValidatableOnSave):
                         ', '.join((test.name for test in tests_that_depend))
                     )
                 )
-                raise ValidationError({'required_student_files': error_msg})
+                raise exceptions.ValidationError(
+                    {'required_student_files': error_msg})
 
         self._required_student_files = value
 
-    _required_student_files = ArrayField(
+    _required_student_files = psql_fields.ArrayField(
         models.CharField(
             max_length=gc.MAX_CHAR_FIELD_LEN,
             blank=True  # We are setting this here so that the clean method
@@ -265,12 +263,12 @@ class Project(ModelValidatableOnSave):
                         ', '.join((test.name for test in tests_that_depend))
                     )
                 )
-                raise ValidationError(
+                raise exceptions.ValidationError(
                     {'expected_student_file_patterns': error_msg})
 
         self._expected_student_file_patterns = value
 
-    _expected_student_file_patterns = JSONField(
+    _expected_student_file_patterns = psql_fields.JSONField(
         default=list, blank=True)
 
     # -------------------------------------------------------------------------
@@ -332,10 +330,11 @@ class Project(ModelValidatableOnSave):
                 num_occurrences = ut.count_if(
                     self.required_student_files, lambda f: f == filename)
                 if num_occurrences > 1:
-                    raise ValidationError('Duplicates are not allowed')
+                    raise exceptions.ValidationError(
+                        'Duplicates are not allowed')
 
                 required_files_errors.append('')
-            except ValidationError as e:
+            except exceptions.ValidationError as e:
                 required_files_errors.append(e.messages)
                 req_files_error_found = True
 
@@ -347,7 +346,7 @@ class Project(ModelValidatableOnSave):
             errors['expected_student_file_patterns'] = file_pattern_errors
 
         if errors:
-            raise ValidationError(errors)
+            raise exceptions.ValidationError(errors)
 
     def _clean_expected_student_file_patterns(self):
         """
@@ -367,8 +366,9 @@ class Project(ModelValidatableOnSave):
                     self.expected_student_file_patterns,
                     lambda pat_tup: pat_tup.pattern == cleaned_pattern)
                 if num_occurrences > 1:
-                    raise ValidationError('Duplicate patterns are not allowed')
-            except ValidationError as e:
+                    raise exceptions.ValidationError(
+                        'Duplicate patterns are not allowed')
+            except exceptions.ValidationError as e:
                 pattern_error = e.messages
 
             cleaned_min = pattern_obj.min_num_matches
@@ -436,7 +436,7 @@ class Project(ModelValidatableOnSave):
             # print(uploaded_file.name)
             ut.check_user_provided_filename(uploaded_file.name)
             if uploaded_file.name in self._uploaded_filenames:
-                raise ValidationError(
+                raise exceptions.ValidationError(
                     'File exists: {}'.format(uploaded_file.name))
             self._uploaded_filenames.append(uploaded_file.name)
 
@@ -466,7 +466,7 @@ class Project(ModelValidatableOnSave):
         tests_depend_on_file = self.autograder_test_cases.filter(
             test_resource_files__contains=[filename])
         if tests_depend_on_file:
-            raise ValidationError(
+            raise exceptions.ValidationError(
                 "One or more test cases depend on file " + filename)
 
         with transaction.atomic():
@@ -527,7 +527,7 @@ class Project(ModelValidatableOnSave):
 
     def _check_file_exists(self, filename):
         if filename not in self._uploaded_filenames:
-            raise ObjectDoesNotExist(
+            raise exceptions.ObjectDoesNotExist(
                 "File {0} for {1} {2} project {3} does not exist".format(
                     filename,
                     self.semester.course.name, self.semester.name,

@@ -9,8 +9,8 @@ from django.contrib.auth.models import User
 from .ag_model_base import AutograderModel
 from .course import Course
 
-import autograder.core.shared.global_constants as gc
 import autograder.core.shared.utilities as ut
+import autograder.utilities.fields as ag_fields
 
 
 class Semester(AutograderModel):
@@ -27,8 +27,7 @@ class Semester(AutograderModel):
 
     # -------------------------------------------------------------------------
 
-    name = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN,
+    name = ag_fields.ShortStringField(
         validators=[validators.MinLengthValidator(1)],
         help_text='''The name used to identify this Semester.
                   Must be non-empty and non-null.

@@ -7,6 +7,7 @@ from .notification import Notification
 from .course import Course
 from .semester import Semester
 from .project import Project
+from .project.expected_student_file_pattern import ExpectedStudentFilePattern
 
 from .submission_group import SubmissionGroup, SubmissionGroupInvitation
 from .submission import Submission

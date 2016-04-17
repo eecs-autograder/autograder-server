@@ -230,7 +230,8 @@ class StringArrayField(ValidatedArrayField):
 
 
 class ShortStringField(models.CharField):
-    def __init__(self, max_length=gc.MAX_CHAR_FIELD_LEN, strip=True, **kwargs):
+    def __init__(self, max_length=gc.MAX_CHAR_FIELD_LEN, strip=False,
+                 **kwargs):
         self.strip = strip
         super().__init__(max_length=max_length, **kwargs)
 
