@@ -1,8 +1,8 @@
 import os
 import copy
 
-from django.db import models
-from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.core import exceptions
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, RegexValidator)
 
@@ -249,8 +249,11 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     feedback_configuration = models.OneToOneField(
         FeedbackConfig,
-        help_text='''Specifies how much information should be
-            included in serialized run results.''')
+        blank=True,  # A default value is given is not specified
+        help_text='''Specifies how much information should be included
+            in serialized run results. If not specified on creation,
+            this field is initialized to a default-constructed
+            FeedbackConfig object.''')
 
     post_deadline_final_submission_feedback_configuration = (
         models.OneToOneField(
@@ -346,6 +349,16 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         super().__init__(*args, **kwargs)
         if self.use_valgrind and self.valgrind_flags is None:
             self.valgrind_flags = gc.DEFAULT_VALGRIND_FLAGS_WHEN_USED
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            try:
+                self.feedback_configuration
+            except exceptions.ObjectDoesNotExist:
+                self.feedback_configuration = (
+                    FeedbackConfig.objects.validate_and_create())
+
+            super().save(*args, **kwargs)
 
     def to_dict(self, **kwargs):
         result = super().to_dict(**kwargs)

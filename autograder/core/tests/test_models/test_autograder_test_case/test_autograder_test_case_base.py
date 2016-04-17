@@ -11,7 +11,6 @@ import autograder.core.shared.global_constants as gc
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
-
 from .models import _DummyAutograderTestCase
 
 
@@ -40,6 +39,88 @@ class _Shared:
 
 
 class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
+    def test_valid_initialization_with_defaults(self):
+        new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
+            name=self.TEST_NAME,
+            project=self.project)
+
+        new_test_case.refresh_from_db()
+
+        self.assertEqual(new_test_case, new_test_case)
+        self.assertEqual(self.TEST_NAME, new_test_case.name)
+        self.assertEqual(self.project, new_test_case.project)
+
+        self.assertEqual(new_test_case.command_line_arguments, [])
+        self.assertEqual(new_test_case.standard_input, "")
+        # self.assertEqual(new_test_case.test_resource_files, [])
+        # self.assertEqual(new_test_case.student_resource_files, [])
+
+        self.assertEqual(new_test_case.time_limit, 10)
+        self.assertFalse(new_test_case.allow_network_connections)
+        self.assertEqual(new_test_case.stack_size_limit,
+                         gc.DEFAULT_STACK_SIZE_LIMIT)
+        self.assertEqual(new_test_case.virtual_memory_limit,
+                         gc.DEFAULT_VIRTUAL_MEM_LIMIT)
+        self.assertEqual(new_test_case.process_spawn_limit,
+                         gc.DEFAULT_PROCESS_LIMIT)
+
+        self.assertIsNone(new_test_case.expected_return_code)
+        self.assertFalse(new_test_case.expect_any_nonzero_return_code)
+        self.assertEqual("", new_test_case.expected_standard_output)
+        self.assertEqual("", new_test_case.expected_standard_error_output)
+        self.assertFalse(new_test_case.use_valgrind)
+        self.assertIsNone(new_test_case.valgrind_flags)
+
+        self.assertEqual(0, new_test_case.points_for_correct_return_code)
+        self.assertEqual(0, new_test_case.points_for_correct_stdout)
+        self.assertEqual(0, new_test_case.points_for_correct_stderr)
+        self.assertEqual(0, new_test_case.deduction_for_valgrind_errors)
+        self.assertEqual(0, new_test_case.points_for_compilation_success)
+
+        self.assertEqual(
+            self.fdbk.to_dict(),
+            new_test_case.feedback_configuration.to_dict())
+        self.assertIsNone(
+            (new_test_case.
+             post_deadline_final_submission_feedback_configuration))
+
+    def test_valid_initialization_custom_values(self):
+        vals = {
+            'name': self.TEST_NAME,
+            'project': self.project,
+            'command_line_arguments': [
+                'spam', '--eggs', '--sausage=spam', '-p', 'input.in'],
+            'standard_input': "spameggsausagespam",
+            'expected_standard_output': "standardspaminputspam",
+            'expected_standard_error_output': "errorzspam",
+            'time_limit': random.randint(1, 60),
+            'stack_size_limit': random.randint(1, gc.MAX_STACK_SIZE_LIMIT),
+            'virtual_memory_limit': random.randint(
+                1, gc.MAX_VIRTUAL_MEM_LIMIT),
+            'process_spawn_limit': random.randint(1, gc.MAX_PROCESS_LIMIT),
+            'allow_network_connections': random.choice([True, False]),
+            'expected_return_code': random.randint(-3, 10),
+            'expect_any_nonzero_return_code': random.choice([True, False]),
+            'valgrind_flags': ['--leak-check=yes', '--error-exitcode=9000'],
+            'use_valgrind': random.choice([True, False]),
+            'points_for_correct_return_code': random.randint(1, 15),
+            'points_for_correct_stdout': random.randint(1, 15),
+            'points_for_correct_stderr': random.randint(1, 15),
+            'deduction_for_valgrind_errors': random.randint(1, 5),
+            'points_for_compilation_success': random.randint(1, 15),
+            'feedback_configuration': self._random_fdbk(),
+            'post_deadline_final_submission_feedback_configuration': (
+                self._random_fdbk())
+        }
+
+        new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
+            **vals)
+
+        new_test_case.refresh_from_db()
+
+        for key, value in vals.items():
+            self.assertEqual(value, getattr(new_test_case, key))
+
     def test_to_dict_default_fields(self):
         expected_fields = [
             'name',
@@ -98,89 +179,6 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
             'post_deadline_final_submission_feedback_configuration',
             'feedback_configuration')
 
-    def test_valid_initialization_with_defaults(self):
-        new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
-            name=self.TEST_NAME,
-            project=self.project,
-            feedback_configuration=self.fdbk)
-
-        new_test_case.refresh_from_db()
-
-        self.assertEqual(new_test_case, new_test_case)
-        self.assertEqual(self.TEST_NAME, new_test_case.name)
-        self.assertEqual(self.project, new_test_case.project)
-
-        self.assertEqual(new_test_case.command_line_arguments, [])
-        self.assertEqual(new_test_case.standard_input, "")
-        # self.assertEqual(new_test_case.test_resource_files, [])
-        # self.assertEqual(new_test_case.student_resource_files, [])
-
-        self.assertEqual(new_test_case.time_limit, 10)
-        self.assertFalse(new_test_case.allow_network_connections)
-        self.assertEqual(new_test_case.stack_size_limit,
-                         gc.DEFAULT_STACK_SIZE_LIMIT)
-        self.assertEqual(new_test_case.virtual_memory_limit,
-                         gc.DEFAULT_VIRTUAL_MEM_LIMIT)
-        self.assertEqual(new_test_case.process_spawn_limit,
-                         gc.DEFAULT_PROCESS_LIMIT)
-
-        self.assertIsNone(new_test_case.expected_return_code)
-        self.assertFalse(new_test_case.expect_any_nonzero_return_code)
-        self.assertEqual("", new_test_case.expected_standard_output)
-        self.assertEqual("", new_test_case.expected_standard_error_output)
-        self.assertFalse(new_test_case.use_valgrind)
-        self.assertIsNone(new_test_case.valgrind_flags)
-
-        self.assertEqual(0, new_test_case.points_for_correct_return_code)
-        self.assertEqual(0, new_test_case.points_for_correct_stdout)
-        self.assertEqual(0, new_test_case.points_for_correct_stderr)
-        self.assertEqual(0, new_test_case.deduction_for_valgrind_errors)
-        self.assertEqual(0, new_test_case.points_for_compilation_success)
-
-        self.assertEqual(
-            self.fdbk,
-            new_test_case.feedback_configuration)
-        self.assertIsNone(
-            (new_test_case.
-             post_deadline_final_submission_feedback_configuration))
-
-    def test_valid_initialization_custom_values(self):
-        vals = {
-            'name': self.TEST_NAME,
-            'project': self.project,
-            'command_line_arguments': [
-                'spam', '--eggs', '--sausage=spam', '-p', 'input.in'],
-            'standard_input': "spameggsausagespam",
-            'expected_standard_output': "standardspaminputspam",
-            'expected_standard_error_output': "errorzspam",
-            'time_limit': random.randint(1, 60),
-            'stack_size_limit': random.randint(1, gc.MAX_STACK_SIZE_LIMIT),
-            'virtual_memory_limit': random.randint(
-                1, gc.MAX_VIRTUAL_MEM_LIMIT),
-            'process_spawn_limit': random.randint(1, gc.MAX_PROCESS_LIMIT),
-            'allow_network_connections': random.choice([True, False]),
-            'expected_return_code': random.randint(-3, 10),
-            'expect_any_nonzero_return_code': random.choice([True, False]),
-            'valgrind_flags': ['--leak-check=yes', '--error-exitcode=9000'],
-            'use_valgrind': random.choice([True, False]),
-            'points_for_correct_return_code': random.randint(1, 15),
-            'points_for_correct_stdout': random.randint(1, 15),
-            'points_for_correct_stderr': random.randint(1, 15),
-            'deduction_for_valgrind_errors': random.randint(1, 5),
-            'points_for_compilation_success': random.randint(1, 15),
-            'feedback_configuration': self._random_fdbk(),
-            'post_deadline_final_submission_feedback_configuration': (
-                self._random_fdbk())
-        }
-
-        new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
-            **vals)
-
-        new_test_case.refresh_from_db()
-
-        for key, value in vals.items():
-            self.assertEqual(value, getattr(new_test_case, key))
-
     def test_exception_on_negative_point_distributions(self):
         with self.assertRaises(ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
@@ -207,33 +205,28 @@ class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
     def test_exception_on_non_unique_name_within_project(self):
         _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
-            project=self.project,
-            feedback_configuration=self.fdbk)
+            project=self.project)
 
         with self.assertRaises(ValidationError):
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME,
-                project=self.project,
-                feedback_configuration=self._random_fdbk())
+                project=self.project)
 
     def test_no_exception_same_name_different_project(self):
         _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
-            project=self.project,
-            feedback_configuration=self.fdbk)
+            project=self.project)
 
         other_project = obj_ut.build_project()
         _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
-            project=other_project,
-            feedback_configuration=self._random_fdbk())
+            project=other_project)
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name='',
-                project=self.project,
-                feedback_configuration=self.fdbk)
+                project=self.project)
 
         self.assertTrue('name' in cm.exception.message_dict)
 
@@ -241,8 +234,7 @@ class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
         with self.assertRaises(ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=None,
-                project=self.project,
-                feedback_configuration=self.fdbk)
+                project=self.project)
 
         self.assertTrue('name' in cm.exception.message_dict)
 
@@ -368,8 +360,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
     def test_no_exception_on_time_limit_is_parseable_int(self):
         ag_test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
-            time_limit='2',
-            feedback_configuration=self.fdbk)
+            time_limit='2')
 
         ag_test.refresh_from_db()
         self.assertEqual(ag_test.time_limit, 2)
@@ -450,8 +441,7 @@ class AGTestRetCodeTestCase(_Shared, TemporaryFilesystemTestCase):
         ag_test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
             project=self.project,
-            expect_any_nonzero_return_code=True,
-            feedback_configuration=self.fdbk)
+            expect_any_nonzero_return_code=True)
 
         ag_test.refresh_from_db()
         self.assertTrue(ag_test.expect_any_nonzero_return_code)
@@ -467,8 +457,7 @@ class AGTestRetCodeTestCase(_Shared, TemporaryFilesystemTestCase):
     def test_no_exception_on_expected_return_code_is_parseable_int(self):
         ag_test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME, project=self.project,
-            expected_return_code='2',
-            feedback_configuration=self.fdbk)
+            expected_return_code='2')
 
         ag_test.refresh_from_db()
         self.assertEqual(ag_test.expected_return_code, 2)
@@ -491,8 +480,7 @@ class AGTestValgrindSettingsTestCase(_Shared, TemporaryFilesystemTestCase):
         ag_test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
             project=self.project,
-            use_valgrind=True,
-            feedback_configuration=self.fdbk)
+            use_valgrind=True)
 
         ag_test.refresh_from_db()
 
