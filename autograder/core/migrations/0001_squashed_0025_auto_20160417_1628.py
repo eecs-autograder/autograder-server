@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 
 import autograder.core.models.ag_model_base
 import autograder.core.models.project.uploaded_file
-import autograder.core.models.student_test_suite.student_test_suite_base
 import autograder.core.shared.feedback_configuration
 import autograder.core.shared.utilities
 import autograder.utilities.fields
@@ -18,9 +17,6 @@ import re
 
 
 class Migration(migrations.Migration):
-
-    # replaces = [('core', '0001_initial'), ('core', '0002_auto_20160112_0030'), ('core', '0003_auto_20160112_0437'), ('core', '0004_auto_20160214_2249'), ('core', '0005_auto_20160321_0055'), ('core', '0006_auto_20160322_0107'), ('core', '0007_auto_20160323_0313'), ('core', '0008_auto_20160329_0236'), ('core', '0009_auto_20160411_0231'), ('core', '0010_auto_20160411_0303'), ('core', '0011_auto_20160417_0042'), ('core', '0012_auto_20160417_0046'), ('core', '0013_auto_20160417_0151'), ('core', '0014_requiredstudentfile'), ('core', '0015_auto_20160417_0157'), ('core', '0016_auto_20160417_0158'), ('core', '0017_auto_20160417_0204'), ('core', '0018_auto_20160417_0211'), ('core', '0019_auto_20160417_0213'), ('core', '0020_uploadedfile'), ('core', '0021_auto_20160417_0311'), ('core', '0022_auto_20160417_0312'), ('core', '0023_auto_20160417_0340'), ('core', '0024_auto_20160417_1519'), ('core', '0025_auto_20160417_1628')]
-
     initial = True
 
     dependencies = [
@@ -163,24 +159,6 @@ class Migration(migrations.Migration):
             ],
             bases=('core.polymorphicmodelvalidatableonsave',),
         ),
-        migrations.CreateModel(
-            name='StudentTestSuiteBase',
-            fields=[
-                ('polymorphicmodelvalidatableonsave_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='core.PolymorphicModelValidatableOnSave')),
-                ('name', models.CharField(max_length=255)),
-                ('student_test_case_filename_pattern', models.CharField(max_length=255)),
-                ('correct_implementation_filename', models.CharField(max_length=255)),
-                ('buggy_implementation_filenames', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(blank=True, max_length=255), blank=True, default=list, size=None)),
-                ('implementation_file_alias', autograder.utilities.fields.ShortStringField(blank=True, max_length=255, strip=True, validators=[autograder.core.models.student_test_suite.student_test_suite_base._validate_implementation_file_alias])),
-                ('suite_resource_filenames', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(blank=True, max_length=255), blank=True, default=list, size=None)),
-                ('time_limit', models.IntegerField(default=10, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(60)])),
-                ('hide_from_students', models.BooleanField(default=True)),
-                ('points_per_buggy_implementation_exposed', models.IntegerField(default=0, validators=[django.core.validators.MinValueValidator(0)])),
-                ('feedback_configuration', autograder.utilities.fields.JsonSerializableClassField(class_=autograder.core.shared.feedback_configuration.StudentTestSuiteFeedbackConfiguration, default=autograder.core.shared.feedback_configuration.StudentTestSuiteFeedbackConfiguration)),
-                ('post_deadline_final_submission_feedback_configuration', autograder.utilities.fields.JsonSerializableClassField(blank=True, class_=autograder.core.shared.feedback_configuration.StudentTestSuiteFeedbackConfiguration, default=None, null=True)),
-            ],
-            bases=('core.polymorphicmodelvalidatableonsave',),
-        ),
         migrations.AddField(
             model_name='submission',
             name='submission_group',
@@ -244,11 +222,6 @@ class Migration(migrations.Migration):
             },
             bases=('core.autogradertestcasebase',),
         ),
-        migrations.AddField(
-            model_name='studenttestsuitebase',
-            name='project',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='student_test_suites', to='core.Project'),
-        ),
         migrations.AlterUniqueTogether(
             name='semester',
             unique_together=set([('name', 'course')]),
@@ -266,15 +239,6 @@ class Migration(migrations.Migration):
             model_name='autogradertestcasebase',
             name='project',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='autograder_test_cases', to='core.Project'),
-        ),
-        migrations.AlterField(
-            model_name='studenttestsuitebase',
-            name='implementation_file_alias',
-            field=autograder.utilities.fields.ShortStringField(blank=True, max_length=255, strip=False, validators=[autograder.core.models.student_test_suite.student_test_suite_base._validate_implementation_file_alias]),
-        ),
-        migrations.AlterUniqueTogether(
-            name='studenttestsuitebase',
-            unique_together=set([('name', 'project')]),
         ),
         migrations.AddField(
             model_name='autogradertestcasebase',

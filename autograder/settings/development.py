@@ -87,7 +87,7 @@ INSTALLED_APPS = [
     # Dummy testing models
     'autograder.core.tests.test_models',
     'autograder.core.tests.test_models.test_autograder_test_case',
-    'autograder.core.tests.test_models.test_student_test_suite',
+    # 'autograder.core.tests.test_models.test_student_test_suite',
 ]
 
 MIDDLEWARE_CLASSES = (
