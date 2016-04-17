@@ -219,3 +219,8 @@ class ShortStringField(models.CharField):
 
     def from_db_value(self, value, expression, connection, context):
         return self.to_python(value)
+
+
+class StringChoiceField(ShortStringField):
+    def __init__(self, choices=[], **kwargs):
+        super().__init__(choices=zip(choices, choices), **kwargs)

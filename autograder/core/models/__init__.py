@@ -25,6 +25,8 @@ from .autograder_test_case.compiled_and_run_autograder_test_case import Compiled
 from .autograder_test_case.compilation_only_autograder_test_case import CompilationOnlyAutograderTestCase
 from .autograder_test_case.interpreted_autograder_test_case import InterpretedAutograderTestCase
 
+from .autograder_test_case.feedback_config import FeedbackConfig
+
 from .autograder_test_case import AutograderTestCaseFactory
 
 from .student_test_suite.student_test_suite_base import StudentTestSuiteBase

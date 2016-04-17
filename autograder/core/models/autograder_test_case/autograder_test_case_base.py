@@ -22,10 +22,7 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
     test cases used to evaluate student-submitted code.
 
     Fields:
-        name -- The name used to identify this test case.
-                Must be non-empty and non-null.
-                Must be unique among test cases associated with a given
-                project.
+        name --
                 This field is REQUIRED.
 
         project -- The Project this test case is associated with.
@@ -244,7 +241,11 @@ class AutograderTestCaseBase(PolymorphicModelValidatableOnSave):
 
     objects = PolymorphicManagerWithValidateOnCreate()
 
-    name = ag_fields.ShortStringField()
+    name = ag_fields.ShortStringField(
+        help_text='''The name used to identify this test case.
+            Must be non-empty and non-null.
+            Must be unique among test cases associated with a given
+            project.''')
     project = models.ForeignKey(
         'Project', related_name='autograder_test_cases')
 
