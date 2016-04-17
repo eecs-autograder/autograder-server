@@ -306,17 +306,10 @@ class Project(AutograderModel):
     def clean(self):
         super().clean()
 
-        if self.name:
-            self.name = self.name.strip()
-
-        errors = {}
-        if not self.name:
-            errors['name'] = "Name can't be empty"
-
         if self.max_group_size < self.min_group_size:
-            errors['max_group_size'] = [
-                'Maximum group size must be greater than '
-                'or equal to minimum group size']
+            raise exceptions.ValidationError(
+                {'max_group_size': ('Maximum group size must be greater than '
+                                    'or equal to minimum group size')})
 
         # self.required_student_files = [
         #     filename.strip() for filename in self.required_student_files]
@@ -345,8 +338,8 @@ class Project(AutograderModel):
         # if file_pattern_errors:
         #     errors['expected_student_file_patterns'] = file_pattern_errors
 
-        if errors:
-            raise exceptions.ValidationError(errors)
+        # if errors:
+        #     raise exceptions.ValidationError(errors)
 
     # def _clean_expected_student_file_patterns(self):
     #     """

@@ -8,7 +8,7 @@ from autograder.core.tests.temporary_filesystem_test_case import (
 import autograder.core.tests.dummy_object_utils as obj_ut
 
 
-class RequiredStudentFileTestCase(TemporaryFilesystemTestCase):
+class CreateRequiredStudentFileTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 

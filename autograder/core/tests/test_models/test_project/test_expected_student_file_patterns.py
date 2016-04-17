@@ -10,7 +10,7 @@ from autograder.core.tests.temporary_filesystem_test_case import (
 import autograder.core.tests.dummy_object_utils as obj_ut
 
 
-class ExpectedStudentFilePatternTestCase(TemporaryFilesystemTestCase):
+class CreateExpectedStudentFilePatternTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.project = obj_ut.build_project()
