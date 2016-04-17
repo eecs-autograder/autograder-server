@@ -1,9 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres import fields as pg_fields
-
-from picklefield.fields import PickledObjectField
 
 from autograder.utilities.json_serializable_interface import JsonSerializable
 
@@ -65,28 +62,6 @@ class JsonSerializableClassField(pg_fields.JSONField):
         super(pg_fields.JSONField, self).validate(value, model_instance)
 
 
-class ClassField(PickledObjectField):
-    def __init__(self, class_, **kwargs):
-        self._class = class_
-        super().__init__(**kwargs)
-
-    def deconstruct(self):
-        name, path, args, kwargs = super().deconstruct()
-        kwargs.update({
-            'class_': self._class
-        })
-        return name, path, args, kwargs
-
-    def get_prep_value(self, value):
-        if value is None or isinstance(value, self._class):
-            return super().get_prep_value(value)
-
-        raise TypeError(
-            'Error preparing value of type {} to the field {}. '
-            'Expected value of type {}'.format(
-                type(value), self.name, self._class))
-
-
 class ValidatedArrayField(pg_fields.ArrayField):
     """
     This field provides the same functionality as the postgres
@@ -127,13 +102,13 @@ class ValidatedArrayField(pg_fields.ArrayField):
         # The validate() function defined in ArrayField has the
         # behavior we want to get rid of, so we instead call
         # validate() on ArrayField's base class.
-        super(ArrayField, self).validate(value, model_instance)
+        super(pg_fields.ArrayField, self).validate(value, model_instance)
 
     def run_validators(self, value):
         # The run_validators() function defined in ArrayField has the
         # behavior we want to get rid of, so we instead call
         # run_validators() on ArrayField's base class.
-        super(ArrayField, self).run_validators(value)
+        super(pg_fields.ArrayField, self).run_validators(value)
 
 
 class StringArrayField(ValidatedArrayField):
@@ -219,21 +194,3 @@ class ShortStringField(models.CharField):
 
     def from_db_value(self, value, expression, connection, context):
         return self.to_python(value)
-
-
-# class StringChoiceField(ShortStringField):
-#     def __init__(self, choices=None, **kwargs):
-#         if choices is None:
-#             choices = []
-#             # raise ValueError('"choices" parameter cannot not be None')
-
-#         self.choices = choices
-
-#         super().__init__(choices=zip(choices, choices), **kwargs)
-
-#     def deconstruct(self):
-#         name, path, args, kwargs = super().deconstruct()
-#         kwargs.update({
-#             'choices': self.choices,
-#         })
-#         return name, path, args, kwargs

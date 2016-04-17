@@ -14,7 +14,6 @@ import django.contrib.postgres.fields.jsonb
 import django.core.validators
 from django.db import migrations, models
 import django.db.models.deletion
-import jsonfield.fields
 import re
 
 
@@ -108,7 +107,7 @@ class Migration(migrations.Migration):
                 ('discarded_files', autograder.utilities.fields.StringArrayField(allow_empty_strings=False, blank=True, default=list, max_string_length=255, size=None, string_validators=[], strip_strings=True)),
                 ('_timestamp', models.DateTimeField(auto_now_add=True)),
                 ('status', models.CharField(choices=[('received', 'Received'), ('queued', 'Queued'), ('being_graded', 'Being graded'), ('finished_grading', 'Finished grading'), ('invalid', 'Invalid'), ('error', 'Error')], default='received', max_length=255)),
-                ('invalid_reason_or_error', jsonfield.fields.JSONField(default=list)),
+                ('invalid_reason_or_error', django.contrib.postgres.fields.jsonb.JSONField(default=list)),
             ],
             options={
                 'ordering': ['pk'],
