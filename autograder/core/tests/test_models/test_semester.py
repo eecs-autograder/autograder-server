@@ -18,9 +18,6 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
         self.course = Course.objects.validate_and_create(name="eecs280")
         self.SEMESTER_NAME = "fall2015"
 
-    # -------------------------------------------------------------------------
-    # -------------------------------------------------------------------------
-
     def test_valid_initialization(self):
         new_semester = Semester.objects.validate_and_create(
             name=self.SEMESTER_NAME, course=self.course)
@@ -74,8 +71,6 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(expected_fields, semester.DEFAULT_INCLUDE_FIELDS)
 
 
-# -----------------------------------------------------------------------------
-
 class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
@@ -123,16 +118,11 @@ class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
             (self.user.username,), self.semester.semester_staff_names)
 
 
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
 class SemesterFilesystemTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.course = Course.objects.validate_and_create(name="eecs280")
         self.SEMESTER_NAME = "fall2015"
-
-    # -------------------------------------------------------------------------
 
     def test_semester_root_dir_created(self):
         semester = Semester(name=self.SEMESTER_NAME, course=self.course)

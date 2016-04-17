@@ -4,8 +4,6 @@ import shutil
 from django.test import TestCase
 from django.conf import settings
 
-# from django.core.cache import cache
-
 
 class TemporaryFilesystemTestCase(TestCase):
     """
@@ -30,12 +28,8 @@ class TemporaryFilesystemTestCase(TestCase):
         self.new_media_root = os.path.join(
             settings.BASE_DIR, 'tmp_filesystem')
 
-        # print("Creating: " + self.new_media_root)
-
         if os.path.isdir(self.new_media_root):
             print('Deleting temp filesystem')
-            # choice = input('Temp filesystem already exists. Delete it? [y/n] ')
-            # if choice.strip().lower() == 'y':
             shutil.rmtree(self.new_media_root)
 
         os.makedirs(self.new_media_root)
@@ -43,9 +37,4 @@ class TemporaryFilesystemTestCase(TestCase):
 
     def tearDown(self):
         settings.MEDIA_ROOT = self._old_media_root
-        # print("Deleting: " + self.new_media_root)
         shutil.rmtree(self.new_media_root)
-
-        # Remove when Django issue # is fixed
-        # assert settings.CACHE_BACKEND == 'locmem:///'
-        # [cache.delete(key) for key in cache._cache.keys()]

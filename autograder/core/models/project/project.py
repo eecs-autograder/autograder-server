@@ -122,8 +122,6 @@ class Project(AutograderModel):
             os.mkdir(project_files_dir)
             os.mkdir(project_submissions_dir)
 
-    # -------------------------------------------------------------------------
-
     def clean(self):
         super().clean()
 

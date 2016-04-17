@@ -89,18 +89,19 @@ class ClassField(PickledObjectField):
 
 class ValidatedArrayField(pg_fields.ArrayField):
     """
-    This field provides the same functionality as the postgres ArrayField
-    but with a more convenient validation process.
-    When evaluating the individual elements of the array, a list of
-    error messages is constructed that has a one-to-one correspondence
-    with the elements of the array. For example, if we're storing an array
-    of positive numbers, but the user provides [1, 2, -5, 4], the
-    corresponding list of error messages would contain
-    ['', '', 'Error: negative number', '']. The empty strings indicate
-    no error for the elements 1, 2, and 4, and the non-empty string indicates
-    the error caused by the -5 element. This list is then thrown as
-    part of a ValidationError.
+    This field provides the same functionality as the postgres
+    ArrayField but with a more convenient validation process. When
+    evaluating the individual elements of the array, a list of error
+    messages is constructed that has a one-to-one correspondence with
+    the elements of the array. For example, if we're storing an array of
+    positive numbers, but the user provides [1, 2, -5, 4], the
+    corresponding list of error messages would contain ['', '', 'Error:
+    negative number', '']. The empty strings indicate no error for the
+    elements 1, 2, and 4, and the non-empty string indicates the error
+    caused by the -5 element. This list is then thrown as part of a
+    ValidationError.
     """
+
     def clean(self, value, model_instance):
         value = super().clean(value, model_instance)
 
@@ -128,45 +129,11 @@ class ValidatedArrayField(pg_fields.ArrayField):
         # validate() on ArrayField's base class.
         super(ArrayField, self).validate(value, model_instance)
 
-        # print('value in validate:', value)
-
-        # # Run default field validation on each list item.
-        # try:
-        #     self._aggregate_errors(
-        #         value,
-        #         functools.partial(
-        #             self.base_field.validate, model_instance=model_instance))
-        # except Exception as e:
-        #     print('waaaaah')
-        #     print(e)
-
     def run_validators(self, value):
         # The run_validators() function defined in ArrayField has the
         # behavior we want to get rid of, so we instead call
         # run_validators() on ArrayField's base class.
         super(ArrayField, self).run_validators(value)
-
-        # print('value in run_validators:', value)
-
-        # # Run user-specified validators on each list item.
-        # self._aggregate_errors(
-        #     value,
-        #     lambda item: [
-        #         validator(item) for validator in self.base_field.validators])
-
-    # def _aggregate_errors(self, items, func):
-    #     errors = []
-    #     error_found = False
-    #     for item in items:
-    #         try:
-    #             func(item)
-    #             errors.append('')
-    #         except ValidationError as e:
-    #             errors.append(e.messages)
-    #             error_found = True
-
-    #     if error_found:
-    #         raise ValidationError(errors)
 
 
 class StringArrayField(ValidatedArrayField):
@@ -188,6 +155,7 @@ class StringArrayField(ValidatedArrayField):
             Default value: (autograder.shared.
                                 global_constants.MAX_CHAR_FIELD_LEN)
     """
+
     def __init__(self, strip_strings=True, allow_empty_strings=False,
                  string_validators=[], max_string_length=gc.MAX_CHAR_FIELD_LEN,
                  **kwargs):

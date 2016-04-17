@@ -25,13 +25,13 @@ PROJECT_SUBMISSIONS_DIRNAME = 'submission_groups'
 # The subdirectory of settings.MEDIA_ROOT where courses will be placed.
 FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'
 
-# This regular expression provides the whitelist to be used when validating
-# the names of user-uploaded files.
+# This regular expression provides the whitelist to be used when
+# validating the names of user-uploaded files.
 # Filenames must start with a capital or lowercase letter.
 # Filenames may contain:
 #   alphanumeric characters, hyphen, underscore, and period
-# Note that this allows the empty string, as emptiness should be specified
-# with the 'blank' argument to the respective field.
+# Note that this allows the empty string, as emptiness should be
+# specified with the 'blank' argument to the respective field.
 PROJECT_FILENAME_WHITELIST_REGEX = re.compile(
     r'[a-zA-Z][a-zA-Z0-9-_.]*|^$')
 # r"[a-zA-Z0-9-_.]+")
@@ -47,8 +47,8 @@ PROJECT_FILE_PATTERN_WHITELIST_REGEX = re.compile(
 
 DEFAULT_VALGRIND_FLAGS_WHEN_USED = ['--leak-check=full', '--error-exitcode=1']
 
-# This regular expression provides the whitelist to be used when validating
-# command line arguments used in an autograder test case.
+# This regular expression provides the whitelist to be used when
+# validating command line arguments used in an autograder test case.
 # Command line arguments can contain:
 #   alphanumeric characters, hyphen, underscore, equals, period, plus
 COMMAND_LINE_ARG_WHITELIST_REGEX = re.compile(

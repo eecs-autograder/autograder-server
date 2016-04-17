@@ -1,5 +1,4 @@
 from django.db import models
-from django.core import validators
 
 from ..ag_model_base import AutograderModel
 from .project import Project

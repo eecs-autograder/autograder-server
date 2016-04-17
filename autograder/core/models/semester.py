@@ -1,5 +1,4 @@
 import os
-import shutil
 import itertools
 
 from django.db import models
@@ -25,8 +24,6 @@ class Semester(AutograderModel):
 
     DEFAULT_INCLUDE_FIELDS = ['name', 'course']
 
-    # -------------------------------------------------------------------------
-
     name = ag_fields.ShortStringField(
         validators=[validators.MinLengthValidator(1)],
         help_text='''The name used to identify this Semester.
@@ -51,6 +48,21 @@ class Semester(AutograderModel):
                   associated with this Semester and may be in
                   SubmissionGroups together.''')
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        semester_root_dir = ut.get_semester_root_dir(self)
+        if not os.path.isdir(semester_root_dir):
+            # Since the database is in charge or validating the uniqueness
+            # of this semester, we can assume at this point that creating
+            # the semester directory will succeed. If for some reason it fails,
+            # this will be considered a more severe error, and the OSError
+            # thrown by os.makedirs will be handled at a higher level.
+
+            os.makedirs(semester_root_dir)
+
+    # -------------------------------------------------------------------------
+
     @property
     def semester_staff_names(self):
         """
@@ -70,26 +82,6 @@ class Semester(AutograderModel):
         Semester.
         """
         return list(user.username for user in self.enrolled_students.all())
-
-    # -------------------------------------------------------------------------
-    # -------------------------------------------------------------------------
-
-    @staticmethod
-    def get_staff_semesters_for_user(user):
-        """
-        Returns an iterable of Semesters for which the given user is
-        a staff member.
-        Note that if user is an administrator for this Semester's Course,
-        all Semesters for that Course will be returned.
-        """
-        staff_semesters = user.semesters_is_staff_for.all()
-        staff_semester_pks = (semester.pk for semester in staff_semesters)
-        return itertools.chain(
-            user.semesters_is_staff_for.all(),
-            itertools.chain.from_iterable(
-                (course.semesters.exclude(pk__in=staff_semester_pks)
-                    for course in user.courses_is_admin_for.all()))
-        )
 
     # -------------------------------------------------------------------------
 
@@ -113,15 +105,19 @@ class Semester(AutograderModel):
 
     # -------------------------------------------------------------------------
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        semester_root_dir = ut.get_semester_root_dir(self)
-        if not os.path.isdir(semester_root_dir):
-            # Since the database is in charge or validating the uniqueness
-            # of this semester, we can assume at this point that creating
-            # the semester directory will succeed. If for some reason it fails,
-            # this will be considered a more severe error, and the OSError
-            # thrown by os.makedirs will be handled at a higher level.
-
-            os.makedirs(semester_root_dir)
+    @staticmethod
+    def get_staff_semesters_for_user(user):
+        """
+        Returns an iterable of Semesters for which the given user is
+        a staff member.
+        Note that if user is an administrator for this Semester's Course,
+        all Semesters for that Course will be returned.
+        """
+        staff_semesters = user.semesters_is_staff_for.all()
+        staff_semester_pks = (semester.pk for semester in staff_semesters)
+        return itertools.chain(
+            user.semesters_is_staff_for.all(),
+            itertools.chain.from_iterable(
+                (course.semesters.exclude(pk__in=staff_semester_pks)
+                    for course in user.courses_is_admin_for.all()))
+        )
