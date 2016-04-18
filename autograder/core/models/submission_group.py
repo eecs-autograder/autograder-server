@@ -89,6 +89,13 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
     Member functions:
         invitee_accept
     """
+    DEFAULT_INCLUDE_FIELDS = [
+        'invitation_creator',
+        'project',
+        'invited_usernames',
+        'invitees_who_accepted',
+    ]
+
     invited_users = models.ManyToManyField(
         User, related_name='group_invitations_received')
     invitation_creator = models.ForeignKey(
@@ -124,6 +131,14 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
 
         self._invitees_who_accepted.append(username)
         self.save()
+
+    def to_dict(self, **kwargs):
+        result = super().to_dict(**kwargs)
+
+        if 'invitation_creator' in result:
+            result['invitation_creator'] = self.invitation_creator.username
+
+        return result
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -200,6 +215,12 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         clean()
         save()
     """
+    DEFAULT_INCLUDE_FIELDS = [
+        'project',
+        'extended_due_date',
+        'member_names',
+    ]
+
     objects = SubmissionGroupManager()
 
     members = models.ManyToManyField(User, related_name="groups_is_member_of")

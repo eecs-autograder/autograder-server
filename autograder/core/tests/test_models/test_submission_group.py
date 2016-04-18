@@ -35,6 +35,30 @@ class SubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
 
         # print(self.project.semester.enrolled_students.all())
 
+    def test_to_dict_default_fields(self):
+        expected_fields = [
+            'project',
+            'invited_usernames',
+            'invitees_who_accepted',
+            'invitation_creator'
+        ]
+
+        self.assertCountEqual(expected_fields,
+                              SubmissionGroupInvitation.DEFAULT_INCLUDE_FIELDS)
+
+    def test_invitation_creator_username_expanded(self):
+        invitation = SubmissionGroupInvitation.objects.validate_and_create(
+            invited_users=self.to_invite_usernames,
+            invitation_creator=self.invitation_creator,
+            project=self.project)
+
+        result = invitation.to_dict()
+        self.assertEqual(self.invitation_creator.username,
+                         result['invitation_creator'])
+
+        result = invitation.to_dict(exclude_fields=['invitation_creator'])
+        self.assertNotIn('invitation_creator', result)
+
     def test_valid_initialization(self):
         invitation = SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite_usernames,
@@ -355,6 +379,16 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         self.non_enrolled_group = obj_ut.create_dummy_users(2)
 
     # -------------------------------------------------------------------------
+
+    def test_to_dict_default_fields(self):
+        expected_fields = [
+            'member_names',
+            'project',
+            'extended_due_date',
+        ]
+
+        self.assertCountEqual(expected_fields,
+                              SubmissionGroup.DEFAULT_INCLUDE_FIELDS)
 
     def test_valid_initialization_with_defaults(self):
         group = SubmissionGroup.objects.validate_and_create(
