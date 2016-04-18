@@ -29,11 +29,13 @@ class ExpectedStudentFilePattern(AutograderModel):
             matching characters. This string must not be empty.''')
 
     min_num_matches = models.IntegerField(
+        default=1,
         validators=[validators.MinValueValidator(0)],
         help_text='''The minimum number of submitted student files that
             should match the pattern. Must be non-negative.''')
 
     max_num_matches = models.IntegerField(
+        default=1,
         help_text='''The maximum number of submitted student files that
             can match the pattern. Must be >= min_num_matches''')
 

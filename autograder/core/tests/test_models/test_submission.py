@@ -274,7 +274,8 @@ class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
                 if i == 3:
                     expected.append(sub)
 
-        sort_key = lambda obj: obj.pk
+        def sort_key(obj):
+            return obj.pk
         actual = sorted(
             Submission.get_most_recent_submissions(self.project),
             key=sort_key)

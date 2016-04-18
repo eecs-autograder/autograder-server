@@ -17,7 +17,19 @@ class CreateExpectedStudentFilePatternTestCase(TemporaryFilesystemTestCase):
 
         self.valid_pattern = 'test_[0-4][!a-z]?.*.cpp'
 
-    def test_valid_create(self):
+    def test_valid_create_defaults(self):
+        pattern = ExpectedStudentFilePattern.objects.validate_and_create(
+            project=self.project,
+            pattern=self.valid_pattern)
+
+        pattern.refresh_from_db()
+
+        self.assertEqual(self.project, pattern.project)
+        self.assertEqual(self.valid_pattern, pattern.pattern)
+        self.assertEqual(1, pattern.min_num_matches)
+        self.assertEqual(1, pattern.max_num_matches)
+
+    def test_valid_create_no_defaults(self):
         min_matches = random.randint(0, 2)
         max_matches = min_matches + random.randint(0, 2)
         pattern = ExpectedStudentFilePattern.objects.validate_and_create(

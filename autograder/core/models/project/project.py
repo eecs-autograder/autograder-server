@@ -27,8 +27,6 @@ class Project(AutograderModel):
         uploaded_files -- Resource files to be used in project test
             cases.
 
-        required_student_files -- Files that students must submit.
-
         expected_student_file_patterns -- Patterns that
             student-submitted files can or should match.
     """
