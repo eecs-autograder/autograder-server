@@ -15,6 +15,10 @@ class _SetUpBase:
     def setUp(self):
         super().setUp()
 
+        # self.project = obj_ut.build_project()
+        # self.group = ag_models.SubmissionGroup.objects.validate_and_create(
+        #     )
+
         self.submitted_filename = 'my_file.py'
         self.project_filename = 'testy.py'
 

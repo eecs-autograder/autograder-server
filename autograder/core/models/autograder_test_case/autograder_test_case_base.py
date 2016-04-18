@@ -311,8 +311,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         blank=True,
         help_text='''The name of the executable program that should be
             produced by the compiler. This is the program that will be
-            tested. If empty, the executable will be arbitrarily
-            named.''')
+            tested.''')
     # validators=[ut.check_user_provided_filename],
     # default="compiled_program")
 

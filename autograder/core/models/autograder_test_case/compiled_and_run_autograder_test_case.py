@@ -2,8 +2,6 @@ from .compiled_autograder_test_case import CompiledAutograderTestCase
 
 from ..autograder_test_case_result import AutograderTestCaseResult
 
-# from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
-
 
 class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
     """
@@ -13,7 +11,6 @@ class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
     Overridden methods:
         run()
     """
-    # objects = PolymorphicManagerWithValidateOnCreate()
     class Meta:
         proxy = True
 

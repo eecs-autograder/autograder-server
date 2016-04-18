@@ -104,9 +104,9 @@ class SubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
             self.to_invite_usernames, invitation.invitees_who_accepted)
         self.assertTrue(invitation.all_invitees_accepted)
 
-    def test_exception_on_normal_create_method(self):
-        with self.assertRaises(NotImplementedError):
-            SubmissionGroup.objects.create(project=self.project)
+    # def test_exception_on_normal_create_method(self):
+    #     with self.assertRaises(NotImplementedError):
+    #         SubmissionGroup.objects.create(project=self.project)
 
     # def test_exception_on_no_invitation_creator(self):
     #     with self.assertRaises(ValidationError) as cm:
@@ -347,10 +347,10 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
             name='my_project', semester=self.semester, max_group_size=2)
 
         self.enrolled_group = obj_ut.create_dummy_users(2)
-        self.semester.add_enrolled_students(*self.enrolled_group)
+        self.semester.enrolled_students.add(*self.enrolled_group)
 
         self.staff_group = obj_ut.create_dummy_users(2)
-        self.semester.add_semester_staff(*self.staff_group)
+        self.semester.staff.add(*self.staff_group)
 
         self.non_enrolled_group = obj_ut.create_dummy_users(2)
 
@@ -425,7 +425,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         members = [user.username for user in existant_users] + ['joe', 'bob']
 
         self.project.allow_submissions_from_non_enrolled_students = True
-        self.project.validate_and_save()
+        self.project.save()
 
         group = SubmissionGroup.objects.validate_and_create(
             members=members, project=self.project,
@@ -456,7 +456,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
     def test_valid_override_group_min_size(self):
         self.project.min_group_size = 10
         self.project.max_group_size = 10
-        self.project.validate_and_save()
+        self.project.save()
         group = SubmissionGroup.objects.validate_and_create(
             members=(user.username for user in self.enrolled_group),
             project=self.project,
@@ -498,7 +498,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         members = [user.username for user in existant_users] + ['joe', 'bob']
 
         self.project.allow_submissions_from_non_enrolled_students = True
-        self.project.validate_and_save()
+        self.project.save()
 
         group.update_group(members, check_project_group_limits=False)
 
@@ -533,7 +533,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
 
         self.project.min_group_size = 10
         self.project.max_group_size = 10
-        self.project.validate_and_save()
+        self.project.save()
 
         with self.assertRaises(ValidationError) as cm:
             group.update_group((user.username for user in new_members))
@@ -547,7 +547,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
 
         self.project.min_group_size = 10
         self.project.max_group_size = 10
-        self.project.validate_and_save()
+        self.project.save()
 
         new_members = obj_ut.create_dummy_users(2)
         self.project.semester.enrolled_students.add(*new_members)
@@ -583,9 +583,9 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         with self.assertRaises(ValidationError):
             group.update_group([], check_project_group_limits=False)
 
-    def test_exception_on_normal_create_method(self):
-        with self.assertRaises(NotImplementedError):
-            SubmissionGroup.objects.create(project=self.project)
+    # def test_exception_on_normal_create_method(self):
+    #     with self.assertRaises(NotImplementedError):
+    #         SubmissionGroup.objects.create(project=self.project)
 
     def test_exception_on_too_few_group_members(self):
         with self.assertRaises(ValidationError):
@@ -595,7 +595,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         self.assertEqual([], list(SubmissionGroup.objects.all()))
 
         self.project.min_group_size = 2
-        self.project.validate_and_save()
+        self.project.save()
         with self.assertRaises(ValidationError):
             SubmissionGroup.objects.validate_and_create(
                 members=self.enrolled_group[0:1],
@@ -607,7 +607,7 @@ class SubmissionGroupTestCase(TemporaryFilesystemTestCase):
         self.project.save()
 
         new_user = obj_ut.create_dummy_user()
-        self.semester.add_enrolled_students(new_user)
+        self.semester.enrolled_students.add(new_user)
         self.enrolled_group.append(new_user)
 
         with self.assertRaises(ValidationError):

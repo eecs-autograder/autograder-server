@@ -7,6 +7,8 @@ from autograder.core.models import (
     Project, Semester, Course,
     AutograderTestCaseFactory, AutograderTestCaseBase)
 
+import autograder.core.models as ag_models
+
 from autograder.security.autograder_sandbox import AutograderSandbox
 
 
@@ -32,7 +34,7 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
 
         # We'll be writing the file manually for these tests, so the
         # "real" file in the project directory doesn't really matter.
-        self.project.add_project_file(
+        self.project.uploaded_files.add(
             SimpleUploadedFile(self.cpp_filename, b''))
 
         self.test_case_starter = AutograderTestCaseFactory.validate_and_create(

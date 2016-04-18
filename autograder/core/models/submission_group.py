@@ -1,21 +1,21 @@
 import os
 import itertools
 
-from django.db import models, transaction, connection
+from django.db import models, transaction
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
 
 from autograder.core.models import Project
-from autograder.core.models.utils import (
-    ModelValidatableOnSave, ManagerWithValidateOnCreate)
+# from autograder.core.models.utils import (
+#     ModelValidatableOnSave, ManagerWithValidateOnCreate)
+from . import ag_model_base
 
 from autograder.utilities import fields as ag_fields
 
 import autograder.core.shared.utilities as ut
 
 
-class SubmissionGroupInvitationManager(ManagerWithValidateOnCreate):
+class SubmissionGroupInvitationManager(ag_model_base.AutograderModelManager):
     def validate_and_create(self, **kwargs):
         """
         The 'invited_users' argument to this function should be an
@@ -59,7 +59,7 @@ class SubmissionGroupInvitationManager(ManagerWithValidateOnCreate):
             return invitation
 
 
-class SubmissionGroupInvitation(ModelValidatableOnSave):
+class SubmissionGroupInvitation(ag_model_base.AutograderModel):
     """
     This class stores an invitation for a set of users to create a
     SubmissionGroup together.
@@ -129,7 +129,7 @@ class SubmissionGroupInvitation(ModelValidatableOnSave):
 # -----------------------------------------------------------------------------
 
 
-class SubmissionGroupManager(ManagerWithValidateOnCreate):
+class SubmissionGroupManager(ag_model_base.AutograderModelManager):
     # TODO: rename check_project_group_limits to check_project_group_size_limits
     def validate_and_create(self, check_project_group_limits=True, **kwargs):
         """
@@ -158,7 +158,7 @@ class SubmissionGroupManager(ManagerWithValidateOnCreate):
             return group
 
 
-class SubmissionGroup(ModelValidatableOnSave):
+class SubmissionGroup(ag_model_base.AutograderModel):
     """
     This class represents a group of students that can submit
     to a particular project.
