@@ -84,18 +84,17 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
         """
         return set(self.invited_usernames) == set(self._invitees_who_accepted)
 
-    def invitee_accept(self, username):
+    def invitee_accept(self, user):
         """
-        Marks the user with the given name as having accepted the group
-        invitation.
+        Marks the given user as having accepted the group invitation.
         """
-        if username == self.invitation_creator.username:
+        if user == self.invitation_creator:
             return
 
-        if username in self.invitees_who_accepted:
+        if user in self.invitees_who_accepted:
             return
 
-        self._invitees_who_accepted.append(username)
+        self._invitees_who_accepted.append(user.username)
         self.save()
 
     def to_dict(self, **kwargs):
