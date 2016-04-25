@@ -25,6 +25,7 @@ class ManagerWithValidateOnCreate(models.Manager):
         then calling save.
 
     """
+
     def validate_and_create(self, **kwargs):
         model = self.model(**kwargs)
         model.full_clean()

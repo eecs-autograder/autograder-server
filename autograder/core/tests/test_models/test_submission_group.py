@@ -3,7 +3,6 @@ import datetime
 import itertools
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-# from django.db import connection, transaction
 from django.contrib.auth.models import User
 from django.utils import timezone
 
@@ -48,7 +47,7 @@ class SubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
 
     def test_invitation_creator_username_expanded(self):
         invitation = SubmissionGroupInvitation.objects.validate_and_create(
-            invited_users=self.to_invite_usernames,
+            invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
 
@@ -61,20 +60,18 @@ class SubmissionGroupInvitationTestCase(TemporaryFilesystemTestCase):
 
     def test_valid_initialization(self):
         invitation = SubmissionGroupInvitation.objects.validate_and_create(
-            invited_users=self.to_invite_usernames,
+            invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
 
-        loaded = SubmissionGroupInvitation.objects.get(pk=invitation.pk)
-        self.assertEqual(self.invitation_creator_username,
-                         loaded.invitation_creator.username)
+        invitation.refresh_from_db()
         self.assertEqual(
-            self.invitation_creator, loaded.invitation_creator)
+            self.invitation_creator, invitation.invitation_creator)
 
-        self.assertCountEqual(self.to_invite, loaded.invited_users.all())
-        self.assertCountEqual(
-            self.to_invite_usernames, loaded.invited_usernames)
-        self.assertEqual(self.project, loaded.project)
+        self.assertCountEqual(self.to_invite, invitation.invited_users.all())
+        self.assertEqual(self.project, invitation.project)
+        self.assertCountEqual([], invitation.invitees_who_accepted)
+        self.assertFalse(invitation.all_invitees_accepted)
 
     def test_invite_users_that_do_not_exist_yet(self):
         existant_users = obj_ut.create_dummy_users(2)
