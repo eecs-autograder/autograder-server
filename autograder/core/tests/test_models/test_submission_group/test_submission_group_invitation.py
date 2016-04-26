@@ -1,17 +1,12 @@
 import itertools
 
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-# from django.contrib.auth.models import User
-# from django.utils import timezone
+from django.core import exceptions
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
-
-from autograder.core.models import (
-    Project, Semester, Course, SubmissionGroup, SubmissionGroupInvitation)
-
-# import autograder.core.shared.utilities as ut
 import autograder.core.tests.dummy_object_utils as obj_ut
+
+import autograder.core.models as ag_models
 
 
 class _SetUp:
@@ -30,8 +25,6 @@ class _SetUp:
                 'enrolled_students': list(itertools.chain(
                     [self.invitation_creator], self.to_invite))})
 
-        # print(self.project.semester.enrolled_students.all())
-
 
 class MiscSubmissionGroupInvitationTestCase(_SetUp,
                                             TemporaryFilesystemTestCase):
@@ -43,11 +36,12 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp,
             'invitation_creator'
         ]
 
-        self.assertCountEqual(expected_fields,
-                              SubmissionGroupInvitation.DEFAULT_INCLUDE_FIELDS)
+        self.assertCountEqual(
+            expected_fields,
+            ag_models.SubmissionGroupInvitation.DEFAULT_INCLUDE_FIELDS)
 
     def test_invitation_creator_username_expanded(self):
-        invitation = SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -60,7 +54,7 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp,
         self.assertNotIn('invitation_creator', result)
 
     def test_valid_initialization(self):
-        invitation = SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -74,36 +68,8 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp,
         self.assertCountEqual([], invitation.invitees_who_accepted)
         self.assertFalse(invitation.all_invitees_accepted)
 
-    # def test_invite_users_that_do_not_exist_yet(self):
-    #     existent_users = obj_ut.create_dummy_users(2)
-    #     non_existant_usernames = ['joe', 'bob', 'steve']
-    #     new_usernames = (non_existant_usernames +
-    #                      [user.username for user in existent_users])
-
-    #     self.project.allow_submissions_from_non_enrolled_students = True
-    #     self.project.max_group_size = 6
-    #     self.project.save()
-
-    #     self.invitation_creator.semesters_is_enrolled_in.remove(
-    #         self.project.semester)
-
-    #     for username in non_existant_usernames:
-    #         with self.assertRaises(ObjectDoesNotExist):
-    #             User.objects.get(username=username)
-
-    #     invitation = SubmissionGroupInvitation.objects.validate_and_create(
-    #         invited_users=new_usernames,
-    #         invitation_creator=self.invitation_creator,
-    #         project=self.project)
-
-    #     users = User.objects.filter(username__in=new_usernames)
-    #     self.assertCountEqual(new_usernames, (user.username for user in users))
-    #     loaded = SubmissionGroupInvitation.objects.get(pk=invitation.pk)
-
-    #     self.assertCountEqual(users, loaded.invited_users.all())
-
     def test_invitee_accept(self):
-        invitation = SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -115,7 +81,7 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp,
         self.assertFalse(invitation.all_invitees_accepted)
 
     def test_all_members_accepted(self):
-        invitation = SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -127,25 +93,14 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp,
             self.to_invite_usernames, invitation.invitees_who_accepted)
         self.assertTrue(invitation.all_invitees_accepted)
 
-    # def test_exception_on_normal_create_method(self):
-    #     with self.assertRaises(NotImplementedError):
-    #         SubmissionGroup.objects.create(project=self.project)
-
-    # def test_exception_on_no_invitation_creator(self):
-    #     with self.assertRaises(ValidationError) as cm:
-    #         SubmissionGroupInvitation.objects.validate_and_create(
-    #             invited_users=self.to_invite_usernames, project=self.project)
-
-    #     self.assertTrue('invitation_creator' in cm.exception.message_dict)
-
 
 class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
     def test_exception_on_no_invitees(self):
         self.project.min_group_size = 1
         self.project.save()
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
                 invited_users=[],
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -156,8 +111,8 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.project.min_group_size = 3
         self.project.save()
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite[:1],
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -166,8 +121,8 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
 
     def test_exception_on_too_many_invitees(self):
         self.to_invite.append(obj_ut.create_dummy_user())
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -175,26 +130,26 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
     def test_exception_on_invitee_already_in_another_group(self):
-        SubmissionGroup.objects.validate_and_create(
+        ag_models.SubmissionGroup.objects.validate_and_create(
             project=self.project,
-            members=self.to_invite_usernames[:1])
+            members=self.to_invite[:1])
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
     def test_exception_on_invitation_creator_already_in_another_group(self):
-        SubmissionGroup.objects.validate_and_create(
+        ag_models.SubmissionGroup.objects.validate_and_create(
             project=self.project,
-            members=[self.invitation_creator_username])
+            members=[self.invitation_creator])
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
@@ -204,9 +159,9 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.to_invite[1].semesters_is_enrolled_in.remove(
             self.project.semester)
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
@@ -216,9 +171,9 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.invitation_creator.semesters_is_enrolled_in.remove(
             self.project.semester)
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
@@ -230,8 +185,8 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
             user.semesters_is_staff_for.add(self.project.semester)
             self.assertTrue(self.project.semester.is_semester_staff(user))
 
-        SubmissionGroupInvitation.objects.validate_and_create(
-            invited_users=self.to_invite_usernames,
+        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
 
@@ -241,9 +196,9 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
             user.semesters_is_enrolled_in.remove(self.project.semester)
             self.assertFalse(self.project.semester.is_enrolled_student(user))
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
@@ -256,8 +211,8 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
             user.semesters_is_enrolled_in.remove(self.project.semester)
             self.assertFalse(self.project.semester.is_enrolled_student(user))
 
-        SubmissionGroupInvitation.objects.validate_and_create(
-            invited_users=self.to_invite_usernames,
+        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
 
@@ -267,9 +222,9 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
 
         self.to_invite[0].semesters_is_staff_for.add(self.project.semester)
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
@@ -281,9 +236,9 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.invitation_creator.semesters_is_staff_for.add(
             self.project.semester)
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
@@ -301,9 +256,9 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
         for user in self.to_invite:
             user.semesters_is_enrolled_in.remove(self.project.semester)
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
@@ -314,9 +269,9 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
             user.semesters_is_enrolled_in.remove(self.project.semester)
             user.semesters_is_staff_for.add(self.project.semester)
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
@@ -329,9 +284,9 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.invitation_creator.semesters_is_enrolled_in.remove(
             self.project.semester)
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 
@@ -348,9 +303,9 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
             user.semesters_is_enrolled_in.remove(self.project.semester)
             user.semesters_is_staff_for.add(self.project.semester)
 
-        with self.assertRaises(ValidationError) as cm:
-            SubmissionGroupInvitation.objects.validate_and_create(
-                invited_users=self.to_invite_usernames,
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
 

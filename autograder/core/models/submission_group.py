@@ -61,6 +61,12 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
 
     objects = SubmissionGroupInvitationManager()
 
+    def clean(self):
+        super().clean()
+        if not self.invited_users.count():
+            raise ValidationError(
+                {'invited_users': 'This field may not be empty'})
+
     @property
     def invited_usernames(self):
         """
