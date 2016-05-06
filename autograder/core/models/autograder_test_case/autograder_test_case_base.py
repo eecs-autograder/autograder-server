@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models, transaction
 from django.core import exceptions
 from django.core.validators import (
@@ -11,6 +13,10 @@ from .feedback_config import FeedbackConfig
 import autograder.utilities.fields as ag_fields
 
 import autograder.core.shared.global_constants as gc
+
+
+def get_random_executable_name():
+    return 'prog-{}'.format(uuid.uuid4().hex)
 
 
 class AutograderTestCaseBase(PolymorphicAutograderModel):
@@ -292,8 +298,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             as the command_line_arguments field.
             NOTE: This list should NOT include the names of files that
                 need to be compiled and should not include flags that
-                affect the name of the resulting executable program.'''
-        )
+                affect the name of the resulting executable program.''')
 
     project_files_to_compile_together = models.ManyToManyField(
         UploadedFile,
@@ -309,6 +314,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     executable_name = ag_fields.ShortStringField(
         blank=True,
+        default=get_random_executable_name,
         help_text='''The name of the executable program that should be
             produced by the compiler. This is the program that will be
             tested.''')

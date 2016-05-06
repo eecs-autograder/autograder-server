@@ -36,7 +36,8 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(test.compiler, self.compiler)
         self.assertEqual(test.compiler_flags, [])
-        self.assertEqual(test.executable_name, '')
+        self.assertNotEqual(test.executable_name, '')
+        self.assertRegex(test.executable_name, 'prog-[a-zA-Z0-9]*')
 
     def test_valid_init_no_defaults(self):
         test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
