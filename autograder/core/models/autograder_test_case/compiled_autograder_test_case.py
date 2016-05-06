@@ -25,6 +25,11 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
                 {'compiler': 'The "compiler" field must be '
                              'specified for this AG test type'})
 
+        if not self.executable_name:
+            raise exceptions.ValidationError(
+                {'executable_name': 'The "executable_name" field '
+                                    'cannot be empty for this AG test type.'})
+
     def _compile_program(self, submission, result_ref, autograder_sandbox):
         compilation_command = (
             [self.compiler] + self.compiler_flags +

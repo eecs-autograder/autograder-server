@@ -13,6 +13,7 @@ from .feedback_config import FeedbackConfig
 import autograder.utilities.fields as ag_fields
 
 import autograder.core.shared.global_constants as gc
+import autograder.core.shared.utilities as ut
 
 
 def get_random_executable_name():
@@ -315,11 +316,10 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     executable_name = ag_fields.ShortStringField(
         blank=True,
         default=get_random_executable_name,
+        validators=[ut.check_user_provided_filename],
         help_text='''The name of the executable program that should be
             produced by the compiler. This is the program that will be
             tested.''')
-    # validators=[ut.check_user_provided_filename],
-    # default="compiled_program")
 
     # INTERPRETED TEST CASE FIELDS -------------------------------------
 

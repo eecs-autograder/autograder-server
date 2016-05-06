@@ -91,38 +91,7 @@ class CompiledAndRunAutograderTestCaseTestCase(_SetUpBase,
 
     # -------------------------------------------------------------------------
 
-    def test_exception_on_empty_executable_name(self):
-        self.compiled_test_kwargs['executable_name'] = ''
 
-        with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseFactory.validate_and_create(
-                'compiled_and_run_test_case',
-                name=self.test_name, project=self.project,
-                **self.compiled_test_kwargs)
-
-        self.assertTrue('executable_name' in cm.exception.message_dict)
-
-    def test_exception_on_null_executable_name(self):
-        self.compiled_test_kwargs['executable_name'] = None
-
-        with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseFactory.validate_and_create(
-                'compiled_and_run_test_case',
-                name=self.test_name, project=self.project,
-                **self.compiled_test_kwargs)
-
-        self.assertTrue('executable_name' in cm.exception.message_dict)
-
-    def test_exception_on_invalid_chars_in_executable_name(self):
-        self.compiled_test_kwargs['executable_name'] = "../haxorz"
-
-        with self.assertRaises(ValidationError) as cm:
-            AutograderTestCaseFactory.validate_and_create(
-                'compiled_and_run_test_case',
-                name=self.test_name, project=self.project,
-                **self.compiled_test_kwargs)
-
-        self.assertTrue('executable_name' in cm.exception.message_dict)
 
     def test_executable_name_whitespace_stripped(self):
         self.compiled_test_kwargs['executable_name'] = "   spam.exe   "

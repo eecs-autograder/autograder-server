@@ -106,6 +106,29 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(error_list[1])
         self.assertTrue(error_list[2])
 
+    def test_exception_on_empty_executable_name(self):
+        test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
+            name=self.test_name, project=self.project,
+            **self.compiled_test_kwargs)
+        print(test.executable_name)
+
+        with self.assertRaises(ValidationError) as cm:
+            test.validate_and_update(executable_name='')
+            print(test.executable_name)
+            print('waaaa')
+
+        self.assertTrue('executable_name' in cm.exception.message_dict)
+
+    def test_exception_on_invalid_chars_in_executable_name(self):
+        self.compiled_test_kwargs['executable_name'] = "../haxorz"
+
+        with self.assertRaises(ValidationError) as cm:
+            _DummyCompiledAutograderTestCase.objects.validate_and_create(
+                name=self.test_name, project=self.project,
+                **self.compiled_test_kwargs)
+
+        self.assertTrue('executable_name' in cm.exception.message_dict)
+
     def test_validation_error_contains_base_and_derived_error_messages(self):
         self.compiled_test_kwargs['compiler'] = 'unsupported_compiler'
 
