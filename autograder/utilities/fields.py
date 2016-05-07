@@ -119,7 +119,7 @@ class StringArrayField(ValidatedArrayField):
     Additional options:
         strip_strings -- When true, leading and trailing whitespace is
             stripped from the items in the array.
-            Default value: True
+            Default value: False
         allow_empty_strings -- Whether the underlying CharField should
             allow empty strings.
             Default value: False
@@ -131,7 +131,7 @@ class StringArrayField(ValidatedArrayField):
                                 global_constants.MAX_CHAR_FIELD_LEN)
     """
 
-    def __init__(self, strip_strings=True, allow_empty_strings=False,
+    def __init__(self, strip_strings=False, allow_empty_strings=False,
                  string_validators=[], max_string_length=gc.MAX_CHAR_FIELD_LEN,
                  **kwargs):
         self.base_string_field = models.CharField(

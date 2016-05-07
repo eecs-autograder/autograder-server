@@ -30,7 +30,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     objects = PolymorphicAutograderModelManager()
 
-    DEFAULT_INCLUDE_FIELDS = [
+    _DEFAULT_TO_DICT_FIELDS = frozenset([
         'name',
         'project',
         'command_line_arguments',
@@ -55,7 +55,11 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'feedback_configuration',
         'post_deadline_final_submission_feedback_configuration',
         'points_for_compilation_success',
-    ]
+    ])
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS
 
     # BASE FIELDS
 
@@ -370,7 +374,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
                 self.feedback_configuration.to_dict())
 
         if 'post_deadline_final_submission_feedback_configuration' in result:
+            post_fdbk = self.post_deadline_final_submission_feedback_configuration
             result['post_deadline_final_submission_feedback_configuration'] = (
+                None if post_fdbk is None else
                 self.post_deadline_final_submission_feedback_configuration.to_dict())
 
         return result
@@ -380,10 +386,10 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     def run(self, submission, autograder_sandbox):
         """
         Runs this autograder test case and returns an
-        AutograderTestCaseResult object that is linked
-        to the given submission. If submission is None,
-        the result object will not be linked to any submission.
-        The test case will be run inside the given AutograderSandbox.
+        AutograderTestCaseResult object that is linked to the given
+        submission. The test case will be run inside the given
+        AutograderSandbox. Any needed files will be added to the sandbox
+        by this method.
 
         NOTE: This method does NOT save the result object to the
             database.
@@ -391,6 +397,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         This method must be overridden by derived classes.
         """
         raise NotImplementedError("Derived classes must override this method.")
+
+    def add_needed_files_to_sandbox(self, autograder_sandbox):
+        pass
 
     # -------------------------------------------------------------------------
 

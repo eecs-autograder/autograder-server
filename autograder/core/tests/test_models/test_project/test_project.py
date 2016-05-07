@@ -86,6 +86,8 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
 
         self.assertCountEqual(expected_fields,
                               project.DEFAULT_INCLUDE_FIELDS)
+        project = obj_ut.build_project()
+        self.assertTrue(project.to_dict())
 
 
 class ProjectNameExceptionTestCase(TemporaryFilesystemTestCase):

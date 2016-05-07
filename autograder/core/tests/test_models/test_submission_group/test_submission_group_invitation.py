@@ -38,7 +38,14 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp,
 
         self.assertCountEqual(
             expected_fields,
-            ag_models.SubmissionGroupInvitation.DEFAULT_INCLUDE_FIELDS)
+            ag_models.SubmissionGroupInvitation.get_default_to_dict_fields())
+
+        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            invited_users=self.to_invite,
+            invitation_creator=self.invitation_creator,
+            project=self.project)
+
+        self.assertTrue(invitation.to_dict())
 
     def test_invitation_creator_username_expanded(self):
         invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(

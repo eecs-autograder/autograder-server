@@ -23,6 +23,16 @@ class UploadedFile(AutograderModel):
     These objects provide a means for storing uploaded files
     to be used in project test cases.
     """
+    _DEFAULT_TO_DICT_FIELDS = frozenset([
+        'project',
+        'name',
+        'size',
+    ])
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS
+
     project = models.ForeignKey(Project, related_name='uploaded_files')
     file_obj = models.FileField(
         upload_to=_get_project_file_upload_to_dir,
@@ -30,5 +40,13 @@ class UploadedFile(AutograderModel):
         max_length=gc.MAX_CHAR_FIELD_LEN * 2)
 
     @property
+    def name(self):
+        return self.basename
+
+    @property
     def basename(self):
         return os.path.basename(self.file_obj.name)
+
+    @property
+    def size(self):
+        return self.file_obj.size

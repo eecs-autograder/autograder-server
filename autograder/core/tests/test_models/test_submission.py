@@ -9,70 +9,92 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
-from autograder.core.models import (
-    Course, Semester, Project, Submission, SubmissionGroup)
+import autograder.core.models as ag_models
 
 import autograder.core.shared.utilities as ut
 
 import autograder.core.tests.dummy_object_utils as obj_ut
-
-# TODO: filesystem test cases
 
 
 class SubmissionTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.course = Course.objects.validate_and_create(name='eecs280')
-        self.semester = Semester.objects.validate_and_create(
-            name='f15', course=self.course)
+        self.submission_group = obj_ut.build_submission_group(num_members=2)
+        self.project = self.submission_group.project
 
-        self.project = Project.objects.validate_and_create(
-            name='my_project', semester=self.semester, max_group_size=2,
-            required_student_files=['spam.cpp', 'eggs.cpp'],
-            expected_student_file_patterns=[
-                Project.FilePatternTuple('test_*.cpp', 1, 2)])
+        expected_files = [
+            {
+                'project': self.project,
+                'pattern': 'spam.cpp'
+            },
+            {
+                'project': self.project,
+                'pattern': 'eggs.cpp'
+            },
+            {
+                'project': self.project,
+                'pattern': 'test_*.cpp',
+                'min_num_matches': 1,
+                'max_num_matches': 2
+            }
+        ]
 
-        self.group_members = obj_ut.create_dummy_users(2)
-        self.member_names = [member.username for member in self.group_members]
-        self.semester.add_enrolled_students(*self.group_members)
+        for pattern_settings in expected_files:
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                **pattern_settings)
 
-        self.submission_group = SubmissionGroup.objects.validate_and_create(
-            members=self.member_names, project=self.project)
+    def test_to_dict_default_fields(self):
+        expected = [
+            'submission_group',
+            'timestamp',
+            'submitter',
+            'submitted_filenames',
+            'discarded_files',
+            'missing_files',
+            'status',
+            'grading_errors',
+        ]
+        self.assertCountEqual(
+            expected,
+            ag_models.Submission.get_default_to_dict_fields())
+        group = obj_ut.build_submission_group()
+        submission = ag_models.Submission(submission_group=group)
+        self.assertTrue(submission.to_dict())
 
     def test_valid_init(self):
         SimpleFileTuple = namedtuple('SimpleFileTuple', ['name', 'content'])
 
-        submit_file_data = sorted([
+        files_to_submit = sorted([
             SimpleFileTuple('spam.cpp', b'blah'),
             SimpleFileTuple('eggs.cpp', b'merp'),
             SimpleFileTuple('test_spam.cpp', b'cheeese')
         ])
 
-        submission = Submission.objects.validate_and_create(
+        submitter = 'steve'
+        submission = ag_models.Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=[
                 SimpleUploadedFile(name, content) for
-                name, content in submit_file_data])
+                name, content in files_to_submit],
+            submitter=submitter)
 
-        loaded_submission = Submission.objects.get(
-            submission_group=self.submission_group)
+        submission.refresh_from_db()
 
-        self.assertEqual(loaded_submission, submission)
+        self.assertEqual(submitter, submission.submitter)
         self.assertEqual(
-            loaded_submission.submission_group, self.submission_group)
-        self.assertEqual(loaded_submission.timestamp, submission.timestamp)
-        self.assertEqual(
-            loaded_submission.status,
-            Submission.GradingStatus.received)
-        self.assertEqual(loaded_submission.invalid_reason_or_error, [])
+            submission.status,
+            ag_models.Submission.GradingStatus.received)
+        self.assertCountEqual(submission.grading_errors, [])
+        self.assertCountEqual(submission.missing_files, [])
         self.assertCountEqual(
-            (file_.name for file_ in submit_file_data),
-            loaded_submission.submitted_filenames)
+            (file_.name for file_ in files_to_submit),
+            submission.submitted_filenames)
 
+        # Check file contents in the filesystem
         self.assertTrue(os.path.isdir(ut.get_submission_dir(submission)))
         with ut.ChangeDirectory(ut.get_submission_dir(submission)):
-            for name, content in submit_file_data:
+            for name, content in files_to_submit:
                 content = content.decode('utf-8')
                 self.assertEqual(name, submission.get_file(name).name)
                 self.assertEqual(content, submission.get_file(name).read())
@@ -82,46 +104,51 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
                 with open(name) as f:
                     self.assertEqual(content, f.read())
 
-        iterable = enumerate(
-            sorted(loaded_submission.submitted_files,
-                   key=lambda obj: obj.name))
-        for index, value in iterable:
-            self.assertEqual(
-                submit_file_data[index].name, os.path.basename(value.name))
-            self.assertEqual(
-                submit_file_data[index].content.decode('utf-8'), value.read())
+        # Check submitted files using member accessors
+        expected = sorted(files_to_submit)
+        actual = sorted(submission.submitted_files,
+                        key=lambda file_: file_.name)
+        for expected_file, loaded_file in zip(expected, actual):
+            self.assertEqual(expected_file.name,
+                             os.path.basename(loaded_file.name))
+            self.assertEqual(expected_file.content.decode('utf-8'),
+                             loaded_file.read())
 
-    def test_invalid_submission_missing_required_file(self):
+    def test_submission_missing_required_file(self):
         files = [
             SimpleUploadedFile('spam.cpp', b'blah'),
             SimpleUploadedFile('test_spam.cpp', b'cheeese')
         ]
-        Submission.objects.validate_and_create(
+
+        submission = ag_models.Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=files)
 
-        loaded_submission = Submission.objects.get(
-            submission_group=self.submission_group)
+        submission.refresh_from_db()
 
         self.assertEqual(
-            loaded_submission.status, Submission.GradingStatus.invalid)
-        self.assertTrue(loaded_submission.invalid_reason_or_error)
+            submission.status, ag_models.Submission.GradingStatus.received)
+        self.assertEqual({'eggs.cpp': 1}, submission.missing_files)
 
-    def test_invalid_submission_not_enough_of_pattern(self):
+    def test_submission_not_enough_files_matching_pattern(self):
+        self.project.expected_student_file_patterns.get(
+            max_num_matches=2
+        ).validate_and_update(min_num_matches=2, max_num_matches=3)
         files = [
             SimpleUploadedFile('spam.cpp', b'blah'),
             SimpleUploadedFile('eggs.cpp', b'merp'),
+            SimpleUploadedFile('test_spam.cpp', b'yarp')
         ]
-        Submission.objects.validate_and_create(
+
+        submission = ag_models.Submission.objects.validate_and_create(
             submission_group=self.submission_group,
             submitted_files=files)
 
-        loaded_submission = Submission.objects.get(
-            submission_group=self.submission_group)
+        submission.refresh_from_db()
 
-        self.assertEqual(
-            loaded_submission.status, Submission.GradingStatus.invalid)
-        self.assertTrue(loaded_submission.invalid_reason_or_error)
+        self.assertEqual(submission.status,
+                         ag_models.Submission.GradingStatus.received)
+        self.assertEqual({'test_*.cpp': 1}, submission.missing_files)
 
     def test_extra_pattern_matching_files_discarded(self):
         files = [
@@ -129,23 +156,25 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleUploadedFile('eggs.cpp', b'merp'),
             SimpleUploadedFile('test_spam.cpp', b'cheeese'),
             SimpleUploadedFile('test_egg.cpp', b'cheeese'),
+        ]
+        extra_files = [
             SimpleUploadedFile('test_sausage.cpp', b'cheeese')
         ]
-        Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
-            submitted_files=files)
 
-        loaded_submission = Submission.objects.get(
-            submission_group=self.submission_group)
+        submission = ag_models.Submission.objects.validate_and_create(
+            submission_group=self.submission_group,
+            submitted_files=files + extra_files)
+
+        submission.refresh_from_db()
 
         self.assertEqual(
-            loaded_submission.status, Submission.GradingStatus.received)
-        self.assertSetEqual(
-            set(file_.name for file_ in files[:-1]),
-            set(loaded_submission.get_submitted_file_basenames()))
+            submission.status, ag_models.Submission.GradingStatus.received)
+        self.assertCountEqual(
+            (file_.name for file_ in files),
+            submission.get_submitted_file_basenames())
 
-        self.assertListEqual(
-            [files[-1].name], loaded_submission.discarded_files)
+        self.assertCountEqual((file_.name for file_ in extra_files),
+                              submission.discarded_files)
 
     def test_extra_files_discarded(self):
         files = [
@@ -156,61 +185,59 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         extra_files = [
             SimpleUploadedFile('extra.cpp', b'merp'),
             SimpleUploadedFile('extra_extra.cpp', b'spam')]
-        files += extra_files
 
-        Submission.objects.validate_and_create(
+        submission = ag_models.Submission.objects.validate_and_create(
             submission_group=self.submission_group,
-            submitted_files=files)
+            submitted_files=files + extra_files)
 
-        loaded_submission = Submission.objects.get(
-            submission_group=self.submission_group)
+        submission.refresh_from_db()
 
-        self.assertEqual(
-            Submission.GradingStatus.received, loaded_submission.status)
-        self.assertCountEqual(
-            loaded_submission.get_submitted_file_basenames(),
-            ['spam.cpp', 'eggs.cpp', 'test_spam.cpp'])
+        self.assertEqual(ag_models.Submission.GradingStatus.received,
+                         submission.status)
+        self.assertCountEqual(submission.get_submitted_file_basenames(),
+                              (file_.name for file_ in files))
 
-        self.assertCountEqual(
-            loaded_submission.discarded_files,
-            [file_.name for file_ in extra_files])
+        self.assertCountEqual(submission.discarded_files,
+                              (file_.name for file_ in extra_files))
 
-        with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
+        with ut.ChangeDirectory(ut.get_submission_dir(submission)):
             for file_ in extra_files:
                 self.assertFalse(os.path.exists(file_.name))
 
-    def test_files_with_illegal_names_discarded(self):
-        files = [
-            SimpleUploadedFile('spam.cpp', b'blah'),
-            SimpleUploadedFile('eggs.cpp', b'merp'),
-            SimpleUploadedFile('test_spam.cpp', b'cheeese'),
-        ]
-        illegal_files = [
-            SimpleUploadedFile('; echo "haxorz!" #', b'merp'),
-            SimpleUploadedFile('@$#%@$#^%$badfilename.bad', b'bad')]
+    ## NOTE: Django's uploaded file classes automatically strip path
+    ## characters from filenames.
+    # def test_files_with_illegal_names_discarded(self):
+    #     files = [
+    #         SimpleUploadedFile('spam.cpp', b'blah'),
+    #         SimpleUploadedFile('eggs.cpp', b'merp'),
+    #         SimpleUploadedFile('test_spam.cpp', b'cheeese'),
+    #     ]
+    #     illegal_files = [
+    #         SimpleUploadedFile('; echo "haxorz!" #', b'merp'),
+    #         SimpleUploadedFile('@$#%@$#^%$badfilename.bad', b'bad')]
 
-        files += illegal_files
+    #     files += illegal_files
 
-        Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
-            submitted_files=files)
+    #     Submission.objects.validate_and_create(
+    #         submission_group=self.submission_group,
+    #         submitted_files=files)
 
-        loaded_submission = Submission.objects.get(
-            submission_group=self.submission_group)
+    #     loaded_submission = Submission.objects.get(
+    #         submission_group=self.submission_group)
 
-        self.assertEqual(
-            Submission.GradingStatus.received, loaded_submission.status)
-        self.assertCountEqual(
-            loaded_submission.get_submitted_file_basenames(),
-            ['spam.cpp', 'eggs.cpp', 'test_spam.cpp'])
+    #     self.assertEqual(
+    #         Submission.GradingStatus.received, loaded_submission.status)
+    #     self.assertCountEqual(
+    #         loaded_submission.get_submitted_file_basenames(),
+    #         ['spam.cpp', 'eggs.cpp', 'test_spam.cpp'])
 
-        self.assertCountEqual(
-            loaded_submission.discarded_files,
-            [file_.name for file_ in illegal_files])
+    #     self.assertCountEqual(
+    #         loaded_submission.discarded_files,
+    #         [file_.name for file_ in illegal_files])
 
-        with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
-            for file_ in illegal_files:
-                self.assertFalse(os.path.exists(file_.name))
+    #     with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
+    #         for file_ in illegal_files:
+    #             self.assertFalse(os.path.exists(file_.name))
 
     def test_duplicate_files_discarded(self):
         files = [
@@ -223,25 +250,20 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleUploadedFile('eggs.cpp', b'merp'),
             SimpleUploadedFile('eggs.cpp', b'merp')
         ]
-        files += duplicate_files
 
-        Submission.objects.validate_and_create(
+        submission = ag_models.Submission.objects.validate_and_create(
             submission_group=self.submission_group,
-            submitted_files=files)
+            submitted_files=files + duplicate_files)
 
-        loaded_submission = Submission.objects.get(
-            submission_group=self.submission_group)
+        submission.refresh_from_db()
 
-        self.assertEqual(
-            Submission.GradingStatus.received, loaded_submission.status)
-        self.assertCountEqual(
-            loaded_submission.get_submitted_file_basenames(),
-            ['spam.cpp', 'eggs.cpp', 'test_spam.cpp'])
+        self.assertEqual(ag_models.Submission.GradingStatus.received,
+                         submission.status)
+        self.assertCountEqual(submission.get_submitted_file_basenames(),
+                              (file_.name for file_ in files))
 
-        self.assertCountEqual(
-            loaded_submission.discarded_files,
-            [file_.name for file_ in duplicate_files])
-
+        self.assertCountEqual(submission.discarded_files,
+                              (file_.name for file_ in duplicate_files))
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -251,45 +273,43 @@ class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.course = Course.objects.validate_and_create(name='eecs280')
-        self.semester = Semester.objects.validate_and_create(
-            name='f15', course=self.course)
+        self.project = obj_ut.build_project()
 
-        self.project = Project.objects.validate_and_create(
-            name='my_project', semester=self.semester, max_group_size=5,
-            allow_submissions_from_non_enrolled_students=True)
+        # self.course = Course.objects.validate_and_create(name='eecs280')
+        # self.semester = Semester.objects.validate_and_create(
+        #     name='f15', course=self.course)
+
+        # self.project = Project.objects.validate_and_create(
+        #     name='my_project', semester=self.semester, max_group_size=5,
+        #     allow_submissions_from_non_enrolled_students=True)
 
     def test_get_most_recent_submissions_normal(self):
-        users = obj_ut.create_dummy_users(10)
         groups = [
-            SubmissionGroup.objects.validate_and_create(
-                members=[username], project=self.project)
-            for username in users
+            obj_ut.build_submission_group(
+                group_kwargs={'project': self.project})
+            for i in range(10)
         ]
-        expected = []
+
+        expected_final_subs = []
         for group in groups:
-            for i in range(4):
-                sub = Submission.objects.validate_and_create(
+            num_submissions = 4
+            for i in range(num_submissions):
+                sub = ag_models.Submission.objects.validate_and_create(
                     submitted_files=[], submission_group=group)
-                if i == 3:
-                    expected.append(sub)
+                if i == num_submissions - 1:
+                    expected_final_subs.append(sub)
 
-        def sort_key(obj):
-            return obj.pk
-        actual = sorted(
-            Submission.get_most_recent_submissions(self.project),
-            key=sort_key)
-        self.assertEqual(sorted(expected, key=sort_key), actual)
+        self.assertCountEqual(
+            expected_final_subs,
+            ag_models.Submission.get_most_recent_submissions(self.project))
 
-    import unittest
-    @unittest.skip('todo')
-    def test_get_most_recent_submissions_same_timestamp(self):
-        self.fail()
+    # import unittest
+    # @unittest.skip('todo')
+    # def test_get_most_recent_submissions_same_timestamp(self):
+    #     self.fail()
 
     def test_get_most_recent_submissions_group_has_no_submissions(self):
-        user = obj_ut.create_dummy_user()
-        group = SubmissionGroup.objects.validate_and_create(
-            members=[user.username], project=self.project)
+        group = obj_ut.build_submission_group()
         self.assertCountEqual([], group.submissions.all())
         self.assertCountEqual(
-            [], Submission.get_most_recent_submissions(self.project))
+            [], ag_models.Submission.get_most_recent_submissions(self.project))

@@ -31,12 +31,16 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
     This class stores an invitation for a set of users to create a
     SubmissionGroup together.
     """
-    DEFAULT_INCLUDE_FIELDS = [
+    _DEFAULT_TO_DICT_FIELDS = [
         'invitation_creator',
         'project',
         'invited_usernames',
         'invitees_who_accepted',
     ]
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS
 
     invited_users = models.ManyToManyField(
         User, related_name='group_invitations_received',

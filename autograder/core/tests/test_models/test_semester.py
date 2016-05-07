@@ -62,13 +62,16 @@ class SemesterTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_new_semester, new_semester)
 
     def test_to_dict_default_fields(self):
-        semester = Semester(name='steve', course=self.course)
         expected_fields = [
             'name',
             'course'
         ]
 
-        self.assertCountEqual(expected_fields, semester.DEFAULT_INCLUDE_FIELDS)
+        self.assertCountEqual(expected_fields,
+                              Semester.get_default_to_dict_fields())
+
+        semester = obj_ut.build_semester()
+        self.assertTrue(semester.to_dict())
 
 
 class SemesterStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):

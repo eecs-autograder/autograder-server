@@ -18,11 +18,15 @@ class _DummyAutograderModel(AutograderModel):
     def the_answer(self):
         return 42
 
-    DEFAULT_INCLUDE_FIELDS = frozenset([
+    _DEFAULT_TO_DICT_FIELDS = frozenset([
         'pos_num_val',
         'non_empty_str_val',
         'the_answer',
     ])
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_.DEFAULT_TO_DICT_FIELDS
 
 
 class _DummyForeignAutograderModel(AutograderModel):
@@ -31,8 +35,12 @@ class _DummyForeignAutograderModel(AutograderModel):
     foreign_key = models.ForeignKey(_DummyAutograderModel,
                                     related_name='dummies')
 
-    DEFAULT_INCLUDE_FIELDS = frozenset([
+    _DEFAULT_TO_DICT_FIELDS = frozenset([
         'name',
         'one_to_one',
         'foreign_key'
     ])
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS

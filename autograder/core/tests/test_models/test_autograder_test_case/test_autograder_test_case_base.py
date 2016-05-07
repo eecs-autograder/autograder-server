@@ -149,7 +149,13 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
 
         self.assertCountEqual(
             expected_fields,
-            ag_models.AutograderTestCaseBase.DEFAULT_INCLUDE_FIELDS)
+            ag_models.AutograderTestCaseBase.get_default_to_dict_fields())
+
+        ag_test = _DummyAutograderTestCase.objects.validate_and_create(
+            name='steve',
+            project=self.project,
+            feedback_configuration=self.fdbk)
+        self.assertTrue(ag_test.to_dict())
 
     def test_to_dict_feedback_expanded(self):
         other_fdbk = self._random_fdbk()
@@ -491,3 +497,17 @@ class AGTestValgrindSettingsTestCase(_Shared, TemporaryFilesystemTestCase):
         error_list = cm.exception.message_dict['valgrind_flags']
         self.assertTrue(error_list[0])
         self.assertFalse(error_list[1])
+
+
+class AddRequiredFilesTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_all_files_added(self):
+        self.fail()
+
+    def test_no_error_missing_student_file(self):
+        self.fail()
+
+    def test_no_error_not_enough_files_matching_pattern(self):
+        self.fail()

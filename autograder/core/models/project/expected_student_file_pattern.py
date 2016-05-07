@@ -16,6 +16,17 @@ class ExpectedStudentFilePattern(AutograderModel):
     class Meta:
         unique_together = ('pattern', 'project')
 
+    _DEFAULT_TO_DICT_FIELDS = frozenset([
+        'project',
+        'pattern',
+        'min_num_matches',
+        'max_num_matches',
+    ])
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS
+
     project = models.ForeignKey(Project,
                                 related_name='expected_student_file_patterns')
 
@@ -26,7 +37,9 @@ class ExpectedStudentFilePattern(AutograderModel):
             function (https://docs.python.org/3.4/library/fnmatch.html)
             This string may contain the same characters allowed in
             project or student files as well as special pattern
-            matching characters. This string must not be empty.''')
+            matching characters. This string must not be empty.
+            NOTE: Patterns for a given project must not overlap,
+                otherwise the behavior is undefined.''')
 
     min_num_matches = models.IntegerField(
         default=1,

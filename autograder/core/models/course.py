@@ -18,7 +18,11 @@ class Course(AutograderModel):
     Related object fields:
         semesters -- The group of Semesters that belong to this Course.
     """
-    DEFAULT_INCLUDE_FIELDS = ['name']
+    _DEFAULT_TO_DICT_FIELDS = frozenset(['name'])
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS
 
     name = ag_fields.ShortStringField(
         unique=True,

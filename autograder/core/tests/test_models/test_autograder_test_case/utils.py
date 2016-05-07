@@ -3,13 +3,15 @@ import os
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from autograder.core.models import (
-    Project, Semester, Course,
-    AutograderTestCaseFactory, AutograderTestCaseBase)
+# from autograder.core.models import (
+#     Project, Semester, Course,
+#     AutograderTestCaseFactory, AutograderTestCaseBase)
 
 import autograder.core.models as ag_models
 
 from autograder.security.autograder_sandbox import AutograderSandbox
+
+import autograder.core.tests.dummy_object_utils as obj_ut
 
 
 class SharedSetUpTearDownForRunTestsWithCompilation(object):
@@ -21,37 +23,35 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
         os.mkdir(self.new_dir)
         os.chdir(self.new_dir)
 
-        self.course = Course.objects.validate_and_create(name='eecs280')
-        self.semester = Semester.objects.validate_and_create(
-            name='f15', course=self.course)
-
         self.student_filename = 'student_file.cpp'
-        self.project = Project.objects.validate_and_create(
-            name='my_project', semester=self.semester)
+        self.project = obj_ut.build_project()
+        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            pattern='student_file.cpp',
 
-        self.cpp_filename = 'main.cpp'
-        self.executable_name = 'program.exe'
+        )
 
         # We'll be writing the file manually for these tests, so the
         # "real" file in the project directory doesn't really matter.
-        self.project.uploaded_files.add(
-            SimpleUploadedFile(self.cpp_filename, b''))
+        ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile('main.cpp', b''))
 
-        self.test_case_starter = AutograderTestCaseFactory.validate_and_create(
+        self.test_case_starter = ag_models.AutograderTestCaseFactory.validate_and_create(
             self.get_ag_test_type_str_for_factory(),
             name='test1', project=self.project,
             compiler='g++',
             compiler_flags=['-Wall', '-pedantic'],
-            test_resource_files=[self.cpp_filename],
+            # test_resource_files=[self.cpp_filename],
             project_files_to_compile_together=[self.cpp_filename],
             # student_files_to_compile_together=[self.student_filename],
-            executable_name=self.executable_name
         )
+
+        ag_models.
+
 
         # Reload the test case to make sure that the polymorphism is
         # set up correctly.
-        self.test_case_starter = AutograderTestCaseBase.objects.get(
-            pk=self.test_case_starter.pk)
+        self.test_case_starter.refresh_from_db()
         print('************', type(self.test_case_starter), '**************')
 
         self.sandbox = AutograderSandbox()

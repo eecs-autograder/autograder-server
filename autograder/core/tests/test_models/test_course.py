@@ -48,13 +48,16 @@ class CourseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(self.course.is_administrator(self.user))
 
     def test_to_dict_default_fields(self):
-        course = Course.objects.validate_and_create(name='spammy')
-
         expected_fields = [
             'name'
         ]
 
-        self.assertCountEqual(expected_fields, course.DEFAULT_INCLUDE_FIELDS)
+        self.assertCountEqual(
+            expected_fields,
+            Course.get_default_to_dict_fields())
+
+        course = obj_ut.build_course()
+        self.assertTrue(course.to_dict())
 
 
 class CourseFilesystemTestCase(TemporaryFilesystemTestCase):

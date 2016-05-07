@@ -20,6 +20,22 @@ class CreateUploadedFileTestCase(TemporaryFilesystemTestCase):
         self.file_obj = SimpleUploadedFile(
             'project_file.txt', b'contents more contents.')
 
+    def test_default_to_dict_fields(self):
+        expected = [
+            'name',
+            'size',
+            'project'
+        ]
+
+        self.assertCountEqual(expected,
+                              UploadedFile.get_default_to_dict_fields())
+
+        uploaded_file = UploadedFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=self.file_obj)
+
+        self.assertTrue(uploaded_file.to_dict())
+
     def test_valid_create(self):
         uploaded_file = UploadedFile.objects.validate_and_create(
             project=self.project,

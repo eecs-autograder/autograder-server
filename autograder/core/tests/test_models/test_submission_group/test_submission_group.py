@@ -37,8 +37,12 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             'extended_due_date',
         ]
 
-        self.assertCountEqual(expected_fields,
-                              ag_models.SubmissionGroup.DEFAULT_INCLUDE_FIELDS)
+        self.assertCountEqual(
+            expected_fields,
+            ag_models.SubmissionGroup.get_default_to_dict_fields())
+
+        group = obj_ut.build_submission_group()
+        self.assertTrue(group.to_dict())
 
     def test_valid_initialization_with_defaults(self):
         group = ag_models.SubmissionGroup.objects.validate_and_create(

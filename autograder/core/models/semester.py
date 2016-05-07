@@ -22,7 +22,11 @@ class Semester(AutograderModel):
     class Meta:
         unique_together = ('name', 'course')
 
-    DEFAULT_INCLUDE_FIELDS = ['name', 'course']
+    _DEFAULT_TO_DICT_FIELDS = ['name', 'course']
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS
 
     name = ag_fields.ShortStringField(
         validators=[validators.MinLengthValidator(1)],

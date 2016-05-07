@@ -96,4 +96,4 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
         ]
 
         self.assertCountEqual(
-            field_names, ag_models.FeedbackConfig.DEFAULT_INCLUDE_FIELDS)
+            field_names, ag_models.FeedbackConfig.get_default_to_dict_fields())

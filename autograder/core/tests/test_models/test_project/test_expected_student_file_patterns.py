@@ -17,6 +17,24 @@ class CreateExpectedStudentFilePatternTestCase(TemporaryFilesystemTestCase):
 
         self.valid_pattern = 'test_[0-4][!a-z]?.*.cpp'
 
+    def test_default_to_dict_fields(self):
+        expected = [
+            'project',
+            'pattern',
+            'min_num_matches',
+            'max_num_matches'
+        ]
+
+        self.assertCountEqual(
+            expected,
+            ExpectedStudentFilePattern.get_default_to_dict_fields())
+
+        pattern = ExpectedStudentFilePattern.objects.validate_and_create(
+            project=self.project,
+            pattern=self.valid_pattern)
+
+        self.assertTrue(pattern.to_dict())
+
     def test_valid_create_defaults(self):
         pattern = ExpectedStudentFilePattern.objects.validate_and_create(
             project=self.project,
@@ -99,6 +117,7 @@ class CreateExpectedStudentFilePatternTestCase(TemporaryFilesystemTestCase):
         illegal_patterns = [
             'test_*.; echo "haxorz";#',
             '../../../hack/you/now',
+            '/usr/bin/haxorz',
             '',
             '    '
         ]

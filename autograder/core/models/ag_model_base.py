@@ -17,13 +17,21 @@ class _AutograderModelManagerMixin:
 
 
 class _AutograderModelMixin:
-    # This set can include model fields, properties, member variables,
-    # "-to-one" relationships, etc.
-    # By default, "-to-one" relationships will be represented as the
-    # primary key of the related object.
-    # In order to include "-to-many" relationships, you must override
-    # the default behavior of this function to handle them correctly.
-    DEFAULT_INCLUDE_FIELDS = frozenset()
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        """
+        An iterable of the names of member variables to include by
+        default in the dictionary returned by to_dict()
+
+        This set can include model fields, properties, member variables,
+        "-to-one" relationships, and anything else for which getattr()
+        returns the desired value.
+        By default, "-to-one" relationships will be represented as the
+        primary key of the related object.
+        In order to include "-to-many" relationships, you must override
+        the default behavior of this function to handle them correctly.
+        """
+        raise NotImplementedError('Subclasses must override this method')
 
     def validate_and_update(self, **kwargs):
         """
@@ -64,7 +72,7 @@ class _AutograderModelMixin:
             or include_fields will be ignored.
         :type exclude_fields: list or None
         """
-        default_fields = frozenset(self.DEFAULT_INCLUDE_FIELDS)
+        default_fields = frozenset(self.get_default_to_dict_fields())
         if include_fields is None:
             include_fields = default_fields
 
@@ -78,7 +86,7 @@ class _AutograderModelMixin:
                 'Cannot serialize the fields: ' + ','.join(illegal_fields))
 
         to_include = (include_fields if include_fields is not None
-                      else self.DEFAULT_INCLUDE_FIELDS)
+                      else default_fields)
         to_include -= set(exclude_fields)
         result = {}
 

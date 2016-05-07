@@ -43,11 +43,15 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         submissions -- The Submissions that this group has made for the
             associated Project.
     """
-    DEFAULT_INCLUDE_FIELDS = [
+    _DEFAULT_TO_DICT_FIELDS = [
         'project',
         'extended_due_date',
         'member_names',
     ]
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS
 
     objects = SubmissionGroupManager()
 
@@ -63,11 +67,10 @@ class SubmissionGroup(ag_model_base.AutograderModel):
 
     extended_due_date = models.DateTimeField(
         null=True, default=None, blank=True,
-        help_text="""
-            When this field is set, it indicates that members of this
-            submission group can submit until this specified date,
-            overriding the project closing time.
-            Default value: None""")
+        help_text="""When this field is set, it indicates that members
+            of this submission group can submit until this specified
+            date, overriding the project closing time. Default value:
+            None""")
 
     @property
     def member_names(self):

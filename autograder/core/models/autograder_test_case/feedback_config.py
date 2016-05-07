@@ -73,7 +73,7 @@ class PointsFdbkLevel:
 
 
 class FeedbackConfig(AutograderModel):
-    DEFAULT_INCLUDE_FIELDS = [
+    _DEFAULT_TO_DICT_FIELDS = [
         'ag_test_name_fdbk',
         'return_code_fdbk',
         'stdout_fdbk',
@@ -82,6 +82,11 @@ class FeedbackConfig(AutograderModel):
         'valgrind_fdbk',
         'points_fdbk',
     ]
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS
+
     ag_test_name_fdbk = ag_fields.ShortStringField(
         choices=zip(AGTestNameFdbkLevel.values, AGTestNameFdbkLevel.values),
         default=AGTestNameFdbkLevel.show_real_name)

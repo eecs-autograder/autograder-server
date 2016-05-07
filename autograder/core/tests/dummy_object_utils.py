@@ -146,13 +146,12 @@ def build_submission_group(num_members=1, group_kwargs=None, project_kwargs=None
     if 'members' not in group_kwargs:
         members = create_dummy_users(num_members)
         project.semester.enrolled_students.add(*members)
-        group_kwargs['members'] = [user.username for user in members]
+        group_kwargs['members'] = members
     else:
         num_members = len(group_kwargs['members'])
 
     if num_members > project.max_group_size:
-        project.max_group_size = num_members
-        project.validate_and_save()
+        project.validate_and_update(max_group_size=num_members)
 
     group = SubmissionGroup.objects.validate_and_create(**group_kwargs)
     return group
