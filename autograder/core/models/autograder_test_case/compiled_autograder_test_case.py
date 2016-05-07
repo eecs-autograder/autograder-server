@@ -12,6 +12,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
     Field changes:
         compiler -- This field is REQUIRED
+        executable_name -- This field is REQUIRED
     """
     class Meta:
         proxy = True
