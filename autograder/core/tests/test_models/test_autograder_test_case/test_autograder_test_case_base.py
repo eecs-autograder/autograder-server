@@ -1,9 +1,11 @@
+import itertools
 import random
 
 from django.core.exceptions import ValidationError
 
-import autograder.core.models as ag_models
+from django.core.files.uploadedfile import SimpleUploadedFile
 
+import autograder.core.models as ag_models
 import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
 
 import autograder.core.shared.global_constants as gc
@@ -12,6 +14,8 @@ from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
 from .models import _DummyAutograderTestCase
+
+from autograder.security.autograder_sandbox import AutograderSandbox
 
 
 class _Shared:
@@ -267,17 +271,6 @@ class AGTestCmdArgErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertFalse(error_list[0])
         self.assertTrue(error_list[1])
 
-    # def test_cmd_arg_whitespace_stripped(self):
-    #     _DummyAutograderTestCase.objects.validate_and_create(
-    #         name=self.TEST_NAME, project=self.project,
-    #         command_line_arguments=['  spam  ', 'eggs', '  sausage'])
-
-    #     loaded_test = _DummyAutograderTestCase.objects.get(
-    #         name=self.TEST_NAME, project=self.project)
-
-    #     self.assertEqual(
-    #         loaded_test.command_line_arguments, ['spam', 'eggs', 'sausage'])
-
     # -------------------------------------------------------------------------
 
     # Note: Filenames in test_resource_files and student_resource_files
@@ -503,11 +496,125 @@ class AddRequiredFilesTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
+        self.group = obj_ut.build_submission_group()
+
+        self.uploaded_resource_files = [
+            ag_models.UploadedFile.objects.validate_and_create(
+                project=self.group.project,
+                file_obj=SimpleUploadedFile('steve', b'blah')),
+            ag_models.UploadedFile.objects.validate_and_create(
+                project=self.group.project,
+                file_obj=SimpleUploadedFile('stave', b'blee'))
+        ]
+        self.uploaded_compiled_files = [
+            ag_models.UploadedFile.objects.validate_and_create(
+                project=self.group.project,
+                file_obj=SimpleUploadedFile('stove.cpp', b'bloo')),
+            ag_models.UploadedFile.objects.validate_and_create(
+                project=self.group.project,
+                file_obj=SimpleUploadedFile('stuve.cpp', b'bloo'))
+        ]
+
+        self.uploaded_files = (self.uploaded_resource_files +
+                               self.uploaded_compiled_files)
+
+        self.expected_resource_files = [
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='spam.txt',
+                project=self.group.project
+            ),
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='eggs.txt',
+                project=self.group.project
+            ),
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='file_*.py',
+                project=self.group.project,
+                min_num_matches=1,
+                max_num_matches=3
+            ),
+        ]
+        self.expected_compiled_files = [
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='spam.cpp',
+                project=self.group.project
+            ),
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='eggs.cpp',
+                project=self.group.project
+            ),
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='file_*.cpp',
+                project=self.group.project,
+                min_num_matches=1,
+                max_num_matches=3
+            ),
+        ]
+
+        self.expected_files = (self.expected_resource_files +
+                               self.expected_compiled_files)
+
+        self.ag_test = _DummyAutograderTestCase.objects.validate_and_create(
+            project=self.group.project,
+            name='testy'
+        )
+
+        self.ag_test.test_resource_files.add(*self.uploaded_resource_files)
+        self.ag_test.student_resource_files.add(*self.expected_resource_files)
+
+        self.ag_test.project_files_to_compile_together.add(
+            *self.uploaded_compiled_files)
+        self.ag_test.student_files_to_compile_together.add(
+            *self.expected_compiled_files)
+
+        self.resource_files_to_submit = [
+            SimpleUploadedFile('spam.txt', b'waaaa'),
+            SimpleUploadedFile('eggs.txt', b'weeeee'),
+            SimpleUploadedFile('file_42.py', b'pypypy'),
+            SimpleUploadedFile('file_43.py', b'pypypy')
+        ]
+        self.compiled_files_to_submit = [
+            SimpleUploadedFile('spam.cpp', b'waaaa'),
+            SimpleUploadedFile('eggs.cpp', b'weeeee'),
+            SimpleUploadedFile('file_42.cpp', b'cppppp'),
+            SimpleUploadedFile('file_43.cpp', b'cppppp')
+        ]
+
+        self.sandbox = AutograderSandbox()
+        self.sandbox.__enter__()
+
+    def tearDown(self):
+        super().tearDown()
+
+        self.sandbox.__exit__()
+
     def test_all_files_added(self):
-        self.fail()
+        files_to_submit = (self.resource_files_to_submit +
+                           self.compiled_files_to_submit)
 
-    def test_no_error_missing_student_file(self):
-        self.fail()
+        print(files_to_submit)
 
-    def test_no_error_not_enough_files_matching_pattern(self):
-        self.fail()
+        self.do_add_files_submitted_test(files_to_submit)
+
+    def test_no_error_no_files_submitted(self):
+        self.do_add_files_submitted_test([])
+
+    def test_no_error_some_files_submitted(self):
+        files_to_submit = (self.resource_files_to_submit[:1] +
+                           self.compiled_files_to_submit[:1])
+
+        self.do_add_files_submitted_test(files_to_submit)
+
+    def do_add_files_submitted_test(self, files_to_submit):
+        submission = ag_models.Submission.objects.validate_and_create(
+            submission_group=self.group,
+            submitted_files=files_to_submit
+        )
+
+        self.ag_test.add_needed_files_to_sandbox(submission, self.sandbox)
+
+        files_added = self.sandbox.run_command(['ls']).stdout.split()
+        expected_filenames = itertools.chain(
+            (file_.name for file_ in files_to_submit),
+            (uploaded_file.name for uploaded_file in self.uploaded_files))
+        self.assertCountEqual(expected_filenames, files_added)

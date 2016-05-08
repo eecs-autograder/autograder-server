@@ -1,12 +1,10 @@
 import os
 import fnmatch
-# import enum
 
 from django.db import models, transaction
 from django.core import exceptions
 from django.core.files import File
 import django.contrib.postgres.fields as pg_fields
-# from django.utils import timezone
 
 import autograder.utilities.fields as ag_fields
 

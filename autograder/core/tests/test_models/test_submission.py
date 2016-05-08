@@ -2,8 +2,6 @@ import os
 
 from collections import namedtuple
 
-# from django.contrib.auth.models import User
-# from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from autograder.core.tests.temporary_filesystem_test_case import (
@@ -275,14 +273,6 @@ class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
 
         self.project = obj_ut.build_project()
 
-        # self.course = Course.objects.validate_and_create(name='eecs280')
-        # self.semester = Semester.objects.validate_and_create(
-        #     name='f15', course=self.course)
-
-        # self.project = Project.objects.validate_and_create(
-        #     name='my_project', semester=self.semester, max_group_size=5,
-        #     allow_submissions_from_non_enrolled_students=True)
-
     def test_get_most_recent_submissions_normal(self):
         groups = [
             obj_ut.build_submission_group(
@@ -302,11 +292,6 @@ class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
         self.assertCountEqual(
             expected_final_subs,
             ag_models.Submission.get_most_recent_submissions(self.project))
-
-    # import unittest
-    # @unittest.skip('todo')
-    # def test_get_most_recent_submissions_same_timestamp(self):
-    #     self.fail()
 
     def test_get_most_recent_submissions_group_has_no_submissions(self):
         group = obj_ut.build_submission_group()

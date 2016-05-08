@@ -1,3 +1,6 @@
+import fnmatch
+import os
+import itertools
 import uuid
 
 from django.db import models, transaction
@@ -309,13 +312,17 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         UploadedFile,
         related_name='ag_tests_compiled_by',
         help_text='''Uploaded project files that will be included when
-            compiling the program.''')
+            compiling the program.
+            NOTE: These files do NOT need to be included in the
+            test_resource_files relationship.''')
 
     student_files_to_compile_together = models.ManyToManyField(
         ExpectedStudentFilePattern,
         related_name='ag_tests_compiled_by',
         help_text='''Student-submitted files that will be included when
-            compiling the program.''')
+            compiling the program.
+            NOTE: These files do NOT need to be included in the
+            student_resource_files relationship.''')
 
     executable_name = ag_fields.ShortStringField(
         blank=True,
@@ -398,101 +405,43 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         """
         raise NotImplementedError("Derived classes must override this method.")
 
-    def add_needed_files_to_sandbox(self, autograder_sandbox):
-        pass
+    def add_needed_files_to_sandbox(self, submission, autograder_sandbox):
+        """
+        Adds all the files needed to run this test case to the given
+        sandbox. This method should be called by derived-class
+        implementations of the run() method.
+        """
+        # Add uploaded resource files and uploaded files to compile
+        project_files_iter = itertools.chain(
+            self.test_resource_files.all(),
+            self.project_files_to_compile_together.all())
+        files_to_add = (
+            os.path.join(
+                ut.get_project_files_dir(
+                    submission.submission_group.project), file_.name)
+            for file_ in project_files_iter)
 
-    # -------------------------------------------------------------------------
+        autograder_sandbox.add_files(*files_to_add)
 
-    # def clean(self):
-    #     super().clean()
+        # Add student resource files and student files to compile
+        student_files_iter = itertools.chain(
+            self.student_resource_files.all(),
+            self.student_files_to_compile_together.all())
+        files_to_add = []
+        for student_file in student_files_iter:
+            matching_files = fnmatch.filter(submission.submitted_filenames,
+                                            student_file.pattern)
+            files_to_add += [
+                os.path.join(ut.get_submission_dir(submission), filename)
+                for filename in matching_files]
 
-    #     errors = {}
-
-    #     test_resource_file_errors = self._clean_test_resouce_files()
-    #     if test_resource_file_errors:
-    #         errors['test_resource_files'] = test_resource_file_errors
-
-    #     student_resource_file_errors = self._clean_student_resource_files()
-    #     if student_resource_file_errors:
-    #         errors['student_resource_files'] = student_resource_file_errors
-
-    #     if errors:
-    #         raise ValidationError(errors)
-
-    # def _clean_test_resouce_files(self):
-    #     if self.test_resource_files is None:
-    #         return ["This field can't be null"]
-
-    #     resource_file_errors = []
-    #     for filename in self.test_resource_files:
-    #         if not self.project.has_file(filename):
-    #             resource_file_errors.append(
-    #                 "File {0} is not a project file project {1}".format(
-    #                     filename, self.project.name))
-
-    #     return resource_file_errors
-
-    # def _clean_student_resource_files(self):
-    #     if self.student_resource_files is None:
-    #         return ["This field can't be null"]
-
-    #     resource_file_errors = []
-    #     for filename in self.student_resource_files:
-    #         is_required = filename in self.project.required_student_files
-    #         is_expected_pattern = filename in (
-    #             obj.pattern for obj in
-    #             self.project.expected_student_file_patterns)
-    #         # filename_matches_any_pattern(
-    #         #     filename, self.project.expected_student_file_patterns)
-    #         if not is_required and not is_expected_pattern:
-    #             resource_file_errors.append(
-    #                 "File {0} is not a student file for project {1}".format(
-    #                     filename, self.project.name))
-
-    #     return resource_file_errors
-
-    # -------------------------------------------------------------------------
+        if files_to_add:
+            autograder_sandbox.add_files(*files_to_add)
 
     # TODO: Remove "test_" prefix from these names
 
     def test_checks_compilation(self):
         return False
-        # raise NotImplementedError('Subclasses must override this method')
 
     def get_type_str(self):
         raise NotImplementedError('Subclasses must override this method')
-
-    # -------------------------------------------------------------------------
-
-    # def to_dict(self):
-    #     return {
-    #         "type": self.get_type_str(),
-    #         "id": self.pk,
-    #         "name": self.name,
-    #         "command_line_arguments": self.command_line_arguments,
-    #         "standard_input": self.standard_input,
-    #         "test_resource_files": self.test_resource_files,
-    #         "student_resource_files": self.student_resource_files,
-    #         "time_limit": self.time_limit,
-    #         "allow_network_connections": self.allow_network_connections,
-    #         "stack_size_limit": self.stack_size_limit,
-    #         "process_spawn_limit": self.process_spawn_limit,
-    #         "virtual_memory_limit": self.virtual_memory_limit,
-
-    #         "expected_return_code": self.expected_return_code,
-    #         "expect_any_nonzero_return_code": self.expect_any_nonzero_return_code,
-    #         "expected_standard_output": self.expected_standard_output,
-    #         "expected_standard_error_output": self.expected_standard_error_output,
-    #         "use_valgrind": self.use_valgrind,
-    #         "valgrind_flags": self.valgrind_flags,
-
-    #         "points_for_correct_return_code": self.points_for_correct_return_code,
-    #         "points_for_correct_output": self.points_for_correct_output,
-    #         "deduction_for_valgrind_errors": self.deduction_for_valgrind_errors,
-    #         "points_for_compilation_success": self.points_for_compilation_success,
-
-    #         "feedback_configuration": self.feedback_configuration.to_json(),
-    #         "post_deadline_final_submission_feedback_configuration": (
-    #             None if self.post_deadline_final_submission_feedback_configuration is None else
-    #             self.post_deadline_final_submission_feedback_configuration.to_json())
-    #     }
