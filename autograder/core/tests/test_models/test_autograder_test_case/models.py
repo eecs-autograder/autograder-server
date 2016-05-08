@@ -10,6 +10,10 @@ class _DummyAutograderTestCase(AutograderTestCaseBase):
     class Meta:
         proxy = True
 
+    @property
+    def type_str(self):
+        return 'dummy'
+
 
 class _DummyCompiledAutograderTestCase(CompiledAutograderTestCase):
     class Meta:

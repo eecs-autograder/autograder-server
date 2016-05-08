@@ -25,12 +25,6 @@ class _SetUpBase:
         self.submitted_filename = 'my_file.py'
         self.project_filename = 'testy.py'
 
-        # self.admin = obj_ut.create_dummy_user()
-        # self.project = obj_ut.build_project(
-        #     course_kwargs={'administrators': [self.admin]},
-        #     project_kwargs={
-        #         'required_student_files': [self.submitted_filename]})
-
         self.project_file = ag_models.UploadedFile.objects.validate_and_create(
             project=self.project,
             file_obj=SimpleUploadedFile(self.project_filename, b''))
@@ -41,13 +35,20 @@ class _SetUpBase:
 
         self.starter_args = {
             'name': 'steve',
-            # 'student_resource_files': [self.submitted_filename],
-            # 'test_resource_files': [self.project_filename],
             'project': self.project
         }
 
 
 class InterpretedAGTestMiscTestCase(_SetUpBase, TemporaryFilesystemTestCase):
+    def test_to_dict(self):
+        test = ag_models.AutograderTestCaseFactory.validate_and_create(
+            'interpreted_test_case',
+            interpreter='python',
+            entry_point_filename=self.project_filename,
+            **self.starter_args)
+
+        self.assertTrue(test.to_dict())
+
     def test_valid_init_with_defaults(self):
         test = ag_models.AutograderTestCaseFactory.validate_and_create(
             'interpreted_test_case',

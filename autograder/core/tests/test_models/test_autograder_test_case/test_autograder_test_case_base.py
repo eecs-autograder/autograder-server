@@ -125,6 +125,8 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
 
     def test_to_dict_default_fields(self):
         expected_fields = [
+            'type_str',
+
             'name',
             'project',
             'command_line_arguments',
@@ -281,49 +283,6 @@ class AGTestCmdArgErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         error_list = cm.exception.message_dict['command_line_arguments']
         self.assertFalse(error_list[0])
         self.assertTrue(error_list[1])
-
-    # -------------------------------------------------------------------------
-
-    # Note: Filenames in test_resource_files and student_resource_files
-    # are restricted to filenames validated by a Project. Therefore we
-    # can assume that the only legal choices for those fields have
-    # valid filenames.
-
-    #### MOVE THESE UP TO THE REST API ####
-    # def test_exception_on_null_test_resource_files_list(self):
-    #     with self.assertRaises(ValidationError):
-    #         _DummyAutograderTestCase.objects.validate_and_create(
-    #             name=self.TEST_NAME, project=self.project,
-    #             test_resource_files=None)
-
-    # def test_exception_on_test_resource_files_has_wrong_file(self):
-    #     # student_file.txt is a student file, not a project file
-    #     self.project.required_student_files.append('student_file.txt')
-    #     with self.assertRaises(ValidationError) as cm:
-    #         _DummyAutograderTestCase.objects.validate_and_create(
-    #             name=self.TEST_NAME, project=self.project,
-    #             test_resource_files=['student_file.txt'])
-
-    #     self.assertTrue('test_resource_files' in cm.exception.message_dict)
-    #     error_list = cm.exception.message_dict['test_resource_files']
-    #     self.assertTrue(error_list[0])
-
-    # def test_exception_on_null_student_resource_files_list(self):
-    #     with self.assertRaises(ValidationError):
-    #         _DummyAutograderTestCase.objects.validate_and_create(
-    #             name=self.TEST_NAME, project=self.project,
-    #             student_resource_files=None)
-
-    # def test_exception_on_student_resource_files_has_wrong_file(self):
-    #     # spam.txt is a project file, not a student file
-    #     with self.assertRaises(ValidationError) as cm:
-    #         _DummyAutograderTestCase.objects.validate_and_create(
-    #             name=self.TEST_NAME, project=self.project,
-    #             student_resource_files=['spam.txt'])
-
-    #     self.assertTrue('student_resource_files' in cm.exception.message_dict)
-    #     error_list = cm.exception.message_dict['student_resource_files']
-    #     self.assertTrue(error_list[0])
 
 
 class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):

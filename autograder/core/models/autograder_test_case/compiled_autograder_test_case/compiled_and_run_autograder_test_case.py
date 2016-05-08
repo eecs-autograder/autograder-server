@@ -14,6 +14,10 @@ class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
     class Meta:
         proxy = True
 
+    @property
+    def type_str(self):
+        return 'compiled_and_run_test_case'
+
     def run(self, submission, autograder_sandbox):
         print('running test: ' + self.name)
 
@@ -26,8 +30,6 @@ class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
         self._compile_program(submission, result, autograder_sandbox)
 
         if result.compilation_return_code != 0 or result.timed_out:
-            # print(result._compilation_return_code)
-            # print(runner.stderr)
             return result
 
         run_program_cmd = (
@@ -64,7 +66,3 @@ class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
         result.valgrind_output = runner.stderr
 
         return result
-
-    # TODO: REMOVE, put the json api serializers in the model classes
-    def get_type_str(self):
-        return 'compiled_and_run_test_case'

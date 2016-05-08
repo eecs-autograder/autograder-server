@@ -1,5 +1,3 @@
-from django.core.exceptions import ValidationError
-
 from ..autograder_test_case_result import AutograderTestCaseResult
 
 from .compiled_autograder_test_case import CompiledAutograderTestCase
@@ -17,28 +15,10 @@ class CompilationOnlyAutograderTestCase(CompiledAutograderTestCase):
     """
     class Meta:
         proxy = True
-    # objects = PolymorphicManagerWithValidateOnCreate()
 
-    # def clean(self):
-    #     errors = {}
-
-    #     try:
-    #         super().clean()
-    #     except ValidationError as e:
-    #         errors = e.message_dict
-
-    #     # errors.update(self._clean_files_to_compile_together())
-
-    #     if errors:
-    #         raise ValidationError(errors)
-
-    def test_checks_compilation(self):
-        return True
-
-    def get_type_str(self):
+    @property
+    def type_str(self):
         return 'compilation_only_test_case'
-
-    # -------------------------------------------------------------------------
 
     def run(self, submission, autograder_sandbox):
         print('running test: ' + self.name)
