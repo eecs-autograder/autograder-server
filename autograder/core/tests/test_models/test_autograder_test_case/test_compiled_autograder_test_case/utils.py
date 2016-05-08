@@ -54,7 +54,7 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
         self.submission = ag_models.Submission.objects.validate_and_create(
             submission_group=self.group,
             submitted_files=[
-                SimpleUploadedFile(self.student_filename, b'// waaaaa')])
+                SimpleUploadedFile(self.student_filename, b'')])
 
         # Reload the test case to make sure that the polymorphism is
         # set up correctly.
@@ -135,15 +135,15 @@ int main(int argc, char** argv)
 using namespace std;
 
 int main()
-{{
+{
     string spam;
     while (cin >> spam)
-    {{
+    {
         cout << spam << ' ' << flush;
-    }}
+    }
 
     return 0;
-}}
+}
 """
 
     PRINT_FILE_CONTENT = """#include <iostream>
@@ -154,16 +154,16 @@ int main()
 using namespace std;
 
 int main()
-{{
+{
     string spam;
     ifstream ifs("input.in");
     while (ifs >> spam)
-    {{
+    {
         cout << spam << ' ' << flush;
-    }}
+    }
 
     return 0;
-}}
+}
 """
 
     INFINITE_LOOP = """int main()

@@ -213,7 +213,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         strip_strings=True, allow_empty_strings=False,
         string_validators=[
             RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
-        default=None, blank=True,
+        default=gc.DEFAULT_VALGRIND_FLAGS, blank=True,
         help_text='''If use_valgrind is True, this field should contain
             a list of command line arguments to be passed to the
             valgrind program. NOTE: This list should NOT contain any
@@ -362,7 +362,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.use_valgrind and self.valgrind_flags is None:
-            self.valgrind_flags = gc.DEFAULT_VALGRIND_FLAGS_WHEN_USED
+            self.valgrind_flags = gc.DEFAULT_VALGRIND_FLAGS
 
     def save(self, *args, **kwargs):
         with transaction.atomic():

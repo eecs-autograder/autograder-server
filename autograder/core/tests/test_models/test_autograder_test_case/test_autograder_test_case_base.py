@@ -71,7 +71,7 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertEqual("", new_test_case.expected_standard_output)
         self.assertEqual("", new_test_case.expected_standard_error_output)
         self.assertFalse(new_test_case.use_valgrind)
-        self.assertIsNone(new_test_case.valgrind_flags)
+        self.assertEqual(gc.DEFAULT_VALGRIND_FLAGS, new_test_case.valgrind_flags)
 
         self.assertEqual(0, new_test_case.points_for_correct_return_code)
         self.assertEqual(0, new_test_case.points_for_correct_stdout)
@@ -466,18 +466,6 @@ class AGTestValgrindSettingsTestCase(_Shared, TemporaryFilesystemTestCase):
         error_list = cm.exception.message_dict['valgrind_flags']
         self.assertTrue(error_list[0])
         self.assertFalse(error_list[1])
-
-    def test_use_valgrind_default_flags(self):
-        ag_test = _DummyAutograderTestCase.objects.validate_and_create(
-            name=self.TEST_NAME,
-            project=self.project,
-            use_valgrind=True)
-
-        ag_test.refresh_from_db()
-
-        self.assertTrue(ag_test.use_valgrind)
-        self.assertEqual(
-            ag_test.valgrind_flags, gc.DEFAULT_VALGRIND_FLAGS_WHEN_USED)
 
     def test_exception_on_invalid_chars_in_valgrind_flags(self):
         with self.assertRaises(ValidationError) as cm:

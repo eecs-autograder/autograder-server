@@ -319,12 +319,13 @@ class CompiledAutograderTestRunTestCase(
 
         expected_output = "egg bacon spam and sausage "
 
-        self.test_case_starter.standard_input = expected_output
-        self.test_case_starter.expected_standard_output = expected_output
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            standard_input=expected_output,
+            expected_standard_output=expected_output)
 
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
+        print(result.standard_output)
         result.save()
         result.refresh_from_db()
 
@@ -335,7 +336,7 @@ class CompiledAutograderTestRunTestCase(
         expected_output = 'spam baked beans lobster sauce '
 
         input_filename = 'input.in'
-        ag_models.UploadedFile.objects.validate_and_create(
+        input_file = ag_models.UploadedFile.objects.validate_and_create(
             project=self.project,
             file_obj=SimpleUploadedFile(input_filename,
                                         expected_output.encode('utf-8')))
@@ -343,8 +344,10 @@ class CompiledAutograderTestRunTestCase(
         with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.PRINT_FILE_CONTENT)
 
-        self.test_case_starter.expected_standard_output = expected_output
-        self.test_case_starter.save()
+        self.test_case_starter.test_resource_files.add(input_file)
+
+        self.test_case_starter.validate_and_update(
+            expected_standard_output=expected_output)
 
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
@@ -429,28 +432,28 @@ class CompiledAutograderTestRunTestCase(
         file_content = 'stuff to read from file '
         input_filename = 'input.in'
 
-        ag_models.UploadedFile.objects.validate_and_create(
+        input_file = ag_models.UploadedFile.objects.validate_and_create(
             project=self.project,
             file_obj=SimpleUploadedFile(input_filename,
                                         file_content.encode('utf-8')))
+        self.test_case_starter.test_resource_files.add(input_file)
 
         stdin_content = 'some content for stdin '
-
         cmd_args = ['zomg', 'wtf', 'bbq']
-
         expected_stdout = (
             ' '.join(cmd_args) + file_content + stdin_content +
             stdout_msg
         )
 
-        self.test_case_starter.command_line_arguments = cmd_args
-        self.test_case_starter.expected_standard_output = expected_stdout
-        self.test_case_starter.expected_standard_error_output = stderr_msg
-        self.test_case_starter.standard_input = stdin_content
-        self.test_case_starter.expected_return_code = 0
-        self.test_case_starter.use_valgrind = True
+        self.test_case_starter.validate_and_update(
+            command_line_arguments=cmd_args,
+            expected_standard_output=expected_stdout,
+            expected_standard_error_output=stderr_msg,
+            standard_input=stdin_content,
+            expected_return_code=0,
+            use_valgrind=True,
+        )
 
-        self.test_case_starter.save()
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
@@ -478,25 +481,26 @@ class CompiledAutograderTestRunTestCase(
         file_content = 'stuff to read from file '
         input_filename = 'input.in'
 
-        ag_models.UploadedFile.objects.validate_and_create(
+        input_file = ag_models.UploadedFile.objects.validate_and_create(
             project=self.project,
             file_obj=SimpleUploadedFile(input_filename,
                                         file_content.encode('utf-8')))
 
+        self.test_case_starter.test_resource_files.add(input_file)
+
         stdin_content = 'some content for stdin '
-
         cmd_args = ['zomg', 'wtf', 'bbq']
-
         expected_stdout = 'spaaaaaaaaaam'
 
-        self.test_case_starter.command_line_arguments = cmd_args
-        self.test_case_starter.expected_standard_output = expected_stdout
-        self.test_case_starter.expected_standard_error_output = 'stderr_msg'
-        self.test_case_starter.standard_input = stdin_content
-        self.test_case_starter.expected_return_code = 0
-        self.test_case_starter.use_valgrind = True
+        self.test_case_starter.validate_and_update(
+            command_line_arguments=cmd_args,
+            expected_standard_output=expected_stdout,
+            expected_standard_error_output='stderr_msg',
+            standard_input=stdin_content,
+            expected_return_code=0,
+            use_valgrind=True
+        )
 
-        self.test_case_starter.save()
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()

@@ -53,6 +53,19 @@ class AutograderSandboxMiscTestCase(unittest.TestCase):
         self.environment_variables = OrderedDict(
             {'spam': 'egg', 'sausage': 42})
 
+    def test_run_command_with_input(self):
+        input_content = 'spam egg sausage spam'
+        with AutograderSandbox() as sandbox:
+            result = sandbox.run_command(
+                ['cat'], input_content=input_content)
+            self.assertEqual(input_content, result.stdout)
+
+    def test_return_code_reported_and_stderr_recorded(self):
+        with AutograderSandbox() as sandbox:
+            result = sandbox.run_command(['ls', 'definitely not a file'])
+            self.assertNotEqual(0, result.return_code)
+            self.assertNotEqual('', result.stderr)
+
     def test_context_manager(self):
         with AutograderSandbox(name=self.name) as sandbox:
             self.assertEqual(self.name, sandbox.name)
