@@ -1,7 +1,6 @@
 from django.core.exceptions import ValidationError
 
 from ..autograder_test_case_result import AutograderTestCaseResult
-# from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
 
 from .compiled_autograder_test_case import CompiledAutograderTestCase
 
@@ -45,6 +44,7 @@ class CompilationOnlyAutograderTestCase(CompiledAutograderTestCase):
         print('running test: ' + self.name)
         result = AutograderTestCaseResult(
             test_case=self, submission=submission)
+        self.add_needed_files_to_sandbox(submission, autograder_sandbox)
         self._compile_program(submission, result, autograder_sandbox)
 
         return result
