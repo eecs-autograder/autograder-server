@@ -2,7 +2,7 @@ import fnmatch
 
 from django.core import exceptions
 
-from .autograder_test_case_base import AutograderTestCaseBase
+from ..autograder_test_case_base import AutograderTestCaseBase
 
 
 class CompiledAutograderTestCase(AutograderTestCaseBase):
@@ -47,12 +47,12 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
     def _compile_program(self, submission, result_ref, autograder_sandbox):
         compilation_command = (
-            [self.compiler] + self.compiler_flags +
-            self.project_files_to_compile_together +
-            self.student_files_to_compile_together
+            [self.compiler] +
+            self.get_filenames_to_compile_together(submission) +
+            self.compiler_flags
         )
 
-        if self.compiler == 'g++' and self.executable_name:
+        if self.compiler == 'g++':
             compilation_command += ['-o', self.executable_name]
 
         compile_result = autograder_sandbox.run_command(

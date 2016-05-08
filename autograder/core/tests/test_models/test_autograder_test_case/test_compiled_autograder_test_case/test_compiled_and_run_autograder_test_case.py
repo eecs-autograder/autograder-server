@@ -154,186 +154,150 @@ class CompiledAutograderTestRunTestCase(
 
     def test_run_correct_standard_output(self):
         stdout_content = "hello world"
-        cpp_file_content = CppProgramStrs.PRINT_TO_STDOUT_TEMPLATE.format(
+        main_file_content = CppProgramStrs.PRINT_TO_STDOUT_TEMPLATE.format(
             stdout_content)
-        with open(self.cpp_filename, 'w') as f:
-            f.write(cpp_file_content)
 
-        self.sandbox.add_files(self.cpp_filename)
+        # NOTE: Currently, changing the mode on a FieldFile doesn't work
+        with open(self.main_file.abspath, 'w') as f:
+            f.write(main_file_content)
 
-        self.test_case_starter.expected_standard_output = (
-            stdout_content)
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            expected_standard_output=stdout_content)
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertEqual(result.standard_output, stdout_content)
         self.assertTrue(result.standard_output_correct)
 
-    # -------------------------------------------------------------------------
-
     def test_run_incorrect_standard_output(self):
         cpp_file_content = CppProgramStrs.PRINT_TO_STDOUT_TEMPLATE.format(
             "wrong message")
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
 
-        self.sandbox.add_files(self.cpp_filename)
-
         expected_stdout_content = "hello world"
-        self.test_case_starter.expected_standard_output = (
-            expected_stdout_content)
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            expected_standard_output=expected_stdout_content)
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertNotEqual(result.standard_output, expected_stdout_content)
         self.assertFalse(result.standard_output_correct)
-
-    # -------------------------------------------------------------------------
 
     def test_run_correct_standard_error_output(self):
         stderr_content = "hello world"
         cpp_file_content = CppProgramStrs.PRINT_TO_STDERR_TEMPLATE.format(
             stderr_content)
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
 
-        self.sandbox.add_files(self.cpp_filename)
-
-        self.test_case_starter.expected_standard_error_output = (
-            stderr_content)
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            expected_standard_error_output=stderr_content)
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertEqual(result.standard_error_output, stderr_content)
         self.assertTrue(result.standard_error_output_correct)
 
-    # -------------------------------------------------------------------------
-
     def test_run_incorrect_standard_error_output(self):
         cpp_file_content = CppProgramStrs.PRINT_TO_STDERR_TEMPLATE.format(
             "wrong output")
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
 
-        self.sandbox.add_files(self.cpp_filename)
-
         expected_stderr_content = "hello world"
-        self.test_case_starter.expected_standard_error_output = (
-            expected_stderr_content)
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            expected_standard_error_output=expected_stderr_content)
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertNotEqual(
             result.standard_error_output, expected_stderr_content)
         self.assertFalse(result.standard_error_output_correct)
 
-    # -------------------------------------------------------------------------
-
     def test_run_correct_exact_return_code(self):
         expected_return_code = 0
         cpp_file_content = CppProgramStrs.RETURN_ONLY_TEMPLATE.format(
             expected_return_code)
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
-
-        self.sandbox.add_files(self.cpp_filename)
 
         self.test_case_starter.expected_return_code = expected_return_code
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertEqual(expected_return_code, result.return_code)
         self.assertTrue(result.return_code_correct)
 
-    # -------------------------------------------------------------------------
-
     def test_run_incorrect_exact_return_code(self):
         cpp_file_content = CppProgramStrs.RETURN_ONLY_TEMPLATE.format(42)
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
-
-        self.sandbox.add_files(self.cpp_filename)
 
         expected_return_code = 0
         self.test_case_starter.expected_return_code = expected_return_code
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertNotEqual(expected_return_code, result.return_code)
         self.assertFalse(result.return_code_correct)
 
-    # -------------------------------------------------------------------------
-
     def test_run_correct_nonzero_return_code(self):
         cpp_file_content = CppProgramStrs.RETURN_ONLY_TEMPLATE.format(42)
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
-
-        self.sandbox.add_files(self.cpp_filename)
 
         self.test_case_starter.expect_any_nonzero_return_code = True
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertNotEqual(0, result.return_code)
         self.assertTrue(result.return_code_correct)
 
-    # -------------------------------------------------------------------------
-
     def test_run_incorrect_nonzero_return_code(self):
         cpp_file_content = CppProgramStrs.RETURN_ONLY_TEMPLATE.format(0)
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
-
-        self.sandbox.add_files(self.cpp_filename)
 
         self.test_case_starter.expect_any_nonzero_return_code = True
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertEqual(0, result.return_code)
         self.assertFalse(result.return_code_correct)
 
-    # -------------------------------------------------------------------------
-
     def test_run_with_cmd_line_args(self):
         cmd_args = ['spam', 'egg', 'sausage']
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.PRINT_CMD_ARGS)
-
-        self.sandbox.add_files(self.cpp_filename)
 
         expected_output = ' '.join(cmd_args)
 
@@ -342,20 +306,16 @@ class CompiledAutograderTestRunTestCase(
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
 
-    # -------------------------------------------------------------------------
-
     def test_run_with_stdin_contents(self):
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.PRINT_STDIN_CONTENT)
-
-        self.sandbox.add_files(self.cpp_filename)
 
         expected_output = "egg bacon spam and sausage "
 
@@ -364,74 +324,62 @@ class CompiledAutograderTestRunTestCase(
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
-
-    # -------------------------------------------------------------------------
 
     def test_run_with_program_that_reads_from_file(self):
         expected_output = 'spam baked beans lobster sauce '
 
         input_filename = 'input.in'
-        self.project.add_project_file(
-            SimpleUploadedFile(input_filename, b''))
-        with open(input_filename, 'w') as f:
-            f.write(expected_output)
+        ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile(input_filename,
+                                        expected_output.encode('utf-8')))
 
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.PRINT_FILE_CONTENT)
-
-        self.sandbox.add_files(self.cpp_filename, input_filename)
 
         self.test_case_starter.expected_standard_output = expected_output
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertEqual(expected_output, result.standard_output)
         self.assertTrue(result.standard_output_correct)
 
-    # -------------------------------------------------------------------------
-
     def test_run_with_timeout(self):
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.INFINITE_LOOP)
-
-        self.sandbox.add_files(self.cpp_filename)
 
         self.test_case_starter.time_limit = 1
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertTrue(result.timed_out)
         self.assertNotEqual(result.return_code, 0)
 
-    # -------------------------------------------------------------------------
-
     def test_run_with_valgrind_no_errors(self):
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.RETURN_ONLY_TEMPLATE.format(0))
-
-        self.sandbox.add_files(self.cpp_filename)
 
         self.test_case_starter.use_valgrind = True
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertEqual(result.valgrind_return_code, 0)
 
@@ -440,64 +388,51 @@ class CompiledAutograderTestRunTestCase(
         self.assertNotEqual(result.valgrind_output, '')
         self.assertFalse(result.valgrind_errors_present)
 
-    # -------------------------------------------------------------------------
-
     def test_run_with_valgrind_with_errors(self):
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.MEMORY_LEAK)
-
-        self.sandbox.add_files(self.cpp_filename)
 
         self.test_case_starter.use_valgrind = True
         self.test_case_starter.save()
 
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertNotEqual(result.valgrind_return_code, 0)
 
         self.assertNotEqual(result.valgrind_output, '')
         self.assertTrue(result.valgrind_errors_present)
 
-    # -------------------------------------------------------------------------
-
     def test_run_compile_error(self):
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.COMPILE_ERROR)
 
-        self.sandbox.add_files(self.cpp_filename)
-
-        self.test_case_starter.save()
-
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertNotEqual(result.compilation_return_code, 0)
         self.assertNotEqual(result.compilation_standard_error_output, '')
         self.assertFalse(result.compilation_succeeded)
-
-    # -------------------------------------------------------------------------
 
     def test_run_everything_correct(self):
         stdout_msg = 'standard spam output'
         stderr_msg = 'standard llama error output'
         cpp_file_content = CppProgramStrs.DO_EVERYTHING.format(
             stdout_str=stdout_msg, stderr_str=stderr_msg, return_code=0)
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
 
         file_content = 'stuff to read from file '
         input_filename = 'input.in'
-        self.project.add_project_file(
-            SimpleUploadedFile(input_filename, b''))
-        with open(input_filename, 'w') as f:
-            f.write(file_content)
 
-        self.sandbox.add_files(self.cpp_filename, input_filename)
+        ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile(input_filename,
+                                        file_content.encode('utf-8')))
 
         stdin_content = 'some content for stdin '
 
@@ -517,9 +452,9 @@ class CompiledAutograderTestRunTestCase(
 
         self.test_case_starter.save()
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertEqual(expected_stdout, result.standard_output)
         self.assertTrue(result.standard_output_correct)
@@ -533,23 +468,20 @@ class CompiledAutograderTestRunTestCase(
         self.assertEqual(0, result.valgrind_return_code)
         self.assertFalse(result.valgrind_errors_present)
 
-    # -------------------------------------------------------------------------
-
     def test_run_everything_incorrect(self):
         stdout_msg = '" << new int(42) << "'
         cpp_file_content = CppProgramStrs.DO_EVERYTHING.format(
             stdout_str=stdout_msg, stderr_str='', return_code=1)
-        with open(self.cpp_filename, 'w') as f:
+        with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
 
         file_content = 'stuff to read from file '
         input_filename = 'input.in'
-        self.project.add_project_file(
-            SimpleUploadedFile(input_filename, b''))
-        with open(input_filename, 'w') as f:
-            f.write(file_content)
 
-        self.sandbox.add_files(self.cpp_filename, input_filename)
+        ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile(input_filename,
+                                        file_content.encode('utf-8')))
 
         stdin_content = 'some content for stdin '
 
@@ -566,9 +498,9 @@ class CompiledAutograderTestRunTestCase(
 
         self.test_case_starter.save()
         result = self.test_case_starter.run(
-            submission=None, autograder_sandbox=self.sandbox)
+            submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
-        result = ag_models.AutograderTestCaseResult.objects.get(pk=result.pk)
+        result.refresh_from_db()
 
         self.assertNotEqual(expected_stdout, result.standard_output)
         self.assertFalse(result.standard_output_correct)
@@ -581,15 +513,6 @@ class CompiledAutograderTestRunTestCase(
 
         self.assertNotEqual(0, result.valgrind_return_code)
         self.assertTrue(result.valgrind_errors_present)
-
-    # -------------------------------------------------------------------------
-
-    import unittest
-    @unittest.skip('not implemented')
-    def test_run_with_pattern_in_files_to_compile(self):
-        self.fail()
-
-# -----------------------------------------------------------------------------
 
 
 class CompiledAGTestResourceLimitTestCase(TemporaryFilesystemTestCase):

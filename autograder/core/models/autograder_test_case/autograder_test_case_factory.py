@@ -1,7 +1,7 @@
 from django.core import exceptions
 
-from .compiled_and_run_autograder_test_case import CompiledAndRunAutograderTestCase
-from .compilation_only_autograder_test_case import CompilationOnlyAutograderTestCase
+from .compiled_autograder_test_case import CompiledAndRunAutograderTestCase
+from .compiled_autograder_test_case import CompilationOnlyAutograderTestCase
 from .interpreted_autograder_test_case import InterpretedAutograderTestCase
 
 

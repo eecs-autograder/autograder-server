@@ -15,15 +15,16 @@ from .submission import Submission
 
 # These next imports need to be in this order to get around
 # circular dependency.
-from .autograder_test_case_result import AutograderTestCaseResult
+from .autograder_test_case.autograder_test_case_result import AutograderTestCaseResult
 # Note: Even though we are importing the different types of test cases here,
 # you should only access them through the factory function below
 from .autograder_test_case.autograder_test_case_base import AutograderTestCaseBase
-from .autograder_test_case.compiled_autograder_test_case import CompiledAutograderTestCase
-from .autograder_test_case.compiled_and_run_autograder_test_case import CompiledAndRunAutograderTestCase
-from .autograder_test_case.compilation_only_autograder_test_case import CompilationOnlyAutograderTestCase
+from .autograder_test_case.compiled_autograder_test_case import (
+    CompiledAutograderTestCase,
+    CompiledAndRunAutograderTestCase,
+    CompilationOnlyAutograderTestCase)
 from .autograder_test_case.interpreted_autograder_test_case import InterpretedAutograderTestCase
 
-from .autograder_test_case.feedback_config import FeedbackConfig
-
 from .autograder_test_case import AutograderTestCaseFactory
+
+from .autograder_test_case.feedback_config import FeedbackConfig

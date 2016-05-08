@@ -1,6 +1,7 @@
 import os
 
 from django.db import models
+from django.conf import settings
 
 from ..ag_model_base import AutograderModel
 from .project import Project
@@ -42,6 +43,10 @@ class UploadedFile(AutograderModel):
     @property
     def name(self):
         return self.basename
+
+    @property
+    def abspath(self):
+        return os.path.join(settings.MEDIA_ROOT, self.file_obj.name)
 
     @property
     def basename(self):

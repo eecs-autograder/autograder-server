@@ -16,6 +16,9 @@ class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
 
     def run(self, submission, autograder_sandbox):
         print('running test: ' + self.name)
+
+        self.add_needed_files_to_sandbox(submission, autograder_sandbox)
+
         result = AutograderTestCaseResult(
             test_case=self, submission=submission)
 

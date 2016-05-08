@@ -18,36 +18,43 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
     def setUp(self):
         super().setUp()
 
-        self.original_dir = os.getcwd()
-        self.new_dir = os.path.join(settings.MEDIA_ROOT, 'working_dir')
-        os.mkdir(self.new_dir)
-        os.chdir(self.new_dir)
+        # self.original_dir = os.getcwd()
+        # self.new_dir = os.path.join(settings.MEDIA_ROOT, 'working_dir')
+        # os.mkdir(self.new_dir)
+        # os.chdir(self.new_dir)
 
-        self.student_filename = 'student_file.cpp'
-        self.project = obj_ut.build_project()
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
-            pattern='student_file.cpp',
+        self.group = obj_ut.build_submission_group()
+        self.project = self.group.project
 
+        self.main_prog_filename = 'main.cpp'
+        self.student_filename = 'student_file.h'
+
+        self.header_file = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            pattern=self.student_filename,
+            project=self.project
         )
 
         # We'll be writing the file manually for these tests, so the
         # "real" file in the project directory doesn't really matter.
-        ag_models.UploadedFile.objects.validate_and_create(
+        self.main_file = ag_models.UploadedFile.objects.validate_and_create(
             project=self.project,
-            file_obj=SimpleUploadedFile('main.cpp', b''))
+            file_obj=SimpleUploadedFile(self.main_prog_filename, b'weeeee'))
 
         self.test_case_starter = ag_models.AutograderTestCaseFactory.validate_and_create(
             self.get_ag_test_type_str_for_factory(),
             name='test1', project=self.project,
             compiler='g++',
             compiler_flags=['-Wall', '-pedantic'],
-            # test_resource_files=[self.cpp_filename],
-            project_files_to_compile_together=[self.cpp_filename],
-            # student_files_to_compile_together=[self.student_filename],
         )
+        self.test_case_starter.project_files_to_compile_together.add(
+            self.main_file)
+        self.test_case_starter.student_resource_files.add(
+            self.header_file)
 
-        ag_models.
-
+        self.submission = ag_models.Submission.objects.validate_and_create(
+            submission_group=self.group,
+            submitted_files=[
+                SimpleUploadedFile(self.student_filename, b'// waaaaa')])
 
         # Reload the test case to make sure that the polymorphism is
         # set up correctly.
@@ -61,7 +68,6 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
         super().tearDown()
 
         self.sandbox.__exit__()
-        os.chdir(self.original_dir)
 
     def get_ag_test_type_str_for_factory(self):
         raise NotImplementedError(
@@ -72,8 +78,9 @@ class SharedSetUpTearDownForRunTestsWithCompilation(object):
 # -----------------------------------------------------------------------------
 
 
-class CppProgramStrs(object):
+class CppProgramStrs:
     PRINT_TO_STDOUT_TEMPLATE = """#include <iostream>
+#include "student_file.h"
 
 using namespace std;
 
@@ -85,6 +92,7 @@ int main()
 """
 
     PRINT_TO_STDERR_TEMPLATE = """#include <iostream>
+#include "student_file.h"
 
 using namespace std;
 
@@ -96,6 +104,7 @@ int main()
 """
 
     RETURN_ONLY_TEMPLATE = """
+#include "student_file.h"
 int main()
 {{
     return {};
@@ -103,6 +112,7 @@ int main()
 """
 
     PRINT_CMD_ARGS = """#include <iostream>
+#include "student_file.h"
 
 using namespace std;
 
@@ -119,6 +129,7 @@ int main(int argc, char** argv)
 """
 
     PRINT_STDIN_CONTENT = """#include <iostream>
+#include "student_file.h"
 #include <string>
 
 using namespace std;
@@ -136,6 +147,7 @@ int main()
 """
 
     PRINT_FILE_CONTENT = """#include <iostream>
+#include "student_file.h"
 #include <fstream>
 #include <string>
 
@@ -155,6 +167,7 @@ int main()
 """
 
     INFINITE_LOOP = """int main()
+#include "student_file.h"
 {{
     while (true);
     return 0;
@@ -162,6 +175,7 @@ int main()
 """
 
     MEMORY_LEAK = """int main()
+#include "student_file.h"
 {{
     new int(42);
     return 0;
@@ -169,12 +183,14 @@ int main()
 """
 
     COMPILE_ERROR = """int main()
+#include "student_file.h"
 {{
     spameggsausagespam
 }}
 """
 
     DO_EVERYTHING = """#include <iostream>
+#include "student_file.h"
 #include <fstream>
 #include <string>
 

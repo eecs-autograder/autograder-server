@@ -7,7 +7,7 @@ from autograder.utilities import fields as ag_fields
 
 import autograder.core.shared.global_constants as gc
 from .autograder_test_case_base import AutograderTestCaseBase
-from ..autograder_test_case_result import AutograderTestCaseResult
+from .autograder_test_case_result import AutograderTestCaseResult
 
 
 class InterpretedAutograderTestCase(AutograderTestCaseBase):

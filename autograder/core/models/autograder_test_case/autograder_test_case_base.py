@@ -415,11 +415,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         project_files_iter = itertools.chain(
             self.test_resource_files.all(),
             self.project_files_to_compile_together.all())
-        files_to_add = (
-            os.path.join(
-                ut.get_project_files_dir(
-                    submission.submission_group.project), file_.name)
-            for file_ in project_files_iter)
+        files_to_add = (file_.abspath for file_ in project_files_iter)
 
         autograder_sandbox.add_files(*files_to_add)
 
