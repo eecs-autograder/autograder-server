@@ -1,4 +1,10 @@
+import itertools
+
 from django.core.exceptions import ValidationError
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+import autograder.core.models as ag_models
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -277,3 +283,112 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
 
     #     self.assertTrue(
     #         'student_files_to_compile_together' in cm.exception.message_dict)
+
+
+class GetCompilationCommandTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.group = obj_ut.build_submission_group()
+
+        # These files should NOT show up in the list of files to compile
+        self.uploaded_resource_files = [
+            ag_models.UploadedFile.objects.validate_and_create(
+                project=self.group.project,
+                file_obj=SimpleUploadedFile('steve', b'blah')),
+        ]
+
+        self.uploaded_compiled_files = [
+            ag_models.UploadedFile.objects.validate_and_create(
+                project=self.group.project,
+                file_obj=SimpleUploadedFile('stove.cpp', b'bloo')),
+            ag_models.UploadedFile.objects.validate_and_create(
+                project=self.group.project,
+                file_obj=SimpleUploadedFile('stuve.cpp', b'bloo'))
+        ]
+
+        # Make sure to submit these files, and verify that they are NOT
+        # included in the list of files to compile.
+        self.expected_resource_files = [
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='spam.txt',
+                project=self.group.project
+            ),
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='file_*.py',
+                project=self.group.project,
+                min_num_matches=1,
+                max_num_matches=3
+            ),
+        ]
+
+        self.expected_compiled_files = [
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='spam.cpp',
+                project=self.group.project
+            ),
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='eggs.cpp',
+                project=self.group.project
+            ),
+            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                pattern='file_*.cpp',
+                project=self.group.project,
+                min_num_matches=1,
+                max_num_matches=3
+            ),
+        ]
+
+        self.ag_test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
+            project=self.group.project,
+            name='testy',
+            compiler='g++'
+        )
+
+        self.ag_test.test_resource_files.add(*self.uploaded_resource_files)
+        self.ag_test.student_resource_files.add(*self.expected_resource_files)
+
+        self.ag_test.project_files_to_compile_together.add(
+            *self.uploaded_compiled_files)
+        self.ag_test.student_files_to_compile_together.add(
+            *self.expected_compiled_files)
+
+        self.resource_files_to_submit = [
+            SimpleUploadedFile('spam.txt', b'waaaa'),
+            SimpleUploadedFile('file_42.py', b'pypypy'),
+            SimpleUploadedFile('file_43.py', b'pypypy')
+        ]
+
+        self.compiled_files_to_submit = [
+            SimpleUploadedFile('spam.cpp', b'waaaa'),
+            SimpleUploadedFile('eggs.cpp', b'weeeee'),
+            SimpleUploadedFile('file_42.cpp', b'cppppp'),
+            SimpleUploadedFile('file_43.cpp', b'cppppp')
+        ]
+
+    def test_all_files_submitted(self):
+        self.do_files_to_compile_test(self.compiled_files_to_submit)
+
+    def test_some_required_files_not_submitted(self):
+        self.do_files_to_compile_test(self.compiled_files_to_submit[1:])
+
+    def test_not_enough_files_matching_pattern(self):
+        self.do_files_to_compile_test(self.compiled_files_to_submit[:-1])
+
+    def do_files_to_compile_test(self, compiled_files_to_submit):
+        submission = ag_models.Submission.objects.validate_and_create(
+            submission_group=self.group,
+            submitted_files=(self.resource_files_to_submit +
+                             compiled_files_to_submit)
+        )
+
+        # Check for uploaded and student-submitted files to compile.
+        expected_compiled_files = itertools.chain(
+            (uploaded_file.name for uploaded_file in
+             self.uploaded_compiled_files),
+            (file_.name for file_ in compiled_files_to_submit)
+        )
+
+        self.assertCountEqual(
+            expected_compiled_files,
+            self.ag_test.get_filenames_to_compile_together(submission))

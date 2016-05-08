@@ -1,4 +1,4 @@
-# import uuid
+import fnmatch
 
 from django.core import exceptions
 
@@ -30,6 +30,20 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
             raise exceptions.ValidationError(
                 {'executable_name': 'The "executable_name" field '
                                     'cannot be empty for this AG test type.'})
+
+    def get_filenames_to_compile_together(self, submission):
+        """
+        Returns a list of filenames that should be compiled together for this
+        test case.
+        """
+        files_to_compile = [uploaded_file.name for uploaded_file in
+                            self.project_files_to_compile_together.all()]
+
+        for expected_file in self.student_files_to_compile_together.all():
+            files_to_compile += fnmatch.filter(submission.submitted_filenames,
+                                               expected_file.pattern)
+
+        return files_to_compile
 
     def _compile_program(self, submission, result_ref, autograder_sandbox):
         compilation_command = (
