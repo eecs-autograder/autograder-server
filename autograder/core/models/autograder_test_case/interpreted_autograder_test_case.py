@@ -1,36 +1,18 @@
-from django.core.validators import RegexValidator
+# from django.core.validators import RegexValidator
 
 # from autograder.core.models.utils import PolymorphicManagerWithValidateOnCreate
 from django.core import exceptions
 
-from autograder.utilities import fields as ag_fields
+# from autograder.utilities import fields as ag_fields
 
-import autograder.core.shared.global_constants as gc
+# import autograder.core.shared.global_constants as gc
 from .autograder_test_case_base import AutograderTestCaseBase
 from .autograder_test_case_result import AutograderTestCaseResult
 
 
 class InterpretedAutograderTestCase(AutograderTestCaseBase):
     """
-    This class evaluates a program by using an interpreter to run it.
-
-    Fields:
-        interpreter -- Currently
-            supported values listed in
-            autograder.shared.global_constants.SUPPORTED_INTERPRETERS
-            This field is REQUIRED.
-
-        interpreter_flags --
-            Default value: empty list
-
-        entry_point_filename --
-            This field is REQUIRED.
-
-    Overridden methods:
-        run()
-        to_dict()
-        get_type_str()
-        clean()
+    This class evaluates a program run using an interpreter.
     """
     class Meta:
         proxy = True
@@ -56,6 +38,8 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
             [self.interpreter] + self.interpreter_flags +
             [self.entry_point_filename] + self.command_line_arguments)
 
+        self.add_needed_files_to_sandbox(submission, autograder_sandbox)
+
         runner = autograder_sandbox.run_command(
             run_program_cmd,
             timeout=self.time_limit,
@@ -74,21 +58,21 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
     def get_type_str(self):
         return 'interpreted_test_case'
 
-    def clean(self):
-        super().clean()
+    # def clean(self):
+    #     super().clean()
 
-        if (self.entry_point_filename not in self.student_resource_files and
-                self.entry_point_filename not in self.test_resource_files):
-            raise exceptions.ValidationError(
-                {'entry_point_filename':
-                    '{} is not a resource file for this test'.format(
-                        self.entry_point_filename)})
+    #     if (self.entry_point_filename not in self.student_resource_files and
+    #             self.entry_point_filename not in self.test_resource_files):
+    #         raise exceptions.ValidationError(
+    #             {'entry_point_filename':
+    #                 '{} is not a resource file for this test'.format(
+    #                     self.entry_point_filename)})
 
-    def to_dict(self):
-        result = super().to_dict()
-        result.update({
-            'interpreter': self.interpreter,
-            'interpreter_flags': self.interpreter_flags,
-            'entry_point_filename': self.entry_point_filename,
-        })
-        return result
+    # def to_dict(self):
+    #     result = super().to_dict()
+    #     result.update({
+    #         'interpreter': self.interpreter,
+    #         'interpreter_flags': self.interpreter_flags,
+    #         'entry_point_filename': self.entry_point_filename,
+    #     })
+    #     return result

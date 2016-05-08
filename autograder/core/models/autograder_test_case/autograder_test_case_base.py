@@ -349,12 +349,11 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     entry_point_filename = ag_fields.ShortStringField(
         blank=True,
+        validators=[ut.check_user_provided_filename],
         help_text='''The name of a file that should be given to the
             interpreter as the program to be run, i.e. the main source
-            module.
-            This field is restricted to filenames listed in
-            self.test_resource_files and
-            self.student_resource_files.''')
+            module. It is up to the user to make sure that this file is
+            either a project or student resource file for this test.''')
 
     # -------------------------------------------------------------------------
     # -------------------------------------------------------------------------
