@@ -24,7 +24,7 @@ class CompilationOnlyAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
 
-        self.assertTrue(result.compilation_succeeded)
+        self.assertEqual(0, result.compilation_return_code)
 
     def test_compilation_failure(self):
         with open(self.main_file.abspath, 'w') as f:
@@ -33,4 +33,4 @@ class CompilationOnlyAutograderTestRunTestCase(
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
 
-        self.assertFalse(result.compilation_succeeded)
+        self.assertNotEqual(0, result.compilation_return_code)

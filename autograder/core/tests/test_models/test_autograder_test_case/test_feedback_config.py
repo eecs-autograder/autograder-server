@@ -5,8 +5,6 @@ from django.core import exceptions
 import autograder.core.models as ag_models
 import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
 
-# from .models import _DummyAutograderTestCase
-# import autograder.core.tests.dummy_object_utils as obj_ut
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
@@ -76,6 +74,37 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
                                  msg='Field: ' + key)
 
             fdbk_conf.delete()
+
+    def test_create_with_max_fdbk(self):
+        fdbk_conf = ag_models.FeedbackConfig.create_with_max_fdbk()
+        fdbk_conf.refresh_from_db()
+
+        self.assertEqual(fdbk_lvls.AGTestNameFdbkLevel.show_real_name,
+                         fdbk_conf.ag_test_name_fdbk)
+
+        self.assertEqual(
+            fdbk_lvls.ReturnCodeFdbkLevel.show_expected_and_actual_values,
+            fdbk_conf.return_code_fdbk)
+        self.assertTrue(fdbk_conf.show_return_code)
+
+        self.assertEqual(
+            fdbk_lvls.StdoutFdbkLevel.show_expected_and_actual_values,
+            fdbk_conf.stdout_fdbk)
+        self.assertTrue(fdbk_conf.show_stdout_content)
+
+        self.assertEqual(
+            fdbk_lvls.StderrFdbkLevel.show_expected_and_actual_values,
+            fdbk_conf.stderr_fdbk)
+        self.assertTrue(fdbk_conf.show_stderr_content)
+
+        self.assertEqual(fdbk_lvls.CompilationFdbkLevel.show_compiler_output,
+                         fdbk_conf.compilation_fdbk)
+
+        self.assertEqual(fdbk_lvls.ValgrindFdbkLevel.show_valgrind_output,
+                         fdbk_conf.valgrind_fdbk)
+
+        self.assertEqual(fdbk_lvls.PointsFdbkLevel.show_breakdown,
+                         fdbk_conf.points_fdbk)
 
     def test_exception_invalid_values(self):
         with self.assertRaises(exceptions.ValidationError) as cm:

@@ -62,7 +62,7 @@ class InterpretedAGTestMiscTestCase(_SetUpBase, TemporaryFilesystemTestCase):
         self.assertEqual([], test.interpreter_flags)
         self.assertEqual(self.project_filename, test.entry_point_filename)
 
-        self.assertEqual('interpreted_test_case', test.get_type_str())
+        self.assertEqual('interpreted_test_case', test.type_str)
 
     def test_valid_init_no_defaults(self):
         flags = ['spam', 'egg']
@@ -79,7 +79,7 @@ class InterpretedAGTestMiscTestCase(_SetUpBase, TemporaryFilesystemTestCase):
         self.assertEqual(flags, test.interpreter_flags)
         self.assertEqual(self.project_filename, test.entry_point_filename)
 
-        self.assertEqual('interpreted_test_case', test.get_type_str())
+        self.assertEqual('interpreted_test_case', test.type_str)
 
     def test_error_unsupported_interpreter(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -195,11 +195,15 @@ class InterpretedAutograderTestCaseResourceLimitTestCase(_SetUpBase, TemporaryFi
             process_spawn_limit=self.process_limit,
             **self.starter_args)
 
+        self.submission = ag_models.Submission.objects.validate_and_create(
+            submission_group=self.group,
+            submitted_files=[])
+
     @mock.patch('autograder.security.autograder_sandbox.AutograderSandbox',
                 autospec=True)
     def test_resource_limits_set(self, MockSandbox):
         sandbox = MockSandbox()
-        self.test.run(None, sandbox)
+        self.test.run(self.submission, sandbox)
 
         sandbox.run_command.assert_called_once_with(
             [self.interpreter, self.project_filename],

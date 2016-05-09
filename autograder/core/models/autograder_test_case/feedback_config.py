@@ -14,6 +14,8 @@ class AGTestNameFdbkLevel:
               deterministically_obfuscate_name,
               show_real_name]
 
+    max_lvl = show_real_name
+
 
 class ReturnCodeFdbkLevel:
     no_feedback = 'no_feedback'
@@ -23,6 +25,8 @@ class ReturnCodeFdbkLevel:
     values = [no_feedback,
               correct_or_incorrect_only,
               show_expected_and_actual_values]
+
+    max_lvl = show_expected_and_actual_values
 
 
 class StdoutFdbkLevel:
@@ -34,6 +38,8 @@ class StdoutFdbkLevel:
               correct_or_incorrect_only,
               show_expected_and_actual_values]
 
+    max_lvl = show_expected_and_actual_values
+
 
 class StderrFdbkLevel:
     no_feedback = 'no_feedback'
@@ -43,6 +49,8 @@ class StderrFdbkLevel:
     values = [no_feedback,
               correct_or_incorrect_only,
               show_expected_and_actual_values]
+
+    max_lvl = show_expected_and_actual_values
 
 
 class CompilationFdbkLevel:
@@ -54,6 +62,8 @@ class CompilationFdbkLevel:
               success_or_failure_only,
               show_compiler_output]
 
+    max_lvl = show_compiler_output
+
 
 class ValgrindFdbkLevel:
     no_feedback = 'no_feedback'
@@ -64,12 +74,16 @@ class ValgrindFdbkLevel:
               errors_or_no_errors_only,
               show_valgrind_output]
 
+    max_lvl = show_valgrind_output
+
 
 class PointsFdbkLevel:
     hide = 'hide'
     show_breakdown = 'show_breakdown'
 
     values = [hide, show_breakdown]
+
+    max_lvl = show_breakdown
 
 
 class FeedbackConfig(AutograderModel):
@@ -89,6 +103,21 @@ class FeedbackConfig(AutograderModel):
     @classmethod
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
+
+    @classmethod
+    def create_with_max_fdbk(class_):
+        return class_.objects.validate_and_create(
+            ag_test_name_fdbk=AGTestNameFdbkLevel.max_lvl,
+            return_code_fdbk=ReturnCodeFdbkLevel.max_lvl,
+            show_return_code=True,
+            stdout_fdbk=StdoutFdbkLevel.max_lvl,
+            show_stdout_content=True,
+            stderr_fdbk=StderrFdbkLevel.max_lvl,
+            show_stderr_content=True,
+            compilation_fdbk=CompilationFdbkLevel.max_lvl,
+            valgrind_fdbk=ValgrindFdbkLevel.max_lvl,
+            points_fdbk=PointsFdbkLevel.max_lvl,
+        )
 
     ag_test_name_fdbk = ag_fields.ShortStringField(
         choices=zip(AGTestNameFdbkLevel.values, AGTestNameFdbkLevel.values),

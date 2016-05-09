@@ -44,7 +44,6 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertEqual(result.standard_output, stdout_content)
-        self.assertTrue(result.standard_output_correct)
 
     def test_run_incorrect_standard_output(self):
         cpp_file_content = CppProgramStrs.PRINT_TO_STDOUT_TEMPLATE.format(
@@ -61,8 +60,8 @@ class CompiledAutograderTestRunTestCase(
         result.save()
         result.refresh_from_db()
 
-        self.assertNotEqual(result.standard_output, expected_stdout_content)
-        self.assertFalse(result.standard_output_correct)
+        self.assertNotEqual(result.standard_output,
+                            expected_stdout_content)
 
     def test_run_correct_standard_error_output(self):
         stderr_content = "hello world"
@@ -80,7 +79,6 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertEqual(result.standard_error_output, stderr_content)
-        self.assertTrue(result.standard_error_output_correct)
 
     def test_run_incorrect_standard_error_output(self):
         cpp_file_content = CppProgramStrs.PRINT_TO_STDERR_TEMPLATE.format(
@@ -97,9 +95,8 @@ class CompiledAutograderTestRunTestCase(
         result.save()
         result.refresh_from_db()
 
-        self.assertNotEqual(
-            result.standard_error_output, expected_stderr_content)
-        self.assertFalse(result.standard_error_output_correct)
+        self.assertNotEqual(result.standard_error_output,
+                            expected_stderr_content)
 
     def test_run_correct_exact_return_code(self):
         expected_return_code = 0
@@ -108,8 +105,8 @@ class CompiledAutograderTestRunTestCase(
         with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
 
-        self.test_case_starter.expected_return_code = expected_return_code
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            expected_return_code=expected_return_code)
 
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
@@ -117,7 +114,6 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertEqual(expected_return_code, result.return_code)
-        self.assertTrue(result.return_code_correct)
 
     def test_run_incorrect_exact_return_code(self):
         cpp_file_content = CppProgramStrs.RETURN_ONLY_TEMPLATE.format(42)
@@ -125,8 +121,8 @@ class CompiledAutograderTestRunTestCase(
             f.write(cpp_file_content)
 
         expected_return_code = 0
-        self.test_case_starter.expected_return_code = expected_return_code
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            expected_return_code=expected_return_code)
 
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
@@ -134,15 +130,14 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertNotEqual(expected_return_code, result.return_code)
-        self.assertFalse(result.return_code_correct)
 
     def test_run_correct_nonzero_return_code(self):
         cpp_file_content = CppProgramStrs.RETURN_ONLY_TEMPLATE.format(42)
         with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
 
-        self.test_case_starter.expect_any_nonzero_return_code = True
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            expect_any_nonzero_return_code=True)
 
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
@@ -150,15 +145,14 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertNotEqual(0, result.return_code)
-        self.assertTrue(result.return_code_correct)
 
     def test_run_incorrect_nonzero_return_code(self):
         cpp_file_content = CppProgramStrs.RETURN_ONLY_TEMPLATE.format(0)
         with open(self.main_file.abspath, 'w') as f:
             f.write(cpp_file_content)
 
-        self.test_case_starter.expect_any_nonzero_return_code = True
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            expect_any_nonzero_return_code=True)
 
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
@@ -166,7 +160,6 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertEqual(0, result.return_code)
-        self.assertFalse(result.return_code_correct)
 
     def test_run_with_cmd_line_args(self):
         cmd_args = ['spam', 'egg', 'sausage']
@@ -175,9 +168,9 @@ class CompiledAutograderTestRunTestCase(
 
         expected_output = ' '.join(cmd_args)
 
-        self.test_case_starter.command_line_arguments = cmd_args
-        self.test_case_starter.expected_standard_output = expected_output
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            command_line_arguments=cmd_args,
+            expected_standard_output=expected_output)
 
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
@@ -185,7 +178,6 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertEqual(expected_output, result.standard_output)
-        self.assertTrue(result.standard_output_correct)
 
     def test_run_with_stdin_contents(self):
         with open(self.main_file.abspath, 'w') as f:
@@ -204,7 +196,6 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertEqual(expected_output, result.standard_output)
-        self.assertTrue(result.standard_output_correct)
 
     def test_run_with_program_that_reads_from_file(self):
         expected_output = 'spam baked beans lobster sauce '
@@ -229,7 +220,6 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertEqual(expected_output, result.standard_output)
-        self.assertTrue(result.standard_output_correct)
 
     def test_run_with_timeout(self):
         with open(self.main_file.abspath, 'w') as f:
@@ -250,8 +240,8 @@ class CompiledAutograderTestRunTestCase(
         with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.RETURN_ONLY_TEMPLATE.format(0))
 
-        self.test_case_starter.use_valgrind = True
-        self.test_case_starter.save()
+        self.test_case_starter.validate_and_update(
+            use_valgrind=True)
 
         result = self.test_case_starter.run(
             submission=self.submission, autograder_sandbox=self.sandbox)
@@ -259,11 +249,9 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertEqual(result.valgrind_return_code, 0)
-
         # We won't be checking exact valgrind output, but we want
         # to make sure that the output was still recorded.
         self.assertNotEqual(result.valgrind_output, '')
-        self.assertFalse(result.valgrind_errors_present)
 
     def test_run_with_valgrind_with_errors(self):
         with open(self.main_file.abspath, 'w') as f:
@@ -278,9 +266,7 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertNotEqual(result.valgrind_return_code, 0)
-
         self.assertNotEqual(result.valgrind_output, '')
-        self.assertTrue(result.valgrind_errors_present)
 
     def test_run_compile_error(self):
         with open(self.main_file.abspath, 'w') as f:
@@ -293,7 +279,6 @@ class CompiledAutograderTestRunTestCase(
 
         self.assertNotEqual(result.compilation_return_code, 0)
         self.assertNotEqual(result.compilation_standard_error_output, '')
-        self.assertFalse(result.compilation_succeeded)
 
     def test_run_everything_correct(self):
         stdout_msg = 'standard spam output'
@@ -334,16 +319,9 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertEqual(expected_stdout, result.standard_output)
-        self.assertTrue(result.standard_output_correct)
-
         self.assertEqual(stderr_msg, result.standard_error_output)
-        self.assertTrue(result.standard_error_output_correct)
-
         self.assertEqual(0, result.return_code)
-        self.assertTrue(result.return_code_correct)
-
         self.assertEqual(0, result.valgrind_return_code)
-        self.assertFalse(result.valgrind_errors_present)
 
     def test_run_everything_incorrect(self):
         stdout_msg = '" << new int(42) << "'
@@ -381,16 +359,9 @@ class CompiledAutograderTestRunTestCase(
         result.refresh_from_db()
 
         self.assertNotEqual(expected_stdout, result.standard_output)
-        self.assertFalse(result.standard_output_correct)
-
         self.assertNotEqual('stderr_msg', result.standard_error_output)
-        self.assertFalse(result.standard_error_output_correct)
-
         self.assertNotEqual(0, result.return_code)
-        self.assertFalse(result.return_code_correct)
-
         self.assertNotEqual(0, result.valgrind_return_code)
-        self.assertTrue(result.valgrind_errors_present)
 
 
 class CompiledAGTestResourceLimitTestCase(TemporaryFilesystemTestCase):
@@ -401,12 +372,16 @@ class CompiledAGTestResourceLimitTestCase(TemporaryFilesystemTestCase):
         self.virtual_mem_limit = random.randint(100000000, 200000000)
         self.process_limit = random.randint(1, 5)
 
-        project = obj_ut.build_project()
+        group = obj_ut.build_submission_group()
+
+        self.submission = ag_models.Submission.objects.validate_and_create(
+            submission_group=group,
+            submitted_files=[])
 
         self.test = ag_models.AutograderTestCaseFactory.validate_and_create(
             'compiled_and_run_test_case',
             name='testy',
-            project=project,
+            project=group.project,
             process_spawn_limit=self.process_limit,
             stack_size_limit=self.stack_limit,
             virtual_memory_limit=self.virtual_mem_limit,
@@ -421,7 +396,7 @@ class CompiledAGTestResourceLimitTestCase(TemporaryFilesystemTestCase):
 
         sandbox = MockSandbox()
         sandbox.run_command.return_value = run_cmd_mock_result
-        self.test.run(None, sandbox)
+        self.test.run(self.submission, sandbox)
 
         sandbox.run_command.assert_called_with(
             ['./' + self.test.executable_name],
@@ -444,7 +419,7 @@ class CompiledAGTestResourceLimitTestCase(TemporaryFilesystemTestCase):
 
         sandbox = MockSandbox()
         sandbox.run_command.return_value = run_cmd_mock_result
-        self.test.run(None, sandbox)
+        self.test.run(self.submission, sandbox)
 
         sandbox.run_command.assert_called_with(
             ['valgrind'] + self.test.valgrind_flags +
