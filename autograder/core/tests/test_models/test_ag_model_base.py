@@ -73,7 +73,8 @@ class AGModelBaseToDictTest(TestCase):
         expected = {
             'name': related.name,
             'one_to_one': self.ag_model.pk,
-            'foreign_key': self.ag_model.pk
+            'foreign_key': self.ag_model.pk,
+            'nullable_one_to_one': None,
         }
         result = related.to_dict()
 

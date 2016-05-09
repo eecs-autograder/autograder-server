@@ -33,7 +33,7 @@ class Project(AutograderModel):
     class Meta:
         unique_together = ('name', 'semester')
 
-    DEFAULT_INCLUDE_FIELDS = [
+    _DEFAULT_TO_DICT_FIELDS = [
         'name',
         'semester',
         'visible_to_students',
@@ -43,6 +43,10 @@ class Project(AutograderModel):
         'min_group_size',
         'max_group_size',
     ]
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return class_._DEFAULT_TO_DICT_FIELDS
 
     name = ag_fields.ShortStringField(
         help_text='''The name used to identify this project.

@@ -85,7 +85,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
         ]
 
         self.assertCountEqual(expected_fields,
-                              project.DEFAULT_INCLUDE_FIELDS)
+                              ag_models.Project.get_default_to_dict_fields())
         project = obj_ut.build_project()
         self.assertTrue(project.to_dict())
 

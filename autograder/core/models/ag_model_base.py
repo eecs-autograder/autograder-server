@@ -1,4 +1,5 @@
 from django.db import models
+from django.core import exceptions
 
 import polymorphic.models as poly_models
 
@@ -92,10 +93,15 @@ class _AutograderModelMixin:
 
         for field_name in to_include:
             result[field_name] = getattr(self, field_name)
-            if field_name in self._meta.get_fields():
+            try:
                 field = self._meta.get_field(field_name)
                 if field.many_to_one or field.one_to_one:
-                    result[field_name] = getattr(self, field_name).pk
+                    field_val = getattr(self, field_name)
+                    if field_val is None:
+                        continue
+                    result[field_name] = field_val.pk
+            except exceptions.FieldDoesNotExist:
+                pass
 
         return result
 

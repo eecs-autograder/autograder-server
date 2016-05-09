@@ -26,7 +26,7 @@ class _DummyAutograderModel(AutograderModel):
 
     @classmethod
     def get_default_to_dict_fields(class_):
-        return class_.DEFAULT_TO_DICT_FIELDS
+        return class_._DEFAULT_TO_DICT_FIELDS
 
 
 class _DummyForeignAutograderModel(AutograderModel):
@@ -34,11 +34,16 @@ class _DummyForeignAutograderModel(AutograderModel):
     one_to_one = models.OneToOneField(_DummyAutograderModel)
     foreign_key = models.ForeignKey(_DummyAutograderModel,
                                     related_name='dummies')
+    nullable_one_to_one = models.OneToOneField(
+        _DummyAutograderModel,
+        blank=True, null=True, default=None,
+        related_name='nullables')
 
     _DEFAULT_TO_DICT_FIELDS = frozenset([
         'name',
         'one_to_one',
-        'foreign_key'
+        'foreign_key',
+        'nullable_one_to_one'
     ])
 
     @classmethod
