@@ -1,13 +1,12 @@
 import random
 import string
 
+import autograder.core.models as ag_models
+import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
+
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
-
-import autograder.core.models as ag_models
-
-import autograder.core.shared.feedback_configuration as fbc
-
+import autograder.core.tests.dummy_object_utils as obj_ut
 from autograder.core.tests.test_models.test_autograder_test_case.models \
     import _DummyCompiledAutograderTestCase
 
@@ -16,12 +15,16 @@ class ValgrindFdbkTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
+        self.project = obj_ut.build_project()
+
         self.valgrind_output = (
             'memcheckererr ' + random.choice(string.ascii_letters))
-        self.valgrind_ag_test = _DummyCompiledAutograderTestCase(
+        self.valgrind_ag_test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
             name='valgrind_ag_test',
+            project=self.project,
+            compiler='g++',
             use_valgrind=True,
-            deduction_for_valgrind_errors=random.randint(-5, -2))
+            deduction_for_valgrind_errors=random.randint(2, 5))
 
         self.correct_result = ag_models.AutograderTestCaseResult(
             test_case=self.valgrind_ag_test,
@@ -49,17 +52,16 @@ class ValgrindFdbkTestCase(TemporaryFilesystemTestCase):
             self.incorrect_result.get_feedback().valgrind_points_deducted)
 
         # Show points set (but points still hidden)
-        self.valgrind_ag_test.feedback_configuration.points_feedback_level = (
-            fbc.PointsFeedbackLevel.show_breakdown)
+        self.valgrind_ag_test.feedback_configuration.validate_and_update(
+            points_fdbk=fdbk_lvls.PointsFdbkLevel.show_breakdown)
         self.assertIsNone(
             self.correct_result.get_feedback().valgrind_points_deducted)
         self.assertIsNone(
             self.incorrect_result.get_feedback().valgrind_points_deducted)
 
     def test_errors_or_no_errors_only(self):
-        (self.valgrind_ag_test.feedback_configuration
-                              .valgrind_feedback_level) = (
-            fbc.ValgrindFeedbackLevel.errors_or_no_errors_only)
+        self.valgrind_ag_test.feedback_configuration.validate_and_update(
+            valgrind_fdbk=fdbk_lvls.ValgrindFdbkLevel.errors_or_no_errors_only)
 
         self.assertFalse(
             self.correct_result.get_feedback().valgrind_errors_reported)
@@ -72,9 +74,8 @@ class ValgrindFdbkTestCase(TemporaryFilesystemTestCase):
         self._check_points_shown_and_hidden()
 
     def test_show_valgrind_output(self):
-        (self.valgrind_ag_test.feedback_configuration
-                              .valgrind_feedback_level) = (
-            fbc.ValgrindFeedbackLevel.show_valgrind_output)
+        self.valgrind_ag_test.feedback_configuration.validate_and_update(
+            valgrind_fdbk=fdbk_lvls.ValgrindFdbkLevel.show_valgrind_output)
 
         self.assertFalse(
             self.correct_result.get_feedback().valgrind_errors_reported)
@@ -89,8 +90,11 @@ class ValgrindFdbkTestCase(TemporaryFilesystemTestCase):
         self._check_points_shown_and_hidden()
 
     def test_fdbk_not_applicable_valgrind_not_used(self):
-        no_valgrind_test = _DummyCompiledAutograderTestCase(
-            name='no_valgrind_test', deduction_for_valgrind_errors=42)
+        no_valgrind_test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
+            name='no_valgrind_test',
+            project=self.project,
+            compiler='g++',
+            deduction_for_valgrind_errors=42)
         result = ag_models.AutograderTestCaseResult(test_case=no_valgrind_test)
 
         self.assertIsNone(
@@ -106,8 +110,8 @@ class ValgrindFdbkTestCase(TemporaryFilesystemTestCase):
             self.incorrect_result.get_feedback().valgrind_points_deducted)
 
         # Show points
-        self.valgrind_ag_test.feedback_configuration.points_feedback_level = (
-            fbc.PointsFeedbackLevel.show_breakdown)
+        self.valgrind_ag_test.feedback_configuration.validate_and_update(
+            points_fdbk=fdbk_lvls.PointsFdbkLevel.show_breakdown)
         self.assertEqual(
             0,
             self.correct_result.get_feedback().valgrind_points_deducted)

@@ -14,7 +14,7 @@ from .endpoint_base import EndpointBase
 from autograder.core import models as ag_models
 from autograder.rest_api import url_shortcuts
 
-import autograder.core.shared.feedback_configuration as fbc
+# import autograder.core.shared.feedback_configuration as fbc
 
 
 class GetUpdateDeleteAutograderTestCaseEndpoint(EndpointBase):

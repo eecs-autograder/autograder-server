@@ -5,8 +5,8 @@ from django.core import exceptions
 import autograder.core.models as ag_models
 import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
 
-from .models import _DummyAutograderTestCase
-import autograder.core.tests.dummy_object_utils as obj_ut
+# from .models import _DummyAutograderTestCase
+# import autograder.core.tests.dummy_object_utils as obj_ut
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
@@ -22,16 +22,25 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(fdbk_lvls.AGTestNameFdbkLevel.show_real_name,
                          fdbk_conf.ag_test_name_fdbk)
+
         self.assertEqual(fdbk_lvls.ReturnCodeFdbkLevel.no_feedback,
                          fdbk_conf.return_code_fdbk)
+        self.assertFalse(fdbk_conf.show_return_code)
+
         self.assertEqual(fdbk_lvls.StdoutFdbkLevel.no_feedback,
                          fdbk_conf.stdout_fdbk)
+        self.assertFalse(fdbk_conf.show_stdout_content)
+
         self.assertEqual(fdbk_lvls.StderrFdbkLevel.no_feedback,
                          fdbk_conf.stderr_fdbk)
+        self.assertFalse(fdbk_conf.show_stderr_content)
+
         self.assertEqual(fdbk_lvls.CompilationFdbkLevel.no_feedback,
                          fdbk_conf.compilation_fdbk)
+
         self.assertEqual(fdbk_lvls.ValgrindFdbkLevel.no_feedback,
                          fdbk_conf.valgrind_fdbk)
+
         self.assertEqual(fdbk_lvls.PointsFdbkLevel.hide,
                          fdbk_conf.points_fdbk)
 
@@ -42,10 +51,13 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
                     fdbk_lvls.AGTestNameFdbkLevel.values),
                 'return_code_fdbk': random.choice(
                     fdbk_lvls.ReturnCodeFdbkLevel.values),
+                'show_return_code': True,
                 'stdout_fdbk': random.choice(
                     fdbk_lvls.StdoutFdbkLevel.values),
+                'show_stdout_content': True,
                 'stderr_fdbk': random.choice(
                     fdbk_lvls.StderrFdbkLevel.values),
+                'show_stderr_content': True,
                 'compilation_fdbk': random.choice(
                     fdbk_lvls.CompilationFdbkLevel.values),
                 'valgrind_fdbk': random.choice(
@@ -88,8 +100,11 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
         field_names = [
             'ag_test_name_fdbk',
             'return_code_fdbk',
+            'show_return_code',
             'stdout_fdbk',
+            'show_stdout_content',
             'stderr_fdbk',
+            'show_stderr_content',
             'compilation_fdbk',
             'valgrind_fdbk',
             'points_fdbk',
@@ -97,3 +112,5 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
 
         self.assertCountEqual(
             field_names, ag_models.FeedbackConfig.get_default_to_dict_fields())
+
+        self.assertTrue(ag_models.FeedbackConfig().to_dict())

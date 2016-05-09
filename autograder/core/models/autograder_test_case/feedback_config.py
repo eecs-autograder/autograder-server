@@ -76,8 +76,11 @@ class FeedbackConfig(AutograderModel):
     _DEFAULT_TO_DICT_FIELDS = [
         'ag_test_name_fdbk',
         'return_code_fdbk',
+        'show_return_code',
         'stdout_fdbk',
+        'show_stdout_content',
         'stderr_fdbk',
+        'show_stderr_content',
         'compilation_fdbk',
         'valgrind_fdbk',
         'points_fdbk',
@@ -95,13 +98,19 @@ class FeedbackConfig(AutograderModel):
         choices=zip(ReturnCodeFdbkLevel.values, ReturnCodeFdbkLevel.values),
         default=ReturnCodeFdbkLevel.no_feedback)
 
+    show_return_code = models.BooleanField(default=False)
+
     stdout_fdbk = ag_fields.ShortStringField(
         choices=zip(StdoutFdbkLevel.values, StdoutFdbkLevel.values),
         default=StdoutFdbkLevel.no_feedback)
 
+    show_stdout_content = models.BooleanField(default=False)
+
     stderr_fdbk = ag_fields.ShortStringField(
         choices=zip(StderrFdbkLevel.values, StderrFdbkLevel.values),
         default=StderrFdbkLevel.no_feedback)
+
+    show_stderr_content = models.BooleanField(default=False)
 
     compilation_fdbk = ag_fields.ShortStringField(
         choices=zip(CompilationFdbkLevel.values, CompilationFdbkLevel.values),

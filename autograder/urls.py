@@ -28,12 +28,12 @@ from django.contrib.auth.decorators import login_required
 # from django.views.generic.base import RedirectView
 
 urlpatterns = [
-    url(r'^login/$', views.LoginView.as_view(), name='login'),
-    url(r'^callback/$', views.LoginView.as_view(), name='callback'),
-    url(r'^', include('autograder.rest_api.urls')),
-    url(r'^$|^semester/.*|^project/.*|^edit-project/.*|^submission/.*|^ag-test/.*|^submitted-file/.*',
-        login_required(views.MainAppPage.as_view()), name='main-app-page'),
-    # url(r'^$', RedirectView.as_view(url='/app/'))
+    # url(r'^login/$', views.LoginView.as_view(), name='login'),
+    # url(r'^callback/$', views.LoginView.as_view(), name='callback'),
+    # url(r'^', include('autograder.rest_api.urls')),
+    # url(r'^$|^semester/.*|^project/.*|^edit-project/.*|^submission/.*|^ag-test/.*|^submitted-file/.*',
+    #     login_required(views.MainAppPage.as_view()), name='main-app-page'),
+    # # url(r'^$', RedirectView.as_view(url='/app/'))
 ]
 
 

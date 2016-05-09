@@ -5,9 +5,9 @@ from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
 import autograder.core.models as ag_models
+import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
 
-import autograder.core.shared.feedback_configuration as fbc
-
+import autograder.core.tests.dummy_object_utils as obj_ut
 from autograder.core.tests.test_models.test_autograder_test_case.models \
     import _DummyAutograderTestCase
 
@@ -16,16 +16,19 @@ class AgTestNameFdbkTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
+        self.project = obj_ut.build_project()
         self.ag_test_name = 'test case ' + random.choice(string.ascii_letters)
-        self.ag_test = _DummyAutograderTestCase(
-            name=self.ag_test_name)
+        self.ag_test = _DummyAutograderTestCase.objects.validate_and_create(
+            name=self.ag_test_name,
+            project=self.project)
 
         self.result = ag_models.AutograderTestCaseResult(
             test_case=self.ag_test)
 
     def test_randomly_obfuscated_name(self):
-        self.ag_test.feedback_configuration.name_level = (
-            fbc.AutograderTestCaseNameFeedbackLevel.randomly_obfuscate_name)
+        self.ag_test.feedback_configuration.validate_and_update(
+            ag_test_name_fdbk=(
+                fdbk_lvls.AGTestNameFdbkLevel.randomly_obfuscate_name))
 
         generated_names = []
         for i in range(1000):
@@ -37,9 +40,10 @@ class AgTestNameFdbkTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(set(generated_names), generated_names)
 
     def test_deterministically_obfuscate_name(self):
-        self.ag_test.feedback_configuration.name_level = (
-            fbc.AutograderTestCaseNameFeedbackLevel
-               .deterministically_obfuscate_name)
+        self.ag_test.feedback_configuration.validate_and_update(
+            ag_test_name_fdbk=(
+                fdbk_lvls.AGTestNameFdbkLevel.deterministically_obfuscate_name)
+        )
 
         self.ag_test.pk = random.randint(1, 1000)
         expected_name = 'test{}'.format(self.ag_test.pk)
