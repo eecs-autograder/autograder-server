@@ -22,6 +22,7 @@ class AutograderSandbox:
 
     Instances of this class are intended to be used with a context manager.
     """
+
     def __init__(self, name=None, allow_network_access=False,
                  environment_variables=None):
         """
