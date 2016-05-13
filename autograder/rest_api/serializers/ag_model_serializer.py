@@ -2,6 +2,12 @@ from rest_framework import serializers
 
 
 class AGModelSerializer(serializers.BaseSerializer):
+    """
+    The purpose of this base class is to push data validation down to
+    the database level while making it still be possible to use django-
+    rest-framework's generic views when desired.
+    """
+
     def get_ag_model_manager(self):
         """
         Returns a django model manager object that can be used to create
