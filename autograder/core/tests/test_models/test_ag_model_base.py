@@ -50,9 +50,13 @@ class AGModelBaseToDictTest(TestCase):
         self.assertEqual(expected, result)
 
     def test_error_bad_include_field_name(self):
-        with self.assertRaises(exceptions.ValidationError):
+        with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_model.to_dict(
                 include_fields=['pos_num_val', 'not_a_field_name'])
+
+        self.assertIn('invalid_field_names', cm.exception.message_dict)
+        self.assertIn('not_a_field_name',
+                      cm.exception.message_dict['invalid_field_names'])
 
     def test_no_error_bad_exclude_field_name(self):
         result = self.ag_model.to_dict(
@@ -113,7 +117,8 @@ class AGModelValidateAndUpdateTestCase(TestCase):
 
         self.ag_model = _DummyAutograderModel.objects.validate_and_create(
             pos_num_val=15,
-            non_empty_str_val='spam')
+            non_empty_str_val='spam',
+            read_only_field='blah')
 
     def test_valid_update(self):
         new_num = random.randint(100, 200)
@@ -145,3 +150,11 @@ class AGModelValidateAndUpdateTestCase(TestCase):
     def test_invalid_update_nonexistant_field(self):
         with self.assertRaises(exceptions.ValidationError):
             self.ag_model.validate_and_update(not_a_field_name='spam')
+
+    def test_invalid_update_non_editable_field(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.ag_model.validate_and_update(read_only_field='steve')
+
+        self.assertIn('non_editable_fields', cm.exception.message_dict)
+        self.assertIn('read_only_field',
+                      cm.exception.message_dict['non_editable_fields'])

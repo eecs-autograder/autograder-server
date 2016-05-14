@@ -23,18 +23,26 @@ class _AutograderModelMixin:
     @classmethod
     def get_default_to_dict_fields(class_):
         """
-        An iterable of the names of member variables to include by
-        default in the dictionary returned by to_dict()
+        Returns a collection of the names of member variables to include
+        by default in the dictionary returned by to_dict()
 
-        This set can include model fields, properties, member variables,
-        "-to-one" relationships, and anything else for which getattr()
-        returns the desired value.
+        This collection can include model fields, properties, member
+        variables, "-to-one" relationships, and anything else for which
+        getattr() returns the desired value.
         By default, "-to-one" relationships will be represented as the
         primary key of the related object.
         In order to include "-to-many" relationships, you must override
-        the default behavior of this function to handle them correctly.
+        to_dict() to handle them correctly.
         """
-        raise NotImplementedError('Subclasses must override this method')
+        raise NotImplementedError('Subclasses should override this method')
+
+    @classmethod
+    def get_editable_fields(class_):
+        """
+        Returns a collection of the names of database fields that can be
+        edited on this model type using model.validate_and_update()
+        """
+        raise NotImplementedError('Subclasses should override this method')
 
     def validate_and_update(self, **kwargs):
         """
@@ -45,12 +53,16 @@ class _AutograderModelMixin:
         and calling full_clean() because this method can perform
         extra validation that depends on the old and new values of
         fields.
-        Raises ValidationError if any specified field doesn't exist.
+        Raises ValidationError if any specified field doesn't exist or
+        is not editable.
         """
         for field_name, val in kwargs.items():
             if not hasattr(self, field_name):
                 raise exceptions.ValidationError(
                     {_INVALID_FIELD_NAMES_KEY: [field_name]})
+            if field_name not in self.get_editable_fields():
+                raise exceptions.ValidationError(
+                    {'non_editable_fields': [field_name]})
             setattr(self, field_name, val)
 
         self.full_clean()
@@ -60,21 +72,19 @@ class _AutograderModelMixin:
         """
         Returns a dictionary representation of this model instance.
 
-        :param include_fields: The names of fields that should
-            be included in the dictionary. If this value is None,
-            then all fields listed in get_default_to_dict_fields()
-            will be included.
-            Names specified here must be present in
-            get_default_to_dict_fields(), otherwise ValidationError will
-            be raised.
-        :type include_fields: list or None
+        Keyword arguments:
+            include_fields -- The names of fields that should be
+                included in the dictionary. If this value is None, then
+                all fields listed in get_default_to_dict_fields() will
+                be included. Names specified here must be present in
+                get_default_to_dict_fields(), otherwise ValidationError
+                will be raised.
 
-        :param exclude_fields: The names of fields that should NOT be
-            included in the dictionary. Fields specified both here and in
-            include_fields will be excluded.
-            Any fields names specified here that are not listed in
-            get_default_to_dict_fields() will be ignored.
-        :type exclude_fields: list or None
+            param exclude_fields -- The names of fields that should NOT
+                be included in the dictionary. Fields specified both
+                here and in include_fields will be excluded. Any fields
+                names specified here that are not listed in
+                get_default_to_dict_fields() will be ignored.
         """
         default_fields = frozenset(self.get_default_to_dict_fields())
         if include_fields is None:
@@ -87,7 +97,7 @@ class _AutograderModelMixin:
         illegal_fields = include_fields - default_fields
         if illegal_fields:
             raise exceptions.ValidationError(
-                {_INVALID_FIELD_NAMES_KEY: illegal_fields})
+                {_INVALID_FIELD_NAMES_KEY: list(illegal_fields)})
 
         to_include = (include_fields if include_fields is not None
                       else default_fields)
