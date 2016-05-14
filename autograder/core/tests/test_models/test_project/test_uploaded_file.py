@@ -2,6 +2,7 @@ import os
 
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.conf import settings
 
 from autograder.core.models.project.uploaded_file import UploadedFile
 
@@ -12,7 +13,7 @@ from autograder.core.tests.temporary_filesystem_test_case import (
 import autograder.core.tests.dummy_object_utils as obj_ut
 
 
-class CreateUploadedFileTestCase(TemporaryFilesystemTestCase):
+class _SetUp:
     def setUp(self):
         super().setUp()
 
@@ -20,6 +21,38 @@ class CreateUploadedFileTestCase(TemporaryFilesystemTestCase):
         self.file_obj = SimpleUploadedFile(
             'project_file.txt', b'contents more contents.')
 
+
+class RenameUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.uploaded_file = UploadedFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=self.file_obj)
+
+    def test_valid_rename(self):
+        new_name = 'new_filename'
+        self.uploaded_file.rename(new_name)
+
+        self.uploaded_file.refresh_from_db()
+
+        self.assertEqual(new_name, self.uploaded_file.name)
+        with ut.ChangeDirectory(ut.get_project_files_dir(self.project)):
+            self.assertTrue(os.path.isfile(new_name))
+
+    def test_path_info_stripped_from_new_name(self):
+        name_with_path = '../../hack/you'
+        self.uploaded_file.rename(name_with_path)
+
+        self.uploaded_file.refresh_from_db()
+
+        expected_new_name = 'you'
+        self.assertEqual(expected_new_name, self.uploaded_file.name)
+        with ut.ChangeDirectory(ut.get_project_files_dir(self.project)):
+            self.assertTrue(os.path.isfile(expected_new_name))
+
+
+class CreateUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
     def test_default_to_dict_fields(self):
         expected = [
             'name',
@@ -33,15 +66,24 @@ class CreateUploadedFileTestCase(TemporaryFilesystemTestCase):
         uploaded_file = UploadedFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
-
         self.assertTrue(uploaded_file.to_dict())
+
+    def test_editable_fields(self):
+        expected = []
+
+        self.assertCountEqual(expected, UploadedFile.get_editable_fields())
 
     def test_valid_create(self):
         uploaded_file = UploadedFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
 
-        self.assertEqual(uploaded_file.basename, self.file_obj.name)
+        self.assertEqual(self.file_obj.name, uploaded_file.name)
+        expected_abspath = os.path.join(
+            ut.get_project_files_dir(self.project), self.file_obj.name)
+        self.assertEqual(expected_abspath, uploaded_file.abspath)
+        self.assertEqual(self.file_obj.size, uploaded_file.size)
+
         self.file_obj.seek(0)
         self.assertEqual(self.file_obj.read(), uploaded_file.file_obj.read())
 
@@ -66,7 +108,7 @@ class CreateUploadedFileTestCase(TemporaryFilesystemTestCase):
             project=self.project,
             file_obj=self.file_obj)
 
-        self.assertEqual(new_filename, uploaded_file.basename)
+        self.assertEqual(new_filename, uploaded_file.name)
 
     def test_exception_illegal_filenames(self):
         illegal_filenames = [

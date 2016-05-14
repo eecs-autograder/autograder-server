@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from django.db import models
 from django.conf import settings
@@ -10,9 +11,14 @@ import autograder.core.shared.global_constants as gc
 import autograder.core.shared.utilities as ut
 
 
-def _get_project_file_upload_to_dir(instance, filename):
+def _get_project_file_upload_to_path(instance, filename):
     return os.path.join(
         ut.get_project_files_relative_dir(instance.project), filename)
+
+
+# For migrations backwards compatibility
+def _get_project_file_upload_to_dir(instance, filename):
+    return _get_project_file_upload_to_path(instance, filename)
 
 
 def _validate_filename(file_obj):
@@ -34,15 +40,34 @@ class UploadedFile(AutograderModel):
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
 
+    @classmethod
+    def get_editable_fields(class_):
+        return []
+
     project = models.ForeignKey(Project, related_name='uploaded_files')
     file_obj = models.FileField(
-        upload_to=_get_project_file_upload_to_dir,
+        upload_to=_get_project_file_upload_to_path,
         validators=[_validate_filename],
         max_length=gc.MAX_CHAR_FIELD_LEN * 2)
 
     @property
     def name(self):
         return self.basename
+
+    def rename(self, new_name):
+        """
+        Renames the file stored in this model instance.
+        Any path information in new_name is stripped before renaming the
+        file, for security reasons.
+        """
+        new_name = os.path.basename(new_name)
+
+        old_abspath = self.abspath
+        self.file_obj.name = _get_project_file_upload_to_path(self, new_name)
+        new_abspath = self.abspath
+
+        shutil.move(old_abspath, new_abspath)
+        self.save()
 
     @property
     def abspath(self):
@@ -55,3 +80,17 @@ class UploadedFile(AutograderModel):
     @property
     def size(self):
         return self.file_obj.size
+
+    # def validate_and_update(self, **kwargs):
+    #     with transaction.atomic():
+    #     if 'name' in kwargs:
+    #         new_name = kwargs.pop('name')
+    #         old_abspath = self.abspath
+    #         self.file_obj.name = new_name
+    #         new_abspath = self.abspath
+
+    #         print(old_abspath)
+    #         print(new_abspath)
+    #         # shutil.move(old_abspath, self.abspath)
+
+    #     super().validate_and_update(**kwargs)

@@ -13,6 +13,7 @@ class _DummyAutograderModel(AutograderModel):
         validators=[validators.MinValueValidator(0)])
     non_empty_str_val = models.TextField(
         validators=[validators.MinLengthValidator(1)])
+    read_only_field = models.TextField(blank=True)
 
     @property
     def the_answer(self):
@@ -21,12 +22,21 @@ class _DummyAutograderModel(AutograderModel):
     _DEFAULT_TO_DICT_FIELDS = frozenset([
         'pos_num_val',
         'non_empty_str_val',
-        'the_answer',
+        'the_answer'
     ])
 
     @classmethod
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
+
+    _EDITABLE_FIELDS = [
+        'pos_num_val',
+        'non_empty_str_val',
+    ]
+
+    @classmethod
+    def get_editable_fields(class_):
+        return class_._EDITABLE_FIELDS
 
 
 class _DummyForeignAutograderModel(AutograderModel):
