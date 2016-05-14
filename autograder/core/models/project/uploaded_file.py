@@ -80,17 +80,3 @@ class UploadedFile(AutograderModel):
     @property
     def size(self):
         return self.file_obj.size
-
-    # def validate_and_update(self, **kwargs):
-    #     with transaction.atomic():
-    #     if 'name' in kwargs:
-    #         new_name = kwargs.pop('name')
-    #         old_abspath = self.abspath
-    #         self.file_obj.name = new_name
-    #         new_abspath = self.abspath
-
-    #         print(old_abspath)
-    #         print(new_abspath)
-    #         # shutil.move(old_abspath, self.abspath)
-
-    #     super().validate_and_update(**kwargs)
