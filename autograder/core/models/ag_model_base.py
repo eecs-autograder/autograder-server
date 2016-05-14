@@ -16,6 +16,8 @@ class _AutograderModelManagerMixin:
         instance.save()
         return instance
 
+_INVALID_FIELD_NAMES_KEY = 'invalid_field_names'
+
 
 class _AutograderModelMixin:
     @classmethod
@@ -43,11 +45,12 @@ class _AutograderModelMixin:
         and calling full_clean() because this method can perform
         extra validation that depends on the old and new values of
         fields.
-        Raises AttributeError if any specified field doesn't exist.
+        Raises ValidationError if any specified field doesn't exist.
         """
         for field_name, val in kwargs.items():
             if not hasattr(self, field_name):
-                raise AttributeError('Field not found: {}'.format(field_name))
+                raise exceptions.ValidationError(
+                    {_INVALID_FIELD_NAMES_KEY: [field_name]})
             setattr(self, field_name, val)
 
         self.full_clean()
@@ -59,18 +62,18 @@ class _AutograderModelMixin:
 
         :param include_fields: The names of fields that should
             be included in the dictionary. If this value is None,
-            then all fields listed in DEFAULT_INCLUDE_FIELDS
+            then all fields listed in get_default_to_dict_fields()
             will be included.
             Names specified here must be present in
-            DEFAULT_INCLUDE_FIELDS, otherwise AttributeError will
+            get_default_to_dict_fields(), otherwise ValidationError will
             be raised.
         :type include_fields: list or None
 
         :param exclude_fields: The names of fields that should NOT be
-            included in the dictionary. Field names specified here
-            will override field names specified in include_fields.
-            Fields specified here that are not in DEFAULT_INCLUDE_FIELDS
-            or include_fields will be ignored.
+            included in the dictionary. Fields specified both here and in
+            include_fields will be excluded.
+            Any fields names specified here that are not listed in
+            get_default_to_dict_fields() will be ignored.
         :type exclude_fields: list or None
         """
         default_fields = frozenset(self.get_default_to_dict_fields())
@@ -83,8 +86,8 @@ class _AutograderModelMixin:
         include_fields = set(include_fields)
         illegal_fields = include_fields - default_fields
         if illegal_fields:
-            raise AttributeError(
-                'Cannot serialize the fields: ' + ','.join(illegal_fields))
+            raise exceptions.ValidationError(
+                {_INVALID_FIELD_NAMES_KEY: illegal_fields})
 
         to_include = (include_fields if include_fields is not None
                       else default_fields)

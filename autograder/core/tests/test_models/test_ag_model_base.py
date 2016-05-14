@@ -50,7 +50,7 @@ class AGModelBaseToDictTest(TestCase):
         self.assertEqual(expected, result)
 
     def test_error_bad_include_field_name(self):
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(exceptions.ValidationError):
             self.ag_model.to_dict(
                 include_fields=['pos_num_val', 'not_a_field_name'])
 
@@ -143,5 +143,5 @@ class AGModelValidateAndUpdateTestCase(TestCase):
         self.assertEqual(old_vals, self.ag_model.to_dict())
 
     def test_invalid_update_nonexistant_field(self):
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(exceptions.ValidationError):
             self.ag_model.validate_and_update(not_a_field_name='spam')
