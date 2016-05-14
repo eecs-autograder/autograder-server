@@ -9,6 +9,20 @@ class AGModelSerializer(serializers.BaseSerializer):
     rest-framework's generic views when desired.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.include_fields = None
+        self.exclude_fields = None
+
+        if not self.context:
+            return
+
+        self.include_fields = (
+            self.context['request'].query_params.getall('include_fields'))
+        self.exclude_fields = (
+            self.context['request'].query_params.getall('exclude_fields'))
+
     def get_ag_model_manager(self):
         """
         Returns a django model manager object that can be used to create
@@ -18,7 +32,8 @@ class AGModelSerializer(serializers.BaseSerializer):
             "Derived classes must override this method")
 
     def to_representation(self, obj):
-        return obj.to_dict()
+        return obj.to_dict(include_fields=self.include_fields,
+                           exclude_fields=self.exclude_fields)
 
     # Subclasses may need to override this if any sub-objects need to be
     # deserialized (for example, FeedbackConfig objects)
