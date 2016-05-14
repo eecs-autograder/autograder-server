@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.core import exceptions
 
 
 class AGModelSerializer(serializers.BaseSerializer):
@@ -25,12 +26,18 @@ class AGModelSerializer(serializers.BaseSerializer):
         return data
 
     def create(self, validated_data):
-        return self.get_ag_model_manager().validate_and_create(
-            **validated_data)
+        try:
+            return self.get_ag_model_manager().validate_and_create(
+                **validated_data)
+        except exceptions.ValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
 
     def update(self, instance, validated_data):
-        instance.validate_and_update(**validated_data)
-        return instance
+        try:
+            instance.validate_and_update(**validated_data)
+            return instance
+        except exceptions.ValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
 
     # Since we're pushing the validation down to the database
     # level, this method should do nothing.

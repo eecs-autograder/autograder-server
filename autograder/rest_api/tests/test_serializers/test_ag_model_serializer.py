@@ -1,8 +1,7 @@
 import random
 
 from django import test
-from django.core import exceptions
-# from rest_framework import parsers
+from rest_framework import serializers
 
 from autograder.core.tests.test_models.models import _DummyAutograderModel
 
@@ -40,7 +39,7 @@ class AGModelSerializerTestCase(test.TestCase):
                          loaded.non_empty_str_val)
 
     def test_create_with_field_errors(self):
-        with self.assertRaises(exceptions.ValidationError):
+        with self.assertRaises(serializers.ValidationError):
             serializer = _DummyAutograderModelSerialier(
                 data={'pos_num_val': -2, 'non_empty_str_val': ''})
 
@@ -67,7 +66,7 @@ class AGModelSerializerTestCase(test.TestCase):
     def test_update_with_field_errors(self):
         self.ag_model.save()
         bad_pos_num_val = -8
-        with self.assertRaises(exceptions.ValidationError):
+        with self.assertRaises(serializers.ValidationError):
             serializer = _DummyAutograderModelSerialier(
                 self.ag_model,
                 data={'pos_num_val': bad_pos_num_val},
