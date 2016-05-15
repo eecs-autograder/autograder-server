@@ -72,7 +72,7 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
         """
         The usernames of the Users that will receive this invitation.
         """
-        return (user.username for user in self.invited_users.all())
+        return [user.username for user in self.invited_users.all()]
 
     @property
     def invitees_who_accepted(self):
@@ -81,7 +81,7 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
         this invitation.
         This field is READ ONLY.
         """
-        return tuple(self._invitees_who_accepted)
+        return list(self._invitees_who_accepted)
 
     @property
     def all_invitees_accepted(self):

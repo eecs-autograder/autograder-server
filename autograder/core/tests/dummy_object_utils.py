@@ -8,7 +8,6 @@ from autograder.core.models import Course, Semester, Project, SubmissionGroup
 
 def _get_unique_id():
     user_id = base64.urlsafe_b64encode(uuid.uuid4().bytes)
-    # print(len(user_id))
     return user_id.decode('utf-8')
 
 
@@ -29,57 +28,6 @@ def create_dummy_users(num_users):
             password='pw{}'.format(user_id))
         users.append(user)
     return users
-
-
-def create_dummy_courses(num_courses=1):
-    """
-    Returns a list containing the specified number of dummy courses.
-    If num_courses is 1, the dummy course is returned on its own
-    rather than as a list.
-    """
-    courses = []
-    for i in range(num_courses):
-        id_ = _get_unique_id()
-        course = Course.objects.validate_and_create(
-            name='course{}'.format(id_))
-        if num_courses == 1:
-            return course
-        courses.append(course)
-    return courses
-
-
-def create_dummy_semesters(course, num_semesters=1):
-    """
-    Returns a list containing the specified number of dummy semesters.
-    If num_semesters is 1, the dummy semester is returned on its own
-    rather than as a list.
-    """
-    semesters = []
-    for i in range(num_semesters):
-        id_ = _get_unique_id()
-        semester = Semester.objects.validate_and_create(
-            name='semester{}'.format(id_), course=course)
-        if num_semesters == 1:
-            return semester
-        semesters.append(semester)
-    return semesters
-
-
-def create_dummy_projects(semester, num_projects=1):
-    """
-    Returns a list containing the specified number of dummy projects.
-    If num_projects is 1, the dummy project is returned on its own
-    rather than as a list.
-    """
-    projects = []
-    for i in range(num_projects):
-        id_ = _get_unique_id()
-        project = Project.objects.validate_and_create(
-            name='project{}'.format(id_), semester=semester)
-        if num_projects == 1:
-            return project
-        projects.append(project)
-    return projects
 
 
 def build_course(course_kwargs=None):
@@ -112,7 +60,6 @@ def build_semester(semester_kwargs=None, course_kwargs=None):
     semester.staff.add(*staff)
     semester.enrolled_students.add(*enrolled)
 
-    # semester.validate_and_save()
     return semester
 
 
@@ -128,7 +75,7 @@ def build_project(project_kwargs=None, semester_kwargs=None,
             semester_kwargs=semester_kwargs, course_kwargs=course_kwargs)
 
     project = Project.objects.validate_and_create(**project_kwargs)
-    return project  # , semester, course
+    return project
 
 
 def build_submission_group(num_members=1, group_kwargs=None, project_kwargs=None,
@@ -155,20 +102,3 @@ def build_submission_group(num_members=1, group_kwargs=None, project_kwargs=None
 
     group = SubmissionGroup.objects.validate_and_create(**group_kwargs)
     return group
-
-# def create_dummy_compiled_autograder_tests(project, num_tests=1):
-#     """
-#     Returns a list containing the specified number of dummy
-#     compiled autograder test cases.
-#     If num_tests is 1, the test case is returned on its own rather
-#     than as a list.
-#     """
-#     tests = []
-#     for i in range(num_tests):
-#         id_ = _get_unique_id()
-#         test = CompiledAutograderTestCase.objects.validate_and_create(
-#             name='test{}'.format(id_), project=project)
-#         if num_tests == 1:
-#             return test
-#         tests.append(test)
-#     return tests

@@ -156,6 +156,6 @@ class PolymorphicAutograderModel(_AutograderModelMixin,
     class Meta:
         abstract = True
 
-    # For some reason, the polymorphic manager needs to be set in the
-    # first concrete class.
+    # NOTE: Currently, the polymorphic manager needs to be set in
+    # the first concrete class.
     # objects = PolymorphicAutograderModelManager()
