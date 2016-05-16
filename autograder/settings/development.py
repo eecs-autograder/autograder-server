@@ -95,7 +95,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
 
-    'autograder.security.authentication.google_identity_toolkit_session_middleware.GoogleIdentityToolkitSessionMiddleware',
+    # 'autograder.security.authentication.google_identity_toolkit_session_middleware.GoogleIdentityToolkitSessionMiddleware',
 
     # 'django.contrib.auth.middleware.AuthenticationMiddleware',
     # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
@@ -103,6 +103,12 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
 )
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    )
+}
 
 ROOT_URLCONF = 'autograder.urls'
 

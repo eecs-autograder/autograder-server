@@ -28,6 +28,7 @@ from django.contrib.auth.decorators import login_required
 # from django.views.generic.base import RedirectView
 
 urlpatterns = [
+    url(r'^api/', include('autograder.rest_api.urls'))
     # url(r'^login/$', views.LoginView.as_view(), name='login'),
     # url(r'^callback/$', views.LoginView.as_view(), name='callback'),
     # url(r'^', include('autograder.rest_api.urls')),

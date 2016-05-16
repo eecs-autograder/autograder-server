@@ -18,10 +18,11 @@ class AGModelSerializer(serializers.BaseSerializer):
         if not self.context:
             return
 
-        self.include_fields = (
-            self.context['request'].query_params.getall('include_fields'))
-        self.exclude_fields = (
-            self.context['request'].query_params.getall('exclude_fields'))
+        request_params = self.context['request'].query_params
+        if 'include_fields' in request_params:
+            self.include_fields = request_params.getlist('include_fields')
+        if 'exclude_fields' in request_params:
+            self.exclude_fields = request_params.getlist('exclude_fields')
 
     def get_ag_model_manager(self):
         """

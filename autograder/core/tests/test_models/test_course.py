@@ -52,12 +52,15 @@ class CourseTestCase(TemporaryFilesystemTestCase):
             'name'
         ]
 
-        self.assertCountEqual(
-            expected_fields,
-            Course.get_default_to_dict_fields())
+        self.assertCountEqual(expected_fields,
+                              Course.get_default_to_dict_fields())
 
         course = obj_ut.build_course()
         self.assertTrue(course.to_dict())
+
+    def test_editable_fields(self):
+        expected = ['name']
+        self.assertCountEqual(expected, Course.get_editable_fields())
 
 
 class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
