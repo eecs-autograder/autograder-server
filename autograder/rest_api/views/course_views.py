@@ -13,12 +13,10 @@ class CoursePermissions(permissions.IsAuthenticated):
         return True
 
     def has_object_permission(self, request, view, course):
-        if view.action in ['update', 'partial_update']:
-            return course.is_administrator(request.user)
-        elif view.action == 'retrieve':
+        if view.action == 'retrieve':
             return True
 
-        return False
+        return course.is_administrator(request.user)
 
 
 class CourseViewSet(mixins.CreateModelMixin,
