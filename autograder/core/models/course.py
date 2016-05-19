@@ -72,10 +72,11 @@ class Course(AutograderModel):
     def is_course_staff(self, user):
         """
         Returns True if the given user is a staff member for this
-        Course.
+        Course. Note that admins are also considered staff members.
         Returns False otherwise.
         """
-        return self.staff.filter(pk=user.pk).exists()
+        return (self.staff.filter(pk=user.pk).exists() or
+                self.administrators.filter(pk=user.pk).exists())
 
     @property
     def staff_names(self):

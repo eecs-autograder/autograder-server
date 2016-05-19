@@ -92,6 +92,12 @@ class CourseAdminStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
         self.course.staff.add(self.user)
         self.assertTrue(self.course.is_course_staff(self.user))
 
+    def test_admin_counts_as_staff(self):
+        self.assertFalse(self.course.is_course_staff(self.user))
+
+        self.course.administrators.add(self.user)
+        self.assertTrue(self.course.is_course_staff(self.user))
+
     def test_is_enrolled_student(self):
         self.assertFalse(self.course.is_enrolled_student(self.user))
 
