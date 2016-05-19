@@ -25,3 +25,6 @@ class NotificationTestCase(TemporaryFilesystemTestCase):
             message='waaaaaaaaaluigi',
             recipient=obj_ut.create_dummy_user())
         self.assertTrue(notification.to_dict())
+
+    def test_editable_fields(self):
+        self.assertCountEqual([], ag_models.Notification.get_editable_fields())

@@ -1,4 +1,3 @@
-import difflib
 import datetime
 
 from django.utils import timezone
@@ -12,10 +11,8 @@ import autograder.core.tests.dummy_object_utils as obj_ut
 from autograder.core.tests.test_models.test_autograder_test_case.models import (
     _DummyAutograderTestCase)
 
-_DIFFER = difflib.Differ()
 
-
-class _SetUpBase(TemporaryFilesystemTestCase):
+class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
@@ -34,8 +31,6 @@ class _SetUpBase(TemporaryFilesystemTestCase):
             name=self.test_name,
             project=self.project)
 
-
-class AutograderTestCaseResultTestCase(_SetUpBase):
     def test_default_init(self):
         result = ag_models.AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
@@ -50,7 +45,6 @@ class AutograderTestCaseResultTestCase(_SetUpBase):
         self.assertEqual(result.standard_output, '')
         self.assertEqual(result.standard_error_output, '')
         self.assertFalse(result.timed_out)
-        # self.assertIsNone(result.time_elapsed)
         self.assertIsNone(result.valgrind_return_code)
         self.assertEqual(result.valgrind_output, '')
         self.assertIsNone(result.compilation_return_code)

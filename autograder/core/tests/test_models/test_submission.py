@@ -60,6 +60,9 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         submission = ag_models.Submission(submission_group=group)
         self.assertTrue(submission.to_dict())
 
+    def test_editable_fields(self):
+        self.assertCountEqual([], ag_models.Submission.get_editable_fields())
+
     def test_valid_init(self):
         SimpleFileTuple = namedtuple('SimpleFileTuple', ['name', 'content'])
 

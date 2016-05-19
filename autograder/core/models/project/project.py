@@ -48,6 +48,20 @@ class Project(AutograderModel):
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
 
+    _EDITABLE_FIELDS = frozenset([
+        'name',
+        'visible_to_students',
+        'closing_time',
+        'disallow_student_submissions',
+        'allow_submissions_from_non_enrolled_students',
+        'min_group_size',
+        'max_group_size',
+    ])
+
+    @classmethod
+    def get_editable_fields(class_):
+        return class_._EDITABLE_FIELDS
+
     name = ag_fields.ShortStringField(
         help_text='''The name used to identify this project.
             Must be non-empty and non-null.

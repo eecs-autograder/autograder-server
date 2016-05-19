@@ -104,6 +104,23 @@ class FeedbackConfig(AutograderModel):
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
 
+    _EDITABLE_FIELDS = frozenset([
+        'ag_test_name_fdbk',
+        'return_code_fdbk',
+        'show_return_code',
+        'stdout_fdbk',
+        'show_stdout_content',
+        'stderr_fdbk',
+        'show_stderr_content',
+        'compilation_fdbk',
+        'valgrind_fdbk',
+        'points_fdbk',
+    ])
+
+    @classmethod
+    def get_editable_fields(class_):
+        return class_._EDITABLE_FIELDS
+
     @classmethod
     def create_with_max_fdbk(class_):
         return class_.objects.validate_and_create(

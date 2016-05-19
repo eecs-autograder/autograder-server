@@ -143,3 +143,20 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
             field_names, ag_models.FeedbackConfig.get_default_to_dict_fields())
 
         self.assertTrue(ag_models.FeedbackConfig().to_dict())
+
+    def test_editable_fields(self):
+        expected = [
+            'ag_test_name_fdbk',
+            'return_code_fdbk',
+            'show_return_code',
+            'stdout_fdbk',
+            'show_stdout_content',
+            'stderr_fdbk',
+            'show_stderr_content',
+            'compilation_fdbk',
+            'valgrind_fdbk',
+            'points_fdbk',
+        ]
+        self.assertCountEqual(expected,
+                              ag_models.FeedbackConfig.get_editable_fields())
+

@@ -11,7 +11,7 @@ from . import verification
 
 
 class SubmissionGroupManager(ag_model_base.AutograderModelManager):
-    # TODO: rename check_project_group_limits to check_project_group_size_limits
+    # TODO: rename check_project_group_limits to check_group_size_limits
     def validate_and_create(self, members,
                             check_project_group_limits=True,
                             **kwargs):
@@ -52,6 +52,10 @@ class SubmissionGroup(ag_model_base.AutograderModel):
     @classmethod
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
+
+    @classmethod
+    def get_editable_fields(class_):
+        return ['extended_due_date']
 
     objects = SubmissionGroupManager()
 

@@ -200,6 +200,49 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
             'post_deadline_final_submission_feedback_configuration',
             'feedback_configuration')
 
+    def test_editable_fields(self):
+        expected = [
+            'name',
+
+            'command_line_arguments',
+            'standard_input',
+
+            'time_limit',
+            'allow_network_connections',
+            'stack_size_limit',
+            'virtual_memory_limit',
+            'process_spawn_limit',
+
+            'expected_return_code',
+            'expect_any_nonzero_return_code',
+            'expected_standard_output',
+            'expected_standard_error_output',
+
+            'use_valgrind',
+            'valgrind_flags',
+
+            'points_for_correct_return_code',
+            'points_for_correct_stdout',
+            'points_for_correct_stderr',
+            'deduction_for_valgrind_errors',
+
+            'feedback_configuration',
+            'post_deadline_final_submission_feedback_configuration',
+
+            'compiler',
+            'compiler_flags',
+            'executable_name',
+            'points_for_compilation_success',
+
+            'interpreter',
+            'interpreter_flags',
+            'entry_point_filename',
+        ]
+
+        self.assertCountEqual(
+            expected,
+            ag_models.AutograderTestCaseBase.get_editable_fields())
+
     def test_exception_on_negative_point_distributions(self):
         with self.assertRaises(ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(

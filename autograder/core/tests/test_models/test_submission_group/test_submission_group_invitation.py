@@ -47,6 +47,11 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp,
 
         self.assertTrue(invitation.to_dict())
 
+    def test_editable_fields(self):
+        self.assertCountEqual(
+            [],
+            ag_models.SubmissionGroupInvitation.get_editable_fields())
+
     def test_invitation_creator_username_expanded(self):
         invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,

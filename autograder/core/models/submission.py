@@ -110,6 +110,10 @@ class Submission(ag_model_base.AutograderModel):
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
 
+    @classmethod
+    def is_read_only(class_):
+        return True
+
     # -------------------------------------------------------------------------
 
     class GradingStatus:

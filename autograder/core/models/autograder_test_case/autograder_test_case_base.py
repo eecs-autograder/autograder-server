@@ -78,6 +78,48 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
 
+    _EDITABLE_FIELDS = frozenset([
+        'name',
+
+        'command_line_arguments',
+        'standard_input',
+
+        'time_limit',
+        'allow_network_connections',
+        'stack_size_limit',
+        'virtual_memory_limit',
+        'process_spawn_limit',
+
+        'expected_return_code',
+        'expect_any_nonzero_return_code',
+        'expected_standard_output',
+        'expected_standard_error_output',
+
+        'use_valgrind',
+        'valgrind_flags',
+
+        'points_for_correct_return_code',
+        'points_for_correct_stdout',
+        'points_for_correct_stderr',
+        'deduction_for_valgrind_errors',
+
+        'feedback_configuration',
+        'post_deadline_final_submission_feedback_configuration',
+
+        'points_for_compilation_success',
+        'compiler',
+        'compiler_flags',
+        'executable_name',
+
+        'interpreter',
+        'interpreter_flags',
+        'entry_point_filename',
+    ])
+
+    @classmethod
+    def get_editable_fields(class_):
+        return class_._EDITABLE_FIELDS
+
     # BASE FIELDS
 
     name = ag_fields.ShortStringField(

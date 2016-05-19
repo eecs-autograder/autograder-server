@@ -89,6 +89,19 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
         project = obj_ut.build_project()
         self.assertTrue(project.to_dict())
 
+    def test_editable_fields(self):
+        expected = [
+            'name',
+            'visible_to_students',
+            'closing_time',
+            'disallow_student_submissions',
+            'allow_submissions_from_non_enrolled_students',
+            'min_group_size',
+            'max_group_size',
+        ]
+        self.assertCountEqual(expected,
+                              ag_models.Project.get_editable_fields())
+
 
 class ProjectNameExceptionTestCase(TemporaryFilesystemTestCase):
     def setUp(self):

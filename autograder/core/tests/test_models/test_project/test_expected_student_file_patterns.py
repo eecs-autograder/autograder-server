@@ -35,6 +35,15 @@ class CreateExpectedStudentFilePatternTestCase(TemporaryFilesystemTestCase):
 
         self.assertTrue(pattern.to_dict())
 
+    def test_editable_fields(self):
+        expected = [
+            'pattern',
+            'min_num_matches',
+            'max_num_matches'
+        ]
+        self.assertCountEqual(expected,
+                              ExpectedStudentFilePattern.get_editable_fields())
+
     def test_valid_create_defaults(self):
         pattern = ExpectedStudentFilePattern.objects.validate_and_create(
             project=self.project,

@@ -24,11 +24,9 @@ class Course(AutograderModel):
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
 
-    _EDITABLE_FIELDS = frozenset(['name'])
-
     @classmethod
     def get_editable_fields(class_):
-        return class_._EDITABLE_FIELDS
+        return frozenset(['name'])
 
     name = ag_fields.ShortStringField(
         unique=True,

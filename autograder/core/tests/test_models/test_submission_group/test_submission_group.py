@@ -44,6 +44,10 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         group = obj_ut.build_submission_group()
         self.assertTrue(group.to_dict())
 
+    def test_editable_fields(self):
+        self.assertCountEqual(['extended_due_date'],
+                              ag_models.SubmissionGroup.get_editable_fields())
+
     def test_valid_initialization_with_defaults(self):
         group = ag_models.SubmissionGroup.objects.validate_and_create(
             members=self.enrolled_group,

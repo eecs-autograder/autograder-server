@@ -42,6 +42,10 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
 
+    @classmethod
+    def is_read_only(class_):
+        return True
+
     invited_users = models.ManyToManyField(
         User, related_name='group_invitations_received',
         help_text="""The Users that the invitation_creator has invited

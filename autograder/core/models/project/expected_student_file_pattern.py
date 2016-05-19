@@ -27,6 +27,16 @@ class ExpectedStudentFilePattern(AutograderModel):
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
 
+    _EDITABLE_FIELDS = frozenset([
+        'pattern',
+        'min_num_matches',
+        'max_num_matches',
+    ])
+
+    @classmethod
+    def get_editable_fields(class_):
+        return class_._EDITABLE_FIELDS
+
     project = models.ForeignKey(Project,
                                 related_name='expected_student_file_patterns')
 

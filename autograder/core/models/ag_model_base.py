@@ -37,12 +37,25 @@ class _AutograderModelMixin:
         raise NotImplementedError('Subclasses should override this method')
 
     @classmethod
+    def is_read_only(class_):
+        """
+        If this method returns True, then model objects of that type
+        should be considered read-only. Effectively, this makes
+        Model.get_editable_fields() return an empty list.
+        """
+        return False
+
+    @classmethod
     def get_editable_fields(class_):
         """
         Returns a collection of the names of database fields that can be
         edited on this model type using model.validate_and_update()
         """
-        raise NotImplementedError('Subclasses should override this method')
+        if class_.is_read_only():
+            return []
+
+        raise NotImplementedError(
+            "Subclasses that aren't read-only should override this method")
 
     def validate_and_update(self, **kwargs):
         """

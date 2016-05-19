@@ -41,8 +41,8 @@ class UploadedFile(AutograderModel):
         return class_._DEFAULT_TO_DICT_FIELDS
 
     @classmethod
-    def get_editable_fields(class_):
-        return []
+    def is_read_only(class_):
+        return True
 
     project = models.ForeignKey(Project, related_name='uploaded_files')
     file_obj = models.FileField(
