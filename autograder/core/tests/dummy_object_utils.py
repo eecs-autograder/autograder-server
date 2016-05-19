@@ -38,8 +38,12 @@ def build_course(course_kwargs=None):
         course_kwargs['name'] = 'course{}'.format(_get_unique_id())
 
     admins = course_kwargs.pop('administrators', [])
+    staff = course_kwargs.pop('staff', [])
+    students = course_kwargs.pop('enrolled_students', [])
     course = ag_models.Course.objects.validate_and_create(**course_kwargs)
     course.administrators.add(*admins)
+    course.staff.add(*staff)
+    course.enrolled_students.add(*students)
 
     return course
 

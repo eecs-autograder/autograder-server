@@ -28,9 +28,9 @@ def verify_users_have_same_enrollment_status(users, project,
     users = tuple(users)
 
     num_enrolled = ut.count_if(
-        users, lambda member: project.semester.is_enrolled_student(member))
+        users, lambda member: project.course.is_enrolled_student(member))
     num_staff = ut.count_if(
-        users, lambda member: project.semester.is_semester_staff(member))
+        users, lambda member: project.course.is_course_staff(member))
 
     if num_staff:
         if num_staff != len(users):

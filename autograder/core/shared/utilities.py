@@ -1,7 +1,6 @@
 import os
 import shutil
 import re
-import datetime
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -119,24 +118,6 @@ def get_course_relative_root_dir(course):
     return os.path.join('courses', 'course{}'.format(course.pk))
 
 
-def get_semester_root_dir(semester):
-    """
-    Computes the absolute path of the base directory for the given semester.
-    """
-    return os.path.join(
-        settings.MEDIA_ROOT, get_semester_relative_root_dir(semester))
-
-
-def get_semester_relative_root_dir(semester):
-    """
-    Same as get_semester_root_dir() but returns a path that is
-    relative to MEDIA_ROOT.
-    """
-    return os.path.join(
-        get_course_relative_root_dir(semester.course),
-        'semester{}'.format(semester.pk))
-
-
 def get_project_root_dir(project):
     """
     Computes the absolute path of the base directory for the given project.
@@ -151,7 +132,7 @@ def get_project_relative_root_dir(project):
     relative to MEDIA_ROOT.
     """
     return os.path.join(
-        get_semester_relative_root_dir(project.semester),
+        get_course_relative_root_dir(project.course),
         'project{}'.format(project.pk))
 
 

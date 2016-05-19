@@ -1,11 +1,4 @@
-import os
-
-from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
-
-# from autograder.core.models import (
-#     Project, Semester, Course,
-#     AutograderTestCaseFactory, AutograderTestCaseBase)
 
 import autograder.core.models as ag_models
 
@@ -17,11 +10,6 @@ import autograder.core.tests.dummy_object_utils as obj_ut
 class SharedSetUpTearDownForRunTestsWithCompilation(object):
     def setUp(self):
         super().setUp()
-
-        # self.original_dir = os.getcwd()
-        # self.new_dir = os.path.join(settings.MEDIA_ROOT, 'working_dir')
-        # os.mkdir(self.new_dir)
-        # os.chdir(self.new_dir)
 
         self.group = obj_ut.build_submission_group()
         self.project = self.group.project

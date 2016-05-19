@@ -18,13 +18,13 @@ class _SetUp:
 
         self.project = obj_ut.build_project(
             project_kwargs={'max_group_size': 2})
-        self.semester = self.project.semester
+        self.course = self.project.course
 
         self.enrolled_group = obj_ut.create_dummy_users(2)
-        self.semester.enrolled_students.add(*self.enrolled_group)
+        self.course.enrolled_students.add(*self.enrolled_group)
 
         self.staff_group = obj_ut.create_dummy_users(2)
-        self.semester.staff.add(*self.staff_group)
+        self.course.staff.add(*self.staff_group)
 
         self.non_enrolled_group = obj_ut.create_dummy_users(2)
 
@@ -107,7 +107,7 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
 class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):
     def test_valid_override_group_max_size(self):
         self.enrolled_group += obj_ut.create_dummy_users(3)
-        self.project.semester.enrolled_students.add(*self.enrolled_group)
+        self.project.course.enrolled_students.add(*self.enrolled_group)
         group = ag_models.SubmissionGroup.objects.validate_and_create(
             members=self.enrolled_group,
             project=self.project,
@@ -153,7 +153,7 @@ class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.project.save()
 
         new_user = obj_ut.create_dummy_user()
-        self.semester.enrolled_students.add(new_user)
+        self.course.enrolled_students.add(new_user)
         self.enrolled_group.append(new_user)
 
         with self.assertRaises(exceptions.ValidationError):
@@ -168,7 +168,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             project=self.project)
 
         new_members = obj_ut.create_dummy_users(2)
-        self.project.semester.enrolled_students.add(*new_members)
+        self.project.course.enrolled_students.add(*new_members)
 
         group.validate_and_update(members=new_members)
 
@@ -181,7 +181,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             project=self.project)
 
         new_members = obj_ut.create_dummy_users(5)
-        self.project.semester.enrolled_students.add(*new_members)
+        self.project.course.enrolled_students.add(*new_members)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             group.validate_and_update(members=new_members)
@@ -194,7 +194,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             project=self.project)
 
         new_members = obj_ut.create_dummy_users(2)
-        self.project.semester.enrolled_students.add(*new_members)
+        self.project.course.enrolled_students.add(*new_members)
 
         self.project.min_group_size = 10
         self.project.max_group_size = 10
@@ -215,7 +215,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.project.save()
 
         new_members = obj_ut.create_dummy_users(2)
-        self.project.semester.enrolled_students.add(*new_members)
+        self.project.course.enrolled_students.add(*new_members)
         group.validate_and_update(members=new_members,
                                   check_project_group_limits=False)
 
@@ -229,7 +229,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             project=self.project)
 
         new_members = obj_ut.create_dummy_users(5)
-        self.project.semester.enrolled_students.add(*new_members)
+        self.project.course.enrolled_students.add(*new_members)
 
         group.validate_and_update(members=new_members,
                                   check_project_group_limits=False)
