@@ -32,20 +32,10 @@ class CourseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue('name' in cm.exception.message_dict)
 
     def test_exception_on_non_unique_name(self):
-        NAME = "eecs280"
-        Course.objects.validate_and_create(name=NAME)
+        course = obj_ut.build_course()
         with self.assertRaises(ValidationError) as cm:
-            Course.objects.validate_and_create(name=NAME)
+            Course.objects.validate_and_create(name=course.name)
         self.assertTrue('name' in cm.exception.message_dict)
-
-    def test_is_administrator(self):
-        self.course = obj_ut.create_dummy_courses()
-        self.user = obj_ut.create_dummy_user()
-
-        self.assertFalse(self.course.is_administrator(self.user))
-
-        self.course.administrators.add(self.user)
-        self.assertTrue(self.course.is_administrator(self.user))
 
     def test_to_dict_default_fields(self):
         expected_fields = [
@@ -78,3 +68,32 @@ class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
         expected_course_root_dir = ut.get_course_root_dir(course)
 
         self.assertTrue(os.path.isdir(expected_course_root_dir))
+
+
+class CourseAdminStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.course = obj_ut.build_course()
+        self.user = obj_ut.create_dummy_user()
+
+    def test_is_administrator(self):
+        self.course = obj_ut.build_course()
+        self.user = obj_ut.create_dummy_user()
+
+        self.assertFalse(self.course.is_administrator(self.user))
+
+        self.course.administrators.add(self.user)
+        self.assertTrue(self.course.is_administrator(self.user))
+
+    def test_is_course_staff(self):
+        self.assertFalse(self.course.is_course_staff(self.user))
+
+        self.course.staff.add(self.user)
+        self.assertTrue(self.course.is_course_staff(self.user))
+
+    def test_is_enrolled_student(self):
+        self.assertFalse(self.course.is_enrolled_student(self.user))
+
+        self.course.enrolled_students.add(self.user)
+        self.assertTrue(self.course.is_enrolled_student(self.user))

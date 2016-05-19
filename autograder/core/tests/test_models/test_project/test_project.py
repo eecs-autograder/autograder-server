@@ -17,18 +17,18 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.semester = obj_ut.build_semester()
+        self.course = obj_ut.build_course()
         self.project_name = 'my_project'
 
     def test_valid_create_with_defaults(self):
         new_project = ag_models.Project.objects.validate_and_create(
-            name=self.project_name, semester=self.semester)
+            name=self.project_name, course=self.course)
 
         new_project.refresh_from_db()
 
         self.assertEqual(new_project, new_project)
         self.assertEqual(new_project.name, self.project_name)
-        self.assertEqual(new_project.semester, self.semester)
+        self.assertEqual(new_project.course, self.course)
 
         self.assertEqual(new_project.visible_to_students, False)
         self.assertEqual(new_project.closing_time, None)
@@ -46,7 +46,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
 
         new_project = ag_models.Project.objects.validate_and_create(
             name=self.project_name,
-            semester=self.semester,
+            course=self.course,
             visible_to_students=True,
             closing_time=tomorrow_date,
             disallow_student_submissions=True,
@@ -59,7 +59,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(new_project, new_project)
         self.assertEqual(new_project.name, self.project_name)
-        self.assertEqual(new_project.semester, self.semester)
+        self.assertEqual(new_project.course, self.course)
 
         self.assertEqual(new_project.visible_to_students, True)
         self.assertEqual(new_project.closing_time, tomorrow_date)
@@ -75,7 +75,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
 
         expected_fields = [
             'name',
-            'semester',
+            'course',
             'visible_to_students',
             'closing_time',
             'disallow_student_submissions',
@@ -94,81 +94,81 @@ class ProjectNameExceptionTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.semester = obj_ut.build_semester()
+        self.course = obj_ut.build_course()
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
-                name='', semester=self.semester)
+                name='', course=self.course)
         self.assertTrue('name' in cm.exception.message_dict)
 
     def test_exception_on_null_name(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
-                name=None, semester=self.semester)
+                name=None, course=self.course)
         self.assertTrue('name' in cm.exception.message_dict)
 
     def test_exception_on_non_unique_name(self):
         name = 'project42'
         ag_models.Project.objects.validate_and_create(
-            name=name, semester=self.semester)
+            name=name, course=self.course)
         with self.assertRaises(exceptions.ValidationError):
             ag_models.Project.objects.validate_and_create(
-                name=name, semester=self.semester)
+                name=name, course=self.course)
 
-    def test_no_exception_same_name_different_semester(self):
-        new_semester = obj_ut.build_semester()
+    def test_no_exception_same_name_different_course(self):
+        new_course = obj_ut.build_course()
         name = 'project43'
 
         ag_models.Project.objects.validate_and_create(
-            name=name, semester=self.semester)
+            name=name, course=self.course)
 
         ag_models.Project.objects.validate_and_create(
-            name=name, semester=new_semester)
+            name=name, course=new_course)
 
 
 class ProjectGroupSizeExceptionTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
-        self.semester = obj_ut.build_semester()
+        self.course = obj_ut.build_course()
         self.project_name = 'project_for_group_tests'
 
     def test_exception_on_min_group_size_too_small(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
-                name=self.project_name, semester=self.semester,
+                name=self.project_name, course=self.course,
                 min_group_size=0)
         self.assertTrue('min_group_size' in cm.exception.message_dict)
 
     def test_exception_on_max_group_size_too_small(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
-                name=self.project_name, semester=self.semester,
+                name=self.project_name, course=self.course,
                 max_group_size=0)
         self.assertTrue('max_group_size' in cm.exception.message_dict)
 
     def test_exception_on_max_group_size_smaller_than_min_group_size(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
-                name=self.project_name, semester=self.semester,
+                name=self.project_name, course=self.course,
                 min_group_size=3, max_group_size=2)
         self.assertTrue('max_group_size' in cm.exception.message_dict)
 
     def test_exception_on_min_and_max_size_not_parseable_ints(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
-                name=self.project_name, semester=self.semester,
+                name=self.project_name, course=self.course,
                 min_group_size='spam', max_group_size='eggs')
         self.assertTrue('min_group_size' in cm.exception.message_dict)
         self.assertTrue('max_group_size' in cm.exception.message_dict)
 
     def test_no_exception_min_and_max_size_parseable_ints(self):
         ag_models.Project.objects.validate_and_create(
-            name=self.project_name, semester=self.semester,
+            name=self.project_name, course=self.course,
             min_group_size='1', max_group_size='2')
 
         loaded_project = ag_models.Project.objects.get(
-            name=self.project_name, semester=self.semester)
+            name=self.project_name, course=self.course)
         self.assertEqual(loaded_project.min_group_size, 1)
         self.assertEqual(loaded_project.max_group_size, 2)
 
@@ -177,12 +177,12 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.semester = obj_ut.build_semester()
+        self.course = obj_ut.build_course()
         self.project_name = 'stats_project'
 
     def test_project_root_dir_created(self):
         project = ag_models.Project(
-            name=self.project_name, semester=self.semester)
+            name=self.project_name, course=self.course)
 
         self.assertEqual(
             [],
@@ -196,7 +196,7 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
     def test_project_files_dir_created(self):
         project = ag_models.Project(
-            name=self.project_name, semester=self.semester)
+            name=self.project_name, course=self.course)
 
         self.assertFalse(
             os.path.exists(
@@ -209,7 +209,7 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
     def test_project_submissions_dir_created(self):
         project = ag_models.Project(
-            name=self.project_name, semester=self.semester)
+            name=self.project_name, course=self.course)
 
         self.assertFalse(
             os.path.exists(

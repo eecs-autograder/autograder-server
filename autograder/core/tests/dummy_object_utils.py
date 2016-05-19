@@ -3,7 +3,7 @@ import base64
 
 from django.contrib.auth.models import User
 
-from autograder.core.models import Course, Semester, Project, SubmissionGroup
+import autograder.core.models as ag_models
 
 
 def _get_unique_id():
@@ -38,61 +38,42 @@ def build_course(course_kwargs=None):
         course_kwargs['name'] = 'course{}'.format(_get_unique_id())
 
     admins = course_kwargs.pop('administrators', [])
-    course = Course.objects.validate_and_create(**course_kwargs)
+    course = ag_models.Course.objects.validate_and_create(**course_kwargs)
     course.administrators.add(*admins)
 
     return course
 
 
-def build_semester(semester_kwargs=None, course_kwargs=None):
-    if semester_kwargs is None:
-        semester_kwargs = {}
-
-    if 'name' not in semester_kwargs:
-        semester_kwargs['name'] = 'semester{}'.format(_get_unique_id())
-    if 'course' not in semester_kwargs:
-        semester_kwargs['course'] = build_course(course_kwargs=course_kwargs)
-
-    staff = semester_kwargs.pop('staff', [])
-    enrolled = semester_kwargs.pop('enrolled_students', [])
-    semester = Semester.objects.validate_and_create(**semester_kwargs)
-
-    semester.staff.add(*staff)
-    semester.enrolled_students.add(*enrolled)
-
-    return semester
-
-
-def build_project(project_kwargs=None, semester_kwargs=None,
-                  course_kwargs=None):
+def build_project(project_kwargs=None, course_kwargs=None):
     if project_kwargs is None:
         project_kwargs = {}
 
     if 'name' not in project_kwargs:
         project_kwargs['name'] = 'project{}'.format(_get_unique_id())
-    if 'semester' not in project_kwargs:
-        project_kwargs['semester'] = build_semester(
-            semester_kwargs=semester_kwargs, course_kwargs=course_kwargs)
+    if 'course' not in project_kwargs:
+        project_kwargs['course'] = build_course(course_kwargs=course_kwargs)
 
-    project = Project.objects.validate_and_create(**project_kwargs)
+    project = ag_models.Project.objects.validate_and_create(**project_kwargs)
     return project
 
 
-def build_submission_group(num_members=1, group_kwargs=None, project_kwargs=None,
-                           semester_kwargs=None, course_kwargs=None):
+def build_submission_group(num_members=1,
+                           group_kwargs=None,
+                           project_kwargs=None,
+                           course_kwargs=None):
     if group_kwargs is None:
         group_kwargs = {}
 
     if 'project' not in group_kwargs:
         group_kwargs['project'] = build_project(
-            project_kwargs=project_kwargs, semester_kwargs=semester_kwargs,
+            project_kwargs=project_kwargs,
             course_kwargs=course_kwargs)
 
     project = group_kwargs['project']
 
     if 'members' not in group_kwargs:
         members = create_dummy_users(num_members)
-        project.semester.enrolled_students.add(*members)
+        project.course.enrolled_students.add(*members)
         group_kwargs['members'] = members
     else:
         num_members = len(group_kwargs['members'])
@@ -100,5 +81,5 @@ def build_submission_group(num_members=1, group_kwargs=None, project_kwargs=None
     if num_members > project.max_group_size:
         project.validate_and_update(max_group_size=num_members)
 
-    group = SubmissionGroup.objects.validate_and_create(**group_kwargs)
+    group = ag_models.SubmissionGroup.objects.validate_and_create(**group_kwargs)
     return group

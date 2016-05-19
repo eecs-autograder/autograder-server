@@ -5,7 +5,7 @@ from django.core import validators
 from django.core import exceptions
 
 from ..ag_model_base import AutograderModel
-from ..semester import Semester
+from ..course import Course
 
 import autograder.utilities.fields as ag_fields
 
@@ -31,11 +31,11 @@ class Project(AutograderModel):
             student-submitted files can or should match.
     """
     class Meta:
-        unique_together = ('name', 'semester')
+        unique_together = ('name', 'course')
 
     _DEFAULT_TO_DICT_FIELDS = [
         'name',
-        'semester',
+        'course',
         'visible_to_students',
         'closing_time',
         'disallow_student_submissions',
@@ -52,12 +52,12 @@ class Project(AutograderModel):
         help_text='''The name used to identify this project.
             Must be non-empty and non-null.
             Must be unique among Projects associated with
-            a given semester.
+            a given course.
             This field is REQUIRED.''')
 
-    semester = models.ForeignKey(
-        Semester, related_name='projects',
-        help_text='''The Semester this project belongs to.
+    course = models.ForeignKey(
+        Course, related_name='projects',
+        help_text='''The Course this project belongs to.
             This field is REQUIRED.''')
 
     visible_to_students = models.BooleanField(
@@ -80,8 +80,8 @@ class Project(AutograderModel):
 
     allow_submissions_from_non_enrolled_students = models.BooleanField(
         default=False,
-        help_text='''By default, only staff members and enrolled
-            students for a given Semester can submit to its Projects.
+        help_text='''By default, only admins, staff members, and enrolled
+            students for a given Course can submit to its Projects.
             When this field is set to True, submissions will be accepted
             from any authenticated Users, with the following caveats:
                 - In order to view the Project, non-enrolled students

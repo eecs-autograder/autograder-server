@@ -16,7 +16,7 @@ class Course(AutograderModel):
     code to an autograder.
 
     Related object fields:
-        semesters -- The group of Semesters that belong to this Course.
+        projects -- The group of Projects that belong to this Course.
     """
     _DEFAULT_TO_DICT_FIELDS = frozenset(['name'])
 
@@ -40,7 +40,20 @@ class Course(AutograderModel):
         User, related_name='courses_is_admin_for',
         help_text='''The Users that are administrators for
                   this Course. Administrators have edit access
-                  to this Course and its Semesters.''')
+                  to this Course.''')
+
+    staff = models.ManyToManyField(
+        User, related_name='courses_is_staff_for',
+        help_text='''Users that are staff members for this Course.
+            Staff members receive full feedback on autograder test
+            cases and can view student submissions.''')
+
+    enrolled_students = models.ManyToManyField(
+        User, related_name='courses_is_enrolled_in',
+        help_text='''Users that are enrolled in this Course.
+                  Enrolled students can view all visible Projects
+                  associated with this Course and may be in
+                  SubmissionGroups together.''')
 
     @property
     def administrator_names(self):
@@ -49,14 +62,42 @@ class Course(AutograderModel):
         """
         return tuple(user.username for user in self.administrators.all())
 
-    # -------------------------------------------------------------------------
-
     def is_administrator(self, user):
         """
         Convenience method for determining if the given user
         is an administrator.
         """
         return self.administrators.filter(pk=user.pk).exists()
+
+    def is_course_staff(self, user):
+        """
+        Returns True if the given user is a staff member for this
+        Course.
+        Returns False otherwise.
+        """
+        return self.staff.filter(pk=user.pk).exists()
+
+    @property
+    def staff_names(self):
+        """
+        A list of usernames that are staff members for this Course.
+        """
+        return list(user.username for user in self.staff.all())
+
+    def is_enrolled_student(self, user):
+        """
+        Returns True if the given user is an enrolled student for
+        this Course. Returns False otherwise.
+        """
+        return self.enrolled_students.filter(pk=user.pk).exists()
+
+    @property
+    def enrolled_student_names(self):
+        """
+        A list of usernames that are enrolled students for this
+        Course.
+        """
+        return list(user.username for user in self.enrolled_students.all())
 
     # -------------------------------------------------------------------------
 
