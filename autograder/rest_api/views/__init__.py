@@ -1,1 +1,1 @@
-from .course_views import CourseViewSet
+from .course_views import CourseViewSet, CourseAdminViewSet

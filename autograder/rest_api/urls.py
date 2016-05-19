@@ -4,11 +4,23 @@ from autograder.rest_api import views
 
 import autograder.core.shared.global_constants as gc
 
-from rest_framework import routers
+# from rest_framework import routers
+from rest_framework_nested import routers
 
-router = routers.DefaultRouter()
+router = routers.SimpleRouter()
+
 router.register(r'courses', views.CourseViewSet, base_name='course')
-urlpatterns = router.urls
+admin_router = routers.NestedSimpleRouter(router, r'courses', lookup='course')
+admin_router.register(r'admins', views.CourseAdminViewSet, base_name='course-admins')
+
+urlpatterns = [
+    url(r'', include(router.urls)),
+    url(r'', include(admin_router.urls))
+]
+
+# print(dir(urlpatterns[0]))
+# print(urlpatterns[1].reverse())
+# print(urlpatterns[1].urlconf_name)
 
 # user_patterns = [
 #     url(r'^$', endpoints.GetUser.as_view(), name='get'),

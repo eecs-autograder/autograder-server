@@ -10,3 +10,5 @@ from .serializer_impls import (
     SubmissionSerializer,
     NotificationSerializer,
 )
+
+from .user_serializer import UserSerializer
