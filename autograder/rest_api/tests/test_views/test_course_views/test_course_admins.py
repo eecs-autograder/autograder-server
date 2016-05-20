@@ -56,7 +56,6 @@ class ListCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
 class AddCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
-        self.client = APIClient()
 
     def test_superuser_or_admin_add_administrators(self):
         current_admins = obj_ut.create_dummy_users(2)
@@ -98,61 +97,57 @@ class AddCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
         self.assertEqual(0, self.course.administrators.count())
 
 
-# class RemoveCourseAdminsTestCase(TemporaryFilesystemTestCase):
-#     def test_superuser_or_admin_remove_single_administrators(self):
-#         expected_content = {
-#             "administrators": list(sorted([
-#                 self.admin.username, self.admin2.username
-#             ]))
-#         }
+class RemoveCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
 
-#         iterable = zip(
-#             [self.admin2, self.superuser],
-#             [self.admin.username, self.admin2.username])
-#         for user, admin_to_remove in iterable:
-#             expected_content['administrators'].remove(admin_to_remove)
+        self.remaining_admin = obj_ut.create_dummy_user()
+        self.current_admins = obj_ut.create_dummy_users(3)
+        self.all_admins = [self.remaining_admin] + self.current_admins
+        self.total_num_admins = len(self.all_admins)
 
-#             client = MockClient(user)
-#             response = client.delete(
-#                 self.course_admins_url, {'administrators': [admin_to_remove]})
+        self.course.administrators.add(self.remaining_admin,
+                                       *self.current_admins)
 
-#             self.assertEqual(200, response.status_code)
+        self.request_body = {
+            'remove_admins': [user.username for user in self.current_admins]
+        }
 
-#             self.assertEqual(
-#                 expected_content, json_load_bytes(response.content))
+    def test_superuser_or_admin_remove_admins(self):
+        for user in self.superuser, self.remaining_admin:
+            self.assertEqual(self.total_num_admins,
+                             self.course.administrators.count())
+            self.client.force_authenticate(user)
 
-#     def test_remove_multiple_administrators(self):
-#         client = MockClient(self.superuser)
-#         response = client.delete(
-#             self.course_admins_url,
-#             {'administrators': [self.admin.username, self.admin2.username]})
+            response = self.client.delete(self.url, self.request_body)
+            self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
-#         self.assertEqual(200, response.status_code)
+            self.assertCountEqual([self.remaining_admin],
+                                  self.course.administrators.all())
 
-#         loaded = Course.objects.get(pk=self.course.pk)
-#         self.assertCountEqual(loaded.administrators.all(), [])
+            self.course.administrators.add(*self.current_admins)
 
-#     def test_error_admin_remove_self_from_admin_list(self):
-#         client = MockClient(self.admin)
-#         response = client.delete(
-#             self.course_admins_url,
-#             {'administrators': [self.admin2.username, self.admin.username]})
-#         self.assertEqual(400, response.status_code)
+    def test_error_admin_remove_self_from_admin_list(self):
+        self.client.force_authenticate(self.remaining_admin)
+        response = self.client.delete(
+            self.url, {'remove_admins': [self.remaining_admin.username]})
 
-#         loaded = Course.objects.get(pk=self.course.pk)
-#         self.assertCountEqual(
-#             loaded.administrators.all(), [self.admin, self.admin2])
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-#     def test_other_remove_administrators_permission_denied(self):
-#         client = MockClient(self.nobody)
-#         response = client.delete(
-#             self.course_admins_url,
-#             {'administrators': [self.admin2.username, self.admin.username]})
+        self.assertTrue(self.course.is_administrator(self.remaining_admin))
 
-#         self.assertEqual(403, response.status_code)
+    def test_other_remove_administrators_permission_denied(self):
+        nobody = obj_ut.create_dummy_user()
+        enrolled = obj_ut.create_dummy_user()
+        self.course.enrolled_students.add(enrolled)
+        staff = obj_ut.create_dummy_user()
+        self.course.staff.add(staff)
 
-#         loaded = Course.objects.get(pk=self.course.pk)
-#         self.assertCountEqual(
-#             loaded.administrators.all(), [self.admin, self.admin2])
+        for user in nobody, enrolled, staff:
+            self.client.force_authenticate(user)
+            response = self.client.delete(self.url, self.request_body)
 
+            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
+            self.assertCountEqual(self.all_admins,
+                                  self.course.administrators.all())

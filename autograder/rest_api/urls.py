@@ -11,7 +11,9 @@ router = routers.SimpleRouter()
 
 router.register(r'courses', views.CourseViewSet, base_name='course')
 admin_router = routers.NestedSimpleRouter(router, r'courses', lookup='course')
-admin_router.register(r'admins', views.CourseAdminViewSet, base_name='course-admins')
+admin_router.register(r'admins',
+                      views.CourseAdminViewSet,
+                      base_name='course-admins')
 
 urlpatterns = [
     url(r'', include(router.urls)),
