@@ -24,19 +24,27 @@ class _AdminsSetUp:
 
         self.course = obj_ut.build_course()
 
+        self.nobody = obj_ut.create_dummy_user()
+
+        self.enrolled = obj_ut.create_dummy_user()
+        self.course.enrolled_students.add(self.enrolled)
+
+        self.staff = obj_ut.create_dummy_user()
+        self.course.staff.add(self.staff)
+
         self.url = reverse('course-admins-list',
                            kwargs={'course_pk': self.course.pk})
 
 
 class ListCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
-    def test_superuser_or_admin_list_administrators(self):
+    def test_superuser_admin_or_staff_list_administrators(self):
         admins = obj_ut.create_dummy_users(3)
         self.course.administrators.add(*admins)
 
         expected_content = ag_serializers.UserSerializer(admins,
                                                          many=True).data
 
-        for user in self.superuser, admins[0]:
+        for user in self.superuser, admins[0], self.staff:
             self.client.force_authenticate(user)
 
             response = self.client.get(self.url)
@@ -45,12 +53,11 @@ class ListCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
             self.assertCountEqual(expected_content, response.data)
 
     def test_other_list_administrators_permission_denied(self):
-        nobody = obj_ut.create_dummy_user()
+        for user in self.nobody, self.enrolled:
+            self.client.force_authenticate(user)
 
-        self.client.force_authenticate(nobody)
-
-        response = self.client.get(self.url)
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+            response = self.client.get(self.url)
+            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
 class AddCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
@@ -87,14 +94,15 @@ class AddCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
             self.course.administrators.set(current_admins, clear=True)
 
     def test_other_add_administrators_permission_denied(self):
-        nobody = obj_ut.create_dummy_user()
-        self.client.force_authenticate(nobody)
+        for user in self.staff, self.enrolled, self.nobody:
+            self.client.force_authenticate(user)
 
-        new_admin_name = 'steve'
-        response = self.client.post(self.url, {'new_admins': [new_admin_name]})
+            new_admin_name = 'steve'
+            response = self.client.post(self.url,
+                                        {'new_admins': [new_admin_name]})
 
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-        self.assertEqual(0, self.course.administrators.count())
+            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+            self.assertEqual(0, self.course.administrators.count())
 
 
 class RemoveCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
@@ -137,13 +145,7 @@ class RemoveCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
         self.assertTrue(self.course.is_administrator(self.remaining_admin))
 
     def test_other_remove_administrators_permission_denied(self):
-        nobody = obj_ut.create_dummy_user()
-        enrolled = obj_ut.create_dummy_user()
-        self.course.enrolled_students.add(enrolled)
-        staff = obj_ut.create_dummy_user()
-        self.course.staff.add(staff)
-
-        for user in nobody, enrolled, staff:
+        for user in self.nobody, self.enrolled, self.staff:
             self.client.force_authenticate(user)
             response = self.client.delete(self.url, self.request_body)
 
