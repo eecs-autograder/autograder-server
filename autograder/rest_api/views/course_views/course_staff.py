@@ -1,26 +1,18 @@
 from django.contrib.auth.models import User
 
 from rest_framework import (
-    viewsets, mixins, permissions, response,
-    status, exceptions)
+    viewsets, mixins, permissions, response, status)
 
 import autograder.rest_api.serializers as ag_serializers
 import autograder.core.models as ag_models
 
-
-class IsAdminOrReadOnlyStaff(permissions.BasePermission):
-    def has_object_permission(self, request, view, course):
-        is_admin = course.is_administrator(request.user)
-        staff_and_read_only = (course.is_course_staff(request.user) and
-                               request.method in permissions.SAFE_METHODS)
-        return is_admin or staff_and_read_only
+from .permissions import IsAdminOrReadOnlyStaff
 
 
 class CourseStaffViewSet(mixins.ListModelMixin,
                          viewsets.GenericViewSet):
     serializer_class = ag_serializers.UserSerializer
-    permission_classes = (permissions.IsAuthenticated,
-                          IsAdminOrReadOnlyStaff)
+    permission_classes = (permissions.IsAuthenticated, IsAdminOrReadOnlyStaff)
 
     def get_object(self, pk):
         course = ag_models.Course.objects.get(pk=pk)

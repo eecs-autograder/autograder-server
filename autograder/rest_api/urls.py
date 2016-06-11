@@ -1,8 +1,8 @@
 from django.conf.urls import url, include
-from rest_framework.urlpatterns import format_suffix_patterns
+# from rest_framework.urlpatterns import format_suffix_patterns
 from autograder.rest_api import views
 
-import autograder.core.shared.global_constants as gc
+# import autograder.core.shared.global_constants as gc
 
 # from rest_framework import routers
 from rest_framework_nested import routers
@@ -18,11 +18,17 @@ staff_router = routers.NestedSimpleRouter(router, r'courses', lookup='course')
 staff_router.register(r'staff',
                       views.CourseStaffViewSet,
                       base_name='course-staff')
+enrolled_students_router = routers.NestedSimpleRouter(router, r'courses',
+                                                      lookup='course')
+enrolled_students_router.register(r'enrolled_students',
+                                  views.CourseEnrolledStudentsViewset,
+                                  base_name='course-enrolled-students')
 
 urlpatterns = [
     url(r'', include(router.urls)),
     url(r'', include(admin_router.urls)),
-    url(r'', include(staff_router.urls))
+    url(r'', include(staff_router.urls)),
+    url(r'', include(enrolled_students_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))

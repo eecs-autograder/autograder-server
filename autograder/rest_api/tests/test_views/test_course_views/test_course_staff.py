@@ -59,23 +59,20 @@ class AddStaffTestCase(_StaffSetUp, TemporaryFilesystemTestCase):
         current_staff = obj_ut.create_dummy_users(2)
         self.course.staff.add(*current_staff)
 
-        new_staff_names = ['staffy1', 'staffy2']
-        new_staff = obj_ut.create_dummy_users(2)
+        new_staff_names = (
+            ['staffy1', 'staffy2'] +
+            [user.username for user in obj_ut.create_dummy_users(2)])
 
         self.assertEqual(len(current_staff), self.course.staff.count())
 
         self.client.force_authenticate(self.admin)
         response = self.client.post(
-            self.url,
-            {'new_staff':
-                new_staff_names + [user.username for user in new_staff]})
+            self.url, {'new_staff': new_staff_names})
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
-        created_staff = [
-            User.objects.get(username=username)
-            for username in new_staff_names]
+        new_staff = list(User.objects.filter(username__in=new_staff_names))
 
-        self.assertCountEqual(current_staff + created_staff + new_staff,
+        self.assertCountEqual(current_staff + new_staff,
                               self.course.staff.all())
 
     def test_other_add_staff_permission_denied(self):
@@ -98,14 +95,14 @@ class RemoveStaffTestCase(_StaffSetUp, TemporaryFilesystemTestCase):
         super().setUp()
 
         self.remaining_staff = obj_ut.create_dummy_user()
-        self.current_staff = obj_ut.create_dummy_users(3)
-        self.all_staff = [self.remaining_staff] + self.current_staff
+        self.staff_to_remove = obj_ut.create_dummy_users(3)
+        self.all_staff = [self.remaining_staff] + self.staff_to_remove
         self.total_num_staff = len(self.all_staff)
 
         self.course.staff.add(*self.all_staff)
 
         self.request_body = {
-            'remove_staff': [user.username for user in self.current_staff]
+            'remove_staff': [user.username for user in self.staff_to_remove]
         }
 
     def test_admin_remove_staff(self):
@@ -128,4 +125,4 @@ class RemoveStaffTestCase(_StaffSetUp, TemporaryFilesystemTestCase):
 
             self.assertCountEqual(self.all_staff, self.course.staff.all())
 
-            self.course.staff.add(*self.current_staff)
+            self.course.staff.add(*self.staff_to_remove)
