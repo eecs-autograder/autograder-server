@@ -114,8 +114,7 @@ class RemoveCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
         self.all_admins = [self.remaining_admin] + self.current_admins
         self.total_num_admins = len(self.all_admins)
 
-        self.course.administrators.add(self.remaining_admin,
-                                       *self.current_admins)
+        self.course.administrators.add(*self.all_admins)
 
         self.request_body = {
             'remove_admins': [user.username for user in self.current_admins]

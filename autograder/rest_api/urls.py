@@ -14,10 +14,15 @@ admin_router = routers.NestedSimpleRouter(router, r'courses', lookup='course')
 admin_router.register(r'admins',
                       views.CourseAdminViewSet,
                       base_name='course-admins')
+staff_router = routers.NestedSimpleRouter(router, r'courses', lookup='course')
+staff_router.register(r'staff',
+                      views.CourseStaffViewSet,
+                      base_name='course-staff')
 
 urlpatterns = [
     url(r'', include(router.urls)),
-    url(r'', include(admin_router.urls))
+    url(r'', include(admin_router.urls)),
+    url(r'', include(staff_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))
