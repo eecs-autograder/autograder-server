@@ -23,12 +23,18 @@ enrolled_students_router = routers.NestedSimpleRouter(router, r'courses',
 enrolled_students_router.register(r'enrolled_students',
                                   views.CourseEnrolledStudentsViewset,
                                   base_name='course-enrolled-students')
+course_projects_router = routers.NestedSimpleRouter(router, r'courses',
+                                                    lookup='course')
+course_projects_router.register(r'projects',
+                                views.CourseProjectsViewSet,
+                                base_name='course-projects')
 
 urlpatterns = [
     url(r'', include(router.urls)),
     url(r'', include(admin_router.urls)),
     url(r'', include(staff_router.urls)),
-    url(r'', include(enrolled_students_router.urls))
+    url(r'', include(enrolled_students_router.urls)),
+    url(r'', include(course_projects_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))

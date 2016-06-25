@@ -5,7 +5,8 @@ from rest_framework import (
     status, exceptions)
 
 import autograder.rest_api.serializers as ag_serializers
-import autograder.core.models as ag_models
+
+from .nested_course_view_mixin import NestedCourseViewMixin
 
 
 class IsSuperuserOrAdminOrReadOnlyStaff(permissions.BasePermission):
@@ -19,26 +20,22 @@ class IsSuperuserOrAdminOrReadOnlyStaff(permissions.BasePermission):
         return can_edit or staff_and_read_only
 
 
-class CourseAdminViewSet(mixins.ListModelMixin,
+class CourseAdminViewSet(NestedCourseViewMixin,
+                         mixins.ListModelMixin,
                          viewsets.GenericViewSet):
     serializer_class = ag_serializers.UserSerializer
     permission_classes = (permissions.IsAuthenticated,
                           IsSuperuserOrAdminOrReadOnlyStaff,)
 
-    def get_object(self, pk):
-        course = ag_models.Course.objects.get(pk=pk)
-        self.check_object_permissions(self.request, course)
-        return course
-
     def get_queryset(self):
-        course = self.get_object(self.kwargs['course_pk'])
+        course = self.load_course()
         return course.administrators.all()
 
     def post(self, request, course_pk):
         users_to_add = [
             User.objects.get_or_create(username=username)[0]
             for username in request.data.getlist('new_admins')]
-        self.get_object(course_pk).administrators.add(*users_to_add)
+        self.load_course().administrators.add(*users_to_add)
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -52,6 +49,6 @@ class CourseAdminViewSet(mixins.ListModelMixin,
                 {'remove_admins':
                     ["You cannot remove your own admin privileges."]})
 
-        self.get_object(course_pk).administrators.remove(*users_to_remove)
+        self.load_course().administrators.remove(*users_to_remove)
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
