@@ -3,6 +3,8 @@ from rest_framework import viewsets, mixins, permissions
 import autograder.rest_api.serializers as ag_serializers
 import autograder.core.models as ag_models
 
+from ..load_object_mixin import build_load_object_mixin
+
 
 class CoursePermissions(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -18,7 +20,8 @@ class CoursePermissions(permissions.BasePermission):
         return course.is_administrator(request.user)
 
 
-class CourseViewSet(mixins.CreateModelMixin,
+class CourseViewSet(build_load_object_mixin(ag_models.Course),
+                    mixins.CreateModelMixin,
                     mixins.UpdateModelMixin,
                     mixins.RetrieveModelMixin,
                     mixins.ListModelMixin,
@@ -28,3 +31,6 @@ class CourseViewSet(mixins.CreateModelMixin,
 
     def get_queryset(self):
         return ag_models.Course.objects.all()
+
+    def get_object(self):
+        return self.load_object(self.kwargs['pk'])

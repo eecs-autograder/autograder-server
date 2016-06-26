@@ -1,5 +1,3 @@
-from django.core import exceptions
-
 import autograder.core.models as ag_models
 
 from .ag_model_serializer import AGModelSerializer
@@ -8,11 +6,6 @@ from .ag_model_serializer import AGModelSerializer
 class CourseSerializer(AGModelSerializer):
     def get_ag_model_manager(self):
         return ag_models.Course.objects
-
-
-class SemesterSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.Semester.objects
 
 
 class ProjectSerializer(AGModelSerializer):

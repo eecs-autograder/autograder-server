@@ -7,34 +7,41 @@ from autograder.rest_api import views
 # from rest_framework import routers
 from rest_framework_nested import routers
 
-router = routers.SimpleRouter()
+course_router = routers.SimpleRouter()
+course_router.register(r'courses', views.CourseViewSet, base_name='course')
 
-router.register(r'courses', views.CourseViewSet, base_name='course')
-admin_router = routers.NestedSimpleRouter(router, r'courses', lookup='course')
+admin_router = routers.NestedSimpleRouter(course_router, r'courses', lookup='course')
 admin_router.register(r'admins',
                       views.CourseAdminViewSet,
                       base_name='course-admins')
-staff_router = routers.NestedSimpleRouter(router, r'courses', lookup='course')
+staff_router = routers.NestedSimpleRouter(course_router, r'courses', lookup='course')
 staff_router.register(r'staff',
                       views.CourseStaffViewSet,
                       base_name='course-staff')
-enrolled_students_router = routers.NestedSimpleRouter(router, r'courses',
+enrolled_students_router = routers.NestedSimpleRouter(course_router, r'courses',
                                                       lookup='course')
 enrolled_students_router.register(r'enrolled_students',
                                   views.CourseEnrolledStudentsViewset,
                                   base_name='course-enrolled-students')
-course_projects_router = routers.NestedSimpleRouter(router, r'courses',
+course_projects_router = routers.NestedSimpleRouter(course_router, r'courses',
                                                     lookup='course')
 course_projects_router.register(r'projects',
                                 views.CourseProjectsViewSet,
                                 base_name='course-projects')
 
+
+project_router = routers.SimpleRouter()
+project_router.register(r'projects', views.ProjectViewSet, base_name='project')
+
+
 urlpatterns = [
-    url(r'', include(router.urls)),
+    url(r'', include(course_router.urls)),
     url(r'', include(admin_router.urls)),
     url(r'', include(staff_router.urls)),
     url(r'', include(enrolled_students_router.urls)),
-    url(r'', include(course_projects_router.urls))
+    url(r'', include(course_projects_router.urls)),
+
+    url(r'', include(project_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))
