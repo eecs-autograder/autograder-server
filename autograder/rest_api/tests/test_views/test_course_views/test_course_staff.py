@@ -2,31 +2,18 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 
 from rest_framework import status
-from rest_framework.test import APIClient
 
 import autograder.rest_api.serializers as ag_serializers
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
-class _StaffSetUp:
+class _StaffSetUp(test_data.Client, test_data.Course):
     def setUp(self):
         super().setUp()
-
-        self.client = APIClient()
-
-        self.course = obj_ut.build_course()
-
-        self.admin = obj_ut.create_dummy_user()
-        self.course.administrators.add(self.admin)
-
-        self.enrolled = obj_ut.create_dummy_user()
-        self.course.enrolled_students.add(self.enrolled)
-
-        self.nobody = obj_ut.create_dummy_user()
-
         self.url = reverse('course-staff-list',
                            kwargs={'course_pk': self.course.pk})
 

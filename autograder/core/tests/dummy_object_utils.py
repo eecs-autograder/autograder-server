@@ -11,11 +11,11 @@ def _get_unique_id():
     return user_id.decode('utf-8')
 
 
-def create_dummy_user():
-    return create_dummy_users(1)[0]
+def create_dummy_user(is_superuser=False):
+    return create_dummy_users(1, is_superuser=is_superuser)[0]
 
 
-def create_dummy_users(num_users):
+def create_dummy_users(num_users, is_superuser=False):
     users = []
 
     for i in range(num_users):
@@ -25,7 +25,8 @@ def create_dummy_users(num_users):
             last_name='ln{}'.format(user_id),
             username='usr{}'.format(user_id),
             email='jameslp@umich.edu',
-            password='pw{}'.format(user_id))
+            password='pw{}'.format(user_id),
+            is_superuser=is_superuser)
         users.append(user)
     return users
 
