@@ -18,7 +18,8 @@ staff_router = routers.NestedSimpleRouter(course_router, r'courses', lookup='cou
 staff_router.register(r'staff',
                       views.CourseStaffViewSet,
                       base_name='course-staff')
-enrolled_students_router = routers.NestedSimpleRouter(course_router, r'courses',
+enrolled_students_router = routers.NestedSimpleRouter(course_router,
+                                                      r'courses',
                                                       lookup='course')
 enrolled_students_router.register(r'enrolled_students',
                                   views.CourseEnrolledStudentsViewset,
@@ -33,6 +34,12 @@ course_projects_router.register(r'projects',
 project_router = routers.SimpleRouter()
 project_router.register(r'projects', views.ProjectViewSet, base_name='project')
 
+expected_patterns_router = routers.NestedSimpleRouter(
+    project_router, r'projects', lookup='project')
+expected_patterns_router.register(
+    r'expected_patterns', views.ProjectExpectedStudentFilePatternViewSet,
+    base_name='project-expected-patterns')
+
 
 urlpatterns = [
     url(r'', include(course_router.urls)),
@@ -41,7 +48,8 @@ urlpatterns = [
     url(r'', include(enrolled_students_router.urls)),
     url(r'', include(course_projects_router.urls)),
 
-    url(r'', include(project_router.urls))
+    url(r'', include(project_router.urls)),
+    url(r'', include(expected_patterns_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))

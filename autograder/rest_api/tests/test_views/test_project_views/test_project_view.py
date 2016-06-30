@@ -1,18 +1,8 @@
-from django.core.urlresolvers import reverse
-
 from rest_framework import status
-from rest_framework.test import APIClient
-
-import autograder.core.models as ag_models
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
-
-
-def get_url(project):
-    return reverse('project-detail', kwargs={'pk': project.pk})
 
 
 class _ProjectSetUp(test_data.Client, test_data.Project):
@@ -46,20 +36,20 @@ class RetrieveProjectTestCase(_ProjectSetUp, TemporaryFilesystemTestCase):
 
     def do_valid_load_project_test(self, user, project):
         self.client.force_authenticate(user)
-        response = self.client.get(get_url(project))
+        response = self.client.get(self.get_proj_url(project))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(project.to_dict(), response.data)
 
     def do_permission_denied_test(self, user, project):
         self.client.force_authenticate(user)
-        response = self.client.get(get_url(project))
+        response = self.client.get(self.get_proj_url(project))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
 class UpdateProjectTestCase(_ProjectSetUp, TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
-        self.url = get_url(self.project)
+        self.url = self.get_proj_url(self.project)
 
     def test_admin_edit_project(self):
         args = {

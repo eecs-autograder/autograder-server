@@ -1,11 +1,13 @@
 '''
-The classes defined here serve as mixins for building a singleton with
-data commonly used in the REST API view test cases.
-Note that a given database object is not created until the first time it is
-accessed per test case.
+The classes defined here serve as mixins for adding members to a class
+that yield data commonly used in the REST API view test cases. Note that
+database objects are not created until the first time they are accessed
+per test case.
 '''
 
 import random
+
+from django.core.urlresolvers import reverse
 
 from rest_framework.test import APIClient
 
@@ -70,6 +72,13 @@ class Course:
 
 
 class Project(Course):
+    def get_proj_url(self, project):
+        return reverse('project-detail', kwargs={'pk': project.pk})
+
+    def get_patterns_url(self, project):
+        return reverse('project-expected-patterns-list',
+                       kwargs={'project_pk': project.pk})
+
     @property
     def project(self):
         if not hasattr(self, '_project'):
