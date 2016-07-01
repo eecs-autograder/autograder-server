@@ -14,9 +14,6 @@ import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 class _PatternSetUp(test_data.Client, test_data.Project):
     pass
-    # def setUp(self):
-    #     super().setUp()
-    #     self.url = reverse('project-patterns-list', kwargs={'pk': self.project.pk})
 
 
 class ListPatternsTestCase(_PatternSetUp, TemporaryFilesystemTestCase):
@@ -76,10 +73,52 @@ class ListPatternsTestCase(_PatternSetUp, TemporaryFilesystemTestCase):
 
 class CreatePatternTestCase(_PatternSetUp, TemporaryFilesystemTestCase):
     def test_admin_create_pattern(self):
-        self.fail()
+        self.assertEqual(
+            0, self.project.expected_student_file_patterns.count())
+
+        args = {
+            'pattern': 'spam.cpp',
+            'min_num_matches': 1,
+            'max_num_matches': 4
+        }
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.get_patterns_url(self.project), args)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertEqual(
+            1, self.project.expected_student_file_patterns.count())
+        created_pattern = self.project.expected_student_file_patterns.first()
+        for arg_name, value in args.items():
+            self.assertEqual(value, getattr(created_pattern, arg_name),
+                             msg=arg_name)
 
     def test_admin_create_pattern_invalid_settings(self):
-        self.fail()
+        self.assertEqual(
+            0, self.project.expected_student_file_patterns.count())
 
-    def test_other_create_pattern_permission_denied(self):
-        self.fail()
+        args = {
+            'pattern': 'spam.cpp',
+            'min_num_matches': 3,
+            'max_num_matches': 1
+        }
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.get_patterns_url(self.project), args)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(
+            0, self.project.expected_student_file_patterns.count())
+
+    def test_non_admin_create_pattern_permission_denied(self):
+        args = {
+            'pattern': 'spam.cpp',
+            'min_num_matches': 1,
+            'max_num_matches': 4
+        }
+
+        for user in self.staff, self.enrolled, self.nobody:
+            self.client.force_authenticate(user)
+            response = self.client.post(
+                self.get_patterns_url(self.visible_public_project), args)
+            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(
+            0, self.project.expected_student_file_patterns.count())

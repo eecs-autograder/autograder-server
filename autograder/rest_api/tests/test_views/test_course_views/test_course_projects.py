@@ -55,7 +55,7 @@ class CourseAddProjectTestCase(_ProjectsSetUp, TemporaryFilesystemTestCase):
 
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
-        loaded = ag_models.Project.objects.get(name=args['name'])
+        loaded = self.course.projects.get(name=args['name'])
         for arg_name, value in args.items():
             self.assertEqual(value, getattr(loaded, arg_name), msg='arg_name')
 
