@@ -11,13 +11,12 @@ from . import verification
 
 
 class SubmissionGroupManager(ag_model_base.AutograderModelManager):
-    # TODO: rename check_project_group_limits to check_group_size_limits
     def validate_and_create(self, members,
-                            check_project_group_limits=True,
+                            check_group_size_limits=True,
                             **kwargs):
         """
         New parameters:
-            check_project_group_limits -- When False, validation of whether
+            check_group_size_limits -- When False, validation of whether
                 the number of users is within the specified project limits
                 will NOT be run.
                 Default value: True
@@ -25,7 +24,7 @@ class SubmissionGroupManager(ag_model_base.AutograderModelManager):
         with transaction.atomic():
             verification.verify_users_can_be_in_group(
                 members, kwargs['project'], 'members',
-                check_project_group_limits=check_project_group_limits)
+                check_group_size_limits=check_group_size_limits)
 
             group = self.model(**kwargs)
             group.save()
@@ -104,10 +103,10 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         if not os.path.isdir(submission_group_dir):
             os.makedirs(submission_group_dir)
 
-    def validate_and_update(self, check_project_group_limits=True, **kwargs):
+    def validate_and_update(self, check_group_size_limits=True, **kwargs):
         """
         New parameters:
-            check_project_group_limits -- When False, validation of
+            check_group_size_limits -- When False, validation of
                 whether the group size is within specified project limits
                 will NOT be performed. Defaults to True.
 
@@ -123,7 +122,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
             verification.verify_users_can_be_in_group(
                 members, self.project, 'members',
                 group_to_ignore=self,
-                check_project_group_limits=check_project_group_limits)
+                check_group_size_limits=check_group_size_limits)
 
             self.members.set(members)
             self.full_clean()

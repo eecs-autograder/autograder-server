@@ -46,6 +46,12 @@ uploaded_files_router.register(
     r'uploaded_files', views.ProjectUploadedFilesViewSet,
     base_name='project-uploaded-files')
 
+groups_router = routers.NestedSimpleRouter(
+    project_router, r'projects', lookup='project')
+groups_router.register(
+    r'submission_groups', views.ProjectGroupsViewSet,
+    base_name='project-groups')
+
 
 urlpatterns = [
     url(r'', include(course_router.urls)),
@@ -56,7 +62,8 @@ urlpatterns = [
 
     url(r'', include(project_router.urls)),
     url(r'', include(expected_patterns_router.urls)),
-    url(r'', include(uploaded_files_router.urls))
+    url(r'', include(uploaded_files_router.urls)),
+    url(r'', include(groups_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))

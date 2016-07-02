@@ -348,7 +348,7 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
 
         if is_admin:
             return self._create_group(
-                project, members, check_project_group_limits=False)
+                project, members, check_group_size_limits=False)
 
         if len(members) != 1:
             raise exceptions.PermissionDenied(
@@ -362,11 +362,11 @@ class ListAddSubmissionGroupEndpoint(EndpointBase):
 
         return self._create_group(project, members)
 
-    def _create_group(self, project, members, check_project_group_limits=True):
+    def _create_group(self, project, members, check_group_size_limits=True):
         group = ag_models.SubmissionGroup.objects.validate_and_create(
             members=members,
             project=project,
-            check_project_group_limits=check_project_group_limits)
+            check_group_size_limits=check_group_size_limits)
 
         response = {
             "members": group.member_names,

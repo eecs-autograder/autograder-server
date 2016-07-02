@@ -136,13 +136,13 @@ def verify_users_not_in_other_group(users, project, error_dict_field_name,
 
 def verify_users_can_be_in_group(users, project, error_dict_field_name,
                                  group_to_ignore=None,
-                                 check_project_group_limits=True):
+                                 check_group_size_limits=True):
     """
     A shortcut for calling the above 4 "verify_" functions.
     """
     verify_users_have_same_enrollment_status(
         users, project, error_dict_field_name)
-    if check_project_group_limits:
+    if check_group_size_limits:
         verify_group_size_allowed_by_project(
             users, project, error_dict_field_name)
     verify_at_least_one_user_in_group(users, project, error_dict_field_name)

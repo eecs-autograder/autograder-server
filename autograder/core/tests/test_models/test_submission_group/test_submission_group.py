@@ -115,7 +115,7 @@ class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):
         group = ag_models.SubmissionGroup.objects.validate_and_create(
             members=self.enrolled_group,
             project=self.project,
-            check_project_group_limits=False)
+            check_group_size_limits=False)
 
         group.refresh_from_db()
 
@@ -128,7 +128,7 @@ class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):
         group = ag_models.SubmissionGroup.objects.validate_and_create(
             members=self.enrolled_group,
             project=self.project,
-            check_project_group_limits=False)
+            check_group_size_limits=False)
 
         group.refresh_from_db()
 
@@ -139,7 +139,7 @@ class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):
         with self.assertRaises(exceptions.ValidationError):
             ag_models.SubmissionGroup.objects.validate_and_create(
                 members=[], project=self.project,
-                check_project_group_limits=False)
+                check_group_size_limits=False)
 
     def test_exception_on_too_few_group_members(self):
         with self.assertRaises(exceptions.ValidationError):
@@ -221,7 +221,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         new_members = obj_ut.create_dummy_users(2)
         self.project.course.enrolled_students.add(*new_members)
         group.validate_and_update(members=new_members,
-                                  check_project_group_limits=False)
+                                  check_group_size_limits=False)
 
         group.refresh_from_db()
 
@@ -236,7 +236,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.project.course.enrolled_students.add(*new_members)
 
         group.validate_and_update(members=new_members,
-                                  check_project_group_limits=False)
+                                  check_group_size_limits=False)
 
         group.refresh_from_db()
 
@@ -249,7 +249,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
 
         with self.assertRaises(exceptions.ValidationError):
             group.validate_and_update(members=[],
-                                      check_project_group_limits=False)
+                                      check_group_size_limits=False)
 
 
 class GroupMembershipTestCase(_SetUp, TemporaryFilesystemTestCase):

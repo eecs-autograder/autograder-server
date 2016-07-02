@@ -56,7 +56,7 @@ class GetUpdateDeleteSubmissionGroupEndpoint(EndpointBase):
             if 'members' in request_content:
                 group.update_group(
                     request_content['members'],
-                    check_project_group_limits=False)
+                    check_group_size_limits=False)
                 response['members'] = group.member_names
 
         return http.JsonResponse(response)
