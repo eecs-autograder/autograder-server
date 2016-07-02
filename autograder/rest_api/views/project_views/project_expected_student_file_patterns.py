@@ -7,7 +7,7 @@ from .permissions import ProjectPermissions
 from ..load_object_mixin import build_load_object_mixin
 
 
-class ProjectExpectedStudentFilePatternViewSet(
+class ProjectExpectedStudentFilePatternsViewSet(
         build_load_object_mixin(ag_models.Project),
         mixins.CreateModelMixin,
         mixins.ListModelMixin,

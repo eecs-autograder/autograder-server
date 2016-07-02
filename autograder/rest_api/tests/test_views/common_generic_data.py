@@ -79,6 +79,10 @@ class Project(Course):
         return reverse('project-expected-patterns-list',
                        kwargs={'project_pk': project.pk})
 
+    def get_uploaded_files_url(self, project):
+        return reverse('project-uploaded-files-list',
+                       kwargs={'project_pk': project.pk})
+
     @property
     def project(self):
         if not hasattr(self, '_project'):

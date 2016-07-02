@@ -84,6 +84,10 @@ class _AutograderModelMixin:
     def to_dict(self, include_fields=None, exclude_fields=None):
         """
         Returns a dictionary representation of this model instance.
+        Note: The primary key of this model instance is always included
+        in the representation under the key 'pk'. 'pk' should not be
+        listed in include_fields or exclude_fields, and will be ignored
+        if it is.
 
         Keyword arguments:
             include_fields -- The names of fields that should be
@@ -128,6 +132,8 @@ class _AutograderModelMixin:
                     result[field_name] = field_val.pk
             except exceptions.FieldDoesNotExist:
                 pass
+
+        result['pk'] = self.pk
 
         return result
 

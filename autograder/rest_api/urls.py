@@ -37,8 +37,14 @@ project_router.register(r'projects', views.ProjectViewSet, base_name='project')
 expected_patterns_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 expected_patterns_router.register(
-    r'expected_patterns', views.ProjectExpectedStudentFilePatternViewSet,
+    r'expected_patterns', views.ProjectExpectedStudentFilePatternsViewSet,
     base_name='project-expected-patterns')
+
+uploaded_files_router = routers.NestedSimpleRouter(
+    project_router, r'projects', lookup='project')
+uploaded_files_router.register(
+    r'uploaded_files', views.ProjectUploadedFilesViewSet,
+    base_name='project-uploaded-files')
 
 
 urlpatterns = [
@@ -49,7 +55,8 @@ urlpatterns = [
     url(r'', include(course_projects_router.urls)),
 
     url(r'', include(project_router.urls)),
-    url(r'', include(expected_patterns_router.urls))
+    url(r'', include(expected_patterns_router.urls)),
+    url(r'', include(uploaded_files_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))

@@ -16,6 +16,7 @@ class AGModelBaseToDictTest(TestCase):
     def test_default_include_fields(self):
         result = self.ag_model.to_dict()
         expected = {
+            'pk': self.ag_model.pk,
             'pos_num_val': self.ag_model.pos_num_val,
             'non_empty_str_val': self.ag_model.non_empty_str_val,
             'the_answer': self.ag_model.the_answer
@@ -26,6 +27,7 @@ class AGModelBaseToDictTest(TestCase):
         result = self.ag_model.to_dict(
             include_fields=['pos_num_val', 'the_answer'])
         expected = {
+            'pk': self.ag_model.pk,
             'pos_num_val': self.ag_model.pos_num_val,
             'the_answer': self.ag_model.the_answer
         }
@@ -35,6 +37,7 @@ class AGModelBaseToDictTest(TestCase):
         result = self.ag_model.to_dict(
             exclude_fields=['pos_num_val', 'the_answer'])
         expected = {
+            'pk': self.ag_model.pk,
             'non_empty_str_val': self.ag_model.non_empty_str_val
         }
         self.assertEqual(expected, result)
@@ -45,6 +48,7 @@ class AGModelBaseToDictTest(TestCase):
         result = self.ag_model.to_dict(include_fields=include,
                                        exclude_fields=exclude)
         expected = {
+            'pk': self.ag_model.pk,
             'pos_num_val': self.ag_model.pos_num_val
         }
         self.assertEqual(expected, result)
@@ -62,6 +66,7 @@ class AGModelBaseToDictTest(TestCase):
         result = self.ag_model.to_dict(
             exclude_fields=['pos_num_val', 'the_answer', 'not_a_field_name'])
         expected = {
+            'pk': self.ag_model.pk,
             'non_empty_str_val': self.ag_model.non_empty_str_val
         }
         self.assertEqual(expected, result)
@@ -75,6 +80,7 @@ class AGModelBaseToDictTest(TestCase):
             foreign_key=self.ag_model)
 
         expected = {
+            'pk': related.pk,
             'name': related.name,
             'one_to_one': self.ag_model.pk,
             'foreign_key': self.ag_model.pk,
