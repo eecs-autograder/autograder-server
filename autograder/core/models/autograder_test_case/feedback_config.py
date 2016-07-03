@@ -169,3 +169,7 @@ class FeedbackConfig(AutograderModel):
     points_fdbk = ag_fields.ShortStringField(
         choices=zip(PointsFdbkLevel.values, PointsFdbkLevel.values),
         default=PointsFdbkLevel.hide)
+
+    @property
+    def _include_pk(self):
+        return False

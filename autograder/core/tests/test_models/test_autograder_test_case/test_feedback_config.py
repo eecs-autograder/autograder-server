@@ -160,3 +160,6 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(expected,
                               ag_models.FeedbackConfig.get_editable_fields())
 
+    def test_to_dict_pk_excluded(self):
+        fdbk = ag_models.FeedbackConfig.objects.validate_and_create()
+        self.assertNotIn('pk', fdbk.to_dict())

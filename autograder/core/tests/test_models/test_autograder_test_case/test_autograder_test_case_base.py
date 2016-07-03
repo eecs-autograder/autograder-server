@@ -1,7 +1,7 @@
 import itertools
 import random
 
-from django.core.exceptions import ValidationError
+from django.core import exceptions
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -244,7 +244,7 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
             ag_models.AutograderTestCaseBase.get_editable_fields())
 
     def test_exception_on_negative_point_distributions(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 points_for_correct_return_code=-1,
@@ -264,6 +264,13 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue(
             'points_for_compilation_success' in cm.exception.message_dict)
 
+    def test_invalid_test_type(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AutograderTestCaseFactory.validate_and_create(
+                'not_a_test_type')
+
+        self.assertIn('type_str', cm.exception.message_dict)
+
 
 class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
     def test_exception_on_non_unique_name_within_project(self):
@@ -271,7 +278,7 @@ class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
             name=self.TEST_NAME,
             project=self.project)
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(exceptions.ValidationError):
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME,
                 project=self.project)
@@ -287,7 +294,7 @@ class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
             project=other_project)
 
     def test_exception_on_empty_name(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name='',
                 project=self.project)
@@ -295,7 +302,7 @@ class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('name' in cm.exception.message_dict)
 
     def test_exception_on_null_name(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=None,
                 project=self.project)
@@ -305,7 +312,7 @@ class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
 
 class AGTestCmdArgErrorTestCase(_Shared, TemporaryFilesystemTestCase):
     def test_exception_on_empty_value_in_cmd_args(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 command_line_arguments=["spam", '', '       '])
@@ -317,7 +324,7 @@ class AGTestCmdArgErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue(error_list[2])
 
     def test_exception_on_invalid_chars_in_command_line_args(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 command_line_arguments=["spam", "; echo 'haxorz!'"])
@@ -330,7 +337,7 @@ class AGTestCmdArgErrorTestCase(_Shared, TemporaryFilesystemTestCase):
 
 class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
     def test_exception_on_zero_time_limit(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=0)
@@ -338,7 +345,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('time_limit' in cm.exception.message_dict)
 
     def test_exception_on_negative_time_limit(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=-1)
@@ -346,7 +353,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('time_limit' in cm.exception.message_dict)
 
     def test_exception_on_time_limit_too_large(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit=gc.MAX_SUBPROCESS_TIMEOUT + 1)
@@ -354,7 +361,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('time_limit' in cm.exception.message_dict)
 
     def test_exception_on_time_limit_not_integer(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 time_limit='spam')
@@ -372,7 +379,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_negative_stack_size_limit(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 stack_size_limit=-1)
@@ -380,7 +387,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('stack_size_limit' in cm.exception.message_dict)
 
     def test_exception_zero_stack_size_limit(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 stack_size_limit=0)
@@ -388,7 +395,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('stack_size_limit' in cm.exception.message_dict)
 
     def test_exception_stack_size_limit_too_large(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 stack_size_limit=gc.MAX_STACK_SIZE_LIMIT + 1)
@@ -398,7 +405,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_negative_virtual_memory_limit(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 virtual_memory_limit=-1)
@@ -406,7 +413,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
 
     def test_exception_zero_virtual_memory_limit(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 virtual_memory_limit=0)
@@ -414,7 +421,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
 
     def test_exception_virtual_mem_limit_too_large(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 virtual_memory_limit=gc.MAX_VIRTUAL_MEM_LIMIT + 1)
@@ -424,7 +431,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
     # -------------------------------------------------------------------------
 
     def test_exception_negative_process_limit(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 process_spawn_limit=-1)
@@ -432,7 +439,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('process_spawn_limit' in cm.exception.message_dict)
 
     def test_exception_process_limit_too_large(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 process_spawn_limit=gc.MAX_PROCESS_LIMIT + 1)
@@ -451,7 +458,7 @@ class AGTestRetCodeTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue(ag_test.expect_any_nonzero_return_code)
 
     def test_exception_on_expected_return_code_not_integer(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 expected_return_code='spam')
@@ -469,7 +476,7 @@ class AGTestRetCodeTestCase(_Shared, TemporaryFilesystemTestCase):
 
 class AGTestValgrindSettingsTestCase(_Shared, TemporaryFilesystemTestCase):
     def test_exception_on_empty_value_in_valgrind_args(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 use_valgrind=True,
@@ -481,7 +488,7 @@ class AGTestValgrindSettingsTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertFalse(error_list[1])
 
     def test_exception_on_invalid_chars_in_valgrind_flags(self):
-        with self.assertRaises(ValidationError) as cm:
+        with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
                 use_valgrind=True,
@@ -493,7 +500,7 @@ class AGTestValgrindSettingsTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertFalse(error_list[1])
 
 
-class AddRequiredFilesTestCase(TemporaryFilesystemTestCase):
+class AddRequiredFilesToSandboxTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 

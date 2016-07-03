@@ -18,7 +18,7 @@ def _get_class(type_str):
         return _STR_TO_CLASS_MAPPINGS[type_str]
     except KeyError:
         raise exceptions.ValidationError(
-            "Invalid test case type: '{}'".format(type_str))
+            {'type_str': "Invalid test case type: '{}'".format(type_str)})
 
 _STR_TO_CLASS_MAPPINGS = {
     'compiled_and_run_test_case': CompiledAndRunAutograderTestCase,
