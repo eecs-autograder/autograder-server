@@ -87,6 +87,10 @@ class Project(Course):
         return reverse('project-groups-list',
                        kwargs={'project_pk': project.pk})
 
+    def get_ag_tests_url(self, project):
+        return reverse('project-ag-tests-list',
+                       kwargs={'project_pk': project.pk})
+
     @property
     def project(self):
         if not hasattr(self, '_project'):

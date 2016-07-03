@@ -14,8 +14,8 @@ class ListObjectsTest:
         self.assertCountEqual(expected_data, response.data)
 
 
-class PermissionDeniedRetrieveTest:
-    def do_permission_denied_retrieve_test(self, client, user, url):
+class PermissionDeniedGetTest:
+    def do_permission_denied_get_test(self, client, user, url):
         client.force_authenticate(user)
         response = client.get(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -24,7 +24,29 @@ class PermissionDeniedRetrieveTest:
 class CreateObjectTest:
     def do_create_object_test(self, model_manager, client,
                               user, url, request_data):
-        self.fail()
+        self.assertEqual(0, model_manager.count())
+        client.force_authenticate(user)
+        response = client.post(url, request_data)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        self.assertEqual(1, model_manager.count())
+        loaded = model_manager.first()
+        self.assertEqual(loaded.to_dict(), response.data)
+
+        for arg_name, value in request_data.items():
+            self.assertEqual(value, getattr(loaded, arg_name))
+
+
+class CreateObjectInvalidArgsTest:
+    def do_invalid_create_object_test(self, model_manager, client,
+                                      user, url, request_data):
+        self.assertEqual(0, model_manager.count())
+        client.force_authenticate(user)
+        response = client.post(url, request_data)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(0, model_manager.count())
+
+        return response
 
 
 class PermissionDeniedCreateTest:

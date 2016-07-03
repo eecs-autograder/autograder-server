@@ -52,6 +52,12 @@ groups_router.register(
     r'submission_groups', views.ProjectGroupsViewSet,
     base_name='project-groups')
 
+ag_tests_router = routers.NestedSimpleRouter(
+    project_router, r'projects', lookup='project')
+ag_tests_router.register(
+    r'ag_test_cases', views.ProjectAGTestsViewset,
+    base_name='project-ag-tests')
+
 
 urlpatterns = [
     url(r'', include(course_router.urls)),
@@ -63,7 +69,8 @@ urlpatterns = [
     url(r'', include(project_router.urls)),
     url(r'', include(expected_patterns_router.urls)),
     url(r'', include(uploaded_files_router.urls)),
-    url(r'', include(groups_router.urls))
+    url(r'', include(groups_router.urls)),
+    url(r'', include(ag_tests_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))

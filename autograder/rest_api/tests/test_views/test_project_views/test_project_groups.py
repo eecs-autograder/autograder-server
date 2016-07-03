@@ -16,7 +16,7 @@ class _GroupsSetUp(test_data.Client, test_data.Project):
 
 class ListGroupsTestCase(_GroupsSetUp,
                          test_impls.ListObjectsTest,
-                         test_impls.PermissionDeniedRetrieveTest,
+                         test_impls.PermissionDeniedGetTest,
                          TemporaryFilesystemTestCase):
     def test_admin_list_groups(self):
         for project in self.all_projects:
@@ -33,13 +33,13 @@ class ListGroupsTestCase(_GroupsSetUp,
     def test_enrolled_list_groups(self):
         for project in self.all_projects:
             self.build_groups(project)
-            self.do_permission_denied_retrieve_test(
+            self.do_permission_denied_get_test(
                 self.client, self.enrolled, self.get_groups_url(project))
 
     def test_other_list_groups(self):
         for project in self.all_projects:
             self.build_groups(project)
-            self.do_permission_denied_retrieve_test(
+            self.do_permission_denied_get_test(
                 self.client, self.enrolled, self.get_groups_url(project))
 
     def build_groups(self, project):

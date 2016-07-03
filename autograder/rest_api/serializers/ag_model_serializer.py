@@ -28,16 +28,21 @@ class AGModelSerializer(serializers.BaseSerializer):
         """
         Returns a django model manager object that can be used to create
         objects of the desired autograder model type.
+
+        Derived classes should either override this method or override
+        validate_and_create with an implementation that doesn't call
+        this method.
         """
         raise NotImplementedError(
-            "Derived classes should override this method")
+            "Derived classes should override either this method or"
+            "validate_and_create")
 
     def to_representation(self, obj):
         return obj.to_dict(include_fields=self.include_fields,
                            exclude_fields=self.exclude_fields)
 
-    # Subclasses may need to override this if any sub-objects need to be
-    # deserialized (for example, FeedbackConfig objects)
+    # Derived classes may need to override this if any sub-objects need
+    # to be deserialized (for example, FeedbackConfig objects)
     def to_internal_value(self, data):
         return data
 
