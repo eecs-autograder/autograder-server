@@ -1,3 +1,5 @@
+from django.core import exceptions
+
 from .autograder_test_case_base import AutograderTestCaseBase
 from .autograder_test_case_result import AutograderTestCaseResult
 
@@ -12,6 +14,17 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
     @property
     def type_str(self):
         return 'interpreted_test_case'
+
+    def clean(self):
+        if not self.interpreter:
+            raise exceptions.ValidationError(
+                {'interpreter': 'The "interpreter" field must be '
+                                'specified for this AG test type'})
+
+        if not self.entry_point_filename:
+            raise exceptions.ValidationError(
+                {'entry_point_filename': 'The "entry_point_filename" field '
+                                         'cannot be empty for this AG test type.'})
 
     def run(self, submission, autograder_sandbox):
         print('running test: ' + self.name)

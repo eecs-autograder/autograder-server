@@ -81,6 +81,15 @@ class InterpretedAGTestMiscTestCase(_SetUpBase, TemporaryFilesystemTestCase):
 
         self.assertEqual('interpreted_test_case', test.type_str)
 
+    def test_error_missing_interpreter(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AutograderTestCaseFactory.validate_and_create(
+                'interpreted_test_case',
+                entry_point_filename=self.project_filename,
+                **self.starter_args)
+
+        self.assertTrue('interpreter' in cm.exception.message_dict)
+
     def test_error_unsupported_interpreter(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AutograderTestCaseFactory.validate_and_create(
@@ -101,6 +110,16 @@ class InterpretedAGTestMiscTestCase(_SetUpBase, TemporaryFilesystemTestCase):
                 **self.starter_args)
 
         self.assertTrue('interpreter_flags'in cm.exception.message_dict)
+
+    def test_error_missing_entry_point_filename(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AutograderTestCaseFactory.validate_and_create(
+                'interpreted_test_case',
+                interpreter='python',
+                entry_point_filename='',
+                **self.starter_args)
+
+        self.assertTrue('entry_point_filename' in cm.exception.message_dict)
 
     def test_entry_point_filename_has_invalid_chars(self):
         with self.assertRaises(exceptions.ValidationError) as cm:

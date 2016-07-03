@@ -391,8 +391,8 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     # INTERPRETED TEST CASE FIELDS -------------------------------------
 
     interpreter = ag_fields.ShortStringField(
+        blank=True,
         choices=zip(gc.SUPPORTED_INTERPRETERS, gc.SUPPORTED_INTERPRETERS),
-        default=gc.SUPPORTED_INTERPRETERS[0],
         help_text='''The interpreter used to run the program.''')
 
     interpreter_flags = ag_fields.StringArrayField(
