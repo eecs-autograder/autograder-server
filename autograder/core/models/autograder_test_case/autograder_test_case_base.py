@@ -489,8 +489,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         if files_to_add:
             autograder_sandbox.add_files(*files_to_add)
 
-    # TODO: Remove "test_" prefix from these names
-
+    # TODO: Remove "test_" prefix from this name
     def test_checks_compilation(self):
         return False
 

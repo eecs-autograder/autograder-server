@@ -24,14 +24,8 @@ class ExpectedStudentFilePatternSerializer(AGModelSerializer):
 
 
 class AGTestCaseSerializer(AGModelSerializer):
-    # def __init__(self, *args, type_str=None, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.type_str = type_str
-
     def validate_and_create(self, data):
-        return ag_models.AutograderTestCaseFactory.validate_and_create(
-            # self.type_str,
-            **data)
+        return ag_models.AutograderTestCaseFactory.validate_and_create(**data)
 
 
 class SubmissionGroupSerializer(AGModelSerializer):

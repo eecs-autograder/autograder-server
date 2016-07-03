@@ -142,6 +142,11 @@ class _AutograderModelMixin:
 
     @property
     def _include_pk(self):
+        '''
+        Derived classes can override this property if they wish to
+        exclude the primary key attribute from their dictionary
+        representation.
+        '''
         return True
 
 
