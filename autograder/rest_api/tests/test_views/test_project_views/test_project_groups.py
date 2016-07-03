@@ -7,41 +7,40 @@ from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
+import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
 class _GroupsSetUp(test_data.Client, test_data.Project):
     pass
 
 
-class ListGroupsTestCase(_GroupsSetUp, TemporaryFilesystemTestCase):
+class ListGroupsTestCase(_GroupsSetUp,
+                         test_impls.ListObjectsTest,
+                         test_impls.PermissionDeniedRetrieveTest,
+                         TemporaryFilesystemTestCase):
     def test_admin_list_groups(self):
         for project in self.all_projects:
-            self.do_list_groups_test(self.admin, project)
+            self.do_list_objects_test(
+                self.client, self.admin, self.get_groups_url(project),
+                self.build_groups(project))
 
     def test_staff_list_groups(self):
         for project in self.all_projects:
-            self.do_list_groups_test(self.staff, project)
+            self.do_list_objects_test(
+                self.client, self.staff, self.get_groups_url(project),
+                self.build_groups(project))
 
     def test_enrolled_list_groups(self):
         for project in self.all_projects:
-            self.do_permission_denied_test(self.enrolled, project)
+            self.build_groups(project)
+            self.do_permission_denied_retrieve_test(
+                self.client, self.enrolled, self.get_groups_url(project))
 
     def test_other_list_groups(self):
         for project in self.all_projects:
-            self.do_permission_denied_test(self.enrolled, project)
-
-    def do_list_groups_test(self, user, project):
-        serialized_groups = self.build_groups(project)
-        self.client.force_authenticate(user)
-        response = self.client.get(self.get_groups_url(project))
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertCountEqual(serialized_groups, response.data)
-
-    def do_permission_denied_test(self, user, project):
-        self.build_groups(project)
-        self.client.force_authenticate(user)
-        response = self.client.get(self.get_groups_url(project))
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+            self.build_groups(project)
+            self.do_permission_denied_retrieve_test(
+                self.client, self.enrolled, self.get_groups_url(project))
 
     def build_groups(self, project):
         project.validate_and_update(
@@ -56,7 +55,9 @@ class ListGroupsTestCase(_GroupsSetUp, TemporaryFilesystemTestCase):
         return serialized_groups
 
 
-class CreateGroupTestCase(_GroupsSetUp, TemporaryFilesystemTestCase):
+class CreateGroupTestCase(_GroupsSetUp,
+                          test_impls.PermissionDeniedCreateTest,
+                          TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
         self.url = self.get_groups_url(self.project)
@@ -64,6 +65,7 @@ class CreateGroupTestCase(_GroupsSetUp, TemporaryFilesystemTestCase):
     def test_admin_create_group(self):
         self.assertEqual(0, self.project.submission_groups.count())
         args = {'members': self.get_legal_member_pks()}
+
         self.client.force_authenticate(self.admin)
         response = self.client.post(self.url, args)
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
@@ -73,11 +75,12 @@ class CreateGroupTestCase(_GroupsSetUp, TemporaryFilesystemTestCase):
         self.assertCountEqual(self.get_legal_members(), loaded.members.all())
 
     def test_admin_create_group_override_size(self):
+        self.project.validate_and_update(max_group_size=1)
+
         self.assertEqual(0, self.project.submission_groups.count())
         args = {'members': self.get_legal_member_pks()}
-        self.project.validate_and_update(max_group_size=1)
-        self.client.force_authenticate(self.admin)
 
+        self.client.force_authenticate(self.admin)
         response = self.client.post(self.url, args)
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
@@ -97,11 +100,9 @@ class CreateGroupTestCase(_GroupsSetUp, TemporaryFilesystemTestCase):
         args = {'members': self.get_legal_member_pks()}
         for user in (self.staff, self.enrolled, self.get_legal_members()[0],
                      self.nobody):
-            self.assertEqual(0, self.project.submission_groups.count())
-            self.client.force_authenticate(user)
-            response = self.client.post(self.url, args)
-            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-            self.assertEqual(0, self.project.submission_groups.count())
+            self.do_permission_denied_create_test(
+                self.project.submission_groups, self.client, user,
+                self.get_groups_url(self.project), args)
 
     def get_legal_members(self):
         if hasattr(self, '_legal_members'):
