@@ -10,3 +10,4 @@ from .project_views.project_expected_student_file_patterns import (
 from .project_views.project_uploaded_files import ProjectUploadedFilesViewSet
 from .project_views.project_groups import ProjectGroupsViewSet
 from .project_views.project_ag_test_cases import ProjectAGTestsViewset
+from .project_views.project_group_invitations import ProjectGroupInvitationsViewset

@@ -34,7 +34,11 @@ class CreateObjectTest:
         self.assertEqual(loaded.to_dict(), response.data)
 
         for arg_name, value in request_data.items():
-            self.assertEqual(value, getattr(loaded, arg_name))
+            actual = getattr(loaded, arg_name)
+            try:
+                self.assertCountEqual(value, actual)
+            except TypeError:
+                self.assertEqual(value, actual)
 
 
 class CreateObjectInvalidArgsTest:

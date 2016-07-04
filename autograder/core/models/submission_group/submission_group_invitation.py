@@ -61,7 +61,8 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
     _invitees_who_accepted = ag_fields.StringArrayField(
         default=list, blank=True)
 
-    project = models.ForeignKey(Project)
+    project = models.ForeignKey(Project,
+                                related_name='submission_group_invitations')
 
     objects = SubmissionGroupInvitationManager()
 

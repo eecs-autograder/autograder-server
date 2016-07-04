@@ -21,14 +21,17 @@ class Project(AutograderModel):
         autograder_test_cases -- The autograder test cases that belong
             to this Project.
 
-        student_test_suites -- The student test suites that belong to
-            this Project.
-
         uploaded_files -- Resource files to be used in project test
             cases.
 
         expected_student_file_patterns -- Patterns that
             student-submitted files can or should match.
+
+        submission_groups -- The submission groups registered for this
+            Project.
+
+        submission_group_invitations -- The pending submission group
+            invitations belonging to this Project.
     """
     class Meta:
         unique_together = ('name', 'course')

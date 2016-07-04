@@ -23,8 +23,9 @@ class ProjectGroupsViewSet(build_load_object_mixin(ag_models.Project),
     def create(self, request, project_pk, *args, **kwargs):
         project = self.load_object(project_pk)
         request.data['project'] = project
-        request.data['members'] = [User.objects.get(pk=pk) for pk in
-                                   request.data.getlist('members')]
+        request.data['members'] = [
+            User.objects.get(username=username)
+            for username in request.data.pop('member_names')]
         request.data['check_group_size_limits'] = (
             not project.course.is_administrator(request.user))
 

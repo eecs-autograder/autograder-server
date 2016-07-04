@@ -1,5 +1,3 @@
-from rest_framework import status
-
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
@@ -56,6 +54,8 @@ class ListGroupsTestCase(_GroupsSetUp,
 
 
 class CreateGroupTestCase(_GroupsSetUp,
+                          test_impls.CreateObjectTest,
+                          test_impls.CreateObjectInvalidArgsTest,
                           test_impls.PermissionDeniedCreateTest,
                           TemporaryFilesystemTestCase):
     def setUp(self):
@@ -63,41 +63,51 @@ class CreateGroupTestCase(_GroupsSetUp,
         self.url = self.get_groups_url(self.project)
 
     def test_admin_create_group(self):
-        self.assertEqual(0, self.project.submission_groups.count())
-        args = {'members': self.get_legal_member_pks()}
+        args = {'member_names': self.get_legal_member_names()}
 
-        self.client.force_authenticate(self.admin)
-        response = self.client.post(self.url, args)
-        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.do_create_object_test(self.project.submission_groups,
+                                   self.client, self.admin, self.url, args)
 
-        self.assertEqual(1, self.project.submission_groups.count())
-        loaded = self.project.submission_groups.first()
-        self.assertCountEqual(self.get_legal_members(), loaded.members.all())
+        # self.assertEqual(0, self.project.submission_groups.count())
+        # self.client.force_authenticate(self.admin)
+        # response = self.client.post(self.url, args)
+        # self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        # self.assertEqual(1, self.project.submission_groups.count())
+        # loaded = self.project.submission_groups.first()
+        # self.assertCountEqual(self.get_legal_members(), loaded.members.all())
 
     def test_admin_create_group_override_size(self):
         self.project.validate_and_update(max_group_size=1)
+        args = {'member_names': self.get_legal_member_names()}
 
-        self.assertEqual(0, self.project.submission_groups.count())
-        args = {'members': self.get_legal_member_pks()}
+        self.do_create_object_test(self.project.submission_groups,
+                                   self.client, self.admin, self.url, args)
 
-        self.client.force_authenticate(self.admin)
-        response = self.client.post(self.url, args)
-        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        # self.assertEqual(0, self.project.submission_groups.count())
 
-        self.assertEqual(1, self.project.submission_groups.count())
-        loaded = self.project.submission_groups.first()
-        self.assertCountEqual(self.get_legal_members(), loaded.members.all())
+        # self.client.force_authenticate(self.admin)
+        # response = self.client.post(self.url, args)
+        # self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        # self.assertEqual(1, self.project.submission_groups.count())
+        # loaded = self.project.submission_groups.first()
+        # self.assertCountEqual(self.get_legal_members(), loaded.members.all())
 
     def test_admin_create_group_error_invalid_members(self):
-        self.assertEqual(0, self.project.submission_groups.count())
-        args = {'members': [self.enrolled.pk, self.nobody.pk]}
-        self.client.force_authenticate(self.admin)
-        response = self.client.post(self.url, args)
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(0, self.project.submission_groups.count())
+        args = {'member_names': [self.enrolled.username, self.nobody.username]}
+        self.do_invalid_create_object_test(
+            self.project.submission_groups, self.client, self.admin, self.url,
+            args)
+
+        # self.assertEqual(0, self.project.submission_groups.count())
+        # self.client.force_authenticate(self.admin)
+        # response = self.client.post(self.url, args)
+        # self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        # self.assertEqual(0, self.project.submission_groups.count())
 
     def test_other_create_group_permission_denied(self):
-        args = {'members': self.get_legal_member_pks()}
+        args = {'member_names': self.get_legal_member_names()}
         for user in (self.staff, self.enrolled, self.get_legal_members()[0],
                      self.nobody):
             self.do_permission_denied_create_test(
@@ -113,6 +123,6 @@ class CreateGroupTestCase(_GroupsSetUp,
         self.project.course.enrolled_students.add(*self._legal_members)
         return self._legal_members
 
-    def get_legal_member_pks(self):
+    def get_legal_member_names(self):
         members = self.get_legal_members()
-        return [member.pk for member in members]
+        return [member.username for member in members]

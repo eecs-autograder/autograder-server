@@ -52,6 +52,12 @@ groups_router.register(
     r'submission_groups', views.ProjectGroupsViewSet,
     base_name='project-groups')
 
+invitations_router = routers.NestedSimpleRouter(
+    project_router, r'projects', lookup='project')
+invitations_router.register(
+    r'group_invitations', views.ProjectGroupInvitationsViewset,
+    base_name='project-group-invitations')
+
 ag_tests_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 ag_tests_router.register(
@@ -70,6 +76,7 @@ urlpatterns = [
     url(r'', include(expected_patterns_router.urls)),
     url(r'', include(uploaded_files_router.urls)),
     url(r'', include(groups_router.urls)),
+    url(r'', include(invitations_router.urls)),
     url(r'', include(ag_tests_router.urls))
 ]
 
