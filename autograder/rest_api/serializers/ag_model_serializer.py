@@ -63,6 +63,6 @@ class AGModelSerializer(serializers.BaseSerializer):
             raise serializers.ValidationError(e.message_dict)
 
     # Since we're pushing the validation down to the database
-    # level, this method should do nothing.
+    # level, this method should return the given data unmodified.
     def run_validation(self, initial_data):
         return initial_data
