@@ -3,6 +3,7 @@ import shutil
 
 from django.db import models
 from django.conf import settings
+from django.core import exceptions
 
 from ..ag_model_base import AutograderModel
 from .project import Project
@@ -61,6 +62,10 @@ class UploadedFile(AutograderModel):
         file, for security reasons.
         """
         new_name = os.path.basename(new_name)
+        try:
+            ut.check_user_provided_filename(new_name)
+        except exceptions.ValidationError as e:
+            raise exceptions.ValidationError({'name': e.message})
 
         old_abspath = self.abspath
         self.file_obj.name = _get_project_file_upload_to_path(self, new_name)

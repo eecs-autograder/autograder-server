@@ -12,6 +12,15 @@ from autograder.core.tests.temporary_filesystem_test_case import (
 import autograder.core.tests.dummy_object_utils as obj_ut
 
 
+_illegal_filenames = [
+    '..',
+    '; echo "haxorz";#',
+    '.spam.txt',
+    '',
+    '     '
+]
+
+
 class _SetUp:
     def setUp(self):
         super().setUp()
@@ -49,6 +58,14 @@ class RenameUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.assertEqual(expected_new_name, self.uploaded_file.name)
         with ut.ChangeDirectory(ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(expected_new_name))
+
+    def test_error_illegal_filenames(self):
+        for filename in _illegal_filenames:
+            with self.assertRaises(exceptions.ValidationError,
+                                   msg='Filename: ' + filename) as cm:
+                self.uploaded_file.rename(filename)
+
+            self.assertIn('name', cm.exception.message_dict)
 
 
 class CreateUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
@@ -110,15 +127,7 @@ class CreateUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.assertEqual(new_filename, uploaded_file.name)
 
     def test_exception_illegal_filenames(self):
-        illegal_filenames = [
-            '..',
-            '; echo "haxorz";#',
-            '.spam.txt',
-            '',
-            '     '
-        ]
-
-        for filename in illegal_filenames:
+        for filename in _illegal_filenames:
             self.file_obj.name = filename
             with self.assertRaises(exceptions.ValidationError,
                                    msg='Filename: ' + filename) as cm:
