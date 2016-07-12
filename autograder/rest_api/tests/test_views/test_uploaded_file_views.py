@@ -1,5 +1,6 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
+from django.test.client import MULTIPART_CONTENT
 
 from rest_framework import status
 import autograder.core.models as ag_models
@@ -144,8 +145,8 @@ class UpdateUploadedFileContentTestCase(test_data.Client,
         for project in self.all_projects:
             file_ = build_file(project)
             response = self.client.put(file_content_url(file_),
-                                       {'file_obj': self.updated_file})
-
+                                       {'file_obj': self.updated_file},
+                                       format='multipart')
             self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
             file_.refresh_from_db()
             self.assertEqual(self.new_content, file_.file_obj.read())
@@ -155,7 +156,7 @@ class UpdateUploadedFileContentTestCase(test_data.Client,
         for user in self.staff, self.enrolled, self.nobody:
             self.do_put_object_permission_denied_test(
                 file_, self.client, user, file_content_url(file_),
-                {'file_obj': self.updated_file})
+                {'file_obj': self.updated_file}, format='multipart')
             file_.refresh_from_db()
             self.assertEqual(_file_obj_kwargs['content'],
                              file_.file_obj.read())

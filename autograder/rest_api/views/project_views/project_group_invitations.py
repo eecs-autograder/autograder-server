@@ -35,5 +35,5 @@ class ProjectGroupInvitationsViewset(
         request.data['invitation_creator'] = request.user
         request.data['invited_users'] = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data.getlist('invited_usernames')]
+            for username in request.data['invited_usernames']]
         return super().create(request, *args, **kwargs)

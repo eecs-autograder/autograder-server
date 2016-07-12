@@ -24,13 +24,13 @@ class CourseStaffViewSet(build_load_object_mixin(ag_models.Course),
     def post(self, request, course_pk):
         staff_to_add = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data.getlist('new_staff')]
+            for username in request.data['new_staff']]
         self.load_object(course_pk).staff.add(*staff_to_add)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     def delete(self, request, course_pk):
         staff_to_remove = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data.getlist('remove_staff')]
+            for username in request.data['remove_staff']]
         self.load_object(course_pk).staff.remove(*staff_to_remove)
         return response.Response(status=status.HTTP_204_NO_CONTENT)

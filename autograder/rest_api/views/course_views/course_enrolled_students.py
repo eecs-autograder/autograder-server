@@ -24,7 +24,7 @@ class CourseEnrolledStudentsViewset(build_load_object_mixin(ag_models.Course),
     def post(self, request, course_pk):
         students_to_add = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data.getlist('new_enrolled_students')
+            for username in request.data['new_enrolled_students']
         ]
         self.load_object(course_pk).enrolled_students.add(*students_to_add)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
@@ -32,7 +32,7 @@ class CourseEnrolledStudentsViewset(build_load_object_mixin(ag_models.Course),
     def put(self, request, course_pk):
         new_roster = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data.getlist('new_enrolled_students')
+            for username in request.data['new_enrolled_students']
         ]
         self.load_object(course_pk).enrolled_students.set(new_roster, clear=True)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
@@ -40,7 +40,7 @@ class CourseEnrolledStudentsViewset(build_load_object_mixin(ag_models.Course),
     def delete(self, request, course_pk):
         students_to_remove = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data.getlist('remove_enrolled_students')
+            for username in request.data['remove_enrolled_students']
         ]
         self.load_object(course_pk).enrolled_students.remove(*students_to_remove)
         return response.Response(status=status.HTTP_204_NO_CONTENT)

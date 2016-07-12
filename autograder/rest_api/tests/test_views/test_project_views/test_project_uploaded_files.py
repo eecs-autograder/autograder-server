@@ -71,7 +71,8 @@ class CreateUploadedFileTestCase(_UploadedFilesSetUp,
         args = {'file_obj': self.file_obj}
         self.client.force_authenticate(self.admin)
         response = self.client.post(
-            self.get_uploaded_files_url(self.project), args)
+            self.get_uploaded_files_url(self.project), args,
+            format='multipart')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         self.assertEqual(1, self.project.uploaded_files.count())
         loaded = self.project.uploaded_files.first()
@@ -87,7 +88,8 @@ class CreateUploadedFileTestCase(_UploadedFilesSetUp,
         args = {'file_obj': bad_file}
         self.client.force_authenticate(self.admin)
         response = self.client.post(
-            self.get_uploaded_files_url(self.project), args)
+            self.get_uploaded_files_url(self.project), args,
+            format='multipart')
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(0, self.project.uploaded_files.count())
 
@@ -97,6 +99,7 @@ class CreateUploadedFileTestCase(_UploadedFilesSetUp,
             args = {'file_obj': self.file_obj}
             self.client.force_authenticate(user)
             response = self.client.post(
-                self.get_uploaded_files_url(self.project), args)
+                self.get_uploaded_files_url(self.project), args,
+                format='multipart')
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
             self.assertEqual(0, self.project.uploaded_files.count())

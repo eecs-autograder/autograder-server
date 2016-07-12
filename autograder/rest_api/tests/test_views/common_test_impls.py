@@ -30,10 +30,10 @@ class GetObjectTest(ListObjectsTest, PermissionDeniedGetTest):
 
 class CreateObjectTest:
     def do_create_object_test(self, model_manager, client,
-                              user, url, request_data):
+                              user, url, request_data, format='json'):
         self.assertEqual(0, model_manager.count())
         client.force_authenticate(user)
-        response = client.post(url, request_data)
+        response = client.post(url, request_data, format=format)
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         self.assertEqual(1, model_manager.count())
@@ -50,10 +50,10 @@ class CreateObjectTest:
 
 class CreateObjectInvalidArgsTest:
     def do_invalid_create_object_test(self, model_manager, client,
-                                      user, url, request_data):
+                                      user, url, request_data, format='json'):
         self.assertEqual(0, model_manager.count())
         client.force_authenticate(user)
-        response = client.post(url, request_data)
+        response = client.post(url, request_data, format=format)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(0, model_manager.count())
 
@@ -62,22 +62,23 @@ class CreateObjectInvalidArgsTest:
 
 class PermissionDeniedCreateTest:
     def do_permission_denied_create_test(self, model_manager, client,
-                                         user, url, request_data):
+                                         user, url, request_data,
+                                         format='json'):
         self.assertEqual(0, model_manager.count())
         client.force_authenticate(user)
-        response = client.post(url, request_data)
+        response = client.post(url, request_data, format=format)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertEqual(0, model_manager.count())
 
 
 class UpdateObjectTest:
     def do_patch_object_test(self, ag_model_obj, client, user, url,
-                             request_data):
+                             request_data, format='json'):
         expected_data = ag_model_obj.to_dict()
         expected_data.update(request_data)
 
         client.force_authenticate(user)
-        response = client.patch(url, request_data)
+        response = client.patch(url, request_data, format=format)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj.refresh_from_db()
@@ -85,22 +86,25 @@ class UpdateObjectTest:
         self.assertEqual(expected_data, response.data)
 
     def do_patch_object_invalid_args_test(self, ag_model_obj, client, user,
-                                          url, request_data):
+                                          url, request_data, format='json'):
         self._do_bad_update_test(ag_model_obj, client, user, url, request_data,
-                                 client.patch, status.HTTP_400_BAD_REQUEST)
+                                 client.patch, status.HTTP_400_BAD_REQUEST,
+                                 format=format)
 
     def do_patch_object_permission_denied_test(self, ag_model_obj, client,
-                                               user, url, request_data):
+                                               user, url, request_data,
+                                               format='json'):
         self._do_bad_update_test(ag_model_obj, client, user, url, request_data,
-                                 client.patch, status.HTTP_403_FORBIDDEN)
+                                 client.patch, status.HTTP_403_FORBIDDEN,
+                                 format=format)
 
     def do_put_object_test(self, ag_model_obj, client, user, url,
-                           request_data):
+                           request_data, format='json'):
         expected_data = ag_model_obj.to_dict()
         expected_data.update(request_data)
 
         client.force_authenticate(user)
-        response = client.put(url, request_data)
+        response = client.put(url, request_data, format=format)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj.refresh_from_db()
@@ -108,21 +112,23 @@ class UpdateObjectTest:
         self.assertEqual(expected_data, response.data)
 
     def do_put_object_invalid_args_test(self, ag_model_obj, client, user, url,
-                                        request_data):
+                                        request_data, format='json'):
         self._do_bad_update_test(ag_model_obj, client, user, url, request_data,
-                                 client.put, status.HTTP_400_BAD_REQUEST)
+                                 client.put, status.HTTP_400_BAD_REQUEST,
+                                 format=format)
 
     def do_put_object_permission_denied_test(self, ag_model_obj, client, user,
-                                             url, request_data):
+                                             url, request_data, format='json'):
         self._do_bad_update_test(ag_model_obj, client, user, url, request_data,
-                                 client.put, status.HTTP_403_FORBIDDEN)
+                                 client.put, status.HTTP_403_FORBIDDEN,
+                                 format=format)
 
     def _do_bad_update_test(self, ag_model_obj, client, user, url, request_data,
-                            client_method, expected_status):
+                            client_method, expected_status, format='json'):
         expected_data = ag_model_obj.to_dict()
 
         client.force_authenticate(user)
-        response = client_method(url, request_data)
+        response = client_method(url, request_data, format=format)
         self.assertEqual(expected_status, response.status_code)
 
         ag_model_obj.refresh_from_db()

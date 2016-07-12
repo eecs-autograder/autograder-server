@@ -35,7 +35,7 @@ class CourseAdminViewSet(build_load_object_mixin(ag_models.Course),
     def post(self, request, course_pk):
         users_to_add = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data.getlist('new_admins')]
+            for username in request.data['new_admins']]
         self.load_object(course_pk).administrators.add(*users_to_add)
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
@@ -43,7 +43,7 @@ class CourseAdminViewSet(build_load_object_mixin(ag_models.Course),
     def delete(self, request, course_pk):
         users_to_remove = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data.getlist('remove_admins')]
+            for username in request.data['remove_admins']]
 
         if request.user in users_to_remove:
             raise exceptions.ValidationError(
