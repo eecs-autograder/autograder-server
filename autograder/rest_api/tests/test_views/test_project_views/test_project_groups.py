@@ -62,20 +62,17 @@ class CreateGroupTestCase(_GroupsSetUp,
         super().setUp()
         self.url = self.get_groups_url(self.project)
 
-    def test_admin_create_group(self):
+    def test_admin_create_enrolled_group(self):
         args = {'member_names': self.get_legal_member_names()}
-
         self.do_create_object_test(self.project.submission_groups,
                                    self.client, self.admin, self.url, args)
 
-        # self.assertEqual(0, self.project.submission_groups.count())
-        # self.client.force_authenticate(self.admin)
-        # response = self.client.post(self.url, args)
-        # self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-
-        # self.assertEqual(1, self.project.submission_groups.count())
-        # loaded = self.project.submission_groups.first()
-        # self.assertCountEqual(self.get_legal_members(), loaded.members.all())
+    def test_admin_create_non_enrolled_group(self):
+        self.project.validate_and_update(
+            allow_submissions_from_non_enrolled_students=True)
+        args = {'member_names': ['not_enrolled1', 'not_enrolled2']}
+        self.do_create_object_test(self.project.submission_groups,
+                                   self.client, self.admin, self.url, args)
 
     def test_admin_create_group_override_size(self):
         self.project.validate_and_update(max_group_size=1)
