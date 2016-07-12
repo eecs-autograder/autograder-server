@@ -75,6 +75,11 @@ uploaded_file_router.register(r'uploaded_files',
                               views.UploadedFileViewset,
                               base_name='uploaded-file')
 
+ag_test_router = routers.SimpleRouter()
+ag_test_router.register(r'ag_test_cases', views.AGTestCaseViewset,
+                        base_name='ag-test')
+
+
 urlpatterns = [
     url(r'', include(course_router.urls)),
     url(r'', include(admin_router.urls)),
@@ -90,7 +95,8 @@ urlpatterns = [
     url(r'', include(ag_tests_router.urls)),
 
     url(r'', include(expected_pattern_router.urls)),
-    url(r'', include(uploaded_file_router.urls))
+    url(r'', include(uploaded_file_router.urls)),
+    url(r'', include(ag_test_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))
