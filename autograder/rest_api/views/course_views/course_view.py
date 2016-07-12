@@ -31,6 +31,3 @@ class CourseViewSet(build_load_object_mixin(ag_models.Course),
 
     def get_queryset(self):
         return ag_models.Course.objects.all()
-
-    def get_object(self):
-        return self.load_object(self.kwargs['pk'])

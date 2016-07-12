@@ -13,6 +13,3 @@ class ProjectViewSet(build_load_object_mixin(ag_models.Project),
                      viewsets.GenericViewSet):
     serializer_class = ag_serializers.ProjectSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermissions)
-
-    def get_object(self):
-        return self.load_object(self.kwargs['pk'])

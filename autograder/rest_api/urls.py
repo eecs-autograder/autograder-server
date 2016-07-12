@@ -70,6 +70,10 @@ expected_pattern_router.register(r'expected_patterns',
                                  views.ExpectedStudentFilePatternViewset,
                                  base_name='expected-pattern')
 
+uploaded_file_router = routers.SimpleRouter()
+uploaded_file_router.register(r'uploaded_files',
+                              views.UploadedFileViewset,
+                              base_name='uploaded-file')
 
 urlpatterns = [
     url(r'', include(course_router.urls)),
@@ -85,7 +89,8 @@ urlpatterns = [
     url(r'', include(invitations_router.urls)),
     url(r'', include(ag_tests_router.urls)),
 
-    url(r'', include(expected_pattern_router.urls))
+    url(r'', include(expected_pattern_router.urls)),
+    url(r'', include(uploaded_file_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))

@@ -10,7 +10,7 @@ import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-base_pattern_args = {
+base_pattern_kwargs = {
     'pattern': 'spaaaaaam',
     'min_num_matches': 1,
     'max_num_matches': 4
@@ -19,7 +19,7 @@ base_pattern_args = {
 
 def build_pattern(project):
     return ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
-        project=project, **base_pattern_args)
+        project=project, **base_pattern_kwargs)
 
 
 def pattern_url(pattern_obj):
@@ -74,7 +74,7 @@ class UpdateExpectedPatternTestCase(test_data.Client,
     def valid_args(self):
         return {
             'pattern': 'waaaaa',
-            'max_num_matches': base_pattern_args['max_num_matches'] + 2
+            'max_num_matches': base_pattern_kwargs['max_num_matches'] + 2
         }
 
     def test_admin_patch_pattern(self):

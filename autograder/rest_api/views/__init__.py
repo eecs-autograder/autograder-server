@@ -13,3 +13,4 @@ from .project_views.project_ag_test_cases import ProjectAGTestsViewset
 from .project_views.project_group_invitations import ProjectGroupInvitationsViewset
 
 from .expected_student_file_pattern_view import ExpectedStudentFilePatternViewset
+from .uploaded_file_views import UploadedFileViewset
