@@ -85,6 +85,10 @@ group_invitation_router.register(r'group_invitations',
                                  base_name='group-invitation')
 
 
+group_router = routers.SimpleRouter()
+group_router.register(r'group', views.GroupViewset, base_name='group')
+
+
 urlpatterns = [
     url(r'', include(course_router.urls)),
     url(r'', include(admin_router.urls)),
@@ -102,7 +106,9 @@ urlpatterns = [
     url(r'', include(expected_pattern_router.urls)),
     url(r'', include(uploaded_file_router.urls)),
     url(r'', include(ag_test_router.urls)),
-    url(r'', include(group_invitation_router.urls))
+    url(r'', include(group_invitation_router.urls)),
+
+    url(r'', include(group_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))

@@ -23,7 +23,7 @@ class GetGroupInvitationTestCase(test_data.Client,
                         self.client, user, self.invitation_url(invite),
                         invite.to_dict())
 
-        for project in self.visible_public_project, self.hidden_public_project:
+        for project in self.public_projects:
             invite = self.non_enrolled_group_invitation(project)
             for user in self.admin, self.staff:
                 self.do_get_object_test(

@@ -162,6 +162,10 @@ class Project(Course):
         return [self.hidden_public_project, self.hidden_private_project]
 
     @property
+    def public_projects(self):
+        return [self.visible_public_project, self.hidden_public_project]
+
+    @property
     def projects_hidden_from_non_enrolled(self):
         return [self.visible_private_project] + self.hidden_projects
 
@@ -177,6 +181,12 @@ class Group(Course):
         self._invitations = {
             # <project pk>: {
             #   <label>: <invitation object>
+            # }
+        }
+
+        self._groups = {
+            # <project pk>: {
+            #   <label>: <group object>
             # }
         }
 
@@ -203,7 +213,7 @@ class Group(Course):
         if project.max_group_size < 3:
             project.validate_and_update(max_group_size=3)
 
-        invitation = self._get_cached(project, label)
+        invitation = self._get_cached_invitation(project, label)
         if invitation is not None:
             return invitation
 
@@ -211,17 +221,48 @@ class Group(Course):
         invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             user_to_clone, invitees, project=project)
 
-        self._store(project, label, invitation)
+        self._store_invitation(project, label, invitation)
         return invitation
 
-    def _build_group(self, project, user_to_clone):
+    # -------------------------------------------------------------------------
+
+    def group_url(self, group):
+        return reverse('group-detail', kwargs={'pk': group.pk})
+
+    def admin_group(self, project):
+        return self._build_group(project, self.admin, 'admin_group')
+
+    def staff_group(self, project):
+        return self._build_group(project, self.staff, 'staff_group')
+
+    def enrolled_group(self, project):
+        return self._build_group(project, self.enrolled, 'enrolled_group')
+
+    def non_enrolled_group(self, project):
+        return self._build_group(project, self.nobody, 'non_enrolled_group')
+
+    def all_groups(self, project):
+        return [self.admin_group(project), self.staff_group(project),
+                self.enrolled_group(project), self.non_enrolled_group(project)]
+
+    def at_least_enrolled_groups(self, project):
+        return [self.admin_group(project), self.staff_group(project),
+                self.enrolled_group(project)]
+
+    def _build_group(self, project, user_to_clone, label):
         if project.max_group_size < 3:
             project.validate_and_update(max_group_size=3)
 
+        group = self._get_cached_group(project, label)
+        if group is not None:
+            return group
+
         members = ([user_to_clone] +
                    [self.clone_user(user_to_clone) for i in range(2)])
-        return ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.SubmissionGroup.objects.validate_and_create(
             members, project=project)
+        self._store_group(project, label, group)
+        return group
 
     # -------------------------------------------------------------------------
 
@@ -236,13 +277,24 @@ class Group(Course):
 
         return new_user
 
-    def _get_cached(self, project, label):
+    def _get_cached_invitation(self, project, label):
         try:
             return self._invitations[project.pk][label]
         except KeyError:
             return None
 
-    def _store(self, project, label, invitation):
+    def _store_invitation(self, project, label, invitation):
         if project.pk not in self._invitations:
             self._invitations[project.pk] = {}
             self._invitations[project.pk][label] = invitation
+
+    def _get_cached_group(self, project, label):
+        try:
+            return self._groups[project.pk][label]
+        except KeyError:
+            return None
+
+    def _store_group(self, project, label, group):
+        if project.pk not in self._groups:
+            self._groups[project.pk] = {}
+            self._groups[project.pk][label] = group

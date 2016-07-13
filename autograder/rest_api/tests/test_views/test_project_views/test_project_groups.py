@@ -81,27 +81,11 @@ class CreateGroupTestCase(_GroupsSetUp,
         self.do_create_object_test(self.project.submission_groups,
                                    self.client, self.admin, self.url, args)
 
-        # self.assertEqual(0, self.project.submission_groups.count())
-
-        # self.client.force_authenticate(self.admin)
-        # response = self.client.post(self.url, args)
-        # self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-
-        # self.assertEqual(1, self.project.submission_groups.count())
-        # loaded = self.project.submission_groups.first()
-        # self.assertCountEqual(self.get_legal_members(), loaded.members.all())
-
     def test_admin_create_group_error_invalid_members(self):
         args = {'member_names': [self.enrolled.username, self.nobody.username]}
         self.do_invalid_create_object_test(
             self.project.submission_groups, self.client, self.admin, self.url,
             args)
-
-        # self.assertEqual(0, self.project.submission_groups.count())
-        # self.client.force_authenticate(self.admin)
-        # response = self.client.post(self.url, args)
-        # self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        # self.assertEqual(0, self.project.submission_groups.count())
 
     def test_other_create_group_permission_denied(self):
         args = {'member_names': self.get_legal_member_names()}

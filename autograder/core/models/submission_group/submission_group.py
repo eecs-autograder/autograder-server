@@ -80,7 +80,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         """
         The usernames of the members of this SubmissionGroup.
         """
-        return tuple(user.username for user in self.members.all())
+        return list(user.username for user in self.members.all())
 
     # -------------------------------------------------------------------------
 
