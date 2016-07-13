@@ -1,8 +1,3 @@
-import itertools
-
-from django.core import exceptions
-from django.core.urlresolvers import reverse
-
 from rest_framework import status
 
 import autograder.core.models as ag_models
@@ -60,12 +55,6 @@ class GetGroupInvitationTestCase(test_data.Client,
             invite = self.enrolled_group_invitation(project)
             self.do_permission_denied_get_test(
                 self.client, self.enrolled, self.invitation_url(invite))
-
-    def test_non_enrolled_view_invitation_non_public_or_hidden_project_permission_denied(self):
-        for project in self.projects_hidden_from_non_enrolled:
-            invite = self.enrolled_group_invitation(project)
-            self.do_permission_denied_get_test(
-                self.client, self.nobody, self.invitation_url(invite))
 
 
 class AcceptGroupInvitationTestCase(test_data.Client,
