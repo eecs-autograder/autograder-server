@@ -57,11 +57,8 @@ class CreateInvitationTestCase(_InvitationsSetUp,
         self.project.validate_and_update(max_group_size=3)
         args = {'invited_usernames': [self.staff.username]}
         self.do_create_object_test(
-            self.project.submission_group_invitations,
-            self.client,
-            self.admin,
-            self.get_invitations_url(self.project),
-            args)
+            self.project.submission_group_invitations, self.client,
+            self.admin, self.get_invitations_url(self.project), args)
 
     def test_enrolled_create_invitation(self):
         self.visible_private_project.validate_and_update(max_group_size=3)
@@ -71,8 +68,7 @@ class CreateInvitationTestCase(_InvitationsSetUp,
         args = {'invited_usernames': [other_enrolled.username]}
         self.do_create_object_test(
             self.visible_private_project.submission_group_invitations,
-            self.client,
-            self.enrolled,
+            self.client, self.enrolled,
             self.get_invitations_url(self.visible_private_project),
             args)
 
@@ -82,30 +78,24 @@ class CreateInvitationTestCase(_InvitationsSetUp,
         args = {'invited_usernames': [other_nobody.username, 'steve']}
         self.do_create_object_test(
             self.visible_public_project.submission_group_invitations,
-            self.client,
-            self.nobody,
-            self.get_invitations_url(self.visible_public_project),
-            args)
+            self.client, self.nobody,
+            self.get_invitations_url(self.visible_public_project), args)
 
     def test_invalid_create_invitation_enrollement_mismatch(self):
         self.visible_public_project.validate_and_update(max_group_size=3)
         args = {'invited_usernames': [self.nobody.username]}
         response = self.do_invalid_create_object_test(
             self.visible_public_project.submission_group_invitations,
-            self.client,
-            self.enrolled,
-            self.get_invitations_url(self.visible_public_project),
-            args)
+            self.client, self.enrolled,
+            self.get_invitations_url(self.visible_public_project), args)
         print(response.data)
 
     def test_invalid_create_invitation_group_too_big(self):
         args = {'invited_usernames': ['steve']}
         response = self.do_invalid_create_object_test(
             self.visible_public_project.submission_group_invitations,
-            self.client,
-            self.nobody,
-            self.get_invitations_url(self.visible_public_project),
-            args)
+            self.client, self.nobody,
+            self.get_invitations_url(self.visible_public_project), args)
         print(response.data)
 
     def test_enrolled_create_invitation_permission_denied(self):
@@ -114,11 +104,8 @@ class CreateInvitationTestCase(_InvitationsSetUp,
         for project in self.hidden_projects:
             project.validate_and_update(max_group_size=3)
             self.do_permission_denied_create_test(
-                project.submission_group_invitations,
-                self.client,
-                self.enrolled,
-                self.get_invitations_url(project),
-                args)
+                project.submission_group_invitations, self.client,
+                self.enrolled, self.get_invitations_url(project), args)
 
     def test_nobody_create_invitation_permission_denied(self):
         other_nobody = obj_ut.create_dummy_user()
@@ -127,8 +114,5 @@ class CreateInvitationTestCase(_InvitationsSetUp,
                         self.hidden_public_project,
                         self.hidden_private_project):
             self.do_permission_denied_create_test(
-                project.submission_group_invitations,
-                self.client,
-                self.nobody,
-                self.get_invitations_url(project),
-                args)
+                project.submission_group_invitations, self.client,
+                self.nobody, self.get_invitations_url(project), args)

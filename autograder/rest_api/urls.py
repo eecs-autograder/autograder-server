@@ -79,6 +79,11 @@ ag_test_router = routers.SimpleRouter()
 ag_test_router.register(r'ag_test_cases', views.AGTestCaseViewset,
                         base_name='ag-test')
 
+group_invitation_router = routers.SimpleRouter()
+group_invitation_router.register(r'group_invitations',
+                                 views.GroupInvitationViewset,
+                                 base_name='group-invitation')
+
 
 urlpatterns = [
     url(r'', include(course_router.urls)),
@@ -96,7 +101,8 @@ urlpatterns = [
 
     url(r'', include(expected_pattern_router.urls)),
     url(r'', include(uploaded_file_router.urls)),
-    url(r'', include(ag_test_router.urls))
+    url(r'', include(ag_test_router.urls)),
+    url(r'', include(group_invitation_router.urls))
 ]
 
 # print(dir(urlpatterns[0]))

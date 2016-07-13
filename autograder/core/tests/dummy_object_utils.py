@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 import autograder.core.models as ag_models
 
 
-def _get_unique_id():
+def get_unique_id():
     user_id = base64.urlsafe_b64encode(uuid.uuid4().bytes)
     return user_id.decode('utf-8')
 
@@ -19,7 +19,7 @@ def create_dummy_users(num_users, is_superuser=False):
     users = []
 
     for i in range(num_users):
-        user_id = _get_unique_id()
+        user_id = get_unique_id()
         user = User.objects.create_user(
             first_name='fn{}'.format(user_id),
             last_name='ln{}'.format(user_id),
@@ -36,7 +36,7 @@ def build_course(course_kwargs=None):
         course_kwargs = {}
 
     if 'name' not in course_kwargs:
-        course_kwargs['name'] = 'course{}'.format(_get_unique_id())
+        course_kwargs['name'] = 'course{}'.format(get_unique_id())
 
     admins = course_kwargs.pop('administrators', [])
     staff = course_kwargs.pop('staff', [])
@@ -54,7 +54,7 @@ def build_project(project_kwargs=None, course_kwargs=None):
         project_kwargs = {}
 
     if 'name' not in project_kwargs:
-        project_kwargs['name'] = 'project{}'.format(_get_unique_id())
+        project_kwargs['name'] = 'project{}'.format(get_unique_id())
     if 'course' not in project_kwargs:
         project_kwargs['course'] = build_course(course_kwargs=course_kwargs)
 

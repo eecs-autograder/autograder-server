@@ -6,6 +6,7 @@ per test case.
 '''
 
 import random
+import copy
 
 from django.core.urlresolvers import reverse
 
@@ -161,5 +162,87 @@ class Project(Course):
         return [self.hidden_public_project, self.hidden_private_project]
 
     @property
+    def projects_hidden_from_non_enrolled(self):
+        return [self.visible_private_project] + self.hidden_projects
+
+    @property
     def all_projects(self):
         return self.visible_projects + self.hidden_projects
+
+
+class Group(Course):
+    def setUp(self):
+        super().setUp()
+        # For caching
+        self._invitations = {
+            # <project pk>: {
+            #   <label>: <invitation object>
+            # }
+        }
+
+    def invitation_url(self, invitation):
+        return reverse('group-invitation-detail', kwargs={'pk': invitation.pk})
+
+    def admin_group_invitation(self, project):
+        label = '_admin_group_invitation'
+        return self._build_invitation(project, self.admin, label)
+
+    def staff_group_invitation(self, project):
+        label = '_staff_group_invitation'
+        return self._build_invitation(project, self.staff, label)
+
+    def enrolled_group_invitation(self, project):
+        label = '_enrolled_group_invitation'
+        return self._build_invitation(project, self.enrolled, label)
+
+    def non_enrolled_group_invitation(self, project):
+        label = '_non_enrolled_group_invitation'
+        return self._build_invitation(project, self.nobody, label)
+
+    def _build_invitation(self, project, user_to_clone, label):
+        if project.max_group_size < 3:
+            project.validate_and_update(max_group_size=3)
+
+        invitation = self._get_cached(project, label)
+        if invitation is not None:
+            return invitation
+
+        invitees = [self.clone_user(user_to_clone) for i in range(2)]
+        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            user_to_clone, invitees, project=project)
+
+        self._store(project, label, invitation)
+        return invitation
+
+    def _build_group(self, project, user_to_clone):
+        if project.max_group_size < 3:
+            project.validate_and_update(max_group_size=3)
+
+        members = ([user_to_clone] +
+                   [self.clone_user(user_to_clone) for i in range(2)])
+        return ag_models.SubmissionGroup.objects.validate_and_create(
+            members, project=project)
+
+    # -------------------------------------------------------------------------
+
+    def clone_user(self, user):
+        new_user = copy.copy(user)
+        new_user.pk = None
+        new_user.username = obj_ut.get_unique_id()
+        new_user.save()
+        new_user.courses_is_admin_for.add(*user.courses_is_admin_for.all())
+        new_user.courses_is_staff_for.add(*user.courses_is_staff_for.all())
+        new_user.courses_is_enrolled_in.add(*user.courses_is_enrolled_in.all())
+
+        return new_user
+
+    def _get_cached(self, project, label):
+        try:
+            return self._invitations[project.pk][label]
+        except KeyError:
+            return None
+
+    def _store(self, project, label, invitation):
+        if project.pk not in self._invitations:
+            self._invitations[project.pk] = {}
+            self._invitations[project.pk][label] = invitation
