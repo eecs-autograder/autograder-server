@@ -1,5 +1,6 @@
-from rest_framework import serializers
 from django.core import exceptions
+
+from rest_framework import serializers
 
 
 class AGModelSerializer(serializers.BaseSerializer):
@@ -38,6 +39,9 @@ class AGModelSerializer(serializers.BaseSerializer):
             "validate_and_create")
 
     def to_representation(self, obj):
+        if isinstance(obj, dict):
+            return obj
+
         return obj.to_dict(include_fields=self.include_fields,
                            exclude_fields=self.exclude_fields)
 

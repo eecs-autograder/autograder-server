@@ -39,6 +39,16 @@ class SubmissionGroupInvitationSerializer(AGModelSerializer):
 
 
 class SubmissionSerializer(AGModelSerializer):
+    def __init__(self, *args, **kwargs):
+        data = kwargs.pop('data', None)
+        if data is None:
+            return super().__init__(*args, **kwargs)
+
+        fixed_data = data.dict()
+        fixed_data['submitted_files'] = data.getlist('submitted_files')
+
+        return super().__init__(*args, data=fixed_data, **kwargs)
+
     def get_ag_model_manager(self):
         return ag_models.Submission.objects
 

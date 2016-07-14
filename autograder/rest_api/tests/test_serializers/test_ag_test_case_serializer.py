@@ -1,3 +1,5 @@
+import copy
+
 from django import test
 
 import autograder.rest_api.serializers as ag_serializers
@@ -27,14 +29,20 @@ class AGTestCaseSerializerTestCase(SerializerTestCase, test.TestCase):
             'name': 'steve',
             'project': self.project,
             'compiler': 'clang++',
+            'type_str': 'compiled_and_run_test_case',
         }
 
-        serializer = ag_serializers.AGTestCaseSerializer(
-            type_str='compiled_and_run_test_case', data=data)
+        serializer = ag_serializers.AGTestCaseSerializer(data=data)
         serializer.is_valid()
         serializer.save()
 
         self.assertEqual(1, ag_models.AutograderTestCaseBase.objects.count())
         loaded = ag_models.AutograderTestCaseBase.objects.get(name='steve')
-        data['project'] = data['project'].pk
-        self.assertEqual(data, loaded.to_dict(include_fields=data.keys()))
+
+        expected = copy.deepcopy(data)
+        expected['project'] = data['project'].pk
+        expected['pk'] = loaded.pk
+        self.assertEqual(expected, loaded.to_dict(include_fields=data.keys()))
+
+    def test_create_and_update_with_feedback_configs(self):
+        self.fail()

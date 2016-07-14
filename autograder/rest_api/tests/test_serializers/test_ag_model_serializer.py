@@ -27,8 +27,7 @@ class AGModelSerializerTestCase(SerializerTestCase, test.TestCase):
 
     def test_create(self):
         self.assertEqual(0, _DummyAutograderModel.objects.count())
-        serializer = _DummyAGModelSerialier(
-            data=self.ag_model.to_dict())
+        serializer = _DummyAGModelSerialier(data=self.ag_model.to_dict())
 
         self.assertTrue(serializer.is_valid())
         serializer.save()
