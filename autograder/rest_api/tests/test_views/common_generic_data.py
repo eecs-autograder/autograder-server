@@ -249,6 +249,9 @@ class Group(Course):
         return [self.admin_group(project), self.staff_group(project),
                 self.enrolled_group(project)]
 
+    def non_staff_groups(self, project):
+        return [self.enrolled_group(project), self.non_enrolled_group(project)]
+
     def _build_group(self, project, user_to_clone, label):
         if project.max_group_size < 3:
             project.validate_and_update(max_group_size=3)

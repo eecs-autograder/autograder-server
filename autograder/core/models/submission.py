@@ -142,6 +142,8 @@ class Submission(ag_model_base.AutograderModel):
             error,
         ]
 
+        active_statuses = [received, queued, being_graded]
+
     # -------------------------------------------------------------------------
 
     submission_group = models.ForeignKey(

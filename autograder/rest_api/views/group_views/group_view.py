@@ -28,7 +28,8 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
     def update(self, request, *args, **kwargs):
         if 'member_names' in request.data:
             request.data['members'] = [
-                User.objects.get_or_create(username=username)[0]
+                User.objects.select_for_update().get_or_create(
+                    username=username)[0]
                 for username in request.data.pop('member_names')]
             request.data['check_group_size_limits'] = False
         return super().update(request, *args, **kwargs)

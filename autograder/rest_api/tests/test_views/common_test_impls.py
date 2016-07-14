@@ -32,15 +32,45 @@ class GetObjectTest(ListObjectsTest):
         return self.do_list_objects_test(client, user, url, expected_data)
 
 
-class CreateObjectTest:
+class CreateObjectInvalidArgsTest:
+    def do_invalid_create_object_test(self, model_manager, client,
+                                      user, url, request_data, format='json'):
+        original_num = model_manager.count()
+        client.force_authenticate(user)
+        response = client.post(url, request_data, format=format)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(original_num, model_manager.count())
+
+        return response
+
+
+class PermissionDeniedCreateTest:
+    def do_permission_denied_create_test(self, model_manager, client,
+                                         user, url, request_data,
+                                         format='json'):
+        original_num = model_manager.count()
+        client.force_authenticate(user)
+        response = client.post(url, request_data, format=format)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(original_num, model_manager.count())
+
+        return response
+
+
+# TODO: merge mixin methods into this class
+class CreateObjectTest(CreateObjectInvalidArgsTest, PermissionDeniedCreateTest):
     def do_create_object_test(self, model_manager, client,
-                              user, url, request_data, format='json'):
-        self.assertEqual(0, model_manager.count())
+                              user, url, request_data, format='json',
+                              check_data=True):
+        original_num = model_manager.count()
         client.force_authenticate(user)
         response = client.post(url, request_data, format=format)
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
-        self.assertEqual(1, model_manager.count())
+        self.assertEqual(original_num + 1, model_manager.count())
+        if not check_data:
+            return response
+
         loaded = model_manager.first()
         self.assertEqual(_ordered(loaded.to_dict()), _ordered(response.data))
 
@@ -50,31 +80,6 @@ class CreateObjectTest:
                 self.assertCountEqual(value, actual)
             except TypeError:
                 self.assertEqual(value, actual)
-
-        return response
-
-
-class CreateObjectInvalidArgsTest:
-    def do_invalid_create_object_test(self, model_manager, client,
-                                      user, url, request_data, format='json'):
-        self.assertEqual(0, model_manager.count())
-        client.force_authenticate(user)
-        response = client.post(url, request_data, format=format)
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(0, model_manager.count())
-
-        return response
-
-
-class PermissionDeniedCreateTest:
-    def do_permission_denied_create_test(self, model_manager, client,
-                                         user, url, request_data,
-                                         format='json'):
-        self.assertEqual(0, model_manager.count())
-        client.force_authenticate(user)
-        response = client.post(url, request_data, format=format)
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-        self.assertEqual(0, model_manager.count())
 
         return response
 

@@ -13,21 +13,6 @@ import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-def submissions_url(group):
-    return reverse('group-submissions-list', kwargs={'group_pk': group.pk})
-
-
-def build_submissions(group):
-    set_up_project(group.project)
-    for i in range(group.members.count()):
-        ag_models.Submission.objects.validate_and_create(
-            _files_to_submit,
-            submitter=group.member_names[i],
-            submission_group=group)
-
-    return group.submissions.all()
-
-
 class ListGroupSubmissionsTestCase(test_data.Client,
                                    test_data.Project,
                                    test_data.Group,
@@ -95,40 +80,172 @@ class CreateSubmissionTestCase(test_data.Client,
                                test_impls.CreateObjectTest,
                                TemporaryFilesystemTestCase):
     def test_admin_or_staff_submit(self):
-        self.fail()
+        for project in self.all_projects:
+            project.validate_and_update(
+                closing_time=timezone.now() + timezone.timedelta(minutes=1))
+            for group in (self.admin_group(project),
+                          self.staff_group(project)):
+                self.do_normal_submit_test(group, group.members.last())
+
+    def test_admin_or_staff_submit_deadline_past(self):
+        self.project.validate_and_update(
+            closing_time=timezone.now() + timezone.timedelta(seconds=-1))
+        for group in (self.admin_group(self.project),
+                      self.staff_group(self.project)):
+            self.do_normal_submit_test(group, group.members.first())
+
+    def test_admin_or_staff_submit_submissions_disallowed(self):
+        self.project.validate_and_update(disallow_student_submissions=True)
+        for group in (self.admin_group(self.project),
+                      self.staff_group(self.project)):
+            self.do_normal_submit_test(group, group.members.last())
 
     def test_enrolled_submit(self):
-        self.fail()
+        for project in self.visible_projects:
+            closing_time = timezone.now() + timezone.timedelta(minutes=1)
+            project.validate_and_update(closing_time=closing_time)
+            group = self.enrolled_group(project)
+            self.do_normal_submit_test(group, group.members.last())
 
     def test_non_enrolled_submit(self):
-        self.fail()
+        closing_time = timezone.now() + timezone.timedelta(minutes=1)
+        self.visible_public_project.validate_and_update(
+            closing_time=closing_time)
+        group = self.non_enrolled_group(self.visible_public_project)
+        self.do_normal_submit_test(group, group.members.first())
+
+    def test_all_submit_no_closing_time(self):
+        for group in self.all_groups(self.visible_public_project):
+            self.do_normal_submit_test(group, group.members.first())
 
     def test_submit_missing_and_discarded_files_tracked(self):
-        self.fail()
+        add_expected_patterns(self.visible_private_project)
+        group = self.enrolled_group(self.visible_private_project)
+        self.client.force_authenticate(self.enrolled)
+        bad_filename = 'not a needed file'
+        request_data = {
+            'submitted_files': [
+                SimpleUploadedFile(bad_filename, b'merp')]}
+        response = self.client.post(
+            submissions_url(group), request_data, format='multipart')
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertCountEqual([], response.data['submitted_filenames'])
+        self.assertCountEqual([bad_filename],
+                              response.data['discarded_files'])
+        self.assertIn('*.txt', response.data['missing_files'])
+        self.assertIn('spam.cpp', response.data['missing_files'])
 
     def test_non_group_member_submit_permission_denied(self):
-        self.fail()
+        group = self.enrolled_group(self.visible_public_project)
+        other_user = self.clone_user(self.enrolled)
+        for user in self.admin, self.staff, other_user, self.nobody:
+            self.do_permission_denied_submit_test(group, user)
 
     def test_enrolled_submit_hidden_project_permission_denied(self):
-        self.fail()
+        for project in self.hidden_projects:
+            group = self.enrolled_group(project)
+            self.do_permission_denied_submit_test(group, group.members.first())
 
     def test_non_enrolled_submit_hidden_project_permission_denied(self):
-        self.fail()
+        group = self.non_enrolled_group(self.hidden_public_project)
+        self.do_permission_denied_submit_test(group, group.members.first())
 
     def test_non_enrolled_submit_private_project_permission_denied(self):
-        self.fail()
+        group = self.non_enrolled_group(self.visible_public_project)
+        self.visible_public_project.validate_and_update(
+            allow_submissions_from_non_enrolled_students=False)
+        for user in group.members.all():
+            self.do_permission_denied_submit_test(group, user)
 
     def test_non_staff_submit_deadline_past(self):
-        self.fail()
+        self.visible_public_project.validate_and_update(
+            closing_time=timezone.now() + timezone.timedelta(seconds=-1))
+        for group in self.non_staff_groups(self.visible_public_project):
+            self.do_permission_denied_submit_test(group, group.members.first())
 
     def test_non_staff_submit_deadline_past_but_has_extension(self):
-        self.fail()
+        closing_time = timezone.now() + timezone.timedelta(seconds=-1)
+        self.visible_public_project.validate_and_update(
+            closing_time=closing_time)
+        for group in self.non_staff_groups(self.visible_public_project):
+            extension = timezone.now() + timezone.timedelta(minutes=1)
+            group.validate_and_update(extended_due_date=extension)
+            self.do_normal_submit_test(group, group.members.last())
 
     def test_non_staff_submit_deadline_and_extension_past(self):
-        self.fail()
+        closing_time = timezone.now() + timezone.timedelta(minutes=-1)
+        self.visible_public_project.validate_and_update(
+            closing_time=closing_time)
+        for group in self.non_staff_groups(self.visible_public_project):
+            extension = timezone.now() + timezone.timedelta(seconds=-1)
+            group.validate_and_update(extended_due_date=extension)
+            self.do_permission_denied_submit_test(group, group.members.first())
+
+    def test_non_staff_submit_submissions_disallowed(self):
+        self.visible_public_project.validate_and_update(
+            disallow_student_submissions=True)
+        future_closing_time = timezone.now() + timezone.timedelta(minutes=1)
+        for group in self.non_staff_groups(self.visible_public_project):
+            for closing_time in None, future_closing_time:
+                self.visible_public_project.validate_and_update(
+                    closing_time=closing_time)
+            self.do_permission_denied_submit_test(group, group.members.first())
+
+    def test_all_users_already_has_submission_being_processed(self):
+        for group in self.all_groups(self.visible_public_project):
+            ag_models.Submission.objects.validate_and_create(
+                [], submission_group=group)
+            self.do_permission_denied_submit_test(group, group.members.last())
+
+    def do_normal_submit_test(self, group, user):
+        add_expected_patterns(group.project)
+        response = self.do_create_object_test(
+            ag_models.Submission.objects, self.client, user,
+            submissions_url(group), {'submitted_files': _files_to_submit},
+            format='multipart', check_data=False)
+
+        loaded = ag_models.Submission.objects.get(pk=response.data['pk'])
+        self.assertEqual(loaded.to_dict(), response.data)
+
+        # We don't know the exact timestamp assigned by the server, so
+        # make sure it's reasonably close to what it should be.
+        timestamp_difference = loaded.timestamp - timezone.now()
+        self.assertLess(timestamp_difference, timezone.timedelta(seconds=2))
+
+        self.assertEqual(group.pk, response.data['submission_group'])
+        self.assertEqual(ag_models.Submission.GradingStatus.received,
+                         response.data['status'])
+        self.assertCountEqual([file_.name for file_ in _files_to_submit],
+                              response.data['submitted_filenames'])
+        self.assertCountEqual([], response.data['missing_files'])
+        self.assertCountEqual([], response.data['discarded_files'])
+        self.assertCountEqual([], response.data['grading_errors'])
+        self.assertEqual(user.username, response.data['submitter'])
+
+    def do_permission_denied_submit_test(self, group, user):
+        add_expected_patterns(group.project)
+        return self.do_permission_denied_create_test(
+            ag_models.Submission.objects, self.client,
+            user, submissions_url(group),
+            {'submitted_files': _files_to_submit}, format='multipart')
 
 
-def set_up_project(project):
+def submissions_url(group):
+    return reverse('group-submissions-list', kwargs={'group_pk': group.pk})
+
+
+def build_submissions(group):
+    add_expected_patterns(group.project)
+    for i in range(group.members.count()):
+        ag_models.Submission.objects.validate_and_create(
+            _files_to_submit,
+            submitter=group.member_names[i],
+            submission_group=group)
+
+    return group.submissions.all()
+
+
+def add_expected_patterns(project):
     if project.expected_student_file_patterns.count():
         return
 
