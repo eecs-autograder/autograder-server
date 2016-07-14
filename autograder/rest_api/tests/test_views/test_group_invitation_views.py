@@ -56,6 +56,20 @@ class GetGroupInvitationTestCase(test_data.Client,
             self.do_permission_denied_get_test(
                 self.client, self.enrolled, self.invitation_url(invite))
 
+    def test_non_enrolled_view_invitation_project_hidden_permission_denied(self):
+        invitation = self.non_enrolled_group_invitation(
+            self.hidden_public_project)
+        self.do_permission_denied_get_test(
+            self.client, self.nobody, self.invitation_url(invitation))
+
+    def test_non_enrolled_view_invitation_project_private_permission_denied(self):
+        invitation = self.non_enrolled_group_invitation(
+            self.visible_public_project)
+        self.visible_public_project.validate_and_update(
+            allow_submissions_from_non_enrolled_students=False)
+        self.do_permission_denied_get_test(
+            self.client, self.nobody, self.invitation_url(invitation))
+
 
 class AcceptGroupInvitationTestCase(test_data.Client,
                                     test_data.Project,
@@ -90,6 +104,18 @@ class AcceptGroupInvitationTestCase(test_data.Client,
             self.do_accept_permission_denied_test(
                 self.enrolled_group_invitation(self.visible_public_project),
                 user)
+
+    def test_non_enrolled_accept_invitation_project_hidden_permission_denied(self):
+        self.do_accept_permission_denied_test(
+            self.non_enrolled_group_invitation(self.hidden_public_project),
+            self.nobody)
+
+    def test_non_enrolled_accept_invitation_project_private_permission_denied(self):
+        invitation = self.non_enrolled_group_invitation(
+            self.visible_public_project)
+        self.visible_public_project.validate_and_update(
+            allow_submissions_from_non_enrolled_students=False)
+        self.do_accept_permission_denied_test(invitation, self.nobody)
 
     def test_creator_accepts_nothing_happens(self):
         invite = self.enrolled_group_invitation(self.visible_private_project)
@@ -219,6 +245,22 @@ class RejectGroupInvitationTestCase(test_data.Client,
                      self.clone_user(self.nobody)):
             self.do_delete_object_permission_denied_test(
                 invitation, self.client, user, self.invitation_url(invitation))
+
+    def test_non_enrolled_reject_invitation_project_hidden_permission_denied(self):
+        invitation = self.non_enrolled_group_invitation(
+            self.hidden_public_project)
+        self.do_delete_object_permission_denied_test(
+            invitation, self.client, self.nobody,
+            self.invitation_url(invitation))
+
+    def test_non_enrolled_reject_invitation_project_private_permission_denied(self):
+        invitation = self.non_enrolled_group_invitation(
+            self.visible_public_project)
+        self.visible_public_project.validate_and_update(
+            allow_submissions_from_non_enrolled_students=False)
+        self.do_delete_object_permission_denied_test(
+            invitation, self.client, self.nobody,
+            self.invitation_url(invitation))
 
     def do_reject_invitation_test(self, invitation, user):
         users = ([invitation.invitation_creator] +

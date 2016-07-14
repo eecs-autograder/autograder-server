@@ -55,6 +55,18 @@ class RetrieveGroupTestCase(test_data.Client,
             self.do_permission_denied_get_test(
                 self.client, self.enrolled, self.group_url(group))
 
+    def test_non_enrolled_view_group_project_hidden_permission_denied(self):
+        group = self.non_enrolled_group(self.hidden_public_project)
+        self.do_permission_denied_get_test(
+            self.client, self.nobody, self.group_url(group))
+
+    def test_non_enrolled_view_group_project_private_permission_denied(self):
+        group = self.non_enrolled_group(self.visible_public_project)
+        self.visible_public_project.validate_and_update(
+            allow_submissions_from_non_enrolled_students=False)
+        self.do_permission_denied_get_test(
+            self.client, self.nobody, self.group_url(group))
+
 
 class UpdateGroupTestCase(test_data.Client,
                           test_data.Project,
