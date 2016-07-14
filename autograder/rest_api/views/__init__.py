@@ -18,3 +18,4 @@ from .ag_test_case_views import AGTestCaseViewset
 from .group_invitation_views import GroupInvitationViewset
 
 from .group_views.group_view import GroupViewset
+from .group_views.group_submissions_view import GroupSubmissionsViewset

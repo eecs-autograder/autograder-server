@@ -86,7 +86,12 @@ group_invitation_router.register(r'group_invitations',
 
 
 group_router = routers.SimpleRouter()
-group_router.register(r'group', views.GroupViewset, base_name='group')
+group_router.register(r'groups', views.GroupViewset, base_name='group')
+
+group_submissions_router = routers.NestedSimpleRouter(group_router, r'groups',
+                                                      lookup='group')
+group_submissions_router.register(r'submissions', views.GroupSubmissionsViewset,
+                                  base_name='group-submissions')
 
 
 urlpatterns = [
@@ -108,7 +113,8 @@ urlpatterns = [
     url(r'', include(ag_test_router.urls)),
     url(r'', include(group_invitation_router.urls)),
 
-    url(r'', include(group_router.urls))
+    url(r'', include(group_router.urls)),
+    url(r'', include(group_submissions_router.urls)),
 ]
 
 # print(dir(urlpatterns[0]))

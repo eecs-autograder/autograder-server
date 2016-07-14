@@ -1,9 +1,6 @@
-# import itertools
-
 from django.contrib.auth.models import User
-# from django.db import transaction
 
-from rest_framework import viewsets, mixins, permissions, response, status
+from rest_framework import viewsets, mixins, permissions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers

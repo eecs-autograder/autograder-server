@@ -8,16 +8,6 @@ from django.core import exceptions
 from rest_framework import status
 
 
-class ListObjectsTest:
-    def do_list_objects_test(self, client, user, url, expected_data):
-        client.force_authenticate(user)
-        response = client.get(url)
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertCountEqual(_ordered(expected_data), _ordered(response.data))
-
-        return response
-
-
 class PermissionDeniedGetTest:
     def do_permission_denied_get_test(self, client, user, url):
         client.force_authenticate(user)
@@ -27,7 +17,17 @@ class PermissionDeniedGetTest:
         return response
 
 
-class GetObjectTest(ListObjectsTest, PermissionDeniedGetTest):
+class ListObjectsTest(PermissionDeniedGetTest):
+    def do_list_objects_test(self, client, user, url, expected_data):
+        client.force_authenticate(user)
+        response = client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertCountEqual(_ordered(expected_data), _ordered(response.data))
+
+        return response
+
+
+class GetObjectTest(ListObjectsTest):
     def do_get_object_test(self, client, user, url, expected_data):
         return self.do_list_objects_test(client, user, url, expected_data)
 

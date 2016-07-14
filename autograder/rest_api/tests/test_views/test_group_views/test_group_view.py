@@ -1,9 +1,5 @@
 from django.utils import timezone
 
-from rest_framework import status
-
-import autograder.core.models as ag_models
-
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
@@ -23,7 +19,7 @@ class RetrieveGroupTestCase(test_data.Client,
                         self.client, user, self.group_url(group),
                         group.to_dict())
 
-        for project in self.visible_public_project, self.hidden_public_project:
+        for project in self.public_projects:
             group = self.non_enrolled_group(project)
             for user in self.admin, self.staff:
                 self.do_get_object_test(
