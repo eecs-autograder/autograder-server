@@ -151,7 +151,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
                          ag_models.Submission.GradingStatus.received)
         self.assertEqual({'test_*.cpp': 1}, submission.missing_files)
 
-    def test_extra_pattern_matching_files_discarded(self):
+    def test_extra_files_matching_pattern_discarded(self):
         files = [
             SimpleUploadedFile('spam.cpp', b'blah'),
             SimpleUploadedFile('eggs.cpp', b'merp'),
