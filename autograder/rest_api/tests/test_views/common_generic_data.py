@@ -8,6 +8,7 @@ per test case.
 import random
 import copy
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 
 from rest_framework.test import APIClient
@@ -252,6 +253,9 @@ class Group(Course):
     def non_staff_groups(self, project):
         return [self.enrolled_group(project), self.non_enrolled_group(project)]
 
+    def staff_groups(self, project):
+        return [self.admin_group(project), self.staff_group(project)]
+
     def _build_group(self, project, user_to_clone, label):
         if project.max_group_size < 3:
             project.validate_and_update(max_group_size=3)
@@ -301,3 +305,59 @@ class Group(Course):
         if project.pk not in self._groups:
             self._groups[project.pk] = {}
             self._groups[project.pk][label] = group
+
+
+# Note that submissions are not cached because they are not required to be
+# unique
+class Submission(Group):
+    def admin_submission(self, project):
+        return self.build_submission(self.admin_group(project))
+
+    def staff_submission(self, project):
+        return self.build_submission(self.staff_group(project))
+
+    def enrolled_submission(self, project):
+        return self.build_submission(self.enrolled_group(project))
+
+    def non_enrolled_submission(self, project):
+        return self.build_submission(self.non_enrolled_group(project))
+
+    def all_submissions(self, project):
+        return [self.build_submission(group)
+                for group in self.all_groups(project)]
+
+    def at_least_enrolled_submissions(self, project):
+        return [self.build_submission(group)
+                for group in self.at_least_enrolled_groups(project)]
+
+    def non_staff_submissions(self, project):
+        return [self.build_submission(group)
+                for group in self.non_staff_groups(project)]
+
+    def staff_submissions(self, project):
+        return [self.build_submission(group)
+                for group in self.staff_groups(project)]
+
+    @property
+    def files_to_submit(self):
+        return [
+            SimpleUploadedFile('spam.cpp', b'steve'),
+            SimpleUploadedFile('egg.txt', b'stave'),
+            SimpleUploadedFile('sausage.txt', b'stove')
+        ]
+
+    def add_expected_patterns(self, project):
+        if project.expected_student_file_patterns.count():
+            return
+
+        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            pattern='spam.cpp', project=project)
+        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            pattern='*.txt', project=project, max_num_matches=3)
+
+    def build_submission(self, group):
+        self.add_expected_patterns(group.project)
+
+        return ag_models.Submission.objects.validate_and_create(
+            self.files_to_submit, submission_group=group,
+            submitter=group.members.first().username)

@@ -1,6 +1,6 @@
 """
 The mixin classes defined here provide generic implementations for
-commonly used test cases.
+common test case patterns.
 """
 
 from django.core import exceptions
@@ -9,7 +9,7 @@ from rest_framework import status
 
 
 class PermissionDeniedGetTest:
-    def do_permission_denied_get_test(self, client, user, url):
+    def do_permission_denied_get_test(self, client, user, url, format='json'):
         client.force_authenticate(user)
         response = client.get(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -18,7 +18,8 @@ class PermissionDeniedGetTest:
 
 
 class ListObjectsTest(PermissionDeniedGetTest):
-    def do_list_objects_test(self, client, user, url, expected_data):
+    def do_list_objects_test(self, client, user, url, expected_data,
+                             format='json'):
         client.force_authenticate(user)
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -28,7 +29,8 @@ class ListObjectsTest(PermissionDeniedGetTest):
 
 
 class GetObjectTest(ListObjectsTest):
-    def do_get_object_test(self, client, user, url, expected_data):
+    def do_get_object_test(self, client, user, url, expected_data,
+                           format='json'):
         return self.do_list_objects_test(client, user, url, expected_data)
 
 

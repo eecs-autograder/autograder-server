@@ -19,3 +19,5 @@ from .group_invitation_views import GroupInvitationViewset
 
 from .group_views.group_view import GroupViewset
 from .group_views.group_submissions_view import GroupSubmissionsViewset
+
+from .submission_views.submission_view import SubmissionViewset

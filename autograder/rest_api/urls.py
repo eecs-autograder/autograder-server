@@ -94,6 +94,10 @@ group_submissions_router.register(r'submissions', views.GroupSubmissionsViewset,
                                   base_name='group-submissions')
 
 
+submission_router = routers.SimpleRouter()
+submission_router.register(r'submissions', views.SubmissionViewset,
+                           base_name='submission')
+
 urlpatterns = [
     url(r'', include(course_router.urls)),
     url(r'', include(admin_router.urls)),
@@ -115,6 +119,8 @@ urlpatterns = [
 
     url(r'', include(group_router.urls)),
     url(r'', include(group_submissions_router.urls)),
+
+    url(r'', include(submission_router.urls)),
 ]
 
 # print(dir(urlpatterns[0]))
