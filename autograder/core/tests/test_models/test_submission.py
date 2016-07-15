@@ -96,13 +96,12 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(os.path.isdir(ut.get_submission_dir(submission)))
         with ut.ChangeDirectory(ut.get_submission_dir(submission)):
             for name, content in files_to_submit:
-                content = content.decode('utf-8')
                 self.assertEqual(name, submission.get_file(name).name)
                 self.assertEqual(content, submission.get_file(name).read())
 
                 self.assertTrue(
                     os.path.isfile(os.path.basename(name)))
-                with open(name) as f:
+                with open(name, 'rb') as f:
                     self.assertEqual(content, f.read())
 
         # Check submitted files using member accessors
@@ -112,7 +111,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         for expected_file, loaded_file in zip(expected, actual):
             self.assertEqual(expected_file.name,
                              os.path.basename(loaded_file.name))
-            self.assertEqual(expected_file.content.decode('utf-8'),
+            self.assertEqual(expected_file.content,
                              loaded_file.read())
 
     def test_submission_missing_required_file(self):

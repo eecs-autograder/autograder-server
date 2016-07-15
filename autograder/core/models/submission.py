@@ -196,9 +196,15 @@ class Submission(ag_model_base.AutograderModel):
 
     # -------------------------------------------------------------------------
 
-    def get_file(self, filename, binary_mode=False):
+    def get_file(self, filename, mode='rb'):
+        '''
+        Returns a Django File object containing the submitted file with
+        the given name. The file is opened using the specified mode
+        (mode can be any valid value for the same argument to the Python
+        open() function).
+        If the file doesn't exist, ObjectDoesNotExist will be raised.
+        '''
         self._check_file_exists(filename)
-        mode = 'rb' if binary_mode else 'r'
         return File(
             open(self._get_submitted_file_dir(filename), mode),
             name=os.path.basename(filename))
