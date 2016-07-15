@@ -1,3 +1,5 @@
+import copy
+
 import autograder.core.models as ag_models
 
 from .ag_model_serializer import AGModelSerializer
@@ -24,6 +26,18 @@ class ExpectedStudentFilePatternSerializer(AGModelSerializer):
 
 
 class AGTestCaseSerializer(AGModelSerializer):
+    def __init__(self, *args, **kwargs):
+        if 'data' not in kwargs:
+            return super().__init__(*args, **kwargs)
+
+        data = copy.copy(kwargs.pop('data'))
+        if 'feedback_configuration' in data:
+            data['feedback_configuration'] = (
+                ag_models.FeedbackConfig.objects.validate_and_create(
+                    **data['feedback_configuration']))
+
+        return super().__init__(*args, data=data, **kwargs)
+
     def validate_and_create(self, data):
         return ag_models.AutograderTestCaseFactory.validate_and_create(**data)
 
