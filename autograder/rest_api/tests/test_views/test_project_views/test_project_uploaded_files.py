@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from rest_framework import status
@@ -64,7 +66,8 @@ class CreateUploadedFileTestCase(_UploadedFilesSetUp,
                                  TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
-        self.file_obj = SimpleUploadedFile('spam', b'waaaaluigi')
+        self.file_obj = SimpleUploadedFile('file' + str(uuid.uuid4().hex),
+                                           b'waaaaluigi')
 
     def test_admin_create_uploaded_file(self):
         self.assertEqual(0, self.project.uploaded_files.count())

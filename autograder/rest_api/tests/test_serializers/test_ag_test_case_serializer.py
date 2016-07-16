@@ -1,18 +1,16 @@
 import copy
 
-from django import test
-
 import autograder.rest_api.serializers as ag_serializers
 import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case import feedback_config
 
-from .utils import SerializerTestCase
+from .serializer_test_case import SerializerTestCase
 import autograder.core.tests.dummy_object_utils as obj_ut
 from autograder.core.tests.test_models.test_autograder_test_case.models \
     import _DummyAutograderTestCase
 
 
-class AGTestCaseSerializerTestCase(SerializerTestCase, test.TestCase):
+class AGTestCaseSerializerTestCase(SerializerTestCase):
     def setUp(self):
         super().setUp()
         self.project = obj_ut.build_project()

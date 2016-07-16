@@ -1,17 +1,13 @@
-from django import test
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.rest_api.serializers as ag_serializers
 import autograder.core.models as ag_models
 
-from .utils import SerializerTestCase
+from .serializer_test_case import SerializerTestCase
 import autograder.core.tests.dummy_object_utils as obj_ut
 
 
-class UploadedFileSerializerTestCase(SerializerTestCase, test.TestCase):
-    def setUp(self):
-        super().setUp()
-
+class UploadedFileSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
         project = obj_ut.build_project()
         uploaded_file = ag_models.UploadedFile.objects.validate_and_create(

@@ -1,15 +1,10 @@
-from django import test
-
 import autograder.rest_api.serializers as ag_serializers
 
-from .utils import SerializerTestCase
+from .serializer_test_case import SerializerTestCase
 import autograder.core.tests.dummy_object_utils as obj_ut
 
 
-class SubmissionGroupSerializerTestCase(SerializerTestCase, test.TestCase):
-    def setUp(self):
-        super().setUp()
-
+class SubmissionGroupSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
         group = obj_ut.build_submission_group()
         self.do_basic_serialize_test(group,

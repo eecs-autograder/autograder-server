@@ -1,17 +1,11 @@
-from django import test
-
 import autograder.rest_api.serializers as ag_serializers
 import autograder.core.models as ag_models
 
-from .utils import SerializerTestCase
+from .serializer_test_case import SerializerTestCase
 import autograder.core.tests.dummy_object_utils as obj_ut
 
 
-class SubmissionGroupInvitationSerializerTestCase(SerializerTestCase,
-                                                  test.TestCase):
-    def setUp(self):
-        super().setUp()
-
+class SubmissionGroupInvitationSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
         project = obj_ut.build_project(
             project_kwargs={

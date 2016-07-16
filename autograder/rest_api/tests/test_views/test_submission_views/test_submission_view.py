@@ -1,12 +1,9 @@
 import os
 
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.http import QueryDict
 
 from rest_framework import status
-
-import autograder.core.models as ag_models
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -119,15 +116,6 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
             b''.join((chunk for chunk in response.streaming_content)))
 
 
-def build_submission(group):
-    if not group.project.expected_student_file_patterns.count():
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
-            pattern='*', max_num_matches=4)
-
-    return ag_models.Submission.objects.validate_and_create(
-        _files_to_submit, submission_group=group)
-
-
 def submission_url(submission):
     return reverse('submission-detail', kwargs={'pk': submission.pk})
 
@@ -137,10 +125,3 @@ def file_url(submission, filename):
     query_params.update({'filename': filename})
     return (reverse('submission-file', kwargs={'pk': submission.pk}) + '?' +
             query_params.urlencode())
-
-
-_files_to_submit = [
-    SimpleUploadedFile('spam.cpp', b'steve'),
-    SimpleUploadedFile('egg.txt', b'stave'),
-    SimpleUploadedFile('sausage.txt', b'stove')
-]

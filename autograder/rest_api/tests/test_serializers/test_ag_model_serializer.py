@@ -1,14 +1,14 @@
 import random
 
-from django import test
-from rest_framework import serializers
+from rest_framework import request, serializers
+from rest_framework.test import APIRequestFactory
 
 from autograder.core.tests.test_models.models import _DummyAutograderModel
 
 from autograder.rest_api.serializers.ag_model_serializer import (
     AGModelSerializer)
 
-from .utils import SerializerTestCase
+from .serializer_test_case import SerializerTestCase
 
 
 class _DummyAGModelSerialier(AGModelSerializer):
@@ -16,14 +16,44 @@ class _DummyAGModelSerialier(AGModelSerializer):
         return _DummyAutograderModel.objects
 
 
-class AGModelSerializerTestCase(SerializerTestCase, test.TestCase):
+class AGModelSerializerTestCase(SerializerTestCase):
     def setUp(self):
+        super().setUp()
         self.ag_model = _DummyAutograderModel(
             pos_num_val=42,
             non_empty_str_val="spam")
 
     def test_serialize(self):
         self.do_basic_serialize_test(self.ag_model, _DummyAGModelSerialier)
+
+    def test_serialize_include_fields(self):
+        self.do_include_exclude_fields_test(
+            include_fields=['non_empty_str_val'])
+
+    def test_serialize_exclude_fields(self):
+        self.do_include_exclude_fields_test(exclude_fields=['the_answer'])
+
+    def test_serialize_include_and_exclude_fields(self):
+        self.do_include_exclude_fields_test(include_fields=['the_answer'],
+                                            exclude_fields=['pos_num_val'])
+
+    def do_include_exclude_fields_test(self,
+                                       include_fields=None,
+                                       exclude_fields=None):
+        data = {}
+        if include_fields is not None:
+            data['include_fields'] = include_fields
+        if exclude_fields is not None:
+            data['exclude_fields'] = exclude_fields
+
+        get_request = request.Request(
+            APIRequestFactory().get('spam', data=data))
+        serializer = _DummyAGModelSerialier(
+            self.ag_model, context={'request': get_request})
+
+        self.assertEqual(self.ag_model.to_dict(include_fields=include_fields,
+                                               exclude_fields=exclude_fields),
+                         serializer.data)
 
     def test_create(self):
         self.assertEqual(0, _DummyAutograderModel.objects.count())

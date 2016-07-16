@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 
@@ -10,44 +12,48 @@ import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-_file_obj_kwargs = {'name': 'spam', 'content': b'waaaluigi'}
-
-
-def build_file(project):
-    return ag_models.UploadedFile.objects.validate_and_create(
-        file_obj=SimpleUploadedFile(**_file_obj_kwargs),
-        project=project)
-
-
 def file_url(uploaded_file):
     return reverse('uploaded-file-detail', kwargs={'pk': uploaded_file.pk})
 
 
-class RetrieveUploadedFileTestCase(test_data.Client,
+class _BuildFile:
+    def setUp(self):
+        super().setUp()
+        self.file_obj_kwargs = {'name': 'file' + str(uuid.uuid4().hex),
+                                'content': b'waaaluigi'}
+
+    def build_file(self, project):
+        return ag_models.UploadedFile.objects.validate_and_create(
+            file_obj=SimpleUploadedFile(**self.file_obj_kwargs),
+            project=project)
+
+
+class RetrieveUploadedFileTestCase(_BuildFile,
+                                   test_data.Client,
                                    test_data.Project,
                                    test_impls.GetObjectTest,
                                    TemporaryFilesystemTestCase):
     def test_admin_get_uploaded_file(self):
         for project in self.all_projects:
-            file_ = build_file(project)
+            file_ = self.build_file(project)
             self.do_get_object_test(
                 self.client, self.admin, file_url(file_), file_.to_dict())
 
     def test_staff_get_uploaded_file(self):
         for project in self.all_projects:
-            file_ = build_file(project)
+            file_ = self.build_file(project)
             self.do_get_object_test(
                 self.client, self.staff, file_url(file_), file_.to_dict())
 
     def test_enrolled_get_uploaded_file(self):
         for project in self.all_projects:
-            file_ = build_file(project)
+            file_ = self.build_file(project)
             self.do_permission_denied_get_test(
                 self.client, self.enrolled, file_url(file_))
 
     def test_other_get_uploaded_file(self):
         for project in self.all_projects:
-            file_ = build_file(project)
+            file_ = self.build_file(project)
             self.do_permission_denied_get_test(
                 self.client, self.nobody, file_url(file_))
 
@@ -57,16 +63,17 @@ def file_name_url(uploaded_file):
                    kwargs={'pk': uploaded_file.pk})
 
 
-class RenameUploadedFileTestCase(test_data.Client,
+class RenameUploadedFileTestCase(_BuildFile,
+                                 test_data.Client,
                                  test_data.Project,
                                  test_impls.UpdateObjectTest,
                                  TemporaryFilesystemTestCase):
     def test_admin_rename_uploaded_file(self):
-        new_name = _file_obj_kwargs['name'] + 'waaa'
+        new_name = self.file_obj_kwargs['name'] + str(uuid.uuid4().hex)
         request_data = {'name': new_name}
         self.client.force_authenticate(self.admin)
         for project in self.all_projects:
-            file_ = build_file(project)
+            file_ = self.build_file(project)
             self.do_put_object_test(
                 file_, self.client, self.admin, file_name_url(file_),
                 request_data)
@@ -76,13 +83,13 @@ class RenameUploadedFileTestCase(test_data.Client,
 
     def test_admin_rename_uploaded_file_invalid_name(self):
         illegal_name = '..'
-        file_ = build_file(self.project)
+        file_ = self.build_file(self.project)
         self.do_put_object_invalid_args_test(
             file_, self.client, self.admin, file_name_url(file_),
             {'name': illegal_name})
 
     def test_other_rename_uploaded_file(self):
-        file_ = build_file(self.visible_public_project)
+        file_ = self.build_file(self.visible_public_project)
         for user in self.staff, self.enrolled, self.nobody:
             self.do_put_object_permission_denied_test(
                 file_, self.client, user, file_name_url(file_),
@@ -94,27 +101,28 @@ def file_content_url(uploaded_file):
                    kwargs={'pk': uploaded_file.pk})
 
 
-class RetrieveUploadedFileContentTestCase(test_data.Client,
+class RetrieveUploadedFileContentTestCase(_BuildFile,
+                                          test_data.Client,
                                           test_data.Project,
                                           test_impls.GetObjectTest,
                                           TemporaryFilesystemTestCase):
     def test_admin_get_content(self):
         for project in self.all_projects:
-            file_ = build_file(project)
+            file_ = self.build_file(project)
             self.do_get_content_test(
                 self.client, self.admin, file_content_url(file_),
-                _file_obj_kwargs['content'])
+                self.file_obj_kwargs['content'])
 
     def test_staff_get_content(self):
         for project in self.all_projects:
-            file_ = build_file(project)
+            file_ = self.build_file(project)
             self.do_get_content_test(
                 self.client, self.staff, file_content_url(file_),
-                _file_obj_kwargs['content'])
+                self.file_obj_kwargs['content'])
 
     def test_enrolled_or_other_get_content(self):
         for user in self.enrolled, self.nobody:
-            file_ = build_file(self.visible_public_project)
+            file_ = self.build_file(self.visible_public_project)
             self.do_permission_denied_get_test(
                 self.client, user, file_content_url(file_))
 
@@ -127,22 +135,24 @@ class RetrieveUploadedFileContentTestCase(test_data.Client,
             b''.join((chunk for chunk in response.streaming_content)))
 
 
-class UpdateUploadedFileContentTestCase(test_data.Client,
+class UpdateUploadedFileContentTestCase(_BuildFile,
+                                        test_data.Client,
                                         test_data.Project,
                                         test_impls.UpdateObjectTest,
                                         TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
-        self.new_content = _file_obj_kwargs['content'] + b'stevestavestove'
+        self.new_content = self.file_obj_kwargs['content'] + b'stevestavestove'
 
     @property
     def updated_file(self):
-        return SimpleUploadedFile(_file_obj_kwargs['name'], self.new_content)
+        return SimpleUploadedFile(
+            self.file_obj_kwargs['name'], self.new_content)
 
     def test_admin_update_content(self):
         self.client.force_authenticate(self.admin)
         for project in self.all_projects:
-            file_ = build_file(project)
+            file_ = self.build_file(project)
             response = self.client.put(file_content_url(file_),
                                        {'file_obj': self.updated_file},
                                        format='multipart')
@@ -151,11 +161,11 @@ class UpdateUploadedFileContentTestCase(test_data.Client,
             self.assertEqual(self.new_content, file_.file_obj.read())
 
     def test_other_update_content(self):
-        file_ = build_file(self.visible_public_project)
+        file_ = self.build_file(self.visible_public_project)
         for user in self.staff, self.enrolled, self.nobody:
             self.do_put_object_permission_denied_test(
                 file_, self.client, user, file_content_url(file_),
                 {'file_obj': self.updated_file}, format='multipart')
             file_.refresh_from_db()
-            self.assertEqual(_file_obj_kwargs['content'],
+            self.assertEqual(self.file_obj_kwargs['content'],
                              file_.file_obj.read())

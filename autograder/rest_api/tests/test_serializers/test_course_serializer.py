@@ -1,12 +1,10 @@
-from django import test
-
 import autograder.rest_api.serializers as ag_serializers
 
-from .utils import SerializerTestCase
+from .serializer_test_case import SerializerTestCase
 import autograder.core.tests.dummy_object_utils as obj_ut
 
 
-class CourseSerializerTestCase(SerializerTestCase, test.TestCase):
+class CourseSerializerTestCase(SerializerTestCase):
     def setUp(self):
         super().setUp()
 

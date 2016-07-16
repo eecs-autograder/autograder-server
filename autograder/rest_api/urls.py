@@ -7,6 +7,9 @@ from autograder.rest_api import views
 # from rest_framework import routers
 from rest_framework_nested import routers
 
+user_router = routers.SimpleRouter()
+user_router.register(r'users', views.UserViewset, base_name='user')
+
 course_router = routers.SimpleRouter()
 course_router.register(r'courses', views.CourseViewSet, base_name='course')
 
@@ -99,6 +102,8 @@ submission_router.register(r'submissions', views.SubmissionViewset,
                            base_name='submission')
 
 urlpatterns = [
+    url(r'', include(user_router.urls)),
+
     url(r'', include(course_router.urls)),
     url(r'', include(admin_router.urls)),
     url(r'', include(staff_router.urls)),
