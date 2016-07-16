@@ -1,5 +1,6 @@
-import os
 import datetime
+import os
+import random
 
 from django.core import exceptions
 from django.utils import timezone
@@ -39,10 +40,18 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(new_project.min_group_size, 1)
         self.assertEqual(new_project.max_group_size, 1)
 
+        self.assertIsNone(new_project.num_submissions_per_day)
+        self.assertEqual(True, new_project.allow_submissions_past_limit)
+        self.assertEqual(datetime.time(),
+                         new_project.submission_limit_reset_time)
+
     def test_valid_create_non_defaults(self):
         tomorrow_date = timezone.now() + datetime.timedelta(days=1)
         min_group_size = 2
         max_group_size = 5
+
+        sub_limit = random.randint(1, 5)
+        reset_time = datetime.time(8, 0, 0)
 
         new_project = ag_models.Project.objects.validate_and_create(
             name=self.project_name,
@@ -53,6 +62,10 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             allow_submissions_from_non_enrolled_students=True,
             min_group_size=min_group_size,
             max_group_size=max_group_size,
+
+            num_submissions_per_day=sub_limit,
+            allow_submissions_past_limit=False,
+            submission_limit_reset_time=reset_time,
         )
 
         new_project.refresh_from_db()
@@ -70,6 +83,10 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(new_project.min_group_size, min_group_size)
         self.assertEqual(new_project.max_group_size, max_group_size)
 
+        self.assertEqual(sub_limit, new_project.num_submissions_per_day)
+        self.assertEqual(False, new_project.allow_submissions_past_limit)
+        self.assertEqual(reset_time, new_project.submission_limit_reset_time)
+
     def test_to_dict_default_fields(self):
         project = obj_ut.build_project()
 
@@ -82,6 +99,10 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             'allow_submissions_from_non_enrolled_students',
             'min_group_size',
             'max_group_size',
+
+            'num_submissions_per_day',
+            'allow_submissions_past_limit',
+            'submission_limit_reset_time',
         ]
 
         self.assertCountEqual(expected_fields,
@@ -98,9 +119,21 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             'allow_submissions_from_non_enrolled_students',
             'min_group_size',
             'max_group_size',
+
+            'num_submissions_per_day',
+            'allow_submissions_past_limit',
+            'submission_limit_reset_time',
         ]
         self.assertCountEqual(expected,
                               ag_models.Project.get_editable_fields())
+
+    def test_error_negative_num_submissions_per_day(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='steve', course=self.course,
+                num_submissions_per_day=random.randint(-10, -1))
+
+        self.assertIn('num_submissions_per_day', cm.exception.message_dict)
 
 
 class ProjectNameExceptionTestCase(TemporaryFilesystemTestCase):

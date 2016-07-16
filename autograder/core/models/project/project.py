@@ -1,4 +1,5 @@
 import os
+import datetime
 
 from django.db import models
 from django.core import validators
@@ -36,7 +37,7 @@ class Project(AutograderModel):
     class Meta:
         unique_together = ('name', 'course')
 
-    _DEFAULT_TO_DICT_FIELDS = [
+    _DEFAULT_TO_DICT_FIELDS = frozenset([
         'name',
         'course',
         'visible_to_students',
@@ -45,7 +46,11 @@ class Project(AutograderModel):
         'allow_submissions_from_non_enrolled_students',
         'min_group_size',
         'max_group_size',
-    ]
+
+        'num_submissions_per_day',
+        'allow_submissions_past_limit',
+        'submission_limit_reset_time',
+    ])
 
     @classmethod
     def get_default_to_dict_fields(class_):
@@ -59,6 +64,10 @@ class Project(AutograderModel):
         'allow_submissions_from_non_enrolled_students',
         'min_group_size',
         'max_group_size',
+
+        'num_submissions_per_day',
+        'allow_submissions_past_limit',
+        'submission_limit_reset_time',
     ])
 
     @classmethod
@@ -120,6 +129,24 @@ class Project(AutograderModel):
             group on this project.
             Must be >= 1.
             Must be >= min_group_size.''')
+
+    num_submissions_per_day = models.IntegerField(
+        default=None, null=True, blank=True,
+        validators=[validators.MinValueValidator(1)],
+        help_text='''The number of submissions each group is allowed per
+            day before either reducing feedback or preventing further
+            submissions. A value of None indicates no limit.''')
+
+    allow_submissions_past_limit = models.BooleanField(
+        default=True, blank=True,
+        help_text='''Whether to allow additional submissions after a
+            group has submitted num_submissions_per_day times.''')
+
+    submission_limit_reset_time = models.TimeField(
+        default=datetime.time,
+        help_text='''The time that marks the beginning and end of the 24
+            hour period during which submissions should be counted
+            towards the daily limit. Defaults to 0:0:0''')
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
