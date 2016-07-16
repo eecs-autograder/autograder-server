@@ -9,6 +9,7 @@ from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.core.tests.dummy_object_utils as obj_ut
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
+import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
 class _EnrolledSetUp(test_data.Client, test_data.Course):
@@ -20,6 +21,7 @@ class _EnrolledSetUp(test_data.Client, test_data.Course):
 
 
 class ListEnrolledStudentsTestCase(_EnrolledSetUp,
+                                   test_impls.ListObjectsTest,
                                    TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
@@ -37,17 +39,12 @@ class ListEnrolledStudentsTestCase(_EnrolledSetUp,
             self.enrolled_students, many=True).data
 
         for user in self.staff, self.admin:
-            self.client.force_authenticate(user)
-            response = self.client.get(self.url)
-
-            self.assertEqual(status.HTTP_200_OK, response.status_code)
-            self.assertEqual(expected_content, response.data)
+            self.do_list_objects_test(
+                self.client, user, self.url, expected_content)
 
     def test_other_list_students_permission_denied(self):
         for user in self.enrolled_students[0], self.nobody:
-            self.client.force_authenticate(user)
-            response = self.client.get(self.url)
-            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+            self.do_permission_denied_get_test(self.client, user, self.url)
 
 
 class AddEnrolledStudentsTestCase(_EnrolledSetUp, TemporaryFilesystemTestCase):
