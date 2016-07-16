@@ -6,6 +6,7 @@ from rest_framework import status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
+import autograder.core.shared.utilities as ut
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -205,14 +206,63 @@ class CreateSubmissionTestCase(test_data.Client,
                 [], submission_group=group)
             self.do_permission_denied_submit_test(group, group.members.last())
 
-    def test_submission_not_past_limit_or_no_limit(self):
-        self.fail()
+    def test_no_submission_limit(self):
+        self.assertIsNone(self.visible_public_project.submission_limit_per_day)
+        for group in self.all_groups(self.visible_public_project):
+            for i in range(5):
+                self.do_normal_submit_test(group, group.members.first())
 
-    def test_submission_past_limit_and_submissions_past_limit_forbidden(self):
-        self.fail()
+    def test_submission_not_past_limit(self):
+        limit = 3
+        self.visible_public_project.validate_and_update(
+            submission_limit_per_day=limit)
+        for group in self.all_groups(self.visible_public_project):
+            for i in range(limit):
+                self.do_normal_submit_test(group, group.members.last())
+            for sub in group.submissions.all():
+                self.assertTrue(sub.count_towards_daily_limit)
+
+    def test_submission_past_limit_allowed(self):
+        limit = 3
+        self.visible_public_project.validate_and_update(
+            submission_limit_per_day=limit,
+            allow_submissions_past_limit=True)
+        for group in self.all_groups(self.visible_public_project):
+            for i in range(limit + 2):
+                self.do_normal_submit_test(group, group.members.last())
+            num_not_past_limit = ut.count_if(
+                group.submissions.all(),
+                lambda sub: not sub.is_past_daily_limit)
+            self.assertEqual(limit, num_not_past_limit)
+            for sub in group.submissions.all():
+                self.assertTrue(sub.count_towards_daily_limit)
+
+    def test_submission_past_limit_forbidden(self):
+        limit = 2
+        self.visible_public_project.validate_and_update(
+            submission_limit_per_day=limit,
+            allow_submissions_past_limit=False)
+        for group in self.non_staff_groups(self.visible_public_project):
+            for i in range(limit):
+                self.do_normal_submit_test(group, group.members.first())
+            for i in range(3):
+                self.do_permission_denied_submit_test(
+                    group, group.members.first())
+            self.assertEqual(limit, group.submissions.count())
+            for sub in group.submissions.all():
+                self.assertTrue(sub.count_towards_daily_limit)
+                self.assertFalse(sub.is_past_daily_limit)
 
     def test_admin_or_staff_submissions_never_count_towards_limit(self):
-        self.fail()
+        limit = 1
+        num_submissions = limit + 4
+        self.hidden_private_project.validate_and_update(
+            submission_limit_per_day=limit)
+        for group in self.staff_groups(self.hidden_private_project):
+            for i in range(num_submissions):
+                self.do_normal_submit_test(group, group.members.last())
+
+            self.assertEqual(num_submissions, group.submissions.count())
 
     def do_normal_submit_test(self, group, user):
         self.add_expected_patterns(group.project)
@@ -238,6 +288,9 @@ class CreateSubmissionTestCase(test_data.Client,
         self.assertCountEqual([], response.data['discarded_files'])
         self.assertCountEqual([], response.data['grading_errors'])
         self.assertEqual(user.username, response.data['submitter'])
+
+        loaded.status = ag_models.Submission.GradingStatus.finished_grading
+        loaded.save()
 
     def do_permission_denied_submit_test(self, group, user):
         self.add_expected_patterns(group.project)

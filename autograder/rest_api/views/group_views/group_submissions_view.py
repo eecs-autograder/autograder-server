@@ -46,7 +46,16 @@ class _Permissions(permissions.BasePermission):
             closing_time = group.project.closing_time
         deadline_past = (closing_time is not None and
                          timestamp > closing_time)
-        return not deadline_past
+
+        if deadline_past:
+            return False
+
+        if (group.project.submission_limit_per_day is None or
+                group.project.allow_submissions_past_limit):
+            return True
+
+        return (group.num_submits_towards_limit <
+                group.project.submission_limit_per_day)
 
 
 class GroupSubmissionsViewset(
