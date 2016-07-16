@@ -40,7 +40,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(new_project.min_group_size, 1)
         self.assertEqual(new_project.max_group_size, 1)
 
-        self.assertIsNone(new_project.num_submissions_per_day)
+        self.assertIsNone(new_project.submission_limit_per_day)
         self.assertEqual(True, new_project.allow_submissions_past_limit)
         self.assertEqual(datetime.time(),
                          new_project.submission_limit_reset_time)
@@ -63,7 +63,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             min_group_size=min_group_size,
             max_group_size=max_group_size,
 
-            num_submissions_per_day=sub_limit,
+            submission_limit_per_day=sub_limit,
             allow_submissions_past_limit=False,
             submission_limit_reset_time=reset_time,
         )
@@ -83,7 +83,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(new_project.min_group_size, min_group_size)
         self.assertEqual(new_project.max_group_size, max_group_size)
 
-        self.assertEqual(sub_limit, new_project.num_submissions_per_day)
+        self.assertEqual(sub_limit, new_project.submission_limit_per_day)
         self.assertEqual(False, new_project.allow_submissions_past_limit)
         self.assertEqual(reset_time, new_project.submission_limit_reset_time)
 
@@ -100,7 +100,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             'min_group_size',
             'max_group_size',
 
-            'num_submissions_per_day',
+            'submission_limit_per_day',
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
         ]
@@ -120,20 +120,20 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             'min_group_size',
             'max_group_size',
 
-            'num_submissions_per_day',
+            'submission_limit_per_day',
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
         ]
         self.assertCountEqual(expected,
                               ag_models.Project.get_editable_fields())
 
-    def test_error_negative_num_submissions_per_day(self):
+    def test_error_negative_submission_limit_per_day(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
                 name='steve', course=self.course,
-                num_submissions_per_day=random.randint(-10, -1))
+                submission_limit_per_day=random.randint(-10, -1))
 
-        self.assertIn('num_submissions_per_day', cm.exception.message_dict)
+        self.assertIn('submission_limit_per_day', cm.exception.message_dict)
 
 
 class ProjectNameExceptionTestCase(TemporaryFilesystemTestCase):

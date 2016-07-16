@@ -47,7 +47,7 @@ class Project(AutograderModel):
         'min_group_size',
         'max_group_size',
 
-        'num_submissions_per_day',
+        'submission_limit_per_day',
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
     ])
@@ -65,7 +65,7 @@ class Project(AutograderModel):
         'min_group_size',
         'max_group_size',
 
-        'num_submissions_per_day',
+        'submission_limit_per_day',
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
     ])
@@ -130,7 +130,7 @@ class Project(AutograderModel):
             Must be >= 1.
             Must be >= min_group_size.''')
 
-    num_submissions_per_day = models.IntegerField(
+    submission_limit_per_day = models.IntegerField(
         default=None, null=True, blank=True,
         validators=[validators.MinValueValidator(1)],
         help_text='''The number of submissions each group is allowed per
@@ -140,13 +140,14 @@ class Project(AutograderModel):
     allow_submissions_past_limit = models.BooleanField(
         default=True, blank=True,
         help_text='''Whether to allow additional submissions after a
-            group has submitted num_submissions_per_day times.''')
+            group has submitted submission_limit_per_day times.''')
 
     submission_limit_reset_time = models.TimeField(
         default=datetime.time,
         help_text='''The time that marks the beginning and end of the 24
             hour period during which submissions should be counted
-            towards the daily limit. Defaults to 0:0:0''')
+            towards the daily limit. This value assumes use of the UTC
+            timezone. Defaults to 0:0:0. ''')
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

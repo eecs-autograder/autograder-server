@@ -3,12 +3,12 @@ import os
 from collections import namedtuple
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 
 import autograder.core.models as ag_models
-
 import autograder.core.shared.utilities as ut
 
 import autograder.core.tests.dummy_object_utils as obj_ut
@@ -52,6 +52,9 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             'missing_files',
             'status',
             'grading_errors',
+
+            'count_towards_daily_limit',
+            'is_past_daily_limit',
         ]
         self.assertCountEqual(
             expected,
@@ -61,7 +64,8 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(submission.to_dict())
 
     def test_editable_fields(self):
-        self.assertCountEqual([], ag_models.Submission.get_editable_fields())
+        self.assertCountEqual(['count_towards_daily_limit'],
+                              ag_models.Submission.get_editable_fields())
 
     def test_valid_init(self):
         SimpleFileTuple = namedtuple('SimpleFileTuple', ['name', 'content'])
@@ -71,6 +75,8 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             SimpleFileTuple('eggs.cpp', b'merp'),
             SimpleFileTuple('test_spam.cpp', b'cheeese')
         ])
+
+        now = timezone.now()
 
         submitter = 'steve'
         submission = ag_models.Submission.objects.validate_and_create(
@@ -91,6 +97,12 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(
             (file_.name for file_ in files_to_submit),
             submission.submitted_filenames)
+
+        self.assertTrue(submission.count_towards_daily_limit)
+        self.assertFalse(submission.is_past_daily_limit)
+
+        self.assertLess(submission.timestamp - now,
+                        timezone.timedelta(seconds=2))
 
         # Check file contents in the filesystem
         self.assertTrue(os.path.isdir(ut.get_submission_dir(submission)))
@@ -113,6 +125,20 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
                              os.path.basename(loaded_file.name))
             self.assertEqual(expected_file.content,
                              loaded_file.read())
+
+    def test_init_custom_values(self):
+        timestamp = timezone.now() + timezone.timedelta(hours=1)
+        count_towards_daily_limit = False
+
+        sub = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group, timestamp=timestamp,
+            count_towards_daily_limit=count_towards_daily_limit)
+
+        sub.refresh_from_db()
+
+        self.assertEqual(timestamp, sub.timestamp)
+        self.assertEqual(count_towards_daily_limit,
+                         sub.count_towards_daily_limit)
 
     def test_submission_missing_required_file(self):
         files = [

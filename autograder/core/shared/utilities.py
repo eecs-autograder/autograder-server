@@ -4,6 +4,7 @@ import re
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 import autograder.core.shared.global_constants as gc
 
@@ -22,6 +23,25 @@ def find_if(iterable, unary_predicate):
     Returns None if no such element could be found.
     """
     return next((item for item in iterable if unary_predicate(item)), None)
+
+
+def get_24_hour_period(start_time, contains_datetime):
+    '''
+    Returns a tuple (start_datetime, end_datetime) representing a 24
+    hour period that contains the current date and time and with the
+    start and end time both being start_time.
+    '''
+    start_date = contains_datetime.date()
+    if contains_datetime.time() < start_time:
+        start_date += timezone.timedelta(days=-1)
+
+    start_datetime = timezone.datetime.combine(
+        start_date, start_time)
+    start_datetime = start_datetime.replace(
+        tzinfo=contains_datetime.tzinfo)
+    end_datetime = start_datetime + timezone.timedelta(days=1)
+
+    return start_datetime, end_datetime
 
 
 # PRETTY_TIMESTAMP_FORMAT_STR = '%B %d, %Y %I:%M:%S %p'
@@ -221,6 +241,7 @@ class ChangeDirectory(object):
     """
     Enables moving into and out of a given directory using "with" statements.
     """
+
     def __init__(self, new_dir):
         self._original_dir = os.getcwd()
         self._new_dir = new_dir
@@ -236,6 +257,7 @@ class TemporaryFile(object):
     """
     Enables creating and destroying a temporary file using "with" statements.
     """
+
     def __init__(self, filename, file_contents):
         self.filename = filename
         self.file_contents = file_contents
@@ -255,6 +277,7 @@ class TemporaryDirectory(object):
     Note that when the directory is destroyed, any files inside it
     will be destroyed as well.
     """
+
     def __init__(self, dirname):
         self.dirname = dirname
 

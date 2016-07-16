@@ -35,6 +35,8 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             'member_names',
             'project',
             'extended_due_date',
+
+            'num_submits_towards_limit',
         ]
 
         self.assertCountEqual(

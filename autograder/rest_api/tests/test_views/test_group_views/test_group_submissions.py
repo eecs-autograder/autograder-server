@@ -205,6 +205,15 @@ class CreateSubmissionTestCase(test_data.Client,
                 [], submission_group=group)
             self.do_permission_denied_submit_test(group, group.members.last())
 
+    def test_submission_not_past_limit_or_no_limit(self):
+        self.fail()
+
+    def test_submission_past_limit_and_submissions_past_limit_forbidden(self):
+        self.fail()
+
+    def test_admin_or_staff_submissions_never_count_towards_limit(self):
+        self.fail()
+
     def do_normal_submit_test(self, group, user):
         self.add_expected_patterns(group.project)
         response = self.do_create_object_test(
@@ -236,6 +245,11 @@ class CreateSubmissionTestCase(test_data.Client,
             ag_models.Submission.objects, self.client,
             user, submissions_url(group),
             {'submitted_files': self.files_to_submit}, format='multipart')
+
+
+class UpdateSubmissionTestCase():
+    def test_edit_count_towards_limit(self):
+        self.fail()
 
 
 def submissions_url(group):

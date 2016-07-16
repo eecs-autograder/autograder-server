@@ -71,3 +71,4 @@ secret_key
 !**/settings/*.py
 secrets.json
 /autograder/static
+logfile

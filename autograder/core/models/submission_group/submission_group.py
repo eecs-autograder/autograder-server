@@ -2,6 +2,7 @@ import os
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
+from django.utils import timezone
 
 from .. import ag_model_base
 from .. project import Project
@@ -46,6 +47,8 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         'project',
         'extended_due_date',
         'member_names',
+
+        'num_submits_towards_limit',
     ]
 
     @classmethod
@@ -81,6 +84,20 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         The usernames of the members of this SubmissionGroup.
         """
         return list(user.username for user in self.members.all())
+
+    @property
+    def num_submits_towards_limit(self):
+        '''
+        The number of submissions this group has made in the current 24
+        hour period that are counted towards the daily submission limit.
+        '''
+        start_datetime, end_datetime = ut.get_24_hour_period(
+            self.project.submission_limit_reset_time, timezone.now())
+        return self.submissions.filter(
+            timestamp__gte=start_datetime,
+            timestamp__lt=end_datetime,
+            count_towards_daily_limit=True
+        ).count()
 
     # -------------------------------------------------------------------------
 

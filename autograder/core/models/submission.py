@@ -1,10 +1,11 @@
-import os
 import fnmatch
+import os
 
 from django.db import models, transaction
 from django.core import exceptions
 from django.core.files import File
 import django.contrib.postgres.fields as pg_fields
+from django.utils import timezone
 
 import autograder.utilities.fields as ag_fields
 
@@ -104,15 +105,20 @@ class Submission(ag_model_base.AutograderModel):
         "missing_files",
         "status",
         "grading_errors",
+
+        'count_towards_daily_limit',
+        'is_past_daily_limit',
     ]
 
     @classmethod
     def get_default_to_dict_fields(class_):
         return class_._DEFAULT_TO_DICT_FIELDS
 
+    _EDITABLE_FIELDS = frozenset(['count_towards_daily_limit'])
+
     @classmethod
-    def is_read_only(class_):
-        return True
+    def get_editable_fields(class_):
+        return class_._EDITABLE_FIELDS
 
     # -------------------------------------------------------------------------
 
@@ -154,9 +160,10 @@ class Submission(ag_model_base.AutograderModel):
             Project.
             This field is REQUIRED.''')
 
-    timestamp = models.DateTimeField(auto_now_add=True, editable=False)
+    timestamp = models.DateTimeField(default=timezone.now)
 
     submitter = ag_fields.ShortStringField(
+        blank=True,
         help_text='''The name of the user who made this submission''')
 
     @property
@@ -177,7 +184,7 @@ class Submission(ag_model_base.AutograderModel):
             this Submission was created.''')
 
     missing_files = pg_fields.JSONField(
-        default=dict,
+        default=dict, blank=True,
         help_text='''Stores missing filenames and the additional number
             of files needed to satisfy a file pattern requirement.
             Stored as key-value pairs of the form:
@@ -189,8 +196,38 @@ class Submission(ag_model_base.AutograderModel):
         help_text='''The grading status of this submission see
             Submission.GradingStatus for details on allowed values.''')
 
+    count_towards_daily_limit = models.BooleanField(
+        default=True,
+        help_text='''Indicates whether this submission should count
+            towards the daily submission limit.''')
+
+    @property
+    def is_past_daily_limit(self):
+        '''
+        Whether this submission is past the daily submission limit in
+        its 24 hour period.
+        This value is computed dynamically, and therefore can change
+        if other submissions in the same 24 hour period are marked
+        or unmarked as counting towards the daily limit.
+        '''
+        project = self.submission_group.project
+        if project.submission_limit_per_day is None:
+            return False
+
+        start_datetime, end_datetime = ut.get_24_hour_period(
+            project.submission_limit_reset_time, self.timestamp)
+
+        num_submissions_before_self = self.submission_group.submissions.filter(
+            timestamp__gte=start_datetime,
+            timestamp__lt=end_datetime,
+            count_towards_daily_limit=True,
+            pk__lt=self.pk
+        ).count()
+
+        return num_submissions_before_self >= project.submission_limit_per_day
+
     grading_errors = ag_fields.StringArrayField(
-        default=list,
+        default=list, blank=True,
         help_text='''A list of errors that occurred while grading this
             submission''')
 
