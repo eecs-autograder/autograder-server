@@ -39,3 +39,18 @@ class SubmissionSerializerTestCase(SerializerTestCase):
 
         self.assertCountEqual(
             (file_.name for file_ in files), loaded.discarded_files)
+
+    def test_update(self):
+        group = obj_ut.build_submission_group()
+        submission = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=group)
+        self.assertTrue(submission.count_towards_daily_limit)
+
+        serializer = ag_serializers.SubmissionSerializer(
+            submission, data={'count_towards_daily_limit': False})
+        serializer.is_valid()
+        serializer.save()
+
+        submission.refresh_from_db()
+
+        self.assertFalse(submission.count_towards_daily_limit)

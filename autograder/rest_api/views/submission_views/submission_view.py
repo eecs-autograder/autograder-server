@@ -13,11 +13,16 @@ from ..load_object_mixin import build_load_object_mixin
 
 class _Permissions(permissions.BasePermission):
     def has_object_permission(self, request, view, submission):
+        if request.method not in permissions.SAFE_METHODS:
+            return submission.submission_group.project.course.is_administrator(
+                request.user)
+
         return user_can_view_group(request.user, submission.submission_group)
 
 
 class SubmissionViewset(build_load_object_mixin(ag_models.Submission),
                         mixins.RetrieveModelMixin,
+                        mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
     queryset = ag_models.Submission.objects.all()
     serializer_class = ag_serializers.SubmissionSerializer

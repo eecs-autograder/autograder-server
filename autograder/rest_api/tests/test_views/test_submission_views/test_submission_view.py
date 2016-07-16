@@ -116,6 +116,49 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
             b''.join((chunk for chunk in response.streaming_content)))
 
 
+class UpdateSubmissionTestCase(test_data.Client,
+                               test_data.Project,
+                               test_data.Submission,
+                               test_impls.UpdateObjectTest,
+                               TemporaryFilesystemTestCase):
+    def test_admin_edit_count_towards_limit(self):
+        for project in self.all_projects:
+            for submission in self.at_least_enrolled_submissions(project):
+                self.assertTrue(submission.count_towards_daily_limit)
+                for val in False, True:
+                    self.do_patch_object_test(
+                        submission, self.client, self.admin,
+                        submission_url(submission),
+                        {'count_towards_daily_limit': val})
+
+        for project in self.visible_public_project, self.hidden_public_project:
+            submission = self.non_enrolled_submission(project)
+            self.assertTrue(submission.count_towards_daily_limit)
+            for val in False, True:
+                self.do_patch_object_test(
+                    submission, self.client, self.admin,
+                    submission_url(submission),
+                    {'count_towards_daily_limit': val})
+
+    def test_admin_edit_submission_invalid_fields(self):
+        for submission in self.all_submissions(self.visible_public_project):
+            self.do_patch_object_invalid_args_test(
+                submission, self.client, self.admin,
+                submission_url(submission), {'is_past_daily_limit': False})
+
+    def test_other_edit_count_towards_limit_permission_denied(self):
+        submissions = (
+            self.staff_submission(self.visible_public_project),
+            self.enrolled_submission(self.visible_public_project),
+            self.non_enrolled_submission(self.visible_public_project))
+        for submission in submissions:
+            self.do_patch_object_permission_denied_test(
+                submission, self.client,
+                submission.submission_group.members.first(),
+                submission_url(submission),
+                {'count_towards_daily_limit': False})
+
+
 def submission_url(submission):
     return reverse('submission-detail', kwargs={'pk': submission.pk})
 

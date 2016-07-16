@@ -247,10 +247,5 @@ class CreateSubmissionTestCase(test_data.Client,
             {'submitted_files': self.files_to_submit}, format='multipart')
 
 
-class UpdateSubmissionTestCase():
-    def test_edit_count_towards_limit(self):
-        self.fail()
-
-
 def submissions_url(group):
     return reverse('group-submissions-list', kwargs={'group_pk': group.pk})

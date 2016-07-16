@@ -1,5 +1,7 @@
 import copy
 
+from django.http import QueryDict
+
 import autograder.core.models as ag_models
 
 from .ag_model_serializer import AGModelSerializer
@@ -58,8 +60,12 @@ class SubmissionSerializer(AGModelSerializer):
         if data is None:
             return super().__init__(*args, **kwargs)
 
-        fixed_data = data.dict()
-        fixed_data['submitted_files'] = data.getlist('submitted_files')
+        try:
+            # If this fails, then we know we don't have a query dict.
+            fixed_data = data.dict()
+            fixed_data['submitted_files'] = data.getlist('submitted_files')
+        except AttributeError:
+            fixed_data = data
 
         return super().__init__(*args, data=fixed_data, **kwargs)
 
