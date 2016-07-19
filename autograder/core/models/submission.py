@@ -109,6 +109,8 @@ class Submission(ag_model_base.AutograderModel):
 
         'count_towards_daily_limit',
         'is_past_daily_limit',
+
+        'basic_score',
     ]
 
     @classmethod
@@ -238,14 +240,13 @@ class Submission(ag_model_base.AutograderModel):
         The sum of the public scores for each test case result belonging
         to this submission.
         '''
-        # key = self.basic_score_cache_key
-        # score = cache.get(key)
-        # if score is not None:
-        #     print('loaded ', score, 'from cache')
-        #     return score
+        key = self.basic_score_cache_key
+        score = cache.get(key)
+        if score is not None:
+            return score
 
         score = sum((result.basic_score for result in self.results.all()))
-        # cache.set(key, score, timeout=None)
+        cache.set(key, score, timeout=None)
         return score
 
     @property

@@ -1,10 +1,12 @@
 import datetime
+import timeit
 
 from django.core.cache import cache
 from django.utils import timezone
 
 import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case import feedback_config
+import autograder.core.shared.utilities as ut
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -65,6 +67,16 @@ class TotalScoreTestCase(TemporaryFilesystemTestCase):
             feedback_configuration=(
                 feedback_config.FeedbackConfig.create_with_max_fdbk()))
 
+        # # Benchmarks
+        # for i in range(10):
+        #     cache.clear()
+        #     with ut.Timer(msg='Result score from empty cache'):
+        #         actual_score = result.basic_score
+
+        # for i in range(10):
+        #     with ut.Timer(msg='Result score from full cache'):
+        #         actual_score = result.basic_score
+
         self.assertEqual(obj_ut.build_compiled_ag_test.points_with_all_used,
                          result.basic_score)
 
@@ -101,4 +113,5 @@ class TotalScoreTestCase(TemporaryFilesystemTestCase):
         test_case.feedback_configuration.validate_and_update(
             points_fdbk=feedback_config.PointsFdbkLevel.hide)
 
-        self.assertEqual(0, result.basic_score)
+        for result in results:
+            self.assertEqual(0, result.basic_score)

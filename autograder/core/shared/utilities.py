@@ -1,6 +1,7 @@
 import os
-import shutil
 import re
+import shutil
+import timeit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -287,3 +288,15 @@ class TemporaryDirectory(object):
 
     def __exit__(self, *args):
         shutil.rmtree(self.dirname)
+
+
+class Timer:
+    def __init__(self, msg=''):
+        self.msg = msg
+
+    def __enter__(self):
+        self.start_time = timeit.default_timer()
+
+    def __exit__(self, *args, **kwargs):
+        self.elapsed = timeit.default_timer() - self.start_time
+        print(self.msg, 'Took', self.elapsed, 'seconds')

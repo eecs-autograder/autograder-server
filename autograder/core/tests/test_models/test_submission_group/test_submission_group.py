@@ -1,8 +1,8 @@
 import datetime
 import os
-import timeit
 
 from django.core import exceptions
+from django.core.cache import cache
 from django.utils import timezone
 
 from autograder.core.tests.temporary_filesystem_test_case import (
@@ -118,9 +118,13 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
     def test_get_ultimate_submission_high_score_tied_take_most_recent(self):
         self.fail()
 
-    def test_best_public_submission(self):
-        num_submissions = 30
-        num_tests = 50
+
+class BestBasicSubmissionTestCase(TemporaryFilesystemTestCase):
+    def test_best_basic_submission(self):
+        cache.clear()
+        # Increase these numbers when benchmarking
+        num_submissions = 3
+        num_tests = 5
         submissions, best, tests = obj_ut.build_submissions_with_results(
             num_submissions=num_submissions, num_tests=num_tests,
             make_one_best=True)
@@ -132,14 +136,27 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.assertEqual(num_submissions,
                          best.submission_group.submissions.count())
 
-        start_time = timeit.default_timer()
-        actual_best = group.submission_with_best_basic_score
-        elapsed = timeit.default_timer() - start_time
-        print('Found max of {} submissions '
-              'with {} tests in {} seconds:'.format(num_submissions, num_tests,
-                                                    elapsed))
+        # # Benchmarks
+        # for i in range(2):
+        #     cache.clear()
+        #     with ut.Timer('Max of {} submissions with {} tests from '
+        #                   'empty cache.'.format(num_submissions, num_tests)):
+        #         actual_best = group.submission_with_best_basic_score
 
-        self.assertEqual(best, actual_best)
+        # for i in range(10):
+        #     cache.delete_many(
+        #         [sub.basic_score_cache_key for sub in submissions])
+        #     with ut.Timer('Max of {} submissions with {} tests from '
+        #                   'results cache.'.format(num_submissions, num_tests)):
+        #         actual_best = group.submission_with_best_basic_score
+
+        # for i in range(10):
+        #     with ut.Timer('Max of {} submissions with {} tests from '
+        #                   'submissions cache.'.format(num_submissions,
+        #                                               num_tests)):
+        #         actual_best = group.submission_with_best_basic_score
+
+        self.assertEqual(best, group.submission_with_best_basic_score)
 
 
 class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):

@@ -1,5 +1,4 @@
 import os
-import timeit
 
 from collections import namedtuple
 
@@ -310,7 +309,8 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
     def test_basic_score(self):
         cache.clear()
 
-        num_tests = 100
+        # Increase this number when benchmarking
+        num_tests = 10
         min_fdbk = feedback_config.FeedbackConfig.objects.validate_and_create()
         submissions, tests = obj_ut.build_submissions_with_results(
             test_fdbk=min_fdbk, num_tests=num_tests)
@@ -323,22 +323,57 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
                 feedback_configuration=(
                     feedback_config.FeedbackConfig.create_with_max_fdbk()))
 
-        cache.clear()
         expected_points = (
             obj_ut.build_compiled_ag_test.points_with_all_used * num_tests)
-        self.assertEqual(expected_points,
-                         sum((result.basic_score for result in submission.results.all())))
-
-        for i in range(10):
-            start_time = timeit.default_timer()
-            actual_points = submission.basic_score
-            elapsed = timeit.default_timer() - start_time
-            print('Aggregated {} tests in {} seconds:'.format(num_tests, elapsed))
-
+        actual_points = sum((result.basic_score
+                             for result in submission.results.all()))
         self.assertEqual(expected_points, actual_points)
 
+        # # Benchmarks
+        # for i in range(10):
+        #     cache.clear()
+        #     with ut.Timer('Aggregated {} tests '
+        #                   'from empty cache.'.format(num_tests)):
+        #         actual_points = submission.basic_score
+
+        # for i in range(10):
+        #     cache.delete(submission.basic_score_cache_key)
+        #     with ut.Timer('Aggregated {} tests from '
+        #                   'cached results only.'.format(num_tests)):
+        #         actual_points = submission.basic_score
+
+        # for i in range(10):
+        #     with ut.Timer('Aggregated {} tests '
+        #                   'from full cache.'.format(num_tests)):
+        #         actual_points = submission.basic_score
+
+        self.assertEqual(expected_points, submission.basic_score)
+
     def test_cache_invalidation(self):
-        self.fail()
+        num_tests = 2
+        submissions, tests = obj_ut.build_submissions_with_results(
+            num_submissions=2, num_tests=num_tests)
+        test_case = tests[0]
+
+        expected_points = (
+            obj_ut.build_compiled_ag_test.points_with_all_used * num_tests)
+        for submission in submissions:
+            self.assertEqual(expected_points, submission.basic_score)
+
+        test_case.points_for_correct_return_code += 1
+        test_case.save()
+
+        expected_points += 1
+        for submission in submissions:
+            self.assertEqual(expected_points, submission.basic_score)
+
+        test_case.feedback_configuration.validate_and_update(
+            points_fdbk=feedback_config.PointsFdbkLevel.hide)
+
+        expected_points -= (
+            obj_ut.build_compiled_ag_test.points_with_all_used + 1)
+        for submission in submissions:
+            self.assertEqual(expected_points, submission.basic_score)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------

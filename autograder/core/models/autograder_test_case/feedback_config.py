@@ -179,6 +179,6 @@ class FeedbackConfig(AutograderModel):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         try:
-            cache.delete_many(self.ag_test.dependent_result_cache_keys)
+            cache.delete_many(self.ag_test.dependent_cache_keys)
         except exceptions.ObjectDoesNotExist:
             pass

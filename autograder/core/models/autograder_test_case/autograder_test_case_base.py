@@ -430,12 +430,16 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
             super().save(*args, **kwargs)
 
-        cache.delete_many(self.dependent_result_cache_keys)
+        cache.delete_many(self.dependent_cache_keys)
 
     @property
-    def dependent_result_cache_keys(self):
-        return [result.basic_score_cache_key
-                for result in self.dependent_results.all()]
+    def dependent_cache_keys(self):
+        dependent_keys = set()
+        for result in self.dependent_results.all():
+            dependent_keys.add(result.basic_score_cache_key)
+            dependent_keys.add(result.submission.basic_score_cache_key)
+
+        return dependent_keys
 
     def to_dict(self, **kwargs):
         result = super().to_dict(**kwargs)

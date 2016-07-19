@@ -50,6 +50,9 @@ class Project(AutograderModel):
         'submission_limit_per_day',
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
+
+        'ultimate_submission_selection_method',
+        'hide_ultimate_submission_fdbk',
     ])
 
     @classmethod
@@ -68,6 +71,9 @@ class Project(AutograderModel):
         'submission_limit_per_day',
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
+
+        'ultimate_submission_selection_method',
+        'hide_ultimate_submission_fdbk',
     ])
 
     @classmethod
