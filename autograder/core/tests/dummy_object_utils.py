@@ -158,7 +158,8 @@ def build_submission(**submission_kwargs):
 
 
 def build_submissions_with_results(num_submissions=1, num_tests=1,
-                                   test_fdbk=None, make_one_best=False):
+                                   test_fdbk=None, make_one_best=False,
+                                   **submission_kwargs):
     if num_submissions < 1:
         raise ValueError('num_submissions must be at least 1')
 
@@ -174,10 +175,13 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
             with_points=True, project=project, feedback_configuration=fdbk)
         tests.append(test)
 
-    group = build_submission_group(group_kwargs={'project': project})
+    if 'submission_group' not in submission_kwargs:
+        submission_kwargs['submission_group'] = build_submission_group(
+            group_kwargs={'project': project})
+
     submissions = []
     for i in range(num_submissions):
-        submission = build_submission(submission_group=group)
+        submission = build_submission(**submission_kwargs)
 
         for test in tests:
             build_compiled_ag_test_result(test_case=test,

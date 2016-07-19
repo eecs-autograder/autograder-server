@@ -10,6 +10,7 @@ import autograder.core.shared.utilities as ut
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
+import autograder.core.tests.dummy_object_utils as obj_ut
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -28,6 +29,14 @@ class ListGroupSubmissionsTestCase(test_data.Client,
                     self.do_list_objects_test(
                         self.client, user, submissions_url(group),
                         expected_data)
+
+        for project in self.hidden_public_project, self.visible_public_project:
+            group = self.non_enrolled_group(project)
+            expected_data = ag_serializers.SubmissionSerializer(
+                self.build_submissions(group), many=True).data
+            for user in self.admin, self.staff:
+                self.do_list_objects_test(
+                    self.client, user, submissions_url(group), expected_data)
 
     def test_enrolled_list_submissions(self):
         for project in self.visible_projects:
@@ -73,13 +82,6 @@ class ListGroupSubmissionsTestCase(test_data.Client,
             allow_submissions_from_non_enrolled_students=False)
         self.do_permission_denied_get_test(
             self.client, self.nobody, submissions_url(group))
-
-    def build_submissions(self, group):
-        submissions = []
-        for i in range(group.members.count()):
-            submissions.append(self.build_submission(group))
-
-        return submissions
 
 
 class CreateSubmissionTestCase(test_data.Client,
@@ -298,35 +300,6 @@ class CreateSubmissionTestCase(test_data.Client,
             ag_models.Submission.objects, self.client,
             user, submissions_url(group),
             {'submitted_files': self.files_to_submit}, format='multipart')
-
-
-class RetrieveUltimateSubmissionTestCase:
-    def test_admin_or_staff_get_ultimate_submission(self):
-        self.fail()
-
-    def test_enrolled_get_ultimate_submission(self):
-        self.fail()
-
-    def test_non_enrolled_get_ultimate_submission(self):
-        self.fail()
-
-    def test_non_member_get_ultimate_permission_denied(self):
-        self.fail()
-
-    def test_enrolled_get_ultimate_project_hidden_permission_denied(self):
-        self.fail()
-
-    def test_non_enrolled_get_ultimate_project_hidden_permission_denied(self):
-        self.fail()
-
-    def test_non_enrolled_view_group_project_private_permission_denied(self):
-        self.fail()
-
-    def test_deadline_not_past_permission_denied(self):
-        self.fail()
-
-    def test_deadline_past_but_ultimate_fdbk_forbidden(self):
-        self.fail()
 
 
 def submissions_url(group):

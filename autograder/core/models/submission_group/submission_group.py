@@ -2,6 +2,7 @@ import os
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
+from django.http import Http404
 from django.utils import timezone
 
 from .. import ag_model_base
@@ -114,6 +115,15 @@ class SubmissionGroup(ag_model_base.AutograderModel):
 
     @property
     def ultimate_submission(self):
+        '''
+        Returns the submission that should be used for final grading.
+        The method used to choose which submission is the ultimate
+        submission is specified in
+        self.project.ultimate_submission_selection_method
+        '''
+        if not self.submissions.count():
+            raise Http404('Group {} has no submissions'.format(self.pk))
+
         if (self.project.ultimate_submission_selection_method ==
                 Project.UltimateSubmissionSelectionMethod.most_recent):
             return self.submissions.first()

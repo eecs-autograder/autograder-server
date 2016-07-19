@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
+from django.utils import timezone
 
-from rest_framework import viewsets, mixins, permissions
+from rest_framework import viewsets, mixins, permissions, decorators, response
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -15,6 +16,30 @@ class _Permissions(permissions.BasePermission):
             return group.project.course.is_administrator(request.user)
 
         return user_can_view_group(request.user, group)
+
+
+class _UltimateSubmissionPermissions(_Permissions):
+    def has_object_permission(self, request, view, group):
+        if not super().has_object_permission(request, view, group):
+            return False
+
+        project = group.project
+        course = group.project.course
+        is_staff = course.is_course_staff(request.user)
+        # Staff and higher can always view their own ultimate submission
+        if is_staff and group.members.filter(pk=request.user.pk).exists():
+            return True
+
+        closing_time_passed = (project.closing_time is None or
+                               timezone.now() > project.closing_time)
+        if not closing_time_passed:
+            return False
+
+        # If closing time has passed, staff can view anyone's ultimate
+        if is_staff:
+            return True
+
+        return not project.hide_ultimate_submission_fdbk
 
 
 class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
@@ -33,3 +58,25 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
                 for username in request.data.pop('member_names')]
             request.data['check_group_size_limits'] = False
         return super().update(request, *args, **kwargs)
+
+    @decorators.detail_route(permission_classes=(
+        permissions.IsAuthenticated, _UltimateSubmissionPermissions))
+    def ultimate_submission(self, request, *args, **kwargs):
+        '''
+        Permissions details:
+        - The normal group and submission viewing permissions apply
+          first.
+        - Staff members can always view their own ultimate submission.
+        - Staff members can only view student and other staff ultimate
+          submissions if the project closing time has passed.
+        - If the project closing time has passed, staff can view student
+          and other staff ultimate submissions regardless of whether
+          ultimate submissions are marked as hidden.
+        - Students can view their ultimate submissions as long as the
+          closing time has passed and ultimate submissions are not
+          overridden as being hidden.
+        '''
+        group = self.get_object()
+        content = ag_serializers.SubmissionSerializer(
+            group.ultimate_submission).data
+        return response.Response(content)

@@ -3,6 +3,7 @@ import os
 
 from django.core import exceptions
 from django.core.cache import cache
+from django.http import Http404
 from django.utils import timezone
 
 from autograder.core.tests.temporary_filesystem_test_case import (
@@ -144,6 +145,11 @@ class GetUltimateSubmissionTestCase(TemporaryFilesystemTestCase):
             ultimate_submission_selection_method=(
                 ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score))
         self.assertEqual(submissions[-1], group.ultimate_submission)
+
+    def test_get_ultimate_submission_no_submissions(self):
+        group = obj_ut.build_submission_group()
+        with self.assertRaises(Http404):
+            group.ultimate_submission
 
 
 class BestBasicSubmissionTestCase(TemporaryFilesystemTestCase):

@@ -304,7 +304,8 @@ class Group(Course):
     def _store_group(self, project, label, group):
         if project.pk not in self._groups:
             self._groups[project.pk] = {}
-            self._groups[project.pk][label] = group
+
+        self._groups[project.pk][label] = group
 
 
 # Note that submissions are not cached because they are not required to be
@@ -361,3 +362,10 @@ class Submission(Group):
         return ag_models.Submission.objects.validate_and_create(
             self.files_to_submit, submission_group=group,
             submitter=group.members.first().username)
+
+    def build_submissions(self, group):
+        submissions = []
+        for i in range(group.members.count()):
+            submissions.append(self.build_submission(group))
+
+        return submissions
