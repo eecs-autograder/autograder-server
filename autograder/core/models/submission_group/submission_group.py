@@ -105,8 +105,25 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         The Submission belonging to this group that has the highest
         score, as calculated using the normal feedback configuration
         for each test case.
+        In the event of a tie, returns the more recent submission.
         '''
+        # Submissions are ordered by pk, descending, so the max function
+        # will automatically return the more recent one in the event of
+        # a tie.
         return max(self.submissions.all(), key=lambda sub: sub.basic_score)
+
+    @property
+    def ultimate_submission(self):
+        if (self.project.ultimate_submission_selection_method ==
+                Project.UltimateSubmissionSelectionMethod.most_recent):
+            return self.submissions.first()
+
+        if (self.project.ultimate_submission_selection_method ==
+                Project.UltimateSubmissionSelectionMethod.best_basic_score):
+            return self.submission_with_best_basic_score
+
+        raise Exception('Invalid ultimate submission selection method ' +
+                        self.project.ultimate_submission_selection_method)
 
     # -------------------------------------------------------------------------
 

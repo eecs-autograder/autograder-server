@@ -322,7 +322,10 @@ class RetrieveUltimateSubmissionTestCase:
     def test_non_enrolled_view_group_project_private_permission_denied(self):
         self.fail()
 
-    def test_criteria_met_but_ultimate_fdbk_forbidden(self):
+    def test_deadline_not_past_permission_denied(self):
+        self.fail()
+
+    def test_deadline_past_but_ultimate_fdbk_forbidden(self):
         self.fail()
 
 

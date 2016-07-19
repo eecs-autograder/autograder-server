@@ -296,14 +296,6 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(submission.discarded_files,
                               (file_.name for file_ in duplicate_files))
 
-    def test_is_ultimate_submission(self):
-        # most recent
-        # best
-        self.fail()
-
-    def test_is_ultimate_submission_criteria_not_met(self):
-        self.fail()
-
 
 class TotalPointsTestCase(TemporaryFilesystemTestCase):
     def test_basic_score(self):

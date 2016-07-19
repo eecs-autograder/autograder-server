@@ -90,6 +90,18 @@ class Project(AutograderModel):
     # -------------------------------------------------------------------------
 
     class UltimateSubmissionSelectionMethod:
+        '''
+        This class contains options for choosing which submissions are
+        used for final grading. AG test cases also have a feedback
+        option that will only be used for ultimate submissions.
+
+        (TODO move this next bit to the result feedback calculator)
+        In order for ultimate submission feedback to be given:
+            - The closing time for the project must have passed
+            - The criteria described by the option selected here must
+                be met for a given submission (the submission being
+                viewed must actually be an ultimate submission).
+        '''
         # The submission that was made most recently
         most_recent = 'most_recent'
 

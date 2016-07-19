@@ -1,8 +1,9 @@
 import os
 import shutil
 
-from django.test import TestCase
+from django.core.cache import cache
 from django.conf import settings
+from django.test import TestCase
 
 
 class TemporaryFilesystemTestCase(TestCase):
@@ -23,7 +24,11 @@ class TemporaryFilesystemTestCase(TestCase):
     """
 
     def setUp(self):
-        # super().setUp()
+        super().setUp()
+
+        # HACK
+        cache.clear()
+
         self._old_media_root = settings.MEDIA_ROOT
         self.new_media_root = os.path.join(
             settings.BASE_DIR, 'tmp_filesystem')

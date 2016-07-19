@@ -110,13 +110,40 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         groups = list(repeated_user.groups_is_member_of.all())
         self.assertCountEqual([first_group, second_group], groups)
 
+
+class GetUltimateSubmissionTestCase(TemporaryFilesystemTestCase):
     def test_get_ultimate_submission(self):
-        # most recent
-        # best
-        self.fail()
+        submissions, best, tests = obj_ut.build_submissions_with_results(
+            num_submissions=5, make_one_best=True)
+        self.assertNotEqual(submissions[-1], best)
+        group = best.submission_group
+        project = group.project
+
+        project.validate_and_update(
+            ultimate_submission_selection_method=(
+                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent))
+        self.assertEqual(submissions[-1], group.ultimate_submission)
+
+        project.validate_and_update(
+            ultimate_submission_selection_method=(
+                ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score))
+        self.assertEqual(best, group.ultimate_submission)
 
     def test_get_ultimate_submission_high_score_tied_take_most_recent(self):
-        self.fail()
+        submissions, tests = obj_ut.build_submissions_with_results(
+            num_submissions=4)
+        group = submissions[0].submission_group
+        project = group.project
+
+        project.validate_and_update(
+            ultimate_submission_selection_method=(
+                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent))
+        self.assertEqual(submissions[-1], group.ultimate_submission)
+
+        project.validate_and_update(
+            ultimate_submission_selection_method=(
+                ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score))
+        self.assertEqual(submissions[-1], group.ultimate_submission)
 
 
 class BestBasicSubmissionTestCase(TemporaryFilesystemTestCase):
