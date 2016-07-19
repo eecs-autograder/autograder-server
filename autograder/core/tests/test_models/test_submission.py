@@ -1,9 +1,13 @@
 import os
+import timeit
 
 from collections import namedtuple
 
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
+
+from autograder.core.models.autograder_test_case import feedback_config
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -55,6 +59,8 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
             'count_towards_daily_limit',
             'is_past_daily_limit',
+
+            'basic_score',
         ]
         self.assertCountEqual(
             expected,
@@ -290,6 +296,49 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         self.assertCountEqual(submission.discarded_files,
                               (file_.name for file_ in duplicate_files))
+
+    def test_is_ultimate_submission(self):
+        # most recent
+        # best
+        self.fail()
+
+    def test_is_ultimate_submission_criteria_not_met(self):
+        self.fail()
+
+
+class TotalPointsTestCase(TemporaryFilesystemTestCase):
+    def test_basic_score(self):
+        cache.clear()
+
+        num_tests = 100
+        min_fdbk = feedback_config.FeedbackConfig.objects.validate_and_create()
+        submissions, tests = obj_ut.build_submissions_with_results(
+            test_fdbk=min_fdbk, num_tests=num_tests)
+        submission = submissions[0]
+
+        self.assertEqual(0, submission.basic_score)
+
+        for test in tests:
+            test.validate_and_update(
+                feedback_configuration=(
+                    feedback_config.FeedbackConfig.create_with_max_fdbk()))
+
+        cache.clear()
+        expected_points = (
+            obj_ut.build_compiled_ag_test.points_with_all_used * num_tests)
+        self.assertEqual(expected_points,
+                         sum((result.basic_score for result in submission.results.all())))
+
+        for i in range(10):
+            start_time = timeit.default_timer()
+            actual_points = submission.basic_score
+            elapsed = timeit.default_timer() - start_time
+            print('Aggregated {} tests in {} seconds:'.format(num_tests, elapsed))
+
+        self.assertEqual(expected_points, actual_points)
+
+    def test_cache_invalidation(self):
+        self.fail()
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------

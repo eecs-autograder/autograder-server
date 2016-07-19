@@ -1,6 +1,7 @@
 import difflib
 import uuid
 
+from django.core.cache import cache
 from django.utils import timezone
 from django.db import models
 
@@ -14,7 +15,7 @@ class AutograderTestCaseResult(models.Model):
     """
     # Using a string here instead of class to get around circular dependency
     test_case = models.ForeignKey(
-        "AutograderTestCaseBase",
+        "AutograderTestCaseBase", related_name='dependent_results',
         help_text='''The test case whose results this object is storing.''')
 
     submission = models.ForeignKey(
@@ -57,6 +58,37 @@ class AutograderTestCaseResult(models.Model):
     compilation_standard_error_output = models.TextField(
         help_text='''The contents of the standard error stream of the
             command used to compile the program being tested.''')
+
+    # -------------------------------------------------------------------------
+
+    @property
+    def basic_score(self):
+        '''
+        The number of points awarded for the related test case using the
+        primary feedback configuration, self.test_result.feedback_config
+        '''
+        key = self.basic_score_cache_key
+        score = cache.get(key)
+        if score is not None:
+            return score
+
+        fdbk = self.get_feedback()
+        try:
+            valgrind_val = -fdbk.valgrind_points_deducted
+        except Exception:
+            valgrind_val = None
+
+        values = (fdbk.return_code_points, fdbk.stdout_points,
+                  fdbk.stderr_points, fdbk.compilation_points,
+                  valgrind_val)
+
+        score = sum((val for val in values if val is not None))
+        cache.set(key, score, timeout=None)
+        return score
+
+    @property
+    def basic_score_cache_key(self):
+        return 'result_basic_score{}'.format(self.pk)
 
     def get_feedback(self):
         return AutograderTestCaseResult._FeedbackCalculator(self)

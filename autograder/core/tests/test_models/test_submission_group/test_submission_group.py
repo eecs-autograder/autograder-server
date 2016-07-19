@@ -1,5 +1,6 @@
 import datetime
 import os
+import timeit
 
 from django.core import exceptions
 from django.utils import timezone
@@ -108,6 +109,37 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
 
         groups = list(repeated_user.groups_is_member_of.all())
         self.assertCountEqual([first_group, second_group], groups)
+
+    def test_get_ultimate_submission(self):
+        # most recent
+        # best
+        self.fail()
+
+    def test_get_ultimate_submission_high_score_tied_take_most_recent(self):
+        self.fail()
+
+    def test_best_public_submission(self):
+        num_submissions = 30
+        num_tests = 50
+        submissions, best, tests = obj_ut.build_submissions_with_results(
+            num_submissions=num_submissions, num_tests=num_tests,
+            make_one_best=True)
+
+        group = submissions[0].submission_group
+        actual_num_tests = group.project.autograder_test_cases.count()
+        self.assertEqual(num_tests, actual_num_tests)
+        self.assertEqual(num_submissions, len(submissions))
+        self.assertEqual(num_submissions,
+                         best.submission_group.submissions.count())
+
+        start_time = timeit.default_timer()
+        actual_best = group.submission_with_best_basic_score
+        elapsed = timeit.default_timer() - start_time
+        print('Found max of {} submissions '
+              'with {} tests in {} seconds:'.format(num_submissions, num_tests,
+                                                    elapsed))
+
+        self.assertEqual(best, actual_best)
 
 
 class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):

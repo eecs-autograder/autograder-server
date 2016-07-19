@@ -322,6 +322,7 @@ class _SubprocessRunner(object):
 
 
 _NEXT_UID_KEY = 'sandbox_next_uid'
+redis.StrictRedis().setnx('sandbox_next_uid', 2000)
 
 
 def _get_next_linux_uid():

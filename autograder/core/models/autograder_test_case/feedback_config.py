@@ -1,3 +1,5 @@
+from django.core.cache import cache
+from django.core import exceptions
 from django.db import models
 
 from ..ag_model_base import AutograderModel
@@ -173,3 +175,10 @@ class FeedbackConfig(AutograderModel):
     @property
     def _include_pk(self):
         return False
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        try:
+            cache.delete_many(self.ag_test.dependent_result_cache_keys)
+        except exceptions.ObjectDoesNotExist:
+            pass

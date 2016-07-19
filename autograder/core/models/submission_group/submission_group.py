@@ -99,6 +99,15 @@ class SubmissionGroup(ag_model_base.AutograderModel):
             count_towards_daily_limit=True
         ).count()
 
+    @property
+    def submission_with_best_basic_score(self):
+        '''
+        The Submission belonging to this group that has the highest
+        score, as calculated using the normal feedback configuration
+        for each test case.
+        '''
+        return max(self.submissions.all(), key=lambda sub: sub.basic_score)
+
     # -------------------------------------------------------------------------
 
     @staticmethod

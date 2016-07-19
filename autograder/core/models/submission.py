@@ -1,10 +1,11 @@
 import fnmatch
 import os
 
-from django.db import models, transaction
 from django.core import exceptions
+from django.core.cache import cache
 from django.core.files import File
 import django.contrib.postgres.fields as pg_fields
+from django.db import models, transaction
 from django.utils import timezone
 
 import autograder.utilities.fields as ag_fields
@@ -230,6 +231,26 @@ class Submission(ag_model_base.AutograderModel):
         default=list, blank=True,
         help_text='''A list of errors that occurred while grading this
             submission''')
+
+    @property
+    def basic_score(self):
+        '''
+        The sum of the public scores for each test case result belonging
+        to this submission.
+        '''
+        # key = self.basic_score_cache_key
+        # score = cache.get(key)
+        # if score is not None:
+        #     print('loaded ', score, 'from cache')
+        #     return score
+
+        score = sum((result.basic_score for result in self.results.all()))
+        # cache.set(key, score, timeout=None)
+        return score
+
+    @property
+    def basic_score_cache_key(self):
+        return 'submission_basic_score{}'.format(self.pk)
 
     # -------------------------------------------------------------------------
 

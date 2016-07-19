@@ -81,6 +81,21 @@ class Project(AutograderModel):
             a given course.
             This field is REQUIRED.''')
 
+    # -------------------------------------------------------------------------
+
+    class UltimateSubmissionSelectionMethod:
+        # The submission that was made most recently
+        most_recent = 'most_recent'
+
+        # The submission for which the student sees the highest basic
+        # score. The basic score is the total score using the normal
+        # feedback config for each test case.
+        best_basic_score = 'best_basic_score'
+
+        values = [most_recent, best_basic_score]
+
+    # -------------------------------------------------------------------------
+
     course = models.ForeignKey(
         Course, related_name='projects',
         help_text='''The Course this project belongs to.
@@ -100,8 +115,8 @@ class Project(AutograderModel):
 
     disallow_student_submissions = models.BooleanField(
         default=False,
-        help_text='''A hard override that will prevent
-            students from submitting even if visible_to_students is
+        help_text='''A hard override that indicates that students should
+            be prevented from submitting even if visible_to_students is
             True and it is before closing_time.''')
 
     allow_submissions_from_non_enrolled_students = models.BooleanField(
@@ -148,6 +163,21 @@ class Project(AutograderModel):
             hour period during which submissions should be counted
             towards the daily limit. This value assumes use of the UTC
             timezone. Defaults to 0:0:0. ''')
+
+    ultimate_submission_selection_method = ag_fields.ShortStringField(
+        choices=zip(UltimateSubmissionSelectionMethod.values,
+                    UltimateSubmissionSelectionMethod.values),
+        default=UltimateSubmissionSelectionMethod.most_recent,
+        blank=True,
+        help_text='''The "ultimate" submission for a group is the one
+            that will be used for final grading. This field specifies
+            how the ultimate submission should be determined.''')
+
+    hide_ultimate_submission_fdbk = models.BooleanField(
+        default=True, blank=True,
+        help_text='''A hard override that indicates that ultimate
+            submission feedback should not be shown, even if the
+            appropriate criteria are met.''')
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

@@ -3,10 +3,11 @@ import os
 import itertools
 import uuid
 
-from django.db import models, transaction
 from django.core import exceptions
+from django.core.cache import cache
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, RegexValidator)
+from django.db import models, transaction
 
 from ..ag_model_base import (
     PolymorphicAutograderModel, PolymorphicAutograderModelManager)
@@ -315,7 +316,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             and the result will NOT go below 0.''')
 
     feedback_configuration = models.OneToOneField(
-        FeedbackConfig,
+        FeedbackConfig, related_name='ag_test',
         blank=True,  # A default value is given is not specified
         help_text='''Specifies how much information should be included
             in serialized run results. If not specified on creation,
@@ -428,6 +429,13 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
                     FeedbackConfig.objects.validate_and_create())
 
             super().save(*args, **kwargs)
+
+        cache.delete_many(self.dependent_result_cache_keys)
+
+    @property
+    def dependent_result_cache_keys(self):
+        return [result.basic_score_cache_key
+                for result in self.dependent_results.all()]
 
     def to_dict(self, **kwargs):
         result = super().to_dict(**kwargs)

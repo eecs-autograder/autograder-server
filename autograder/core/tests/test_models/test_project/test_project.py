@@ -45,6 +45,11 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(datetime.time(),
                          new_project.submission_limit_reset_time)
 
+        self.assertTrue(new_project.hide_ultimate_submission_fdbk)
+        self.assertEqual(
+            ag_models.Project.UltimateSubmissionSelectionMethod.most_recent,
+            new_project.ultimate_submission_selection_method)
+
     def test_valid_create_non_defaults(self):
         tomorrow_date = timezone.now() + datetime.timedelta(days=1)
         min_group_size = 2
@@ -52,6 +57,9 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
 
         sub_limit = random.randint(1, 5)
         reset_time = datetime.time(8, 0, 0)
+
+        selection_method = (ag_models.Project.UltimateSubmissionSelectionMethod
+                                             .best_basic_score)
 
         new_project = ag_models.Project.objects.validate_and_create(
             name=self.project_name,
@@ -66,6 +74,9 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             submission_limit_per_day=sub_limit,
             allow_submissions_past_limit=False,
             submission_limit_reset_time=reset_time,
+
+            hide_ultimate_submission_fdbk=False,
+            ultimate_submission_selection_method=selection_method,
         )
 
         new_project.refresh_from_db()
@@ -87,6 +98,10 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(False, new_project.allow_submissions_past_limit)
         self.assertEqual(reset_time, new_project.submission_limit_reset_time)
 
+        self.assertFalse(new_project.hide_ultimate_submission_fdbk)
+        self.assertEqual(selection_method,
+                         new_project.ultimate_submission_selection_method)
+
     def test_to_dict_default_fields(self):
         project = obj_ut.build_project()
 
@@ -103,6 +118,9 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             'submission_limit_per_day',
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
+
+            'ultimate_submission_selection_method',
+            'hide_ultimate_submission_fdbk',
         ]
 
         self.assertCountEqual(expected_fields,
@@ -123,6 +141,9 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             'submission_limit_per_day',
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
+
+            'ultimate_submission_selection_method',
+            'hide_ultimate_submission_fdbk',
         ]
         self.assertCountEqual(expected,
                               ag_models.Project.get_editable_fields())
@@ -134,6 +155,15 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
                 submission_limit_per_day=random.randint(-10, -1))
 
         self.assertIn('submission_limit_per_day', cm.exception.message_dict)
+
+    def test_error_invalid_ultimate_submission_selection_method(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='steve', course=self.course,
+                ultimate_submission_selection_method='not_a_method')
+
+        self.assertIn('ultimate_submission_selection_method',
+                      cm.exception.message_dict)
 
 
 class ProjectNameExceptionTestCase(TemporaryFilesystemTestCase):

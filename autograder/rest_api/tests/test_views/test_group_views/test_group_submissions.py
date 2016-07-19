@@ -300,5 +300,31 @@ class CreateSubmissionTestCase(test_data.Client,
             {'submitted_files': self.files_to_submit}, format='multipart')
 
 
+class RetrieveUltimateSubmissionTestCase:
+    def test_admin_or_staff_get_ultimate_submission(self):
+        self.fail()
+
+    def test_enrolled_get_ultimate_submission(self):
+        self.fail()
+
+    def test_non_enrolled_get_ultimate_submission(self):
+        self.fail()
+
+    def test_non_member_get_ultimate_permission_denied(self):
+        self.fail()
+
+    def test_enrolled_get_ultimate_project_hidden_permission_denied(self):
+        self.fail()
+
+    def test_non_enrolled_get_ultimate_project_hidden_permission_denied(self):
+        self.fail()
+
+    def test_non_enrolled_view_group_project_private_permission_denied(self):
+        self.fail()
+
+    def test_criteria_met_but_ultimate_fdbk_forbidden(self):
+        self.fail()
+
+
 def submissions_url(group):
     return reverse('group-submissions-list', kwargs={'group_pk': group.pk})
