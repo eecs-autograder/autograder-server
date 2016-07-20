@@ -1,12 +1,11 @@
 import datetime
-import timeit
 
 from django.core.cache import cache
 from django.utils import timezone
 
 import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case import feedback_config
-import autograder.core.shared.utilities as ut
+# import autograder.core.shared.utilities as ut  # For benchmarks
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)

@@ -6,8 +6,10 @@ from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
-import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
-
+from autograder.core.models.autograder_test_case.feedback_config import (
+    FeedbackConfig, AGTestNameFdbkLevel, ReturnCodeFdbkLevel,
+    StdoutFdbkLevel, StderrFdbkLevel, CompilationFdbkLevel,
+    ValgrindFdbkLevel, PointsFdbkLevel)
 import autograder.core.shared.global_constants as gc
 
 from autograder.core.tests.temporary_filesystem_test_case import (
@@ -28,17 +30,13 @@ class _Shared:
 
     def _random_fdbk(self):
         return ag_models.FeedbackConfig.objects.validate_and_create(
-            ag_test_name_fdbk=random.choice(
-                fdbk_lvls.AGTestNameFdbkLevel.values),
-            return_code_fdbk=random.choice(
-                fdbk_lvls.ReturnCodeFdbkLevel.values),
-            stdout_fdbk=random.choice(fdbk_lvls.StdoutFdbkLevel.values),
-            stderr_fdbk=random.choice(fdbk_lvls.StderrFdbkLevel.values),
-            compilation_fdbk=random.choice(
-                fdbk_lvls.CompilationFdbkLevel.values),
-            valgrind_fdbk=random.choice(
-                fdbk_lvls.ValgrindFdbkLevel.values),
-            points_fdbk=random.choice(fdbk_lvls.PointsFdbkLevel.values),
+            ag_test_name_fdbk=random.choice(AGTestNameFdbkLevel.values),
+            return_code_fdbk=random.choice(ReturnCodeFdbkLevel.values),
+            stdout_fdbk=random.choice(StdoutFdbkLevel.values),
+            stderr_fdbk=random.choice(StderrFdbkLevel.values),
+            compilation_fdbk=random.choice(CompilationFdbkLevel.values),
+            valgrind_fdbk=random.choice(ValgrindFdbkLevel.values),
+            points_fdbk=random.choice(PointsFdbkLevel.values),
         )
 
 
@@ -82,37 +80,61 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertEqual(
             self.fdbk.to_dict(),
             new_test_case.feedback_configuration.to_dict())
-        self.assertIsNone(
-            (new_test_case.
-             post_deadline_final_submission_feedback_configuration))
+        self.assertFalse(new_test_case.visible_to_students)
+
+        self.assertEqual(
+            FeedbackConfig.create_ultimate_submission_default().to_dict(),
+            new_test_case.ultimate_submission_fdbk_conf.to_dict())
+        self.assertTrue(new_test_case.visible_in_ultimate_submission)
+
+        self.assertEqual(
+            FeedbackConfig().to_dict(),
+            new_test_case.past_submission_limit_fdbk_conf.to_dict())
+        self.assertFalse(new_test_case.visible_in_past_limit_submission)
+
+        self.assertEqual(FeedbackConfig.create_with_max_fdbk().to_dict(),
+                         new_test_case.staff_viewer_fdbk_conf.to_dict())
+        self.assertTrue(new_test_case.visible_to_staff_viewer)
 
     def test_valid_initialization_custom_values(self):
         vals = {
             'name': self.TEST_NAME,
             'project': self.project,
+
             'command_line_arguments': [
                 'spam', '--eggs', '--sausage=spam', '-p', 'input.in'],
             'standard_input': "spameggsausagespam",
             'expected_standard_output': "standardspaminputspam",
             'expected_standard_error_output': "errorzspam",
+
             'time_limit': random.randint(1, 60),
             'stack_size_limit': random.randint(1, gc.MAX_STACK_SIZE_LIMIT),
             'virtual_memory_limit': random.randint(
                 1, gc.MAX_VIRTUAL_MEM_LIMIT),
             'process_spawn_limit': random.randint(1, gc.MAX_PROCESS_LIMIT),
             'allow_network_connections': random.choice([True, False]),
+
             'expected_return_code': random.randint(-3, 10),
             'expect_any_nonzero_return_code': random.choice([True, False]),
+
             'valgrind_flags': ['--leak-check=yes', '--error-exitcode=9000'],
             'use_valgrind': random.choice([True, False]),
+
             'points_for_correct_return_code': random.randint(1, 15),
             'points_for_correct_stdout': random.randint(1, 15),
             'points_for_correct_stderr': random.randint(1, 15),
             'deduction_for_valgrind_errors': random.randint(1, 5),
             'points_for_compilation_success': random.randint(1, 15),
+
             'feedback_configuration': self._random_fdbk(),
-            'post_deadline_final_submission_feedback_configuration': (
-                self._random_fdbk())
+            'ultimate_submission_fdbk_conf': self._random_fdbk(),
+            'past_submission_limit_fdbk_conf': self._random_fdbk(),
+            'staff_viewer_fdbk_conf': self._random_fdbk(),
+
+            'visible_to_students': random.choice([True, False]),
+            'visible_in_ultimate_submission': random.choice([True, False]),
+            'visible_in_past_limit_submission': random.choice([True, False]),
+            'visible_to_staff_viewer': random.choice([True, False]),
         }
 
         new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
@@ -152,7 +174,16 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
             'deduction_for_valgrind_errors',
 
             'feedback_configuration',
-            'post_deadline_final_submission_feedback_configuration',
+            'visible_to_students',
+
+            'ultimate_submission_fdbk_conf',
+            'visible_in_ultimate_submission',
+
+            'past_submission_limit_fdbk_conf',
+            'visible_in_past_limit_submission',
+
+            'staff_viewer_fdbk_conf',
+            'visible_to_staff_viewer',
 
             'compiler',
             'compiler_flags',
@@ -175,30 +206,25 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue(ag_test.to_dict())
 
     def test_to_dict_feedback_expanded(self):
-        other_fdbk = self._random_fdbk()
+        self.assertCountEqual(
+            ['feedback_configuration', 'ultimate_submission_fdbk_conf',
+             'past_submission_limit_fdbk_conf', 'staff_viewer_fdbk_conf'],
+            ag_models.AutograderTestCaseBase.FBDK_FIELD_NAMES)
         ag_test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
             project=self.project,
             feedback_configuration=self.fdbk,
-            post_deadline_final_submission_feedback_configuration=other_fdbk)
+            ultimate_submission_fdbk_conf=self._random_fdbk(),
+            past_submission_limit_fdbk_conf=self._random_fdbk(),
+            staff_viewer_fdbk_conf=self._random_fdbk())
 
-        self.assertEqual(
-            self.fdbk.to_dict(),
-            ag_test.to_dict()['feedback_configuration'])
+        for fdbk_field in ag_models.AutograderTestCaseBase.FBDK_FIELD_NAMES:
+            self.assertEqual(getattr(ag_test, fdbk_field).to_dict(),
+                             ag_test.to_dict()[fdbk_field])
 
-        self.assertEqual(
-            other_fdbk.to_dict(),
-            ag_test.to_dict()['post_deadline_final_submission_feedback_configuration'])
+            fdbk_excluded = ag_test.to_dict(exclude_fields=[fdbk_field])
 
-        fdbk_excluded = ag_test.to_dict(
-            exclude_fields=[
-                'feedback_configuration',
-                'post_deadline_final_submission_feedback_configuration'])
-
-        self.assertNotIn('feedback_configuration', fdbk_excluded)
-        self.assertNotIn(
-            'post_deadline_final_submission_feedback_configuration',
-            'feedback_configuration')
+            self.assertNotIn(fdbk_field, fdbk_excluded)
 
     def test_editable_fields(self):
         expected = [
@@ -227,7 +253,16 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
             'deduction_for_valgrind_errors',
 
             'feedback_configuration',
-            'post_deadline_final_submission_feedback_configuration',
+            'visible_to_students',
+
+            'ultimate_submission_fdbk_conf',
+            'visible_in_ultimate_submission',
+
+            'past_submission_limit_fdbk_conf',
+            'visible_in_past_limit_submission',
+
+            'staff_viewer_fdbk_conf',
+            'visible_to_staff_viewer',
 
             'compiler',
             'compiler_flags',

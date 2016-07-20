@@ -44,37 +44,39 @@ class AGTestCaseSerializerTestCase(SerializerTestCase):
         expected['pk'] = loaded.pk
         self.assertEqual(expected, loaded.to_dict(include_fields=data.keys()))
 
-    def test_create_and_update_feedback_config(self):
-        data = {
-            'name': 'steve',
-            'project': self.project,
-            'compiler': 'clang++',
-            'type_str': 'compiled_and_run_test_case',
-            'feedback_configuration': (
-                ag_models.FeedbackConfig.create_with_max_fdbk().to_dict())
-        }
+    def test_create_and_update_feedback_configs(self):
+        for fdbk_field in ag_models.AutograderTestCaseBase.FBDK_FIELD_NAMES:
+            data = {
+                'name': 'steve',
+                'project': self.project,
+                'compiler': 'clang++',
+                'type_str': 'compiled_and_run_test_case',
+                fdbk_field: (
+                    ag_models.FeedbackConfig.create_with_max_fdbk().to_dict())
+            }
 
-        serializer = ag_serializers.AGTestCaseSerializer(data=data)
-        serializer.is_valid()
-        serializer.save()
-        loaded = ag_models.AutograderTestCaseBase.objects.get(
-            name=data['name'])
+            serializer = ag_serializers.AGTestCaseSerializer(data=data)
+            serializer.is_valid()
+            serializer.save()
+            loaded = ag_models.AutograderTestCaseBase.objects.get(
+                name=data['name'])
 
-        self.assertEqual(data['feedback_configuration'],
-                         loaded.feedback_configuration.to_dict())
+            self.assertEqual(data[fdbk_field],
+                             getattr(loaded, fdbk_field).to_dict())
 
-        updated_fdbk = copy.copy(data['feedback_configuration'])
-        updated_fdbk['return_code_fdbk'] = (
-            feedback_config.ReturnCodeFdbkLevel.no_feedback)
-        self.assertNotEqual(data['feedback_configuration'], updated_fdbk)
+            updated_fdbk = copy.copy(data[fdbk_field])
+            updated_fdbk['return_code_fdbk'] = (
+                feedback_config.ReturnCodeFdbkLevel.no_feedback)
+            self.assertNotEqual(data[fdbk_field], updated_fdbk)
 
-        serializer = ag_serializers.AGTestCaseSerializer(
-            loaded, data={'feedback_configuration': updated_fdbk},
-            partial=True)
-        serializer.is_valid()
-        serializer.save()
+            serializer = ag_serializers.AGTestCaseSerializer(
+                loaded, data={fdbk_field: updated_fdbk},
+                partial=True)
+            serializer.is_valid()
+            serializer.save()
 
-        loaded.refresh_from_db()
-        self.assertEqual(updated_fdbk, loaded.feedback_configuration.to_dict())
+            loaded.refresh_from_db()
+            self.assertEqual(updated_fdbk,
+                             getattr(loaded, fdbk_field).to_dict())
 
-    # TODO: Once more optional feedback configs are added, test them
+            loaded.delete()

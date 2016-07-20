@@ -90,19 +90,35 @@ class AutograderTestCaseResult(models.Model):
     def basic_score_cache_key(self):
         return 'result_basic_score{}'.format(self.pk)
 
-    def get_feedback(self):
-        return AutograderTestCaseResult._FeedbackCalculator(self)
+    def get_feedback(self, user=None, is_ultimate_submission=False,
+                     use_student_view=False):
+        return AutograderTestCaseResult._FeedbackCalculator(
+            self, user, is_ultimate_submission, use_student_view)
 
     class _FeedbackCalculator:
-        def __init__(self, result,
-                     ag_test_name_fdbk_override=None,
-                     return_code_fdbk_override=None,
-                     stdout_fdbk_override=None,
-                     stderr_fdbk_override=None,
-                     compilation_fdbk_override=None,
-                     valgrind_feedback_override=None):
+        def __init__(self, result, user, is_ultimate_submission,
+                     use_student_view):
+            # Note to self: staff viewers always get "staff viewer" fdbk, but
+            # only see "visible to staff viewer" results when listing results.
+            # "staff viewer" fdbk should default to max.
+
+            # If user is staff viewing their own result, max fdbk
+            # If user is staff viewing someone else's result,
+            #   use "staff viewer fdbk" unless "use_student_view" is true
+            # If user is student or use_student_view is true:
+            #   - If submission was past limit, use "past limit fdbk"
+            #   - If submission is ultimate and is_ultimate_submission is True,
+            #       use "ultimate fdbk"
+
             self._fdbk = result.test_case.feedback_configuration
             self._result = result
+
+        @property
+        def fdbk_config_dict(self):
+            '''
+            Returns the internal feedback configuration as a dictionary.
+            '''
+            return self._fdbk.to_dict()
 
         @property
         def ag_test_name(self):

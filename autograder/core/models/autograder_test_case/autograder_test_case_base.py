@@ -63,7 +63,16 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'deduction_for_valgrind_errors',
 
         'feedback_configuration',
-        'post_deadline_final_submission_feedback_configuration',
+        'visible_to_students',
+
+        'ultimate_submission_fdbk_conf',
+        'visible_in_ultimate_submission',
+
+        'past_submission_limit_fdbk_conf',
+        'visible_in_past_limit_submission',
+
+        'staff_viewer_fdbk_conf',
+        'visible_to_staff_viewer',
 
         'compiler',
         'compiler_flags',
@@ -105,7 +114,16 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'deduction_for_valgrind_errors',
 
         'feedback_configuration',
-        'post_deadline_final_submission_feedback_configuration',
+        'visible_to_students',
+
+        'ultimate_submission_fdbk_conf',
+        'visible_in_ultimate_submission',
+
+        'past_submission_limit_fdbk_conf',
+        'visible_in_past_limit_submission',
+
+        'staff_viewer_fdbk_conf',
+        'visible_to_staff_viewer',
 
         'points_for_compilation_success',
         'compiler',
@@ -315,37 +333,54 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             subtracted from the sum of return code and output points,
             and the result will NOT go below 0.''')
 
+    # FEEDBACK SETTINGS ------------------------------------------------
+
     feedback_configuration = models.OneToOneField(
-        FeedbackConfig, related_name='ag_test',
-        blank=True,  # A default value is given is not specified
+        FeedbackConfig, related_name='ag_test', blank=True, null=True,
         help_text='''Specifies how much information should be included
-            in serialized run results. If not specified on creation,
-            this field is initialized to a default-constructed
+            in serialized test case results in normal situations. If not
+            specified, this field is set to a default-constructed
             FeedbackConfig object.''')
+    visible_to_students = models.BooleanField(
+        default=False, blank=True,
+        help_text='''Indicates whether results for this test case should
+            be shown to students under normal circumstances.''')
 
-    post_deadline_final_submission_feedback_configuration = (
-        models.OneToOneField(
-            FeedbackConfig,
-            related_name='+',
-            default=None, null=True, blank=True,
-            help_text='''When this
-                field is not None, the feedback configuration that it
-                stores will override the value stored in
-                self.feedback_configuration for Submissions that meet
-                the following criteria:
-                    - The Submission is the most recent Submission for a
-                      given SubmissionGroup
-                    - The deadline for the project has passed. If the
-                      SubmissionGroup was granted an extension, then
-                      that deadline must have passed as well.'''
-        )
-    )
+    ultimate_submission_fdbk_conf = models.OneToOneField(
+        FeedbackConfig, related_name='+', blank=True, null=True,
+        help_text='''The feedback configuration to be used when a result
+            belongs to a group's ultimate submission. If not specified,
+            this field is set to
+            FeedbackConfig.create_ultimate_submission_default()''')
+    visible_in_ultimate_submission = models.BooleanField(
+        default=True, blank=True,
+        help_text='''Indicates whether results for this test case should
+            be shown to students when part of a group's ultimate
+            submission.''')
 
-    points_for_compilation_success = models.IntegerField(
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text='''The number of points to be awarded for the program
-            being tested compiling successfully.''')
+    past_submission_limit_fdbk_conf = models.OneToOneField(
+        FeedbackConfig, related_name='+', blank=True, null=True,
+        help_text='''The feedback configuration to be used when a result
+            belongs to a submission that is past the daily submission
+            limit. If not specified, this field is set to a default
+            initialized FeedbackConfig object.''')
+    visible_in_past_limit_submission = models.BooleanField(
+        default=False, blank=True,
+        help_text='''Indicates whether results for this test case should
+            be shown to students when part of a submission that is past
+            the daily limit.''')
+
+    staff_viewer_fdbk_conf = models.OneToOneField(
+        FeedbackConfig, related_name='+', blank=True, null=True,
+        help_text='''The feedback configuration to be used when a result
+            belongs to a submission being viewed by an outside staff
+            member. If not specified, this field is set to
+            FeedbackConfig.create_with_max_fdbk().''')
+    visible_to_staff_viewer = models.BooleanField(
+        default=True, blank=True,
+        help_text='''Indicates whether results for this test case should
+            be shown to staff members viewing another group's
+            submission.''')
 
     # COMPILED AUTOGRADER TEST CASE FIELDS -----------------------------
 
@@ -389,6 +424,12 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             produced by the compiler. This is the program that will be
             tested.''')
 
+    points_for_compilation_success = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='''The number of points to be awarded for the program
+            being tested compiling successfully.''')
+
     # INTERPRETED TEST CASE FIELDS -------------------------------------
 
     interpreter = ag_fields.ShortStringField(
@@ -422,11 +463,21 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
-            try:
-                self.feedback_configuration
-            except exceptions.ObjectDoesNotExist:
+            if self.feedback_configuration is None:
                 self.feedback_configuration = (
                     FeedbackConfig.objects.validate_and_create())
+
+            if self.ultimate_submission_fdbk_conf is None:
+                self.ultimate_submission_fdbk_conf = (
+                    FeedbackConfig.create_ultimate_submission_default())
+
+            if self.past_submission_limit_fdbk_conf is None:
+                self.past_submission_limit_fdbk_conf = (
+                    FeedbackConfig.objects.validate_and_create())
+
+            if self.staff_viewer_fdbk_conf is None:
+                self.staff_viewer_fdbk_conf = (
+                    FeedbackConfig.create_with_max_fdbk())
 
             super().save(*args, **kwargs)
 
@@ -443,17 +494,15 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     def to_dict(self, **kwargs):
         result = super().to_dict(**kwargs)
-        if 'feedback_configuration' in result:
-            result['feedback_configuration'] = (
-                self.feedback_configuration.to_dict())
-
-        if 'post_deadline_final_submission_feedback_configuration' in result:
-            post_fdbk = self.post_deadline_final_submission_feedback_configuration
-            result['post_deadline_final_submission_feedback_configuration'] = (
-                None if post_fdbk is None else
-                self.post_deadline_final_submission_feedback_configuration.to_dict())
+        for fdbk_field in AutograderTestCaseBase.FBDK_FIELD_NAMES:
+            if fdbk_field in result:
+                result[fdbk_field] = getattr(self, fdbk_field).to_dict()
 
         return result
+
+    FBDK_FIELD_NAMES = [
+        'feedback_configuration', 'ultimate_submission_fdbk_conf',
+        'past_submission_limit_fdbk_conf', 'staff_viewer_fdbk_conf']
 
     # -------------------------------------------------------------------------
 

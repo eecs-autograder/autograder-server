@@ -106,6 +106,37 @@ class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(fdbk_lvls.PointsFdbkLevel.show_breakdown,
                          fdbk_conf.points_fdbk)
 
+    def test_create_ultimate_submission_default(self):
+        fdbk_conf = ag_models.FeedbackConfig.create_ultimate_submission_default()
+        fdbk_conf.refresh_from_db()
+
+        self.assertEqual(fdbk_lvls.AGTestNameFdbkLevel.show_real_name,
+                         fdbk_conf.ag_test_name_fdbk)
+
+        self.assertEqual(
+            fdbk_lvls.ReturnCodeFdbkLevel.correct_or_incorrect_only,
+            fdbk_conf.return_code_fdbk)
+        self.assertFalse(fdbk_conf.show_return_code)
+
+        self.assertEqual(
+            fdbk_lvls.StdoutFdbkLevel.correct_or_incorrect_only,
+            fdbk_conf.stdout_fdbk)
+        self.assertFalse(fdbk_conf.show_stdout_content)
+
+        self.assertEqual(
+            fdbk_lvls.StderrFdbkLevel.correct_or_incorrect_only,
+            fdbk_conf.stderr_fdbk)
+        self.assertFalse(fdbk_conf.show_stderr_content)
+
+        self.assertEqual(fdbk_lvls.CompilationFdbkLevel.success_or_failure_only,
+                         fdbk_conf.compilation_fdbk)
+
+        self.assertEqual(fdbk_lvls.ValgrindFdbkLevel.errors_or_no_errors_only,
+                         fdbk_conf.valgrind_fdbk)
+
+        self.assertEqual(fdbk_lvls.PointsFdbkLevel.show_breakdown,
+                         fdbk_conf.points_fdbk)
+
     def test_exception_invalid_values(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.FeedbackConfig.objects.validate_and_create(

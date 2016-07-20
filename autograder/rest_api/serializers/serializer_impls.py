@@ -33,10 +33,11 @@ class AGTestCaseSerializer(AGModelSerializer):
             return super().__init__(*args, **kwargs)
 
         data = copy.copy(kwargs.pop('data'))
-        if 'feedback_configuration' in data:
-            data['feedback_configuration'] = (
-                ag_models.FeedbackConfig.objects.validate_and_create(
-                    **data['feedback_configuration']))
+        for fdbk_field in ag_models.AutograderTestCaseBase.FBDK_FIELD_NAMES:
+            if fdbk_field in data:
+                data[fdbk_field] = (
+                    ag_models.FeedbackConfig.objects.validate_and_create(
+                        **data[fdbk_field]))
 
         return super().__init__(*args, data=data, **kwargs)
 

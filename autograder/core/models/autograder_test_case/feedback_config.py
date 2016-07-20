@@ -138,6 +138,26 @@ class FeedbackConfig(AutograderModel):
             points_fdbk=PointsFdbkLevel.max_lvl,
         )
 
+    @classmethod
+    def create_ultimate_submission_default(class_):
+        '''
+        Returns a feedback configuration that will show the points
+        awarded for each test criterion without showing details (such as
+        an output comparison) about why those criteria were not met.
+        '''
+        return class_.objects.validate_and_create(
+            ag_test_name_fdbk=AGTestNameFdbkLevel.show_real_name,
+            return_code_fdbk=ReturnCodeFdbkLevel.correct_or_incorrect_only,
+            show_return_code=False,
+            stdout_fdbk=StdoutFdbkLevel.correct_or_incorrect_only,
+            show_stdout_content=False,
+            stderr_fdbk=StderrFdbkLevel.correct_or_incorrect_only,
+            show_stderr_content=False,
+            compilation_fdbk=CompilationFdbkLevel.success_or_failure_only,
+            valgrind_fdbk=ValgrindFdbkLevel.errors_or_no_errors_only,
+            points_fdbk=PointsFdbkLevel.show_breakdown,
+        )
+
     ag_test_name_fdbk = ag_fields.ShortStringField(
         choices=zip(AGTestNameFdbkLevel.values, AGTestNameFdbkLevel.values),
         default=AGTestNameFdbkLevel.show_real_name)
