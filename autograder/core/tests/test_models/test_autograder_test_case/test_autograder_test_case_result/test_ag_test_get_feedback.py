@@ -77,6 +77,27 @@ class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
 
             result.test_case.delete()
 
+    def test_staf_get_other_with_student_view(self):
+        for group in self.all_groups(self.visible_public_project):
+            for user in self.admin, self.staff:
+                if group.members.filter(pk=user.pk).exists():
+                    continue
+
+                submission = self.non_ultimate_submission(group)
+                result = obj_ut.build_compiled_ag_test_result(
+                    submission=submission,
+                    ag_test_kwargs={'staff_viewer_fdbk_conf': self.fdbk})
+                ag_test = result.test_case
+
+                actual_fdbk = result.get_feedback(
+                    user, student_view=True).to_dict()
+
+                # Making sure staff gets student view (normal) feedback
+                # instead of staff viewer
+                self.assertEqual(result.get_feedback().to_dict(), actual_fdbk)
+
+                ag_test.delete()
+
 
 class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
                                             gen_data.Submission,

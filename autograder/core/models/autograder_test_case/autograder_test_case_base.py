@@ -3,7 +3,6 @@ import os
 import itertools
 import uuid
 
-from django.core import exceptions
 from django.core.cache import cache
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, RegexValidator)
