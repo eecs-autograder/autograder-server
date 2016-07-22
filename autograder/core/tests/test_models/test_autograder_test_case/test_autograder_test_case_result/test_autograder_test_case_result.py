@@ -19,7 +19,7 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
     def setUp(self):
         super().setUp()
 
-        self.closing_time = timezone.now() + datetime.timedelta(hours=-1)
+        self.closing_time = timezone.now() - datetime.timedelta(hours=1)
 
         group = obj_ut.build_submission_group(
             project_kwargs={'closing_time': self.closing_time})
@@ -41,8 +41,6 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
 
         result.refresh_from_db()
 
-        self.assertEqual(result, result)
-
         self.assertEqual(result.test_case, self.test_case)
         self.assertIsNone(result.return_code)
         self.assertEqual(result.standard_output, '')
@@ -53,6 +51,47 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
         self.assertIsNone(result.compilation_return_code)
         self.assertEqual(result.compilation_standard_output, '')
         self.assertEqual(result.compilation_standard_error_output, '')
+
+    def test_get_feedback_default_to_dict_fields(self):
+        expected = [
+            'ag_test_name',
+            'return_code_correct',
+            'expected_return_code',
+            'actual_return_code',
+            'return_code_points',
+
+            'stdout_correct',
+            'stdout_content',
+            'stdout_diff',
+            'stdout_points',
+
+            'stderr_correct',
+            'stderr_content',
+            'stderr_diff',
+            'stderr_points',
+
+            'compilation_succeeded',
+            'compilation_stdout',
+            'compilation_stderr',
+            'compilation_points',
+
+            'valgrind_errors_reported',
+            'valgrind_output',
+            'valgrind_points_deducted',
+        ]
+
+        self.assertCountEqual(
+            expected,
+            (ag_models.AutograderTestCaseResult
+                      .FeedbackCalculator.get_default_to_dict_fields()))
+
+    def test_to_dict_pk_excluded(self):
+        result = ag_models.AutograderTestCaseResult.objects.create(
+            test_case=self.test_case,
+            submission=self.submission)
+
+        fdbk = result.get_feedback()
+        self.assertNotIn('pk', fdbk.to_dict())
 
 
 class TotalScoreTestCase(TemporaryFilesystemTestCase):

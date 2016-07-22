@@ -2,8 +2,10 @@ import difflib
 import uuid
 
 from django.core.cache import cache
-from django.utils import timezone
 from django.db import models
+from django.utils import timezone
+
+from autograder.core.models.ag_model_base import ToDictMixin
 
 from . import feedback_config as fdbk_conf
 
@@ -90,35 +92,66 @@ class AutograderTestCaseResult(models.Model):
     def basic_score_cache_key(self):
         return 'result_basic_score{}'.format(self.pk)
 
-    def get_feedback(self, user=None, is_ultimate_submission=False,
-                     use_student_view=False):
-        return AutograderTestCaseResult._FeedbackCalculator(
-            self, user, is_ultimate_submission, use_student_view)
+    def get_feedback(self, user_requesting_data=None):
+        '''
+        Returns a FeedbackCalculator object attached to this result and
+        with the given user specified to determine which feedback
+        configuration to use.
+        If user requesting data is None, the normal feedback
+        configuration will be used.
 
-    class _FeedbackCalculator:
-        def __init__(self, result, user, is_ultimate_submission,
-                     use_student_view):
-            # Note to self: staff viewers always get "staff viewer" fdbk, but
-            # only see "visible to staff viewer" results when listing results.
-            # "staff viewer" fdbk should default to max.
+        Prefer using this method over directly instantiating
+        FeedbackCalculator instances.
+        '''
+        return AutograderTestCaseResult.FeedbackCalculator(
+            self, user_requesting_data)
 
-            # If user is staff viewing their own result, max fdbk
-            # If user is staff viewing someone else's result,
-            #   use "staff viewer fdbk" unless "use_student_view" is true
-            # If user is student or use_student_view is true:
-            #   - If submission was past limit, use "past limit fdbk"
-            #   - If submission is ultimate and is_ultimate_submission is True,
-            #       use "ultimate fdbk"
-
+    class FeedbackCalculator(ToDictMixin):
+        def __init__(self, result, user_requesting_data):
+            '''
+            Initializes this object with the given result and user. The
+            appropriate feedback configuration to use is determined
+            based on the status of the user as well as the state of the
+            attached test case and project.
+            '''
             self._fdbk = result.test_case.feedback_configuration
             self._result = result
 
+        _DEFAULT_TO_DICT_FIELDS = frozenset([
+            'ag_test_name',
+
+            'return_code_correct',
+            'expected_return_code',
+            'actual_return_code',
+            'return_code_points',
+
+            'stdout_correct',
+            'stdout_content',
+            'stdout_diff',
+            'stdout_points',
+
+            'stderr_correct',
+            'stderr_content',
+            'stderr_diff',
+            'stderr_points',
+
+            'compilation_succeeded',
+            'compilation_stdout',
+            'compilation_stderr',
+            'compilation_points',
+
+            'valgrind_errors_reported',
+            'valgrind_output',
+            'valgrind_points_deducted',
+        ])
+
+        @classmethod
+        def get_default_to_dict_fields(class_):
+            return class_._DEFAULT_TO_DICT_FIELDS
+
         @property
-        def fdbk_config_dict(self):
-            '''
-            Returns the internal feedback configuration as a dictionary.
-            '''
-            return self._fdbk.to_dict()
+        def _include_pk(self):
+            return False
 
         @property
         def ag_test_name(self):

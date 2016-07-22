@@ -19,7 +19,7 @@ class _AutograderModelManagerMixin:
 _INVALID_FIELD_NAMES_KEY = 'invalid_field_names'
 
 
-class _AutograderModelMixin:
+class ToDictMixin:
     @classmethod
     def get_default_to_dict_fields(class_):
         """
@@ -34,52 +34,8 @@ class _AutograderModelMixin:
         In order to include "-to-many" relationships, you must override
         to_dict() to handle them correctly.
         """
-        raise NotImplementedError('Subclasses should override this method')
-
-    @classmethod
-    def is_read_only(class_):
-        """
-        If this method returns True, then model objects of that type
-        should be considered read-only. Effectively, this makes
-        Model.get_editable_fields() return an empty list.
-        """
-        return False
-
-    @classmethod
-    def get_editable_fields(class_):
-        """
-        Returns a collection of the names of database fields that can be
-        edited on this model type using model.validate_and_update()
-        """
-        if class_.is_read_only():
-            return []
-
         raise NotImplementedError(
-            "Subclasses that aren't read-only should override this method")
-
-    def validate_and_update(self, **kwargs):
-        """
-        Updates the values of the fields specified as
-        keyword arguments, runs model validation, and saves the
-        model.
-        Prefer using this method over setting values manually
-        and calling full_clean() because this method can perform
-        extra validation that depends on the old and new values of
-        fields.
-        Raises ValidationError if any specified field doesn't exist or
-        is not editable.
-        """
-        for field_name, val in kwargs.items():
-            if not hasattr(self, field_name):
-                raise exceptions.ValidationError(
-                    {_INVALID_FIELD_NAMES_KEY: [field_name]})
-            if field_name not in self.get_editable_fields():
-                raise exceptions.ValidationError(
-                    {'non_editable_fields': [field_name]})
-            setattr(self, field_name, val)
-
-        self.full_clean()
-        self.save()
+            'Derived classes should override this method')
 
     def to_dict(self, include_fields=None, exclude_fields=None):
         """
@@ -125,6 +81,11 @@ class _AutograderModelMixin:
 
         for field_name in to_include:
             result[field_name] = getattr(self, field_name)
+
+            # If this isn't a Django Model, skip the field logic
+            if not hasattr(self, '_meta'):
+                continue
+
             try:
                 field = self._meta.get_field(field_name)
                 if field.many_to_one or field.one_to_one:
@@ -148,6 +109,54 @@ class _AutograderModelMixin:
         representation.
         '''
         return True
+
+
+class _AutograderModelMixin(ToDictMixin):
+
+    @classmethod
+    def is_read_only(class_):
+        """
+        If this method returns True, then model objects of that type
+        should be considered read-only. Effectively, this makes
+        Model.get_editable_fields() return an empty list.
+        """
+        return False
+
+    @classmethod
+    def get_editable_fields(class_):
+        """
+        Returns a collection of the names of database fields that can be
+        edited on this model type using model.validate_and_update()
+        """
+        if class_.is_read_only():
+            return []
+
+        raise NotImplementedError(
+            "Derived classes that aren't read-only should override this method")
+
+    def validate_and_update(self, **kwargs):
+        """
+        Updates the values of the fields specified as
+        keyword arguments, runs model validation, and saves the
+        model.
+        Prefer using this method over setting values manually
+        and calling full_clean() because this method can perform
+        extra validation that depends on the old and new values of
+        fields.
+        Raises ValidationError if any specified field doesn't exist or
+        is not editable.
+        """
+        for field_name, val in kwargs.items():
+            if not hasattr(self, field_name):
+                raise exceptions.ValidationError(
+                    {_INVALID_FIELD_NAMES_KEY: [field_name]})
+            if field_name not in self.get_editable_fields():
+                raise exceptions.ValidationError(
+                    {'non_editable_fields': [field_name]})
+            setattr(self, field_name, val)
+
+        self.full_clean()
+        self.save()
 
 
 class AutograderModelManager(_AutograderModelManagerMixin, models.Manager):

@@ -29,15 +29,7 @@ class _Shared:
         self.fdbk = ag_models.FeedbackConfig.objects.validate_and_create()
 
     def _random_fdbk(self):
-        return ag_models.FeedbackConfig.objects.validate_and_create(
-            ag_test_name_fdbk=random.choice(AGTestNameFdbkLevel.values),
-            return_code_fdbk=random.choice(ReturnCodeFdbkLevel.values),
-            stdout_fdbk=random.choice(StdoutFdbkLevel.values),
-            stderr_fdbk=random.choice(StderrFdbkLevel.values),
-            compilation_fdbk=random.choice(CompilationFdbkLevel.values),
-            valgrind_fdbk=random.choice(ValgrindFdbkLevel.values),
-            points_fdbk=random.choice(PointsFdbkLevel.values),
-        )
+        return obj_ut.random_fdbk()
 
 
 class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
@@ -94,7 +86,6 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
 
         self.assertEqual(FeedbackConfig.create_with_max_fdbk().to_dict(),
                          new_test_case.staff_viewer_fdbk_conf.to_dict())
-        self.assertTrue(new_test_case.visible_to_staff_viewer)
 
     def test_valid_initialization_custom_values(self):
         vals = {
@@ -134,7 +125,6 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
             'visible_to_students': random.choice([True, False]),
             'visible_in_ultimate_submission': random.choice([True, False]),
             'visible_in_past_limit_submission': random.choice([True, False]),
-            'visible_to_staff_viewer': random.choice([True, False]),
         }
 
         new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
@@ -183,7 +173,6 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
             'visible_in_past_limit_submission',
 
             'staff_viewer_fdbk_conf',
-            'visible_to_staff_viewer',
 
             'compiler',
             'compiler_flags',
@@ -262,7 +251,6 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
             'visible_in_past_limit_submission',
 
             'staff_viewer_fdbk_conf',
-            'visible_to_staff_viewer',
 
             'compiler',
             'compiler_flags',

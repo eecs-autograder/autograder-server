@@ -5,7 +5,10 @@ import base64
 from django.contrib.auth.models import User
 
 import autograder.core.models as ag_models
-from autograder.core.models.autograder_test_case import feedback_config
+from autograder.core.models.autograder_test_case.feedback_config import (
+    FeedbackConfig, AGTestNameFdbkLevel, ReturnCodeFdbkLevel,
+    StdoutFdbkLevel, StderrFdbkLevel, CompilationFdbkLevel,
+    ValgrindFdbkLevel, PointsFdbkLevel)
 
 
 def get_unique_id():
@@ -97,10 +100,11 @@ build_compiled_ag_test.points_with_all_used = 14
 
 def build_compiled_ag_test_result(ag_test_with_points=True,
                                   all_points_used=True,
+                                  ag_test_kwargs={},
                                   **result_kwargs):
     if 'test_case' not in result_kwargs:
         result_kwargs['test_case'] = build_compiled_ag_test(
-            with_points=ag_test_with_points)
+            with_points=ag_test_with_points, **ag_test_kwargs)
 
     if 'submission' not in result_kwargs:
         result_kwargs['submission'] = build_submission()
@@ -164,13 +168,12 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
         raise ValueError('num_submissions must be at least 1')
 
     if test_fdbk is None:
-        test_fdbk = feedback_config.FeedbackConfig.create_with_max_fdbk()
+        test_fdbk = FeedbackConfig.create_with_max_fdbk()
 
     project = build_project()
     tests = []
     for i in range(num_tests):
-        fdbk = feedback_config.FeedbackConfig.objects.validate_and_create(
-            **test_fdbk.to_dict())
+        fdbk = FeedbackConfig.objects.validate_and_create(**test_fdbk.to_dict())
         test = build_compiled_ag_test(
             with_points=True, project=project, feedback_configuration=fdbk)
         tests.append(test)
@@ -193,6 +196,7 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
         if num_submissions < 2:
             raise Exception('In order to make a best submission, '
                             'num_submissions must be at least 2')
+        # Choose a submission to be the best that is NOT the most recent
         best = random.choice(submissions[:-1])
         result_to_update = best.results.first()
         result_to_update.valgrind_return_code = 0
@@ -207,3 +211,25 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
         return submissions, best, tests
 
     return submissions, tests
+
+
+def random_fdbk():
+    fdbk = ag_models.FeedbackConfig.objects.validate_and_create(
+        ag_test_name_fdbk=random.choice(AGTestNameFdbkLevel.values),
+        return_code_fdbk=random.choice(ReturnCodeFdbkLevel.values),
+        stdout_fdbk=random.choice(StdoutFdbkLevel.values),
+        stderr_fdbk=random.choice(StderrFdbkLevel.values),
+        compilation_fdbk=random.choice(CompilationFdbkLevel.values),
+        valgrind_fdbk=random.choice(ValgrindFdbkLevel.values),
+        points_fdbk=random.choice(PointsFdbkLevel.values),
+    )
+
+    as_dict = fdbk.to_dict()
+    norm_dict = ag_models.FeedbackConfig().to_dict()
+    max_dict = ag_models.FeedbackConfig.create_with_max_fdbk().to_dict()
+    ult_dict = (ag_models.FeedbackConfig
+                         .create_ultimate_submission_default().to_dict())
+    if as_dict == norm_dict or as_dict == max_dict or as_dict == ult_dict:
+        return random_fdbk()
+
+    return fdbk

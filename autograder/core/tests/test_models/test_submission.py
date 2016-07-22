@@ -367,6 +367,12 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
         for submission in submissions:
             self.assertEqual(expected_points, submission.basic_score)
 
+    def test_basic_score_no_results(self):
+        group = obj_ut.build_submission_group()
+        submission = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=group)
+        self.assertEqual(0, submission.basic_score)
+
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 

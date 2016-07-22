@@ -72,7 +72,6 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'visible_in_past_limit_submission',
 
         'staff_viewer_fdbk_conf',
-        'visible_to_staff_viewer',
 
         'compiler',
         'compiler_flags',
@@ -123,7 +122,6 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'visible_in_past_limit_submission',
 
         'staff_viewer_fdbk_conf',
-        'visible_to_staff_viewer',
 
         'points_for_compilation_success',
         'compiler',
@@ -376,11 +374,6 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             belongs to a submission being viewed by an outside staff
             member. If not specified, this field is set to
             FeedbackConfig.create_with_max_fdbk().''')
-    visible_to_staff_viewer = models.BooleanField(
-        default=True, blank=True,
-        help_text='''Indicates whether results for this test case should
-            be shown to staff members viewing another group's
-            submission.''')
 
     # COMPILED AUTOGRADER TEST CASE FIELDS -----------------------------
 
