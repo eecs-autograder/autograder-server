@@ -100,18 +100,26 @@ build_compiled_ag_test.points_with_all_used = 14
 
 def build_compiled_ag_test_result(ag_test_with_points=True,
                                   all_points_used=True,
-                                  ag_test_kwargs={},
+                                  ag_test_kwargs=None,
                                   **result_kwargs):
+    if ag_test_kwargs is None:
+        ag_test_kwargs = {}
+
     if 'project' not in ag_test_kwargs:
-        ag_test_kwargs['project'] = (
-            result_kwargs['submission'].submission_group.project)
+        if 'submission' in result_kwargs:
+            ag_test_kwargs['project'] = (
+                result_kwargs['submission'].submission_group.project)
+        else:
+            ag_test_kwargs['project'] = build_project()
+
+    if 'submission' not in result_kwargs:
+        group = build_submission_group(
+            group_kwargs={'project': ag_test_kwargs['project']})
+        result_kwargs['submission'] = build_submission(submission_group=group)
 
     if 'test_case' not in result_kwargs:
         result_kwargs['test_case'] = build_compiled_ag_test(
             with_points=ag_test_with_points, **ag_test_kwargs)
-
-    if 'submission' not in result_kwargs:
-        result_kwargs['submission'] = build_submission()
 
     ag_test = result_kwargs['test_case']
     if all_points_used:

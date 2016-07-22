@@ -1,7 +1,5 @@
 import copy
 
-from django.http import QueryDict
-
 import autograder.core.models as ag_models
 
 from .ag_model_serializer import AGModelSerializer
@@ -43,6 +41,29 @@ class AGTestCaseSerializer(AGModelSerializer):
 
     def validate_and_create(self, data):
         return ag_models.AutograderTestCaseFactory.validate_and_create(**data)
+
+
+class AGTestResultSerializer(AGModelSerializer):
+    def save(self, *args, **kwargs):
+        raise NotImplementedError(
+            'Creating or updating AG test results is not supported')
+
+    def create(self, validated_data):
+        raise NotImplementedError('Updating AG test results is not supported')
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError('Creating AG test results is not supported')
+
+    def to_representation(self, obj):
+        if not self.context:
+            obj = obj.get_feedback()
+            return super().to_representation(obj)
+
+        request = self.context['request']
+        student_view = request.query_params.get('student_view', False)
+        obj = obj.get_feedback(user_requesting_data=request.user,
+                               student_view=student_view)
+        return super().to_representation(obj)
 
 
 class SubmissionGroupSerializer(AGModelSerializer):

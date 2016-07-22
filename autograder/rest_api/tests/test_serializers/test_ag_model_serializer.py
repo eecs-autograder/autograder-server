@@ -37,9 +37,9 @@ class AGModelSerializerTestCase(SerializerTestCase):
         self.do_include_exclude_fields_test(include_fields=['the_answer'],
                                             exclude_fields=['pos_num_val'])
 
-    def do_include_exclude_fields_test(self,
-                                       include_fields=None,
-                                       exclude_fields=None):
+    def do_include_exclude_fields_from_request_test(self,
+                                                    include_fields=None,
+                                                    exclude_fields=None):
         data = {}
         if include_fields is not None:
             data['include_fields'] = include_fields
@@ -47,7 +47,7 @@ class AGModelSerializerTestCase(SerializerTestCase):
             data['exclude_fields'] = exclude_fields
 
         get_request = request.Request(
-            APIRequestFactory().get('spam', data=data))
+            APIRequestFactory().get('path', data=data))
         serializer = _DummyAGModelSerialier(
             self.ag_model, context={'request': get_request})
 

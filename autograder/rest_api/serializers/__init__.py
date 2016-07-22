@@ -4,6 +4,7 @@ from .serializer_impls import (
     UploadedFileSerializer,
     ExpectedStudentFilePatternSerializer,
     AGTestCaseSerializer,
+    AGTestResultSerializer,
     SubmissionGroupSerializer,
     SubmissionGroupInvitationSerializer,
     SubmissionSerializer,

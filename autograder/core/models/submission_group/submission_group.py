@@ -177,5 +177,5 @@ class SubmissionGroup(ag_model_base.AutograderModel):
                 group_to_ignore=self,
                 check_group_size_limits=check_group_size_limits)
 
-            self.members.set(members)
+            self.members.set(members, clear=True)
             self.full_clean()
