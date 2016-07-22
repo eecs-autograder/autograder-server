@@ -1,12 +1,7 @@
-import datetime
-
 from django.utils import timezone
 
-import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case.feedback_config import (
-    FeedbackConfig, ReturnCodeFdbkLevel, StdoutFdbkLevel, StderrFdbkLevel,
-    CompilationFdbkLevel, ValgrindFdbkLevel)
-# import autograder.core.shared.utilities as ut  # For benchmarks
+    FeedbackConfig)
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -20,7 +15,7 @@ class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
     def setUp(self):
         super().setUp()
         self.fdbk = obj_ut.random_fdbk()
-        self.maxDiff = None
+        # self.maxDiff = None
 
     def test_staff_get_own_max_fdbk(self):
         for group in self.staff_groups(self.project):
@@ -70,7 +65,17 @@ class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
                 ag_test.delete()
 
     def test_staff_get_own_with_student_view(self):
-        self.fail()
+        for group in self.staff_groups(self.project):
+            submission = self.non_ultimate_submission(group)
+            result = obj_ut.build_compiled_ag_test_result(
+                submission=submission,
+                ag_test_kwargs={'feedback_configuration': self.fdbk})
+
+            actual_fdbk = result.get_feedback(
+                group.members.first(), student_view=True).to_dict()
+            self.assertEqual(result.get_feedback().to_dict(), actual_fdbk)
+
+            result.test_case.delete()
 
 
 class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
@@ -79,7 +84,7 @@ class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
     def setUp(self):
         super().setUp()
         self.fdbk = obj_ut.random_fdbk()
-        self.maxDiff = None
+        # self.maxDiff = None
 
     def test_admin_or_staff_get_own_max_fdbk(self):
         for group in self.staff_groups(self.project):
@@ -178,7 +183,28 @@ class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
                 ag_test.delete()
 
     def test_staff_get_own_with_student_view(self):
-        self.fail()
+        submission_funcs = [self.best_ultimate_submission,
+                            self.most_recent_ultimate_submission,
+                            self.past_limit_most_recent_ultimate_submission,
+                            self.past_limit_best_ultimate_submission]
+        for group in self.staff_groups(self.project):
+            for submission_func in submission_funcs:
+                submission = submission_func(group)
+                self.assertEqual(submission, group.ultimate_submission)
+                result = obj_ut.build_compiled_ag_test_result(
+                    submission=submission,
+                    ag_test_kwargs={
+                        'ultimate_submission_fdbk_conf': self.fdbk})
+                ag_test = result.test_case
+
+                actual_fdbk = result.get_feedback(
+                    group.members.first(), student_view=True).to_dict()
+
+                ag_test.validate_and_update(feedback_configuration=self.fdbk)
+                self.assertEqual(result.get_feedback().to_dict(), actual_fdbk)
+
+                ag_test.delete()
+                submission.delete()
 
 
 class GetFeedbackPastLimitSubmissionTestCase(gen_data.Project,
@@ -262,4 +288,17 @@ class GetFeedbackPastLimitSubmissionTestCase(gen_data.Project,
             ag_test.delete()
 
     def test_staff_get_other_staff_viewer_fdbk(self):
-        self.fail()
+        for group in self.staff_groups(self.project):
+            submission = self.past_limit_most_recent_submission(group)
+            self.assertTrue(submission.is_past_daily_limit)
+            result = obj_ut.build_compiled_ag_test_result(
+                submission=submission,
+                ag_test_kwargs={'past_submission_limit_fdbk_conf': self.fdbk})
+            ag_test = result.test_case
+
+            actual_fdbk = result.get_feedback(
+                group.members.first(), student_view=True).to_dict()
+            ag_test.validate_and_update(feedback_configuration=self.fdbk)
+            self.assertEqual(result.get_feedback().to_dict(), actual_fdbk)
+
+            ag_test.delete()

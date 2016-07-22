@@ -92,22 +92,24 @@ class AutograderTestCaseResult(models.Model):
     def basic_score_cache_key(self):
         return 'result_basic_score{}'.format(self.pk)
 
-    def get_feedback(self, user_requesting_data=None):
+    def get_feedback(self, user_requesting_data=None, student_view=False):
         '''
         Returns a FeedbackCalculator object attached to this result and
         with the given user specified to determine which feedback
         configuration to use.
         If user requesting data is None, the normal feedback
         configuration will be used.
+        If student_view is True, then whether the given user is course
+        staff will not be considered.
 
         Prefer using this method over directly instantiating
         FeedbackCalculator instances.
         '''
         return AutograderTestCaseResult.FeedbackCalculator(
-            self, user_requesting_data)
+            self, user_requesting_data, student_view)
 
     class FeedbackCalculator(ToDictMixin):
-        def __init__(self, result, user_requesting_data):
+        def __init__(self, result, user_requesting_data, student_view):
             '''
             Initializes this object with the given result and user. The
             appropriate feedback configuration to use is determined
@@ -115,10 +117,10 @@ class AutograderTestCaseResult(models.Model):
             attached test case and project.
             '''
             self._fdbk = self._determine_fdbk_conf(
-                result, user_requesting_data)
+                result, user_requesting_data, student_view)
             self._result = result
 
-        def _determine_fdbk_conf(self, result, user):
+        def _determine_fdbk_conf(self, result, user, student_view):
             if user is None:
                 return result.test_case.feedback_configuration
 
@@ -126,7 +128,7 @@ class AutograderTestCaseResult(models.Model):
             project = test_case.project
             course = project.course
             group = result.submission.submission_group
-            if course.is_course_staff(user):
+            if not student_view and course.is_course_staff(user):
                 if group.members.filter(pk=user.pk).exists():
                     return fdbk_conf.FeedbackConfig.create_with_max_fdbk()
 
