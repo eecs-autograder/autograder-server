@@ -102,6 +102,10 @@ def build_compiled_ag_test_result(ag_test_with_points=True,
                                   all_points_used=True,
                                   ag_test_kwargs={},
                                   **result_kwargs):
+    if 'project' not in ag_test_kwargs:
+        ag_test_kwargs['project'] = (
+            result_kwargs['submission'].submission_group.project)
+
     if 'test_case' not in result_kwargs:
         result_kwargs['test_case'] = build_compiled_ag_test(
             with_points=ag_test_with_points, **ag_test_kwargs)
@@ -215,7 +219,9 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
 
 def random_fdbk():
     fdbk = ag_models.FeedbackConfig.objects.validate_and_create(
-        ag_test_name_fdbk=random.choice(AGTestNameFdbkLevel.values),
+        ag_test_name_fdbk=random.choice(
+            [AGTestNameFdbkLevel.show_real_name,
+             AGTestNameFdbkLevel.deterministically_obfuscate_name]),
         return_code_fdbk=random.choice(ReturnCodeFdbkLevel.values),
         stdout_fdbk=random.choice(StdoutFdbkLevel.values),
         stderr_fdbk=random.choice(StderrFdbkLevel.values),

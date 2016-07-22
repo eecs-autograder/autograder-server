@@ -114,8 +114,35 @@ class AutograderTestCaseResult(models.Model):
             based on the status of the user as well as the state of the
             attached test case and project.
             '''
-            self._fdbk = result.test_case.feedback_configuration
+            self._fdbk = self._determine_fdbk_conf(
+                result, user_requesting_data)
             self._result = result
+
+        def _determine_fdbk_conf(self, result, user):
+            if user is None:
+                return result.test_case.feedback_configuration
+
+            test_case = result.test_case
+            project = test_case.project
+            course = project.course
+            group = result.submission.submission_group
+            if course.is_course_staff(user):
+                if group.members.filter(pk=user.pk).exists():
+                    return fdbk_conf.FeedbackConfig.create_with_max_fdbk()
+
+                return test_case.staff_viewer_fdbk_conf
+
+            deadline_past = (project.closing_time is None or
+                             timezone.now() > project.closing_time)
+            if (result.submission == group.ultimate_submission and
+                    not project.hide_ultimate_submission_fdbk and
+                    deadline_past):
+                return test_case.ultimate_submission_fdbk_conf
+
+            if result.submission.is_past_daily_limit:
+                return test_case.past_submission_limit_fdbk_conf
+
+            return result.test_case.feedback_configuration
 
         _DEFAULT_TO_DICT_FIELDS = frozenset([
             'ag_test_name',
@@ -358,14 +385,11 @@ class AutograderTestCaseResult(models.Model):
                     else self._result.test_case.points_for_compilation_success)
 
         def _no_compiler_fdbk(self):
-            compiler_fdbk = (
-                self._result.test_case.feedback_configuration.compilation_fdbk)
-            return compiler_fdbk == fdbk_conf.CompilationFdbkLevel.no_feedback
+            return (self._fdbk.compilation_fdbk ==
+                    fdbk_conf.CompilationFdbkLevel.no_feedback)
 
         def _show_compiler_output(self):
-            compiler_fdbk = (
-                self._result.test_case.feedback_configuration.compilation_fdbk)
-            return (compiler_fdbk ==
+            return (self._fdbk.compilation_fdbk ==
                     fdbk_conf.CompilationFdbkLevel.show_compiler_output)
 
         # ---------------------------------------------------------------------
@@ -397,14 +421,11 @@ class AutograderTestCaseResult(models.Model):
                     else self._result.test_case.deduction_for_valgrind_errors)
 
         def _no_valgrind_fdbk(self):
-            valgrind_fdbk = (
-                self._result.test_case.feedback_configuration.valgrind_fdbk)
-            return valgrind_fdbk == fdbk_conf.ValgrindFdbkLevel.no_feedback
+            return (self._fdbk.valgrind_fdbk ==
+                    fdbk_conf.ValgrindFdbkLevel.no_feedback)
 
         def _show_valgrind_output(self):
-            valgrind_fdbk = (
-                self._result.test_case.feedback_configuration.valgrind_fdbk)
-            return (valgrind_fdbk ==
+            return (self._fdbk.valgrind_fdbk ==
                     fdbk_conf.ValgrindFdbkLevel.show_valgrind_output)
 
         # ---------------------------------------------------------------------

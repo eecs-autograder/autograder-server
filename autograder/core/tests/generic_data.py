@@ -2,6 +2,7 @@ import copy
 import random
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 import autograder.core.models as ag_models
 
@@ -276,7 +277,9 @@ class Submission(Group):
     def most_recent_ultimate_submission(self, group):
         group.project.validate_and_update(
             ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent))
+                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent),
+            hide_ultimate_submission_fdbk=False,
+        )
         return self.most_recent_submission(group)
 
     def most_recent_submission(self, group, num_submissions=3):
@@ -288,7 +291,9 @@ class Submission(Group):
     def best_ultimate_submission(self, group):
         group.project.validate_and_update(
             ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score))
+                ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score),
+            hide_ultimate_submission_fdbk=False,
+            closing_time=timezone.now() - timezone.timedelta(seconds=2))
         return self.best_submission(group)
 
     def best_submission(self, group, num_submissions=3):
@@ -320,19 +325,23 @@ class Submission(Group):
 
     def past_limit_best_submission(self, group):
         group.project.validate_and_update(submission_limit_per_day=1)
+        ag_models.Submission.objects.validate_and_create(
+            [], submission_group=group)
         return self.best_submission(group)
 
     def past_limit_best_ultimate_submission(self, group):
         group.project.validate_and_update(submission_limit_per_day=1)
+        ag_models.Submission.objects.validate_and_create(
+            [], submission_group=group)
         return self.best_ultimate_submission(group)
 
-    def past_limit_non_most_recent_submission(self, group):
-        group.project.validate_and_update(submission_limit_per_day=1)
-        return self.non_most_recent_submission(group)
+    # def past_limit_non_most_recent_submission(self, group):
+    #     group.project.validate_and_update(submission_limit_per_day=1)
+    #     return self.non_most_recent_submission(group)
 
-    def past_limit_non_best_submission(self, group):
-        group.project.validate_and_update(submission_limit_per_day=1)
-        return self.non_best_submission(group)
+    # def past_limit_non_best_submission(self, group):
+    #     group.project.validate_and_update(submission_limit_per_day=1)
+    #     return self.non_best_submission(group)
 
     def past_limit_submission(self, group):
         group.project.validate_and_update(submission_limit_per_day=1)
