@@ -97,7 +97,6 @@ def main():
 
 def get_num_submissions_being_processed():
     return len(Submission.objects.filter(
-        Q(status=Submission.GradingStatus.received) |
         Q(status=Submission.GradingStatus.queued) |
         Q(status=Submission.GradingStatus.being_graded))
     )

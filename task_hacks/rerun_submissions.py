@@ -55,7 +55,7 @@ def main():
         )
         submission.results.all().delete()
         submission.suite_results.all().delete()
-        submission.status = Submission.GradingStatus.received
+        submission.status = Submission.GradingStatus.queued
         submission.save()
 
 

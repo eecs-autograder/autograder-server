@@ -98,7 +98,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(submitter, submission.submitter)
         self.assertEqual(
             submission.status,
-            ag_models.Submission.GradingStatus.received)
+            ag_models.Submission.GradingStatus.queued)
         self.assertCountEqual(submission.grading_errors, [])
         self.assertCountEqual(submission.missing_files, [])
         self.assertCountEqual(
@@ -160,7 +160,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         submission.refresh_from_db()
 
         self.assertEqual(
-            submission.status, ag_models.Submission.GradingStatus.received)
+            submission.status, ag_models.Submission.GradingStatus.queued)
         self.assertEqual({'eggs.cpp': 1}, submission.missing_files)
 
     def test_submission_not_enough_files_matching_pattern(self):
@@ -180,7 +180,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         submission.refresh_from_db()
 
         self.assertEqual(submission.status,
-                         ag_models.Submission.GradingStatus.received)
+                         ag_models.Submission.GradingStatus.queued)
         self.assertEqual({'test_*.cpp': 1}, submission.missing_files)
 
     def test_extra_files_matching_pattern_discarded(self):
@@ -201,7 +201,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         submission.refresh_from_db()
 
         self.assertEqual(
-            submission.status, ag_models.Submission.GradingStatus.received)
+            submission.status, ag_models.Submission.GradingStatus.queued)
         self.assertCountEqual(
             (file_.name for file_ in files),
             submission.get_submitted_file_basenames())
@@ -225,7 +225,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         submission.refresh_from_db()
 
-        self.assertEqual(ag_models.Submission.GradingStatus.received,
+        self.assertEqual(ag_models.Submission.GradingStatus.queued,
                          submission.status)
         self.assertCountEqual(submission.get_submitted_file_basenames(),
                               (file_.name for file_ in files))
@@ -259,7 +259,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
     #         submission_group=self.submission_group)
 
     #     self.assertEqual(
-    #         Submission.GradingStatus.received, loaded_submission.status)
+    #         Submission.GradingStatus.queued, loaded_submission.status)
     #     self.assertCountEqual(
     #         loaded_submission.get_submitted_file_basenames(),
     #         ['spam.cpp', 'eggs.cpp', 'test_spam.cpp'])
@@ -290,7 +290,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
         submission.refresh_from_db()
 
-        self.assertEqual(ag_models.Submission.GradingStatus.received,
+        self.assertEqual(ag_models.Submission.GradingStatus.queued,
                          submission.status)
         self.assertCountEqual(submission.get_submitted_file_basenames(),
                               (file_.name for file_ in files))

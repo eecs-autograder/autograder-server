@@ -20,6 +20,15 @@ class _Permissions(permissions.BasePermission):
         return user_can_view_group(request.user, submission.submission_group)
 
 
+class _RemoveFromQueuePermissions(permissions.BasePermission):
+    def has_object_permission(self, request, view, submission):
+        group = submission.submission_group
+        if not user_can_view_group(request.user, group):
+            return False
+
+        return group.members.filter(pk=request.user.pk).exists()
+
+
 class SubmissionViewset(build_load_object_mixin(ag_models.Submission),
                         mixins.RetrieveModelMixin,
                         mixins.UpdateModelMixin,
@@ -28,7 +37,7 @@ class SubmissionViewset(build_load_object_mixin(ag_models.Submission),
     serializer_class = ag_serializers.SubmissionSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)
 
-    @decorators.detail_route()
+    @decorators.detail_route(methods=['get'])
     def file(self, request, *args, **kwargs):
         submission = self.get_object()
 
@@ -42,3 +51,18 @@ class SubmissionViewset(build_load_object_mixin(ag_models.Submission),
         except exceptions.ObjectDoesNotExist:
             return response.Response('File "{}" not found'.format(filename),
                                      status=status.HTTP_404_NOT_FOUND)
+
+    @decorators.detail_route(methods=['post'],
+                             permission_classes=(permissions.IsAuthenticated,
+                                                 _RemoveFromQueuePermissions))
+    def remove_from_queue(self, request, *args, **kwargs):
+        submission = self.get_object()
+        if submission.status != ag_models.Submission.GradingStatus.queued:
+            return response.Response('This submission is not currently queued',
+                                     status=status.HTTP_400_BAD_REQUEST)
+
+        submission.status = (
+            ag_models.Submission.GradingStatus.removed_from_queue)
+        submission.save()
+
+        return response.Response(status=status.HTTP_204_NO_CONTENT)

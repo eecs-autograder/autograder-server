@@ -5,6 +5,8 @@ from django.http import QueryDict
 
 from rest_framework import status
 
+from autograder.core.models import Submission
+
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
@@ -159,19 +161,106 @@ class UpdateSubmissionTestCase(test_data.Client,
                 {'count_towards_daily_limit': False})
 
 
-class RemoveFromQueueTestCase():
-    def test_valid_remove_own_submission_from_queue(self):
-        self.fail()
+class RemoveFromQueueTestCase(test_data.Client,
+                              test_data.Project,
+                              test_data.Submission,
+                              TemporaryFilesystemTestCase):
+    def test_admin_or_staff_remove_own_from_queue(self):
+        for project in self.all_projects:
+            for submission in self.staff_submissions(project):
+                self.do_valid_remove_from_queue_test(submission)
+
+    def test_enrolled_remove_own_from_queue(self):
+        for project in self.visible_projects:
+            submission = self.enrolled_submission(project)
+            self.do_valid_remove_from_queue_test(submission)
+
+    def test_non_enrolled_remove_own_from_queue(self):
+        submission = self.non_enrolled_submission(self.visible_public_project)
+        self.do_valid_remove_from_queue_test(submission)
+
+    def test_enrolled_remove_from_queue_project_hidden_permission_denied(self):
+        for project in self.hidden_projects:
+            submission = self.enrolled_submission(project)
+            self.do_permission_denied_remove_from_queue_test(
+                submission, submission.submission_group.members.first())
+
+    def test_non_enrolled_remove_from_queue_project_hidden_permission_denied(self):
+        submission = self.non_enrolled_submission(self.hidden_public_project)
+        self.do_permission_denied_remove_from_queue_test(
+            submission, submission.submission_group.members.first())
+
+    def test_non_enrolled_remove_from_queue_project_private_permission_denied(self):
+        submission = self.non_enrolled_submission(self.visible_public_project)
+        self.visible_public_project.validate_and_update(
+            allow_submissions_from_non_enrolled_students=False)
+        self.do_permission_denied_remove_from_queue_test(
+            submission, submission.submission_group.members.first())
 
     def test_remove_others_submission_from_queue_permission_denied(self):
-        self.fail()
+        for submission in self.all_submissions(self.visible_public_project):
+            for user in self.admin, self.staff, self.enrolled, self.nobody:
+                group = submission.submission_group
+                if group.members.filter(pk=user.pk).exists():
+                    continue
+
+                self.do_permission_denied_remove_from_queue_test(
+                    submission, user)
 
     def test_error_remove_submission_not_in_queue(self):
-        self.fail()
+        statuses = set(Submission.GradingStatus.values)
+        statuses.remove(Submission.GradingStatus.queued)
+        for submission in self.all_submissions(self.visible_public_project):
+            for grading_status in statuses:
+                submission.status = grading_status
+                submission.save()
+                self.do_invalid_remove_from_queue_test(submission)
+
+    def do_valid_remove_from_queue_test(self, submission, user=None):
+        submission.status = Submission.GradingStatus.queued
+        submission.save()
+
+        if user is None:
+            user = submission.submission_group.members.first()
+
+        self.client.force_authenticate(user)
+        response = self.client.post(submission_remove_from_queue_url(submission))
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        submission.refresh_from_db()
+
+        self.assertEqual(Submission.GradingStatus.removed_from_queue,
+                         submission.status)
+
+    def do_permission_denied_remove_from_queue_test(self, submission, user):
+        self._do_bad_remove_from_queue_test(
+            submission, user, status.HTTP_403_FORBIDDEN)
+
+    def do_invalid_remove_from_queue_test(self, submission, user=None):
+        self._do_bad_remove_from_queue_test(
+            submission, user, status.HTTP_400_BAD_REQUEST)
+
+    def _do_bad_remove_from_queue_test(self, submission, user, expected_status):
+        original_status = submission.status
+        if user is None:
+            user = submission.submission_group.members.first()
+
+        self.client.force_authenticate(user)
+        response = self.client.post(submission_remove_from_queue_url(submission))
+        self.assertEqual(expected_status, response.status_code)
+
+        submission.refresh_from_db()
+
+        self.assertEqual(original_status, submission.status)
 
 
 def submission_url(submission):
     return reverse('submission-detail', kwargs={'pk': submission.pk})
+
+
+def submission_remove_from_queue_url(submission):
+    return reverse('submission-remove-from-queue',
+                   kwargs={'pk': submission.pk})
 
 
 def file_url(submission, filename):
