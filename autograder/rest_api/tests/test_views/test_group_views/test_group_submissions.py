@@ -10,7 +10,6 @@ import autograder.core.shared.utilities as ut
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -207,6 +206,18 @@ class CreateSubmissionTestCase(test_data.Client,
             ag_models.Submission.objects.validate_and_create(
                 [], submission_group=group)
             self.do_permission_denied_submit_test(group, group.members.last())
+
+    def test_can_resubmit_non_being_processed_status(self):
+        for group in self.all_groups(self.visible_public_project):
+            for grading_status in ag_models.Submission.GradingStatus.values:
+                if grading_status in (
+                        ag_models.Submission.GradingStatus.active_statuses):
+                    continue
+
+                ag_models.Submission.objects.validate_and_create(
+                    [], submission_group=group, status=grading_status)
+
+                self.do_normal_submit_test(group, group.members.first())
 
     def test_no_submission_limit(self):
         self.assertIsNone(self.visible_public_project.submission_limit_per_day)

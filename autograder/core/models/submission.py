@@ -11,7 +11,6 @@ from django.utils import timezone
 import autograder.utilities.fields as ag_fields
 
 from . import ag_model_base
-from .submission_group import SubmissionGroup
 
 import autograder.core.shared.global_constants as gc
 import autograder.core.shared.utilities as ut
@@ -149,12 +148,20 @@ class Submission(ag_model_base.AutograderModel):
             error,
         ]
 
+        # These statuses bar users from making another submission
+        # while the current one is active.
         active_statuses = [received, queued, being_graded]
+
+        # A submission should only be counted towards the daily limit if
+        # it has one of these statuses.
+        count_towards_limit_statuses = [
+            received, queued, being_graded, finished_grading
+        ]
 
     # -------------------------------------------------------------------------
 
     submission_group = models.ForeignKey(
-        SubmissionGroup, related_name='submissions',
+        'SubmissionGroup', related_name='submissions',
         help_text='''
             The SubmissionGroup that this submission belongs to. Note
             that this field indirectly links this Submission object to a
@@ -222,6 +229,7 @@ class Submission(ag_model_base.AutograderModel):
             timestamp__gte=start_datetime,
             timestamp__lt=end_datetime,
             count_towards_daily_limit=True,
+            status__in=Submission.GradingStatus.count_towards_limit_statuses,
             pk__lt=self.pk
         ).count()
 

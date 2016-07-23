@@ -159,6 +159,17 @@ class UpdateSubmissionTestCase(test_data.Client,
                 {'count_towards_daily_limit': False})
 
 
+class RemoveFromQueueTestCase():
+    def test_valid_remove_own_submission_from_queue(self):
+        self.fail()
+
+    def test_remove_others_submission_from_queue_permission_denied(self):
+        self.fail()
+
+    def test_error_remove_submission_not_in_queue(self):
+        self.fail()
+
+
 def submission_url(submission):
     return reverse('submission-detail', kwargs={'pk': submission.pk})
 

@@ -191,3 +191,32 @@ class SubmissionLimitAndCountTestCase(TemporaryFilesystemTestCase):
             timestamp=next_cycle_timestamp)
         self.assertTrue(next_cycle_sub.count_towards_daily_limit)
         self.assertFalse(next_cycle_sub.is_past_daily_limit)
+
+    def test_statuses_not_counted_towards_limit(self):
+        self.project.validate_and_update(submission_limit_per_day=2)
+        first_sub = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group)
+        self.assertEqual(1, self.submission_group.num_submits_towards_limit)
+        self.assertFalse(first_sub.is_past_daily_limit)
+
+        removed_sub = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group,
+            status=ag_models.Submission.GradingStatus.removed_from_queue)
+        self.assertEqual(1, self.submission_group.num_submits_towards_limit)
+        self.assertFalse(removed_sub.is_past_daily_limit)
+
+        error_sub = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group,
+            status=ag_models.Submission.GradingStatus.error)
+        self.assertEqual(1, self.submission_group.num_submits_towards_limit)
+        self.assertFalse(error_sub.is_past_daily_limit)
+
+        second_sub = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group)
+        self.assertEqual(2, self.submission_group.num_submits_towards_limit)
+        self.assertFalse(second_sub.is_past_daily_limit)
+
+        third_sub = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group)
+        self.assertEqual(3, self.submission_group.num_submits_towards_limit)
+        self.assertTrue(third_sub.is_past_daily_limit)

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from .. import ag_model_base
 from .. project import Project
+from ..submission import Submission
 import autograder.core.shared.utilities as ut
 
 from . import verification
@@ -97,7 +98,8 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         return self.submissions.filter(
             timestamp__gte=start_datetime,
             timestamp__lt=end_datetime,
-            count_towards_daily_limit=True
+            count_towards_daily_limit=True,
+            status__in=Submission.GradingStatus.count_towards_limit_statuses
         ).count()
 
     @property
