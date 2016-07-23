@@ -1,7 +1,6 @@
-from django.contrib.auth.models import User
 from django.utils import timezone
 
-from rest_framework import viewsets, mixins, permissions, decorators, response
+from rest_framework import viewsets, mixins, permissions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers

@@ -27,19 +27,19 @@ class AGModelSerializerTestCase(SerializerTestCase):
         self.do_basic_serialize_test(self.ag_model, _DummyAGModelSerialier)
 
     def test_serialize_include_fields(self):
-        self.do_include_exclude_fields_test(
+        self.do_include_exclude_fields_from_request_test(
             include_fields=['non_empty_str_val'])
 
     def test_serialize_exclude_fields(self):
-        self.do_include_exclude_fields_test(exclude_fields=['the_answer'])
+        self.do_include_exclude_fields_from_request_test(
+            exclude_fields=['the_answer'])
 
     def test_serialize_include_and_exclude_fields(self):
-        self.do_include_exclude_fields_test(include_fields=['the_answer'],
-                                            exclude_fields=['pos_num_val'])
+        self.do_include_exclude_fields_from_request_test(
+            include_fields=['the_answer'], exclude_fields=['pos_num_val'])
 
-    def do_include_exclude_fields_from_request_test(self,
-                                                    include_fields=None,
-                                                    exclude_fields=None):
+    def do_include_exclude_fields_from_request_test(
+            self, include_fields=None, exclude_fields=None):
         data = {}
         if include_fields is not None:
             data['include_fields'] = include_fields

@@ -18,6 +18,14 @@ class Client:
         self.client = APIClient()
 
 
+class Superuser(gen_data.Superuser):
+    pass
+
+
+class Course(gen_data.Course):
+    pass
+
+
 class Project(gen_data.Project):
     def get_proj_url(self, project):
         return reverse('project-detail', kwargs={'pk': project.pk})

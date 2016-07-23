@@ -104,6 +104,12 @@ submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionViewset,
                            base_name='submission')
 
+submission_results_router = routers.NestedSimpleRouter(
+    submission_router, r'submissions', lookup='submission')
+submission_results_router.register(r'results', views.SubmissionResultsViewset,
+                                   base_name='submission-results')
+
+
 urlpatterns = [
     url(r'', include(user_router.urls)),
 
@@ -130,4 +136,5 @@ urlpatterns = [
     url(r'', include(group_submissions_router.urls)),
 
     url(r'', include(submission_router.urls)),
+    url(r'', include(submission_results_router.urls)),
 ]

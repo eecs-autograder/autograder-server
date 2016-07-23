@@ -279,6 +279,7 @@ class Submission(Group):
             ultimate_submission_selection_method=(
                 ag_models.Project.UltimateSubmissionSelectionMethod.most_recent),
             hide_ultimate_submission_fdbk=False,
+            closing_time=None
         )
         return self.most_recent_submission(group)
 

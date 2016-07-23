@@ -17,10 +17,12 @@ from .project_views.project_group_invitations import ProjectGroupInvitationsView
 from .expected_student_file_pattern_views import ExpectedStudentFilePatternViewset
 from .uploaded_file_views import UploadedFileViewset
 from .ag_test_case_views import AGTestCaseViewset
-from .ag_test_result_views import AGTestResultViewSet
 from .group_invitation_views import GroupInvitationViewset
 
 from .group_views.group_view import GroupViewset
 from .group_views.group_submissions_view import GroupSubmissionsViewset
 
 from .submission_views.submission_view import SubmissionViewset
+from .submission_views.submission_results import SubmissionResultsViewset
+
+from .ag_test_result_views import AGTestResultViewSet
