@@ -46,6 +46,10 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
                 **pattern_settings)
 
     def test_to_dict_default_fields(self):
+        # Note: Do NOT add basic_score to this list, as that will leak
+        # information in certain scenarios (such as when a student
+        # requests feedback on a submission that is past the daily
+        # limit).
         expected = [
             'submission_group',
             'timestamp',
@@ -58,8 +62,6 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
 
             'count_towards_daily_limit',
             'is_past_daily_limit',
-
-            'basic_score',
         ]
         self.assertCountEqual(
             expected,

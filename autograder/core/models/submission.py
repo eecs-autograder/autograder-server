@@ -109,8 +109,6 @@ class Submission(ag_model_base.AutograderModel):
 
         'count_towards_daily_limit',
         'is_past_daily_limit',
-
-        'basic_score',
     ]
 
     @classmethod
@@ -234,6 +232,11 @@ class Submission(ag_model_base.AutograderModel):
         help_text='''A list of errors that occurred while grading this
             submission''')
 
+    # Note: Don't include basic_score in to_dict() serialization. If you
+    # want to expose it as part of the server api, do so with a
+    # dedicated endpoint and make sure permissions are handled properly
+    # based on the standing of the submission (ultimate, past limit,
+    # etc.).
     @property
     def basic_score(self):
         '''
