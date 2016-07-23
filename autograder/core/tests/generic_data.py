@@ -316,21 +316,29 @@ class Submission(Group):
         return submissions[-1]
 
     def past_limit_most_recent_submission(self, group):
-        group.project.validate_and_update(submission_limit_per_day=1)
+        group.project.validate_and_update(
+            submission_limit_per_day=1,
+            closing_time=timezone.now() + timezone.timedelta(minutes=5))
         return self.most_recent_submission(group)
 
     def past_limit_most_recent_ultimate_submission(self, group):
-        group.project.validate_and_update(submission_limit_per_day=1)
+        group.project.validate_and_update(
+            submission_limit_per_day=1,
+            closing_time=timezone.now() + timezone.timedelta(minutes=5))
         return self.most_recent_ultimate_submission(group)
 
     def past_limit_best_submission(self, group):
-        group.project.validate_and_update(submission_limit_per_day=1)
+        group.project.validate_and_update(
+            submission_limit_per_day=1,
+            closing_time=timezone.now() + timezone.timedelta(minutes=5))
         ag_models.Submission.objects.validate_and_create(
             [], submission_group=group)
         return self.best_submission(group)
 
     def past_limit_best_ultimate_submission(self, group):
-        group.project.validate_and_update(submission_limit_per_day=1)
+        group.project.validate_and_update(
+            submission_limit_per_day=1,
+            closing_time=timezone.now() + timezone.timedelta(minutes=5))
         ag_models.Submission.objects.validate_and_create(
             [], submission_group=group)
         return self.best_ultimate_submission(group)
@@ -344,7 +352,9 @@ class Submission(Group):
     #     return self.non_best_submission(group)
 
     def past_limit_submission(self, group):
-        group.project.validate_and_update(submission_limit_per_day=1)
+        group.project.validate_and_update(
+            submission_limit_per_day=1,
+            closing_time=timezone.now() + timezone.timedelta(minutes=5))
         for i in range(group.project.submission_limit_per_day + 1):
             submission = ag_models.Submission.objects.validate_and_create(
                 [], submission_group=group)

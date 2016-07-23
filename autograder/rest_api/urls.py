@@ -80,6 +80,10 @@ ag_test_router = routers.SimpleRouter()
 ag_test_router.register(r'ag_test_cases', views.AGTestCaseViewset,
                         base_name='ag-test')
 
+ag_test_result_router = routers.SimpleRouter()
+ag_test_result_router.register(r'ag_test_results', views.AGTestResultViewSet,
+                               base_name='ag-test-result')
+
 group_invitation_router = routers.SimpleRouter()
 group_invitation_router.register(r'group_invitations',
                                  views.GroupInvitationViewset,
@@ -119,6 +123,7 @@ urlpatterns = [
     url(r'', include(expected_pattern_router.urls)),
     url(r'', include(uploaded_file_router.urls)),
     url(r'', include(ag_test_router.urls)),
+    url(r'', include(ag_test_result_router.urls)),
     url(r'', include(group_invitation_router.urls)),
 
     url(r'', include(group_router.urls)),
