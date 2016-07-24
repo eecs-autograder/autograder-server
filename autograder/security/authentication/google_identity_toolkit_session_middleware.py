@@ -1,3 +1,5 @@
+# We're holding on to this file for now for historical reasons.
+
 # import os
 
 from django.contrib.auth.models import User, AnonymousUser

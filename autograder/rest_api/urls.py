@@ -111,6 +111,8 @@ submission_results_router.register(r'results', views.SubmissionResultsViewset,
 
 
 urlpatterns = [
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+
     url(r'', include(user_router.urls)),
 
     url(r'', include(course_router.urls)),

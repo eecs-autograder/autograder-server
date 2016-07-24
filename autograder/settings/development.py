@@ -16,9 +16,8 @@ import json
 from django.utils.crypto import get_random_string
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MEDIA_ROOT = os.path.join(BASE_DIR, 'filesystem/')
-
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -108,7 +107,11 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    'TEST_REQUEST_DEFAULT_FORMAT': 'json'
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'autograder.security.authentication.google_identity_toolkit_auth.GoogleIdentityToolkitAuth',
+    )
 }
 
 ROOT_URLCONF = 'autograder.urls'
@@ -171,4 +174,5 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_URL = '/static/'
