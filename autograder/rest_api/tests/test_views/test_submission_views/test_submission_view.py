@@ -210,6 +210,7 @@ class RemoveFromQueueTestCase(test_data.Client,
     def test_error_remove_submission_not_in_queue(self):
         statuses = set(Submission.GradingStatus.values)
         statuses.remove(Submission.GradingStatus.queued)
+        statuses.remove(Submission.GradingStatus.received)
         for submission in self.all_submissions(self.visible_public_project):
             for grading_status in statuses:
                 submission.status = grading_status
@@ -217,20 +218,23 @@ class RemoveFromQueueTestCase(test_data.Client,
                 self.do_invalid_remove_from_queue_test(submission)
 
     def do_valid_remove_from_queue_test(self, submission, user=None):
-        submission.status = Submission.GradingStatus.queued
-        submission.save()
+        for grading_status in (Submission.GradingStatus.received,
+                               Submission.GradingStatus.queued):
+            submission.status = grading_status
+            submission.save()
 
-        if user is None:
-            user = submission.submission_group.members.first()
+            if user is None:
+                user = submission.submission_group.members.first()
 
-        self.client.force_authenticate(user)
-        response = self.client.post(submission_remove_from_queue_url(submission))
-        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+            self.client.force_authenticate(user)
+            response = self.client.post(
+                submission_remove_from_queue_url(submission))
+            self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
-        submission.refresh_from_db()
+            submission.refresh_from_db()
 
-        self.assertEqual(Submission.GradingStatus.removed_from_queue,
-                         submission.status)
+            self.assertEqual(Submission.GradingStatus.removed_from_queue,
+                             submission.status)
 
     def do_permission_denied_remove_from_queue_test(self, submission, user):
         self._do_bad_remove_from_queue_test(

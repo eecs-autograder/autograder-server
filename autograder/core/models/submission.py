@@ -123,7 +123,10 @@ class Submission(ag_model_base.AutograderModel):
     # -------------------------------------------------------------------------
 
     class GradingStatus:
-        # The submission has been recorded and is waiting to be graded
+        # The submission has been accepted and saved to the database
+        received = 'received'
+
+        # The submission has been queued is waiting to be graded
         queued = 'queued'
 
         being_graded = 'being_graded'
@@ -137,6 +140,7 @@ class Submission(ag_model_base.AutograderModel):
         error = 'error'
 
         values = [
+            received,
             queued,
             being_graded,
             finished_grading,
@@ -146,11 +150,12 @@ class Submission(ag_model_base.AutograderModel):
 
         # These statuses bar users from making another submission
         # while the current one is active.
-        active_statuses = [queued, being_graded]
+        active_statuses = [received, queued, being_graded]
 
         # A submission should only be counted towards the daily limit if
         # it has one of these statuses.
-        count_towards_limit_statuses = [queued, being_graded, finished_grading]
+        count_towards_limit_statuses = [
+            received, queued, being_graded, finished_grading]
 
     # -------------------------------------------------------------------------
 
@@ -193,7 +198,7 @@ class Submission(ag_model_base.AutograderModel):
             {pattern: num_additional_needed}''')
 
     status = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, default=GradingStatus.queued,
+        max_length=gc.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
         choices=zip(GradingStatus.values, GradingStatus.values),
         help_text='''The grading status of this submission see
             Submission.GradingStatus for details on allowed values.''')

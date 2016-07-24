@@ -57,7 +57,9 @@ class SubmissionViewset(build_load_object_mixin(ag_models.Submission),
                                                  _RemoveFromQueuePermissions))
     def remove_from_queue(self, request, *args, **kwargs):
         submission = self.get_object()
-        if submission.status != ag_models.Submission.GradingStatus.queued:
+        removeable_statuses = [ag_models.Submission.GradingStatus.received,
+                               ag_models.Submission.GradingStatus.queued]
+        if submission.status not in removeable_statuses:
             return response.Response('This submission is not currently queued',
                                      status=status.HTTP_400_BAD_REQUEST)
 

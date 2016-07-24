@@ -192,6 +192,37 @@ class SubmissionLimitAndCountTestCase(TemporaryFilesystemTestCase):
         self.assertTrue(next_cycle_sub.count_towards_daily_limit)
         self.assertFalse(next_cycle_sub.is_past_daily_limit)
 
+    def test_statuses_counted_towards_limit(self):
+        self.project.validate_and_update(submission_limit_per_day=4)
+        received = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group,
+            status=ag_models.Submission.GradingStatus.received)
+        self.assertEqual(1, self.submission_group.num_submits_towards_limit)
+        self.assertFalse(received.is_past_daily_limit)
+
+        queued = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group,
+            status=ag_models.Submission.GradingStatus.queued)
+        self.assertEqual(2, self.submission_group.num_submits_towards_limit)
+        self.assertFalse(queued.is_past_daily_limit)
+
+        being_graded = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group,
+            status=ag_models.Submission.GradingStatus.being_graded)
+        self.assertEqual(3, self.submission_group.num_submits_towards_limit)
+        self.assertFalse(being_graded.is_past_daily_limit)
+
+        finished_grading = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group,
+            status=ag_models.Submission.GradingStatus.finished_grading)
+        self.assertEqual(4, self.submission_group.num_submits_towards_limit)
+        self.assertFalse(finished_grading.is_past_daily_limit)
+
+        past_limit = ag_models.Submission.objects.validate_and_create(
+            [], submission_group=self.submission_group)
+        self.assertEqual(5, self.submission_group.num_submits_towards_limit)
+        self.assertTrue(past_limit.is_past_daily_limit)
+
     def test_statuses_not_counted_towards_limit(self):
         self.project.validate_and_update(submission_limit_per_day=2)
         first_sub = ag_models.Submission.objects.validate_and_create(
