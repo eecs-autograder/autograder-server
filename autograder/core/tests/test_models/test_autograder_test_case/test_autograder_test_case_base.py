@@ -44,6 +44,8 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertEqual(self.TEST_NAME, new_test_case.name)
         self.assertEqual(self.project, new_test_case.project)
 
+        self.assertFalse(new_test_case.deferred)
+
         self.assertEqual(new_test_case.command_line_arguments, [])
         self.assertEqual(new_test_case.standard_input, "")
 
@@ -91,6 +93,8 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
         vals = {
             'name': self.TEST_NAME,
             'project': self.project,
+
+            'deferred': True,
 
             'command_line_arguments': [
                 'spam', '--eggs', '--sausage=spam', '-p', 'input.in'],
@@ -141,6 +145,9 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
 
             'name',
             'project',
+
+            'deferred',
+
             'command_line_arguments',
             'standard_input',
 
@@ -218,6 +225,8 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
     def test_editable_fields(self):
         expected = [
             'name',
+
+            'deferred',
 
             'command_line_arguments',
             'standard_input',

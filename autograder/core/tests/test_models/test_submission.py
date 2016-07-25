@@ -298,6 +298,18 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(submission.discarded_files,
                               (file_.name for file_ in duplicate_files))
 
+    def test_active_statuses(self):
+        statuses = [
+            ag_models.Submission.GradingStatus.received,
+            ag_models.Submission.GradingStatus.queued,
+            ag_models.Submission.GradingStatus.being_graded]
+        self.assertCountEqual(
+            statuses,
+            ag_models.Submission.GradingStatus.active_statuses)
+
+    def test_deferred_tests_finished(self):
+        self.fail()
+
 
 class TotalPointsTestCase(TemporaryFilesystemTestCase):
     def test_basic_score(self):
@@ -343,7 +355,7 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(expected_points, submission.basic_score)
 
-    def test_cache_invalidation(self):
+    def test_cache_invalidation_on_ag_test_save(self):
         num_tests = 2
         submissions, tests = obj_ut.build_submissions_with_results(
             num_submissions=2, num_tests=num_tests)
@@ -368,6 +380,33 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
             obj_ut.build_compiled_ag_test.points_with_all_used + 1)
         for submission in submissions:
             self.assertEqual(expected_points, submission.basic_score)
+
+    def test_cache_invalidation_on_result_save(self):
+        submissions, tests = obj_ut.build_submissions_with_results(
+            num_submissions=2, num_tests=1)
+
+        submission = submissions[0]
+        other_sub = submissions[1]
+
+        result = submission.results.first()
+        test_case = result.test_case
+        result.delete()
+        self.assertEqual(0, submission.basic_score)
+
+        self.assertEqual(
+            obj_ut.build_compiled_ag_test.points_with_all_used,
+            other_sub.basic_score)
+
+        result = obj_ut.build_compiled_ag_test_result(
+            test_case=test_case, submission=submission)
+
+        self.assertEqual(
+            obj_ut.build_compiled_ag_test.points_with_all_used,
+            submission.basic_score)
+
+        self.assertEqual(
+            obj_ut.build_compiled_ag_test.points_with_all_used,
+            other_sub.basic_score)
 
     def test_basic_score_no_results(self):
         group = obj_ut.build_submission_group()

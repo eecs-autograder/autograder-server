@@ -39,6 +39,8 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'name',
         'project',
 
+        'deferred',
+
         'command_line_arguments',
         'standard_input',
 
@@ -88,6 +90,8 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     _EDITABLE_FIELDS = frozenset([
         'name',
+
+        'deferred',
 
         'command_line_arguments',
         'standard_input',
@@ -148,6 +152,12 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         related_name='autograder_test_cases',
         help_text='''The Project this test case is associated with.
             This field is REQUIRED.''')
+
+    deferred = models.BooleanField(
+        default=False, blank=True,
+        help_text='''A value of True indicates that this test case can
+            be graded asynchronously and that submissions can be marked
+            as finished grading before this test case finishes.''')
 
     command_line_arguments = ag_fields.StringArrayField(
         strip_strings=True, allow_empty_strings=False,

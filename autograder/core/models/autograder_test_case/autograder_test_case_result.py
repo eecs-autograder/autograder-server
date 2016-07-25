@@ -63,6 +63,10 @@ class AutograderTestCaseResult(models.Model):
 
     # -------------------------------------------------------------------------
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete(self.submission.basic_score_cache_key)
+
     @property
     def basic_score(self):
         '''
