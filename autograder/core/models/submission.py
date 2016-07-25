@@ -130,6 +130,11 @@ class Submission(ag_model_base.AutograderModel):
         queued = 'queued'
 
         being_graded = 'being_graded'
+
+        # Non-deferred test cases have finished and the group can submit
+        # again.
+        waiting_for_deferred = 'waiting_for_deferred'
+        # All test cases have finished grading.
         finished_grading = 'finished_grading'
 
         # A student removed their submission from the queue before it
@@ -143,6 +148,7 @@ class Submission(ag_model_base.AutograderModel):
             received,
             queued,
             being_graded,
+            waiting_for_deferred,
             finished_grading,
             removed_from_queue,
             error,
@@ -155,7 +161,8 @@ class Submission(ag_model_base.AutograderModel):
         # A submission should only be counted towards the daily limit if
         # it has one of these statuses.
         count_towards_limit_statuses = [
-            received, queued, being_graded, finished_grading]
+            received, queued, being_graded,
+            waiting_for_deferred, finished_grading]
 
     # -------------------------------------------------------------------------
 

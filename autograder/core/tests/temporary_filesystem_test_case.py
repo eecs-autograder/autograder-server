@@ -3,10 +3,10 @@ import shutil
 
 from django.core.cache import cache
 from django.conf import settings
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 
-class TemporaryFilesystemTestCase(TestCase):
+class TemporaryFilesystemTestCase(TransactionTestCase):
     """
     Base class for test cases that test code that performs
     filesystem operations.

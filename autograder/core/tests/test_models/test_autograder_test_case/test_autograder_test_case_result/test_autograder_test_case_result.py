@@ -93,6 +93,29 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
         fdbk = result.get_feedback()
         self.assertNotIn('pk', fdbk.to_dict())
 
+    # def test_very_large_output(self):
+    #     stdout = 'a' * 300000000
+    #     stderr = 'b' * 300000000
+    #     valgrind = 'c' * 300000000
+    #     comp_stdout = 'd' * 300000000
+    #     comp_stderr = 'e' * 300000000
+    #     result = ag_models.AutograderTestCaseResult.objects.create(
+    #         test_case=self.test_case,
+    #         submission=self.submission,
+    #         standard_output=stdout,
+    #         standard_error_output=stderr,
+    #         valgrind_output=valgrind,
+    #         compilation_standard_output=comp_stdout,
+    #         compilation_standard_error_output=comp_stderr,)
+
+    #     result.refresh_from_db()
+
+    #     self.assertEqual(result.standard_output, stdout)
+    #     self.assertEqual(result.standard_error_output, stderr)
+    #     self.assertEqual(result.valgrind_output, valgrind)
+    #     self.assertEqual(result.compilation_standard_output, comp_stdout)
+    #     self.assertEqual(result.compilation_standard_error_output, comp_stderr)
+
 
 class TotalScoreTestCase(TemporaryFilesystemTestCase):
     def test_basic_score(self):

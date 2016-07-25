@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     'autograder.security',
     'autograder.rest_api',
     'autograder.web_interface',
+    'autograder.grading_tasks',
 
     # Dummy testing models
     'autograder.core.tests.test_models',
@@ -142,6 +143,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'autograder_test_db',
+        'TEST': {
+            # Semi-hack, we want the test db to be the one that celery hits
+            'NAME': 'autograder_test_db'
+        }
     },
 
     # 'default': {

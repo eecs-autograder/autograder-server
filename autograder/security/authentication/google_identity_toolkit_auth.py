@@ -7,6 +7,7 @@ WEB_CLIENT_ID = "405101394-6mv8jvt0t7l172490hh8qsrq1mikn1bn.apps.googleuserconte
 APPS_DOMAIN_NAME = 'umich.edu'
 
 
+# Adapted from the Google Identity Toolkit docs
 class GoogleIdentityToolkitAuth(BasicAuthentication):
     def authenticate(self, request):
         gtoken = request.COOKIES.get('gtoken')

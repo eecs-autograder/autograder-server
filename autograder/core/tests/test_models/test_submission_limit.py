@@ -193,34 +193,31 @@ class SubmissionLimitAndCountTestCase(TemporaryFilesystemTestCase):
         self.assertFalse(next_cycle_sub.is_past_daily_limit)
 
     def test_statuses_counted_towards_limit(self):
-        self.project.validate_and_update(submission_limit_per_day=4)
-        received = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group,
-            status=ag_models.Submission.GradingStatus.received)
-        self.assertEqual(1, self.submission_group.num_submits_towards_limit)
-        self.assertFalse(received.is_past_daily_limit)
+        count_towards_limit_statuses = [
+            ag_models.Submission.GradingStatus.received,
+            ag_models.Submission.GradingStatus.queued,
+            ag_models.Submission.GradingStatus.being_graded,
+            ag_models.Submission.GradingStatus.waiting_for_deferred,
+            ag_models.Submission.GradingStatus.finished_grading
+        ]
+        self.assertCountEqual(
+            count_towards_limit_statuses,
+            ag_models.Submission.GradingStatus.count_towards_limit_statuses)
+        num_statuses = len(count_towards_limit_statuses)
+        self.project.validate_and_update(submission_limit_per_day=num_statuses)
 
-        queued = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group,
-            status=ag_models.Submission.GradingStatus.queued)
-        self.assertEqual(2, self.submission_group.num_submits_towards_limit)
-        self.assertFalse(queued.is_past_daily_limit)
-
-        being_graded = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group,
-            status=ag_models.Submission.GradingStatus.being_graded)
-        self.assertEqual(3, self.submission_group.num_submits_towards_limit)
-        self.assertFalse(being_graded.is_past_daily_limit)
-
-        finished_grading = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group,
-            status=ag_models.Submission.GradingStatus.finished_grading)
-        self.assertEqual(4, self.submission_group.num_submits_towards_limit)
-        self.assertFalse(finished_grading.is_past_daily_limit)
+        for count, status in zip(range(1, num_statuses + 1),
+                                 count_towards_limit_statuses):
+            submission = ag_models.Submission.objects.validate_and_create(
+                [], submission_group=self.submission_group, status=status)
+            self.assertEqual(count,
+                             self.submission_group.num_submits_towards_limit)
+            self.assertFalse(submission.is_past_daily_limit)
 
         past_limit = ag_models.Submission.objects.validate_and_create(
             [], submission_group=self.submission_group)
-        self.assertEqual(5, self.submission_group.num_submits_towards_limit)
+        self.assertEqual(num_statuses + 1,
+                         self.submission_group.num_submits_towards_limit)
         self.assertTrue(past_limit.is_past_daily_limit)
 
     def test_statuses_not_counted_towards_limit(self):
