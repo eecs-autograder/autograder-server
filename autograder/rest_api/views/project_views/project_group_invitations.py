@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.db import transaction
 
 from rest_framework import viewsets, mixins, permissions
 
@@ -30,6 +31,7 @@ class ProjectGroupInvitationsViewset(
         project = self.load_object(self.kwargs['project_pk'])
         return project.submission_group_invitations.all()
 
+    @transaction.atomic()
     def create(self, request, project_pk, *args, **kwargs):
         request.data['project'] = self.load_object(project_pk)
         request.data['invitation_creator'] = request.user

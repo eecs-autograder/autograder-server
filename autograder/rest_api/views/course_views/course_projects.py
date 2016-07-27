@@ -1,3 +1,5 @@
+from django.db import transaction
+
 from rest_framework import viewsets, mixins, permissions
 
 import autograder.core.models as ag_models
@@ -31,6 +33,7 @@ class CourseProjectsViewSet(build_load_object_mixin(ag_models.Course),
 
         return course.projects.filter(visible_to_students=True)
 
+    @transaction.atomic()
     def create(self, request, course_pk, *args, **kwargs):
         request.data['course'] = self.load_object(course_pk)
         return super().create(request, *args, **kwargs)

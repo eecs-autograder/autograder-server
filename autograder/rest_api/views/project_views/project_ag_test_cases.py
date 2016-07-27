@@ -1,3 +1,5 @@
+from django.db import transaction
+
 from rest_framework import viewsets, mixins, permissions
 
 import autograder.core.models as ag_models
@@ -18,6 +20,7 @@ class ProjectAGTestsViewset(build_load_object_mixin(ag_models.Project),
         project = self.load_object(self.kwargs['project_pk'])
         return project.autograder_test_cases.all()
 
+    @transaction.atomic()
     def create(self, request, project_pk, *args, **kwargs):
         request.data['project'] = self.load_object(project_pk)
         return super().create(request, *args, **kwargs)

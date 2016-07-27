@@ -116,3 +116,9 @@ class CreateInvitationTestCase(_InvitationsSetUp,
             self.do_permission_denied_create_test(
                 project.submission_group_invitations, self.client,
                 self.nobody, self.get_invitations_url(project), args)
+
+    def test_two_simultaneous_final_acceptances_race_condition_prevented(self):
+        self.fail()
+
+    def test_simultaneous_final_accept_and_create_race_condition_prevented(self):
+        self.fail()

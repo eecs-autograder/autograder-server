@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.db import transaction
 
 from rest_framework import (
     viewsets, mixins, permissions, response,
@@ -32,6 +33,7 @@ class CourseAdminViewSet(build_load_object_mixin(ag_models.Course),
         course = self.load_object(self.kwargs['course_pk'])
         return course.administrators.all()
 
+    @transaction.atomic()
     def post(self, request, course_pk):
         users_to_add = [
             User.objects.get_or_create(username=username)[0]
@@ -40,6 +42,7 @@ class CourseAdminViewSet(build_load_object_mixin(ag_models.Course),
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
+    @transaction.atomic()
     def delete(self, request, course_pk):
         users_to_remove = [
             User.objects.get_or_create(username=username)[0]

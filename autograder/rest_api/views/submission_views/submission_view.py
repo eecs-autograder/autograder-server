@@ -1,4 +1,5 @@
 from django.core import exceptions
+from django.db import transaction
 from django.http.response import FileResponse
 
 from rest_framework import (
@@ -6,6 +7,7 @@ from rest_framework import (
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
+from autograder.rest_api import transaction_mixins
 
 from ..permission_components import user_can_view_group
 from ..load_object_mixin import build_load_object_mixin
@@ -31,13 +33,13 @@ class _RemoveFromQueuePermissions(permissions.BasePermission):
 
 class SubmissionViewset(build_load_object_mixin(ag_models.Submission),
                         mixins.RetrieveModelMixin,
-                        mixins.UpdateModelMixin,
+                        transaction_mixins.TransactionUpdateMixin,
                         viewsets.GenericViewSet):
     queryset = ag_models.Submission.objects.all()
     serializer_class = ag_serializers.SubmissionSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)
 
-    @decorators.detail_route(methods=['get'])
+    @decorators.detail_route()
     def file(self, request, *args, **kwargs):
         submission = self.get_object()
 
@@ -52,6 +54,7 @@ class SubmissionViewset(build_load_object_mixin(ag_models.Submission),
             return response.Response('File "{}" not found'.format(filename),
                                      status=status.HTTP_404_NOT_FOUND)
 
+    @transaction.atomic()
     @decorators.detail_route(methods=['post'],
                              permission_classes=(permissions.IsAuthenticated,
                                                  _RemoveFromQueuePermissions))

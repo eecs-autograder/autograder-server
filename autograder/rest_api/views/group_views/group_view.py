@@ -5,6 +5,7 @@ from rest_framework import viewsets, mixins, permissions, decorators, response
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
+from autograder.rest_api import transaction_mixins
 
 from ..permission_components import user_can_view_group
 from ..load_object_mixin import build_load_object_mixin
@@ -44,7 +45,7 @@ class _UltimateSubmissionPermissions(_Permissions):
 
 class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
                    mixins.RetrieveModelMixin,
-                   mixins.UpdateModelMixin,
+                   transaction_mixins.TransactionUpdateMixin,
                    viewsets.GenericViewSet):
     queryset = ag_models.SubmissionGroup.objects.all()
     serializer_class = ag_serializers.SubmissionGroupSerializer

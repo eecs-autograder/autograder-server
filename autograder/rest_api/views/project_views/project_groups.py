@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.db import transaction
 
 from rest_framework import viewsets, mixins, permissions
 
@@ -20,6 +21,7 @@ class ProjectGroupsViewSet(build_load_object_mixin(ag_models.Project),
         project = self.load_object(self.kwargs['project_pk'])
         return project.submission_groups.all()
 
+    @transaction.atomic()
     def create(self, request, project_pk, *args, **kwargs):
         project = self.load_object(project_pk)
         request.data['project'] = project

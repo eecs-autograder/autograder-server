@@ -1,6 +1,7 @@
 # from wsgiref.util import FileWrapper
 
 from django.core import exceptions
+from django.db import transaction
 from django.http import FileResponse
 
 from rest_framework import (
@@ -30,6 +31,7 @@ class UploadedFileViewset(build_load_object_mixin(ag_models.UploadedFile),
     serializer_class = ag_serializers.UploadedFileSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)
 
+    @transaction.atomic()
     @decorators.detail_route(methods=['put'])
     def name(self, request, pk):
         uploaded_file = self.load_object(pk)
@@ -40,6 +42,7 @@ class UploadedFileViewset(build_load_object_mixin(ag_models.UploadedFile),
             return response.Response(e.message_dict,
                                      status=status.HTTP_400_BAD_REQUEST)
 
+    @transaction.atomic()
     @decorators.detail_route(methods=['get', 'put'])
     def content(self, request, pk):
         uploaded_file = self.load_object(pk)

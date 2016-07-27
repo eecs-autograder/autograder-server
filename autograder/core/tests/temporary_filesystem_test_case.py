@@ -37,4 +37,7 @@ class TemporaryFilesystemTestCase(TransactionTestCase):
             shutil.rmtree(settings.MEDIA_ROOT)
 
     def tearDown(self):
-        shutil.rmtree(settings.MEDIA_ROOT)
+        try:
+            shutil.rmtree(settings.MEDIA_ROOT)
+        except Exception:
+            pass

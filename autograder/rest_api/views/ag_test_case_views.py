@@ -2,6 +2,7 @@ from rest_framework import viewsets, mixins, permissions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
+from autograder.rest_api import transaction_mixins
 
 from .permission_components import is_admin_or_read_only_staff
 from .load_object_mixin import build_load_object_mixin
@@ -15,8 +16,8 @@ class _Permissions(permissions.BasePermission):
 class AGTestCaseViewset(
         build_load_object_mixin(ag_models.AutograderTestCaseBase),
         mixins.RetrieveModelMixin,
-        mixins.UpdateModelMixin,
-        mixins.DestroyModelMixin,
+        transaction_mixins.TransactionUpdateMixin,
+        transaction_mixins.TransactionDestroyMixin,
         viewsets.GenericViewSet):
     serializer_class = ag_serializers.AGTestCaseSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)

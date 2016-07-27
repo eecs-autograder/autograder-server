@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.utils import timezone
 
 from rest_framework import viewsets, mixins, permissions
@@ -69,6 +70,7 @@ class GroupSubmissionsViewset(
     def get_queryset(self):
         return self.get_object().submissions.all()
 
+    @transaction.atomic()
     def create(self, request, *args, **kwargs):
         request.data['submission_group'] = self.get_object()
         request.data['submitter'] = request.user.username

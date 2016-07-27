@@ -1,7 +1,8 @@
 from rest_framework import viewsets, mixins, permissions
 
-import autograder.rest_api.serializers as ag_serializers
 import autograder.core.models as ag_models
+import autograder.rest_api.serializers as ag_serializers
+from autograder.rest_api import transaction_mixins
 
 from ..load_object_mixin import build_load_object_mixin
 
@@ -21,8 +22,8 @@ class CoursePermissions(permissions.BasePermission):
 
 
 class CourseViewSet(build_load_object_mixin(ag_models.Course),
-                    mixins.CreateModelMixin,
-                    mixins.UpdateModelMixin,
+                    transaction_mixins.TransactionCreateMixin,
+                    transaction_mixins.TransactionUpdateMixin,
                     mixins.RetrieveModelMixin,
                     mixins.ListModelMixin,
                     viewsets.GenericViewSet):
