@@ -4,12 +4,14 @@ import shutil
 from django.core.cache import cache
 from django.conf import settings
 from django.test import TransactionTestCase
+from django.test.utils import override_settings
 
 
+@override_settings(MEDIA_ROOT=os.path.join(settings.BASE_DIR, 'tmp_filesystem'))
 class TemporaryFilesystemTestCase(TransactionTestCase):
     """
     Base class for test cases that test code that performs
-    filesystem operations.
+    filesystem operations. Overrides the MEDIA_ROOT setting
 
     The setUp() method does the following:
         - Creates a temporary directory for the test to use.
@@ -29,17 +31,10 @@ class TemporaryFilesystemTestCase(TransactionTestCase):
         # HACK
         cache.clear()
 
-        self._old_media_root = settings.MEDIA_ROOT
-        self.new_media_root = os.path.join(
-            settings.BASE_DIR, 'tmp_filesystem')
-
-        if os.path.isdir(self.new_media_root):
+        if os.path.isdir(settings.MEDIA_ROOT):
             print('Deleting temp filesystem')
-            shutil.rmtree(self.new_media_root)
-
-        os.makedirs(self.new_media_root)
-        settings.MEDIA_ROOT = self.new_media_root
+            self.assertTrue(settings.MEDIA_ROOT.endswith('tmp_filesystem'))
+            shutil.rmtree(settings.MEDIA_ROOT)
 
     def tearDown(self):
-        settings.MEDIA_ROOT = self._old_media_root
-        shutil.rmtree(self.new_media_root)
+        shutil.rmtree(settings.MEDIA_ROOT)

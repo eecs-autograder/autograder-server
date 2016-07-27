@@ -10,12 +10,16 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
+# TODO: make development settings use this production module as a
+# starting point
 from .development import *
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 ALLOWED_HOSTS = ['class1.eecs.umich.edu']
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp_filesystem')
 
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases

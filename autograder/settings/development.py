@@ -17,7 +17,7 @@ from django.utils.crypto import get_random_string
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA_ROOT = os.path.join(BASE_DIR, 'filesystem/')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp_filesystem')
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -181,3 +181,22 @@ USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_URL = '/static/'
+
+
+# ----- Celery settings ----- #
+
+CELERYD_PREFETCH_MULTIPLIER = 1
+
+# CELERY_ACCEPT_CONTENT = ['json']  # Ignore other content
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_SERIALIZER = 'json'
+# CELERY_QUEUES = {
+#     'default': {
+#         'serializer': 'json'
+#     }
+# }
+
+# Override these values in production settings
+AG_TEST_MAX_RETRIES = 2
+AG_TEST_MIN_RETRY_DELAY = 1
+AG_TEST_MAX_RETRY_DELAY = 2

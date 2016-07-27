@@ -1,6 +1,9 @@
+import random
 import subprocess
+import time
 import traceback
 
+from django.conf import settings
 from django.db import transaction
 
 import celery
@@ -12,50 +15,60 @@ from autograder.security.autograder_sandbox import AutograderSandbox
 @celery.shared_task
 def grade_submission(submission_id):
     try:
-        with transaction.atomic():
-            submission = ag_models.Submission.objects.select_for_update().get(
-                pk=submission_id)
-            if (submission.status ==
-                    ag_models.Submission.GradingStatus.removed_from_queue):
-                print('submission {} has been removed '
-                      'from the queue'.format(submission.pk))
-                return
-            submission.status = ag_models.Submission.GradingStatus.being_graded
-            submission.save()
-
-        print('####### SUBMISSION STATUS: ', submission.status, ' #######')
+        submission = _mark_as_being_graded(submission_id)
+        _run_non_deferred_tests(submission)
 
         project = submission.submission_group.project
-
-        for ag_test in project.autograder_test_cases.filter(deferred=False):
-            try:
-                _grade_ag_test_impl(ag_test, submission)
-            except subprocess.CalledProcessError:
-                # TODO: error handling
-                raise
-            except Exception:
-                # TODO: error handling
-                raise
-
-        _mark_as_waiting_for_deferred(submission_id)
-
         deferred_queryset = project.autograder_test_cases.filter(deferred=True)
-        # if not deferred_queryset.count():
-        #     _mark_as_finished(submission_id)
-
+        signatures = (grade_ag_test.s(ag_test.pk, submission_id)
+                      for ag_test in deferred_queryset)
         callback = _mark_as_finished.s(submission_id)
-        print(callback)
-        celery.chord(
-            (grade_ag_test.s(ag_test.pk, submission_id) for ag_test in
-             deferred_queryset))(callback)
-        # deferred_results.apply_async()
-    except Exception:  # FIXME
+        celery.chord(signatures)(callback)
+    except Exception:
         traceback.print_exc()
         with transaction.atomic():
             submission = ag_models.Submission.objects.select_for_update().get(
                 pk=submission_id)
             submission.status = ag_models.Submission.GradingStatus.error
             submission.save()
+        raise
+
+
+def _mark_as_being_graded(submission_id):
+    with transaction.atomic():
+        submission = ag_models.Submission.objects.select_for_update().get(
+            pk=submission_id)
+        if (submission.status ==
+                ag_models.Submission.GradingStatus.removed_from_queue):
+            print('submission {} has been removed '
+                  'from the queue'.format(submission.pk))
+            return
+        submission.status = ag_models.Submission.GradingStatus.being_graded
+        submission.save()
+        return submission
+
+
+def _run_non_deferred_tests(submission):
+        project = submission.submission_group.project
+        for ag_test in project.autograder_test_cases.filter(deferred=False):
+            print('running test: {}'.format(ag_test.pk))
+            num_retries = 0
+            while True:
+                try:
+                    grade_ag_test_impl(ag_test, submission)
+                    break
+                except subprocess.CalledProcessError:
+                    if num_retries == settings.AG_TEST_MAX_RETRIES:
+                        print('max retries exceeded for '
+                              'non-deferred test {}'.format(ag_test.pk))
+                        raise
+                    num_retries += 1
+                    print('retrying: {}'.format(num_retries))
+                    time.sleep(
+                        random.randint(settings.AG_TEST_MIN_RETRY_DELAY,
+                                       settings.AG_TEST_MAX_RETRY_DELAY))
+
+        _mark_as_waiting_for_deferred(submission.pk)
 
 
 @celery.shared_task
@@ -89,18 +102,21 @@ def _mark_as_waiting_for_deferred(submission_id):
 #   "being graded"
 #   -
 
-@celery.shared_task(bind=True)
+
+@celery.shared_task(bind=True, max_retries=settings.AG_TEST_MAX_RETRIES)
 def grade_ag_test(self, ag_test_id, submission_id):
     try:
         ag_test = ag_models.AutograderTestCaseBase.objects.get(pk=ag_test_id)
         submission = ag_models.Submission.objects.get(pk=submission_id)
 
-        _grade_ag_test_impl(ag_test, submission)
+        grade_ag_test_impl(ag_test, submission)
     except subprocess.CalledProcessError as e:
-        self.retry(exc=e, countdown=1)
+        self.retry(exc=e,
+                   countdown=random.randint(settings.AG_TEST_MIN_RETRY_DELAY,
+                                            settings.AG_TEST_MAX_RETRY_DELAY))
 
 
-def _grade_ag_test_impl(ag_test, submission):
+def grade_ag_test_impl(ag_test, submission):
     group = submission.submission_group
 
     sandbox = AutograderSandbox(
