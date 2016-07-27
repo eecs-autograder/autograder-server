@@ -307,9 +307,6 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             statuses,
             ag_models.Submission.GradingStatus.active_statuses)
 
-    def test_deferred_tests_finished(self):
-        self.fail()
-
 
 class TotalPointsTestCase(TemporaryFilesystemTestCase):
     def test_basic_score(self):

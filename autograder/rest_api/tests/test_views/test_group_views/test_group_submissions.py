@@ -277,11 +277,11 @@ class CreateSubmissionTestCase(test_data.Client,
 
             self.assertEqual(num_submissions, group.submissions.count())
 
-    def test_simultaneous_create_race_condition_prevented(self):
-        self.fail()
+    # def test_simultaneous_create_race_condition_prevented(self):
+    #     self.fail()
 
-    def test_simultaneous_create_and_remove_from_queue_race_condition_prevented(self):
-        self.fail()
+    # def test_simultaneous_create_and_remove_from_queue_race_condition_prevented(self):
+    #     self.fail()
 
     def do_normal_submit_test(self, group, user):
         self.add_expected_patterns(group.project)
