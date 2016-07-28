@@ -1,5 +1,4 @@
 import random
-import subprocess
 import time
 import traceback
 
@@ -57,7 +56,7 @@ def _run_non_deferred_tests(submission):
                 try:
                     grade_ag_test_impl(ag_test, submission)
                     break
-                except subprocess.CalledProcessError:
+                except Exception:
                     if num_retries == settings.AG_TEST_MAX_RETRIES:
                         print('max retries exceeded for '
                               'non-deferred test {}'.format(ag_test.pk))
@@ -110,7 +109,7 @@ def grade_ag_test(self, ag_test_id, submission_id):
         submission = ag_models.Submission.objects.get(pk=submission_id)
 
         grade_ag_test_impl(ag_test, submission)
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         self.retry(exc=e,
                    countdown=random.randint(settings.AG_TEST_MIN_RETRY_DELAY,
                                             settings.AG_TEST_MAX_RETRY_DELAY))

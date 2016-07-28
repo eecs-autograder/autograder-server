@@ -143,10 +143,6 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'autograder_test_db',
-        'TEST': {
-            # Semi-hack, we want the test db to be the one that celery hits
-            'NAME': 'autograder_test_db'
-        }
     },
 
     # 'default': {
@@ -184,6 +180,9 @@ STATIC_URL = '/static/'
 
 
 # ----- Celery settings ----- #
+
+# For testing without celery server running
+TEST_RUNNER = 'autograder.grading_tasks.celery_test_runner.CeleryTestSuiteRunner'
 
 CELERYD_PREFETCH_MULTIPLIER = 1
 
