@@ -107,3 +107,14 @@ class CreateGroupTestCase(_GroupsSetUp,
     def get_legal_member_names(self):
         members = self.get_legal_members()
         return [member.username for member in members]
+
+
+# class RaceConditionTestCase():
+#     def test_simultaneous_create_group_and_invitation_race_condition_prevented(self):
+#         self.fail()
+
+#     def test_simultaneous_create_and_update_groups_race_condition_prevented(self):
+#         self.fail()
+
+#     def test_simultaneous_update_group_and_create_invitation_race_condition_prevented(self):
+#         self.fail()

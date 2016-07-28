@@ -1,8 +1,14 @@
+import multiprocessing
+import time
+from unittest import mock
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
+from django import db
 from django.utils import timezone
 
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -277,12 +283,6 @@ class CreateSubmissionTestCase(test_data.Client,
 
             self.assertEqual(num_submissions, group.submissions.count())
 
-    # def test_simultaneous_create_race_condition_prevented(self):
-    #     self.fail()
-
-    # def test_simultaneous_create_and_remove_from_queue_race_condition_prevented(self):
-    #     self.fail()
-
     def do_normal_submit_test(self, group, user):
         self.add_expected_patterns(group.project)
         response = self.do_create_object_test(
@@ -317,6 +317,60 @@ class CreateSubmissionTestCase(test_data.Client,
             ag_models.Submission.objects, self.client,
             user, submissions_url(group),
             {'submitted_files': self.files_to_submit}, format='multipart')
+
+
+class RaceConditionTestCase(test_data.Client,
+                            test_data.Project,
+                            test_data.Group,
+                            TemporaryFilesystemTestCase):
+    def test_simultaneous_create_race_condition_prevented(self):
+        group = self.admin_group(self.project)
+        group_id = group.pk
+
+        subprocess_has_lock = multiprocessing.Event()
+
+        def do_request_and_wait(group_id):
+            group = ag_models.SubmissionGroup.objects.get(pk=group_id)
+            path = ('autograder.rest_api.views.group_views.'
+                    'group_submissions_view.user_can_view_group')
+            with mock.patch(path, return_value=ag_models.Submission.GradingStatus) as mock_func:
+
+                def sleep_and_return(*args, **kwargs):
+                    subprocess_has_lock.set()
+                    print('subprocess going to sleep')
+                    time.sleep(5)
+                    return mock.DEFAULT
+                mock_func.side_effect = sleep_and_return
+                client = APIClient()
+                client.force_authenticate(group.members.first())
+                response = client.post(submissions_url(group),
+                                       {'submitted_files': []},
+                                       format='multipart')
+                print(response.status_code)
+                print(response.content)
+                if response.status_code != status.HTTP_201_CREATED:
+                    raise Exception('Incorrect status in sleeper thread')
+                if ag_models.Submission.objects.count() != 1:
+                    raise Exception('Submission not created in sleeper thread')
+
+        # Reset the database connection so that child threads get their own
+        # connections.
+        db.connection.close()
+
+        proc = multiprocessing.Process(
+            target=do_request_and_wait, args=[group_id])
+        proc.start()
+
+        print('started subprocesses')
+        subprocess_has_lock.wait()
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(submissions_url(group),
+                                    {'submitted_files': []},
+                                    format='multipart')
+        print('got response')
+        proc.join()
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(1, ag_models.Submission.objects.count())
 
 
 def submissions_url(group):

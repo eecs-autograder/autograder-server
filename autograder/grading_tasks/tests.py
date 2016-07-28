@@ -1,14 +1,21 @@
+import multiprocessing
 import subprocess
 import time
 from unittest import mock
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.urlresolvers import reverse
+from django import db
+
+from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.core.tests.dummy_object_utils as obj_ut
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
+from autograder.core.tests import generic_data
 
 from .tasks import grade_submission, grade_ag_test, grade_ag_test_impl
 
@@ -275,3 +282,52 @@ int spam()
     return 42;
 }
 '''
+
+
+class RaceConditionTestCase(generic_data.Project,
+                            generic_data.Submission,
+                            TemporaryFilesystemTestCase):
+    def test_remove_from_queue_when_being_marked_as_being_graded_race_condition_prevented(self):
+        group = self.admin_group(self.project)
+        submission = self.build_submission(group)
+        submission_id = submission.pk
+
+        subprocess_has_lock = multiprocessing.Event()
+
+        def do_request_and_wait(submission_id):
+            path = ('autograder.grading_tasks.tasks.ag_models'
+                    '.Submission.GradingStatus.removed_from_queue')
+            patched = mock.patch(
+                path, new_callable=mock.PropertyMock,
+                return_value=(
+                    ag_models.Submission.GradingStatus.removed_from_queue))
+            with patched as mock_status:
+
+                def sleep_and_return(*args, **kwargs):
+                    subprocess_has_lock.set()
+                    print('subprocess going to sleep')
+                    time.sleep(5)
+                    return mock.DEFAULT
+                mock_status.side_effect = sleep_and_return
+                print('calling grade_submission')
+                grade_submission(submission_id)
+
+        db.connection.close()
+
+        proc = multiprocessing.Process(
+            target=do_request_and_wait, args=[submission_id])
+        proc.start()
+
+        print('started subprocesses')
+        subprocess_has_lock.wait()
+
+        print('sending remove from queue request')
+        client = APIClient()
+        client.force_authenticate(
+            submission.submission_group.members.first())
+        response = client.post(reverse('submission-remove-from-queue',
+                                       kwargs={'pk': submission.pk}))
+        submission.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.being_graded, submission.status)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
