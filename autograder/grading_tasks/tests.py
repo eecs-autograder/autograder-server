@@ -327,7 +327,9 @@ class RaceConditionTestCase(generic_data.Project,
             submission.submission_group.members.first())
         response = client.post(reverse('submission-remove-from-queue',
                                        kwargs={'pk': submission.pk}))
+        proc.join()
         submission.refresh_from_db()
-        self.assertEqual(
-            ag_models.Submission.GradingStatus.being_graded, submission.status)
+        self.assertNotEqual(
+            ag_models.Submission.GradingStatus.removed_from_queue,
+            submission.status)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
