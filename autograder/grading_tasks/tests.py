@@ -297,4 +297,9 @@ class RaceConditionTestCase(generic_data.Project,
             submission.refresh_from_db()
 
     def test_mark_as_waiting_for_deferred_and_finished_grading_at_same_time_race_prevented(self):
+        # 1. mark_as_finished gets the lock and sleeps
+        # 2. mark_as_waiting_for_deferred tries to lock and is is blocked
+        # 3. mark_as_finished wakes up and finishes
+        # 4. mark_as_waiting_for_deferred wakes up and sees it's already marked
+        # as finished
         self.fail()
