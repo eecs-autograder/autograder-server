@@ -333,3 +333,12 @@ class RaceConditionTestCase(generic_data.Project,
             ag_models.Submission.GradingStatus.removed_from_queue,
             submission.status)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        time_waited = 0
+        while (submission.status !=
+                ag_models.Submission.GradingStatus.finished_grading):
+            if time_waited > 10:
+                self.fail('spent too long waiting')
+            time.sleep(2)
+            time_waited += 2
+            submission.refresh_from_db()
