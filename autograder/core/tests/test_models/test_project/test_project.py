@@ -33,6 +33,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(new_project.visible_to_students, False)
         self.assertEqual(new_project.closing_time, None)
+        self.assertEqual(new_project.soft_closing_time, None)
         self.assertEqual(new_project.disallow_student_submissions, False)
         self.assertEqual(
             new_project.allow_submissions_from_non_enrolled_students,
@@ -52,6 +53,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
 
     def test_valid_create_non_defaults(self):
         tomorrow_date = timezone.now() + datetime.timedelta(days=1)
+        soft_closing_time = tomorrow_date - timezone.timedelta(minutes=3)
         min_group_size = 2
         max_group_size = 5
 
@@ -66,6 +68,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             course=self.course,
             visible_to_students=True,
             closing_time=tomorrow_date,
+            soft_closing_time=soft_closing_time,
             disallow_student_submissions=True,
             allow_submissions_from_non_enrolled_students=True,
             min_group_size=min_group_size,
@@ -87,6 +90,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
 
         self.assertEqual(new_project.visible_to_students, True)
         self.assertEqual(new_project.closing_time, tomorrow_date)
+        self.assertEqual(new_project.soft_closing_time, soft_closing_time)
         self.assertEqual(new_project.disallow_student_submissions, True)
         self.assertEqual(
             new_project.allow_submissions_from_non_enrolled_students,
@@ -110,6 +114,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             'course',
             'visible_to_students',
             'closing_time',
+            'soft_closing_time',
             'disallow_student_submissions',
             'allow_submissions_from_non_enrolled_students',
             'min_group_size',
@@ -133,6 +138,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
             'name',
             'visible_to_students',
             'closing_time',
+            'soft_closing_time',
             'disallow_student_submissions',
             'allow_submissions_from_non_enrolled_students',
             'min_group_size',
@@ -147,6 +153,40 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
         ]
         self.assertCountEqual(expected,
                               ag_models.Project.get_editable_fields())
+
+
+class HardAndSoftClosingTimeTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+        self.course = obj_ut.build_course()
+
+    def test_valid_soft_closing_time_None_closing_time_not_None(self):
+        closing_time = timezone.now()
+        proj = ag_models.Project.objects.validate_and_create(
+            name='stave', course=self.course,
+            closing_time=closing_time,
+            soft_closing_time=None)
+
+        proj.refresh_from_db()
+        self.assertEqual(closing_time, proj.closing_time)
+        self.assertIsNone(proj.soft_closing_time)
+
+    def test_error_soft_closing_time_after_closing_time(self):
+        closing_time = timezone.now()
+        soft_closing_time = closing_time + timezone.timedelta(minutes=5)
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='stove', course=self.course,
+                closing_time=closing_time,
+                soft_closing_time=soft_closing_time)
+
+        self.assertIn('soft_closing_time', cm.exception.message_dict)
+
+
+class ProjectMiscErrorTestCase(TemporaryFilesystemTestCase):
+    def setUp(self):
+        super().setUp()
+        self.course = obj_ut.build_course()
 
     def test_error_negative_submission_limit_per_day(self):
         with self.assertRaises(exceptions.ValidationError) as cm:

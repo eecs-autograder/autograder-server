@@ -4,7 +4,6 @@ from django.core import exceptions
 from rest_framework import status
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
 
 from autograder.core.tests.temporary_filesystem_test_case import (
     TemporaryFilesystemTestCase)
@@ -19,30 +18,30 @@ class _ProjectsSetUp(test_data.Client, test_data.Project):
 
 
 class CourseListProjectsTestCase(_ProjectsSetUp, TemporaryFilesystemTestCase):
-    def test_admin_or_staff_list_projects(self):
-        expected_content = ag_serializers.ProjectSerializer(
-            self.all_projects, many=True).data
-        for user in self.admin, self.staff:
-            self.client.force_authenticate(user)
-            response = self.client.get(self.url)
+    def test_admin_list_projects(self):
+        self.do_valid_list_projects_test(self.admin, self.all_projects)
 
-            self.assertEqual(status.HTTP_200_OK, response.status_code)
-            self.assertCountEqual(expected_content, response.data)
+    def test_staff_list_projects(self):
+        self.do_valid_list_projects_test(self.staff, self.all_projects)
 
     def test_enrolled_student_list_projects_visible_only(self):
-        expected_content = ag_serializers.ProjectSerializer(
-            self.visible_projects, many=True).data
-
-        self.client.force_authenticate(self.enrolled)
-        response = self.client.get(self.url)
-
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertCountEqual(expected_content, response.data)
+        self.do_valid_list_projects_test(self.enrolled, self.visible_projects)
 
     def test_other_list_projects_permission_denied(self):
         self.client.force_authenticate(self.nobody)
         response = self.client.get(self.url)
         self.assertEqual(403, response.status_code)
+
+    def do_valid_list_projects_test(self, user, expected_projects):
+        exclude_fields = None
+        exclude_fields = ['closing_time']
+        expected_data = [project.to_dict(exclude_fields=exclude_fields)
+                         for project in expected_projects]
+        self.client.force_authenticate(user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertCountEqual(expected_data, response.data)
 
 
 class CourseAddProjectTestCase(_ProjectsSetUp, TemporaryFilesystemTestCase):

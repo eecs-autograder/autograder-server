@@ -42,6 +42,7 @@ class Project(AutograderModel):
         'course',
         'visible_to_students',
         'closing_time',
+        'soft_closing_time',
         'disallow_student_submissions',
         'allow_submissions_from_non_enrolled_students',
         'min_group_size',
@@ -63,6 +64,7 @@ class Project(AutograderModel):
         'name',
         'visible_to_students',
         'closing_time',
+        'soft_closing_time',
         'disallow_student_submissions',
         'allow_submissions_from_non_enrolled_students',
         'min_group_size',
@@ -94,13 +96,6 @@ class Project(AutograderModel):
         This class contains options for choosing which submissions are
         used for final grading. AG test cases also have a feedback
         option that will only be used for ultimate submissions.
-
-        (TODO move this next bit to the result feedback calculator)
-        In order for ultimate submission feedback to be given:
-            - The closing time for the project must have passed
-            - The criteria described by the option selected here must
-                be met for a given submission (the submission being
-                viewed must actually be an ultimate submission).
         '''
         # The submission that was made most recently
         most_recent = 'most_recent'
@@ -130,6 +125,15 @@ class Project(AutograderModel):
             accepting submissions.
             A value of None indicates that this project should
             stay open.''')
+
+    soft_closing_time = models.DateTimeField(
+        default=None, null=True, blank=True,
+        help_text='''The date and time that should be displayed as the
+            due date for this project. Unlike closing_time,
+            soft_closing_time does not affect whether submissions are
+            actually accepted.
+            If not None and closing_time is not None, this value must be
+            less than (before) closing_time.''')
 
     disallow_student_submissions = models.BooleanField(
         default=False,
@@ -224,3 +228,9 @@ class Project(AutograderModel):
             raise exceptions.ValidationError(
                 {'max_group_size': ('Maximum group size must be greater than '
                                     'or equal to minimum group size')})
+
+        if self.closing_time is not None and self.soft_closing_time is not None:
+            if self.closing_time < self.soft_closing_time:
+                raise exceptions.ValidationError(
+                    {'soft_closing_time': (
+                        'Soft closing time must be before hard closing time')})

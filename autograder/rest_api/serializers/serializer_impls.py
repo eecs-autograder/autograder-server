@@ -11,6 +11,24 @@ class CourseSerializer(AGModelSerializer):
 
 
 class ProjectSerializer(AGModelSerializer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.context:
+            return
+
+        request = self.context['request']
+        try:
+            show_closing_time = self.instance.course.is_administrator(
+                request.user)
+        except AttributeError:
+            show_closing_time = False
+
+        if not show_closing_time:
+            if self.exclude_fields is None:
+                self.exclude_fields = []
+
+            self.exclude_fields.append('closing_time')
+
     def get_ag_model_manager(self):
         return ag_models.Project.objects
 

@@ -106,6 +106,13 @@ class AutograderTestCaseResult(models.Model):
         If student_view is True, then whether the given user is course
         staff will not be considered.
 
+        In order for ultimate submission feedback to be given:
+            - The closing time for the project must be None or have
+              passed
+            - The criteria described by the option selected here must
+                be met for a given submission (the submission being
+                viewed must actually be an ultimate submission).
+
         Prefer using this method over directly instantiating
         FeedbackCalculator instances.
         '''

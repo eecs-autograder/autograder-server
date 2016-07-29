@@ -12,33 +12,46 @@ class _ProjectSetUp(test_data.Client, test_data.Project):
 class RetrieveProjectTestCase(_ProjectSetUp, TemporaryFilesystemTestCase):
     def test_admin_get_project(self):
         for project in self.all_projects:
-            self.do_valid_load_project_test(self.admin, project)
+            response = self.do_valid_load_project_test(
+                self.admin, project, exclude_closing_time=False)
+            self.assertIn('closing_time', response.data)
 
     def test_staff_get_project(self):
         for project in self.all_projects:
-            self.do_valid_load_project_test(self.staff, project)
+            response = self.do_valid_load_project_test(self.staff, project)
+            self.assertNotIn('closing_time', response.data)
 
-    def test_student_get_projects(self):
+    def test_student_get_project(self):
         for project in self.visible_projects:
-            self.do_valid_load_project_test(self.enrolled, project)
+            response = self.do_valid_load_project_test(self.enrolled, project)
+            self.assertNotIn('closing_time', response.data)
 
         for project in self.hidden_projects:
             self.do_permission_denied_test(self.enrolled, project)
 
-    def test_other_get_projects(self):
-        self.do_valid_load_project_test(self.nobody,
-                                        self.visible_public_project)
+    def test_other_get_project(self):
+        response = self.do_valid_load_project_test(
+            self.nobody, self.visible_public_project)
+        self.assertNotIn('closing_time', response.data)
+
         self.do_permission_denied_test(self.nobody,
                                        self.visible_private_project)
 
         for project in self.hidden_projects:
             self.do_permission_denied_test(self.nobody, project)
 
-    def do_valid_load_project_test(self, user, project):
+    def do_valid_load_project_test(self, user, project,
+                                   exclude_closing_time=True):
         self.client.force_authenticate(user)
         response = self.client.get(self.get_proj_url(project))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual(project.to_dict(), response.data)
+        exclude_fields = None
+        if exclude_closing_time:
+            exclude_fields = ['closing_time']
+        self.assertEqual(project.to_dict(exclude_fields=exclude_fields),
+                         response.data)
+
+        return response
 
     def do_permission_denied_test(self, user, project):
         self.client.force_authenticate(user)
