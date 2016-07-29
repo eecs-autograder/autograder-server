@@ -17,7 +17,7 @@ from django.utils.crypto import get_random_string
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp_filesystem')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'dev_filesystem')
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -111,7 +111,7 @@ REST_FRAMEWORK = {
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'autograder.security.authentication.google_identity_toolkit_auth.GoogleIdentityToolkitAuth',
+        'autograder.rest_api.authentication.google_identity_toolkit_auth.GoogleIdentityToolkitAuth',
     )
 }
 
@@ -142,7 +142,7 @@ WSGI_APPLICATION = 'autograder.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'autograder_test_db',
+        'NAME': 'autograder_dev_db',
     },
 
     # 'default': {
