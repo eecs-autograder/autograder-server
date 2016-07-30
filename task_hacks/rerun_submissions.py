@@ -51,7 +51,7 @@ def main():
     for submission in submissions:
         print('{}-{}'.format(
             submission.submission_group.members,
-            submission.timestamp.strftime(ut.FILESYSTEM_TIMESTAMP_FORMAT_STR))
+            submission.timestamp.strftime('%Y-%m-%d %H.%M.%S'))
         )
         submission.results.all().delete()
         submission.suite_results.all().delete()

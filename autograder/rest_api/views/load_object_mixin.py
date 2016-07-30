@@ -2,15 +2,16 @@ from django.shortcuts import get_object_or_404
 from rest_framework import permissions
 
 
-def build_load_object_mixin(ag_model_class, pk_key='pk'):
+def build_load_object_mixin(ag_model_class, pk_key='pk',
+                            lock_on_unsafe_method=False):
     """
     Returns a mixin class that provides an implementation of get_object
     that can be used in a Django Rest Framework generic viewset:
     http://www.django-rest-framework.org/api-guide/viewsets/#genericviewset
 
-    Note: The implementation of get_object will also call
-    select_for_update() on the default manager if the request method is
-    not a 'safe method'.
+    If lock_on_unsafe_method is True, implementation of get_object will
+    also call select_for_update() on the default manager if the request
+    method is not a 'safe method'.
 
     Note: The implementation of get_object will raise an HTTP 404 error
     if the object being looked up does not exist.
@@ -28,7 +29,8 @@ def build_load_object_mixin(ag_model_class, pk_key='pk'):
     class LoadObjectMixin:
         def load_object(self, pk):
             manager = ag_model_class.objects
-            if self.request.method not in permissions.SAFE_METHODS:
+            if (lock_on_unsafe_method and
+                    self.request.method not in permissions.SAFE_METHODS):
                 manager = manager.select_for_update()
 
             obj = get_object_or_404(manager, pk=pk)

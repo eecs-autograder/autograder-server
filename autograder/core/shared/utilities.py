@@ -5,6 +5,7 @@ import timeit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 from django.utils import timezone
 
 import autograder.core.shared.global_constants as gc
@@ -45,9 +46,15 @@ def get_24_hour_period(start_time, contains_datetime):
     return start_datetime, end_datetime
 
 
-# PRETTY_TIMESTAMP_FORMAT_STR = '%B %d, %Y %I:%M:%S %p'
-
-FILESYSTEM_TIMESTAMP_FORMAT_STR = '%Y-%m-%d %H.%M.%S'
+def lock_users(users_iterable):
+    '''
+    Calls select_for_update() on a queryset that includes all the users
+    in users_iterable.
+    '''
+    # list() forces the queryset to be evaluated)
+    queryset = User.objects.select_for_update().filter(
+        pk__in=(user.pk for user in users_iterable))
+    list(queryset)
 
 
 # -----------------------------------------------------------------------------

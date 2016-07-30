@@ -1,3 +1,5 @@
+import itertools
+
 from django.contrib.auth.models import User
 from django.db import transaction
 
@@ -5,6 +7,8 @@ from rest_framework import viewsets, mixins, permissions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
+
+import autograder.core.shared.utilities as ut
 
 from .permissions import IsAdminOrReadOnlyStaff, user_can_view_project
 from ..load_object_mixin import build_load_object_mixin
@@ -34,8 +38,13 @@ class ProjectGroupInvitationsViewset(
     @transaction.atomic()
     def create(self, request, project_pk, *args, **kwargs):
         request.data['project'] = self.load_object(project_pk)
-        request.data['invitation_creator'] = request.user
-        request.data['invited_users'] = [
-            User.objects.select_for_update().get_or_create(username=username)[0]
+
+        invited_users = [
+            User.objects.get_or_create(username=username)[0]
             for username in request.data['invited_usernames']]
+
+        ut.lock_users(itertools.chain([request.user], invited_users))
+
+        request.data['invitation_creator'] = request.user
+        request.data['invited_users'] = invited_users
         return super().create(request, *args, **kwargs)

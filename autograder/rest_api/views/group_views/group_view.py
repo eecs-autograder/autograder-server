@@ -7,6 +7,8 @@ import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
 
+import autograder.core.shared.utilities as ut
+
 from ..permission_components import user_can_view_group
 from ..load_object_mixin import build_load_object_mixin
 
@@ -53,10 +55,14 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
 
     def update(self, request, *args, **kwargs):
         if 'member_names' in request.data:
-            request.data['members'] = [
-                User.objects.select_for_update().get_or_create(
+            users = [
+                User.objects.get_or_create(
                     username=username)[0]
                 for username in request.data.pop('member_names')]
+
+            ut.lock_users(users)
+
+            request.data['members'] = users
             request.data['check_group_size_limits'] = False
         return super().update(request, *args, **kwargs)
 

@@ -1,14 +1,7 @@
-import multiprocessing
-import time
-from unittest import mock
-
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.urlresolvers import reverse
-from django import db
 from django.utils import timezone
 
 from rest_framework import status
-from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -22,6 +15,7 @@ import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 class ListGroupSubmissionsTestCase(test_data.Client,
                                    test_data.Project,
+                                   test_data.Group,
                                    test_data.Submission,
                                    test_impls.ListObjectsTest,
                                    TemporaryFilesystemTestCase):
@@ -32,7 +26,7 @@ class ListGroupSubmissionsTestCase(test_data.Client,
                     self.build_submissions(group), many=True).data
                 for user in self.admin, self.staff:
                     self.do_list_objects_test(
-                        self.client, user, submissions_url(group),
+                        self.client, user, self.submissions_url(group),
                         expected_data)
 
         for project in self.hidden_public_project, self.visible_public_project:
@@ -41,7 +35,8 @@ class ListGroupSubmissionsTestCase(test_data.Client,
                 self.build_submissions(group), many=True).data
             for user in self.admin, self.staff:
                 self.do_list_objects_test(
-                    self.client, user, submissions_url(group), expected_data)
+                    self.client, user, self.submissions_url(group),
+                    expected_data)
 
     def test_enrolled_list_submissions(self):
         for project in self.visible_projects:
@@ -49,7 +44,7 @@ class ListGroupSubmissionsTestCase(test_data.Client,
             expected_data = ag_serializers.SubmissionSerializer(
                 self.build_submissions(group), many=True).data
             self.do_list_objects_test(
-                self.client, self.enrolled, submissions_url(group),
+                self.client, self.enrolled, self.submissions_url(group),
                 expected_data)
 
     def test_non_enrolled_list_submissions(self):
@@ -57,7 +52,8 @@ class ListGroupSubmissionsTestCase(test_data.Client,
         expected_data = ag_serializers.SubmissionSerializer(
             self.build_submissions(group), many=True).data
         self.do_list_objects_test(
-            self.client, self.nobody, submissions_url(group), expected_data)
+            self.client, self.nobody, self.submissions_url(group),
+            expected_data)
 
     def test_non_group_member_list_submissions_permission_denied(self):
         group = self.enrolled_group(self.visible_public_project)
@@ -65,20 +61,20 @@ class ListGroupSubmissionsTestCase(test_data.Client,
         non_member = self.clone_user(self.enrolled)
         for user in non_member, self.nobody:
             self.do_permission_denied_get_test(
-                self.client, user, submissions_url(group))
+                self.client, user, self.submissions_url(group))
 
     def test_enrolled_list_submissions_project_hidden_permission_denied(self):
         for project in self.hidden_projects:
             group = self.enrolled_group(project)
             self.build_submissions(group)
             self.do_permission_denied_get_test(
-                self.client, self.enrolled, submissions_url(group))
+                self.client, self.enrolled, self.submissions_url(group))
 
     def test_non_enrolled_list_submissions_project_hidden_permission_denied(self):
         group = self.non_enrolled_group(self.hidden_public_project)
         self.build_submissions(group)
         self.do_permission_denied_get_test(
-            self.client, self.nobody, submissions_url(group))
+            self.client, self.nobody, self.submissions_url(group))
 
     def test_non_enrolled_list_submissions_project_private_permission_denied(self):
         group = self.non_enrolled_group(self.visible_public_project)
@@ -86,11 +82,12 @@ class ListGroupSubmissionsTestCase(test_data.Client,
         self.visible_public_project.validate_and_update(
             allow_submissions_from_non_enrolled_students=False)
         self.do_permission_denied_get_test(
-            self.client, self.nobody, submissions_url(group))
+            self.client, self.nobody, self.submissions_url(group))
 
 
 class CreateSubmissionTestCase(test_data.Client,
                                test_data.Project,
+                               test_data.Group,
                                test_data.Submission,
                                test_impls.CreateObjectTest,
                                TemporaryFilesystemTestCase):
@@ -142,7 +139,7 @@ class CreateSubmissionTestCase(test_data.Client,
             'submitted_files': [
                 SimpleUploadedFile(bad_filename, b'merp')]}
         response = self.client.post(
-            submissions_url(group), request_data, format='multipart')
+            self.submissions_url(group), request_data, format='multipart')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         self.assertCountEqual([], response.data['submitted_filenames'])
         self.assertCountEqual([bad_filename],
@@ -287,7 +284,8 @@ class CreateSubmissionTestCase(test_data.Client,
         self.add_expected_patterns(group.project)
         response = self.do_create_object_test(
             ag_models.Submission.objects, self.client, user,
-            submissions_url(group), {'submitted_files': self.files_to_submit},
+            self.submissions_url(group),
+            {'submitted_files': self.files_to_submit},
             format='multipart', check_data=False)
 
         loaded = ag_models.Submission.objects.get(pk=response.data['pk'])
@@ -315,63 +313,5 @@ class CreateSubmissionTestCase(test_data.Client,
         self.add_expected_patterns(group.project)
         return self.do_permission_denied_create_test(
             ag_models.Submission.objects, self.client,
-            user, submissions_url(group),
+            user, self.submissions_url(group),
             {'submitted_files': self.files_to_submit}, format='multipart')
-
-
-class RaceConditionTestCase(test_data.Client,
-                            test_data.Project,
-                            test_data.Group,
-                            TemporaryFilesystemTestCase):
-    def test_simultaneous_create_race_condition_prevented(self):
-        group = self.admin_group(self.project)
-        group_id = group.pk
-
-        subprocess_has_lock = multiprocessing.Event()
-
-        def do_request_and_wait(group_id):
-            group = ag_models.SubmissionGroup.objects.get(pk=group_id)
-            path = ('autograder.rest_api.views.group_views.'
-                    'group_submissions_view.user_can_view_group')
-            with mock.patch(path, return_value=ag_models.Submission.GradingStatus) as mock_func:
-
-                def sleep_and_return(*args, **kwargs):
-                    subprocess_has_lock.set()
-                    print('subprocess going to sleep')
-                    time.sleep(5)
-                    return mock.DEFAULT
-                mock_func.side_effect = sleep_and_return
-                client = APIClient()
-                client.force_authenticate(group.members.first())
-                response = client.post(submissions_url(group),
-                                       {'submitted_files': []},
-                                       format='multipart')
-                print(response.status_code)
-                print(response.content)
-                if response.status_code != status.HTTP_201_CREATED:
-                    raise Exception('Incorrect status in sleeper thread')
-                if ag_models.Submission.objects.count() != 1:
-                    raise Exception('Submission not created in sleeper thread')
-
-        # Reset the database connection so that child threads get their own
-        # connections.
-        db.connection.close()
-
-        proc = multiprocessing.Process(
-            target=do_request_and_wait, args=[group_id])
-        proc.start()
-
-        print('started subprocesses')
-        subprocess_has_lock.wait()
-        self.client.force_authenticate(self.admin)
-        response = self.client.post(submissions_url(group),
-                                    {'submitted_files': []},
-                                    format='multipart')
-        print('got response')
-        proc.join()
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-        self.assertEqual(1, ag_models.Submission.objects.count())
-
-
-def submissions_url(group):
-    return reverse('group-submissions-list', kwargs={'group_pk': group.pk})

@@ -6,6 +6,8 @@ from rest_framework import viewsets, mixins, permissions
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
+import autograder.core.shared.utilities as ut
+
 from .permissions import IsAdminOrReadOnlyStaff
 from ..load_object_mixin import build_load_object_mixin
 
@@ -25,10 +27,22 @@ class ProjectGroupsViewSet(build_load_object_mixin(ag_models.Project),
     def create(self, request, project_pk, *args, **kwargs):
         project = self.load_object(project_pk)
         request.data['project'] = project
-        request.data['members'] = [
-            User.objects.select_for_update().get_or_create(username=username)[0]
+
+        users = [
+            User.objects.get_or_create(username=username)[0]
             for username in request.data.pop('member_names')]
+
+        ut.lock_users(users)
+
+        request.data['members'] = users
         request.data['check_group_size_limits'] = (
             not project.course.is_administrator(request.user))
 
         return super().create(request, *args, **kwargs)
+
+    def _lock_users(self, users_iterable):
+        # Lock the users all at once (list() forces the queryset to be
+        # evaluated)
+        queryset = User.objects.select_for_update().filter(
+            pk__in=(user.pk for user in users_iterable))
+        list(queryset)
