@@ -163,6 +163,9 @@ class UpdateGroupTestCase(test_data.Client,
                     group, self.client, user, self.group_url(group),
                     {'extended_due_date': self.new_due_date})
 
+    # def test_update_group_new_members_pending_invitations_deleted(self):
+    #     self.fail()
+
 
 class RetrieveUltimateSubmissionTestCase(test_data.Client,
                                          test_data.Project,

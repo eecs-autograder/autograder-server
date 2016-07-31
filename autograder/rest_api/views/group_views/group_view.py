@@ -61,6 +61,8 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
                 for username in request.data.pop('member_names')]
 
             ut.lock_users(users)
+            # Keep this hook just after the users are locked
+            ut.mocking_hook()
 
             request.data['members'] = users
             request.data['check_group_size_limits'] = False

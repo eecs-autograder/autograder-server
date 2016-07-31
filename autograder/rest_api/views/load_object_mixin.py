@@ -3,7 +3,7 @@ from rest_framework import permissions
 
 
 def build_load_object_mixin(ag_model_class, pk_key='pk',
-                            lock_on_unsafe_method=False):
+                            lock_on_unsafe_method=True):
     """
     Returns a mixin class that provides an implementation of get_object
     that can be used in a Django Rest Framework generic viewset:

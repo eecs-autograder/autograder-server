@@ -23,7 +23,7 @@ class GroupInvitationsPermissions(IsAdminOrReadOnlyStaff):
 
 
 class ProjectGroupInvitationsViewset(
-        build_load_object_mixin(ag_models.Project),
+        build_load_object_mixin(ag_models.Project, lock_on_unsafe_method=False),
         mixins.ListModelMixin,
         mixins.CreateModelMixin,
         viewsets.GenericViewSet):

@@ -8,6 +8,8 @@ from rest_framework import viewsets, mixins, permissions, response, status
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
+import autograder.core.shared.utilities as ut
+
 from .permission_components import user_can_view_project
 from .load_object_mixin import build_load_object_mixin
 
@@ -44,15 +46,22 @@ class GroupInvitationViewset(
         if not invitation.all_invitees_accepted:
             return response.Response(invitation.to_dict())
 
-        locked_creator = User.objects.select_for_update().get(
-            pk=invitation.invitation_creator.pk)
-        members = ([locked_creator] +
-                   list(invitation.invited_users.select_for_update().all()))
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
-            members, project=invitation.project)
+        members = ([invitation.invitation_creator] +
+                   list(invitation.invited_users.all()))
+        ut.lock_users(members)
+        # Keep this hook just after the users are locked
+        ut.mocking_hook()
+
+        serializer = ag_serializers.SubmissionGroupSerializer(
+            data={'members': members, 'project': invitation.project})
+        serializer.is_valid()
+        serializer.save()
+
         invitation.delete()
-        return response.Response(group.to_dict(),
-                                 status=status.HTTP_201_CREATED)
+        return response.Response(
+            serializer.data, status=status.HTTP_201_CREATED,
+            headers=mixins.CreateModelMixin.get_success_headers(
+                self, serializer.data))
 
     @transaction.atomic()
     def delete(self, request, pk, *args, **kwargs):

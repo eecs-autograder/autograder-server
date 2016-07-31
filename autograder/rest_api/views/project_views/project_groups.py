@@ -12,10 +12,11 @@ from .permissions import IsAdminOrReadOnlyStaff
 from ..load_object_mixin import build_load_object_mixin
 
 
-class ProjectGroupsViewSet(build_load_object_mixin(ag_models.Project),
-                           mixins.ListModelMixin,
-                           mixins.CreateModelMixin,
-                           viewsets.GenericViewSet):
+class ProjectGroupsViewSet(
+        build_load_object_mixin(ag_models.Project, lock_on_unsafe_method=False),
+        mixins.ListModelMixin,
+        mixins.CreateModelMixin,
+        viewsets.GenericViewSet):
     serializer_class = ag_serializers.SubmissionGroupSerializer
     permission_classes = (permissions.IsAuthenticated, IsAdminOrReadOnlyStaff)
 
@@ -33,16 +34,11 @@ class ProjectGroupsViewSet(build_load_object_mixin(ag_models.Project),
             for username in request.data.pop('member_names')]
 
         ut.lock_users(users)
+        # Keep this hook immediately after locking the users.
+        ut.mocking_hook()
 
         request.data['members'] = users
         request.data['check_group_size_limits'] = (
             not project.course.is_administrator(request.user))
 
         return super().create(request, *args, **kwargs)
-
-    def _lock_users(self, users_iterable):
-        # Lock the users all at once (list() forces the queryset to be
-        # evaluated)
-        queryset = User.objects.select_for_update().filter(
-            pk__in=(user.pk for user in users_iterable))
-        list(queryset)

@@ -129,8 +129,11 @@ class RaceConditionTestCase(test_data.Client,
         second_group.refresh_from_db()
         self.assertNotIn(overlap_member.username, second_group.member_names)
 
-    def test_update_groups_with_multiple_overlap_no_deadlock(self):
-        self.fail()
+    # There may not be a good way to test for this reliably. Make sure
+    # that users are always locked simultaneously using the lock_users()
+    # utility function.
+    # def test_update_groups_with_multiple_overlap_no_deadlock(self):
+    #     self.fail()
 
     def test_create_and_update_groups_with_member_overlap(self):
         self.project.validate_and_update(max_group_size=4)
@@ -161,13 +164,232 @@ class RaceConditionTestCase(test_data.Client,
         self.assertNotIn(overlap_member.username, group.member_names)
 
     def test_update_group_and_create_invitation_with_invitor_in_both(self):
-        self.fail()
+        self.project.validate_and_update(max_group_size=4)
+        group = self.admin_group(self.project)
+        invitor = self.clone_user(self.admin)
+        path = ('autograder.rest_api.views.group_views'
+                '.group_view.GroupViewset.serializer_class')
+
+        @sleeper_subtest(path, wraps=GroupViewset.serializer_class)
+        def update_group():
+            client = APIClient()
+            client.force_authenticate(self.admin)
+            response = client.patch(
+                self.group_url(group),
+                {'member_names': [invitor.username] + group.member_names})
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertIn(invitor.username, response.data['member_names'])
+
+        subtest = update_group()
+        self.client.force_authenticate(invitor)
+        response = self.client.post(
+            self.get_invitations_url(self.project),
+            {'invited_usernames': [self.clone_user(self.admin).username]})
+        subtest.join()
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(0, ag_models.SubmissionGroupInvitation.objects.count())
 
     def test_update_group_and_create_invitation_with_member_in_both(self):
-        self.fail()
+        self.project.validate_and_update(max_group_size=4)
+        group = self.admin_group(self.project)
+        new_member = self.clone_user(self.admin)
+        path = ('autograder.rest_api.views.group_views'
+                '.group_view.GroupViewset.serializer_class')
 
-    def test_two_final_invitation_acceptances_race_condition_prevented(self):
-        self.fail()
+        @sleeper_subtest(path, wraps=GroupViewset.serializer_class)
+        def update_group():
+            client = APIClient()
+            client.force_authenticate(self.admin)
+            response = client.patch(
+                self.group_url(group),
+                {'member_names': [new_member.username] + group.member_names})
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertIn(new_member.username, response.data['member_names'])
 
-    def test_final_invitation_accept_and_create(self):
-        self.fail()
+        subtest = update_group()
+        invitor = self.clone_user(self.admin)
+        self.client.force_authenticate(invitor)
+        response = self.client.post(
+            self.get_invitations_url(self.project),
+            {'invited_usernames': [new_member.username]})
+        subtest.join()
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(0, ag_models.SubmissionGroupInvitation.objects.count())
+
+    def test_two_different_final_invitation_acceptances_invitor_overlap(self):
+        self.project.validate_and_update(max_group_size=2)
+        invitor = self.clone_user(self.admin)
+        first_invitee = self.clone_user(self.admin)
+        second_invitee = self.clone_user(self.admin)
+
+        first_invitation = (
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invitor, [first_invitee], project=self.project))
+        second_invitation = (
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invitor, [second_invitee], project=self.project))
+
+        path = ('autograder.rest_api.views'
+                '.group_invitation_views.ut.mocking_hook')
+
+        @sleeper_subtest(path)
+        def first_final_accept():
+            client = APIClient()
+            client.force_authenticate(first_invitee)
+            response = client.post(self.invitation_url(first_invitation))
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+
+        subtest = first_final_accept()
+        self.client.force_authenticate(second_invitee)
+        response = self.client.post(self.invitation_url(second_invitation))
+        subtest.join()
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+
+    def test_two_different_final_invitation_acceptances_member_overlap(self):
+        self.project.validate_and_update(max_group_size=2)
+        first_invitor = self.clone_user(self.admin)
+        second_invitor = self.clone_user(self.admin)
+        invitee = self.clone_user(self.admin)
+
+        first_invitation = (
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                first_invitor, [invitee], project=self.project))
+        second_invitation = (
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                second_invitor, [invitee], project=self.project))
+
+        path = ('autograder.rest_api.views'
+                '.group_invitation_views.ut.mocking_hook')
+
+        @sleeper_subtest(path)
+        def first_final_accept():
+            client = APIClient()
+            client.force_authenticate(invitee)
+            response = client.post(self.invitation_url(first_invitation))
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+
+        subtest = first_final_accept()
+        self.client.force_authenticate(invitee)
+        response = self.client.post(self.invitation_url(second_invitation))
+        subtest.join()
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+
+    def test_create_group_and_final_invitation_accept_invitor_overlap(self):
+        self.project.validate_and_update(max_group_size=2)
+        invitor = self.clone_user(self.admin)
+        other_member = self.clone_user(self.admin)
+
+        invitation = (
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invitor, [other_member], project=self.project))
+
+        path = ('autograder.rest_api.views.project_views'
+                '.project_groups.ut.mocking_hook')
+
+        @sleeper_subtest(path)
+        def create_group():
+            client = APIClient()
+            client.force_authenticate(self.admin)
+            response = client.post(
+                self.get_groups_url(self.project),
+                {'member_names': [invitor.username]})
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+
+        subtest = create_group()
+        self.client.force_authenticate(other_member)
+        response = self.client.post(self.invitation_url(invitation))
+        subtest.join()
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+
+    def test_create_group_and_final_invitation_accept_member_overlap(self):
+        self.project.validate_and_update(max_group_size=2)
+        invitor = self.clone_user(self.admin)
+        other_member = self.clone_user(self.admin)
+
+        invitation = (
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invitor, [other_member], project=self.project))
+
+        path = ('autograder.rest_api.views.project_views'
+                '.project_groups.ut.mocking_hook')
+
+        @sleeper_subtest(path)
+        def create_group():
+            client = APIClient()
+            client.force_authenticate(self.admin)
+            response = client.post(
+                self.get_groups_url(self.project),
+                {'member_names': [other_member.username]})
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+
+        subtest = create_group()
+        self.client.force_authenticate(other_member)
+        response = self.client.post(self.invitation_url(invitation))
+        subtest.join()
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+
+    def test_update_group_and_final_invitation_accept_invitor_overlap(self):
+        self.project.validate_and_update(max_group_size=4)
+        invitor = self.clone_user(self.admin)
+        other_member = self.clone_user(self.admin)
+
+        invitation = (
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invitor, [other_member], project=self.project))
+        group = self.admin_group(self.project)
+
+        path = ('autograder.rest_api.views.group_views.group_view.ut.mocking_hook')
+
+        @sleeper_subtest(path)
+        def update_group():
+            client = APIClient()
+            client.force_authenticate(self.admin)
+            response = client.patch(
+                self.group_url(group),
+                {'member_names': [invitor.username] + group.member_names})
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertIn(invitor.username, response.data['member_names'])
+
+        subtest = update_group()
+        self.client.force_authenticate(other_member)
+        response = self.client.post(self.invitation_url(invitation))
+        subtest.join()
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+
+    def test_update_group_and_final_invitation_accept_member_overlap(self):
+        self.project.validate_and_update(max_group_size=4)
+        invitor = self.clone_user(self.admin)
+        other_member = self.clone_user(self.admin)
+
+        invitation = (
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invitor, [other_member], project=self.project))
+        group = self.admin_group(self.project)
+
+        path = ('autograder.rest_api.views.group_views.group_view.ut.mocking_hook')
+
+        @sleeper_subtest(path)
+        def update_group():
+            client = APIClient()
+            client.force_authenticate(self.admin)
+            response = client.patch(
+                self.group_url(group),
+                {'member_names': [other_member.username] + group.member_names})
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertIn(other_member.username, response.data['member_names'])
+
+        subtest = update_group()
+        self.client.force_authenticate(other_member)
+        response = self.client.post(self.invitation_url(invitation))
+        subtest.join()
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())

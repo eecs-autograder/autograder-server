@@ -95,6 +95,9 @@ class CreateGroupTestCase(_GroupsSetUp,
                 self.project.submission_groups, self.client, user,
                 self.get_groups_url(self.project), args)
 
+    def test_pending_invitations_deleted_after_group_create(self):
+        self.fail()
+
     def get_legal_members(self):
         if hasattr(self, '_legal_members'):
             return self._legal_members

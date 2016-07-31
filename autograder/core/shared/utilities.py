@@ -57,6 +57,22 @@ def lock_users(users_iterable):
     list(queryset)
 
 
+def mocking_hook():
+    '''
+    This is a dummy function that can be used to insert special mock
+    behaviors during testing, i.e. Forcing a function to sleep during a
+    race condition test case.
+
+    This function should be used sparingly to avoid source code clutter.
+
+    Yes, this probably goes against some best practices, but race
+    condition test cases are very important, and trying to find a "real"
+    line of code to mock has so far proven to be a large time waster due
+    to the complexity of the libraries being used.
+    '''
+    pass
+
+
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------

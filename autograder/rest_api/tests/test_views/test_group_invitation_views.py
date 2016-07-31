@@ -124,6 +124,9 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(0, len(response.data['invitees_who_accepted']))
 
+    # def test_all_accept_other_pending_invitations_deleted(self):
+    #     self.fail()
+
     def do_all_accept_test(self, invitation):
         # Send accept requests for all but one user, and make sure that
         # the list of users who accepted the invitation is updated and

@@ -186,35 +186,44 @@ class Group(Course):
 
     # -------------------------------------------------------------------------
 
-    def admin_group(self, project):
-        return self._build_group(project, self.admin, 'admin_group')
+    def admin_group(self, project, group_size=3):
+        return self._build_group(project, self.admin, 'admin_group',
+                                 group_size=group_size)
 
-    def staff_group(self, project):
-        return self._build_group(project, self.staff, 'staff_group')
+    def staff_group(self, project, group_size=3):
+        return self._build_group(project, self.staff, 'staff_group',
+                                 group_size=group_size)
 
-    def enrolled_group(self, project):
-        return self._build_group(project, self.enrolled, 'enrolled_group')
+    def enrolled_group(self, project, group_size=3):
+        return self._build_group(project, self.enrolled, 'enrolled_group',
+                                 group_size=group_size)
 
-    def non_enrolled_group(self, project):
-        return self._build_group(project, self.nobody, 'non_enrolled_group')
+    def non_enrolled_group(self, project, group_size=3):
+        return self._build_group(project, self.nobody, 'non_enrolled_group',
+                                 group_size=group_size)
 
-    def all_groups(self, project):
-        return [self.admin_group(project), self.staff_group(project),
-                self.enrolled_group(project), self.non_enrolled_group(project)]
+    def all_groups(self, project, group_size=3):
+        return [self.admin_group(project, group_size=group_size),
+                self.staff_group(project, group_size=group_size),
+                self.enrolled_group(project, group_size=group_size),
+                self.non_enrolled_group(project, group_size=group_size)]
 
-    def at_least_enrolled_groups(self, project):
-        return [self.admin_group(project), self.staff_group(project),
-                self.enrolled_group(project)]
+    def at_least_enrolled_groups(self, project, group_size=3):
+        return [self.admin_group(project, group_size=group_size),
+                self.staff_group(project, group_size=group_size),
+                self.enrolled_group(project, group_size=group_size)]
 
-    def non_staff_groups(self, project):
-        return [self.enrolled_group(project), self.non_enrolled_group(project)]
+    def non_staff_groups(self, project, group_size=3):
+        return [self.enrolled_group(project, group_size=group_size),
+                self.non_enrolled_group(project, group_size=group_size)]
 
-    def staff_groups(self, project):
-        return [self.admin_group(project), self.staff_group(project)]
+    def staff_groups(self, project, group_size=3):
+        return [self.admin_group(project, group_size=group_size),
+                self.staff_group(project, group_size=group_size)]
 
-    def _build_group(self, project, user_to_clone, label):
-        if project.max_group_size < 3:
-            project.validate_and_update(max_group_size=3)
+    def _build_group(self, project, user_to_clone, label, group_size):
+        if project.max_group_size < group_size:
+            project.validate_and_update(max_group_size=group_size)
 
         group = self._get_cached_group(project, label)
         if group is not None:
