@@ -43,6 +43,7 @@ class Project(AutograderModel):
         'closing_time',
         'soft_closing_time',
         'disallow_student_submissions',
+        'disallow_group_registration',
         'allow_submissions_from_non_enrolled_students',
         'min_group_size',
         'max_group_size',
@@ -65,6 +66,7 @@ class Project(AutograderModel):
         'closing_time',
         'soft_closing_time',
         'disallow_student_submissions',
+        'disallow_group_registration',
         'allow_submissions_from_non_enrolled_students',
         'min_group_size',
         'max_group_size',
@@ -139,6 +141,12 @@ class Project(AutograderModel):
         help_text='''A hard override that indicates that students should
             be prevented from submitting even if visible_to_students is
             True and it is before closing_time.''')
+
+    disallow_group_registration = models.BooleanField(
+        default=False,
+        help_text='''A hard override that indicates that students should
+            not be able to send, accept, or reject group
+            invitations.''')
 
     allow_submissions_from_non_enrolled_students = models.BooleanField(
         default=False,

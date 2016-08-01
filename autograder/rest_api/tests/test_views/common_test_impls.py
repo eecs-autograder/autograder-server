@@ -73,7 +73,7 @@ class CreateObjectTest(CreateObjectInvalidArgsTest, PermissionDeniedCreateTest):
         if not check_data:
             return response
 
-        loaded = model_manager.first()
+        loaded = model_manager.get(pk=response.data['pk'])
         self.assertEqual(_ordered(loaded.to_dict()), _ordered(response.data))
 
         for arg_name, value in request_data.items():

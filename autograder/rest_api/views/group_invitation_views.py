@@ -19,16 +19,17 @@ class _Permissions(permissions.BasePermission):
         if not user_can_view_project(request.user, invitation.project):
             return False
 
-        if request.user == invitation.invitation_creator:
-            return True
-
-        if request.user in invitation.invited_users.all():
-            return True
+        is_staff = invitation.project.course.is_course_staff(request.user)
+        is_involved = (request.user == invitation.invitation_creator or
+                       request.user in invitation.invited_users.all())
 
         if request.method.lower() == 'get':
-            return invitation.project.course.is_course_staff(request.user)
+            return is_staff or is_involved
 
-        return False
+        if invitation.project.disallow_group_registration and not is_staff:
+            return False
+
+        return is_involved
 
 
 class GroupInvitationViewset(

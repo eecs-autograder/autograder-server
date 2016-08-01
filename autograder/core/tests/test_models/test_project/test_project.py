@@ -29,13 +29,12 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual(new_project.name, self.project_name)
         self.assertEqual(new_project.course, self.course)
 
-        self.assertEqual(new_project.visible_to_students, False)
-        self.assertEqual(new_project.closing_time, None)
-        self.assertEqual(new_project.soft_closing_time, None)
-        self.assertEqual(new_project.disallow_student_submissions, False)
-        self.assertEqual(
-            new_project.allow_submissions_from_non_enrolled_students,
-            False)
+        self.assertFalse(new_project.visible_to_students)
+        self.assertIsNone(new_project.closing_time)
+        self.assertIsNone(new_project.soft_closing_time)
+        self.assertFalse(new_project.disallow_student_submissions)
+        self.assertFalse(new_project.disallow_group_registration)
+        self.assertFalse(new_project.allow_submissions_from_non_enrolled_students)
         self.assertEqual(new_project.min_group_size, 1)
         self.assertEqual(new_project.max_group_size, 1)
 
@@ -60,49 +59,35 @@ class ProjectMiscTestCase(UnitTestBase):
 
         selection_method = (ag_models.Project.UltimateSubmissionSelectionMethod
                                              .best_basic_score)
+        kwargs = {
+            'name': self.project_name,
+            'course': self.course,
+            'visible_to_students': True,
+            'closing_time': tomorrow_date,
+            'soft_closing_time': soft_closing_time,
+            'disallow_student_submissions': True,
+            'disallow_group_registration': True,
+            'allow_submissions_from_non_enrolled_students': True,
+            'min_group_size': min_group_size,
+            'max_group_size': max_group_size,
+
+            'submission_limit_per_day': sub_limit,
+            'allow_submissions_past_limit': False,
+            'submission_limit_reset_time': reset_time,
+
+            'hide_ultimate_submission_fdbk': False,
+            'ultimate_submission_selection_method': selection_method,
+        }
 
         new_project = ag_models.Project.objects.validate_and_create(
-            name=self.project_name,
-            course=self.course,
-            visible_to_students=True,
-            closing_time=tomorrow_date,
-            soft_closing_time=soft_closing_time,
-            disallow_student_submissions=True,
-            allow_submissions_from_non_enrolled_students=True,
-            min_group_size=min_group_size,
-            max_group_size=max_group_size,
-
-            submission_limit_per_day=sub_limit,
-            allow_submissions_past_limit=False,
-            submission_limit_reset_time=reset_time,
-
-            hide_ultimate_submission_fdbk=False,
-            ultimate_submission_selection_method=selection_method,
+            **kwargs
         )
 
         new_project.refresh_from_db()
 
-        self.assertEqual(new_project, new_project)
-        self.assertEqual(new_project.name, self.project_name)
-        self.assertEqual(new_project.course, self.course)
-
-        self.assertEqual(new_project.visible_to_students, True)
-        self.assertEqual(new_project.closing_time, tomorrow_date)
-        self.assertEqual(new_project.soft_closing_time, soft_closing_time)
-        self.assertEqual(new_project.disallow_student_submissions, True)
-        self.assertEqual(
-            new_project.allow_submissions_from_non_enrolled_students,
-            True)
-        self.assertEqual(new_project.min_group_size, min_group_size)
-        self.assertEqual(new_project.max_group_size, max_group_size)
-
-        self.assertEqual(sub_limit, new_project.submission_limit_per_day)
-        self.assertEqual(False, new_project.allow_submissions_past_limit)
-        self.assertEqual(reset_time, new_project.submission_limit_reset_time)
-
-        self.assertFalse(new_project.hide_ultimate_submission_fdbk)
-        self.assertEqual(selection_method,
-                         new_project.ultimate_submission_selection_method)
+        for field_name, value in kwargs.items():
+            self.assertEqual(value, getattr(new_project, field_name),
+                             msg=field_name)
 
     def test_to_dict_default_fields(self):
         project = obj_build.build_project()
@@ -114,6 +99,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'closing_time',
             'soft_closing_time',
             'disallow_student_submissions',
+            'disallow_group_registration',
             'allow_submissions_from_non_enrolled_students',
             'min_group_size',
             'max_group_size',
@@ -138,6 +124,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'closing_time',
             'soft_closing_time',
             'disallow_student_submissions',
+            'disallow_group_registration',
             'allow_submissions_from_non_enrolled_students',
             'min_group_size',
             'max_group_size',

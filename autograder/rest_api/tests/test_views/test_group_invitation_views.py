@@ -126,6 +126,26 @@ class AcceptGroupInvitationTestCase(test_data.Client,
     # def test_all_accept_other_pending_invitations_deleted(self):
     #     self.fail()
 
+    def test_registration_disabled_permission_denied_for_enrolled(self):
+        self.visible_public_project.validate_and_update(
+            disallow_group_registration=True)
+        self.do_accept_permission_denied_test(
+            self.enrolled_group_invitation(self.visible_public_project),
+            self.enrolled)
+
+    def test_registration_disabled_permission_denied_for_non_enrolled(self):
+        self.visible_public_project.validate_and_update(
+            disallow_group_registration=True)
+        self.do_accept_permission_denied_test(
+            self.non_enrolled_group_invitation(self.visible_public_project),
+            self.nobody)
+
+    def test_registration_disabled_staff_can_still_accept_invites(self):
+        self.project.validate_and_update(disallow_group_registration=True)
+        for invitation in (self.admin_group_invitation(self.project),
+                           self.staff_group_invitation(self.project)):
+            self.do_all_accept_test(invitation)
+
     def do_all_accept_test(self, invitation):
         # Send accept requests for all but one user, and make sure that
         # the list of users who accepted the invitation is updated and
@@ -133,11 +153,11 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         invited_users = list(invitation.invited_users.all())
         # Computing this for later use.
         all_users = invited_users + [invitation.invitation_creator]
+        original_invite_count = (
+            ag_models.SubmissionGroupInvitation.objects.count())
+        original_group_count = ag_models.SubmissionGroup.objects.count()
         num_accepted = 0
         for user in invited_users[:-1]:
-            self.assertEqual(0, ag_models.SubmissionGroup.objects.count())
-            self.assertEqual(
-                1, ag_models.SubmissionGroupInvitation.objects.count())
             num_accepted += 1
             self.client.force_authenticate(user)
             response = self.client.post(self.invitation_url(invitation))
@@ -156,9 +176,12 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         self.assertEqual(
-            0, ag_models.SubmissionGroupInvitation.objects.count())
+            original_invite_count - 1,
+            ag_models.SubmissionGroupInvitation.objects.count())
 
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(
+            original_group_count + 1,
+            ag_models.SubmissionGroup.objects.count())
         group = ag_models.SubmissionGroup.objects.first()
         self.assertCountEqual(all_users, group.members.all())
         self.assertEqual(group.to_dict(), response.data)
@@ -264,7 +287,35 @@ class RejectGroupInvitationTestCase(test_data.Client,
             invitation, self.client, self.nobody,
             self.invitation_url(invitation))
 
+    def test_enrolled_reject_invitation_registration_disabled_permission_denied(self):
+        invitation = self.enrolled_group_invitation(self.visible_public_project)
+        self.visible_public_project.validate_and_update(
+            disallow_group_registration=True)
+        self.do_delete_object_permission_denied_test(
+            invitation, self.client, self.enrolled,
+            self.invitation_url(invitation))
+
+    def test_non_enrolled_reject_invitation_registration_disabled_permission_denied(self):
+        invitation = self.non_enrolled_group_invitation(self.visible_public_project)
+        self.visible_public_project.validate_and_update(
+            disallow_group_registration=True)
+        self.do_delete_object_permission_denied_test(
+            invitation, self.client, self.nobody,
+            self.invitation_url(invitation))
+
+    def test_staff_can_reject_invitation_with_registration_disabled(self):
+        self.visible_public_project.validate_and_update(
+            disallow_group_registration=True)
+        for invitation in (self.admin_group_invitation(self.project),
+                           self.staff_group_invitation(self.project)):
+            self.do_reject_invitation_test(
+                invitation, invitation.invitation_creator)
+
     def do_reject_invitation_test(self, invitation, user):
+        original_invite_count = (
+            ag_models.SubmissionGroupInvitation.objects.count())
+        original_group_count = ag_models.SubmissionGroup.objects.count()
+
         users = ([invitation.invitation_creator] +
                  list(invitation.invited_users.all()))
         expected_num_notifications = len(users)
@@ -272,9 +323,10 @@ class RejectGroupInvitationTestCase(test_data.Client,
         response = self.client.delete(self.invitation_url(invitation))
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertEqual(
-            0, ag_models.SubmissionGroupInvitation.objects.count())
+            original_invite_count - 1,
+            ag_models.SubmissionGroupInvitation.objects.count())
         self.assertEqual(
-            0, ag_models.SubmissionGroup.objects.count())
+            original_group_count, ag_models.SubmissionGroup.objects.count())
 
         # Make sure the correct notifications were sent
         self.assertEqual(expected_num_notifications,
