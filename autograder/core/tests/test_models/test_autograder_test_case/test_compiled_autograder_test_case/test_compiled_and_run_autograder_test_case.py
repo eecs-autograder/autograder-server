@@ -6,19 +6,18 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 
-from .utils import (
+from .helpers import (
     SharedSetUpTearDownForRunTestsWithCompilation,
     CppProgramStrs)
 
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class CompiledAutograderTestRunTestCase(
         SharedSetUpTearDownForRunTestsWithCompilation,
-        TemporaryFilesystemTestCase):
+        UnitTestBase):
 
     def get_ag_test_type_str_for_factory(self):
         return 'compiled_and_run_test_case'
@@ -364,7 +363,7 @@ class CompiledAutograderTestRunTestCase(
         self.assertNotEqual(0, result.valgrind_return_code)
 
 
-class CompiledAGTestResourceLimitTestCase(TemporaryFilesystemTestCase):
+class CompiledAGTestResourceLimitTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -372,7 +371,7 @@ class CompiledAGTestResourceLimitTestCase(TemporaryFilesystemTestCase):
         self.virtual_mem_limit = random.randint(100000000, 200000000)
         self.process_limit = random.randint(1, 5)
 
-        group = obj_ut.build_submission_group()
+        group = obj_build.build_submission_group()
 
         self.submission = ag_models.Submission.objects.validate_and_create(
             submission_group=group,
@@ -387,7 +386,7 @@ class CompiledAGTestResourceLimitTestCase(TemporaryFilesystemTestCase):
             virtual_memory_limit=self.virtual_mem_limit,
             compiler='g++')
 
-    @mock.patch('autograder.security.autograder_sandbox.AutograderSandbox',
+    @mock.patch('autograder.sandbox.autograder_sandbox.AutograderSandbox',
                 autospec=True)
     def test_resource_limits_set(self, MockSandbox):
         run_cmd_mock_result = mock.Mock()
@@ -406,7 +405,7 @@ class CompiledAGTestResourceLimitTestCase(TemporaryFilesystemTestCase):
             max_stack_size=self.stack_limit,
             max_virtual_memory=self.virtual_mem_limit)
 
-    @mock.patch('autograder.security.autograder_sandbox.AutograderSandbox',
+    @mock.patch('autograder.sandbox.autograder_sandbox.AutograderSandbox',
                 autospec=True)
     def test_resource_limits_used_with_valgrind(self, MockSandbox):
         self.test.use_valgrind = True

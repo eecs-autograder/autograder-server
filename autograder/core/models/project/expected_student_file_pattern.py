@@ -4,8 +4,8 @@ from django.core import validators, exceptions
 from ..ag_model_base import AutograderModel
 from .project import Project
 
-import autograder.core.shared.utilities as ut
-import autograder.utilities.fields as ag_fields
+import autograder.core.utils as core_ut
+import autograder.core.fields as ag_fields
 
 
 class ExpectedStudentFilePattern(AutograderModel):
@@ -41,7 +41,7 @@ class ExpectedStudentFilePattern(AutograderModel):
                                 related_name='expected_student_file_patterns')
 
     pattern = ag_fields.ShortStringField(
-        validators=[ut.check_shell_style_file_pattern],
+        validators=[core_ut.check_shell_style_file_pattern],
         help_text='''A shell-style file pattern suitable for
             use with Python's fnmatch.fnmatch()
             function (https://docs.python.org/3.4/library/fnmatch.html)

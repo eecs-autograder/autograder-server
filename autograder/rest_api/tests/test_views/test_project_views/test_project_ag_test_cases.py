@@ -1,8 +1,7 @@
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -14,7 +13,7 @@ class _AGTestsSetUp(test_data.Client, test_data.Project):
 class ListAGTestsTestCase(_AGTestsSetUp,
                           test_impls.ListObjectsTest,
                           test_impls.PermissionDeniedGetTest,
-                          TemporaryFilesystemTestCase):
+                          UnitTestBase):
     def test_admin_list_ag_tests(self):
         for project in self.all_projects:
             self.do_list_objects_test(
@@ -58,7 +57,7 @@ class CreateAGTestTestCase(_AGTestsSetUp,
                            test_impls.CreateObjectTest,
                            test_impls.CreateObjectInvalidArgsTest,
                            test_impls.PermissionDeniedCreateTest,
-                           TemporaryFilesystemTestCase):
+                           UnitTestBase):
     def setUp(self):
         super().setUp()
         self.url = self.get_ag_tests_url(self.project)

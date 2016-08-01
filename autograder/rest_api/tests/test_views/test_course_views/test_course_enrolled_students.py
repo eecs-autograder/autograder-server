@@ -5,9 +5,8 @@ from rest_framework import status
 
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -22,11 +21,11 @@ class _EnrolledSetUp(test_data.Client, test_data.Course):
 
 class ListEnrolledStudentsTestCase(_EnrolledSetUp,
                                    test_impls.ListObjectsTest,
-                                   TemporaryFilesystemTestCase):
+                                   UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.enrolled_students = obj_ut.create_dummy_users(4)
+        self.enrolled_students = obj_build.create_dummy_users(4)
         self.course.enrolled_students.add(*self.enrolled_students)
 
     # Note: As far as I can tell, making the list of enrolled students
@@ -47,18 +46,18 @@ class ListEnrolledStudentsTestCase(_EnrolledSetUp,
             self.do_permission_denied_get_test(self.client, user, self.url)
 
 
-class AddEnrolledStudentsTestCase(_EnrolledSetUp, TemporaryFilesystemTestCase):
+class AddEnrolledStudentsTestCase(_EnrolledSetUp, UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.current_students = obj_ut.create_dummy_users(2)
+        self.current_students = obj_build.create_dummy_users(2)
         self.course.enrolled_students.add(*self.current_students)
 
     def test_admin_add_enrolled_students(self):
         self.client.force_authenticate(self.admin)
         new_student_names = (
             ['steve', 'bill'] +
-            [user.username for user in obj_ut.create_dummy_users(3)])
+            [user.username for user in obj_build.create_dummy_users(3)])
 
         self.assertEqual(len(self.current_students),
                          self.course.enrolled_students.count())
@@ -86,15 +85,15 @@ class AddEnrolledStudentsTestCase(_EnrolledSetUp, TemporaryFilesystemTestCase):
 
 
 class UpdateEnrolledStudentsTestCase(_EnrolledSetUp,
-                                     TemporaryFilesystemTestCase):
+                                     UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.current_students = obj_ut.create_dummy_users(5)
+        self.current_students = obj_build.create_dummy_users(5)
         self.course.enrolled_students.add(*self.current_students)
 
     def test_admin_update_enrolled_students(self):
-        new_roster = obj_ut.create_dummy_users(3)
+        new_roster = obj_build.create_dummy_users(3)
         self.client.force_authenticate(self.admin)
 
         response = self.client.put(
@@ -110,19 +109,19 @@ class UpdateEnrolledStudentsTestCase(_EnrolledSetUp,
             response = self.client.put(
                 self.url,
                 {'new_enrolled_students':
-                    [user.username for user in obj_ut.create_dummy_users(2)]})
+                    [user.username for user in obj_build.create_dummy_users(2)]})
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
             self.assertCountEqual(self.current_students,
                                   self.course.enrolled_students.all())
 
 
 class RemoveEnrolledStudentsTestCase(_EnrolledSetUp,
-                                     TemporaryFilesystemTestCase):
+                                     UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.remaining_students = obj_ut.create_dummy_users(2)
-        self.students_to_remove = obj_ut.create_dummy_users(5)
+        self.remaining_students = obj_build.create_dummy_users(2)
+        self.students_to_remove = obj_build.create_dummy_users(5)
         self.all_enrolled = self.remaining_students + self.students_to_remove
         self.total_num_enrolled = len(self.all_enrolled)
 

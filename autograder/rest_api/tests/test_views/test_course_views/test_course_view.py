@@ -5,25 +5,24 @@ from rest_framework import status
 
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
 class ListCoursesTestCase(test_data.Client, test_data.Superuser,
-                          TemporaryFilesystemTestCase):
+                          UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.admin = obj_ut.create_dummy_user()
+        self.admin = obj_build.create_dummy_user()
         self.courses = [
-            obj_ut.build_course(
+            obj_build.build_course(
                 course_kwargs={'administrators': [self.admin]})
             for i in range(4)]
 
     def test_superuser_get_course_list(self):
-        superuser = obj_ut.create_dummy_user()
+        superuser = obj_build.create_dummy_user()
         superuser.is_superuser = True
         superuser.save()
 
@@ -36,7 +35,7 @@ class ListCoursesTestCase(test_data.Client, test_data.Superuser,
         self.assertCountEqual(expected_content, response.data)
 
     def test_other_get_course_list_permission_denied(self):
-        nobody = obj_ut.create_dummy_user()
+        nobody = obj_build.create_dummy_user()
 
         for user in self.admin, nobody:
             self.client.force_authenticate(user=user)
@@ -45,7 +44,7 @@ class ListCoursesTestCase(test_data.Client, test_data.Superuser,
 
 
 class CreateCourseTestCase(test_data.Client, test_data.Superuser,
-                           TemporaryFilesystemTestCase):
+                           UnitTestBase):
     def test_superuser_create_course(self):
         self.client.force_authenticate(self.superuser)
         name = 'new_course'
@@ -56,7 +55,7 @@ class CreateCourseTestCase(test_data.Client, test_data.Superuser,
         self.assertEqual(loaded_course.to_dict(), response.data)
 
     def test_other_create_course_permission_denied(self):
-        nobody = obj_ut.create_dummy_user()
+        nobody = obj_build.create_dummy_user()
 
         name = 'spam'
         self.client.force_authenticate(nobody)
@@ -67,7 +66,7 @@ class CreateCourseTestCase(test_data.Client, test_data.Superuser,
 
 
 class RetrieveCourseTestCase(test_data.Client, test_data.Course,
-                             TemporaryFilesystemTestCase):
+                             UnitTestBase):
     def test_get_course(self):
         for user in self.admin, self.nobody:
             self.client.force_authenticate(user)
@@ -86,7 +85,7 @@ class RetrieveCourseTestCase(test_data.Client, test_data.Course,
 
 
 class UpdateCourseTestCase(test_data.Client, test_data.Course,
-                           TemporaryFilesystemTestCase):
+                           UnitTestBase):
     def test_admin_patch_course(self):
         old_name = self.course.name
         new_name = 'steve'

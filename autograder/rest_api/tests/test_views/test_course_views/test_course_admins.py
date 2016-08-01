@@ -6,9 +6,8 @@ from rest_framework import status
 
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
@@ -19,9 +18,9 @@ class _AdminsSetUp(test_data.Client, test_data.Superuser, test_data.Course):
                            kwargs={'course_pk': self.course.pk})
 
 
-class ListCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
+class ListCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
     def test_superuser_admin_or_staff_list_administrators(self):
-        admins = obj_ut.create_dummy_users(3)
+        admins = obj_build.create_dummy_users(3)
         self.course.administrators.add(*admins)
 
         expected_content = ag_serializers.UserSerializer(admins,
@@ -43,15 +42,15 @@ class ListCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class AddCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
+class AddCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
     def setUp(self):
         super().setUp()
 
     def test_superuser_or_admin_add_administrators(self):
-        current_admins = obj_ut.create_dummy_users(2)
+        current_admins = obj_build.create_dummy_users(2)
         self.course.administrators.add(*current_admins)
         new_admin_names = ['steve', 'stave', 'stove', 'stive']
-        new_admins = obj_ut.create_dummy_users(2)
+        new_admins = obj_build.create_dummy_users(2)
 
         for user in (self.superuser, current_admins[0]):
             self.assertEqual(len(current_admins),
@@ -88,12 +87,12 @@ class AddCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
             self.assertEqual(0, self.course.administrators.count())
 
 
-class RemoveCourseAdminsTestCase(_AdminsSetUp, TemporaryFilesystemTestCase):
+class RemoveCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.remaining_admin = obj_ut.create_dummy_user()
-        self.current_admins = obj_ut.create_dummy_users(3)
+        self.remaining_admin = obj_build.create_dummy_user()
+        self.current_admins = obj_build.create_dummy_users(3)
         self.all_admins = [self.remaining_admin] + self.current_admins
         self.total_num_admins = len(self.all_admins)
 

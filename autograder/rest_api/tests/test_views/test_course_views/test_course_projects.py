@@ -5,8 +5,7 @@ from rest_framework import status
 
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
@@ -17,7 +16,7 @@ class _ProjectsSetUp(test_data.Client, test_data.Project):
                            kwargs={'course_pk': self.course.pk})
 
 
-class CourseListProjectsTestCase(_ProjectsSetUp, TemporaryFilesystemTestCase):
+class CourseListProjectsTestCase(_ProjectsSetUp, UnitTestBase):
     def test_admin_list_projects(self):
         self.do_valid_list_projects_test(self.admin, self.all_projects)
 
@@ -44,7 +43,7 @@ class CourseListProjectsTestCase(_ProjectsSetUp, TemporaryFilesystemTestCase):
         self.assertCountEqual(expected_data, response.data)
 
 
-class CourseAddProjectTestCase(_ProjectsSetUp, TemporaryFilesystemTestCase):
+class CourseAddProjectTestCase(_ProjectsSetUp, UnitTestBase):
     def test_course_admin_add_project(self):
         args = {'name': 'spam project',
                 'min_group_size': 2,

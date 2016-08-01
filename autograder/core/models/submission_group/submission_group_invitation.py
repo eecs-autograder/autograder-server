@@ -6,7 +6,7 @@ from django.db import models, transaction
 
 from .. import ag_model_base
 from .. project import Project
-from autograder.utilities import fields as ag_fields
+from autograder.core import fields as ag_fields
 
 from . import verification
 

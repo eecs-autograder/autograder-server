@@ -366,7 +366,7 @@ class AutograderTestCaseResult(models.Model):
         @property
         def compilation_succeeded(self):
             if (self._no_compiler_fdbk() or
-                    not self._result.test_case.test_checks_compilation()):
+                    not self._result.test_case.checks_compilation()):
                 return None
 
             return self._result.compilation_return_code == 0
@@ -374,7 +374,7 @@ class AutograderTestCaseResult(models.Model):
         @property
         def compilation_stdout(self):
             if (not self._show_compiler_output() or
-                    not self._result.test_case.test_checks_compilation()):
+                    not self._result.test_case.checks_compilation()):
                 return None
 
             return self._result.compilation_standard_output
@@ -382,7 +382,7 @@ class AutograderTestCaseResult(models.Model):
         @property
         def compilation_stderr(self):
             if (not self._show_compiler_output() or
-                    not self._result.test_case.test_checks_compilation()):
+                    not self._result.test_case.checks_compilation()):
                 return None
 
             return self._result.compilation_standard_error_output
@@ -391,7 +391,7 @@ class AutograderTestCaseResult(models.Model):
         def compilation_points(self):
             if (self._no_compiler_fdbk() or
                     self._no_pts_fdbk() or
-                    not self._result.test_case.test_checks_compilation()):
+                    not self._result.test_case.checks_compilation()):
                 return None
 
             return (0 if not self.compilation_succeeded

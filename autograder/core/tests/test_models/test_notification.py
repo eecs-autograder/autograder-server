@@ -1,12 +1,11 @@
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class NotificationTestCase(TemporaryFilesystemTestCase):
+class NotificationTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -23,7 +22,7 @@ class NotificationTestCase(TemporaryFilesystemTestCase):
 
         notification = ag_models.Notification.objects.validate_and_create(
             message='waaaaaaaaaluigi',
-            recipient=obj_ut.create_dummy_user())
+            recipient=obj_build.create_dummy_user())
         self.assertTrue(notification.to_dict())
 
     def test_editable_fields(self):

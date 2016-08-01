@@ -5,21 +5,20 @@ from unittest import mock
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core import exceptions
 
-from autograder.security.autograder_sandbox import AutograderSandbox
+from autograder.sandbox.autograder_sandbox import AutograderSandbox
 import autograder.core.models as ag_models
 
-import autograder.core.shared.utilities as ut
+import autograder.core.utils as core_ut
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-from autograder.core.tests import dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+from autograder.utils.testing import model_obj_builders as obj_build
 
 
 class _SetUpBase:
     def setUp(self):
         super().setUp()
 
-        self.group = obj_ut.build_submission_group()
+        self.group = obj_build.build_submission_group()
         self.project = self.group.project
 
         self.submitted_filename = 'my_file.py'
@@ -39,7 +38,7 @@ class _SetUpBase:
         }
 
 
-class InterpretedAGTestMiscTestCase(_SetUpBase, TemporaryFilesystemTestCase):
+class InterpretedAGTestMiscTestCase(_SetUpBase, UnitTestBase):
     def test_to_dict(self):
         test = ag_models.AutograderTestCaseFactory.validate_and_create(
             'interpreted_test_case',
@@ -132,7 +131,7 @@ class InterpretedAGTestMiscTestCase(_SetUpBase, TemporaryFilesystemTestCase):
         self.assertTrue('entry_point_filename' in cm.exception.message_dict)
 
 
-class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTestCase):
+class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -153,7 +152,7 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTe
             submitted_files=[SimpleUploadedFile(self.submitted_filename, b'')])
 
         self.submitted_file_abspath = os.path.join(
-            ut.get_submission_dir(self.submission), self.submitted_filename)
+            core_ut.get_submission_dir(self.submission), self.submitted_filename)
 
         self.sandbox = AutograderSandbox()
         self.sandbox.__enter__()
@@ -197,7 +196,7 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, TemporaryFilesystemTe
         self.assertEqual(expected_output, result.standard_output)
 
 
-class InterpretedAutograderTestCaseResourceLimitTestCase(_SetUpBase, TemporaryFilesystemTestCase):
+class InterpretedAutograderTestCaseResourceLimitTestCase(_SetUpBase, UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -218,7 +217,7 @@ class InterpretedAutograderTestCaseResourceLimitTestCase(_SetUpBase, TemporaryFi
             submission_group=self.group,
             submitted_files=[])
 
-    @mock.patch('autograder.security.autograder_sandbox.AutograderSandbox',
+    @mock.patch('autograder.sandbox.autograder_sandbox.AutograderSandbox',
                 autospec=True)
     def test_resource_limits_set(self, MockSandbox):
         sandbox = MockSandbox()

@@ -9,7 +9,7 @@ class CompilationOnlyAutograderTestCase(CompiledAutograderTestCase):
 
     Overridden methods:
         clean()
-        test_checks_compilation()
+        checks_compilation()
         get_type_str()
         run()
     """

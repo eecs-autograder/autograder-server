@@ -4,7 +4,7 @@ from django.db import models
 
 from ..ag_model_base import AutograderModel
 
-import autograder.utilities.fields as ag_fields
+import autograder.core.fields as ag_fields
 
 
 class AGTestNameFdbkLevel:

@@ -6,18 +6,17 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 from ..models import _DummyCompiledAutograderTestCase
 
 
-class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
+class CompiledAutograderTestCaseTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
 
         self.test_name = 'my_test'
 
@@ -147,19 +146,19 @@ class CompiledAutograderTestCaseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue('time_limit' in cm.exception.message_dict)
         self.assertTrue('compiler' in cm.exception.message_dict)
 
-    def test_test_checks_compilation(self):
+    def test_checks_compilation(self):
         test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
             name=self.test_name, project=self.project,
             **self.compiled_test_kwargs)
 
-        self.assertTrue(test.test_checks_compilation())
+        self.assertTrue(test.checks_compilation())
 
 
-class GetCompilationCommandTestCase(TemporaryFilesystemTestCase):
+class GetCompilationCommandTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.group = obj_ut.build_submission_group()
+        self.group = obj_build.build_submission_group()
 
         # These files should NOT show up in the list of files to compile
         self.uploaded_resource_files = [

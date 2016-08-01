@@ -8,7 +8,7 @@ from django.db import transaction
 import celery
 
 import autograder.core.models as ag_models
-from autograder.security.autograder_sandbox import AutograderSandbox
+from autograder.sandbox.autograder_sandbox import AutograderSandbox
 
 
 @celery.shared_task
@@ -21,7 +21,7 @@ def grade_submission(submission_id):
         deferred_queryset = project.autograder_test_cases.filter(deferred=True)
         signatures = (grade_ag_test.s(ag_test.pk, submission_id)
                       for ag_test in deferred_queryset)
-        callback = _mark_as_finished.s(submission_id)
+        callback = mark_as_finished.s(submission_id)
         celery.chord(signatures)(callback)
     except Exception:
         traceback.print_exc()
@@ -67,21 +67,25 @@ def _run_non_deferred_tests(submission):
                         random.randint(settings.AG_TEST_MIN_RETRY_DELAY,
                                        settings.AG_TEST_MAX_RETRY_DELAY))
 
-        _mark_as_waiting_for_deferred(submission.pk)
+        mark_as_waiting_for_deferred(submission.pk)
 
 
 @celery.shared_task
-def _mark_as_finished(results, submission_id):
-    print(results, submission_id)
+def mark_as_finished(chord_results, submission_id):
+    print(chord_results, submission_id)
     print(ag_models.Submission.objects.all())
     with transaction.atomic():
         submission = ag_models.Submission.objects.select_for_update().get(
             pk=submission_id)
+
+        mark_as_finished.mocking_hook()
+
         submission.status = ag_models.Submission.GradingStatus.finished_grading
         submission.save()
+mark_as_finished.mocking_hook = lambda: None
 
 
-def _mark_as_waiting_for_deferred(submission_id):
+def mark_as_waiting_for_deferred(submission_id):
     with transaction.atomic():
         submission = ag_models.Submission.objects.select_for_update().get(
             pk=submission_id)
@@ -118,6 +122,8 @@ def grade_ag_test(self, ag_test_id, submission_id):
 def grade_ag_test_impl(ag_test, submission):
     group = submission.submission_group
 
+    grade_ag_test_impl.mocking_hook()
+
     sandbox = AutograderSandbox(
         name='submission{}-test{}'.format(submission.pk, ag_test.pk),
         environment_variables={
@@ -126,3 +132,4 @@ def grade_ag_test_impl(ag_test, submission):
     with sandbox:
         result = ag_test.run(submission, sandbox)
         result.save()
+grade_ag_test_impl.mocking_hook = lambda: None

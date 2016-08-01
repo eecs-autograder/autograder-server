@@ -7,32 +7,32 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case.feedback_config import (
-    FeedbackConfig, AGTestNameFdbkLevel, ReturnCodeFdbkLevel,
-    StdoutFdbkLevel, StderrFdbkLevel, CompilationFdbkLevel,
-    ValgrindFdbkLevel, PointsFdbkLevel)
-import autograder.core.shared.global_constants as gc
+    FeedbackConfig)
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.core.constants as const
+import autograder.sandbox.constants as sandbox_const
+
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
+
 from .models import _DummyAutograderTestCase
 
-from autograder.security.autograder_sandbox import AutograderSandbox
+from autograder.sandbox.autograder_sandbox import AutograderSandbox
 
 
 class _Shared:
     def setUp(self):
         super().setUp()
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
 
         self.TEST_NAME = 'my_test'
         self.fdbk = ag_models.FeedbackConfig.objects.validate_and_create()
 
     def _random_fdbk(self):
-        return obj_ut.random_fdbk()
+        return obj_build.random_fdbk()
 
 
-class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
+class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
     def test_valid_initialization_with_defaults(self):
         new_test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
@@ -52,18 +52,19 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertEqual(new_test_case.time_limit, 10)
         self.assertFalse(new_test_case.allow_network_connections)
         self.assertEqual(new_test_case.stack_size_limit,
-                         gc.DEFAULT_STACK_SIZE_LIMIT)
+                         sandbox_const.DEFAULT_STACK_SIZE_LIMIT)
         self.assertEqual(new_test_case.virtual_memory_limit,
-                         gc.DEFAULT_VIRTUAL_MEM_LIMIT)
+                         sandbox_const.DEFAULT_VIRTUAL_MEM_LIMIT)
         self.assertEqual(new_test_case.process_spawn_limit,
-                         gc.DEFAULT_PROCESS_LIMIT)
+                         sandbox_const.DEFAULT_PROCESS_LIMIT)
 
         self.assertIsNone(new_test_case.expected_return_code)
         self.assertFalse(new_test_case.expect_any_nonzero_return_code)
         self.assertEqual("", new_test_case.expected_standard_output)
         self.assertEqual("", new_test_case.expected_standard_error_output)
         self.assertFalse(new_test_case.use_valgrind)
-        self.assertEqual(gc.DEFAULT_VALGRIND_FLAGS, new_test_case.valgrind_flags)
+        self.assertEqual(const.DEFAULT_VALGRIND_FLAGS,
+                         new_test_case.valgrind_flags)
 
         self.assertEqual(0, new_test_case.points_for_correct_return_code)
         self.assertEqual(0, new_test_case.points_for_correct_stdout)
@@ -103,10 +104,12 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
             'expected_standard_error_output': "errorzspam",
 
             'time_limit': random.randint(1, 60),
-            'stack_size_limit': random.randint(1, gc.MAX_STACK_SIZE_LIMIT),
+            'stack_size_limit': random.randint(
+                1, sandbox_const.MAX_STACK_SIZE_LIMIT),
             'virtual_memory_limit': random.randint(
-                1, gc.MAX_VIRTUAL_MEM_LIMIT),
-            'process_spawn_limit': random.randint(1, gc.MAX_PROCESS_LIMIT),
+                1, sandbox_const.MAX_VIRTUAL_MEM_LIMIT),
+            'process_spawn_limit': random.randint(
+                1, sandbox_const.MAX_PROCESS_LIMIT),
             'allow_network_connections': random.choice([True, False]),
 
             'expected_return_code': random.randint(-3, 10),
@@ -304,7 +307,7 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertIn('type_str', cm.exception.message_dict)
 
 
-class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
+class AGTestCaseNameExceptionTestCase(_Shared, UnitTestBase):
     def test_exception_on_non_unique_name_within_project(self):
         _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
@@ -320,7 +323,7 @@ class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
             name=self.TEST_NAME,
             project=self.project)
 
-        other_project = obj_ut.build_project()
+        other_project = obj_build.build_project()
         _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
             project=other_project)
@@ -342,7 +345,7 @@ class AGTestCaseNameExceptionTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue('name' in cm.exception.message_dict)
 
 
-class AGTestCmdArgErrorTestCase(_Shared, TemporaryFilesystemTestCase):
+class AGTestCmdArgErrorTestCase(_Shared, UnitTestBase):
     def test_exception_on_empty_value_in_cmd_args(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
@@ -367,7 +370,7 @@ class AGTestCmdArgErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertTrue(error_list[1])
 
 
-class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
+class AGTestResourceLimitErrorTestCase(_Shared, UnitTestBase):
     def test_exception_on_zero_time_limit(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
@@ -388,7 +391,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
-                time_limit=gc.MAX_SUBPROCESS_TIMEOUT + 1)
+                time_limit=sandbox_const.MAX_SUBPROCESS_TIMEOUT + 1)
 
         self.assertTrue('time_limit' in cm.exception.message_dict)
 
@@ -430,7 +433,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
-                stack_size_limit=gc.MAX_STACK_SIZE_LIMIT + 1)
+                stack_size_limit=sandbox_const.MAX_STACK_SIZE_LIMIT + 1)
 
         self.assertTrue('stack_size_limit' in cm.exception.message_dict)
 
@@ -456,7 +459,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
-                virtual_memory_limit=gc.MAX_VIRTUAL_MEM_LIMIT + 1)
+                virtual_memory_limit=sandbox_const.MAX_VIRTUAL_MEM_LIMIT + 1)
 
         self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
 
@@ -474,12 +477,12 @@ class AGTestResourceLimitErrorTestCase(_Shared, TemporaryFilesystemTestCase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
-                process_spawn_limit=gc.MAX_PROCESS_LIMIT + 1)
+                process_spawn_limit=sandbox_const.MAX_PROCESS_LIMIT + 1)
 
         self.assertTrue('process_spawn_limit' in cm.exception.message_dict)
 
 
-class AGTestRetCodeTestCase(_Shared, TemporaryFilesystemTestCase):
+class AGTestRetCodeTestCase(_Shared, UnitTestBase):
     def test_nonzero_expected_return_code(self):
         ag_test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
@@ -506,7 +509,7 @@ class AGTestRetCodeTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertEqual(ag_test.expected_return_code, 2)
 
 
-class AGTestValgrindSettingsTestCase(_Shared, TemporaryFilesystemTestCase):
+class AGTestValgrindSettingsTestCase(_Shared, UnitTestBase):
     def test_exception_on_empty_value_in_valgrind_args(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
@@ -532,11 +535,11 @@ class AGTestValgrindSettingsTestCase(_Shared, TemporaryFilesystemTestCase):
         self.assertFalse(error_list[1])
 
 
-class AddRequiredFilesToSandboxTestCase(TemporaryFilesystemTestCase):
+class AddRequiredFilesToSandboxTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.group = obj_ut.build_submission_group()
+        self.group = obj_build.build_submission_group()
 
         self.uploaded_resource_files = [
             ag_models.UploadedFile.objects.validate_and_create(

@@ -3,24 +3,21 @@ from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+import autograder.utils.testing as test_ut
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
-
-from .sleeper_subtest import sleeper_subtest
 
 
 class RaceConditionTestCase(test_data.Client,
                             test_data.Project,
                             test_data.Group,
-                            TemporaryFilesystemTestCase):
+                            test_ut.UnitTestBase):
     def test_simultaneous_create_race_condition_prevented(self):
         group = self.admin_group(self.project)
         group_id = group.pk
         path = ('autograder.rest_api.views.group_views.'
                 'group_submissions_view.user_can_view_group')
 
-        @sleeper_subtest(path)
+        @test_ut.sleeper_subtest(path)
         def create_submission_first(group_id):
             group = ag_models.SubmissionGroup.objects.get(pk=group_id)
             client = APIClient()

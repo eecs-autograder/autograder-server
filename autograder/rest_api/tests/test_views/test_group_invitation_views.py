@@ -2,8 +2,7 @@ from rest_framework import status
 
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -12,7 +11,7 @@ class GetGroupInvitationTestCase(test_data.Client,
                                  test_data.Project,
                                  test_data.Group,
                                  test_impls.GetObjectTest,
-                                 TemporaryFilesystemTestCase):
+                                 UnitTestBase):
     def test_admin_or_staff_view_invitation(self):
         for project in self.all_projects:
             for invite in (self.admin_group_invitation(project),
@@ -74,7 +73,7 @@ class GetGroupInvitationTestCase(test_data.Client,
 class AcceptGroupInvitationTestCase(test_data.Client,
                                     test_data.Project,
                                     test_data.Group,
-                                    TemporaryFilesystemTestCase):
+                                    UnitTestBase):
     def test_admin_all_invitees_accept(self):
         for project in self.all_projects:
             self.do_all_accept_test(self.admin_group_invitation(project))
@@ -183,7 +182,7 @@ class RejectGroupInvitationTestCase(test_data.Client,
                                     test_data.Project,
                                     test_data.Group,
                                     test_impls.DestroyObjectTest,
-                                    TemporaryFilesystemTestCase):
+                                    UnitTestBase):
     def test_admin_invitee_rejects(self):
         for project in self.all_projects:
             invitation = self.admin_group_invitation(project)

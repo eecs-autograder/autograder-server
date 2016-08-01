@@ -1,6 +1,6 @@
 from django.core import exceptions
 
-import autograder.core.shared.utilities as ut
+from autograder import utils
 
 
 def verify_users_have_same_enrollment_status(users, project,
@@ -27,9 +27,9 @@ def verify_users_have_same_enrollment_status(users, project,
     """
     users = tuple(users)
 
-    num_enrolled = ut.count_if(
+    num_enrolled = utils.count_if(
         users, lambda member: project.course.is_enrolled_student(member))
-    num_staff = ut.count_if(
+    num_staff = utils.count_if(
         users, lambda member: project.course.is_course_staff(member))
 
     if num_staff:

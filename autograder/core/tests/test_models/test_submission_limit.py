@@ -3,24 +3,23 @@ import random
 
 from django.utils import timezone
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 
 import autograder.core.models as ag_models
 
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class SubmissionLimitAndCountTestCase(TemporaryFilesystemTestCase):
+class SubmissionLimitAndCountTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.submission_group = obj_ut.build_submission_group()
+        self.submission_group = obj_build.build_submission_group()
         self.project = self.submission_group.project
 
         # We want to make sure that only submissions for the specified
         # group are counted, so we'll create an extra other submission
         # to make sure it isn't counted.
-        other_group = obj_ut.build_submission_group()
+        other_group = obj_build.build_submission_group()
         self.assertNotEqual(other_group, self.submission_group)
         ag_models.Submission.objects.validate_and_create(
             [], submission_group=other_group)

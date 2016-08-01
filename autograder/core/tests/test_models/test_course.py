@@ -4,15 +4,13 @@ from django.core.exceptions import ValidationError
 
 from autograder.core.models import Course
 
-import autograder.core.shared.utilities as ut
+import autograder.core.utils as core_ut
+from autograder.utils.testing import UnitTestBase
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class CourseTestCase(TemporaryFilesystemTestCase):
+class CourseTestCase(UnitTestBase):
     def test_valid_create(self):
         name = "eecs280"
         course = Course.objects.validate_and_create(name=name)
@@ -32,7 +30,7 @@ class CourseTestCase(TemporaryFilesystemTestCase):
         self.assertTrue('name' in cm.exception.message_dict)
 
     def test_exception_on_non_unique_name(self):
-        course = obj_ut.build_course()
+        course = obj_build.build_course()
         with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name=course.name)
         self.assertTrue('name' in cm.exception.message_dict)
@@ -45,7 +43,7 @@ class CourseTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(expected_fields,
                               Course.get_default_to_dict_fields())
 
-        course = obj_ut.build_course()
+        course = obj_build.build_course()
         self.assertTrue(course.to_dict())
 
     def test_editable_fields(self):
@@ -53,7 +51,7 @@ class CourseTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(expected, Course.get_editable_fields())
 
 
-class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
+class CourseFilesystemTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.COURSE_NAME = 'eecs280'
@@ -62,24 +60,24 @@ class CourseFilesystemTestCase(TemporaryFilesystemTestCase):
         course = Course(name=self.COURSE_NAME)
 
         self.assertFalse(
-            os.path.exists(os.path.dirname(ut.get_course_root_dir(course))))
+            os.path.exists(os.path.dirname(core_ut.get_course_root_dir(course))))
 
         course.save()
-        expected_course_root_dir = ut.get_course_root_dir(course)
+        expected_course_root_dir = core_ut.get_course_root_dir(course)
 
         self.assertTrue(os.path.isdir(expected_course_root_dir))
 
 
-class CourseAdminStaffAndEnrolledStudentTestCase(TemporaryFilesystemTestCase):
+class CourseAdminStaffAndEnrolledStudentTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.course = obj_ut.build_course()
-        self.user = obj_ut.create_dummy_user()
+        self.course = obj_build.build_course()
+        self.user = obj_build.create_dummy_user()
 
     def test_is_administrator(self):
-        self.course = obj_ut.build_course()
-        self.user = obj_ut.create_dummy_user()
+        self.course = obj_build.build_course()
+        self.user = obj_build.create_dummy_user()
 
         self.assertFalse(self.course.is_administrator(self.user))
 

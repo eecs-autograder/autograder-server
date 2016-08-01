@@ -5,7 +5,7 @@ import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case import feedback_config
 
 from .serializer_test_case import SerializerTestCase
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.tests.test_models.test_autograder_test_case.models \
     import _DummyAutograderTestCase
 
@@ -13,7 +13,7 @@ from autograder.core.tests.test_models.test_autograder_test_case.models \
 class AGTestCaseSerializerTestCase(SerializerTestCase):
     def setUp(self):
         super().setUp()
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
 
     def test_serialize(self):
         ag_test = _DummyAutograderTestCase.objects.validate_and_create(

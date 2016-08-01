@@ -1,4 +1,3 @@
-import multiprocessing
 import subprocess
 import time
 from unittest import mock
@@ -6,29 +5,27 @@ from unittest import mock
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
-from django import db
 
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.core.tests.dummy_object_utils as obj_ut
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-from autograder.core.tests import generic_data
+import autograder.utils.testing.model_obj_builders as obj_build
+import autograder.utils.testing as test_ut
+import autograder.utils.testing.generic_data as gen_data
 
-from .tasks import grade_submission, grade_ag_test, grade_ag_test_impl
+from . import tasks
 
 
 class _MockException(Exception):
     pass
 
 
-class TasksTestCase(TemporaryFilesystemTestCase):
+class TasksTestCase(test_ut.UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.group = obj_ut.build_submission_group()
+        self.group = obj_build.build_submission_group()
         self.project = self.group.project
 
         impl_h = ag_models.UploadedFile.objects.validate_and_create(
@@ -78,7 +75,7 @@ class TasksTestCase(TemporaryFilesystemTestCase):
 
     def test_grade_submission_no_deferred(self):
         print(self.submission.pk)
-        grade_submission(self.submission.pk)
+        tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(2, self.submission.basic_score)
@@ -87,7 +84,7 @@ class TasksTestCase(TemporaryFilesystemTestCase):
 
     def test_grade_submission_some_deferred(self):
         self.compiled_test.validate_and_update(deferred=True)
-        grade_submission(self.submission.pk)
+        tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(2, self.submission.basic_score)
@@ -96,26 +93,67 @@ class TasksTestCase(TemporaryFilesystemTestCase):
 
     def test_grade_submission_all_deferred(self):
         self._mark_all_as_deferred()
-        grade_submission(self.submission.pk)
+        tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(2, self.submission.basic_score)
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+                         self.submission.status)
+
+    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
+    def test_non_deferred_retry_on_error(self, impl_mock):
+        impl_mock.side_effect = TasksTestCase._SideEffectSequence([
+            _MockException('retry me I am an error'),
+            lambda: None,
+            _MockException('retry me I am an error'),
+            lambda: None])
+        tasks.grade_submission(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+                         self.submission.status)
+        self.assertEqual(2, self.submission.basic_score)
+
+    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl')
+    def test_non_deferred_max_num_retries_exceeded(self, impl_mock):
+        impl_mock.side_effect = [
+            subprocess.CalledProcessError(42, ['waaaluigi'])
+            for i in range(settings.AG_TEST_MAX_RETRIES + 1)]
+        with self.assertRaises(subprocess.CalledProcessError):
+            tasks.grade_submission(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.error,
+                         self.submission.status)
+        self.assertEqual(0, self.submission.basic_score)
+
+    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
+    def test_deferred_retry_on_called_process_error(self, impl_mock):
+        self.interpreted_test.validate_and_update(deferred=True)
+        self.compiled_test.delete()
+        impl_mock.side_effect = TasksTestCase._SideEffectSequence([
+            _MockException('errorrr'),
+            lambda: None])
+        tasks.grade_submission(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(1, self.submission.basic_score)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl')
-    def test_non_deferred_retry_on_error(self, impl_mock):
-        impl_mock.side_effect = TasksTestCase._SideEffectSequence([
-            _MockException('retry me I am an error'),
-            grade_ag_test_impl,
-            _MockException('retry me I am an error'),
-            grade_ag_test_impl])
-        grade_submission(self.submission.pk)
+    def test_deferred_ag_test_max_retries_exceeded(self, impl_mock):
+        impl_mock.side_effect = [
+            subprocess.CalledProcessError(42, ['waaaluigi'])
+            for i in range(settings.AG_TEST_MAX_RETRIES + 1)]
+        with self.assertRaises(subprocess.CalledProcessError):
+            tasks.grade_ag_test(self.compiled_test.pk, self.submission.pk)
 
-        self.submission.refresh_from_db()
-        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
-                         self.submission.status)
-        self.assertEqual(2, self.submission.basic_score)
+    def _mark_all_as_deferred(self):
+        self.compiled_test.validate_and_update(deferred=True)
+        self.interpreted_test.validate_and_update(deferred=True)
+        for test in self.project.autograder_test_cases.all():
+            self.assertTrue(test.deferred)
 
     class _SideEffectSequence:
         '''
@@ -142,47 +180,6 @@ class TasksTestCase(TemporaryFilesystemTestCase):
                 print(e)
 
             return next_item
-
-    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl')
-    def test_non_deferred_max_num_retries_exceeded(self, impl_mock):
-        impl_mock.side_effect = [
-            subprocess.CalledProcessError(42, ['waaaluigi'])
-            for i in range(settings.AG_TEST_MAX_RETRIES + 1)]
-        with self.assertRaises(subprocess.CalledProcessError):
-            grade_submission(self.submission.pk)
-
-        self.submission.refresh_from_db()
-        self.assertEqual(ag_models.Submission.GradingStatus.error,
-                         self.submission.status)
-        self.assertEqual(0, self.submission.basic_score)
-
-    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl')
-    def test_deferred_retry_on_called_process_error(self, impl_mock):
-        self.interpreted_test.validate_and_update(deferred=True)
-        self.compiled_test.delete()
-        impl_mock.side_effect = TasksTestCase._SideEffectSequence([
-            _MockException('errorrr'),
-            grade_ag_test_impl])
-        grade_submission(self.submission.pk)
-
-        self.submission.refresh_from_db()
-        self.assertEqual(1, self.submission.basic_score)
-        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
-                         self.submission.status)
-
-    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl')
-    def test_deferred_ag_test_max_retries_exceeded(self, impl_mock):
-        impl_mock.side_effect = [
-            subprocess.CalledProcessError(42, ['waaaluigi'])
-            for i in range(settings.AG_TEST_MAX_RETRIES + 1)]
-        with self.assertRaises(subprocess.CalledProcessError):
-            grade_ag_test(self.compiled_test.pk, self.submission.pk)
-
-    def _mark_all_as_deferred(self):
-        self.compiled_test.validate_and_update(deferred=True)
-        self.interpreted_test.validate_and_update(deferred=True)
-        for test in self.project.autograder_test_cases.all():
-            self.assertTrue(test.deferred)
 
 
 _NEEDS_FILES_TEST = b'''
@@ -236,42 +233,24 @@ int spam()
 '''
 
 
-class RaceConditionTestCase(generic_data.Project,
-                            generic_data.Submission,
-                            TemporaryFilesystemTestCase):
+class RaceConditionTestCase(gen_data.Project,
+                            gen_data.Submission,
+                            test_ut.UnitTestBase):
     def test_remove_from_queue_when_being_marked_as_being_graded_race_condition_prevented(self):
         group = self.admin_group(self.project)
         submission = self.build_submission(group)
-        submission_id = submission.pk
 
-        subprocess_has_lock = multiprocessing.Event()
+        path = ('autograder.grading_tasks.tasks.ag_models'
+                '.Submission.GradingStatus.removed_from_queue')
 
-        def do_request_and_wait(submission_id):
-            path = ('autograder.grading_tasks.tasks.ag_models'
-                    '.Submission.GradingStatus.removed_from_queue')
-            patched = mock.patch(
-                path, new_callable=mock.PropertyMock,
-                return_value=(
-                    ag_models.Submission.GradingStatus.removed_from_queue))
-            with patched as mock_status:
+        @test_ut.sleeper_subtest(
+            path,
+            new_callable=mock.PropertyMock,
+            return_value=(ag_models.Submission.GradingStatus.removed_from_queue))
+        def do_request_and_wait():
+            tasks.grade_submission(submission.pk)
 
-                def sleep_and_return(*args, **kwargs):
-                    subprocess_has_lock.set()
-                    print('subprocess going to sleep')
-                    time.sleep(5)
-                    return mock.DEFAULT
-                mock_status.side_effect = sleep_and_return
-                print('calling grade_submission')
-                grade_submission(submission_id)
-
-        db.connection.close()
-
-        proc = multiprocessing.Process(
-            target=do_request_and_wait, args=[submission_id])
-        proc.start()
-
-        print('started subprocesses')
-        subprocess_has_lock.wait()
+        subtest = do_request_and_wait()
 
         print('sending remove from queue request')
         client = APIClient()
@@ -279,7 +258,7 @@ class RaceConditionTestCase(generic_data.Project,
             submission.submission_group.members.first())
         response = client.post(reverse('submission-remove-from-queue',
                                        kwargs={'pk': submission.pk}))
-        proc.join()
+        subtest.join()
         submission.refresh_from_db()
         self.assertNotEqual(
             ag_models.Submission.GradingStatus.removed_from_queue,
@@ -296,12 +275,24 @@ class RaceConditionTestCase(generic_data.Project,
             time_waited += 2
             submission.refresh_from_db()
 
-    # This test is proving difficult to implement because there isn't a
-    # good place to mock in the sleep after the lock is grabbed.
     def test_mark_as_waiting_for_deferred_and_finished_grading_at_same_time_race_prevented(self):
-        # 1. mark_as_finished gets the lock and sleeps
-        # 2. mark_as_waiting_for_deferred tries to lock and is is blocked
-        # 3. mark_as_finished wakes up and finishes
-        # 4. mark_as_waiting_for_deferred wakes up and sees it's already marked
-        # as finished
-        self.fail()
+        group = self.admin_group(self.project)
+        submission = self.build_submission(group)
+
+        path = 'autograder.grading_tasks.tasks.mark_as_finished.mocking_hook'
+
+        @test_ut.sleeper_subtest(path)
+        def do_mark_as_finished():
+            tasks.mark_as_finished([], submission.pk)
+            submission.refresh_from_db()
+            self.assertEqual(
+                ag_models.Submission.GradingStatus.finished_grading,
+                submission.status)
+
+        subtest = do_mark_as_finished()
+        tasks.mark_as_waiting_for_deferred(submission.pk)
+        subtest.join()
+        submission.refresh_from_db()
+        self.assertEqual(
+            ag_models.Submission.GradingStatus.finished_grading,
+            submission.status)

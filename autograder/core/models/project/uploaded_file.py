@@ -5,16 +5,16 @@ from django.db import models
 from django.conf import settings
 from django.core import exceptions
 
+import autograder.core.utils as core_ut
+import autograder.core.constants as const
+
 from ..ag_model_base import AutograderModel
 from .project import Project
-
-import autograder.core.shared.global_constants as gc
-import autograder.core.shared.utilities as ut
 
 
 def _get_project_file_upload_to_path(instance, filename):
     return os.path.join(
-        ut.get_project_files_relative_dir(instance.project), filename)
+        core_ut.get_project_files_relative_dir(instance.project), filename)
 
 
 # For migrations backwards compatibility
@@ -23,7 +23,7 @@ def _get_project_file_upload_to_dir(instance, filename):
 
 
 def _validate_filename(file_obj):
-    ut.check_user_provided_filename(file_obj.name)
+    core_ut.check_user_provided_filename(file_obj.name)
 
 
 class UploadedFile(AutograderModel):
@@ -49,7 +49,7 @@ class UploadedFile(AutograderModel):
     file_obj = models.FileField(
         upload_to=_get_project_file_upload_to_path,
         validators=[_validate_filename],
-        max_length=gc.MAX_CHAR_FIELD_LEN * 2)
+        max_length=const.MAX_CHAR_FIELD_LEN * 2)
 
     @property
     def name(self):
@@ -63,7 +63,7 @@ class UploadedFile(AutograderModel):
         """
         new_name = os.path.basename(new_name)
         try:
-            ut.check_user_provided_filename(new_name)
+            core_ut.check_user_provided_filename(new_name)
         except exceptions.ValidationError as e:
             raise exceptions.ValidationError({'name': e.message})
 

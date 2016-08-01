@@ -1,22 +1,21 @@
 import random
 import string
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 
 import autograder.core.models as ag_models
 import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
 
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.tests.test_models.test_autograder_test_case.models import (
     _DummyAutograderTestCase, _DummyCompiledAutograderTestCase)
 
 
-class CompilationFdbkTestCase(TemporaryFilesystemTestCase):
+class CompilationFdbkTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
 
         self.compiler_stdout = (
             'it compiled ' + random.choice(string.ascii_letters))

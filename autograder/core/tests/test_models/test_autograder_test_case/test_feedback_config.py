@@ -5,11 +5,10 @@ from django.core import exceptions
 import autograder.core.models as ag_models
 import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 
 
-class AutograderFeedbackConfigurationTestCase(TemporaryFilesystemTestCase):
+class AutograderFeedbackConfigurationTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 

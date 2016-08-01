@@ -1,30 +1,10 @@
 import os
-import re
-import shutil
-import timeit
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
+from django.core import exceptions
 from django.utils import timezone
 
-import autograder.core.shared.global_constants as gc
-
-
-def count_if(iterable, unary_predicate):
-    """
-    Returns the number of items in iterable for which unary_predicate
-    returns True.
-    """
-    return sum(1 for item in iterable if unary_predicate(item))
-
-
-def find_if(iterable, unary_predicate):
-    """
-    Returns the first element for which unary_predicate returns True.
-    Returns None if no such element could be found.
-    """
-    return next((item for item in iterable if unary_predicate(item)), None)
+from . import constants as const
 
 
 def get_24_hour_period(start_time, contains_datetime):
@@ -46,53 +26,6 @@ def get_24_hour_period(start_time, contains_datetime):
     return start_datetime, end_datetime
 
 
-def lock_users(users_iterable):
-    '''
-    Calls select_for_update() on a queryset that includes all the users
-    in users_iterable.
-    '''
-    # list() forces the queryset to be evaluated)
-    queryset = User.objects.select_for_update().filter(
-        pk__in=(user.pk for user in users_iterable))
-    list(queryset)
-
-
-def mocking_hook():
-    '''
-    This is a dummy function that can be used to insert special mock
-    behaviors during testing, i.e. Forcing a function to sleep during a
-    race condition test case.
-
-    This function should be used sparingly to avoid source code clutter.
-
-    Yes, this probably goes against some best practices, but race
-    condition test cases are very important, and trying to find a "real"
-    line of code to mock has so far proven to be a large time waster due
-    to the complexity of the libraries being used.
-    '''
-    pass
-
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-def check_values_against_whitelist(values, whitelist):
-    """
-    values -- An iterable object.
-    whitelist -- A regular expression (can be compiled or a string).
-
-    Raises ValidationError if any value in values does not fully match the
-    whitelist regex (as per regex.fullmatch
-    https://docs.python.org/3.4/library/re.html#re.regex.fullmatch)
-    """
-    for value in values:
-        if not re.fullmatch(whitelist, value):
-            raise ValidationError(
-                "Value {0} contains illegal characters.".format(
-                    value, whitelist))
-
-
 def check_user_provided_filename(filename, allow_empty=False):
     """
     Verifies whether the given filename is valid according to the
@@ -107,13 +40,13 @@ def check_user_provided_filename(filename, allow_empty=False):
     purposes.
     """
     if filename is None:
-        raise ValidationError("Filenames must be non-null")
+        raise exceptions.ValidationError("Filenames must be non-null")
 
     if not filename and not allow_empty:
-        raise ValidationError("Filenames must be non-empty")
+        raise exceptions.ValidationError("Filenames must be non-empty")
 
-    if not gc.PROJECT_FILENAME_WHITELIST_REGEX.fullmatch(filename):
-        raise ValidationError(
+    if not const.PROJECT_FILENAME_WHITELIST_REGEX.fullmatch(filename):
+        raise exceptions.ValidationError(
             "Invalid filename: {0} \n"
             "Filenames must contain only alphanumeric characters, hyphen, "
             "underscore, and period.".format(filename))
@@ -132,19 +65,17 @@ def check_shell_style_file_pattern(pattern):
     purposes.
     """
     if not pattern:
-        raise ValidationError("File patterns must be non-empty")
+        raise exceptions.ValidationError("File patterns must be non-empty")
 
-    if not gc.PROJECT_FILE_PATTERN_WHITELIST_REGEX.fullmatch(pattern):
-        raise ValidationError(
+    if not const.PROJECT_FILE_PATTERN_WHITELIST_REGEX.fullmatch(pattern):
+        raise exceptions.ValidationError(
             "Invalid file pattern: {0} \n"
             "Shell-style patterns must only contain "
             "alphanumeric characters, hyphen, underscore, "
             "period, * ? [ ] and !".format(pattern))
 
+# -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
 
 def get_course_root_dir(course):
     """
@@ -195,7 +126,7 @@ def get_project_files_relative_dir(project):
     relative to MEDIA_ROOT.
     """
     return os.path.join(
-        get_project_relative_root_dir(project), gc.PROJECT_FILES_DIRNAME)
+        get_project_relative_root_dir(project), const.PROJECT_FILES_DIRNAME)
 
 
 def get_project_submission_groups_dir(project):
@@ -214,7 +145,8 @@ def get_project_submission_groups_relative_dir(project):
     that is relative to MEDIA_ROOT.
     """
     return os.path.join(
-        get_project_relative_root_dir(project), gc.PROJECT_SUBMISSIONS_DIRNAME)
+        get_project_relative_root_dir(project),
+        const.PROJECT_SUBMISSIONS_DIRNAME)
 
 
 def get_student_submission_group_dir(submission_group):
@@ -255,71 +187,3 @@ def get_submission_relative_dir(submission):
     return os.path.join(
         get_student_submission_group_relative_dir(submission.submission_group),
         'submission{}'.format(submission.pk))
-
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-class ChangeDirectory(object):
-    """
-    Enables moving into and out of a given directory using "with" statements.
-    """
-
-    def __init__(self, new_dir):
-        self._original_dir = os.getcwd()
-        self._new_dir = new_dir
-
-    def __enter__(self):
-        os.chdir(self._new_dir)
-
-    def __exit__(self, *args):
-        os.chdir(self._original_dir)
-
-
-class TemporaryFile(object):
-    """
-    Enables creating and destroying a temporary file using "with" statements.
-    """
-
-    def __init__(self, filename, file_contents):
-        self.filename = filename
-        self.file_contents = file_contents
-
-    def __enter__(self):
-        with open(self.filename, 'w') as f:
-            f.write(self.file_contents)
-
-    def __exit__(self, *args):
-        os.remove(self.filename)
-
-
-class TemporaryDirectory(object):
-    """
-    Enables creating and destroying a temporary directory using
-    "with" statements.
-    Note that when the directory is destroyed, any files inside it
-    will be destroyed as well.
-    """
-
-    def __init__(self, dirname):
-        self.dirname = dirname
-
-    def __enter__(self):
-        os.mkdir(self.dirname)
-        os.chmod(self.dirname, 0o777)
-
-    def __exit__(self, *args):
-        shutil.rmtree(self.dirname)
-
-
-class Timer:
-    def __init__(self, msg=''):
-        self.msg = msg
-
-    def __enter__(self):
-        self.start_time = timeit.default_timer()
-
-    def __exit__(self, *args, **kwargs):
-        self.elapsed = timeit.default_timer() - self.start_time
-        print(self.msg, 'Took', self.elapsed, 'seconds')

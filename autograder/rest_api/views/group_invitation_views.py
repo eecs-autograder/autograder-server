@@ -1,6 +1,5 @@
 import itertools
 
-from django.contrib.auth.models import User
 from django.db import transaction
 
 from rest_framework import viewsets, mixins, permissions, response, status
@@ -8,7 +7,8 @@ from rest_framework import viewsets, mixins, permissions, response, status
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-import autograder.core.shared.utilities as ut
+from autograder import utils
+import autograder.utils.testing as test_ut
 
 from .permission_components import user_can_view_project
 from .load_object_mixin import build_load_object_mixin
@@ -48,9 +48,9 @@ class GroupInvitationViewset(
 
         members = ([invitation.invitation_creator] +
                    list(invitation.invited_users.all()))
-        ut.lock_users(members)
+        utils.lock_users(members)
         # Keep this hook just after the users are locked
-        ut.mocking_hook()
+        test_ut.mocking_hook()
 
         serializer = ag_serializers.SubmissionGroupSerializer(
             data={'members': members, 'project': invitation.project})

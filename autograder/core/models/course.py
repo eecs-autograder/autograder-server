@@ -6,8 +6,8 @@ from django.contrib.auth.models import User
 
 from .ag_model_base import AutograderModel
 
-import autograder.core.shared.utilities as ut
-import autograder.utilities.fields as ag_fields
+import autograder.core.fields as ag_fields
+import autograder.core.utils as core_ut
 
 
 class Course(AutograderModel):
@@ -103,7 +103,7 @@ class Course(AutograderModel):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        course_root_dir = ut.get_course_root_dir(self)
+        course_root_dir = core_ut.get_course_root_dir(self)
         if not os.path.isdir(course_root_dir):
             # Since the database is in charge or validating the uniqueness
             # of this course, we can assume at this point that creating

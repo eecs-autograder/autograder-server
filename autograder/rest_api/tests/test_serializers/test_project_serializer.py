@@ -4,23 +4,22 @@ from rest_framework.test import APIRequestFactory
 import autograder.rest_api.serializers as ag_serializers
 
 from .serializer_test_case import SerializerTestCase
-import autograder.core.tests.dummy_object_utils as obj_ut
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 
 import autograder.rest_api.tests.test_views.common_generic_data as gen_data
 
 
 class ProjectSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
-        project = obj_ut.build_project()
+        project = obj_build.build_project()
         data = self.do_basic_serialize_test(project,
                                             ag_serializers.ProjectSerializer)
         self.assertIn('closing_time', data)
 
 
 class ClosingTimeShownTestCase(gen_data.Project,
-                               TemporaryFilesystemTestCase):
+                               UnitTestBase):
     def test_admin_shown_closing_time(self):
         get_request = request.Request(APIRequestFactory().get('path'))
         get_request.user = self.admin

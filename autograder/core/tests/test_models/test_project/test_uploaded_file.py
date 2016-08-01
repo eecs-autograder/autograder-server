@@ -5,11 +5,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from autograder.core.models.project.uploaded_file import UploadedFile
 
-import autograder.core.shared.utilities as ut
-
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder import utils
+import autograder.core.utils as core_ut
+import autograder.utils.testing as test_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
 _illegal_filenames = [
@@ -25,12 +24,12 @@ class _SetUp:
     def setUp(self):
         super().setUp()
 
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
         self.file_obj = SimpleUploadedFile(
             'project_file.txt', b'contents more contents.')
 
 
-class RenameUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
+class RenameUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -45,7 +44,7 @@ class RenameUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.uploaded_file.refresh_from_db()
 
         self.assertEqual(new_name, self.uploaded_file.name)
-        with ut.ChangeDirectory(ut.get_project_files_dir(self.project)):
+        with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(new_name))
 
     def test_path_info_stripped_from_new_name(self):
@@ -56,7 +55,7 @@ class RenameUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
 
         expected_new_name = 'you'
         self.assertEqual(expected_new_name, self.uploaded_file.name)
-        with ut.ChangeDirectory(ut.get_project_files_dir(self.project)):
+        with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(expected_new_name))
 
     def test_error_illegal_filenames(self):
@@ -68,7 +67,7 @@ class RenameUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
             self.assertIn('name', cm.exception.message_dict)
 
 
-class CreateUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
+class CreateUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
     def test_default_to_dict_fields(self):
         expected = [
             'name',
@@ -96,14 +95,14 @@ class CreateUploadedFileTestCase(_SetUp, TemporaryFilesystemTestCase):
 
         self.assertEqual(self.file_obj.name, uploaded_file.name)
         expected_abspath = os.path.join(
-            ut.get_project_files_dir(self.project), self.file_obj.name)
+            core_ut.get_project_files_dir(self.project), self.file_obj.name)
         self.assertEqual(expected_abspath, uploaded_file.abspath)
         self.assertEqual(self.file_obj.size, uploaded_file.size)
 
         self.file_obj.seek(0)
         self.assertEqual(self.file_obj.read(), uploaded_file.file_obj.read())
 
-        with ut.ChangeDirectory(ut.get_project_files_dir(self.project)):
+        with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(self.file_obj.name))
 
     # If we decide we don't want the Django default behavior of renaming

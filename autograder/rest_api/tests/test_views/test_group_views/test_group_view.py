@@ -3,9 +3,8 @@ from django.utils import timezone
 
 import autograder.core.models as ag_models
 
-import autograder.core.tests.dummy_object_utils as obj_ut
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -14,7 +13,7 @@ class RetrieveGroupTestCase(test_data.Client,
                             test_data.Project,
                             test_data.Group,
                             test_impls.GetObjectTest,
-                            TemporaryFilesystemTestCase):
+                            UnitTestBase):
     def test_admin_or_staff_get_group(self):
         for project in self.all_projects:
             for group in self.at_least_enrolled_groups(project):
@@ -72,7 +71,7 @@ class UpdateGroupTestCase(test_data.Client,
                           test_data.Project,
                           test_data.Group,
                           test_impls.UpdateObjectTest,
-                          TemporaryFilesystemTestCase):
+                          UnitTestBase):
     def setUp(self):
         super().setUp()
         self.new_due_date = timezone.now().replace(microsecond=0)
@@ -171,7 +170,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
                                          test_data.Project,
                                          test_data.Submission,
                                          test_impls.GetObjectTest,
-                                         TemporaryFilesystemTestCase):
+                                         UnitTestBase):
     def setUp(self):
         super().setUp()
         self.past_closing_time = timezone.now() - timezone.timedelta(minutes=5)
@@ -302,7 +301,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
                 hide_ultimate_submission_fdbk=hide_ultimates)
             for group_func in group_funcs:
                 group = group_func(project)
-                submissions, best, tests = obj_ut.build_submissions_with_results(
+                submissions, best, tests = obj_build.build_submissions_with_results(
                     num_submissions=4, make_one_best=True,
                     submission_group=group)
                 for user in users:

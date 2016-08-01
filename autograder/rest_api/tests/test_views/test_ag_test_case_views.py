@@ -2,8 +2,7 @@ from django.core.urlresolvers import reverse
 
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -28,7 +27,7 @@ def ag_test_url(ag_test):
 class AGTestCaseRetrieveTestCase(test_data.Client,
                                  test_data.Project,
                                  test_impls.GetObjectTest,
-                                 TemporaryFilesystemTestCase):
+                                 UnitTestBase):
     def test_admin_get_ag_test(self):
         for project in self.all_projects:
             ag_test = build_ag_test(project)
@@ -57,7 +56,7 @@ class AGTestCaseRetrieveTestCase(test_data.Client,
 class AGTestCaseUpdateTestCase(test_data.Client,
                                test_data.Project,
                                test_impls.UpdateObjectTest,
-                               TemporaryFilesystemTestCase):
+                               UnitTestBase):
     def setUp(self):
         super().setUp()
         self.updated_kwargs = {
@@ -108,7 +107,7 @@ class AGTestCaseUpdateTestCase(test_data.Client,
 class AGTestCaseDeleteTestCase(test_data.Client,
                                test_data.Project,
                                test_impls.DestroyObjectTest,
-                               TemporaryFilesystemTestCase):
+                               UnitTestBase):
     def test_admin_delete_ag_test(self):
         for project in self.all_projects:
             ag_test = build_ag_test(project)

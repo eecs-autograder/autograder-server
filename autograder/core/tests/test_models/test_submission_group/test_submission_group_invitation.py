@@ -2,9 +2,8 @@ import itertools
 
 from django.core import exceptions
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 
 import autograder.core.models as ag_models
 
@@ -13,13 +12,13 @@ class _SetUp:
     def setUp(self):
         super().setUp()
 
-        self.to_invite = obj_ut.create_dummy_users(3)
+        self.to_invite = obj_build.create_dummy_users(3)
         self.to_invite_usernames = [user.username for user in self.to_invite]
 
-        self.invitation_creator = obj_ut.create_dummy_user()
+        self.invitation_creator = obj_build.create_dummy_user()
         self.invitation_creator_username = self.invitation_creator.username
 
-        self.project = obj_ut.build_project(
+        self.project = obj_build.build_project(
             project_kwargs={'min_group_size': 1, 'max_group_size': 4},
             course_kwargs={
                 'enrolled_students': list(itertools.chain(
@@ -27,7 +26,7 @@ class _SetUp:
 
 
 class MiscSubmissionGroupInvitationTestCase(_SetUp,
-                                            TemporaryFilesystemTestCase):
+                                            UnitTestBase):
     def test_to_dict_default_fields(self):
         expected_fields = [
             'project',
@@ -106,7 +105,7 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp,
         self.assertTrue(invitation.all_invitees_accepted)
 
 
-class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
+class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
     def test_exception_on_no_invitees(self):
         self.project.min_group_size = 1
         self.project.save()
@@ -132,7 +131,7 @@ class GroupInvitationMembersTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
     def test_exception_on_too_many_invitees(self):
-        self.to_invite.append(obj_ut.create_dummy_user())
+        self.to_invite.append(obj_build.create_dummy_user())
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.SubmissionGroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,

@@ -5,15 +5,14 @@ from django.core import exceptions
 from autograder.core.models.project.expected_student_file_pattern import (
     ExpectedStudentFilePattern)
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class CreateExpectedStudentFilePatternTestCase(TemporaryFilesystemTestCase):
+class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
 
         self.valid_pattern = 'test_[0-4][!a-z]?.*.cpp'
 
@@ -94,7 +93,7 @@ class CreateExpectedStudentFilePatternTestCase(TemporaryFilesystemTestCase):
             min_num_matches=1,
             max_num_matches=2)
 
-        other_project = obj_ut.build_project()
+        other_project = obj_build.build_project()
         ExpectedStudentFilePattern.objects.validate_and_create(
             project=other_project,
             pattern=self.valid_pattern,

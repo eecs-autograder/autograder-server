@@ -5,23 +5,21 @@ from django.utils import timezone
 
 import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case import feedback_config
-# import autograder.core.shared.utilities as ut  # For benchmarks
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing as test_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 from autograder.core.tests.test_models.test_autograder_test_case.models \
     import _DummyAutograderTestCase
 
 
-class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
+class AutograderTestCaseResultTestCase(test_ut.UnitTestBase):
     def setUp(self):
         super().setUp()
 
         self.closing_time = timezone.now() - datetime.timedelta(hours=1)
 
-        group = obj_ut.build_submission_group(
+        group = obj_build.build_submission_group(
             project_kwargs={'closing_time': self.closing_time})
         self.project = group.project
 
@@ -117,10 +115,10 @@ class AutograderTestCaseResultTestCase(TemporaryFilesystemTestCase):
     #     self.assertEqual(result.compilation_standard_error_output, comp_stderr)
 
 
-class TotalScoreTestCase(TemporaryFilesystemTestCase):
+class TotalScoreTestCase(test_ut.UnitTestBase):
     def test_basic_score(self):
         cache.clear()
-        result = obj_ut.build_compiled_ag_test_result()
+        result = obj_build.build_compiled_ag_test_result()
 
         self.assertEqual(0, result.basic_score)
 
@@ -131,26 +129,26 @@ class TotalScoreTestCase(TemporaryFilesystemTestCase):
         # # Benchmarks
         # for i in range(10):
         #     cache.clear()
-        #     with ut.Timer(msg='Result score from empty cache'):
+        #     with test_ut.Timer(msg='Result score from empty cache'):
         #         actual_score = result.basic_score
 
         # for i in range(10):
-        #     with ut.Timer(msg='Result score from full cache'):
+        #     with test_ut.Timer(msg='Result score from full cache'):
         #         actual_score = result.basic_score
 
-        self.assertEqual(obj_ut.build_compiled_ag_test.points_with_all_used,
+        self.assertEqual(obj_build.build_compiled_ag_test.points_with_all_used,
                          result.basic_score)
 
     def test_cache_invalidation(self):
         results = []
-        result = obj_ut.build_compiled_ag_test_result()
+        result = obj_build.build_compiled_ag_test_result()
         result.test_case.feedback_configuration = (
             feedback_config.FeedbackConfig.create_with_max_fdbk())
         results.append(result)
 
         test_case = result.test_case
 
-        result = obj_ut.build_compiled_ag_test_result(
+        result = obj_build.build_compiled_ag_test_result(
             test_case=test_case)
         result.test_case.feedback_configuration = (
             feedback_config.FeedbackConfig.create_with_max_fdbk())
@@ -160,7 +158,7 @@ class TotalScoreTestCase(TemporaryFilesystemTestCase):
 
         for result in results:
             self.assertEqual(
-                obj_ut.build_compiled_ag_test.points_with_all_used,
+                obj_build.build_compiled_ag_test.points_with_all_used,
                 result.basic_score)
 
         test_case.points_for_correct_return_code += 1
@@ -168,7 +166,7 @@ class TotalScoreTestCase(TemporaryFilesystemTestCase):
 
         for result in results:
             self.assertEqual(
-                obj_ut.build_compiled_ag_test.points_with_all_used + 1,
+                obj_build.build_compiled_ag_test.points_with_all_used + 1,
                 result.basic_score)
 
         test_case.feedback_configuration.validate_and_update(

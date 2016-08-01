@@ -5,10 +5,11 @@ from django.db import models, transaction
 from django.http import Http404
 from django.utils import timezone
 
+import autograder.core.utils as core_ut
+
 from .. import ag_model_base
-from .. project import Project
+from ..project import Project
 from ..submission import Submission
-import autograder.core.shared.utilities as ut
 
 from . import verification
 
@@ -93,7 +94,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         The number of submissions this group has made in the current 24
         hour period that are counted towards the daily submission limit.
         '''
-        start_datetime, end_datetime = ut.get_24_hour_period(
+        start_datetime, end_datetime = core_ut.get_24_hour_period(
             self.project.submission_limit_reset_time, timezone.now())
         return self.submissions.filter(
             timestamp__gte=start_datetime,
@@ -153,7 +154,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        submission_group_dir = ut.get_student_submission_group_dir(self)
+        submission_group_dir = core_ut.get_student_submission_group_dir(self)
 
         if not os.path.isdir(submission_group_dir):
             os.makedirs(submission_group_dir)

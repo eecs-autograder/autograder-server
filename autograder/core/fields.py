@@ -2,9 +2,9 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.postgres import fields as pg_fields
 
-from autograder.utilities.json_serializable_interface import JsonSerializable
+from autograder.utils.json_serializable_interface import JsonSerializable
 
-import autograder.core.shared.global_constants as gc
+from . import constants as const
 
 
 class JsonSerializableClassField(pg_fields.JSONField):
@@ -132,7 +132,8 @@ class StringArrayField(ValidatedArrayField):
     """
 
     def __init__(self, strip_strings=False, allow_empty_strings=False,
-                 string_validators=[], max_string_length=gc.MAX_CHAR_FIELD_LEN,
+                 string_validators=[],
+                 max_string_length=const.MAX_CHAR_FIELD_LEN,
                  **kwargs):
         self.base_string_field = models.CharField(
             max_length=max_string_length, blank=allow_empty_strings,
@@ -173,7 +174,7 @@ class StringArrayField(ValidatedArrayField):
 
 
 class ShortStringField(models.CharField):
-    def __init__(self, max_length=gc.MAX_CHAR_FIELD_LEN, strip=False,
+    def __init__(self, max_length=const.MAX_CHAR_FIELD_LEN, strip=False,
                  **kwargs):
         self.strip = strip
         super().__init__(max_length=max_length, **kwargs)

@@ -6,14 +6,14 @@ from django.utils import timezone
 
 import autograder.core.models as ag_models
 
-from . import dummy_object_utils as obj_ut
+from autograder.utils.testing import model_obj_builders as obj_build
 
 
 class Superuser:
     @property
     def superuser(self):
         if not hasattr(self, '_superuser'):
-            self._superuser = obj_ut.create_dummy_user(is_superuser=True)
+            self._superuser = obj_build.create_dummy_user(is_superuser=True)
 
         return self._superuser
 
@@ -22,14 +22,14 @@ class Course:
     @property
     def course(self):
         if not hasattr(self, '_course'):
-            self._course = obj_ut.build_course()
+            self._course = obj_build.build_course()
 
         return self._course
 
     @property
     def admin(self):
         if not hasattr(self, '_admin'):
-            self._admin = obj_ut.create_dummy_user()
+            self._admin = obj_build.create_dummy_user()
             self.course.administrators.add(self._admin)
 
         return self._admin
@@ -37,7 +37,7 @@ class Course:
     @property
     def staff(self):
         if not hasattr(self, '_staff'):
-            self._staff = obj_ut.create_dummy_user()
+            self._staff = obj_build.create_dummy_user()
             self.course.staff.add(self._staff)
 
         return self._staff
@@ -45,7 +45,7 @@ class Course:
     @property
     def enrolled(self):
         if not hasattr(self, '_enrolled'):
-            self._enrolled = obj_ut.create_dummy_user()
+            self._enrolled = obj_build.create_dummy_user()
             self.course.enrolled_students.add(self._enrolled)
 
         return self._enrolled
@@ -53,7 +53,7 @@ class Course:
     @property
     def nobody(self):
         if not hasattr(self, '_nobody'):
-            self._nobody = obj_ut.create_dummy_user()
+            self._nobody = obj_build.create_dummy_user()
 
         return self._nobody
 
@@ -241,7 +241,7 @@ class Group(Course):
     def clone_user(self, user):
         new_user = copy.copy(user)
         new_user.pk = None
-        new_user.username = obj_ut.get_unique_id()
+        new_user.username = obj_build.get_unique_id()
         new_user.save()
         new_user.courses_is_admin_for.add(*user.courses_is_admin_for.all())
         new_user.courses_is_staff_for.add(*user.courses_is_staff_for.all())
@@ -293,7 +293,7 @@ class Submission(Group):
         return self.most_recent_submission(group)
 
     def most_recent_submission(self, group, num_submissions=3):
-        submissions, best, test = obj_ut.build_submissions_with_results(
+        submissions, best, test = obj_build.build_submissions_with_results(
             num_submissions=num_submissions, make_one_best=True,
             submission_group=group)
         return submissions[-1]
@@ -307,18 +307,18 @@ class Submission(Group):
         return self.best_submission(group)
 
     def best_submission(self, group, num_submissions=3):
-        submissions, best, test = obj_ut.build_submissions_with_results(
+        submissions, best, test = obj_build.build_submissions_with_results(
             num_submissions=num_submissions, make_one_best=True,
             submission_group=group)
         return best
 
     def non_most_recent_submission(self, group, num_submissions=3):
-        submissions, test = obj_ut.build_submissions_with_results(
+        submissions, test = obj_build.build_submissions_with_results(
             num_submissions=num_submissions, submission_group=group)
         return submissions[0]
 
     def non_best_submission(self, group, num_submissions=3):
-        submissions, best, test = obj_ut.build_submissions_with_results(
+        submissions, best, test = obj_build.build_submissions_with_results(
             num_submissions=num_submissions, make_one_best=True,
             submission_group=group)
         # The above build function chooses a submission other than the

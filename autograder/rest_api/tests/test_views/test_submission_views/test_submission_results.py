@@ -2,9 +2,8 @@ from urllib.parse import urlencode
 
 from django.core.urlresolvers import reverse
 
-import autograder.core.tests.dummy_object_utils as obj_ut
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -21,7 +20,7 @@ class ListResultsTestCase(test_data.Client,
                           test_data.Project,
                           test_data.Submission,
                           test_impls.GetObjectTest,
-                          TemporaryFilesystemTestCase):
+                          UnitTestBase):
     def test_staff_list_own_results_with_and_without_student_view(self):
         for project in self.all_projects:
             project_settings = project.to_dict(exclude_fields=['course'])
@@ -160,37 +159,37 @@ class ListResultsTestCase(test_data.Client,
             results_url(submission, student_view=student_view), expected_data)
 
     def visible_to_students_result(self, submission):
-        return obj_ut.build_compiled_ag_test_result(
+        return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_to_students': True,
             })
 
     def hidden_from_students_result(self, submission):
-        return obj_ut.build_compiled_ag_test_result(
+        return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_to_students': False,
             })
 
     def visible_in_ultimate_result(self, submission):
-        return obj_ut.build_compiled_ag_test_result(
+        return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_in_ultimate_submission': True,
             })
 
     def hidden_in_ultimate_result(self, submission):
-        return obj_ut.build_compiled_ag_test_result(
+        return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_in_ultimate_submission': False,
             })
 
     def visible_in_past_limit_result(self, submission):
-        return obj_ut.build_compiled_ag_test_result(
+        return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_in_past_limit_submission': True,
             })
 
     def hidden_in_past_limit_result(self, submission):
-        return obj_ut.build_compiled_ag_test_result(
+        return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_in_past_limit_submission': False,
             })

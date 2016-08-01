@@ -4,18 +4,17 @@ import string
 import autograder.core.models as ag_models
 import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.tests.test_models.test_autograder_test_case.models \
     import _DummyCompiledAutograderTestCase
 
 
-class ValgrindFdbkTestCase(TemporaryFilesystemTestCase):
+class ValgrindFdbkTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
 
         self.valgrind_output = (
             'memcheckererr ' + random.choice(string.ascii_letters))

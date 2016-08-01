@@ -4,8 +4,7 @@ from django.core.urlresolvers import reverse
 
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -29,7 +28,7 @@ def pattern_url(pattern_obj):
 class RetrieveExpectedPatternTestCase(test_data.Client,
                                       test_data.Project,
                                       test_impls.GetObjectTest,
-                                      TemporaryFilesystemTestCase):
+                                      UnitTestBase):
     def test_admin_get_pattern(self):
         for project in self.all_projects:
             pattern = build_pattern(project)
@@ -69,7 +68,7 @@ class RetrieveExpectedPatternTestCase(test_data.Client,
 class UpdateExpectedPatternTestCase(test_data.Client,
                                     test_data.Project,
                                     test_impls.UpdateObjectTest,
-                                    TemporaryFilesystemTestCase):
+                                    UnitTestBase):
     @property
     def valid_args(self):
         return {
@@ -117,7 +116,7 @@ class UpdateExpectedPatternTestCase(test_data.Client,
 class DeleteExpectedPatternTestCase(test_data.Client,
                                     test_data.Project,
                                     test_impls.DestroyObjectTest,
-                                    TemporaryFilesystemTestCase):
+                                    UnitTestBase):
     def test_admin_delete_pattern(self):
         for project in self.all_projects:
             pattern = build_pattern(project)

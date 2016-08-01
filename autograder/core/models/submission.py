@@ -8,22 +8,21 @@ import django.contrib.postgres.fields as pg_fields
 from django.db import models, transaction
 from django.utils import timezone
 
-import autograder.utilities.fields as ag_fields
+import autograder.core.utils as core_ut
+import autograder.core.constants as const
+import autograder.core.fields as ag_fields
 
 from . import ag_model_base
-
-import autograder.core.shared.global_constants as gc
-import autograder.core.shared.utilities as ut
 
 
 def _get_submission_file_upload_to_dir(submission, filename):
     value = os.path.join(
-        ut.get_submission_dir(submission), filename)
+        core_ut.get_submission_dir(submission), filename)
     return value
 
 
 def _validate_filename(file_):
-    ut.check_user_provided_filename(file_.name)
+    core_ut.check_user_provided_filename(file_.name)
 
 
 class _SubmissionManager(ag_model_base.AutograderModelManager):
@@ -205,7 +204,7 @@ class Submission(ag_model_base.AutograderModel):
             {pattern: num_additional_needed}''')
 
     status = models.CharField(
-        max_length=gc.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
+        max_length=const.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
         choices=zip(GradingStatus.values, GradingStatus.values),
         help_text='''The grading status of this submission see
             Submission.GradingStatus for details on allowed values.''')
@@ -228,7 +227,7 @@ class Submission(ag_model_base.AutograderModel):
         if project.submission_limit_per_day is None:
             return False
 
-        start_datetime, end_datetime = ut.get_24_hour_period(
+        start_datetime, end_datetime = core_ut.get_24_hour_period(
             project.submission_limit_reset_time, self.timestamp)
 
         num_submissions_before_self = self.submission_group.submissions.filter(
@@ -290,7 +289,7 @@ class Submission(ag_model_base.AutograderModel):
             raise exceptions.ObjectDoesNotExist()
 
     def _get_submitted_file_dir(self, filename):
-        return os.path.join(ut.get_submission_dir(self), filename)
+        return os.path.join(core_ut.get_submission_dir(self), filename)
 
     @staticmethod
     def get_most_recent_submissions(project):
@@ -315,6 +314,6 @@ class Submission(ag_model_base.AutograderModel):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        submission_dir = ut.get_submission_dir(self)
+        submission_dir = core_ut.get_submission_dir(self)
         if not os.path.isdir(submission_dir):
             os.makedirs(submission_dir)

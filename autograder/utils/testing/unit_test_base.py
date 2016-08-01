@@ -8,7 +8,7 @@ from django.test.utils import override_settings
 
 
 @override_settings(MEDIA_ROOT=os.path.join(settings.BASE_DIR, 'tmp_filesystem'))
-class TemporaryFilesystemTestCase(TransactionTestCase):
+class UnitTestBase(TransactionTestCase):
     """
     Base class for test cases that test code that performs
     filesystem operations. Overrides the MEDIA_ROOT setting

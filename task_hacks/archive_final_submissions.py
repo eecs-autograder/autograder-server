@@ -1,21 +1,21 @@
 #! /usr/bin/env python3
 
 import sys
-sys.path.append('..')
 import os
 import traceback
 import argparse
 import zipfile
 # import settings
 # import django
+sys.path.append('..')
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
-import django
+import django  # noqa
 django.setup()
 
-from autograder.core.models import Course, Submission
+from autograder.core.models import Course, Submission  # noqa
 
-import autograder.core.shared.utilities as ut
+import autograder.core.shared.utilities as ut  # noqa
 
 
 def main():

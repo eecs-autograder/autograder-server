@@ -3,12 +3,12 @@ from django.utils import timezone
 
 from rest_framework import status
 
+from autograder import utils
+
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-import autograder.core.shared.utilities as ut
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -18,7 +18,7 @@ class ListGroupSubmissionsTestCase(test_data.Client,
                                    test_data.Group,
                                    test_data.Submission,
                                    test_impls.ListObjectsTest,
-                                   TemporaryFilesystemTestCase):
+                                   UnitTestBase):
     def test_admin_or_staff_list_submissions(self):
         for project in self.all_projects:
             for group in self.at_least_enrolled_groups(project):
@@ -90,7 +90,7 @@ class CreateSubmissionTestCase(test_data.Client,
                                test_data.Group,
                                test_data.Submission,
                                test_impls.CreateObjectTest,
-                               TemporaryFilesystemTestCase):
+                               UnitTestBase):
     def test_admin_or_staff_submit(self):
         for project in self.all_projects:
             project.validate_and_update(
@@ -246,7 +246,7 @@ class CreateSubmissionTestCase(test_data.Client,
         for group in self.all_groups(self.visible_public_project):
             for i in range(limit + 2):
                 self.do_normal_submit_test(group, group.members.last())
-            num_not_past_limit = ut.count_if(
+            num_not_past_limit = utils.count_if(
                 group.submissions.all(),
                 lambda sub: not sub.is_past_daily_limit)
             self.assertEqual(limit, num_not_past_limit)

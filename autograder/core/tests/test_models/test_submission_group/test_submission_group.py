@@ -6,32 +6,30 @@ from django.core.cache import cache
 from django.http import Http404
 from django.utils import timezone
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
-
 import autograder.core.models as ag_models
-import autograder.core.shared.utilities as ut
+import autograder.core.utils as core_ut
+import autograder.utils.testing.model_obj_builders as obj_build
+import autograder.utils.testing as test_ut
 
 
 class _SetUp:
     def setUp(self):
         super().setUp()
 
-        self.project = obj_ut.build_project(
+        self.project = obj_build.build_project(
             project_kwargs={'max_group_size': 2})
         self.course = self.project.course
 
-        self.enrolled_group = obj_ut.create_dummy_users(2)
+        self.enrolled_group = obj_build.create_dummy_users(2)
         self.course.enrolled_students.add(*self.enrolled_group)
 
-        self.staff_group = obj_ut.create_dummy_users(2)
+        self.staff_group = obj_build.create_dummy_users(2)
         self.course.staff.add(*self.staff_group)
 
-        self.non_enrolled_group = obj_ut.create_dummy_users(2)
+        self.non_enrolled_group = obj_build.create_dummy_users(2)
 
 
-class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
+class MiscSubmissionGroupTestCase(_SetUp, test_ut.UnitTestBase):
     def test_to_dict_default_fields(self):
         expected_fields = [
             'member_names',
@@ -45,7 +43,7 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             expected_fields,
             ag_models.SubmissionGroup.get_default_to_dict_fields())
 
-        group = obj_ut.build_submission_group()
+        group = obj_build.build_submission_group()
         self.assertTrue(group.to_dict())
 
     def test_editable_fields(self):
@@ -68,7 +66,7 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.assertEqual(self.project, group.project)
 
         self.assertTrue(
-            os.path.isdir(ut.get_student_submission_group_dir(group)))
+            os.path.isdir(core_ut.get_student_submission_group_dir(group)))
 
     def test_valid_initialization_no_defaults(self):
         extended_due_date = timezone.now() + datetime.timedelta(days=1)
@@ -84,7 +82,7 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.assertEqual(self.project, group.project)
 
     def test_valid_member_of_multiple_groups_for_different_projects(self):
-        other_project = obj_ut.build_project(
+        other_project = obj_build.build_project(
             project_kwargs={
                 'max_group_size': 2,
                 'allow_submissions_from_non_enrolled_students': True})
@@ -112,9 +110,9 @@ class MiscSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.assertCountEqual([first_group, second_group], groups)
 
 
-class GetUltimateSubmissionTestCase(TemporaryFilesystemTestCase):
+class GetUltimateSubmissionTestCase(test_ut.UnitTestBase):
     def test_get_ultimate_submission(self):
-        submissions, best, tests = obj_ut.build_submissions_with_results(
+        submissions, best, tests = obj_build.build_submissions_with_results(
             num_submissions=5, make_one_best=True)
         self.assertNotEqual(submissions[-1], best)
         group = best.submission_group
@@ -131,7 +129,7 @@ class GetUltimateSubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(best, group.ultimate_submission)
 
     def test_get_ultimate_submission_high_score_tied_take_most_recent(self):
-        submissions, tests = obj_ut.build_submissions_with_results(
+        submissions, tests = obj_build.build_submissions_with_results(
             num_submissions=4)
         group = submissions[0].submission_group
         project = group.project
@@ -147,18 +145,18 @@ class GetUltimateSubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(submissions[-1], group.ultimate_submission)
 
     def test_get_ultimate_submission_no_submissions(self):
-        group = obj_ut.build_submission_group()
+        group = obj_build.build_submission_group()
         with self.assertRaises(Http404):
             group.ultimate_submission
 
 
-class BestBasicSubmissionTestCase(TemporaryFilesystemTestCase):
+class BestBasicSubmissionTestCase(test_ut.UnitTestBase):
     def test_best_basic_submission(self):
         cache.clear()
         # Increase these numbers when benchmarking
         num_submissions = 3
         num_tests = 5
-        submissions, best, tests = obj_ut.build_submissions_with_results(
+        submissions, best, tests = obj_build.build_submissions_with_results(
             num_submissions=num_submissions, num_tests=num_tests,
             make_one_best=True)
 
@@ -172,19 +170,19 @@ class BestBasicSubmissionTestCase(TemporaryFilesystemTestCase):
         # # Benchmarks
         # for i in range(2):
         #     cache.clear()
-        #     with ut.Timer('Max of {} submissions with {} tests from '
+        #     with test_ut.Timer('Max of {} submissions with {} tests from '
         #                   'empty cache.'.format(num_submissions, num_tests)):
         #         actual_best = group.submission_with_best_basic_score
 
         # for i in range(10):
         #     cache.delete_many(
         #         [sub.basic_score_cache_key for sub in submissions])
-        #     with ut.Timer('Max of {} submissions with {} tests from '
+        #     with test_ut.Timer('Max of {} submissions with {} tests from '
         #                   'results cache.'.format(num_submissions, num_tests)):
         #         actual_best = group.submission_with_best_basic_score
 
         # for i in range(10):
-        #     with ut.Timer('Max of {} submissions with {} tests from '
+        #     with test_ut.Timer('Max of {} submissions with {} tests from '
         #                   'submissions cache.'.format(num_submissions,
         #                                               num_tests)):
         #         actual_best = group.submission_with_best_basic_score
@@ -192,9 +190,9 @@ class BestBasicSubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(best, group.submission_with_best_basic_score)
 
 
-class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):
+class SubmissionGroupSizeTestCase(_SetUp, test_ut.UnitTestBase):
     def test_valid_override_group_max_size(self):
-        self.enrolled_group += obj_ut.create_dummy_users(3)
+        self.enrolled_group += obj_build.create_dummy_users(3)
         self.project.course.enrolled_students.add(*self.enrolled_group)
         group = ag_models.SubmissionGroup.objects.validate_and_create(
             members=self.enrolled_group,
@@ -240,7 +238,7 @@ class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):
     def test_exception_on_too_many_group_members(self):
         self.project.save()
 
-        new_user = obj_ut.create_dummy_user()
+        new_user = obj_build.create_dummy_user()
         self.course.enrolled_students.add(new_user)
         self.enrolled_group.append(new_user)
 
@@ -249,13 +247,13 @@ class SubmissionGroupSizeTestCase(_SetUp, TemporaryFilesystemTestCase):
                 members=self.enrolled_group, project=self.project)
 
 
-class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
+class UpdateSubmissionGroupTestCase(_SetUp, test_ut.UnitTestBase):
     def test_normal_update_group(self):
         group = ag_models.SubmissionGroup.objects.validate_and_create(
             members=self.enrolled_group,
             project=self.project)
 
-        new_members = obj_ut.create_dummy_users(2)
+        new_members = obj_build.create_dummy_users(2)
         self.project.course.enrolled_students.add(*new_members)
 
         group.validate_and_update(members=new_members)
@@ -268,7 +266,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             members=self.enrolled_group,
             project=self.project)
 
-        new_members = obj_ut.create_dummy_users(5)
+        new_members = obj_build.create_dummy_users(5)
         self.project.course.enrolled_students.add(*new_members)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -281,7 +279,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             members=self.enrolled_group,
             project=self.project)
 
-        new_members = obj_ut.create_dummy_users(2)
+        new_members = obj_build.create_dummy_users(2)
         self.project.course.enrolled_students.add(*new_members)
 
         self.project.min_group_size = 10
@@ -302,7 +300,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
         self.project.max_group_size = 10
         self.project.save()
 
-        new_members = obj_ut.create_dummy_users(2)
+        new_members = obj_build.create_dummy_users(2)
         self.project.course.enrolled_students.add(*new_members)
         group.validate_and_update(members=new_members,
                                   check_group_size_limits=False)
@@ -316,7 +314,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
             members=self.enrolled_group,
             project=self.project)
 
-        new_members = obj_ut.create_dummy_users(5)
+        new_members = obj_build.create_dummy_users(5)
         self.project.course.enrolled_students.add(*new_members)
 
         group.validate_and_update(members=new_members,
@@ -336,7 +334,7 @@ class UpdateSubmissionGroupTestCase(_SetUp, TemporaryFilesystemTestCase):
                                       check_group_size_limits=False)
 
 
-class GroupMembershipTestCase(_SetUp, TemporaryFilesystemTestCase):
+class GroupMembershipTestCase(_SetUp, test_ut.UnitTestBase):
     def test_exception_on_group_member_already_in_another_group(self):
         ag_models.SubmissionGroup.objects.validate_and_create(
             members=self.enrolled_group[0:1], project=self.project)
@@ -346,7 +344,7 @@ class GroupMembershipTestCase(_SetUp, TemporaryFilesystemTestCase):
                 members=self.enrolled_group, project=self.project)
 
     def test_exception_on_some_members_not_enrolled(self):
-        mixed_group = self.enrolled_group[0:1] + [obj_ut.create_dummy_user()]
+        mixed_group = self.enrolled_group[0:1] + [obj_build.create_dummy_user()]
         with self.assertRaises(exceptions.ValidationError):
             ag_models.SubmissionGroup.objects.validate_and_create(
                 members=mixed_group, project=self.project)

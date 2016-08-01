@@ -5,8 +5,7 @@ from rest_framework import status
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
@@ -14,7 +13,7 @@ class _PatternSetUp(test_data.Client, test_data.Project):
     pass
 
 
-class ListPatternsTestCase(_PatternSetUp, TemporaryFilesystemTestCase):
+class ListPatternsTestCase(_PatternSetUp, UnitTestBase):
     def test_admin_list_patterns(self):
         for project in self.all_projects:
             self.do_list_patterns_test(self.admin, project)
@@ -69,7 +68,7 @@ class ListPatternsTestCase(_PatternSetUp, TemporaryFilesystemTestCase):
         return serialized_patterns
 
 
-class CreatePatternTestCase(_PatternSetUp, TemporaryFilesystemTestCase):
+class CreatePatternTestCase(_PatternSetUp, UnitTestBase):
     def test_admin_create_pattern(self):
         self.assertEqual(
             0, self.project.expected_student_file_patterns.count())

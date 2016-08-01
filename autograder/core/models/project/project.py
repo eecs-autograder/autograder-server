@@ -8,9 +8,8 @@ from django.core import exceptions
 from ..ag_model_base import AutograderModel
 from ..course import Course
 
-import autograder.utilities.fields as ag_fields
-
-import autograder.core.shared.utilities as ut
+import autograder.core.utils as core_ut
+import autograder.core.fields as ag_fields
 
 
 class Project(AutograderModel):
@@ -204,10 +203,9 @@ class Project(AutograderModel):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        project_root_dir = ut.get_project_root_dir(self)
-        project_files_dir = ut.get_project_files_dir(self)
-        project_submissions_dir = ut.get_project_submission_groups_dir(
-            self)
+        project_root_dir = core_ut.get_project_root_dir(self)
+        project_files_dir = core_ut.get_project_files_dir(self)
+        project_submissions_dir = core_ut.get_project_submission_groups_dir(self)
 
         if not os.path.isdir(project_root_dir):
             # Since the database is in charge of validating the

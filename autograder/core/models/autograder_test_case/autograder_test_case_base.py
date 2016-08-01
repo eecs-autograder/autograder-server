@@ -13,10 +13,10 @@ from ..ag_model_base import (
 from ..project import Project, UploadedFile, ExpectedStudentFilePattern
 from .feedback_config import FeedbackConfig
 
-import autograder.utilities.fields as ag_fields
-
-import autograder.core.shared.global_constants as gc
-import autograder.core.shared.utilities as ut
+import autograder.core.constants as const
+import autograder.core.utils as core_ut
+import autograder.sandbox.constants as sandbox_const
+import autograder.core.fields as ag_fields
 
 
 def get_random_executable_name():
@@ -162,7 +162,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     command_line_arguments = ag_fields.StringArrayField(
         strip_strings=True, allow_empty_strings=False,
         string_validators=[
-            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
+            RegexValidator(const.COMMAND_LINE_ARG_WHITELIST_REGEX)],
         default=list, blank=True,
         help_text='''A list of arguments to be passed to the program
             being tested.
@@ -203,9 +203,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             This value may NOT be None.''')
 
     time_limit = models.IntegerField(
-        default=gc.DEFAULT_SUBPROCESS_TIMEOUT,
+        default=sandbox_const.DEFAULT_SUBPROCESS_TIMEOUT,
         validators=[MinValueValidator(1),
-                    MaxValueValidator(gc.MAX_SUBPROCESS_TIMEOUT)],
+                    MaxValueValidator(sandbox_const.MAX_SUBPROCESS_TIMEOUT)],
         help_text='''The time limit in seconds to be placed on the
             program being tested. This limit currently applies to each
             of: compilation, running the program, and running the
@@ -221,9 +221,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             network connections.''')
 
     stack_size_limit = models.IntegerField(
-        default=gc.DEFAULT_STACK_SIZE_LIMIT,
+        default=sandbox_const.DEFAULT_STACK_SIZE_LIMIT,
         validators=[MinValueValidator(1),
-                    MaxValueValidator(gc.MAX_STACK_SIZE_LIMIT)],
+                    MaxValueValidator(sandbox_const.MAX_STACK_SIZE_LIMIT)],
         help_text='''
         stack_size_limit -- The maximum stack size in bytes.
             Must be > 0
@@ -231,9 +231,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             NOTE: Setting this value too low may cause the program being
                     tested to crash prematurely.''')
     virtual_memory_limit = models.IntegerField(
-        default=gc.DEFAULT_VIRTUAL_MEM_LIMIT,
+        default=sandbox_const.DEFAULT_VIRTUAL_MEM_LIMIT,
         validators=[MinValueValidator(1),
-                    MaxValueValidator(gc.MAX_VIRTUAL_MEM_LIMIT)],
+                    MaxValueValidator(sandbox_const.MAX_VIRTUAL_MEM_LIMIT)],
         help_text='''The maximum amount of virtual memory
             (in bytes) the program being tested can use.
             Must be > 0
@@ -241,9 +241,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             NOTE: Setting this value too low may cause the program being
                     tested to crash prematurely.''')
     process_spawn_limit = models.IntegerField(
-        default=gc.DEFAULT_PROCESS_LIMIT,
+        default=sandbox_const.DEFAULT_PROCESS_LIMIT,
         validators=[MinValueValidator(0),
-                    MaxValueValidator(gc.MAX_PROCESS_LIMIT)],
+                    MaxValueValidator(sandbox_const.MAX_PROCESS_LIMIT)],
         help_text='''The maximum number of processes that the program
             being tested is allowed to spawn.
             Must be >= 0
@@ -294,8 +294,8 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         null=True,
         strip_strings=True, allow_empty_strings=False,
         string_validators=[
-            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
-        default=gc.DEFAULT_VALGRIND_FLAGS, blank=True,
+            RegexValidator(const.COMMAND_LINE_ARG_WHITELIST_REGEX)],
+        default=const.DEFAULT_VALGRIND_FLAGS, blank=True,
         help_text='''If use_valgrind is True, this field should contain
             a list of command line arguments to be passed to the
             valgrind program. NOTE: This list should NOT contain any
@@ -388,13 +388,13 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     compiler = ag_fields.ShortStringField(
         blank=True,
-        choices=zip(gc.SUPPORTED_COMPILERS, gc.SUPPORTED_COMPILERS),
+        choices=zip(const.SUPPORTED_COMPILERS, const.SUPPORTED_COMPILERS),
         help_text='''The program that will be used to compile the test
             case executable.''')
 
     compiler_flags = ag_fields.StringArrayField(
         default=list, blank=True, string_validators=[
-            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
+            RegexValidator(const.COMMAND_LINE_ARG_WHITELIST_REGEX)],
         help_text='''A list of option flags to be passed to the
             compiler. These flags are limited to the same character set
             as the command_line_arguments field.
@@ -421,7 +421,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     executable_name = ag_fields.ShortStringField(
         blank=True,
         default=get_random_executable_name,
-        validators=[ut.check_user_provided_filename],
+        validators=[core_ut.check_user_provided_filename],
         help_text='''The name of the executable program that should be
             produced by the compiler. This is the program that will be
             tested.''')
@@ -436,20 +436,20 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     interpreter = ag_fields.ShortStringField(
         blank=True,
-        choices=zip(gc.SUPPORTED_INTERPRETERS, gc.SUPPORTED_INTERPRETERS),
+        choices=zip(const.SUPPORTED_INTERPRETERS, const.SUPPORTED_INTERPRETERS),
         help_text='''The interpreter used to run the program.''')
 
     interpreter_flags = ag_fields.StringArrayField(
         blank=True, default=list,
         string_validators=[
-            RegexValidator(gc.COMMAND_LINE_ARG_WHITELIST_REGEX)],
+            RegexValidator(const.COMMAND_LINE_ARG_WHITELIST_REGEX)],
         help_text='''A list of objtion flags to be passed to the
             interpreter. These flags are limited to the same character
             set as the command_line_argument_field.''')
 
     entry_point_filename = ag_fields.ShortStringField(
         blank=True,
-        validators=[ut.check_user_provided_filename],
+        validators=[core_ut.check_user_provided_filename],
         help_text='''The name of a file that should be given to the
             interpreter as the program to be run, i.e. the main source
             module. It is up to the user to make sure that this file is
@@ -461,7 +461,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.use_valgrind and self.valgrind_flags is None:
-            self.valgrind_flags = gc.DEFAULT_VALGRIND_FLAGS
+            self.valgrind_flags = const.DEFAULT_VALGRIND_FLAGS
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
@@ -546,14 +546,13 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             matching_files = fnmatch.filter(submission.submitted_filenames,
                                             student_file.pattern)
             files_to_add += [
-                os.path.join(ut.get_submission_dir(submission), filename)
+                os.path.join(core_ut.get_submission_dir(submission), filename)
                 for filename in matching_files]
 
         if files_to_add:
             autograder_sandbox.add_files(*files_to_add)
 
-    # TODO: Remove "test_" prefix from this name
-    def test_checks_compilation(self):
+    def checks_compilation(self):
         return False
 
     @property

@@ -1,5 +1,3 @@
-# from autograder.security.views import LoginRequiredView
-
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from django.shortcuts import render

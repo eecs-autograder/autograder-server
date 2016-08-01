@@ -7,8 +7,7 @@ from rest_framework import status
 
 from autograder.core.models import Submission
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -17,7 +16,7 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
                                         test_data.Project,
                                         test_data.Submission,
                                         test_impls.GetObjectTest,
-                                        TemporaryFilesystemTestCase):
+                                        UnitTestBase):
     def test_admin_or_staff_view_submission(self):
         for project in self.all_projects:
             for submission in self.at_least_enrolled_submissions(project):
@@ -122,7 +121,7 @@ class UpdateSubmissionTestCase(test_data.Client,
                                test_data.Project,
                                test_data.Submission,
                                test_impls.UpdateObjectTest,
-                               TemporaryFilesystemTestCase):
+                               UnitTestBase):
     def test_admin_edit_count_towards_limit(self):
         for project in self.all_projects:
             for submission in self.at_least_enrolled_submissions(project):
@@ -164,7 +163,7 @@ class UpdateSubmissionTestCase(test_data.Client,
 class RemoveFromQueueTestCase(test_data.Client,
                               test_data.Project,
                               test_data.Submission,
-                              TemporaryFilesystemTestCase):
+                              UnitTestBase):
     def test_admin_or_staff_remove_own_from_queue(self):
         for project in self.all_projects:
             for submission in self.staff_submissions(project):

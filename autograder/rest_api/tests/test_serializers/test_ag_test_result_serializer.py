@@ -6,13 +6,13 @@ import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
 from .serializer_test_case import SerializerTestCase
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class AGTestResultSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
-        fdbk = obj_ut.random_fdbk()
-        result = obj_ut.build_compiled_ag_test_result(
+        fdbk = obj_build.random_fdbk()
+        result = obj_build.build_compiled_ag_test_result(
             ag_test_kwargs={'feedback_configuration': fdbk})
 
         serializer = ag_serializers.AGTestResultSerializer(result)
@@ -46,10 +46,10 @@ class AGTestResultSerializerTestCase(SerializerTestCase):
         self.assertEqual(result.get_feedback().to_dict(), actual_data)
 
     def make_result_and_admin(self):
-        result = obj_ut.build_compiled_ag_test_result()
+        result = obj_build.build_compiled_ag_test_result()
         group = result.submission.submission_group
         course = group.project.course
-        admin = obj_ut.create_dummy_user()
+        admin = obj_build.create_dummy_user()
         course.administrators.add(admin)
 
         group.members.set([admin], clear=True)

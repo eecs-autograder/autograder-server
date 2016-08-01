@@ -1,9 +1,8 @@
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -15,7 +14,7 @@ class _InvitationsSetUp(test_data.Client, test_data.Project):
 class ListGroupInvitationsTestCase(_InvitationsSetUp,
                                    test_impls.ListObjectsTest,
                                    test_impls.PermissionDeniedGetTest,
-                                   TemporaryFilesystemTestCase):
+                                   UnitTestBase):
     def test_admin_list_invitations(self):
         for project in self.all_projects:
             self.do_list_objects_test(
@@ -52,7 +51,7 @@ class CreateInvitationTestCase(_InvitationsSetUp,
                                test_impls.CreateObjectTest,
                                test_impls.CreateObjectInvalidArgsTest,
                                test_impls.PermissionDeniedCreateTest,
-                               TemporaryFilesystemTestCase):
+                               UnitTestBase):
     def test_admin_and_staff_create_invitation(self):
         self.project.validate_and_update(max_group_size=3)
         args = {'invited_usernames': [self.staff.username]}
@@ -62,7 +61,7 @@ class CreateInvitationTestCase(_InvitationsSetUp,
 
     def test_enrolled_create_invitation(self):
         self.visible_private_project.validate_and_update(max_group_size=3)
-        other_enrolled = obj_ut.create_dummy_user()
+        other_enrolled = obj_build.create_dummy_user()
         self.visible_private_project.course.enrolled_students.add(
             other_enrolled)
         args = {'invited_usernames': [other_enrolled.username]}
@@ -74,7 +73,7 @@ class CreateInvitationTestCase(_InvitationsSetUp,
 
     def test_other_create_invitation(self):
         self.visible_public_project.validate_and_update(max_group_size=3)
-        other_nobody = obj_ut.create_dummy_user()
+        other_nobody = obj_build.create_dummy_user()
         args = {'invited_usernames': [other_nobody.username, 'steve']}
         self.do_create_object_test(
             self.visible_public_project.submission_group_invitations,
@@ -99,7 +98,7 @@ class CreateInvitationTestCase(_InvitationsSetUp,
         print(response.data)
 
     def test_enrolled_create_invitation_permission_denied(self):
-        other_enrolled = obj_ut.create_dummy_user()
+        other_enrolled = obj_build.create_dummy_user()
         args = {'invited_usernames': [other_enrolled.username]}
         for project in self.hidden_projects:
             project.validate_and_update(max_group_size=3)
@@ -108,7 +107,7 @@ class CreateInvitationTestCase(_InvitationsSetUp,
                 self.enrolled, self.get_invitations_url(project), args)
 
     def test_nobody_create_invitation_permission_denied(self):
-        other_nobody = obj_ut.create_dummy_user()
+        other_nobody = obj_build.create_dummy_user()
         args = {'invited_usernames': [other_nobody.username]}
         for project in (self.visible_private_project,
                         self.hidden_public_project,

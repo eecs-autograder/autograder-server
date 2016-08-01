@@ -6,7 +6,8 @@ from rest_framework import viewsets, mixins, permissions
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-import autograder.core.shared.utilities as ut
+from autograder import utils
+import autograder.utils.testing as test_ut
 
 from .permissions import IsAdminOrReadOnlyStaff
 from ..load_object_mixin import build_load_object_mixin
@@ -33,9 +34,9 @@ class ProjectGroupsViewSet(
             User.objects.get_or_create(username=username)[0]
             for username in request.data.pop('member_names')]
 
-        ut.lock_users(users)
+        utils.lock_users(users)
         # Keep this hook immediately after locking the users.
-        ut.mocking_hook()
+        test_ut.mocking_hook()
 
         request.data['members'] = users
         request.data['check_group_size_limits'] = (

@@ -1,7 +1,6 @@
 from rest_framework import status
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
@@ -9,7 +8,7 @@ class _ProjectSetUp(test_data.Client, test_data.Project):
     pass
 
 
-class RetrieveProjectTestCase(_ProjectSetUp, TemporaryFilesystemTestCase):
+class RetrieveProjectTestCase(_ProjectSetUp, UnitTestBase):
     def test_admin_get_project(self):
         for project in self.all_projects:
             response = self.do_valid_load_project_test(
@@ -59,7 +58,7 @@ class RetrieveProjectTestCase(_ProjectSetUp, TemporaryFilesystemTestCase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class UpdateProjectTestCase(_ProjectSetUp, TemporaryFilesystemTestCase):
+class UpdateProjectTestCase(_ProjectSetUp, UnitTestBase):
     def setUp(self):
         super().setUp()
         self.url = self.get_proj_url(self.project)

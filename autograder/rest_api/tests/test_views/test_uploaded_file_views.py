@@ -6,8 +6,7 @@ from django.core.urlresolvers import reverse
 from rest_framework import status
 import autograder.core.models as ag_models
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -32,7 +31,7 @@ class RetrieveUploadedFileTestCase(_BuildFile,
                                    test_data.Client,
                                    test_data.Project,
                                    test_impls.GetObjectTest,
-                                   TemporaryFilesystemTestCase):
+                                   UnitTestBase):
     def test_admin_get_uploaded_file(self):
         for project in self.all_projects:
             file_ = self.build_file(project)
@@ -67,7 +66,7 @@ class RenameUploadedFileTestCase(_BuildFile,
                                  test_data.Client,
                                  test_data.Project,
                                  test_impls.UpdateObjectTest,
-                                 TemporaryFilesystemTestCase):
+                                 UnitTestBase):
     def test_admin_rename_uploaded_file(self):
         new_name = self.file_obj_kwargs['name'] + str(uuid.uuid4().hex)
         request_data = {'name': new_name}
@@ -105,7 +104,7 @@ class RetrieveUploadedFileContentTestCase(_BuildFile,
                                           test_data.Client,
                                           test_data.Project,
                                           test_impls.GetObjectTest,
-                                          TemporaryFilesystemTestCase):
+                                          UnitTestBase):
     def test_admin_get_content(self):
         for project in self.all_projects:
             file_ = self.build_file(project)
@@ -139,7 +138,7 @@ class UpdateUploadedFileContentTestCase(_BuildFile,
                                         test_data.Client,
                                         test_data.Project,
                                         test_impls.UpdateObjectTest,
-                                        TemporaryFilesystemTestCase):
+                                        UnitTestBase):
     def setUp(self):
         super().setUp()
         self.new_content = self.file_obj_kwargs['content'] + b'stevestavestove'

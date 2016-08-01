@@ -2,9 +2,8 @@ from urllib.parse import urlencode
 
 from django.core.urlresolvers import reverse
 
-import autograder.core.tests.dummy_object_utils as obj_ut
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -20,7 +19,7 @@ class RetrieveResultTestCase(test_data.Client,
                              test_data.Project,
                              test_data.Submission,
                              test_impls.GetObjectTest,
-                             TemporaryFilesystemTestCase):
+                             UnitTestBase):
     def test_staff_view_own_result(self):
         for project in self.all_projects:
             for group in self.staff_groups(project):
@@ -61,7 +60,7 @@ class RetrieveResultTestCase(test_data.Client,
             for submission_func, key in (
                     self.submission_funcs_and_ag_test_kwargs()):
                 submission = submission_func(group)
-                result = obj_ut.build_compiled_ag_test_result(
+                result = obj_build.build_compiled_ag_test_result(
                     submission=submission,
                     ag_test_kwargs={key: False})
                 self.do_permission_denied_get_test(
@@ -78,7 +77,7 @@ class RetrieveResultTestCase(test_data.Client,
             for submission_func, key in (
                     self.submission_funcs_and_ag_test_kwargs()):
                 submission = submission_func(group)
-                result = obj_ut.build_compiled_ag_test_result(
+                result = obj_build.build_compiled_ag_test_result(
                     submission=submission,
                     ag_test_kwargs={key: False})
                 self.do_permission_denied_get_test(
@@ -94,7 +93,7 @@ class RetrieveResultTestCase(test_data.Client,
             for submission_func, key in (
                     self.submission_funcs_and_ag_test_kwargs()):
                 submission = submission_func(group)
-                result = obj_ut.build_compiled_ag_test_result(
+                result = obj_build.build_compiled_ag_test_result(
                     submission=submission,
                     ag_test_kwargs={key: False})
                 for user in self.admin, self.staff:
@@ -147,7 +146,7 @@ class RetrieveResultTestCase(test_data.Client,
         ]
 
     def make_result(self, submission):
-        return obj_ut.build_compiled_ag_test_result(
+        return obj_build.build_compiled_ag_test_result(
             submission=submission,
             ag_test_kwargs=self.all_visible_ag_test_kwargs())
 

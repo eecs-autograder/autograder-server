@@ -17,7 +17,7 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
     class Meta:
         proxy = True
 
-    def test_checks_compilation(self):
+    def checks_compilation(self):
         return True
 
     def clean(self):

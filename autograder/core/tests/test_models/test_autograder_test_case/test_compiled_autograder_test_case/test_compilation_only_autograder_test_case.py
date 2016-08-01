@@ -1,14 +1,13 @@
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 
-from .utils import (
+from .helpers import (
     SharedSetUpTearDownForRunTestsWithCompilation,
     CppProgramStrs)
 
 
 class CompilationOnlyAutograderTestRunTestCase(
         SharedSetUpTearDownForRunTestsWithCompilation,
-        TemporaryFilesystemTestCase):
+        UnitTestBase):
 
     def get_ag_test_type_str_for_factory(self):
         return 'compilation_only_test_case'

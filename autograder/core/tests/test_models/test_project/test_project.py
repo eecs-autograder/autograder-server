@@ -6,19 +6,17 @@ from django.core import exceptions
 from django.utils import timezone
 
 import autograder.core.models as ag_models
+import autograder.core.utils as core_ut
 
-import autograder.core.shared.utilities as ut
-
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class ProjectMiscTestCase(TemporaryFilesystemTestCase):
+class ProjectMiscTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.course = obj_ut.build_course()
+        self.course = obj_build.build_course()
         self.project_name = 'my_project'
 
     def test_valid_create_with_defaults(self):
@@ -107,7 +105,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
                          new_project.ultimate_submission_selection_method)
 
     def test_to_dict_default_fields(self):
-        project = obj_ut.build_project()
+        project = obj_build.build_project()
 
         expected_fields = [
             'name',
@@ -130,7 +128,7 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
 
         self.assertCountEqual(expected_fields,
                               ag_models.Project.get_default_to_dict_fields())
-        project = obj_ut.build_project()
+        project = obj_build.build_project()
         self.assertTrue(project.to_dict())
 
     def test_editable_fields(self):
@@ -155,10 +153,10 @@ class ProjectMiscTestCase(TemporaryFilesystemTestCase):
                               ag_models.Project.get_editable_fields())
 
 
-class HardAndSoftClosingTimeTestCase(TemporaryFilesystemTestCase):
+class HardAndSoftClosingTimeTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.course = obj_ut.build_course()
+        self.course = obj_build.build_course()
 
     def test_valid_soft_closing_time_None_closing_time_not_None(self):
         closing_time = timezone.now()
@@ -183,10 +181,10 @@ class HardAndSoftClosingTimeTestCase(TemporaryFilesystemTestCase):
         self.assertIn('soft_closing_time', cm.exception.message_dict)
 
 
-class ProjectMiscErrorTestCase(TemporaryFilesystemTestCase):
+class ProjectMiscErrorTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.course = obj_ut.build_course()
+        self.course = obj_build.build_course()
 
     def test_error_negative_submission_limit_per_day(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -206,11 +204,11 @@ class ProjectMiscErrorTestCase(TemporaryFilesystemTestCase):
                       cm.exception.message_dict)
 
 
-class ProjectNameExceptionTestCase(TemporaryFilesystemTestCase):
+class ProjectNameExceptionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.course = obj_ut.build_course()
+        self.course = obj_build.build_course()
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -233,7 +231,7 @@ class ProjectNameExceptionTestCase(TemporaryFilesystemTestCase):
                 name=name, course=self.course)
 
     def test_no_exception_same_name_different_course(self):
-        new_course = obj_ut.build_course()
+        new_course = obj_build.build_course()
         name = 'project43'
 
         ag_models.Project.objects.validate_and_create(
@@ -243,10 +241,10 @@ class ProjectNameExceptionTestCase(TemporaryFilesystemTestCase):
             name=name, course=new_course)
 
 
-class ProjectGroupSizeExceptionTestCase(TemporaryFilesystemTestCase):
+class ProjectGroupSizeExceptionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.course = obj_ut.build_course()
+        self.course = obj_build.build_course()
         self.project_name = 'project_for_group_tests'
 
     def test_exception_on_min_group_size_too_small(self):
@@ -289,11 +287,11 @@ class ProjectGroupSizeExceptionTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(loaded_project.max_group_size, 2)
 
 
-class ProjectFilesystemTest(TemporaryFilesystemTestCase):
+class ProjectFilesystemTest(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.course = obj_ut.build_course()
+        self.course = obj_build.build_course()
         self.project_name = 'stats_project'
 
     def test_project_root_dir_created(self):
@@ -302,11 +300,11 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
         self.assertEqual(
             [],
-            os.listdir(os.path.dirname(ut.get_project_root_dir(project))))
+            os.listdir(os.path.dirname(core_ut.get_project_root_dir(project))))
 
         project.save()
 
-        expected_project_root_dir = ut.get_project_root_dir(project)
+        expected_project_root_dir = core_ut.get_project_root_dir(project)
 
         self.assertTrue(os.path.isdir(expected_project_root_dir))
 
@@ -316,11 +314,11 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
 
         self.assertFalse(
             os.path.exists(
-                os.path.dirname(ut.get_project_files_dir(project))))
+                os.path.dirname(core_ut.get_project_files_dir(project))))
 
         project.save()
 
-        expected_project_files_dir = ut.get_project_files_dir(project)
+        expected_project_files_dir = core_ut.get_project_files_dir(project)
         self.assertTrue(os.path.isdir(expected_project_files_dir))
 
     def test_project_submissions_dir_created(self):
@@ -330,12 +328,12 @@ class ProjectFilesystemTest(TemporaryFilesystemTestCase):
         self.assertFalse(
             os.path.exists(
                 os.path.dirname(
-                    ut.get_project_submission_groups_dir(project))))
+                    core_ut.get_project_submission_groups_dir(project))))
 
         project.save()
 
         expected_project_submissions_by_student_dir = (
-            ut.get_project_submission_groups_dir(project))
+            core_ut.get_project_submission_groups_dir(project))
 
         self.assertTrue(
             os.path.isdir(expected_project_submissions_by_student_dir))

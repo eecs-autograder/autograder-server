@@ -8,7 +8,7 @@ from rest_framework import viewsets, mixins, permissions
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-import autograder.core.shared.utilities as ut
+from autograder import utils
 
 from .permissions import IsAdminOrReadOnlyStaff, user_can_view_project
 from ..load_object_mixin import build_load_object_mixin
@@ -43,7 +43,7 @@ class ProjectGroupInvitationsViewset(
             User.objects.get_or_create(username=username)[0]
             for username in request.data['invited_usernames']]
 
-        ut.lock_users(itertools.chain([request.user], invited_users))
+        utils.lock_users(itertools.chain([request.user], invited_users))
 
         request.data['invitation_creator'] = request.user
         request.data['invited_users'] = invited_users

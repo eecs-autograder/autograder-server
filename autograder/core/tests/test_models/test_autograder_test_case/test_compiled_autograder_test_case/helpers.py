@@ -2,16 +2,16 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
 
-from autograder.security.autograder_sandbox import AutograderSandbox
+from autograder.sandbox.autograder_sandbox import AutograderSandbox
 
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class SharedSetUpTearDownForRunTestsWithCompilation(object):
     def setUp(self):
         super().setUp()
 
-        self.group = obj_ut.build_submission_group()
+        self.group = obj_build.build_submission_group()
         self.project = self.group.project
 
         self.main_prog_filename = 'main.cpp'

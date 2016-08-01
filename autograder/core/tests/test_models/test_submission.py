@@ -8,20 +8,20 @@ from django.utils import timezone
 
 from autograder.core.models.autograder_test_case import feedback_config
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder import utils
+import autograder.utils.testing as test_ut
 
 import autograder.core.models as ag_models
-import autograder.core.shared.utilities as ut
+import autograder.core.utils as core_ut
 
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class SubmissionTestCase(TemporaryFilesystemTestCase):
+class SubmissionTestCase(test_ut.UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.submission_group = obj_ut.build_submission_group(num_members=2)
+        self.submission_group = obj_build.build_submission_group(num_members=2)
         self.project = self.submission_group.project
 
         expected_files = [
@@ -66,7 +66,7 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(
             expected,
             ag_models.Submission.get_default_to_dict_fields())
-        group = obj_ut.build_submission_group()
+        group = obj_build.build_submission_group()
         submission = ag_models.Submission(submission_group=group)
         self.assertTrue(submission.to_dict())
 
@@ -112,8 +112,8 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
                         timezone.timedelta(seconds=2))
 
         # Check file contents in the filesystem
-        self.assertTrue(os.path.isdir(ut.get_submission_dir(submission)))
-        with ut.ChangeDirectory(ut.get_submission_dir(submission)):
+        self.assertTrue(os.path.isdir(core_ut.get_submission_dir(submission)))
+        with utils.ChangeDirectory(core_ut.get_submission_dir(submission)):
             for name, content in files_to_submit:
                 self.assertEqual(name, submission.get_file(name).name)
                 self.assertEqual(content, submission.get_file(name).read())
@@ -233,44 +233,9 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
         self.assertCountEqual(submission.discarded_files,
                               (file_.name for file_ in extra_files))
 
-        with ut.ChangeDirectory(ut.get_submission_dir(submission)):
+        with utils.ChangeDirectory(core_ut.get_submission_dir(submission)):
             for file_ in extra_files:
                 self.assertFalse(os.path.exists(file_.name))
-
-    ## NOTE: Django's uploaded file classes automatically strip path
-    ## characters from filenames.
-    # def test_files_with_illegal_names_discarded(self):
-    #     files = [
-    #         SimpleUploadedFile('spam.cpp', b'blah'),
-    #         SimpleUploadedFile('eggs.cpp', b'merp'),
-    #         SimpleUploadedFile('test_spam.cpp', b'cheeese'),
-    #     ]
-    #     illegal_files = [
-    #         SimpleUploadedFile('; echo "haxorz!" #', b'merp'),
-    #         SimpleUploadedFile('@$#%@$#^%$badfilename.bad', b'bad')]
-
-    #     files += illegal_files
-
-    #     Submission.objects.validate_and_create(
-    #         submission_group=self.submission_group,
-    #         submitted_files=files)
-
-    #     loaded_submission = Submission.objects.get(
-    #         submission_group=self.submission_group)
-
-    #     self.assertEqual(
-    #         Submission.GradingStatus.received, loaded_submission.status)
-    #     self.assertCountEqual(
-    #         loaded_submission.get_submitted_file_basenames(),
-    #         ['spam.cpp', 'eggs.cpp', 'test_spam.cpp'])
-
-    #     self.assertCountEqual(
-    #         loaded_submission.discarded_files,
-    #         [file_.name for file_ in illegal_files])
-
-    #     with ut.ChangeDirectory(ut.get_submission_dir(loaded_submission)):
-    #         for file_ in illegal_files:
-    #             self.assertFalse(os.path.exists(file_.name))
 
     def test_duplicate_files_discarded(self):
         files = [
@@ -308,14 +273,14 @@ class SubmissionTestCase(TemporaryFilesystemTestCase):
             ag_models.Submission.GradingStatus.active_statuses)
 
 
-class TotalPointsTestCase(TemporaryFilesystemTestCase):
+class TotalPointsTestCase(test_ut.UnitTestBase):
     def test_basic_score(self):
         cache.clear()
 
         # Increase this number when benchmarking
         num_tests = 10
         min_fdbk = feedback_config.FeedbackConfig.objects.validate_and_create()
-        submissions, tests = obj_ut.build_submissions_with_results(
+        submissions, tests = obj_build.build_submissions_with_results(
             test_fdbk=min_fdbk, num_tests=num_tests)
         submission = submissions[0]
 
@@ -327,7 +292,7 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
                     feedback_config.FeedbackConfig.create_with_max_fdbk()))
 
         expected_points = (
-            obj_ut.build_compiled_ag_test.points_with_all_used * num_tests)
+            obj_build.build_compiled_ag_test.points_with_all_used * num_tests)
         actual_points = sum((result.basic_score
                              for result in submission.results.all()))
         self.assertEqual(expected_points, actual_points)
@@ -335,31 +300,31 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
         # # Benchmarks
         # for i in range(10):
         #     cache.clear()
-        #     with ut.Timer('Aggregated {} tests '
-        #                   'from empty cache.'.format(num_tests)):
+        #     with test_ut.Timer('Aggregated {} tests '
+        #                        'from empty cache.'.format(num_tests)):
         #         actual_points = submission.basic_score
 
         # for i in range(10):
         #     cache.delete(submission.basic_score_cache_key)
-        #     with ut.Timer('Aggregated {} tests from '
-        #                   'cached results only.'.format(num_tests)):
+        #     with test_ut.Timer('Aggregated {} tests from '
+        #                        'cached results only.'.format(num_tests)):
         #         actual_points = submission.basic_score
 
         # for i in range(10):
-        #     with ut.Timer('Aggregated {} tests '
-        #                   'from full cache.'.format(num_tests)):
+        #     with test_ut.Timer('Aggregated {} tests '
+        #                        'from full cache.'.format(num_tests)):
         #         actual_points = submission.basic_score
 
         self.assertEqual(expected_points, submission.basic_score)
 
     def test_cache_invalidation_on_ag_test_save(self):
         num_tests = 2
-        submissions, tests = obj_ut.build_submissions_with_results(
+        submissions, tests = obj_build.build_submissions_with_results(
             num_submissions=2, num_tests=num_tests)
         test_case = tests[0]
 
         expected_points = (
-            obj_ut.build_compiled_ag_test.points_with_all_used * num_tests)
+            obj_build.build_compiled_ag_test.points_with_all_used * num_tests)
         for submission in submissions:
             self.assertEqual(expected_points, submission.basic_score)
 
@@ -374,12 +339,12 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
             points_fdbk=feedback_config.PointsFdbkLevel.hide)
 
         expected_points -= (
-            obj_ut.build_compiled_ag_test.points_with_all_used + 1)
+            obj_build.build_compiled_ag_test.points_with_all_used + 1)
         for submission in submissions:
             self.assertEqual(expected_points, submission.basic_score)
 
     def test_cache_invalidation_on_result_save(self):
-        submissions, tests = obj_ut.build_submissions_with_results(
+        submissions, tests = obj_build.build_submissions_with_results(
             num_submissions=2, num_tests=1)
 
         submission = submissions[0]
@@ -391,22 +356,22 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
         self.assertEqual(0, submission.basic_score)
 
         self.assertEqual(
-            obj_ut.build_compiled_ag_test.points_with_all_used,
+            obj_build.build_compiled_ag_test.points_with_all_used,
             other_sub.basic_score)
 
-        result = obj_ut.build_compiled_ag_test_result(
+        result = obj_build.build_compiled_ag_test_result(
             test_case=test_case, submission=submission)
 
         self.assertEqual(
-            obj_ut.build_compiled_ag_test.points_with_all_used,
+            obj_build.build_compiled_ag_test.points_with_all_used,
             submission.basic_score)
 
         self.assertEqual(
-            obj_ut.build_compiled_ag_test.points_with_all_used,
+            obj_build.build_compiled_ag_test.points_with_all_used,
             other_sub.basic_score)
 
     def test_basic_score_no_results(self):
-        group = obj_ut.build_submission_group()
+        group = obj_build.build_submission_group()
         submission = ag_models.Submission.objects.validate_and_create(
             [], submission_group=group)
         self.assertEqual(0, submission.basic_score)
@@ -415,15 +380,15 @@ class TotalPointsTestCase(TemporaryFilesystemTestCase):
 # -----------------------------------------------------------------------------
 
 
-class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
+class SubmissionQueryFunctionTests(test_ut.UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
 
     def test_get_most_recent_submissions_normal(self):
         groups = [
-            obj_ut.build_submission_group(
+            obj_build.build_submission_group(
                 group_kwargs={'project': self.project})
             for i in range(10)
         ]
@@ -442,7 +407,7 @@ class SubmissionQueryFunctionTests(TemporaryFilesystemTestCase):
             ag_models.Submission.get_most_recent_submissions(self.project))
 
     def test_get_most_recent_submissions_group_has_no_submissions(self):
-        group = obj_ut.build_submission_group()
+        group = obj_build.build_submission_group()
         self.assertCountEqual([], group.submissions.all())
         self.assertCountEqual(
             [], ag_models.Submission.get_most_recent_submissions(self.project))

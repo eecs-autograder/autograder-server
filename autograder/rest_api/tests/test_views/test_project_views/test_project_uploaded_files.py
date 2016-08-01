@@ -7,8 +7,7 @@ from rest_framework import status
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
@@ -17,7 +16,7 @@ class _UploadedFilesSetUp(test_data.Client, test_data.Project):
 
 
 class ListUploadedFilesTestCase(_UploadedFilesSetUp,
-                                TemporaryFilesystemTestCase):
+                                UnitTestBase):
     def test_admin_list_files(self):
         for project in self.all_projects:
             self.do_list_uploaded_files_test(self.admin, project)
@@ -63,7 +62,7 @@ class ListUploadedFilesTestCase(_UploadedFilesSetUp,
 
 
 class CreateUploadedFileTestCase(_UploadedFilesSetUp,
-                                 TemporaryFilesystemTestCase):
+                                 UnitTestBase):
     def setUp(self):
         super().setUp()
         self.file_obj = SimpleUploadedFile('file' + str(uuid.uuid4().hex),

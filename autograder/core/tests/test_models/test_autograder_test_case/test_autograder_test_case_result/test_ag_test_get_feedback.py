@@ -3,24 +3,23 @@ from django.utils import timezone
 from autograder.core.models.autograder_test_case.feedback_config import (
     FeedbackConfig)
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
-import autograder.core.tests.generic_data as gen_data
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
+import autograder.utils.testing.generic_data as gen_data
 
 
 class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
                                           gen_data.Submission,
-                                          TemporaryFilesystemTestCase):
+                                          UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.fdbk = obj_ut.random_fdbk()
+        self.fdbk = obj_build.random_fdbk()
         # self.maxDiff = None
 
     def test_staff_get_own_max_fdbk(self):
         for group in self.staff_groups(self.project):
             submission = self.non_ultimate_submission(group)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'feedback_configuration': self.fdbk})
             ag_test = result.test_case
@@ -37,7 +36,7 @@ class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
     def test_student_get_own_normal_fdbk(self):
         for group in self.non_staff_groups(self.visible_public_project):
             submission = self.non_ultimate_submission(group)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'feedback_configuration': self.fdbk})
 
@@ -53,7 +52,7 @@ class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
                     continue
 
                 submission = self.non_ultimate_submission(group)
-                result = obj_ut.build_compiled_ag_test_result(
+                result = obj_build.build_compiled_ag_test_result(
                     submission=submission,
                     ag_test_kwargs={'staff_viewer_fdbk_conf': self.fdbk})
                 ag_test = result.test_case
@@ -67,7 +66,7 @@ class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
     def test_staff_get_own_with_student_view(self):
         for group in self.staff_groups(self.project):
             submission = self.non_ultimate_submission(group)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'feedback_configuration': self.fdbk})
 
@@ -84,7 +83,7 @@ class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
                     continue
 
                 submission = self.non_ultimate_submission(group)
-                result = obj_ut.build_compiled_ag_test_result(
+                result = obj_build.build_compiled_ag_test_result(
                     submission=submission,
                     ag_test_kwargs={'staff_viewer_fdbk_conf': self.fdbk})
                 ag_test = result.test_case
@@ -101,16 +100,16 @@ class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
 
 class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
                                             gen_data.Submission,
-                                            TemporaryFilesystemTestCase):
+                                            UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.fdbk = obj_ut.random_fdbk()
+        self.fdbk = obj_build.random_fdbk()
         # self.maxDiff = None
 
     def test_admin_or_staff_get_own_max_fdbk(self):
         for group in self.staff_groups(self.project):
             submission = self.best_ultimate_submission(group)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'ultimate_submission_fdbk_conf': self.fdbk})
             ag_test = result.test_case
@@ -137,7 +136,7 @@ class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
             for submission_func in submission_funcs:
                 submission = submission_func(group)
                 self.assertEqual(submission, group.ultimate_submission)
-                result = obj_ut.build_compiled_ag_test_result(
+                result = obj_build.build_compiled_ag_test_result(
                     submission=submission,
                     ag_test_kwargs={
                         'ultimate_submission_fdbk_conf': self.fdbk})
@@ -156,7 +155,7 @@ class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
         for group in self.non_staff_groups(self.visible_public_project):
             submission = self.most_recent_ultimate_submission(group)
             self.assertEqual(submission, group.ultimate_submission)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'ultimate_submission_fdbk_conf': self.fdbk})
 
@@ -172,7 +171,7 @@ class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
         for group in self.non_staff_groups(self.visible_public_project):
             submission = self.most_recent_ultimate_submission(group)
             self.assertEqual(submission, group.ultimate_submission)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'ultimate_submission_fdbk_conf': self.fdbk})
 
@@ -192,7 +191,7 @@ class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
 
                 submission = self.best_ultimate_submission(group)
                 self.assertEqual(submission, group.ultimate_submission)
-                result = obj_ut.build_compiled_ag_test_result(
+                result = obj_build.build_compiled_ag_test_result(
                     submission=submission,
                     ag_test_kwargs={'staff_viewer_fdbk_conf': self.fdbk})
                 ag_test = result.test_case
@@ -212,7 +211,7 @@ class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
             for submission_func in submission_funcs:
                 submission = submission_func(group)
                 self.assertEqual(submission, group.ultimate_submission)
-                result = obj_ut.build_compiled_ag_test_result(
+                result = obj_build.build_compiled_ag_test_result(
                     submission=submission,
                     ag_test_kwargs={
                         'ultimate_submission_fdbk_conf': self.fdbk})
@@ -230,17 +229,17 @@ class GetFeedbackUltimateSubmissionTestCase(gen_data.Project,
 
 class GetFeedbackPastLimitSubmissionTestCase(gen_data.Project,
                                              gen_data.Submission,
-                                             TemporaryFilesystemTestCase):
+                                             UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.fdbk = obj_ut.random_fdbk()
+        self.fdbk = obj_build.random_fdbk()
         # self.maxDiff = None
 
     def test_admin_or_staff_get_own_max_fdbk(self):
         for group in self.staff_groups(self.project):
             submission = self.past_limit_most_recent_submission(group)
             self.assertTrue(submission.is_past_daily_limit)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'past_submission_limit_fdbk_conf': self.fdbk})
             ag_test = result.test_case
@@ -258,7 +257,7 @@ class GetFeedbackPastLimitSubmissionTestCase(gen_data.Project,
         for group in self.non_staff_groups(self.visible_public_project):
             submission = self.past_limit_most_recent_submission(group)
             self.assertTrue(submission.is_past_daily_limit)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'past_submission_limit_fdbk_conf': self.fdbk})
             ag_test = result.test_case
@@ -275,7 +274,7 @@ class GetFeedbackPastLimitSubmissionTestCase(gen_data.Project,
             self.assertTrue(submission.is_past_daily_limit)
             self.assertEqual(submission, group.ultimate_submission)
             self.assertTrue(submission.is_past_daily_limit)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'past_submission_limit_fdbk_conf': self.fdbk})
             ag_test = result.test_case
@@ -294,7 +293,7 @@ class GetFeedbackPastLimitSubmissionTestCase(gen_data.Project,
             submission = self.past_limit_most_recent_ultimate_submission(group)
             self.assertTrue(submission.is_past_daily_limit)
             self.assertEqual(submission, group.ultimate_submission)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'past_submission_limit_fdbk_conf': self.fdbk})
             ag_test = result.test_case
@@ -312,7 +311,7 @@ class GetFeedbackPastLimitSubmissionTestCase(gen_data.Project,
         for group in self.staff_groups(self.project):
             submission = self.past_limit_most_recent_submission(group)
             self.assertTrue(submission.is_past_daily_limit)
-            result = obj_ut.build_compiled_ag_test_result(
+            result = obj_build.build_compiled_ag_test_result(
                 submission=submission,
                 ag_test_kwargs={'past_submission_limit_fdbk_conf': self.fdbk})
             ag_test = result.test_case

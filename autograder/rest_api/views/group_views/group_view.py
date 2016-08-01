@@ -7,7 +7,8 @@ import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
 
-import autograder.core.shared.utilities as ut
+from autograder import utils
+import autograder.utils.testing as test_ut
 
 from ..permission_components import user_can_view_group
 from ..load_object_mixin import build_load_object_mixin
@@ -60,9 +61,9 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
                     username=username)[0]
                 for username in request.data.pop('member_names')]
 
-            ut.lock_users(users)
+            utils.lock_users(users)
             # Keep this hook just after the users are locked
-            ut.mocking_hook()
+            test_ut.mocking_hook()
 
             request.data['members'] = users
             request.data['check_group_size_limits'] = False

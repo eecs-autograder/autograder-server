@@ -1,25 +1,24 @@
 import random
 import difflib
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 
 import autograder.core.models as ag_models
 
 import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
 
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.tests.test_models.test_autograder_test_case.models import (
     _DummyAutograderTestCase)
 
 _DIFFER = difflib.Differ()
 
 
-class StdoutFdbkTestCase(TemporaryFilesystemTestCase):
+class StdoutFdbkTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
 
         expected_stdout = "some\n cool\n output\n {}\n".format(
             random.randint(0, 9000))
@@ -137,11 +136,11 @@ class StdoutFdbkTestCase(TemporaryFilesystemTestCase):
         self.assertIsNone(self.incorrect_result.get_feedback().stdout_points)
 
 
-class StderrFdbkTestCase(TemporaryFilesystemTestCase):
+class StderrFdbkTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.project = obj_ut.build_project()
+        self.project = obj_build.build_project()
 
         expected_stderr = "some\n cool\n stderrrr\n {}\n".format(
             random.randint(0, 9000))

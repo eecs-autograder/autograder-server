@@ -5,9 +5,8 @@ from rest_framework import status
 
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
-import autograder.core.tests.dummy_object_utils as obj_ut
+from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
@@ -18,9 +17,9 @@ class _StaffSetUp(test_data.Client, test_data.Course):
                            kwargs={'course_pk': self.course.pk})
 
 
-class ListStaffTestCase(_StaffSetUp, TemporaryFilesystemTestCase):
+class ListStaffTestCase(_StaffSetUp, UnitTestBase):
     def test_admin_or_staff_list_staff(self):
-        staff = obj_ut.create_dummy_users(3)
+        staff = obj_build.create_dummy_users(3)
         self.course.staff.add(*staff)
 
         expected_content = ag_serializers.UserSerializer(staff, many=True).data
@@ -41,14 +40,14 @@ class ListStaffTestCase(_StaffSetUp, TemporaryFilesystemTestCase):
             self.assertEqual(403, response.status_code)
 
 
-class AddStaffTestCase(_StaffSetUp, TemporaryFilesystemTestCase):
+class AddStaffTestCase(_StaffSetUp, UnitTestBase):
     def test_admin_add_staff(self):
-        current_staff = obj_ut.create_dummy_users(2)
+        current_staff = obj_build.create_dummy_users(2)
         self.course.staff.add(*current_staff)
 
         new_staff_names = (
             ['staffy1', 'staffy2'] +
-            [user.username for user in obj_ut.create_dummy_users(2)])
+            [user.username for user in obj_build.create_dummy_users(2)])
 
         self.assertEqual(len(current_staff), self.course.staff.count())
 
@@ -63,7 +62,7 @@ class AddStaffTestCase(_StaffSetUp, TemporaryFilesystemTestCase):
                               self.course.staff.all())
 
     def test_other_add_staff_permission_denied(self):
-        current_staff = obj_ut.create_dummy_user()
+        current_staff = obj_build.create_dummy_user()
         self.course.staff.add(current_staff)
 
         for user in current_staff, self.enrolled, self.nobody:
@@ -77,12 +76,12 @@ class AddStaffTestCase(_StaffSetUp, TemporaryFilesystemTestCase):
                                   self.course.staff.all())
 
 
-class RemoveStaffTestCase(_StaffSetUp, TemporaryFilesystemTestCase):
+class RemoveStaffTestCase(_StaffSetUp, UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.remaining_staff = obj_ut.create_dummy_user()
-        self.staff_to_remove = obj_ut.create_dummy_users(3)
+        self.remaining_staff = obj_build.create_dummy_user()
+        self.staff_to_remove = obj_build.create_dummy_users(3)
         self.all_staff = [self.remaining_staff] + self.staff_to_remove
         self.total_num_staff = len(self.all_staff)
 

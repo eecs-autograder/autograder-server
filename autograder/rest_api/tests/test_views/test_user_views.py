@@ -6,8 +6,7 @@ from rest_framework import status
 
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.core.tests.temporary_filesystem_test_case import (
-    TemporaryFilesystemTestCase)
+from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -16,7 +15,7 @@ class RetrieveUserTestCase(test_data.Client,
                            test_data.Project,
                            test_data.Group,
                            test_impls.GetObjectTest,
-                           TemporaryFilesystemTestCase):
+                           UnitTestBase):
     def test_self_get_currently_authenticated_user(self):
         for user in self.all_users:
             self.do_get_object_test(self.client, user, reverse('user-current'),

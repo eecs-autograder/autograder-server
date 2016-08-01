@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 from autograder.rest_api.serializers.user_serializer import UserSerializer
 
-import autograder.core.tests.dummy_object_utils as obj_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
 _EXPECTED_USER_FIELDS = [
@@ -21,7 +21,7 @@ def _user_to_expected_dict(user):
 
 class UserSerializerTestCase(test.TestCase):
     def setUp(self):
-        self.user = obj_ut.create_dummy_user()
+        self.user = obj_build.create_dummy_user()
 
     def test_serialize_user(self):
         serializer = UserSerializer(self.user)

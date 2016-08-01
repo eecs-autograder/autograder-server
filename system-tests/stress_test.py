@@ -22,7 +22,7 @@ from autograder.core.models import (
     # AutograderTestCaseBase,
     # CompiledAutograderTestCase, CompilationOnlyAutograderTestCase
 )
-# import autograder.core.tests.dummy_object_utils as obj_ut
+# import autograder.utils.testing.model_obj_builders as obj_build
 from django.db.models import Q
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
