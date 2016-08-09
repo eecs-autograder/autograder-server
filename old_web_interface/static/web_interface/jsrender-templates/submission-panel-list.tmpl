@@ -1,9 +1,0 @@
-<div>Group members: {{for group.members}}{{>}} {{/for}}</div>
-<div class='panel-group' id='submission-list'>
-    <div class='panel panel-default'>
-    {{for submissions.submissions tmpl=~submission_collapse_panel}}
-    {{else}}
-        You do not have any submissions yet
-    {{/for}}
-    </div>
-</div>
