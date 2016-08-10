@@ -7,7 +7,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'dev_filesystem')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split()
 
 INSTALLED_APPS += [
     # Dummy testing models
@@ -25,14 +25,15 @@ REST_FRAMEWORK.update({
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'autograder_dev_db',
+        'NAME': os.environ.get('AG_DB_NAME', 'autograder_dev_db'),
     },
 }
 
 CACHES = {
     'default': {
         'BACKEND': 'redis_cache.RedisCache',
-        'LOCATION': 'localhost:6379',
+        'LOCATION': '{}:6379'.format(os.environ.get('AG_REDIS_HOST',
+                                                    'localhost')),
     },
 }
 

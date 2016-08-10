@@ -96,16 +96,6 @@ def mark_as_waiting_for_deferred(submission_id):
             submission.save()
 
 
-# def _get_queue_name()
-
-# Decisions to make:
-#   - Use a chain (run ag tests in series)
-#   - Use a chord (run ag tests in parallel)
-#   - How to manage queued tests vs how many submissions are labelled as
-#   "being graded"
-#   -
-
-
 @celery.shared_task(bind=True, max_retries=settings.AG_TEST_MAX_RETRIES)
 def grade_ag_test(self, ag_test_id, submission_id):
     try:

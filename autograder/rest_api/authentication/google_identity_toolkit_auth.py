@@ -38,3 +38,8 @@ class GoogleIdentityToolkitAuth(BasicAuthentication):
         return (user, None)
         # userid = id_info['sub']
         # print(userid)
+
+    # We're overriding the WWW-Authenticate header value so that the
+    # browser doesn't use its own username/password prompt.
+    def authenticate_header(self, request):
+        return 'Google Identity Toolkit Auth'

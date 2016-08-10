@@ -65,9 +65,9 @@ GOOGLE_IDENTITY_TOOLKIT_APPS_DOMAIN_NAMES = ['umich.edu']
 GOOGLE_IDENTITY_TOOLKIT_CONFIG_FILE = os.path.join(
     SETTINGS_DIR, 'gitkit-server-config.json')
 
-# FIXME
-LOGIN_URL = '/callback/?mode=select'
-# Application definition
+# # FIXME
+# LOGIN_URL = '/callback/?mode=select'
+# # Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -86,15 +86,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE_CLASSES = (
-    # 'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
 
-    # 'autograder.sandbox.authentication.google_identity_toolkit_session_middleware.GoogleIdentityToolkitSessionMiddleware',
-
-    # 'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    # 'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
 )
