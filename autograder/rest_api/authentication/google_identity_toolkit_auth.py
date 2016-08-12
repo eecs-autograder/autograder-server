@@ -3,7 +3,7 @@ from rest_framework.authentication import BasicAuthentication
 
 from oauth2client import client, crypt
 
-WEB_CLIENT_ID = "405101394-6mv8jvt0t7l172490hh8qsrq1mikn1bn.apps.googleusercontent.com"
+WEB_CLIENT_ID = "358440655746-bl5ig1es62n6n4oho525l4f58fgl367c.apps.googleusercontent.com"
 APPS_DOMAIN_NAME = 'umich.edu'
 
 

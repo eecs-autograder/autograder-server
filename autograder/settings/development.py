@@ -26,14 +26,19 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('AG_DB_NAME', 'autograder_dev_db'),
+        'USER': os.environ.get('AG_DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('AG_DB_PASSWORD', ''),
+        'HOST': os.environ.get('AG_DB_HOST', 'localhost'),
+        'PORT': os.environ.get('AG_DB_PORT', '5432')
     },
 }
 
 CACHES = {
     'default': {
         'BACKEND': 'redis_cache.RedisCache',
-        'LOCATION': '{}:6379'.format(os.environ.get('AG_REDIS_HOST',
-                                                    'localhost')),
+        'LOCATION': '{host}:{port}'.format(
+            host=os.environ.get('AG_REDIS_HOST', 'localhost'),
+            port=os.environ.get('AG_REDIS_PORT', '6379')),
     },
 }
 
