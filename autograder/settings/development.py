@@ -26,10 +26,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('AG_DB_NAME', 'autograder_dev_db'),
-        'USER': os.environ.get('AG_DB_USER', 'postgres'),
+        'USER': os.environ.get('AG_DB_USER', ''),
         'PASSWORD': os.environ.get('AG_DB_PASSWORD', ''),
-        'HOST': os.environ.get('AG_DB_HOST', 'localhost'),
-        'PORT': os.environ.get('AG_DB_PORT', '5432')
+        'HOST': os.environ.get('AG_DB_HOST', ''),
+        'PORT': os.environ.get('AG_DB_PORT', '')
     },
 }
 

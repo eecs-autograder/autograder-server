@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from rest_framework.authentication import BasicAuthentication
+from rest_framework.authentication import SessionAuthentication
 
 from oauth2client import client, crypt
 
@@ -7,9 +7,12 @@ WEB_CLIENT_ID = "358440655746-bl5ig1es62n6n4oho525l4f58fgl367c.apps.googleuserco
 APPS_DOMAIN_NAME = 'umich.edu'
 
 
-# Adapted from the Google Identity Toolkit docs
-class GoogleIdentityToolkitAuth(BasicAuthentication):
+# Adapted from the Google Identity Toolkit docs.
+# This needs to inherit from SessionAuthentication so that we can use
+# its csrf check method.
+class GoogleIdentityToolkitAuth(SessionAuthentication):
     def authenticate(self, request):
+        print('waaaaaaluigi', flush=True)
         gtoken = request.COOKIES.get('gtoken')
         if not gtoken:
             print('user not logged in')
@@ -29,6 +32,8 @@ class GoogleIdentityToolkitAuth(BasicAuthentication):
         except KeyError:
             print('gtoken not set')
             return None
+
+        self.enforce_csrf(request)
 
         print(id_info)
         username = id_info['email']

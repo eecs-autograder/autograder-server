@@ -11,7 +11,8 @@ _EXPECTED_USER_FIELDS = [
     'username',
     'first_name',
     'last_name',
-    'email'
+    'email',
+    'is_superuser'
 ]
 
 

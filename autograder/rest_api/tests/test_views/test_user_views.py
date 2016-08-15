@@ -2,7 +2,7 @@ import itertools
 
 from django.core.urlresolvers import reverse
 
-from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.rest_api.serializers as ag_serializers
 
@@ -20,6 +20,12 @@ class RetrieveUserTestCase(test_data.Client,
         for user in self.all_users:
             self.do_get_object_test(self.client, user, reverse('user-current'),
                                     ag_serializers.UserSerializer(user).data)
+
+    def test_csrftoken_cookie_set(self):
+        client = APIClient(enforce_csrf_checks=True)
+        client.force_authenticate(self.enrolled)
+        response = client.get(reverse('user-current'))
+        self.assertIn('csrftoken', response.cookies)
 
     def test_self_get_user(self):
         for user in self.all_users:
