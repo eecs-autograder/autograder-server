@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.middleware import csrf
 from rest_framework.authentication import SessionAuthentication
 
 from oauth2client import client, crypt
@@ -9,7 +10,7 @@ APPS_DOMAIN_NAME = 'umich.edu'
 
 # Adapted from the Google Identity Toolkit docs.
 # This needs to inherit from SessionAuthentication so that we can use
-# its csrf check method.
+# its enforce_csrf method.
 class GoogleIdentityToolkitAuth(SessionAuthentication):
     def authenticate(self, request):
         print('waaaaaaluigi', flush=True)
@@ -33,7 +34,13 @@ class GoogleIdentityToolkitAuth(SessionAuthentication):
             print('gtoken not set')
             return None
 
+        # THESE TWO CALLS MUST STAY IN THIS ORDER!!!
+        # enforce_csrf will raise a permission denied error if the
+        # request method is unsafe and the csrf token header is not set.
+        # Then, if that check passes we can use get_token to set the
+        # csrftoken cookie if it isn't already set.
         self.enforce_csrf(request)
+        csrf.get_token(request)
 
         print(id_info)
         username = id_info['email']

@@ -1,6 +1,4 @@
 from django.contrib.auth.models import User
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import ensure_csrf_cookie
 
 from rest_framework import viewsets, mixins, permissions, decorators, response
 
@@ -24,7 +22,6 @@ class UserViewset(build_load_object_mixin(User),
     serializer_class = ag_serializers.UserSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)
 
-    @method_decorator(ensure_csrf_cookie)
     @decorators.list_route()
     def current(self, request, *args, **kwargs):
         return response.Response(
