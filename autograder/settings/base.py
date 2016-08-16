@@ -78,7 +78,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'polymorphic',
 
-    'django_extensions',
+    # 'django_extensions',
 
     'autograder.core',
     'autograder.sandbox',
