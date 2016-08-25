@@ -23,7 +23,8 @@ class Superuser(gen_data.Superuser):
 
 
 class Course(gen_data.Course):
-    pass
+    def course_roles_url(self, course):
+        return reverse('course-my-roles', kwargs={'pk': course.pk})
 
 
 class Project(gen_data.Project):

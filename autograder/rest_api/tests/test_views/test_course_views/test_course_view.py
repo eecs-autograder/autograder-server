@@ -8,6 +8,7 @@ import autograder.core.models as ag_models
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
+import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
 class ListCoursesTestCase(test_data.Client, test_data.Superuser,
@@ -124,3 +125,43 @@ class UpdateCourseTestCase(test_data.Client, test_data.Course,
             {"name": 'spam'})
 
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+
+class IsRoleForCourseTestCase(test_data.Client, test_data.Course,
+                              test_impls.GetObjectTest, UnitTestBase):
+    def expected_response_base(self):
+        return {
+            "is_admin": False,
+            "is_staff": False,
+            "is_enrolled": False
+        }
+
+    def test_admin_user_roles(self):
+        expected = self.expected_response_base()
+        expected['is_admin'] = True
+        expected['is_staff'] = True
+
+        self.do_get_object_test(
+            self.client, self.admin, self.course_roles_url(self.course),
+            expected)
+
+    def test_staff_user_roles(self):
+        expected = self.expected_response_base()
+        expected['is_staff'] = True
+
+        self.do_get_object_test(
+            self.client, self.staff, self.course_roles_url(self.course),
+            expected)
+
+    def test_enrolled_user_roles(self):
+        expected = self.expected_response_base()
+        expected['is_enrolled'] = True
+
+        self.do_get_object_test(
+            self.client, self.enrolled, self.course_roles_url(self.course),
+            expected)
+
+    def test_other_user_roles(self):
+        self.do_get_object_test(
+            self.client, self.nobody, self.course_roles_url(self.course),
+            self.expected_response_base())
