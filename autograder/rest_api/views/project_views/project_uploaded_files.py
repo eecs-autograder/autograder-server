@@ -22,6 +22,8 @@ class ProjectUploadedFilesViewSet(build_load_object_mixin(ag_models.Project),
         return project.uploaded_files.all()
 
     @transaction.atomic()
-    def create(self, request, project_pk, *args, **kwargs):
-        request.data['project'] = self.load_object(project_pk)
-        return super().create(request, *args, **kwargs)
+    def create(self, *args, **kwargs):
+        return super().create(*args, **kwargs)
+
+    def perform_create(self, serializer):
+        serializer.save(project=self.load_object(self.kwargs['project_pk']))

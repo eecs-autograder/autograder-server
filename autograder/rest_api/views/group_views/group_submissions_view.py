@@ -72,6 +72,8 @@ class GroupSubmissionsViewset(
 
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
-        request.data['submission_group'] = self.get_object()
-        request.data['submitter'] = request.user.username
         return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        serializer.save(submission_group=self.get_object(),
+                        submitter=self.request.user.username)
