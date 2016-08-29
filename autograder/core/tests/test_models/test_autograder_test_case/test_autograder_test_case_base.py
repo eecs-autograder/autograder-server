@@ -184,10 +184,16 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
 
             'staff_viewer_fdbk_conf',
 
+            'test_resource_files',
+            'student_resource_files',
+
             'compiler',
             'compiler_flags',
             'executable_name',
             'points_for_compilation_success',
+
+            'project_files_to_compile_together',
+            'student_files_to_compile_together',
 
             'interpreter',
             'interpreter_flags',
@@ -204,11 +210,11 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
             feedback_configuration=self.fdbk)
         self.assertTrue(ag_test.to_dict())
 
-    def test_to_dict_feedback_expanded(self):
+    def test_to_dict_feedback_expanded_and_serialized(self):
         self.assertCountEqual(
             ['feedback_configuration', 'ultimate_submission_fdbk_conf',
              'past_submission_limit_fdbk_conf', 'staff_viewer_fdbk_conf'],
-            ag_models.AutograderTestCaseBase.FBDK_FIELD_NAMES)
+            ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES)
         ag_test = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.TEST_NAME,
             project=self.project,
@@ -217,13 +223,23 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
             past_submission_limit_fdbk_conf=self._random_fdbk(),
             staff_viewer_fdbk_conf=self._random_fdbk())
 
-        for fdbk_field in ag_models.AutograderTestCaseBase.FBDK_FIELD_NAMES:
+        for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:
             self.assertEqual(getattr(ag_test, fdbk_field).to_dict(),
                              ag_test.to_dict()[fdbk_field])
 
             fdbk_excluded = ag_test.to_dict(exclude_fields=[fdbk_field])
 
             self.assertNotIn(fdbk_field, fdbk_excluded)
+
+    def to_dict_related_file_fields_serialized(self):
+        self.assertCountEqual(
+            ['test_resource_files', 'student_resource_files',
+             'project_files_to_compile_together',
+             'student_files_to_compile_together'],
+            ag_models.AutograderTestCaseBase.RELATED_FILE_FIELD_NAMES)
+
+
+        self.fail()
 
     def test_editable_fields(self):
         expected = [
@@ -264,10 +280,16 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
 
             'staff_viewer_fdbk_conf',
 
+            'test_resource_files',
+            'student_resource_files',
+
             'compiler',
             'compiler_flags',
             'executable_name',
             'points_for_compilation_success',
+
+            'project_files_to_compile_together',
+            'student_files_to_compile_together',
 
             'interpreter',
             'interpreter_flags',

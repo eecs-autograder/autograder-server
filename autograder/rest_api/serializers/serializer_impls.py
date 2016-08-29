@@ -1,5 +1,7 @@
 import copy
 
+from django.db import transaction
+
 import autograder.core.models as ag_models
 
 from .ag_model_serializer import AGModelSerializer
@@ -49,7 +51,7 @@ class AGTestCaseSerializer(AGModelSerializer):
             return super().__init__(*args, **kwargs)
 
         data = copy.copy(kwargs.pop('data'))
-        for fdbk_field in ag_models.AutograderTestCaseBase.FBDK_FIELD_NAMES:
+        for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:
             if fdbk_field in data:
                 data[fdbk_field] = (
                     ag_models.FeedbackConfig.objects.validate_and_create(
@@ -59,6 +61,60 @@ class AGTestCaseSerializer(AGModelSerializer):
 
     def validate_and_create(self, data):
         return ag_models.AutograderTestCaseFactory.validate_and_create(**data)
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            file_field_data = self._deserialize_related_file_fields(validated_data)
+            result = super().create(validated_data)
+            for field_name, vals in file_field_data.items():
+                getattr(result, field_name).set(vals, clear=True)
+            return result
+
+    def update(self, instance, validated_data):
+        with transaction.atomic():
+            file_field_data = self._deserialize_related_file_fields(validated_data)
+            result = super().update(instance, validated_data)
+            for field_name, vals in file_field_data.items():
+                getattr(result, field_name).set(vals, clear=True)
+            return result
+
+    def _deserialize_related_file_fields(self, data):
+        result = {}
+        if 'test_resource_files' in data:
+            result['test_resource_files'] = self._load_uploaded_files(
+                data.pop('test_resource_files'))
+
+        if 'student_resource_files' in data:
+            result['student_resource_files'] = self._load_patterns(
+                data.pop('student_resource_files'))
+
+        if 'project_files_to_compile_together' in data:
+            result['project_files_to_compile_together'] = self._load_uploaded_files(
+                data.pop('project_files_to_compile_together'))
+
+        if 'student_files_to_compile_together' in data:
+            result['student_files_to_compile_together'] = self._load_patterns(
+                data.pop('student_files_to_compile_together'))
+
+        return result
+
+    def _load_uploaded_files(self, dicts):
+        try:
+            pk_list = [obj['pk'] for obj in dicts]
+        except TypeError:
+            pk_list = [obj.pk for obj in dicts]
+
+        return ag_models.UploadedFile.objects.filter(
+            pk__in=pk_list)
+
+    def _load_patterns(self, dicts):
+        try:
+            pk_list = [obj['pk'] for obj in dicts]
+        except TypeError:
+            pk_list = [obj.pk for obj in dicts]
+
+        return ag_models.ExpectedStudentFilePattern.objects.filter(
+            pk__in=pk_list)
 
 
 class AGTestResultSerializer(AGModelSerializer):

@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.core import exceptions
 
 import polymorphic.models as poly_models
@@ -11,10 +11,22 @@ class _AutograderModelManagerMixin:
         calling full_clean(), and then calling save().
         Prefer using this method over <Model class>.objects.create().
         """
-        instance = self.model(**kwargs)
-        instance.full_clean()
-        instance.save()
-        return instance
+        instance = self.model()
+        many_to_many_to_set = {}
+        for field_name in list(kwargs.keys()):
+            if instance._meta.get_field(field_name).many_to_many:
+                many_to_many_to_set[field_name] = kwargs.pop(field_name)
+
+        with transaction.atomic():
+            for field_name, value in kwargs.items():
+                setattr(instance, field_name, value)
+            instance.full_clean()
+            instance.save()
+
+            for field_name, value in many_to_many_to_set.items():
+                getattr(instance, field_name).set(value, clear=True)
+
+            return instance
 
 _INVALID_FIELD_NAMES_KEY = 'invalid_field_names'
 
@@ -31,8 +43,12 @@ class ToDictMixin:
         getattr() returns the desired value.
         By default, "-to-one" relationships will be represented as the
         primary key of the related object.
-        In order to include "-to-many" relationships, you must override
-        to_dict() to handle them correctly.
+        By default, "-to-many" relationships are represented as a list
+        of model objects. These objects are serialized if they also have
+        a "to_dict()" method.
+        "-to-many" fields can only be serialized in instances of the
+        model class they are defined in, not reverse-lookup
+        relationships.
         """
         raise NotImplementedError(
             'Derived classes should override this method')
@@ -55,7 +71,7 @@ class ToDictMixin:
                 get_default_to_dict_fields(), otherwise ValidationError
                 will be raised.
 
-            param exclude_fields -- The names of fields that should NOT
+            exclude_fields -- The names of fields that should NOT
                 be included in the dictionary. Fields specified both
                 here and in include_fields will be excluded. Any fields
                 names specified here that are not listed in
@@ -93,6 +109,12 @@ class ToDictMixin:
                     if field_val is None:
                         continue
                     result[field_name] = field_val.pk
+                elif field.many_to_many:
+                    try:
+                        result[field_name] = [
+                            obj.to_dict() for obj in getattr(self, field_name).all()]
+                    except AttributeError:
+                        result[field_name] = list(getattr(self, field_name).all())
             except exceptions.FieldDoesNotExist:
                 pass
 
@@ -134,6 +156,7 @@ class _AutograderModelMixin(ToDictMixin):
         raise NotImplementedError(
             "Derived classes that aren't read-only should override this method")
 
+    @transaction.atomic
     def validate_and_update(self, **kwargs):
         """
         Updates the values of the fields specified as
@@ -153,7 +176,10 @@ class _AutograderModelMixin(ToDictMixin):
             if field_name not in self.get_editable_fields():
                 raise exceptions.ValidationError(
                     {'non_editable_fields': [field_name]})
-            setattr(self, field_name, val)
+            if self._meta.get_field(field_name).many_to_many:
+                getattr(self, field_name).set(val, clear=True)
+            else:
+                setattr(self, field_name, val)
 
         self.full_clean()
         self.save()

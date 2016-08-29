@@ -74,10 +74,16 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
         'staff_viewer_fdbk_conf',
 
+        'test_resource_files',
+        'student_resource_files',
+
         'compiler',
         'compiler_flags',
         'executable_name',
         'points_for_compilation_success',
+
+        'project_files_to_compile_together',
+        'student_files_to_compile_together',
 
         'interpreter',
         'interpreter_flags',
@@ -126,10 +132,16 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
         'staff_viewer_fdbk_conf',
 
+        'test_resource_files',
+        'student_resource_files',
+
         'points_for_compilation_success',
         'compiler',
         'compiler_flags',
         'executable_name',
+
+        'project_files_to_compile_together',
+        'student_files_to_compile_together',
 
         'interpreter',
         'interpreter_flags',
@@ -496,15 +508,23 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     def to_dict(self, **kwargs):
         result = super().to_dict(**kwargs)
-        for fdbk_field in AutograderTestCaseBase.FBDK_FIELD_NAMES:
+        for fdbk_field in AutograderTestCaseBase.FDBK_FIELD_NAMES:
             if fdbk_field in result:
                 result[fdbk_field] = getattr(self, fdbk_field).to_dict()
 
         return result
 
-    FBDK_FIELD_NAMES = [
+    FDBK_FIELD_NAMES = [
         'feedback_configuration', 'ultimate_submission_fdbk_conf',
         'past_submission_limit_fdbk_conf', 'staff_viewer_fdbk_conf']
+
+    RELATED_FILE_FIELD_NAMES = [
+        'test_resource_files',
+        'student_resource_files',
+
+        'project_files_to_compile_together',
+        'student_files_to_compile_together',
+    ]
 
     # -------------------------------------------------------------------------
 

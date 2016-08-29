@@ -23,7 +23,7 @@ class ListObjectsTest(PermissionDeniedGetTest):
         client.force_authenticate(user)
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertCountEqual(_ordered(expected_data), _ordered(response.data))
+        self.assertContentsEqual(expected_data, response.data)
 
         return response
 
@@ -74,7 +74,7 @@ class CreateObjectTest(CreateObjectInvalidArgsTest, PermissionDeniedCreateTest):
             return response
 
         loaded = model_manager.get(pk=response.data['pk'])
-        self.assertEqual(_ordered(loaded.to_dict()), _ordered(response.data))
+        self.assertContentsEqual(loaded.to_dict(), response.data)
 
         for arg_name, value in request_data.items():
             actual = getattr(loaded, arg_name)
@@ -97,9 +97,8 @@ class UpdateObjectTest:
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj.refresh_from_db()
-        self.assertEqual(_ordered(expected_data),
-                         _ordered(ag_model_obj.to_dict()))
-        self.assertEqual(_ordered(expected_data), _ordered(response.data))
+        self.assertContentsEqual(expected_data, ag_model_obj.to_dict())
+        self.assertContentsEqual(expected_data, response.data)
 
         return response
 
@@ -126,9 +125,8 @@ class UpdateObjectTest:
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj.refresh_from_db()
-        self.assertEqual(_ordered(expected_data),
-                         _ordered(ag_model_obj.to_dict()))
-        self.assertEqual(_ordered(expected_data), _ordered(response.data))
+        self.assertContentsEqual(expected_data, ag_model_obj.to_dict())
+        self.assertContentsEqual((expected_data), (response.data))
 
         return response
 
@@ -153,8 +151,7 @@ class UpdateObjectTest:
         self.assertEqual(expected_status, response.status_code)
 
         ag_model_obj.refresh_from_db()
-        self.assertEqual(
-            _ordered(expected_data), _ordered(ag_model_obj.to_dict()))
+        self.assertContentsEqual(expected_data, ag_model_obj.to_dict())
 
         return response
 
@@ -177,16 +174,3 @@ class DestroyObjectTest:
         ag_model_obj.refresh_from_db()
 
         return response
-
-
-# Adapted from: http://stackoverflow.com/questions/25851183/
-def _ordered(obj):
-    if isinstance(obj, dict):
-        return {key: _ordered(value) for key, value in obj.items()}
-    if isinstance(obj, list) or isinstance(obj, tuple):
-        try:
-            return sorted(_ordered(value) for value in obj)
-        except TypeError:
-            return (_ordered(value) for value in obj)
-    else:
-        return obj

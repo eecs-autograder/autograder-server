@@ -1,11 +1,20 @@
 from django.core import validators
 from django.db import models
+from django.contrib.auth.models import User
 
 from autograder.core.models import AutograderModel
 
 # -----------------------------------------------------------------------------
 # DUMMY MODELS FOR TESTING AUTOGRADER MODEL BASE CLASS
 # -----------------------------------------------------------------------------
+
+
+class _DummyToManyModel(AutograderModel):
+    name = models.CharField(max_length=255)
+
+    @classmethod
+    def get_default_to_dict_fields(class_):
+        return frozenset(['name'])
 
 
 class _DummyAutograderModel(AutograderModel):
@@ -15,6 +24,10 @@ class _DummyAutograderModel(AutograderModel):
         validators=[validators.MinLengthValidator(1)])
     read_only_field = models.TextField(blank=True)
 
+    many_to_many = models.ManyToManyField(_DummyToManyModel)
+
+    users = models.ManyToManyField(User)
+
     @property
     def the_answer(self):
         return 42
@@ -22,7 +35,9 @@ class _DummyAutograderModel(AutograderModel):
     _DEFAULT_TO_DICT_FIELDS = frozenset([
         'pos_num_val',
         'non_empty_str_val',
-        'the_answer'
+        'the_answer',
+        'many_to_many',
+        'users'
     ])
 
     @classmethod
@@ -32,6 +47,7 @@ class _DummyAutograderModel(AutograderModel):
     _EDITABLE_FIELDS = [
         'pos_num_val',
         'non_empty_str_val',
+        'many_to_many'
     ]
 
     @classmethod

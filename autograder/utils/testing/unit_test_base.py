@@ -23,6 +23,9 @@ class UnitTestBase(TransactionTestCase):
 
     Since setUp() and tearDown() are called for each test case,
     you won't have to worry about tests interfering with each other.
+
+    This class also includes a method for comparing containers, ignoring
+    the order of any items in sub-containers.
     """
 
     def setUp(self):
@@ -41,3 +44,19 @@ class UnitTestBase(TransactionTestCase):
             shutil.rmtree(settings.MEDIA_ROOT)
         except Exception:
             pass
+
+    def assertContentsEqual(self, first, second):
+        self.assertEqual(_ordered(first), _ordered(second))
+
+
+# Adapted from: http://stackoverflow.com/questions/25851183/
+def _ordered(obj):
+    if isinstance(obj, dict):
+        return {key: _ordered(value) for key, value in obj.items()}
+    if isinstance(obj, list) or isinstance(obj, tuple):
+        try:
+            return list(sorted(_ordered(value) for value in obj))
+        except TypeError:
+            return [_ordered(value) for value in obj]
+    else:
+        return obj
