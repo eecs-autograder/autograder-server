@@ -1,0 +1,3 @@
+[submodule "autograder-sandbox"]
+	path = autograder-sandbox
+	url = ../autograder-sandbox.git
