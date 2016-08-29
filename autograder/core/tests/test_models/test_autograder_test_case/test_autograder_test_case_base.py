@@ -10,7 +10,6 @@ from autograder.core.models.autograder_test_case.feedback_config import (
     FeedbackConfig)
 
 import autograder.core.constants as const
-import autograder.sandbox.constants as sandbox_const
 
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -52,11 +51,11 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
         self.assertEqual(new_test_case.time_limit, 10)
         self.assertFalse(new_test_case.allow_network_connections)
         self.assertEqual(new_test_case.stack_size_limit,
-                         sandbox_const.DEFAULT_STACK_SIZE_LIMIT)
+                         const.DEFAULT_STACK_SIZE_LIMIT)
         self.assertEqual(new_test_case.virtual_memory_limit,
-                         sandbox_const.DEFAULT_VIRTUAL_MEM_LIMIT)
+                         const.DEFAULT_VIRTUAL_MEM_LIMIT)
         self.assertEqual(new_test_case.process_spawn_limit,
-                         sandbox_const.DEFAULT_PROCESS_LIMIT)
+                         const.DEFAULT_PROCESS_LIMIT)
 
         self.assertIsNone(new_test_case.expected_return_code)
         self.assertFalse(new_test_case.expect_any_nonzero_return_code)
@@ -105,11 +104,11 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
 
             'time_limit': random.randint(1, 60),
             'stack_size_limit': random.randint(
-                1, sandbox_const.MAX_STACK_SIZE_LIMIT),
+                1, const.MAX_STACK_SIZE_LIMIT),
             'virtual_memory_limit': random.randint(
-                1, sandbox_const.MAX_VIRTUAL_MEM_LIMIT),
+                1, const.MAX_VIRTUAL_MEM_LIMIT),
             'process_spawn_limit': random.randint(
-                1, sandbox_const.MAX_PROCESS_LIMIT),
+                1, const.MAX_PROCESS_LIMIT),
             'allow_network_connections': random.choice([True, False]),
 
             'expected_return_code': random.randint(-3, 10),
@@ -403,7 +402,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, UnitTestBase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
-                time_limit=sandbox_const.MAX_SUBPROCESS_TIMEOUT + 1)
+                time_limit=const.MAX_SUBPROCESS_TIMEOUT + 1)
 
         self.assertTrue('time_limit' in cm.exception.message_dict)
 
@@ -445,7 +444,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, UnitTestBase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
-                stack_size_limit=sandbox_const.MAX_STACK_SIZE_LIMIT + 1)
+                stack_size_limit=const.MAX_STACK_SIZE_LIMIT + 1)
 
         self.assertTrue('stack_size_limit' in cm.exception.message_dict)
 
@@ -471,7 +470,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, UnitTestBase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
-                virtual_memory_limit=sandbox_const.MAX_VIRTUAL_MEM_LIMIT + 1)
+                virtual_memory_limit=const.MAX_VIRTUAL_MEM_LIMIT + 1)
 
         self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
 
@@ -489,7 +488,7 @@ class AGTestResourceLimitErrorTestCase(_Shared, UnitTestBase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderTestCase.objects.validate_and_create(
                 name=self.TEST_NAME, project=self.project,
-                process_spawn_limit=sandbox_const.MAX_PROCESS_LIMIT + 1)
+                process_spawn_limit=const.MAX_PROCESS_LIMIT + 1)
 
         self.assertTrue('process_spawn_limit' in cm.exception.message_dict)
 

@@ -15,7 +15,6 @@ from .feedback_config import FeedbackConfig
 
 import autograder.core.constants as const
 import autograder.core.utils as core_ut
-import autograder.sandbox.constants as sandbox_const
 import autograder.core.fields as ag_fields
 
 
@@ -215,9 +214,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             This value may NOT be None.''')
 
     time_limit = models.IntegerField(
-        default=sandbox_const.DEFAULT_SUBPROCESS_TIMEOUT,
+        default=const.DEFAULT_SUBPROCESS_TIMEOUT,
         validators=[MinValueValidator(1),
-                    MaxValueValidator(sandbox_const.MAX_SUBPROCESS_TIMEOUT)],
+                    MaxValueValidator(const.MAX_SUBPROCESS_TIMEOUT)],
         help_text='''The time limit in seconds to be placed on the
             program being tested. This limit currently applies to each
             of: compilation, running the program, and running the
@@ -233,9 +232,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             network connections.''')
 
     stack_size_limit = models.IntegerField(
-        default=sandbox_const.DEFAULT_STACK_SIZE_LIMIT,
+        default=const.DEFAULT_STACK_SIZE_LIMIT,
         validators=[MinValueValidator(1),
-                    MaxValueValidator(sandbox_const.MAX_STACK_SIZE_LIMIT)],
+                    MaxValueValidator(const.MAX_STACK_SIZE_LIMIT)],
         help_text='''
         stack_size_limit -- The maximum stack size in bytes.
             Must be > 0
@@ -243,9 +242,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             NOTE: Setting this value too low may cause the program being
                     tested to crash prematurely.''')
     virtual_memory_limit = models.IntegerField(
-        default=sandbox_const.DEFAULT_VIRTUAL_MEM_LIMIT,
+        default=const.DEFAULT_VIRTUAL_MEM_LIMIT,
         validators=[MinValueValidator(1),
-                    MaxValueValidator(sandbox_const.MAX_VIRTUAL_MEM_LIMIT)],
+                    MaxValueValidator(const.MAX_VIRTUAL_MEM_LIMIT)],
         help_text='''The maximum amount of virtual memory
             (in bytes) the program being tested can use.
             Must be > 0
@@ -253,9 +252,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             NOTE: Setting this value too low may cause the program being
                     tested to crash prematurely.''')
     process_spawn_limit = models.IntegerField(
-        default=sandbox_const.DEFAULT_PROCESS_LIMIT,
+        default=const.DEFAULT_PROCESS_LIMIT,
         validators=[MinValueValidator(0),
-                    MaxValueValidator(sandbox_const.MAX_PROCESS_LIMIT)],
+                    MaxValueValidator(const.MAX_PROCESS_LIMIT)],
         help_text='''The maximum number of processes that the program
             being tested is allowed to spawn.
             Must be >= 0

@@ -81,7 +81,7 @@ INSTALLED_APPS = [
     # 'django_extensions',
 
     'autograder.core',
-    'autograder.sandbox',
+    # 'autograder.sandbox',
     'autograder.rest_api',
     'autograder.grading_tasks',
     'autograder.utils',
