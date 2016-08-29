@@ -8,7 +8,7 @@ from django.db import transaction
 import celery
 
 import autograder.core.models as ag_models
-from autograder.sandbox.autograder_sandbox import AutograderSandbox
+from autograder_sandbox import AutograderSandbox
 
 
 @celery.shared_task

@@ -5,7 +5,7 @@ from unittest import mock
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core import exceptions
 
-from autograder.sandbox.autograder_sandbox import AutograderSandbox
+from autograder_sandbox import AutograderSandbox
 import autograder.core.models as ag_models
 
 import autograder.core.utils as core_ut
@@ -217,7 +217,7 @@ class InterpretedAutograderTestCaseResourceLimitTestCase(_SetUpBase, UnitTestBas
             submission_group=self.group,
             submitted_files=[])
 
-    @mock.patch('autograder.sandbox.autograder_sandbox.AutograderSandbox',
+    @mock.patch('autograder_sandbox.AutograderSandbox',
                 autospec=True)
     def test_resource_limits_set(self, MockSandbox):
         sandbox = MockSandbox()

@@ -16,7 +16,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 from .models import _DummyAutograderTestCase
 
-from autograder.sandbox.autograder_sandbox import AutograderSandbox
+from autograder_sandbox import AutograderSandbox
 
 
 class _Shared:

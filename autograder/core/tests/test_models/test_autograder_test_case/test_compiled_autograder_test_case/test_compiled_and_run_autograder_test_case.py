@@ -386,7 +386,7 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
             virtual_memory_limit=self.virtual_mem_limit,
             compiler='g++')
 
-    @mock.patch('autograder.sandbox.autograder_sandbox.AutograderSandbox',
+    @mock.patch('autograder_sandbox.AutograderSandbox',
                 autospec=True)
     def test_resource_limits_set(self, MockSandbox):
         run_cmd_mock_result = mock.Mock()
@@ -405,7 +405,7 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
             max_stack_size=self.stack_limit,
             max_virtual_memory=self.virtual_mem_limit)
 
-    @mock.patch('autograder.sandbox.autograder_sandbox.AutograderSandbox',
+    @mock.patch('autograder_sandbox.AutograderSandbox',
                 autospec=True)
     def test_resource_limits_used_with_valgrind(self, MockSandbox):
         self.test.use_valgrind = True

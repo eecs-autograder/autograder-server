@@ -2,7 +2,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
 
-from autograder.sandbox.autograder_sandbox import AutograderSandbox
+from autograder_sandbox import AutograderSandbox
 
 import autograder.utils.testing.model_obj_builders as obj_build
 
