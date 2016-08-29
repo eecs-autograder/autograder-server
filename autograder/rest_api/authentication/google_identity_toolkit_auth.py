@@ -13,8 +13,8 @@ APPS_DOMAIN_NAME = 'umich.edu'
 # its enforce_csrf method.
 class GoogleIdentityToolkitAuth(SessionAuthentication):
     def authenticate(self, request):
-        print('waaaaaaluigi', flush=True)
         gtoken = request.COOKIES.get('gtoken')
+        print('gtoken:', gtoken)
         if not gtoken:
             print('user not logged in')
             return None
