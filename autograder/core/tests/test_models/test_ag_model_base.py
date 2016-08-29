@@ -42,7 +42,7 @@ class AGModelBaseToDictTest(_SetUp, UnitTestBase):
             'users': self.users
         }
         print(result)
-        self.assertContentsEqual(expected, result)
+        self.assertDictContentsEqual(expected, result)
 
     def test_include_fields(self):
         self.ag_model.many_to_many.set(self.many_to_manys, clear=True)
@@ -53,7 +53,7 @@ class AGModelBaseToDictTest(_SetUp, UnitTestBase):
             'pos_num_val': self.ag_model.pos_num_val,
             'many_to_many': self.manys_serialized
         }
-        self.assertContentsEqual(expected, result)
+        self.assertDictContentsEqual(expected, result)
 
     def test_exclude_fields(self):
         result = self.ag_model.to_dict(
@@ -63,7 +63,7 @@ class AGModelBaseToDictTest(_SetUp, UnitTestBase):
             'non_empty_str_val': self.ag_model.non_empty_str_val,
             'users': self.users
         }
-        self.assertContentsEqual(expected, result)
+        self.assertDictContentsEqual(expected, result)
 
     def test_include_and_exclude_fields(self):
         include = ['pos_num_val', 'non_empty_str_val', 'the_answer']
@@ -184,7 +184,7 @@ class AGModelValidateAndUpdateTestCase(_SetUp, UnitTestBase):
         self.assertIn('non_empty_str_val', cm.exception.message_dict)
 
         self.ag_model.refresh_from_db()
-        self.assertContentsEqual(old_vals, self.ag_model.to_dict())
+        self.assertDictContentsEqual(old_vals, self.ag_model.to_dict())
 
     def test_invalid_update_nonexistant_field(self):
         with self.assertRaises(exceptions.ValidationError):

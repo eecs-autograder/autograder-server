@@ -34,7 +34,7 @@ class AGTestCaseSerializerTestCase(_SetUp, SerializerTestCase):
             student_resource_files=[self.expected_pattern],
             project_files_to_compile_together=[self.uploaded_file],
             student_files_to_compile_together=[self.expected_pattern])
-        print(ag_test.to_dict())
+        print(ag_test.to_dict(include_fields=['test_resource_files']))
         self.do_basic_serialize_test(ag_test,
                                      ag_serializers.AGTestCaseSerializer)
 

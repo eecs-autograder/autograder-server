@@ -45,8 +45,11 @@ class UnitTestBase(TransactionTestCase):
         except Exception:
             pass
 
-    def assertContentsEqual(self, first, second):
+    def assertDictContentsEqual(self, first, second):
         self.assertEqual(_ordered(first), _ordered(second))
+
+    def assertListContentsEqual(self, first, second):
+        self.assertCountEqual(_ordered(first), _ordered(second))
 
 
 # Adapted from: http://stackoverflow.com/questions/25851183/

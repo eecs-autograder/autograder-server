@@ -231,16 +231,6 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
 
             self.assertNotIn(fdbk_field, fdbk_excluded)
 
-    def to_dict_related_file_fields_serialized(self):
-        self.assertCountEqual(
-            ['test_resource_files', 'student_resource_files',
-             'project_files_to_compile_together',
-             'student_files_to_compile_together'],
-            ag_models.AutograderTestCaseBase.RELATED_FILE_FIELD_NAMES)
-
-
-        self.fail()
-
     def test_editable_fields(self):
         expected = [
             'name',

@@ -23,7 +23,7 @@ class ListObjectsTest(PermissionDeniedGetTest):
         client.force_authenticate(user)
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertContentsEqual(expected_data, response.data)
+        self.assertListContentsEqual(expected_data, response.data)
 
         return response
 
@@ -74,7 +74,7 @@ class CreateObjectTest(CreateObjectInvalidArgsTest, PermissionDeniedCreateTest):
             return response
 
         loaded = model_manager.get(pk=response.data['pk'])
-        self.assertContentsEqual(loaded.to_dict(), response.data)
+        self.assertDictContentsEqual(loaded.to_dict(), response.data)
 
         for arg_name, value in request_data.items():
             actual = getattr(loaded, arg_name)
@@ -97,8 +97,8 @@ class UpdateObjectTest:
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj.refresh_from_db()
-        self.assertContentsEqual(expected_data, ag_model_obj.to_dict())
-        self.assertContentsEqual(expected_data, response.data)
+        self.assertDictContentsEqual(expected_data, ag_model_obj.to_dict())
+        self.assertDictContentsEqual(expected_data, response.data)
 
         return response
 
@@ -125,8 +125,8 @@ class UpdateObjectTest:
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj.refresh_from_db()
-        self.assertContentsEqual(expected_data, ag_model_obj.to_dict())
-        self.assertContentsEqual((expected_data), (response.data))
+        self.assertDictContentsEqual(expected_data, ag_model_obj.to_dict())
+        self.assertDictContentsEqual((expected_data), (response.data))
 
         return response
 
@@ -151,7 +151,7 @@ class UpdateObjectTest:
         self.assertEqual(expected_status, response.status_code)
 
         ag_model_obj.refresh_from_db()
-        self.assertContentsEqual(expected_data, ag_model_obj.to_dict())
+        self.assertDictContentsEqual(expected_data, ag_model_obj.to_dict())
 
         return response
 

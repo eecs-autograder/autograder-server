@@ -68,6 +68,13 @@ class AGTestCaseSerializer(AGModelSerializer):
             result = super().create(validated_data)
             for field_name, vals in file_field_data.items():
                 getattr(result, field_name).set(vals, clear=True)
+
+            # for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:
+            #     if fdbk_field in validated_data:
+            #         setattr(
+            #             result, fdbk_field,
+            #             ag_models.FeedbackConfig.objects.validate_and_create(
+            #                 **validated_data.popfdbk_field]))
             return result
 
     def update(self, instance, validated_data):
@@ -76,6 +83,10 @@ class AGTestCaseSerializer(AGModelSerializer):
             result = super().update(instance, validated_data)
             for field_name, vals in file_field_data.items():
                 getattr(result, field_name).set(vals, clear=True)
+
+            # for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:
+            #     if fdbk_field in validated_data:
+            #         setattr(result, fdbk_field, ag_models.FeedbackConfig.objects.get(pk=))
             return result
 
     def _deserialize_related_file_fields(self, data):

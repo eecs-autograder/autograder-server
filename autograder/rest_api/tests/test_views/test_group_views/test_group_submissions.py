@@ -19,6 +19,10 @@ class ListGroupSubmissionsTestCase(test_data.Client,
                                    test_data.Submission,
                                    test_impls.ListObjectsTest,
                                    UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.maxDiff = None
+
     def test_admin_or_staff_list_submissions(self):
         for project in self.all_projects:
             for group in self.at_least_enrolled_groups(project):

@@ -19,7 +19,7 @@ class _DummyAGModelSerialier(AGModelSerializer):
 class AGModelSerializerTestCase(SerializerTestCase):
     def setUp(self):
         super().setUp()
-        self.ag_model = _DummyAutograderModel(
+        self.ag_model = _DummyAutograderModel.objects.validate_and_create(
             pos_num_val=42,
             non_empty_str_val="spam")
 
@@ -56,19 +56,23 @@ class AGModelSerializerTestCase(SerializerTestCase):
                          serializer.data)
 
     def test_create(self):
-        self.assertEqual(0, _DummyAutograderModel.objects.count())
-        serializer = _DummyAGModelSerialier(data=self.ag_model.to_dict())
+        original_count = _DummyAutograderModel.objects.count()
+        serializer = _DummyAGModelSerialier(data={
+            'pos_num_val': 42,
+            'non_empty_str_val': "spam"
+        })
 
         self.assertTrue(serializer.is_valid())
-        serializer.save()
+        created = serializer.save()
+        created.refresh_from_db()
 
-        self.assertEqual(1, _DummyAutograderModel.objects.count())
-        loaded = _DummyAutograderModel.objects.get(
-            pos_num_val=self.ag_model.pos_num_val)
+        self.assertEqual(original_count + 1,
+                         _DummyAutograderModel.objects.count())
         self.assertEqual(self.ag_model.non_empty_str_val,
-                         loaded.non_empty_str_val)
+                         created.non_empty_str_val)
 
     def test_create_with_field_errors(self):
+        original_count = _DummyAutograderModel.objects.count()
         with self.assertRaises(serializers.ValidationError):
             serializer = _DummyAGModelSerialier(
                 data={'pos_num_val': -2, 'non_empty_str_val': ''})
@@ -76,7 +80,7 @@ class AGModelSerializerTestCase(SerializerTestCase):
             self.assertTrue(serializer.is_valid())
             serializer.save()
 
-        self.assertEqual(0, _DummyAutograderModel.objects.count())
+        self.assertEqual(original_count, _DummyAutograderModel.objects.count())
 
     def test_update(self):
         self.ag_model.save()

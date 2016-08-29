@@ -321,10 +321,15 @@ class _SubprocessRunner(object):
             self._stderr = msg
 
 
+_REDIS_SETTINGS = {
+    'host': os.environ.get('AG_REDIS_HOST', 'localhost'),
+    'port': os.environ.get('AG_REDIS_PORT', '6379')
+}
+
 _NEXT_UID_KEY = 'sandbox_next_uid'
-redis.StrictRedis().setnx('sandbox_next_uid', 2000)
+redis.StrictRedis(**_REDIS_SETTINGS).setnx('sandbox_next_uid', 2000)
 
 
 def _get_next_linux_uid():
-    redis_conn = redis.StrictRedis()
+    redis_conn = redis.StrictRedis(**_REDIS_SETTINGS)
     return redis_conn.incr(_NEXT_UID_KEY)
