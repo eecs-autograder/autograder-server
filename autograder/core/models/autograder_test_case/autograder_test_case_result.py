@@ -194,8 +194,8 @@ class AutograderTestCaseResult(models.Model):
             return class_._DEFAULT_TO_DICT_FIELDS
 
         @property
-        def _include_pk(self):
-            return False
+        def pk(self):
+            return self._result.pk
 
         @property
         def ag_test_name(self):

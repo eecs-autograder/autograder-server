@@ -87,13 +87,13 @@ class AutograderTestCaseResultTestCase(test_ut.UnitTestBase):
             (ag_models.AutograderTestCaseResult
                       .FeedbackCalculator.get_default_to_dict_fields()))
 
-    def test_to_dict_pk_excluded(self):
+    def test_to_dict_pk_included(self):
         result = ag_models.AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
             submission=self.submission)
 
         fdbk = result.get_feedback()
-        self.assertNotIn('pk', fdbk.to_dict())
+        self.assertIn('pk', fdbk.to_dict())
 
     # def test_very_large_output(self):
     #     stdout = 'a' * 300000000
