@@ -57,21 +57,25 @@ class AutograderTestCaseResultTestCase(test_ut.UnitTestBase):
             'expected_return_code',
             'actual_return_code',
             'return_code_points',
+            'return_code_points_possible',
 
             'stdout_correct',
             'stdout_content',
             'stdout_diff',
             'stdout_points',
+            'stdout_points_possible',
 
             'stderr_correct',
             'stderr_content',
             'stderr_diff',
             'stderr_points',
+            'stderr_points_possible',
 
             'compilation_succeeded',
             'compilation_stdout',
             'compilation_stderr',
             'compilation_points',
+            'compilation_points_possible',
 
             'valgrind_errors_reported',
             'valgrind_output',

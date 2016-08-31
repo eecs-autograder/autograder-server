@@ -155,9 +155,10 @@ class UpdateUploadedFileContentTestCase(_BuildFile,
             response = self.client.put(file_content_url(file_),
                                        {'file_obj': self.updated_file},
                                        format='multipart')
-            self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
             file_.refresh_from_db()
             self.assertEqual(self.new_content, file_.file_obj.read())
+            self.assertEqual(file_.to_dict(), response.data)
 
     def test_other_update_content(self):
         file_ = self.build_file(self.visible_public_project)

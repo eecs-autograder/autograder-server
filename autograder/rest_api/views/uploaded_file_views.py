@@ -50,6 +50,6 @@ class UploadedFileViewset(build_load_object_mixin(ag_models.UploadedFile),
             with open(uploaded_file.abspath, 'wb') as f:
                 for chunk in request.data['file_obj'].chunks():
                     f.write(chunk)
-            return response.Response(status=status.HTTP_204_NO_CONTENT)
+            return response.Response(uploaded_file.to_dict())
         else:
             return FileResponse(uploaded_file.file_obj)

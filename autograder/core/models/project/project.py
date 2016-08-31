@@ -191,7 +191,7 @@ class Project(AutograderModel):
         help_text='''The time that marks the beginning and end of the 24
             hour period during which submissions should be counted
             towards the daily limit. This value assumes use of the UTC
-            timezone. Defaults to 0:0:0. ''')
+            timezone. Defaults to 0:0:0.''')
 
     ultimate_submission_selection_method = ag_fields.ShortStringField(
         choices=zip(UltimateSubmissionSelectionMethod.values,

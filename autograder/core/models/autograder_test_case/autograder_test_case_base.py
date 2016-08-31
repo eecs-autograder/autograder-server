@@ -309,8 +309,10 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         default=const.DEFAULT_VALGRIND_FLAGS, blank=True,
         help_text='''If use_valgrind is True, this field should contain
             a list of command line arguments to be passed to the
-            valgrind program. NOTE: This list should NOT contain any
-            details about the program being tested. For example:
+            valgrind program.
+            NOTE: This list should NOT contain any
+            details about the program being tested.
+            Example value:
             ['--leak-check=full', '--error-exitcode=42'] This list can
             be empty. This list can only be None if use_valgrind is
             False.

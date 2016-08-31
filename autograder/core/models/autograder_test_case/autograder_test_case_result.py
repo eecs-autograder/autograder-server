@@ -164,21 +164,25 @@ class AutograderTestCaseResult(models.Model):
             'expected_return_code',
             'actual_return_code',
             'return_code_points',
+            'return_code_points_possible',
 
             'stdout_correct',
             'stdout_content',
             'stdout_diff',
             'stdout_points',
+            'stdout_points_possible',
 
             'stderr_correct',
             'stderr_content',
             'stderr_diff',
             'stderr_points',
+            'stderr_points_possible',
 
             'compilation_succeeded',
             'compilation_stdout',
             'compilation_stderr',
             'compilation_points',
+            'compilation_points_possible',
 
             'valgrind_errors_reported',
             'valgrind_output',
@@ -242,13 +246,18 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def return_code_points(self):
+            possible = self.return_code_points_possible
+            if possible is None:
+                return None
+
+            return 0 if not self.return_code_correct else possible
+
+        @property
+        def return_code_points_possible(self):
             if (not self._ret_code_checked() or
                     self._no_ret_code_correctness_fdbk() or
                     self._no_pts_fdbk()):
                 return None
-
-            if not self.return_code_correct:
-                return 0
 
             return self._result.test_case.points_for_correct_return_code
 
@@ -291,13 +300,20 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def stdout_points(self):
+            possible = self.stdout_points_possible
+            if possible is None:
+                return None
+
+            return 0 if not self.stdout_correct else possible
+
+        @property
+        def stdout_points_possible(self):
             if (not self._stdout_checked() or
                     self._no_stdout_correctness_fdbk() or
                     self._no_pts_fdbk()):
                 return None
 
-            return (0 if not self.stdout_correct
-                    else self._result.test_case.points_for_correct_stdout)
+            return self._result.test_case.points_for_correct_stdout
 
         def _no_stdout_correctness_fdbk(self):
             return (self._fdbk.stdout_fdbk ==
@@ -342,13 +358,20 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def stderr_points(self):
+            possible = self.stderr_points_possible
+            if possible is None:
+                return None
+
+            return 0 if not self.stderr_correct else possible
+
+        @property
+        def stderr_points_possible(self):
             if (not self._stderr_checked() or
                     self._no_stderr_correctness_fdbk() or
                     self._no_pts_fdbk()):
                 return None
 
-            return (0 if not self.stderr_correct
-                    else self._result.test_case.points_for_correct_stderr)
+            return self._result.test_case.points_for_correct_stderr
 
         def _no_stderr_correctness_fdbk(self):
             return (self._fdbk.stderr_fdbk ==
@@ -389,13 +412,20 @@ class AutograderTestCaseResult(models.Model):
 
         @property
         def compilation_points(self):
+            points_possible = self.compilation_points_possible
+            if points_possible is None:
+                return None
+
+            return 0 if not self.compilation_succeeded else points_possible
+
+        @property
+        def compilation_points_possible(self):
             if (self._no_compiler_fdbk() or
                     self._no_pts_fdbk() or
                     not self._result.test_case.checks_compilation()):
                 return None
 
-            return (0 if not self.compilation_succeeded
-                    else self._result.test_case.points_for_compilation_success)
+            return self._result.test_case.points_for_compilation_success
 
         def _no_compiler_fdbk(self):
             return (self._fdbk.compilation_fdbk ==
