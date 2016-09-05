@@ -1,3 +1,5 @@
+from django.core.urlresolvers import reverse
+
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
@@ -109,3 +111,70 @@ class CreateGroupTestCase(_GroupsSetUp,
     def get_legal_member_names(self):
         members = self.get_legal_members()
         return [member.username for member in members]
+
+
+class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
+                              UnitTestBase):
+    def get_solo_group_url(self, project):
+        return reverse('project-groups-solo-group',
+                       kwargs={'project_pk': project.pk})
+
+    def test_create_solo_group_min_size_one(self):
+        for user in self.admin, self.staff, self.enrolled, self.nobody:
+            response = self.do_create_object_test(
+                self.visible_public_project.submission_groups,
+                self.client, user,
+                self.get_solo_group_url(self.visible_public_project), {},
+                check_data=False)
+            self.assertCountEqual([user.username],
+                                  response.data['member_names'])
+
+    def test_student_create_solo_group_visible_private_project(self):
+        response = self.do_create_object_test(
+            self.visible_private_project.submission_groups,
+            self.client, self.enrolled,
+            self.get_solo_group_url(self.visible_private_project), {},
+            check_data=False)
+        self.assertCountEqual([self.enrolled.username],
+                              response.data['member_names'])
+
+    def test_student_create_solo_group_min_size_not_one_invalid(self):
+        self.visible_public_project.validate_and_update(
+            min_group_size=2, max_group_size=2)
+        for user in self.enrolled, self.nobody:
+            self.do_invalid_create_object_test(
+                self.visible_public_project.submission_groups,
+                self.client, user,
+                self.get_solo_group_url(self.visible_public_project), {})
+
+    def test_staff_create_solo_group_project_hidden_allowed(self):
+        response = self.do_create_object_test(
+            self.hidden_private_project.submission_groups,
+            self.client, self.staff,
+            self.get_solo_group_url(self.hidden_private_project), {},
+            check_data=False)
+        self.assertCountEqual([self.staff.username],
+                              response.data['member_names'])
+
+    def test_staff_create_solo_group_min_size_not_one_allowed(self):
+        self.project.validate_and_update(min_group_size=2, max_group_size=2)
+        response = self.do_create_object_test(
+            self.project.submission_groups,
+            self.client, self.staff,
+            self.get_solo_group_url(self.project), {},
+            check_data=False)
+        self.assertCountEqual([self.staff.username],
+                              response.data['member_names'])
+
+    def test_student_create_solo_group_project_hidden_permission_denied(self):
+        for user in self.enrolled, self.nobody:
+            self.do_permission_denied_create_test(
+                self.hidden_public_project.submission_groups,
+                self.client, user,
+                self.get_solo_group_url(self.hidden_public_project), {})
+
+    def test_non_enrolled_create_solo_group_project_private_permission_denied(self):
+        self.do_permission_denied_create_test(
+            self.visible_private_project.submission_groups,
+            self.client, self.nobody,
+            self.get_solo_group_url(self.visible_private_project), {})
