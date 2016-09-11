@@ -10,15 +10,20 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
+import datetime
 import os
 import json
 
 from django.utils.crypto import get_random_string
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA_ROOT = os.path.join(BASE_DIR, 'dev_filesystem')
+from kombu import Queue
+
+
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT')
+
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split()
 
 
 def generate_secrets(overwrite_prompt=True):
@@ -38,7 +43,7 @@ def generate_secrets(overwrite_prompt=True):
     chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
     secrets = {
         'secret_key': get_random_string(50, chars),
-        'db_password': get_random_string(50, chars)
+        # 'db_password': get_random_string(50, chars)
     }
 
     with open(secrets_file, 'w') as f:
@@ -56,18 +61,9 @@ with open(_secrets_filename) as f:
     SECRET_KEY = secrets.pop('secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
-
-# A list of domain names that users are allowed to authenitcate from.
-GOOGLE_IDENTITY_TOOLKIT_APPS_DOMAIN_NAMES = ['umich.edu']
-GOOGLE_IDENTITY_TOOLKIT_CONFIG_FILE = os.path.join(
-    SETTINGS_DIR, 'gitkit-server-config.json')
-
-# # FIXME
-# LOGIN_URL = '/callback/?mode=select'
-# # Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -81,7 +77,6 @@ INSTALLED_APPS = [
     'django_extensions',
 
     'autograder.core',
-    # 'autograder.sandbox',
     'autograder.rest_api',
     'autograder.grading_tasks',
     'autograder.utils',
@@ -138,11 +133,26 @@ USE_L10N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.9/howto/static-files/
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('AG_DB_NAME', ''),
+        'USER': os.environ.get('AG_DB_USER', ''),
+        'PASSWORD': os.environ.get('AG_DB_PASSWORD'),
+        'HOST': os.environ.get('AG_DB_HOST', ''),
+        'PORT': os.environ.get('AG_DB_PORT', '')
+    },
+}
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATIC_URL = '/static/'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'redis_cache.RedisCache',
+        'LOCATION': '{host}:{port}'.format(
+            host=os.environ.get('AG_REDIS_HOST', 'localhost'),
+            port=os.environ.get('AG_REDIS_PORT', '6379')),
+    },
+}
 
 
 # ----- Celery settings ----- #
@@ -151,10 +161,20 @@ CELERYD_PREFETCH_MULTIPLIER = 1
 
 # FIXME
 # CELERY_ACCEPT_CONTENT = ['json']  # Ignore other content
-# CELERY_TASK_SERIALIZER = 'json'
-# CELERY_RESULT_SERIALIZER = 'json'
-# CELERY_QUEUES = {
-#     'default': {
-#         'serializer': 'json'
-#     }
-# }
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_QUEUES = (
+    Queue('submissions'),
+    Queue('deferred'),
+    Queue('submission_listener')
+)
+
+CELERYBEAT_SCHEDULE = {
+    'queue-submissions': {
+        'task': 'autograder.grading_tasks.tasks.queue_submissions',
+        'schedule': datetime.timedelta(seconds=5),  # UPDATE AS DESIRED
+        'options': {
+            'queue': 'submission_listener'
+        }
+    },
+}

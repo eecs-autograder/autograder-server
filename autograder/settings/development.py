@@ -2,12 +2,12 @@ import os
 
 from .base import *
 
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MEDIA_ROOT = os.path.join(BASE_DIR, 'dev_filesystem')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split()
 
 INSTALLED_APPS += [
     # Dummy testing models
@@ -19,8 +19,6 @@ REST_FRAMEWORK.update({
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
 })
 
-# Database
-# https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
 DATABASES = {
     'default': {
@@ -32,19 +30,6 @@ DATABASES = {
         'PORT': os.environ.get('AG_DB_PORT', '')
     },
 }
-
-CACHES = {
-    'default': {
-        'BACKEND': 'redis_cache.RedisCache',
-        'LOCATION': '{host}:{port}'.format(
-            host=os.environ.get('AG_REDIS_HOST', 'localhost'),
-            port=os.environ.get('AG_REDIS_PORT', '6379')),
-    },
-}
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATIC_URL = '/static/'
-
 
 # ----- Celery settings ----- #
 

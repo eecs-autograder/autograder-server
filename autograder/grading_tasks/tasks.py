@@ -12,6 +12,20 @@ from autograder_sandbox import AutograderSandbox
 
 
 @celery.shared_task
+def queue_submissions():
+    # TODO: integration test
+    # TODO: update this to support multiple courses in one system
+    newly_queued = ag_models.Submission.objects.filter(
+        status=ag_models.Submission.GradingStatus.received
+    ).update(status=ag_models.Submission.GradingStatus.queued)
+
+    for submission in newly_queued:
+        grade_submission.apply_async(submission.pk)
+
+    print('queued {} submissions'.format(len(newly_queued)))
+
+
+@celery.shared_task
 def grade_submission(submission_id):
     try:
         submission = _mark_as_being_graded(submission_id)
@@ -22,7 +36,7 @@ def grade_submission(submission_id):
         signatures = (grade_ag_test.s(ag_test.pk, submission_id)
                       for ag_test in deferred_queryset)
         callback = mark_as_finished.s(submission_id)
-        celery.chord(signatures)(callback)
+        celery.chord(signatures, queue='deferred')(callback)
     except Exception:
         traceback.print_exc()
         with transaction.atomic():
