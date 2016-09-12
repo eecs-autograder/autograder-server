@@ -21,12 +21,13 @@ def queue_submissions():
     import autograder.core.models as ag_models
     # TODO: integration test
     # TODO: update this to support multiple courses in one system
-    newly_queued = ag_models.Submission.objects.filter(
-        status=ag_models.Submission.GradingStatus.received
-    ).update(status=ag_models.Submission.GradingStatus.queued)
+    with transaction.atomic():
+        newly_queued = ag_models.Submission.objects.select_for_update().filter(
+            status=ag_models.Submission.GradingStatus.received)
+        newly_queued.update(status=ag_models.Submission.GradingStatus.queued)
 
-    for submission in newly_queued:
-        grade_submission.apply_async(submission.pk)
+        print(newly_queued.all())
+        for submission in newly_queued.all():
+            grade_submission.apply_async(submission.pk)
 
-    print('queued {} submissions'.format(len(newly_queued)))
-
+        print('queued {} submissions'.format(len(newly_queued)))

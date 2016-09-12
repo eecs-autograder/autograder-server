@@ -8,7 +8,7 @@
 Description=Start the celery submission listener worker 
 
 [Service]
-ExecStart=/usr/local/bin/celery -A autograder worker -Q listener -n listener@%h --loglevel=info
+ExecStart=/usr/local/bin/celery -A autograder worker -Q submission_listener -n listener@%h --loglevel=info
 Restart=always
 User=jameslp
 EnvironmentFile=/home/jameslp/autograder-server/install_grader_node/environment_vars

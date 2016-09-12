@@ -19,7 +19,7 @@ CELERY_QUEUES = (
 
 CELERYBEAT_SCHEDULE = {
     'queue-submissions': {
-        'task': 'queue_submissions',
+        'task': 'autograder.celery.queue_submissions',
         'schedule': datetime.timedelta(seconds=5),  # UPDATE AS DESIRED
         'options': {
             'queue': 'submission_listener'
