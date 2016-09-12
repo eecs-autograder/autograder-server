@@ -10,15 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
-import datetime
 import os
 import json
 
 from django.utils.crypto import get_random_string
 
-from kombu import Queue
-
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT')
 
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -144,7 +141,6 @@ DATABASES = {
     },
 }
 
-
 CACHES = {
     'default': {
         'BACKEND': 'redis_cache.RedisCache',
@@ -154,27 +150,5 @@ CACHES = {
     },
 }
 
-
-# ----- Celery settings ----- #
-
-CELERYD_PREFETCH_MULTIPLIER = 1
-
-# FIXME
-# CELERY_ACCEPT_CONTENT = ['json']  # Ignore other content
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_QUEUES = (
-    Queue('submissions'),
-    Queue('deferred'),
-    Queue('submission_listener')
-)
-
-CELERYBEAT_SCHEDULE = {
-    'queue-submissions': {
-        'task': 'autograder.grading_tasks.tasks.queue_submissions',
-        'schedule': datetime.timedelta(seconds=5),  # UPDATE AS DESIRED
-        'options': {
-            'queue': 'submission_listener'
-        }
-    },
-}
+# Celery settings
+from .celery_config import *
