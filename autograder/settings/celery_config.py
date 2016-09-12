@@ -3,7 +3,7 @@ import os
 from kombu import Queue
 
 
-BROKER_URL = os.environ.get('AG_CELERY_BROKER_URL', 'amqp://guest:guest@localhost:5672//')
+BROKER_URL = os.environ.get('AG_CELERY_BROKER_URL', 'amqp://guest@localhost:5672//')
 
 CELERYD_PREFETCH_MULTIPLIER = 1
 CELERYD_CONCURRENCY = 1
@@ -19,7 +19,7 @@ CELERY_QUEUES = (
 
 CELERYBEAT_SCHEDULE = {
     'queue-submissions': {
-        'task': 'autograder.grading_tasks.tasks.queue_submissions',
+        'task': 'queue_submissions',
         'schedule': datetime.timedelta(seconds=5),  # UPDATE AS DESIRED
         'options': {
             'queue': 'submission_listener'

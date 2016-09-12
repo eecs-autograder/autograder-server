@@ -12,22 +12,6 @@ from autograder_sandbox import AutograderSandbox
 
 
 @celery.shared_task
-def queue_submissions():
-    # TODO: integration test
-    # TODO: update this to support multiple courses in one system
-    with transaction.atomic():
-        newly_queued = ag_models.Submission.objects.select_for_update().filter(
-            status=ag_models.Submission.GradingStatus.received)
-        newly_queued.update(status=ag_models.Submission.GradingStatus.queued)
-
-        print(newly_queued.all())
-        for submission in newly_queued.all():
-            grade_submission.apply_async(submission.pk)
-
-        print('queued {} submissions'.format(len(newly_queued)))
-
-
-@celery.shared_task
 def grade_submission(submission_id):
     try:
         submission = _mark_as_being_graded(submission_id)

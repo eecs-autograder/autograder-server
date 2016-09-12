@@ -74,3 +74,5 @@ secrets.json
 logfile
 old
 *.rdb
+celerybeat-schedule.db
+celerybeat.pid
