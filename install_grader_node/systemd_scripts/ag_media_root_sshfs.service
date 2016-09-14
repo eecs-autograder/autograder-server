@@ -9,7 +9,7 @@ Description=Mount the media_root of the autograder server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/sshfs -o reconnect jameslp@class7.eecs.umich.edu:media_root /home/jameslp/media_root
+ExecStart=/usr/bin/sshfs -o reconnect jameslp@class7.eecs.umich.edu:autograder-full-stack/autograder-server/dev_filesystem /home/jameslp/media_root
 Restart=always
 User=jameslp
 Type=forking
