@@ -31,6 +31,12 @@ DATABASES = {
     },
 }
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'autograder.rest_api.authentication.google_identity_toolkit_auth.DevAuth',
+    )
+}
+
 # ----- Celery settings ----- #
 
 # For testing without celery server running

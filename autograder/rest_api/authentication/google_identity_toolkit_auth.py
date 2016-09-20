@@ -8,6 +8,12 @@ WEB_CLIENT_ID = "358440655746-bl5ig1es62n6n4oho525l4f58fgl367c.apps.googleuserco
 APPS_DOMAIN_NAME = 'umich.edu'
 
 
+class DevAuth(SessionAuthentication):
+    def authenticate(self, request):
+        user = User.objects.get_or_create(username='jameslp@umich.edu')[0]
+        return (user, None)
+
+
 # Adapted from the Google Identity Toolkit docs.
 # This needs to inherit from SessionAuthentication so that we can use
 # its enforce_csrf method.

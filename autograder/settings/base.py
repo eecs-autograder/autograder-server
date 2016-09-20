@@ -149,6 +149,3 @@ CACHES = {
             port=os.environ.get('AG_REDIS_PORT', '6379')),
     },
 }
-
-# Celery settings
-from .celery_config import *
