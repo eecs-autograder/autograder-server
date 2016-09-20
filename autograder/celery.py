@@ -2,20 +2,17 @@ import os
 
 from celery import Celery
 
-# set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'autograder.settings')
+os.environ.setdefault('CELERY_CONFIG_MODULE', 'autograder.settings.celery')
 
 from django.conf import settings  # noqa
-from django.db import transaction
+from django.db import transaction  # noqa
 
-app = Celery('autograder', backend='amqp')
+app = Celery('autograder')
+app.config_from_envvar('CELERY_CONFIG_MODULE')
 
-# Using a string here means the worker will not have to
-# pickle the object when using Windows.
-app.config_from_object('django.conf:settings')
-if not os.environ.get('IS_CELERYBEAT', False):
-    print('autodiscovering tasks')
-    app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+
 
 @app.task
 def queue_submissions():
@@ -28,7 +25,7 @@ def queue_submissions():
             status=ag_models.Submission.GradingStatus.received))
         print(to_queue)
 
-        for submission in to_queue: 
+        for submission in to_queue:
             print('adding submission{} to queue for grading'.format(submission.pk))
             submission.status = 'queued'
             submission.save()

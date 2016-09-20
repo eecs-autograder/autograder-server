@@ -117,7 +117,8 @@ def grade_ag_test_impl(ag_test, submission):
     sandbox = AutograderSandbox(
         name='submission{}-test{}'.format(submission.pk, ag_test.pk),
         environment_variables={
-            'usernames': ' '.join(sorted(group.member_names))})
+            'usernames': ' '.join(sorted(group.member_names))},
+        allow_network_access=ag_test.allow_network_connections)
 
     with sandbox:
         result = ag_test.run(submission, sandbox)
