@@ -15,6 +15,9 @@ INSTALLED_APPS += [
 
 REST_FRAMEWORK.update({
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'autograder.rest_api.authentication.google_identity_toolkit_auth.DevAuth',
+    )
 })
 
 
@@ -27,12 +30,6 @@ DATABASES = {
         'HOST': os.environ.get('AG_DB_HOST', 'localhost'),
         'PORT': os.environ.get('AG_DB_PORT', '5432')
     },
-}
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'autograder.rest_api.authentication.google_identity_toolkit_auth.DevAuth',
-    )
 }
 
 # ----- Celery settings ----- #
