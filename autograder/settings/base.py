@@ -12,11 +12,12 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 import os
 import json
+import importlib
 
 from django.utils.crypto import get_random_string
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA_ROOT = os.environ.get('MEDIA_ROOT')
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media_root'))
 
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -149,3 +150,11 @@ CACHES = {
             port=os.environ.get('AG_REDIS_PORT', '6379')),
     },
 }
+
+# TODO: figure out dynamic import or just condense to one celery settings thing
+from autograder.settings.celery.production import *
+
+# CELERY_CONFIG_MODULE = os.environ.setdefault(
+#     'CELERY_CONFIG_MODULE', 'autograder.settings.celery.production')
+
+# globals().update(importlib.import_module(CELERY_CONFIG_MODULE).__dict__)

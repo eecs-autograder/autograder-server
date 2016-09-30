@@ -2,9 +2,7 @@ import os
 
 from .base import *
 
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA_ROOT = os.path.join(BASE_DIR, 'dev_filesystem')
+MEDIA_ROOT += '_dev'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -23,11 +21,11 @@ REST_FRAMEWORK.update({
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('AG_DB_NAME', 'autograder_dev_db'),
-        'USER': os.environ.get('AG_DB_USER', ''),
-        'PASSWORD': os.environ.get('AG_DB_PASSWORD', ''),
-        'HOST': os.environ.get('AG_DB_HOST', ''),
-        'PORT': os.environ.get('AG_DB_PORT', '')
+        'NAME': os.environ.get('AG_DB_NAME', 'postgres'),
+        'USER': os.environ.get('AG_DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('AG_DB_PASSWORD', 'postgres'),
+        'HOST': os.environ.get('AG_DB_HOST', 'localhost'),
+        'PORT': os.environ.get('AG_DB_PORT', '5432')
     },
 }
 
@@ -41,15 +39,6 @@ REST_FRAMEWORK = {
 
 # For testing without celery server running
 TEST_RUNNER = 'autograder.grading_tasks.celery_test_runner.CeleryTestSuiteRunner'
-
-# CELERY_ACCEPT_CONTENT = ['json']  # Ignore other content
-# CELERY_TASK_SERIALIZER = 'json'
-# CELERY_RESULT_SERIALIZER = 'json'
-# CELERY_QUEUES = {
-#     'default': {
-#         'serializer': 'json'
-#     }
-# }
 
 # Override these values in production settings
 AG_TEST_MAX_RETRIES = 2

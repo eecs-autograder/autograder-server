@@ -76,15 +76,18 @@ class TasksTestCase(test_ut.UnitTestBase):
     def test_grade_submission_no_deferred(self):
         print(self.submission.pk)
         tasks.grade_submission(self.submission.pk)
+        tasks.check_for_finished_deferreds()
 
         self.submission.refresh_from_db()
         self.assertEqual(2, self.submission.basic_score)
+
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
     def test_grade_submission_some_deferred(self):
         self.compiled_test.validate_and_update(deferred=True)
         tasks.grade_submission(self.submission.pk)
+        tasks.check_for_finished_deferreds()
 
         self.submission.refresh_from_db()
         self.assertEqual(2, self.submission.basic_score)
@@ -94,6 +97,7 @@ class TasksTestCase(test_ut.UnitTestBase):
     def test_grade_submission_all_deferred(self):
         self._mark_all_as_deferred()
         tasks.grade_submission(self.submission.pk)
+        tasks.check_for_finished_deferreds()
 
         self.submission.refresh_from_db()
         self.assertEqual(2, self.submission.basic_score)
@@ -110,7 +114,7 @@ class TasksTestCase(test_ut.UnitTestBase):
         tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
-        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+        self.assertEqual(ag_models.Submission.GradingStatus.waiting_for_deferred,
                          self.submission.status)
         self.assertEqual(2, self.submission.basic_score)
 
@@ -138,7 +142,7 @@ class TasksTestCase(test_ut.UnitTestBase):
 
         self.submission.refresh_from_db()
         self.assertEqual(1, self.submission.basic_score)
-        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+        self.assertEqual(ag_models.Submission.GradingStatus.waiting_for_deferred,
                          self.submission.status)
 
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl')
@@ -268,6 +272,7 @@ class RaceConditionTestCase(gen_data.Project,
         time_waited = 0
         while (submission.status !=
                 ag_models.Submission.GradingStatus.finished_grading):
+            tasks.check_for_finished_deferreds()
             print(submission.status)
             if time_waited > 10:
                 self.fail('spent too long waiting')

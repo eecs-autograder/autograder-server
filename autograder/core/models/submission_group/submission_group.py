@@ -123,6 +123,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         The method used to choose which submission is the ultimate
         submission is specified in
         self.project.ultimate_submission_selection_method
+        Raises Http404 if this group has no submissions.
         '''
         if not self.submissions.count():
             raise Http404('Group {} has no submissions'.format(self.pk))

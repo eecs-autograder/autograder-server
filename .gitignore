@@ -76,3 +76,5 @@ old
 *.rdb
 celerybeat-schedule.db
 celerybeat.pid
+dev_filesystem
+media_root_dev

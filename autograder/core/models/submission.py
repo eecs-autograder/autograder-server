@@ -296,6 +296,8 @@ class Submission(ag_model_base.AutograderModel):
         """
         Returns a list containing each SubmissionGroup's most
         recent Submission for the given project.
+
+        # TODO: REMOVE
         """
         submissions = []
         for group in project.submission_groups.all():
