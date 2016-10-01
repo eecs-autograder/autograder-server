@@ -14,11 +14,15 @@ INSTALLED_APPS += [
 ]
 
 REST_FRAMEWORK.update({
-    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'autograder.rest_api.authentication.google_identity_toolkit_auth.DevAuth',
-    )
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json'
 })
+
+if os.environ.get('USE_REAL_AUTH', 'true').lower() == 'false':
+    REST_FRAMEWORK.update({
+        'DEFAULT_AUTHENTICATION_CLASSES': (
+            'autograder.rest_api.authentication.google_identity_toolkit_auth.DevAuth',
+        )
+    })
 
 
 DATABASES = {
@@ -37,7 +41,6 @@ DATABASES = {
 # For testing without celery server running
 TEST_RUNNER = 'autograder.grading_tasks.celery_test_runner.CeleryTestSuiteRunner'
 
-# Override these values in production settings
 AG_TEST_MAX_RETRIES = 2
 AG_TEST_MIN_RETRY_DELAY = 1
 AG_TEST_MAX_RETRY_DELAY = 2
