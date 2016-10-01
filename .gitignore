@@ -67,8 +67,6 @@ secret_key
 .DS_Store
 secret_key
 
-**/settings/*
-!**/settings/*.py
 secrets.json
 /autograder/static
 logfile
