@@ -8,7 +8,6 @@ from django.db import transaction
 import celery
 
 import autograder.core.models as ag_models
-from autograder_sandbox import AutograderSandbox
 
 
 @celery.shared_task
@@ -113,6 +112,8 @@ def grade_ag_test(self, ag_test_id, submission_id):
 
 
 def grade_ag_test_impl(ag_test, submission):
+    from autograder_sandbox import AutograderSandbox
+
     group = submission.submission_group
 
     grade_ag_test_impl.mocking_hook()
