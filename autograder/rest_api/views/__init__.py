@@ -1,3 +1,5 @@
+from .oauth2callback import oauth2_callback
+
 from .user_views import UserViewset
 
 from .course_views.course_view import CourseViewSet

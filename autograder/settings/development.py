@@ -20,7 +20,7 @@ REST_FRAMEWORK.update({
 if os.environ.get('USE_REAL_AUTH', 'true').lower() == 'false':
     REST_FRAMEWORK.update({
         'DEFAULT_AUTHENTICATION_CLASSES': (
-            'autograder.rest_api.authentication.google_identity_toolkit_auth.DevAuth',
+            'autograder.rest_api.auth.DevAuth',
         )
     })
 

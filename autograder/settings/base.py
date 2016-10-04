@@ -24,6 +24,10 @@ SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split()
 
 
+OAUTH2_SECRETS_FILENAME = os.environ.get('OAUTH2_SECRETS_FILENAME', 'dev_oauth2_secrets.json')
+OAUTH2_SECRETS_PATH = os.path.join(SETTINGS_DIR, OAUTH2_SECRETS_FILENAME)
+
+
 def generate_secrets(overwrite_prompt=True):
     """
     Generates an app secret key and a database password and writes
@@ -67,7 +71,7 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.staticfiles',
+    'django.contrib.sessions',
 
     'rest_framework',
     'polymorphic',
@@ -81,8 +85,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE_CLASSES = (
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
 
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -93,29 +99,15 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'autograder.rest_api.authentication.google_identity_toolkit_auth.GoogleIdentityToolkitAuth',
+        'autograder.rest_api.auth.GoogleOAuth2',
     )
 }
 
 ROOT_URLCONF = 'autograder.urls'
 
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
 WSGI_APPLICATION = 'autograder.wsgi.application'
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/

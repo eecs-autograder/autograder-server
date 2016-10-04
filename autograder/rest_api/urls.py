@@ -111,6 +111,8 @@ submission_results_router.register(r'results', views.SubmissionResultsViewset,
 
 
 urlpatterns = [
+    url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
+
     url(r'', include(user_router.urls)),
 
     url(r'', include(course_router.urls)),
