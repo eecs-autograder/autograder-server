@@ -8,7 +8,7 @@
 Description=Start the celery submission processing worker 
 
 [Service]
-ExecStart=/usr/local/bin/celery -A autograder worker -Q submissions -n submissions@%h --loglevel=info
+ExecStart=/usr/local/bin/celery -A autograder worker -Q submissions -n submissions@%h --loglevel=info -n 1
 Restart=always
 User=jameslp
 EnvironmentFile=/home/jameslp/autograder-server/install_grader_node/environment_vars
