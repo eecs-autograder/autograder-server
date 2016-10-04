@@ -120,8 +120,8 @@ class RetrieveUploadedFileContentTestCase(_BuildFile,
                 self.file_obj_kwargs['content'])
 
     def test_enrolled_or_other_get_content(self):
+        file_ = self.build_file(self.visible_public_project)
         for user in self.enrolled, self.nobody:
-            file_ = self.build_file(self.visible_public_project)
             self.do_permission_denied_get_test(
                 self.client, user, file_content_url(file_))
 
@@ -160,7 +160,7 @@ class UpdateUploadedFileContentTestCase(_BuildFile,
             self.assertEqual(self.new_content, file_.file_obj.read())
             self.assertEqual(file_.to_dict(), response.data)
 
-    def test_other_update_content(self):
+    def test_other_update_content_permission_denied(self):
         file_ = self.build_file(self.visible_public_project)
         for user in self.staff, self.enrolled, self.nobody:
             self.do_put_object_permission_denied_test(
@@ -169,3 +169,27 @@ class UpdateUploadedFileContentTestCase(_BuildFile,
             file_.refresh_from_db()
             self.assertEqual(self.file_obj_kwargs['content'],
                              file_.file_obj.read())
+
+
+class DeleteUploadedFileTestCase(_BuildFile,
+                                 test_data.Client,
+                                 test_data.Project,
+                                 test_impls.DestroyObjectTest,
+                                 UnitTestBase):
+    def test_admin_delete_file(self):
+        self.client.force_authenticate(self.admin)
+        for project in self.all_projects:
+            file_ = self.build_file(project)
+
+            self.do_delete_object_test(
+                file_, self.client, self.admin, file_url(file_))
+            with self.assertRaises(FileNotFoundError):
+                file_.file_obj.read()
+
+    def test_other_delete_file_permission_denied(self):
+        file_ = self.build_file(self.visible_public_project)
+        for user in self.staff, self.enrolled, self.nobody:
+            self.do_delete_object_permission_denied_test(
+                file_, self.client, user, file_url(file_))
+
+            file_.file_obj.read()

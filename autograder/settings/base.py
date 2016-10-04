@@ -142,9 +142,20 @@ CACHES = {
 }
 
 # TODO: figure out dynamic import or just condense to one celery settings thing
-from autograder.settings.celery.production import *
+from autograder.settings.celery.production import *  # noqa
 
-# CELERY_CONFIG_MODULE = os.environ.setdefault(
-#     'CELERY_CONFIG_MODULE', 'autograder.settings.celery.production')
-
-# globals().update(importlib.import_module(CELERY_CONFIG_MODULE).__dict__)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]

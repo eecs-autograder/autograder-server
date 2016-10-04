@@ -1,14 +1,15 @@
 import os
 import shutil
 
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.core import exceptions
 
 import autograder.core.utils as core_ut
 import autograder.core.constants as const
+from autograder import utils
 
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, AutograderModelManager
 from .project import Project
 
 
@@ -26,11 +27,29 @@ def _validate_filename(file_obj):
     core_ut.check_user_provided_filename(file_obj.name)
 
 
+class UploadedFileManager(AutograderModelManager):
+    def validate_and_create(self, **kwargs):
+        if 'file_obj' in kwargs and 'project' in kwargs:
+            file_obj = kwargs['file_obj']
+            project = kwargs['project']
+
+            file_exists = utils.find_if(
+                project.uploaded_files.all(),
+                lambda uploaded: uploaded.name == file_obj.name)
+            if file_exists:
+                raise exceptions.ValidationError(
+                    {'filename': 'File {} already exists'.format(file_obj.name)})
+
+        return super().validate_and_create(**kwargs)
+
+
 class UploadedFile(AutograderModel):
     """
     These objects provide a means for storing uploaded files
     to be used in project test cases.
     """
+    objects = UploadedFileManager()
+
     _DEFAULT_TO_DICT_FIELDS = frozenset([
         'project',
         'name',
@@ -85,3 +104,11 @@ class UploadedFile(AutograderModel):
     @property
     def size(self):
         return self.file_obj.size
+
+    def delete(self, **kwargs):
+        with transaction.atomic():
+            file_path = self.abspath
+            return_val = super().delete()
+            os.remove(file_path)
+
+            return return_val

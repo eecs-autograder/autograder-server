@@ -12,7 +12,7 @@ import httplib2
 
 from autograder.rest_api.auth import GOOGLE_API_SCOPES
 
-import autograder.utils as ut
+from autograder import utils
 
 
 _DJANGO_NAME_MAX_LEN = 30
@@ -32,7 +32,7 @@ def oauth2_callback(request):
     if user_info.get('domain', None) != 'umich.edu':
         return redirect(state['http_referer'])
 
-    email = ut.find_if(user_info['emails'], lambda data: data['type'] == 'account')
+    email = utils.find_if(user_info['emails'], lambda data: data['type'] == 'account')
     if email is None:
         raise RuntimeError('Email was None in user info')
 
