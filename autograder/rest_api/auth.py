@@ -46,7 +46,8 @@ class GoogleOAuth2(SessionAuthentication):
             redirect_uri=redirect_uri)
 
         state = {
-            'http_referer': request.META['HTTP_REFERER'],
+            'http_referer': request.META.get('HTTP_REFERER',
+                                             request.build_absolute_uri()),
             'redirect_uri': redirect_uri
         }
 
