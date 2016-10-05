@@ -326,28 +326,33 @@ class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
     def test_invalid_invitation_create_user_has_pending_invite_sent(self):
         ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
-            invitation_creator=self.invitation_creator)
+            invitation_creator=self.invitation_creator,
+            project=self.project)
 
         other_invitees = obj_build.create_dummy_users(len(self.to_invite))
         self.project.course.enrolled_students.add(*other_invitees)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.SubmissionGroupInvitation.objects.validate_and_create(
-                self.invitation_creator, other_invitees)
+                invitation_creator=self.invitation_creator,
+                invited_users=other_invitees,
+                project=self.project)
 
         self.assertIn('pending_invitation', cm.exception.message_dict)
 
     def test_invalid_invitation_create_user_has_pending_invite_received(self):
         ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invitation_creator=self.invitation_creator,
-            invited_users=self.invited_users)
+            invited_users=self.to_invite,
+            project=self.project)
 
-        creator = self.invited_users[0]
+        creator = self.to_invite[0]
         other_invitees = obj_build.create_dummy_users(len(self.to_invite))
         self.project.course.enrolled_students.add(*other_invitees)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.SubmissionGroupInvitation.objects.validate_and_create(
-                creator=creator, invited_users=other_invitees)
+                invitation_creator=creator, invited_users=other_invitees,
+                project=self.project)
 
         self.assertIn('pending_invitation', cm.exception.message_dict)

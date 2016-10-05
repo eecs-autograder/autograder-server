@@ -18,6 +18,13 @@ class SubmissionGroupInvitationManager(ag_model_base.AutograderModelManager):
                 tuple(itertools.chain(invited_users, (invitation_creator,))),
                 kwargs['project'], 'invited_users')
 
+            if (invitation_creator.group_invitations_sent.count() or
+                    invitation_creator.group_invitations_received.count()):
+                raise exceptions.ValidationError(
+                    {'pending_invitation':
+                        'You may not send any additional group invitations until '
+                        'your pending invitations are resolved.'})
+
             invitation = self.model(
                 invitation_creator=invitation_creator, **kwargs)
             invitation.save()
