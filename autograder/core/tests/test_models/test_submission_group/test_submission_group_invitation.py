@@ -25,8 +25,7 @@ class _SetUp:
                     [self.invitation_creator], self.to_invite))})
 
 
-class MiscSubmissionGroupInvitationTestCase(_SetUp,
-                                            UnitTestBase):
+class MiscSubmissionGroupInvitationTestCase(_SetUp, UnitTestBase):
     def test_to_dict_default_fields(self):
         expected_fields = [
             'project',
@@ -321,3 +320,34 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
                 project=self.project)
 
         self.assertTrue('invited_users' in cm.exception.message_dict)
+
+
+class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
+    def test_invalid_invitation_create_user_has_pending_invite_sent(self):
+        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            invited_users=self.to_invite,
+            invitation_creator=self.invitation_creator)
+
+        other_invitees = obj_build.create_dummy_users(len(self.to_invite))
+        self.project.course.enrolled_students.add(*other_invitees)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                self.invitation_creator, other_invitees)
+
+        self.assertIn('pending_invitation', cm.exception.message_dict)
+
+    def test_invalid_invitation_create_user_has_pending_invite_received(self):
+        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            invitation_creator=self.invitation_creator,
+            invited_users=self.invited_users)
+
+        creator = self.invited_users[0]
+        other_invitees = obj_build.create_dummy_users(len(self.to_invite))
+        self.project.course.enrolled_students.add(*other_invitees)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                creator=creator, invited_users=other_invitees)
+
+        self.assertIn('pending_invitation', cm.exception.message_dict)

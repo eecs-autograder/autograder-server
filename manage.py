@@ -6,7 +6,7 @@ if __name__ == "__main__":
     if sys.argv[1] == 'test':
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "autograder.settings.development")
     else:
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "autograder.settings")
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "autograder.settings.production")
 
     os.environ.setdefault("DJANGO_TEST_PROCESSES", '1')
 
