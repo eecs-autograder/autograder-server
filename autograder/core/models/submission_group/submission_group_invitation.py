@@ -18,8 +18,12 @@ class SubmissionGroupInvitationManager(ag_model_base.AutograderModelManager):
                 tuple(itertools.chain(invited_users, (invitation_creator,))),
                 kwargs['project'], 'invited_users')
 
-            if (invitation_creator.group_invitations_sent.count() or
-                    invitation_creator.group_invitations_received.count()):
+            project = kwargs['project']
+            has_pending_sent = invitation_creator.group_invitations_sent.filter(
+                project=project).count()
+            has_pending_received = invitation_creator.group_invitations_received.filter(
+                project=project).count()
+            if has_pending_sent or has_pending_received:
                 raise exceptions.ValidationError(
                     {'pending_invitation':
                         'You may not send any additional group invitations until '

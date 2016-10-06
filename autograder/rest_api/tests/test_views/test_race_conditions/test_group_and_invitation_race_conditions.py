@@ -215,16 +215,16 @@ class RaceConditionTestCase(test_data.Client,
 
     def test_two_different_final_invitation_acceptances_invitor_overlap(self):
         self.project.validate_and_update(max_group_size=2)
-        invitor = self.clone_user(self.admin)
         first_invitee = self.clone_user(self.admin)
-        second_invitee = self.clone_user(self.admin)
+        invitor_and_second_invitee = self.clone_user(self.admin)
+        second_invitor = self.clone_user(self.admin)
 
         first_invitation = (
             ag_models.SubmissionGroupInvitation.objects.validate_and_create(
-                invitor, [first_invitee], project=self.project))
+                invitor_and_second_invitee, [first_invitee], project=self.project))
         second_invitation = (
             ag_models.SubmissionGroupInvitation.objects.validate_and_create(
-                invitor, [second_invitee], project=self.project))
+                second_invitor, [invitor_and_second_invitee], project=self.project))
 
         path = ('autograder.rest_api.views'
                 '.group_invitation_views.test_ut.mocking_hook')
@@ -238,7 +238,7 @@ class RaceConditionTestCase(test_data.Client,
             self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
 
         subtest = first_final_accept()
-        self.client.force_authenticate(second_invitee)
+        self.client.force_authenticate(invitor_and_second_invitee)
         response = self.client.post(self.invitation_url(second_invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)

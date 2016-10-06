@@ -356,3 +356,29 @@ class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
                 project=self.project)
 
         self.assertIn('pending_invitation', cm.exception.message_dict)
+
+    def test_valid_invitations_across_projects(self):
+        project2 = ag_models.Project.objects.validate_and_create(
+            course=self.project.course, max_group_size=4,
+            name='project2')
+
+        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            invitation_creator=self.invitation_creator,
+            invited_users=self.to_invite,
+            project=self.project)
+
+        # Same creator (and invitees), different project
+        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            invitation_creator=self.invitation_creator,
+            invited_users=self.to_invite,
+            project=project2)
+
+        project3 = ag_models.Project.objects.validate_and_create(
+            course=self.project.course, max_group_size=4,
+            name='project3')
+
+        # Creator has pending invites received on different project
+        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            invitation_creator=self.to_invite[0],
+            invited_users=self.to_invite[1:],
+            project=project3)

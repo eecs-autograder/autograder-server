@@ -42,7 +42,8 @@ class ListGroupInvitationsTestCase(_InvitationsSetUp,
         first = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             self.admin, [self.staff], project=project)
         second = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
-            self.staff, [self.admin], project=project)
+            self.clone_user(self.staff), [self.clone_user(self.admin)],
+            project=project)
         return ag_serializers.SubmissionGroupInvitationSerializer(
             [first, second], many=True).data
 
@@ -148,7 +149,8 @@ class CreateInvitationTestCase(_InvitationsSetUp,
             self.project.submission_group_invitations, self.client,
             self.admin, self.get_invitations_url(self.project), args)
 
-        args['invited_usernames'] = [self.admin.username]
+        args['invited_usernames'] = [self.clone_user(self.admin).username]
         self.do_create_object_test(
             self.project.submission_group_invitations, self.client,
-            self.staff, self.get_invitations_url(self.project), args)
+            self.clone_user(self.staff), self.get_invitations_url(self.project),
+            args)
