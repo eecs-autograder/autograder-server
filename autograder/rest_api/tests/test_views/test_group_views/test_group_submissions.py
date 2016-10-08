@@ -178,7 +178,9 @@ class CreateSubmissionTestCase(test_data.Client,
         self.visible_public_project.validate_and_update(
             closing_time=timezone.now() + timezone.timedelta(seconds=-1))
         for group in self.non_staff_groups(self.visible_public_project):
-            self.do_permission_denied_submit_test(group, group.members.first())
+            response = self.do_bad_request_submit_test(
+                group, group.members.first())
+            self.assertIn('submission', response.data)
 
     def test_non_staff_submit_deadline_past_but_has_extension(self):
         closing_time = timezone.now() + timezone.timedelta(seconds=-1)
@@ -196,7 +198,8 @@ class CreateSubmissionTestCase(test_data.Client,
         for group in self.non_staff_groups(self.visible_public_project):
             extension = timezone.now() + timezone.timedelta(seconds=-1)
             group.validate_and_update(extended_due_date=extension)
-            self.do_permission_denied_submit_test(group, group.members.first())
+            response = self.do_bad_request_submit_test(group, group.members.first())
+            self.assertIn('submission', response.data)
 
     def test_non_staff_submit_submissions_disallowed(self):
         self.visible_public_project.validate_and_update(
@@ -206,13 +209,15 @@ class CreateSubmissionTestCase(test_data.Client,
             for closing_time in None, future_closing_time:
                 self.visible_public_project.validate_and_update(
                     closing_time=closing_time)
-            self.do_permission_denied_submit_test(group, group.members.first())
+            response = self.do_bad_request_submit_test(group, group.members.first())
+            self.assertIn('submission', response.data)
 
     def test_all_users_already_has_submission_being_processed(self):
         for group in self.all_groups(self.visible_public_project):
             ag_models.Submission.objects.validate_and_create(
                 [], submission_group=group)
-            self.do_permission_denied_submit_test(group, group.members.last())
+            response = self.do_bad_request_submit_test(group, group.members.last())
+            self.assertIn('submission', response.data)
 
     def test_can_resubmit_non_being_processed_status(self):
         for group in self.all_groups(self.visible_public_project):
@@ -257,7 +262,7 @@ class CreateSubmissionTestCase(test_data.Client,
             for sub in group.submissions.all():
                 self.assertTrue(sub.count_towards_daily_limit)
 
-    def test_submission_past_limit_forbidden(self):
+    def test_submission_past_limit_not_allowed_bad_request(self):
         limit = 2
         self.visible_public_project.validate_and_update(
             submission_limit_per_day=limit,
@@ -266,8 +271,9 @@ class CreateSubmissionTestCase(test_data.Client,
             for i in range(limit):
                 self.do_normal_submit_test(group, group.members.first())
             for i in range(3):
-                self.do_permission_denied_submit_test(
+                response = self.do_bad_request_submit_test(
                     group, group.members.first())
+                self.assertIn('submission', response.data)
             self.assertEqual(limit, group.submissions.count())
             for sub in group.submissions.all():
                 self.assertTrue(sub.count_towards_daily_limit)
@@ -318,4 +324,11 @@ class CreateSubmissionTestCase(test_data.Client,
         return self.do_permission_denied_create_test(
             ag_models.Submission.objects, self.client,
             user, self.submissions_url(group),
+            {'submitted_files': self.files_to_submit}, format='multipart')
+
+    def do_bad_request_submit_test(self, group, user):
+        self.add_expected_patterns(group.project)
+        return self.do_invalid_create_object_test(
+            group.submissions, self.client, user,
+            self.submissions_url(group),
             {'submitted_files': self.files_to_submit}, format='multipart')
