@@ -104,6 +104,17 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
+    def test_grade_submission_removed_from_queue(self):
+        self.compiled_test.validate_and_update(deferred=True)
+        self.submission.status = ag_models.Submission.GradingStatus.removed_from_queue
+        self.submission.save()
+        tasks.grade_submission(self.submission.pk)
+        tasks.check_for_finished_deferreds()
+
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.removed_from_queue,
+                         self.submission.status)
+
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
     def test_non_deferred_retry_on_error(self, impl_mock):
         impl_mock.side_effect = TasksTestCase._SideEffectSequence([

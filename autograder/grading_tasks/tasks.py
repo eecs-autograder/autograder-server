@@ -14,6 +14,9 @@ import autograder.core.models as ag_models
 def grade_submission(submission_id):
     try:
         submission = _mark_as_being_graded(submission_id)
+        if submission is None:
+            return
+
         _run_non_deferred_tests(submission)
 
         project = submission.submission_group.project
@@ -43,33 +46,37 @@ def _mark_as_being_graded(submission_id):
                 ag_models.Submission.GradingStatus.removed_from_queue):
             print('submission {} has been removed '
                   'from the queue'.format(submission.pk))
-            return
+            return None
+
         submission.status = ag_models.Submission.GradingStatus.being_graded
         submission.save()
         return submission
 
 
 def _run_non_deferred_tests(submission):
-        project = submission.submission_group.project
-        for ag_test in project.autograder_test_cases.filter(deferred=False):
-            print('running test: {}'.format(ag_test.pk))
-            num_retries = 0
-            while True:
-                try:
-                    grade_ag_test_impl(ag_test, submission)
-                    break
-                except Exception:
-                    if num_retries == settings.AG_TEST_MAX_RETRIES:
-                        print('max retries exceeded for '
-                              'non-deferred test {}'.format(ag_test.pk))
-                        raise
-                    num_retries += 1
-                    print('retrying: {}'.format(num_retries))
-                    time.sleep(
-                        random.randint(settings.AG_TEST_MIN_RETRY_DELAY,
-                                       settings.AG_TEST_MAX_RETRY_DELAY))
+    if submission.status == ag_models.Submission.GradingStatus.removed_from_queue:
+        return
 
-        mark_as_waiting_for_deferred(submission.pk)
+    project = submission.submission_group.project
+    for ag_test in project.autograder_test_cases.filter(deferred=False):
+        print('running test: {}'.format(ag_test.pk))
+        num_retries = 0
+        while True:
+            try:
+                grade_ag_test_impl(ag_test, submission)
+                break
+            except Exception:
+                if num_retries == settings.AG_TEST_MAX_RETRIES:
+                    print('max retries exceeded for '
+                          'non-deferred test {}'.format(ag_test.pk))
+                    raise
+                num_retries += 1
+                print('retrying: {}'.format(num_retries))
+                time.sleep(
+                    random.randint(settings.AG_TEST_MIN_RETRY_DELAY,
+                                   settings.AG_TEST_MAX_RETRY_DELAY))
+
+    mark_as_waiting_for_deferred(submission.pk)
 
 
 @celery.shared_task
