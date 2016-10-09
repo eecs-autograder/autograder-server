@@ -13,7 +13,7 @@ from autograder.core.tests.test_models.test_autograder_test_case.models \
     import _DummyAutograderTestCase
 
 
-class AutograderTestCaseResultTestCase(test_ut.UnitTestBase):
+class _SetUp:
     def setUp(self):
         super().setUp()
 
@@ -32,6 +32,56 @@ class AutograderTestCaseResultTestCase(test_ut.UnitTestBase):
             name=self.test_name,
             project=self.project)
 
+
+class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.result = ag_models.AutograderTestCaseResult.objects.create(
+            test_case=self.test_case,
+            submission=self.submission)
+
+    def test_get_normal_feedback(self):
+        fdbk = obj_build.random_fdbk()
+        self.test_case.feedback_configuration = fdbk
+
+        self.assertEqual(fdbk.to_dict(),
+                         self.result.get_normal_feedback().fdbk_conf.to_dict())
+
+    def test_get_ultimate_submission_feedback(self):
+        fdbk = obj_build.random_fdbk()
+        self.test_case.ultimate_submission_fdbk_conf = fdbk
+
+        self.assertEqual(
+            fdbk.to_dict(),
+            self.result.get_ultimate_submission_feedback().fdbk_conf.to_dict())
+
+    def test_get_staff_viewer_feedback(self):
+        fdbk = obj_build.random_fdbk()
+        self.test_case.staff_viewer_fdbk_conf = fdbk
+
+        self.assertEqual(
+            fdbk.to_dict(),
+            self.result.get_staff_viewer_feedback().fdbk_conf.to_dict())
+
+    def test_get_past_submission_limit_feedback(self):
+        fdbk = obj_build.random_fdbk()
+        self.test_case.past_submission_limit_fdbk_conf = fdbk
+
+        self.assertEqual(
+            fdbk.to_dict(),
+            self.result.get_past_submission_limit_feedback().fdbk_conf.to_dict())
+
+    def test_get_max_feedback(self):
+        fdbk = ag_models.FeedbackConfig.create_with_max_fdbk()
+        self.test_case.ultimate_submission_fdbk_conf = fdbk
+
+        self.assertEqual(
+            fdbk.to_dict(),
+            self.result.get_max_feedback().fdbk_conf.to_dict())
+
+
+class MiscAutograderTestCaseResultTestCase(_SetUp, test_ut.UnitTestBase):
     def test_default_init(self):
         result = ag_models.AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
@@ -50,7 +100,7 @@ class AutograderTestCaseResultTestCase(test_ut.UnitTestBase):
         self.assertEqual(result.compilation_standard_output, '')
         self.assertEqual(result.compilation_standard_error_output, '')
 
-    def test_get_feedback_default_to_dict_fields(self):
+    def test_feedback_calculator_default_to_dict_fields(self):
         expected = [
             'ag_test_name',
             'return_code_correct',
@@ -92,7 +142,8 @@ class AutograderTestCaseResultTestCase(test_ut.UnitTestBase):
             test_case=self.test_case,
             submission=self.submission)
 
-        fdbk = result.get_feedback()
+        fdbk = ag_models.AutograderTestCaseResult.FeedbackCalculator(
+            result, self.test_case.feedback_configuration)
         self.assertIn('pk', fdbk.to_dict())
 
     # def test_very_large_output(self):

@@ -78,7 +78,7 @@ class AutograderTestCaseResult(models.Model):
         if score is not None:
             return score
 
-        fdbk = self.get_feedback()
+        fdbk = self.get_normal_feedback()
         try:
             valgrind_val = -fdbk.valgrind_points_deducted
         except Exception:
@@ -96,8 +96,60 @@ class AutograderTestCaseResult(models.Model):
     def basic_score_cache_key(self):
         return 'result_basic_score{}'.format(self.pk)
 
+    def get_normal_feedback(self):
+        '''
+        Returns a FeedbackCalculator object for this result initialized
+        with self.test_case.feedback_configuration as its feedback
+        config.
+        '''
+        return AutograderTestCaseResult.FeedbackCalculator(
+            self, self.test_case.feedback_configuration)
+
+    def get_ultimate_submission_feedback(self):
+        '''
+        Returns a FeedbackCalculator object for this result initialized
+        with self.test_case.ultimate_submission_fdbk_conf as its
+        feedback config.
+        '''
+        return AutograderTestCaseResult.FeedbackCalculator(
+            self, self.test_case.ultimate_submission_fdbk_conf)
+
+    def get_staff_viewer_feedback(self):
+        '''
+        Returns a FeedbackCalculator object for this result initialized
+        with self.test_case.staff_viewer_fdbk_conf as its feedback
+        config.
+        '''
+        return AutograderTestCaseResult.FeedbackCalculator(
+            self, self.test_case.staff_viewer_fdbk_conf)
+
+    def get_past_submission_limit_feedback(self):
+        '''
+        Returns a FeedbackCalculator object for this result initialized
+        with self.test_case.past_submission_limit_fdbk_conf as its
+        feedback config.
+        '''
+        return AutograderTestCaseResult.FeedbackCalculator(
+            self, self.test_case.past_submission_limit_fdbk_conf)
+
+    def get_max_feedback(self):
+        '''
+        Returns a FeedbackCalculator object for this result initialized
+        with FeedbackConfig.create_with_max_fdbk() as its feedback
+        config.
+        '''
+        return AutograderTestCaseResult.FeedbackCalculator(
+            self, fdbk_conf.FeedbackConfig.create_with_max_fdbk())
+
+    # TODO
+    # def get_staff_viewer_ultimate_submission_feedback(self):
+    #     pass
+
     def get_feedback(self, user_requesting_data=None, student_view=False):
         '''
+        Deprecated alias for get_normal_feedback().
+
+        Deprecated:
         Returns a FeedbackCalculator object attached to this result and
         with the given user specified to determine which feedback
         configuration to use.
@@ -120,42 +172,18 @@ class AutograderTestCaseResult(models.Model):
             self, user_requesting_data, student_view)
 
     class FeedbackCalculator(ToDictMixin):
-        def __init__(self, result, user_requesting_data, student_view):
+        '''
+        Instances of this class dynamically calculate the appropriate
+        feedback data to give for an AG test result.
+        '''
+
+        def __init__(self, result, fdbk_conf):
             '''
-            Initializes this object with the given result and user. The
-            appropriate feedback configuration to use is determined
-            based on the status of the user as well as the state of the
-            attached test case and project.
+            Initializes the object with the given result and optionally
+            a FeedbackConfig object ot use.
             '''
-            self._fdbk = self._determine_fdbk_conf(
-                result, user_requesting_data, student_view)
+            self._fdbk = fdbk_conf
             self._result = result
-
-        def _determine_fdbk_conf(self, result, user, student_view):
-            if user is None:
-                return result.test_case.feedback_configuration
-
-            test_case = result.test_case
-            project = test_case.project
-            course = project.course
-            group = result.submission.submission_group
-            if not student_view and course.is_course_staff(user):
-                if group.members.filter(pk=user.pk).exists():
-                    return fdbk_conf.FeedbackConfig.create_with_max_fdbk()
-
-                return test_case.staff_viewer_fdbk_conf
-
-            deadline_past = (project.closing_time is None or
-                             timezone.now() > project.closing_time)
-            if (result.submission == group.ultimate_submission and
-                    not project.hide_ultimate_submission_fdbk and
-                    deadline_past):
-                return test_case.ultimate_submission_fdbk_conf
-
-            if result.submission.is_past_daily_limit:
-                return test_case.past_submission_limit_fdbk_conf
-
-            return result.test_case.feedback_configuration
 
         _DEFAULT_TO_DICT_FIELDS = frozenset([
             'ag_test_name',
@@ -192,6 +220,14 @@ class AutograderTestCaseResult(models.Model):
         @classmethod
         def get_default_to_dict_fields(class_):
             return class_._DEFAULT_TO_DICT_FIELDS
+
+        @property
+        def fdbk_conf(self):
+            '''
+            Returns the FeedbackConfig object that this object was
+            initialized with.
+            '''
+            return self._fdbk
 
         @property
         def pk(self):

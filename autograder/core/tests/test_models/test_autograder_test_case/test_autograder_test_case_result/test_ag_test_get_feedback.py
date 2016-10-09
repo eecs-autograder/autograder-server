@@ -76,7 +76,7 @@ class GetFeedbackNormalSubmissionTestCase(gen_data.Project,
 
             result.test_case.delete()
 
-    def test_staf_get_other_with_student_view(self):
+    def test_staff_get_other_with_student_view(self):
         for group in self.all_groups(self.visible_public_project):
             for user in self.admin, self.staff:
                 if group.members.filter(pk=user.pk).exists():
