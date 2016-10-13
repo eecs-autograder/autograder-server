@@ -3,7 +3,6 @@ import uuid
 
 from django.core.cache import cache
 from django.db import models
-from django.utils import timezone
 
 from autograder.core.models.ag_model_base import ToDictMixin
 
@@ -141,35 +140,31 @@ class AutograderTestCaseResult(models.Model):
         return AutograderTestCaseResult.FeedbackCalculator(
             self, fdbk_conf.FeedbackConfig.create_with_max_fdbk())
 
-    # TODO
-    # def get_staff_viewer_ultimate_submission_feedback(self):
-    #     pass
+    # def get_feedback(self, user_requesting_data=None, student_view=False):
+    #     '''
+    #     Deprecated alias for get_normal_feedback().
 
-    def get_feedback(self, user_requesting_data=None, student_view=False):
-        '''
-        Deprecated alias for get_normal_feedback().
+    #     Deprecated:
+    #     Returns a FeedbackCalculator object attached to this result and
+    #     with the given user specified to determine which feedback
+    #     configuration to use.
+    #     If user requesting data is None, the normal feedback
+    #     configuration will be used.
+    #     If student_view is True, then whether the given user is course
+    #     staff will not be considered.
 
-        Deprecated:
-        Returns a FeedbackCalculator object attached to this result and
-        with the given user specified to determine which feedback
-        configuration to use.
-        If user requesting data is None, the normal feedback
-        configuration will be used.
-        If student_view is True, then whether the given user is course
-        staff will not be considered.
+    #     In order for ultimate submission feedback to be given:
+    #         - The closing time for the project must be None or have
+    #           passed
+    #         - The criteria described by the option selected here must
+    #             be met for a given submission (the submission being
+    #             viewed must actually be an ultimate submission).
 
-        In order for ultimate submission feedback to be given:
-            - The closing time for the project must be None or have
-              passed
-            - The criteria described by the option selected here must
-                be met for a given submission (the submission being
-                viewed must actually be an ultimate submission).
-
-        Prefer using this method over directly instantiating
-        FeedbackCalculator instances.
-        '''
-        return AutograderTestCaseResult.FeedbackCalculator(
-            self, user_requesting_data, student_view)
+    #     Prefer using this method over directly instantiating
+    #     FeedbackCalculator instances.
+    #     '''
+    #     return AutograderTestCaseResult.FeedbackCalculator(
+    #         self, user_requesting_data, student_view)
 
     class FeedbackCalculator(ToDictMixin):
         '''

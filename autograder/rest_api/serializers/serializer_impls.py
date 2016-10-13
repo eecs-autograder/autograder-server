@@ -120,6 +120,15 @@ class AGTestCaseSerializer(AGModelSerializer):
 
 
 class AGTestResultSerializer(AGModelSerializer):
+    def __init__(self, *args, feedback_type=None, **kwargs):
+        if feedback_type is None:
+            raise ValueError(
+                'Missing feedback_type in AGTestResulSerializer initialization')
+
+        self._fdbk_type = feedback_type
+
+        return super().__init__(*args, **kwargs)
+
     def save(self, *args, **kwargs):
         raise NotImplementedError(
             'Creating or updating AG test results is not supported')
@@ -131,15 +140,22 @@ class AGTestResultSerializer(AGModelSerializer):
         raise NotImplementedError('Creating AG test results is not supported')
 
     def to_representation(self, obj):
-        if not self.context:
-            obj = obj.get_feedback()
-            return super().to_representation(obj)
+        if self._fdbk_type == 'normal':
+            return obj.get_normal_feedback().to_dict()
 
-        request = self.context['request']
-        student_view = request.query_params.get('student_view', False)
-        obj = obj.get_feedback(user_requesting_data=request.user,
-                               student_view=student_view)
-        return super().to_representation(obj)
+        if self._fdbk_type == 'ultimate_submission':
+            return obj.get_ultimate_submission_feedback().to_dict()
+
+        if self._fdbk_type == 'staff_viewer':
+            return obj.get_staff_viewer_feedback().to_dict()
+
+        if self._fdbk_type == 'past_submission_limit':
+            return obj.get_past_submission_limit_feedback().to_dict()
+
+        if self._fdbk_type == 'max':
+            return obj.get_max_feedback().to_dict()
+
+        raise ValueError('Invalid feedback type: {}'.format(self._fdbk_type))
 
 
 class SubmissionGroupSerializer(AGModelSerializer):

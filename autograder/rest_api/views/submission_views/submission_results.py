@@ -29,6 +29,10 @@ class SubmissionResultsViewset(
 
         user = self.request.user
 
+        fdbk_type = self.request.query_params.get('feedback_type')
+        if fdbk_type == 'normal':
+            queryset = submission.results.filter(test_case__visible_to_students=True)
+
         student_view = self.request.query_params.get('student_view', False)
         is_group_member = group.members.filter(pk=user.pk).exists()
         if (course.is_course_staff(user) and
