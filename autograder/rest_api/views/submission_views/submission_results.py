@@ -1,53 +1,79 @@
 from django.utils import timezone
 
-from rest_framework import viewsets, mixins, permissions
+from rest_framework import viewsets, mixins, permissions, exceptions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from ..permission_components import user_can_view_group
+from ..permission_components import user_can_view_group, user_can_request_feedback_type
 from ..load_object_mixin import build_load_object_mixin
 
 
 class _Permissions(permissions.BasePermission):
     def has_object_permission(self, request, view, submission):
-        return user_can_view_group(request.user, submission.submission_group)
+        return (user_can_view_group(request.user, submission.submission_group) and
+                user_can_request_feedback_type(
+                    request.user, request.query_params.get('feedback_type'), submission))
 
 
 class SubmissionResultsViewset(
         build_load_object_mixin(ag_models.Submission, pk_key='submission_pk'),
         mixins.ListModelMixin,
         viewsets.GenericViewSet):
-    serializer_class = ag_serializers.AGTestResultSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)
+
+    def get_serializer(self, *args, **kwargs):
+        if 'feedback_type' not in self.request.query_params:
+            raise exceptions.ValidationError(
+                {'feedback_type': 'Missing required query param: feedback_type'})
+
+        fdbk_type = self.request.query_params.get('feedback_type')
+
+        kwargs['context'] = self.get_serializer_context()
+        return ag_serializers.AGTestResultSerializer(
+            *args, feedback_type=fdbk_type, **kwargs)
 
     def get_queryset(self):
         submission = self.get_object()
-        group = submission.submission_group
-        project = group.project
-        course = project.course
+        # group = submission.submission_group
+        # project = group.project
+        # course = project.course
 
-        user = self.request.user
+        # user = self.request.user
 
         fdbk_type = self.request.query_params.get('feedback_type')
         if fdbk_type == 'normal':
-            queryset = submission.results.filter(test_case__visible_to_students=True)
+            return submission.results.filter(test_case__visible_to_students=True)
 
-        student_view = self.request.query_params.get('student_view', False)
-        is_group_member = group.members.filter(pk=user.pk).exists()
-        if (course.is_course_staff(user) and
-                not (student_view and is_group_member)):
-            return submission.results.all()
-
-        deadline_past = (project.closing_time is None or
-                         timezone.now() > project.closing_time)
-        if (deadline_past and not project.hide_ultimate_submission_fdbk and
-                submission == group.ultimate_submission):
-            return submission.results.filter(
-                test_case__visible_in_ultimate_submission=True)
-
-        if submission.is_past_daily_limit:
+        if fdbk_type == 'past_submission_limit':
             return submission.results.filter(
                 test_case__visible_in_past_limit_submission=True)
 
-        return submission.results.filter(test_case__visible_to_students=True)
+        if fdbk_type == 'ultimate_submission':
+            return submission.results.filter(
+                test_case__visible_in_ultimate_submission=True)
+
+        if fdbk_type == 'staff_viewer' or fdbk_type == 'max':
+            return submission.results.all()
+
+        raise exceptions.ValidationError(
+            {'feedback_type': 'Invalid feedback_type: {}'.format(fdbk_type)})
+
+        # student_view = self.request.query_params.get('student_view', False)
+        # is_group_member = group.members.filter(pk=user.pk).exists()
+        # if (course.is_course_staff(user) and
+        #         not (student_view and is_group_member)):
+        #     return submission.results.all()
+
+        # deadline_past = (project.closing_time is None or
+        #                  timezone.now() > project.closing_time)
+        # if (deadline_past and not project.hide_ultimate_submission_fdbk and
+        #         submission == group.ultimate_submission):
+        #     return submission.results.filter(
+        #         test_case__visible_in_ultimate_submission=True)
+
+        # if submission.is_past_daily_limit:
+        #     return submission.results.filter(
+        #         test_case__visible_in_past_limit_submission=True)
+
+        # return submission.results.filter(test_case__visible_to_students=True)

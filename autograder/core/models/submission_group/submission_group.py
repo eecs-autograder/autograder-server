@@ -78,8 +78,8 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         null=True, default=None, blank=True,
         help_text="""When this field is set, it indicates that members
             of this submission group can submit until this specified
-            date, overriding the project closing time. Default value:
-            None""")
+            date, overriding the project closing time.
+            Default value: None""")
 
     @property
     def member_names(self):
