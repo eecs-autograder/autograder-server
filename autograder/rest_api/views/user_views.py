@@ -68,3 +68,10 @@ class UserViewset(build_load_object_mixin(User),
         return response.Response(
             ag_serializers.SubmissionGroupInvitationSerializer(
                 user.group_invitations_sent.all(), many=True).data)
+
+    @decorators.detail_route()
+    def notifications(self, request, *args, **kwargs):
+        user = self.get_object()
+        return response.Response(
+            ag_serializers.NotificationSerializer(
+                user.notifications.all(), many=True).data)
