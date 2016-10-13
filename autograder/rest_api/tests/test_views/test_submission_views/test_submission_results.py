@@ -8,11 +8,10 @@ import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-def results_url(submission, student_view=None):
+def results_url(submission, feedback_type):
     url = reverse('submission-results-list',
                   kwargs={'submission_pk': submission.pk})
-    if student_view is not None:
-        url += '?' + urlencode({'student_view': student_view})
+    url += '?' + urlencode({'feedback_type': feedback_type})
     return url
 
 
@@ -21,7 +20,64 @@ class ListResultsTestCase(test_data.Client,
                           test_data.Submission,
                           test_impls.GetObjectTest,
                           UnitTestBase):
-    def test_staff_list_own_results_with_and_without_student_view(self):
+    def test_staff_list_own_normal_fdbk(self):
+        for project in self.all_projects:
+            group = self.staff_group(project)
+            submission = self.non_ultimate_submission(group)
+            results = [self.visible_to_students_result(submission),
+                       self.hidden_from_students_result(submission)]
+            self.do_list_results_test(submission, results, results[:1],
+                                      'get_normal_feedback', 'normal')
+
+    def test_staff_list_own_past_limit_fdbk(self):
+        for project in self.all_projects:
+            group = self.staff_group(project)
+            submission = self.past_limit_submission(group)
+            results = [self.visible_to_students_result(submission),
+                       self.visible_in_past_limit_result(submission),
+                       self.hidden_from_students_result(submission),
+                       self.hidden_in_past_limit_result(submission)]
+            self.do_list_results_test(submission, results, results[2:],
+                                      'get_past_submission_limit_feedback',
+                                      'past_limit_submission')
+
+    def test_staff_list_own_best_ultimate_fdbk(self):
+        for project in self.all_projects:
+            group = self.staff_group(project)
+            submission = self.best_ultimate_submission(group)
+            results = [self.visible_to_students_result(submission),
+                       self.hidden_from_students_result(submission)]
+            self.do_list_results_test(submission, results, results,
+                                      'get_ultimate_submission_feedback',
+                                      'ultimate_submission')
+
+    def test_staff_list_own_most_recent_ultimate_fdbk(self):
+        for project in self.all_projects:
+            group = self.staff_group(project)
+            submission = self.most_recent_ultimate_submission(group)
+            results = [self.visible_to_students_result(submission),
+                       self.hidden_from_students_result(submission)]
+            self.do_list_results_test(submission, results, results,
+                                      'get_ultimate_submission_feedback',
+                                      'ultimate_submission')
+
+    def test_staff_list_own_staff_viewer_fdbk(self):
+        for project in self.all_projects:
+            group = self.staff_group(project)
+            for submission in (self.most_recent_ultimate_submission(group),
+                               self.best_ultimate_submission(group)):
+                submission = self.ultimate_submission(group)
+                results = [self.visible_to_students_result(submission),
+                           self.hidden_from_students_result(submission)]
+                self.do_list_results_test(submission, results, results,
+                                          'get_ultimate_submission_feedback',
+                                          'ultimate_submission')
+        self.fail()
+
+    def test_staff_list_own_max_fdbk(self):
+        self.fail()
+
+    def test_staff_list_own_results_all_fdbk_types(self):
         for project in self.all_projects:
             project_settings = project.to_dict(exclude_fields=['course'])
             project_settings.pop('pk')
@@ -29,14 +85,20 @@ class ListResultsTestCase(test_data.Client,
                 submission = self.non_ultimate_submission(group)
                 results = [self.visible_to_students_result(submission),
                            self.hidden_from_students_result(submission)]
-                self.do_list_results_test(submission, results, results)
+                self.do_list_results_test(submission, results, results,
+                                          'get_normal_feedback', 'normal')
                 self.do_list_results_test(submission, results[:1], results,
-                                          student_view=True)
+                                          'get_staff_viewer_feedback', 'staff_viewer')
+                self.do_list_results_test(submission, results, results,
+                                          'get_max_feedback', 'max')
 
                 submission = self.past_limit_submission(group)
                 results = [self.visible_in_past_limit_result(submission),
                            self.hidden_in_past_limit_result(submission)]
-                self.do_list_results_test(submission, results, results)
+                self.do_list_results_test(
+                    submission, results, results,
+                    'get_past_submission_limit_feedback',
+                    'past_limit_submission')
                 self.do_list_results_test(submission, results[:1], results,
                                           student_view=True)
 
@@ -50,45 +112,7 @@ class ListResultsTestCase(test_data.Client,
 
                 project.validate_and_update(**project_settings)
 
-    def test_enrolled_list_own_results(self):
-        for project in self.visible_projects:
-            group = self.enrolled_group(project)
-            submission = self.non_ultimate_submission(group)
-            results = [self.visible_to_students_result(submission),
-                       self.hidden_from_students_result(submission)]
-            self.do_list_results_test(submission, results[:1], results)
-
-            submission = self.past_limit_submission(group)
-            results = [self.visible_in_past_limit_result(submission),
-                       self.hidden_in_past_limit_result(submission)]
-            self.do_list_results_test(submission, results[:1], results)
-
-            submission = self.most_recent_ultimate_submission(group)
-            submission.results.all().delete()
-            results = [self.visible_in_ultimate_result(submission),
-                       self.hidden_in_ultimate_result(submission)]
-            self.do_list_results_test(submission, results[:1], results)
-
-    def test_non_enrolled_list_own_results(self):
-        group = self.non_enrolled_group(self.visible_public_project)
-        submission = self.non_ultimate_submission(group)
-        results = [self.visible_to_students_result(submission),
-                   self.hidden_from_students_result(submission)]
-        self.do_list_results_test(submission, results[:1], results)
-
-        submission = self.past_limit_submission(group)
-        results = [self.visible_in_past_limit_result(submission),
-                   self.hidden_in_past_limit_result(submission)]
-        self.do_list_results_test(submission, results[:1], results)
-
-        group = self.non_enrolled_group(self.visible_public_project)
-        submission = self.most_recent_ultimate_submission(group)
-        submission.results.all().delete()
-        results = [self.visible_in_ultimate_result(submission),
-                   self.hidden_in_ultimate_result(submission)]
-        self.do_list_results_test(submission, results[:1], results)
-
-    def test_staff_list_other_all_shown(self):
+    def test_staff_list_other_all_results_shown_with_staff_viewer_fdbk(self):
         for group in self.all_groups(self.visible_public_project):
             submission = self.non_ultimate_submission(group)
             results = [
@@ -111,7 +135,79 @@ class ListResultsTestCase(test_data.Client,
                 self.do_list_results_test(
                     submission, results, results, user=user, student_view=True)
 
-    def test_non_member_list_other_permission_denied(self):
+    def test_staff_list_other_staff_viewer_not_requested_permission_denied(self):
+        self.fail()
+
+    # def test_staff_list_other_staff_viewer_ultimate_requested_all_results_shown(self):
+    #     self.fail()
+
+    # def test_staff_list_other_staff_viewer_ultimate_requested_deadline_not_past_forbidden(self):
+    #     self.fail()
+
+    # def test_staff_list_other_staff_viewer_ultimate_requested_subm_not_ultimate_forbidden(self):
+    #     self.fail()
+
+    def test_enrolled_list_own_results_normal_fdbk(self):
+        for project in self.visible_projects:
+            group = self.enrolled_group(project)
+            submission = self.non_ultimate_submission(group)
+            results = [self.visible_to_students_result(submission),
+                       self.hidden_from_students_result(submission)]
+            self.do_list_results_test(submission, results[:1], results)
+
+    def test_enrolled_list_own_results_normal_fdbk_submission_past_limit_permission_denied(self):
+        # submission = self.past_limit_submission(group)
+        # results = [self.visible_in_past_limit_result(submission),
+        #            self.hidden_in_past_limit_result(submission)]
+        # self.do_list_results_test(submission, results[:1], results)
+        self.fail()
+
+    def test_enrolled_list_own_results_ultimate_fdbk_ultimate_submission_past_deadline(self):
+        # submission = self.most_recent_ultimate_submission(group)
+        # submission.results.all().delete()
+        # results = [self.visible_in_ultimate_result(submission),
+        #            self.hidden_in_ultimate_result(submission)]
+        # self.do_list_results_test(submission, results[:1], results)
+        self.fail()
+
+    def test_enrolled_list_own_results_ultimate_fdbk_deadline_not_past_permission_denied(self):
+        self.fail()
+
+    def test_enrolled_list_own_results_ultimate_fdbk_not_ultimate_subm_permission_denied(self):
+        self.fail()
+
+    def test_enrolled_list_own_results_past_limit_fdbk_subm_past_limit(self):
+        self.fail()
+
+    def test_enrolled_list_own_results_past_limit_fdbk_subm_not_past_limit_permission_denied(self):
+        self.fail()
+
+    def test_enrolled_list_own_ultimate_requested_submission_past_limit_and_ultimate(self):
+        self.fail()
+
+    def test_non_enrolled_list_own_results(self):
+        group = self.non_enrolled_group(self.visible_public_project)
+        submission = self.non_ultimate_submission(group)
+        results = [self.visible_to_students_result(submission),
+                   self.hidden_from_students_result(submission)]
+        self.do_list_results_test(submission, results[:1], results)
+
+        submission = self.past_limit_submission(group)
+        results = [self.visible_in_past_limit_result(submission),
+                   self.hidden_in_past_limit_result(submission)]
+        self.do_list_results_test(submission, results[:1], results)
+
+        group = self.non_enrolled_group(self.visible_public_project)
+        submission = self.most_recent_ultimate_submission(group)
+        submission.results.all().delete()
+        results = [self.visible_in_ultimate_result(submission),
+                   self.hidden_in_ultimate_result(submission)]
+        self.do_list_results_test(submission, results[:1], results)
+
+    def test_non_staff_max_fdbk_requested_permission_denied(self):
+        self.fail()
+
+    def test_non_staff_non_member_member_list_other_permission_denied(self):
         group = self.enrolled_group(self.visible_public_project)
         submission = self.non_ultimate_submission(group)
         self.visible_to_students_result(submission)
@@ -143,53 +239,62 @@ class ListResultsTestCase(test_data.Client,
             self.client, group.members.first(), results_url(submission))
 
     def do_list_results_test(self, submission, expected_result_objs,
-                             all_result_objs, user=None, student_view=None):
+                             all_result_objs, fdbk_python_method_name,
+                             request_fdbk_type_str,
+                             user=None):
         self.assertCountEqual(all_result_objs, submission.results.all())
 
         if user is None:
             user = submission.submission_group.members.first()
 
         expected_data = [
-            result.get_feedback(user, student_view=student_view).to_dict()
+            getattr(result, fdbk_python_method_name)().to_dict()
             for result in expected_result_objs
         ]
 
         self.do_list_objects_test(
             self.client, user,
-            results_url(submission, student_view=student_view), expected_data)
+            results_url(submission, feedback_type=request_fdbk_type_str),
+            expected_data)
 
     def visible_to_students_result(self, submission):
         return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_to_students': True,
+                'feedback_configuration': obj_build.random_fdbk()
             })
 
     def hidden_from_students_result(self, submission):
         return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_to_students': False,
+                'feedback_configuration': obj_build.random_fdbk()
             })
 
     def visible_in_ultimate_result(self, submission):
         return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_in_ultimate_submission': True,
+                'ultimate_submission_fdbk_conf': obj_build.random_fdbk()
             })
 
     def hidden_in_ultimate_result(self, submission):
         return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_in_ultimate_submission': False,
+                'ultimate_submission_fdbk_conf': obj_build.random_fdbk()
             })
 
     def visible_in_past_limit_result(self, submission):
         return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_in_past_limit_submission': True,
+                'past_submission_limit_fdbk_conf': obj_build.random_fdbk()
             })
 
     def hidden_in_past_limit_result(self, submission):
         return obj_build.build_compiled_ag_test_result(
             submission=submission, ag_test_kwargs={
                 'visible_in_past_limit_submission': False,
+                'past_submission_limit_fdbk_conf': obj_build.random_fdbk()
             })

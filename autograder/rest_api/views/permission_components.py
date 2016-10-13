@@ -31,3 +31,29 @@ def user_can_view_group(user, group):
         return True
 
     return group.members.filter(pk=user.pk).exists()
+
+
+def user_can_request_feedback_type(user, feedback_type, submission):
+    '''
+    Returns True if the given user is allowed to request the specified
+    type of feedback for the given submission.
+
+    Notes for staff members:
+        - Staff members can always request any feedback option for their
+          own submission.
+        - Staff members can only request 'staff_viewer' feedback for
+          non-ultimate submissions belonging to other groups. Staff
+          members can request max feedback for other groups' ultimate
+          submissions.
+
+    Note that staff members for the course that the submission belongs
+    to are allowed to request any
+
+    Valid options for feedback type are:
+        - 'normal'
+        - 'ultimate_submission'
+        - 'staff_viewer'
+        - 'past_limit_submission'
+        - 'max'
+    '''
+    pass

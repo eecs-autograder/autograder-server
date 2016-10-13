@@ -512,7 +512,6 @@ class AutograderTestCaseResult(models.Model):
         def _no_pts_fdbk(self):
             return self._fdbk.points_fdbk == fdbk_conf.PointsFdbkLevel.hide
 
-# -----------------------------------------------------------------------------
 
 _DIFFER = difflib.Differ()
 
