@@ -486,7 +486,8 @@ class StudentListOwnResultsTestCase(_Shared,
         for project in self.hidden_projects:
             group = self.enrolled_group(project)
             submission = self.build_submission(group)
-            self.do_permission_denied_list_results_test(submission, group.members.first(), 'normal')
+            self.do_permission_denied_list_results_test(
+                submission, group.members.first(), 'normal')
 
     def test_non_enrolled_student_project_not_public_permission_denied(self):
         project = self.visible_public_project
