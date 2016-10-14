@@ -236,15 +236,28 @@ class TotalScoreTestCase(test_ut.UnitTestBase):
     def test_feedback_total_points_and_points_possible(self):
         result = obj_build.build_compiled_ag_test_result()
 
+        # Both zero
         self.assertEqual(0, result.get_normal_feedback().total_points)
         self.assertEqual(0, result.get_normal_feedback().total_points_possible)
 
         self.assertEqual(obj_build.build_compiled_ag_test.points_with_all_used,
                          result.get_max_feedback().total_points)
 
+        # Both full points
         expected_possible_points = (
             obj_build.build_compiled_ag_test.points_with_all_used +
             result.get_max_feedback().valgrind_points_deducted)
 
         self.assertEqual(expected_possible_points,
                          result.get_max_feedback().total_points_possible)
+
+        # Points awarded less than points possible
+        result.compilation_return_code = 42
+        expected_total_points = (
+            obj_build.build_compiled_ag_test.points_with_all_used -
+            result.test_case.points_for_compilation_success)
+
+        self.assertEqual(expected_possible_points,
+                         result.get_max_feedback().total_points_possible)
+        self.assertEqual(expected_total_points,
+                         result.get_max_feedback().total_points)
