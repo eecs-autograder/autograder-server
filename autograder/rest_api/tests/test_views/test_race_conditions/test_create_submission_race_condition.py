@@ -34,5 +34,5 @@ class RaceConditionTestCase(test_data.Client,
                                     {'submitted_files': []},
                                     format='multipart')
         subtest.join()
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(1, ag_models.Submission.objects.count())

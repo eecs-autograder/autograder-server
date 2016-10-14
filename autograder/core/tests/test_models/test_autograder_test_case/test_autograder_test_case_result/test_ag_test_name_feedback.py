@@ -31,7 +31,7 @@ class AgTestNameFdbkTestCase(UnitTestBase):
 
         generated_names = []
         for i in range(1000):
-            name = self.result.get_feedback().ag_test_name
+            name = self.result.get_normal_feedback().ag_test_name
             self.assertNotEqual(name, self.ag_test_name)
             self.assertTrue(name.startswith('test'))
             generated_names.append(name)
@@ -48,8 +48,8 @@ class AgTestNameFdbkTestCase(UnitTestBase):
         expected_name = 'test{}'.format(self.ag_test.pk)
         for i in range(100):
             self.assertEqual(expected_name,
-                             self.result.get_feedback().ag_test_name)
+                             self.result.get_normal_feedback().ag_test_name)
 
     def test_show_real_name(self):
         self.assertEqual(self.ag_test_name,
-                         self.result.get_feedback().ag_test_name)
+                         self.result.get_normal_feedback().ag_test_name)

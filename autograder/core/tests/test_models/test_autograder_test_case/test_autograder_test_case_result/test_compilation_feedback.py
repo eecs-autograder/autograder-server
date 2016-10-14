@@ -43,34 +43,34 @@ class CompilationFdbkTestCase(UnitTestBase):
         self.compilation_ag_test.feedback_configuration.validate_and_update(
             points_fdbk=fdbk_lvls.PointsFdbkLevel.show_breakdown)
 
-        self.assertIsNone(self.correct_result.get_feedback().compilation_stdout)
-        self.assertIsNone(self.correct_result.get_feedback().compilation_stderr)
-        self.assertIsNone(self.correct_result.get_feedback().compilation_succeeded)
+        self.assertIsNone(self.correct_result.get_normal_feedback().compilation_stdout)
+        self.assertIsNone(self.correct_result.get_normal_feedback().compilation_stderr)
+        self.assertIsNone(self.correct_result.get_normal_feedback().compilation_succeeded)
 
-        self.assertIsNone(self.incorrect_result.get_feedback().compilation_stdout)
-        self.assertIsNone(self.incorrect_result.get_feedback().compilation_stderr)
-        self.assertIsNone(self.incorrect_result.get_feedback().compilation_succeeded)
+        self.assertIsNone(self.incorrect_result.get_normal_feedback().compilation_stdout)
+        self.assertIsNone(self.incorrect_result.get_normal_feedback().compilation_stderr)
+        self.assertIsNone(self.incorrect_result.get_normal_feedback().compilation_succeeded)
 
-        self.assertIsNone(self.correct_result.get_feedback().compilation_points)
+        self.assertIsNone(self.correct_result.get_normal_feedback().compilation_points)
         self.assertIsNone(
-            self.correct_result.get_feedback().compilation_points_possible)
+            self.correct_result.get_normal_feedback().compilation_points_possible)
 
-        self.assertIsNone(self.incorrect_result.get_feedback().compilation_points)
+        self.assertIsNone(self.incorrect_result.get_normal_feedback().compilation_points)
         self.assertIsNone(
-            self.incorrect_result.get_feedback().compilation_points_possible)
+            self.incorrect_result.get_normal_feedback().compilation_points_possible)
 
     def test_success_or_failure_only(self):
         self.compilation_ag_test.feedback_configuration.validate_and_update(
             compilation_fdbk=(
                 fdbk_lvls.CompilationFdbkLevel.success_or_failure_only))
 
-        self.assertIsNone(self.correct_result.get_feedback().compilation_stdout)
-        self.assertIsNone(self.correct_result.get_feedback().compilation_stderr)
-        self.assertTrue(self.correct_result.get_feedback().compilation_succeeded)
+        self.assertIsNone(self.correct_result.get_normal_feedback().compilation_stdout)
+        self.assertIsNone(self.correct_result.get_normal_feedback().compilation_stderr)
+        self.assertTrue(self.correct_result.get_normal_feedback().compilation_succeeded)
 
-        self.assertIsNone(self.incorrect_result.get_feedback().compilation_stdout)
-        self.assertIsNone(self.incorrect_result.get_feedback().compilation_stderr)
-        self.assertFalse(self.incorrect_result.get_feedback().compilation_succeeded)
+        self.assertIsNone(self.incorrect_result.get_normal_feedback().compilation_stdout)
+        self.assertIsNone(self.incorrect_result.get_normal_feedback().compilation_stderr)
+        self.assertFalse(self.incorrect_result.get_normal_feedback().compilation_succeeded)
 
         self._check_points_fdbk_shown_and_hidden()
 
@@ -80,16 +80,16 @@ class CompilationFdbkTestCase(UnitTestBase):
                 fdbk_lvls.CompilationFdbkLevel.show_compiler_output))
 
         self.assertEqual(self.compiler_stdout,
-                         self.correct_result.get_feedback().compilation_stdout)
+                         self.correct_result.get_normal_feedback().compilation_stdout)
         self.assertEqual(self.compiler_stderr,
-                         self.correct_result.get_feedback().compilation_stderr)
-        self.assertTrue(self.correct_result.get_feedback().compilation_succeeded)
+                         self.correct_result.get_normal_feedback().compilation_stderr)
+        self.assertTrue(self.correct_result.get_normal_feedback().compilation_succeeded)
 
         self.assertEqual(self.compiler_stdout,
-                         self.incorrect_result.get_feedback().compilation_stdout)
+                         self.incorrect_result.get_normal_feedback().compilation_stdout)
         self.assertEqual(self.compiler_stderr,
-                         self.incorrect_result.get_feedback().compilation_stderr)
-        self.assertFalse(self.incorrect_result.get_feedback().compilation_succeeded)
+                         self.incorrect_result.get_normal_feedback().compilation_stderr)
+        self.assertFalse(self.incorrect_result.get_normal_feedback().compilation_succeeded)
 
         self._check_points_fdbk_shown_and_hidden()
 
@@ -107,35 +107,35 @@ class CompilationFdbkTestCase(UnitTestBase):
         non_compiled_ag_test.feedback_configuration.validate_and_update(
             points_fdbk=fdbk_lvls.PointsFdbkLevel.show_breakdown)
 
-        self.assertIsNone(result.get_feedback().compilation_stdout)
-        self.assertIsNone(result.get_feedback().compilation_stderr)
-        self.assertIsNone(result.get_feedback().compilation_succeeded)
-        self.assertIsNone(result.get_feedback().compilation_points)
-        self.assertIsNone(result.get_feedback().compilation_points_possible)
+        self.assertIsNone(result.get_normal_feedback().compilation_stdout)
+        self.assertIsNone(result.get_normal_feedback().compilation_stderr)
+        self.assertIsNone(result.get_normal_feedback().compilation_succeeded)
+        self.assertIsNone(result.get_normal_feedback().compilation_points)
+        self.assertIsNone(result.get_normal_feedback().compilation_points_possible)
 
     def _check_points_fdbk_shown_and_hidden(self):
         self.compilation_ag_test.feedback_configuration.validate_and_update(
             points_fdbk=fdbk_lvls.PointsFdbkLevel.hide)
         # Hide points
-        self.assertIsNone(self.correct_result.get_feedback().compilation_points)
+        self.assertIsNone(self.correct_result.get_normal_feedback().compilation_points)
         self.assertIsNone(
-            self.correct_result.get_feedback().compilation_points_possible)
+            self.correct_result.get_normal_feedback().compilation_points_possible)
 
-        self.assertIsNone(self.incorrect_result.get_feedback().compilation_points)
+        self.assertIsNone(self.incorrect_result.get_normal_feedback().compilation_points)
         self.assertIsNone(
-            self.incorrect_result.get_feedback().compilation_points_possible)
+            self.incorrect_result.get_normal_feedback().compilation_points_possible)
 
         # Show points
         self.compilation_ag_test.feedback_configuration.validate_and_update(
             points_fdbk=fdbk_lvls.PointsFdbkLevel.show_breakdown)
         self.assertEqual(
             self.compilation_ag_test.points_for_compilation_success,
-            self.correct_result.get_feedback().compilation_points)
+            self.correct_result.get_normal_feedback().compilation_points)
         self.assertEqual(
             self.compilation_ag_test.points_for_compilation_success,
-            self.correct_result.get_feedback().compilation_points_possible)
+            self.correct_result.get_normal_feedback().compilation_points_possible)
 
-        self.assertEqual(0, self.incorrect_result.get_feedback().compilation_points)
+        self.assertEqual(0, self.incorrect_result.get_normal_feedback().compilation_points)
         self.assertEqual(
             self.compilation_ag_test.points_for_compilation_success,
-            self.incorrect_result.get_feedback().compilation_points_possible)
+            self.incorrect_result.get_normal_feedback().compilation_points_possible)

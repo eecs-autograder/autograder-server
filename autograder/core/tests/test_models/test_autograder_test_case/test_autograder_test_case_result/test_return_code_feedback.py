@@ -61,28 +61,28 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
             test.feedback_configuration.validate_and_update(
                 points_fdbk=fdbk_lvls.PointsFdbkLevel.show_breakdown)
 
-            self.assertIsNone(correct.get_feedback().return_code_correct,
+            self.assertIsNone(correct.get_normal_feedback().return_code_correct,
                               msg=test.name)
-            self.assertIsNone(correct.get_feedback().expected_return_code,
+            self.assertIsNone(correct.get_normal_feedback().expected_return_code,
                               msg=test.name)
-            self.assertIsNone(correct.get_feedback().actual_return_code,
+            self.assertIsNone(correct.get_normal_feedback().actual_return_code,
                               msg=test.name)
-            self.assertIsNone(correct.get_feedback().return_code_points,
+            self.assertIsNone(correct.get_normal_feedback().return_code_points,
                               msg=test.name)
             self.assertIsNone(
-                correct.get_feedback().return_code_points_possible,
+                correct.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
 
-            self.assertIsNone(incorrect.get_feedback().return_code_correct,
+            self.assertIsNone(incorrect.get_normal_feedback().return_code_correct,
                               msg=test.name)
-            self.assertIsNone(incorrect.get_feedback().expected_return_code,
+            self.assertIsNone(incorrect.get_normal_feedback().expected_return_code,
                               msg=test.name)
-            self.assertIsNone(incorrect.get_feedback().actual_return_code,
+            self.assertIsNone(incorrect.get_normal_feedback().actual_return_code,
                               msg=test.name)
-            self.assertIsNone(incorrect.get_feedback().return_code_points,
+            self.assertIsNone(incorrect.get_normal_feedback().return_code_points,
                               msg=test.name)
             self.assertIsNone(
-                incorrect.get_feedback().return_code_points_possible,
+                incorrect.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
 
     def test_correct_or_incorrect_only_fdbk(self):
@@ -95,38 +95,38 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
             test.feedback_configuration.validate_and_update(
                 points_fdbk=fdbk_lvls.PointsFdbkLevel.show_breakdown)
 
-            self.assertTrue(correct.get_feedback().return_code_correct,
+            self.assertTrue(correct.get_normal_feedback().return_code_correct,
                             msg=test.name)
             self.assertEqual(test.points_for_correct_return_code,
-                             correct.get_feedback().return_code_points,
+                             correct.get_normal_feedback().return_code_points,
                              msg=test.name)
             self.assertEqual(test.points_for_correct_return_code,
-                             correct.get_feedback().return_code_points_possible,
+                             correct.get_normal_feedback().return_code_points_possible,
                              msg=test.name)
-            self.assertIsNone(correct.get_feedback().expected_return_code)
-            self.assertIsNone(correct.get_feedback().actual_return_code)
+            self.assertIsNone(correct.get_normal_feedback().expected_return_code)
+            self.assertIsNone(correct.get_normal_feedback().actual_return_code)
 
-            self.assertFalse(incorrect.get_feedback().return_code_correct,
+            self.assertFalse(incorrect.get_normal_feedback().return_code_correct,
                              msg=test.name)
-            self.assertEqual(0, incorrect.get_feedback().return_code_points)
+            self.assertEqual(0, incorrect.get_normal_feedback().return_code_points)
             self.assertEqual(
                 test.points_for_correct_return_code,
-                incorrect.get_feedback().return_code_points_possible)
-            self.assertIsNone(incorrect.get_feedback().expected_return_code)
-            self.assertIsNone(incorrect.get_feedback().actual_return_code)
+                incorrect.get_normal_feedback().return_code_points_possible)
+            self.assertIsNone(incorrect.get_normal_feedback().expected_return_code)
+            self.assertIsNone(incorrect.get_normal_feedback().actual_return_code)
 
             # Hide points
             test.feedback_configuration.validate_and_update(
                 points_fdbk=fdbk_lvls.PointsFdbkLevel.hide)
-            self.assertIsNone(correct.get_feedback().return_code_points,
+            self.assertIsNone(correct.get_normal_feedback().return_code_points,
                               msg=test.name)
             self.assertIsNone(
-                correct.get_feedback().return_code_points_possible,
+                correct.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
-            self.assertIsNone(incorrect.get_feedback().return_code_points,
+            self.assertIsNone(incorrect.get_normal_feedback().return_code_points,
                               msg=test.name)
             self.assertIsNone(
-                incorrect.get_feedback().return_code_points_possible,
+                incorrect.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
 
     def test_show_expected_and_actual_values_fdbk(self):
@@ -140,49 +140,49 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
                 points_fdbk=fdbk_lvls.PointsFdbkLevel.show_breakdown)
 
             self.assertEqual(test.expected_return_code,
-                             correct.get_feedback().expected_return_code,
+                             correct.get_normal_feedback().expected_return_code,
                              msg=test.name)
             self.assertEqual(correct.return_code,
-                             correct.get_feedback().actual_return_code,
+                             correct.get_normal_feedback().actual_return_code,
                              msg=test.name)
             self.assertEqual(test.points_for_correct_return_code,
-                             correct.get_feedback().return_code_points,
+                             correct.get_normal_feedback().return_code_points,
                              msg=test.name)
             self.assertEqual(
                 test.points_for_correct_return_code,
-                correct.get_feedback().return_code_points_possible,
+                correct.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
-            self.assertTrue(correct.get_feedback().return_code_correct,
+            self.assertTrue(correct.get_normal_feedback().return_code_correct,
                             msg=test.name)
 
             self.assertEqual(test.expected_return_code,
-                             incorrect.get_feedback().expected_return_code,
+                             incorrect.get_normal_feedback().expected_return_code,
                              msg=test.name)
             self.assertEqual(incorrect.return_code,
-                             incorrect.get_feedback().actual_return_code,
+                             incorrect.get_normal_feedback().actual_return_code,
                              msg=test.name)
-            self.assertEqual(0, incorrect.get_feedback().return_code_points,
+            self.assertEqual(0, incorrect.get_normal_feedback().return_code_points,
                              msg=test.name)
             self.assertEqual(
                 test.points_for_correct_return_code,
-                incorrect.get_feedback().return_code_points_possible,
+                incorrect.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
-            self.assertFalse(incorrect.get_feedback().return_code_correct,
+            self.assertFalse(incorrect.get_normal_feedback().return_code_correct,
                              msg=test.name)
 
             # Hide points
             test.feedback_configuration.validate_and_update(
                 points_fdbk=fdbk_lvls.PointsFdbkLevel.hide)
-            self.assertIsNone(correct.get_feedback().return_code_points,
+            self.assertIsNone(correct.get_normal_feedback().return_code_points,
                               msg=test.name)
             self.assertIsNone(
-                correct.get_feedback().return_code_points_possible,
+                correct.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
 
-            self.assertIsNone(incorrect.get_feedback().return_code_points,
+            self.assertIsNone(incorrect.get_normal_feedback().return_code_points,
                               msg=test.name)
             self.assertIsNone(
-                incorrect.get_feedback().return_code_points_possible,
+                incorrect.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
 
     def test_show_return_code(self):
@@ -191,9 +191,9 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
                 show_return_code=True)
 
             self.assertEqual(correct.return_code,
-                             correct.get_feedback().actual_return_code)
+                             correct.get_normal_feedback().actual_return_code)
             self.assertEqual(incorrect.return_code,
-                             incorrect.get_feedback().actual_return_code)
+                             incorrect.get_normal_feedback().actual_return_code)
 
     def test_fdbk_not_applicable_return_code_not_checked(self):
         no_ret_code_check_ag_test = _DummyAutograderTestCase.objects.validate_and_create(
@@ -211,17 +211,17 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
             points_fdbk=fdbk_lvls.PointsFdbkLevel.show_breakdown)
 
         self.assertIsNone(
-            no_ret_code_check_result.get_feedback().return_code_correct)
+            no_ret_code_check_result.get_normal_feedback().return_code_correct)
         self.assertIsNone(
-            no_ret_code_check_result.get_feedback().expected_return_code)
+            no_ret_code_check_result.get_normal_feedback().expected_return_code)
         self.assertIsNone(
-            no_ret_code_check_result.get_feedback().return_code_points)
+            no_ret_code_check_result.get_normal_feedback().return_code_points)
         self.assertIsNone(
-            no_ret_code_check_result.get_feedback().return_code_points_possible)
+            no_ret_code_check_result.get_normal_feedback().return_code_points_possible)
 
         # Hide return code
         self.assertIsNone(
-            no_ret_code_check_result.get_feedback().actual_return_code)
+            no_ret_code_check_result.get_normal_feedback().actual_return_code)
 
         # Show return code
         no_ret_code_check_ag_test.feedback_configuration.validate_and_update(
@@ -229,4 +229,4 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
 
         self.assertEqual(
             no_ret_code_check_result.return_code,
-            no_ret_code_check_result.get_feedback().actual_return_code)
+            no_ret_code_check_result.get_normal_feedback().actual_return_code)

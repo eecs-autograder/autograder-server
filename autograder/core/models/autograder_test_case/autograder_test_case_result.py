@@ -78,17 +78,7 @@ class AutograderTestCaseResult(models.Model):
             return score
 
         fdbk = self.get_normal_feedback()
-        try:
-            valgrind_val = -fdbk.valgrind_points_deducted
-        except Exception:
-            valgrind_val = None
-
-        values = (fdbk.return_code_points, fdbk.stdout_points,
-                  fdbk.stderr_points, fdbk.compilation_points,
-                  valgrind_val)
-
-        score = sum((val for val in values if val is not None))
-        cache.set(key, score, timeout=None)
+        score = fdbk.total_points
         return score
 
     @property
@@ -184,6 +174,9 @@ class AutograderTestCaseResult(models.Model):
             'valgrind_errors_reported',
             'valgrind_output',
             'valgrind_points_deducted',
+
+            'total_points',
+            'total_points_possible'
         ])
 
         @classmethod
@@ -480,6 +473,27 @@ class AutograderTestCaseResult(models.Model):
 
         def _no_pts_fdbk(self):
             return self._fdbk.points_fdbk == fdbk_conf.PointsFdbkLevel.hide
+
+        # ---------------------------------------------------------------------
+
+        @property
+        def total_points(self):
+            try:
+                valgrind_val = -self.valgrind_points_deducted
+            except Exception:
+                valgrind_val = None
+
+            values = (self.return_code_points, self.stdout_points,
+                      self.stderr_points, self.compilation_points,
+                      valgrind_val)
+
+            return sum((val for val in values if val is not None))
+
+        @property
+        def total_points_possible(self):
+            values = (self.return_code_points, self.stdout_points,
+                      self.stderr_points, self.compilation_points)
+            return sum((val for val in values if val is not None))
 
 
 _DIFFER = difflib.Differ()
