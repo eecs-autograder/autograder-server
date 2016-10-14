@@ -1,5 +1,3 @@
-from django.utils import timezone
-
 from rest_framework import viewsets, mixins, permissions, exceptions
 
 import autograder.core.models as ag_models
@@ -35,11 +33,6 @@ class SubmissionResultsViewset(
 
     def get_queryset(self):
         submission = self.get_object()
-        # group = submission.submission_group
-        # project = group.project
-        # course = project.course
-
-        # user = self.request.user
 
         fdbk_type = self.request.query_params.get('feedback_type')
         if fdbk_type == 'normal':
@@ -58,22 +51,3 @@ class SubmissionResultsViewset(
 
         raise exceptions.ValidationError(
             {'feedback_type': 'Invalid feedback_type: {}'.format(fdbk_type)})
-
-        # student_view = self.request.query_params.get('student_view', False)
-        # is_group_member = group.members.filter(pk=user.pk).exists()
-        # if (course.is_course_staff(user) and
-        #         not (student_view and is_group_member)):
-        #     return submission.results.all()
-
-        # deadline_past = (project.closing_time is None or
-        #                  timezone.now() > project.closing_time)
-        # if (deadline_past and not project.hide_ultimate_submission_fdbk and
-        #         submission == group.ultimate_submission):
-        #     return submission.results.filter(
-        #         test_case__visible_in_ultimate_submission=True)
-
-        # if submission.is_past_daily_limit:
-        #     return submission.results.filter(
-        #         test_case__visible_in_past_limit_submission=True)
-
-        # return submission.results.filter(test_case__visible_to_students=True)

@@ -1,5 +1,5 @@
 from django.utils import timezone
-from rest_framework import permissions
+from rest_framework import permissions, exceptions
 
 
 def is_admin_or_read_only_staff(request, course):
@@ -58,15 +58,37 @@ def user_can_request_feedback_type(user, feedback_type, submission):
     project = group.project
     course = project.course
 
+    deadline_past = _deadline_is_past(submission)
+
     if course.is_course_staff(user):
         if (group.members.filter(pk=user.pk).exists() or
                 feedback_type == 'staff_viewer'):
             return True
 
-        if _deadline_is_past(submission) and feedback_type == 'max':
+        if deadline_past and feedback_type == 'max':
             return True
 
         return False
+
+    if not group.members.filter(pk=user.pk).exists():
+        return False
+
+    if feedback_type == 'normal':
+        return not submission.is_past_daily_limit
+
+    if feedback_type == 'ultimate_submission':
+        return (not project.hide_ultimate_submission_fdbk and
+                group.ultimate_submission == submission and
+                deadline_past)
+
+    if feedback_type == 'past_submission_limit':
+        return submission.is_past_daily_limit
+
+    if feedback_type == 'max' or feedback_type == 'staff_viewer':
+        return False
+
+    raise exceptions.ValidationError(
+        {'feedback_type': 'Invalid feedback type requested: {}'.format(feedback_type)})
 
 
 def _deadline_is_past(submission):
@@ -80,26 +102,3 @@ def _deadline_is_past(submission):
         return project.closing_time < now
 
     return group.extended_due_date < now
-
-
-    # test_case = result.test_case
-    # project = test_case.project
-    # course = project.course
-    # group = result.submission.submission_group
-    # if not student_view and course.is_course_staff(user):
-    #     if group.members.filter(pk=user.pk).exists():
-    #         return fdbk_conf.FeedbackConfig.create_with_max_fdbk()
-
-    #     return test_case.staff_viewer_fdbk_conf
-
-    # deadline_past = (project.closing_time is None or
-    #                  timezone.now() > project.closing_time)
-    # if (result.submission == group.ultimate_submission and
-    #         not project.hide_ultimate_submission_fdbk and
-    #         deadline_past):
-    #     return test_case.ultimate_submission_fdbk_conf
-
-    # if result.submission.is_past_daily_limit:
-    #     return test_case.past_submission_limit_fdbk_conf
-
-    # return result.test_case.feedback_configuration
