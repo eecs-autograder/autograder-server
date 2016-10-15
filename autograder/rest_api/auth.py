@@ -58,5 +58,6 @@ class GoogleOAuth2(SessionAuthentication):
 # DO NOT USE IN PRODUCTION
 class DevAuth(SessionAuthentication):
     def authenticate(self, request):
-        user = User.objects.get_or_create(username='jameslp@umich.edu')[0]
+        username = request.COOKIES.get('username', 'jameslp@umich.edu')
+        user = User.objects.get_or_create(username=username)[0]
         return (user, None)
