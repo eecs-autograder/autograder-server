@@ -57,7 +57,7 @@ class AddCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
                              self.course.administrators.count())
 
             self.client.force_authenticate(self.superuser)
-            response = self.client.post(
+            response = self.client.patch(
                 self.url,
                 {'new_admins':
                     new_admin_names + [user.username for user in new_admins]})
@@ -80,8 +80,8 @@ class AddCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
             self.client.force_authenticate(user)
 
             new_admin_name = 'steve'
-            response = self.client.post(self.url,
-                                        {'new_admins': [new_admin_name]})
+            response = self.client.patch(self.url,
+                                         {'new_admins': [new_admin_name]})
 
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
             self.assertEqual(0, self.course.administrators.count())
@@ -99,7 +99,8 @@ class RemoveCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
         self.course.administrators.add(*self.all_admins)
 
         self.request_body = {
-            'remove_admins': [user.username for user in self.current_admins]
+            'remove_admins': ag_serializers.UserSerializer(
+                self.current_admins, many=True).data
         }
 
     def test_superuser_or_admin_remove_admins(self):
@@ -108,7 +109,7 @@ class RemoveCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
                              self.course.administrators.count())
             self.client.force_authenticate(user)
 
-            response = self.client.delete(self.url, self.request_body)
+            response = self.client.patch(self.url, self.request_body)
             self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
             self.assertCountEqual([self.remaining_admin],
@@ -118,8 +119,10 @@ class RemoveCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
 
     def test_error_admin_remove_self_from_admin_list(self):
         self.client.force_authenticate(self.remaining_admin)
-        response = self.client.delete(
-            self.url, {'remove_admins': [self.remaining_admin.username]})
+        response = self.client.patch(
+            self.url,
+            {'remove_admins':
+                ag_serializers.UserSerializer([self.remaining_admin], many=True).data})
 
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
@@ -128,7 +131,7 @@ class RemoveCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
     def test_other_remove_administrators_permission_denied(self):
         for user in self.nobody, self.enrolled, self.staff:
             self.client.force_authenticate(user)
-            response = self.client.delete(self.url, self.request_body)
+            response = self.client.patch(self.url, self.request_body)
 
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 

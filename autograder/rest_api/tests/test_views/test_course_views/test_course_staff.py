@@ -52,7 +52,7 @@ class AddStaffTestCase(_StaffSetUp, UnitTestBase):
         self.assertEqual(len(current_staff), self.course.staff.count())
 
         self.client.force_authenticate(self.admin)
-        response = self.client.post(
+        response = self.client.patch(
             self.url, {'new_staff': new_staff_names})
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
@@ -67,7 +67,7 @@ class AddStaffTestCase(_StaffSetUp, UnitTestBase):
 
         for user in current_staff, self.enrolled, self.nobody:
             self.client.force_authenticate(user)
-            response = self.client.post(
+            response = self.client.patch(
                 self.url, {'new_staff': ['spam', 'steve']})
 
             self.assertEqual(403, response.status_code)
@@ -88,13 +88,14 @@ class RemoveStaffTestCase(_StaffSetUp, UnitTestBase):
         self.course.staff.add(*self.all_staff)
 
         self.request_body = {
-            'remove_staff': [user.username for user in self.staff_to_remove]
+            'remove_staff': ag_serializers.UserSerializer(
+                self.staff_to_remove, many=True).data
         }
 
     def test_admin_remove_staff(self):
         self.client.force_authenticate(self.admin)
 
-        response = self.client.delete(self.url, self.request_body)
+        response = self.client.patch(self.url, self.request_body)
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
         self.assertCountEqual([self.remaining_staff],
@@ -106,7 +107,7 @@ class RemoveStaffTestCase(_StaffSetUp, UnitTestBase):
                              self.course.staff.count())
 
             self.client.force_authenticate(user)
-            response = self.client.delete(self.url, self.request_body)
+            response = self.client.patch(self.url, self.request_body)
             self.assertEqual(403, response.status_code)
 
             self.assertCountEqual(self.all_staff, self.course.staff.all())

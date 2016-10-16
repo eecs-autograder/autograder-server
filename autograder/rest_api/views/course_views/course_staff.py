@@ -12,28 +12,33 @@ from .permissions import IsAdminOrReadOnlyStaff
 from ..load_object_mixin import build_load_object_mixin
 
 
-class CourseStaffViewSet(build_load_object_mixin(ag_models.Course),
+class CourseStaffViewSet(build_load_object_mixin(ag_models.Course, pk_key='course_pk'),
                          mixins.ListModelMixin,
                          viewsets.GenericViewSet):
     serializer_class = ag_serializers.UserSerializer
     permission_classes = (permissions.IsAuthenticated, IsAdminOrReadOnlyStaff)
 
     def get_queryset(self):
-        course = self.load_object(self.kwargs['course_pk'])
+        course = self.get_object()
         return course.staff.all()
 
     @transaction.atomic()
-    def post(self, request, course_pk):
-        staff_to_add = [
-            User.objects.get_or_create(username=username)[0]
-            for username in request.data['new_staff']]
-        self.load_object(course_pk).staff.add(*staff_to_add)
+    def patch(self, request, *args, **kwargs):
+        course = self.get_object()
+        if 'new_staff' in request.data:
+            self.add_staff(course, request.data['new_staff'])
+        elif 'remove_staff' in request.data:
+            self.remove_staff(course, request.data['remove_staff'])
+
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @transaction.atomic()
-    def delete(self, request, course_pk):
-        staff_to_remove = [
+    def add_staff(self, course, usernames):
+        staff_to_add = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data['remove_staff']]
-        self.load_object(course_pk).staff.remove(*staff_to_remove)
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
+            for username in usernames]
+        course.staff.add(*staff_to_add)
+
+    def remove_staff(self, course, users_json):
+        staff_to_remove = User.objects.filter(
+            pk__in=[user['pk'] for user in users_json])
+        course.staff.remove(*staff_to_remove)

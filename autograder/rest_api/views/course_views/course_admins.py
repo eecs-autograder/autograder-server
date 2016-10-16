@@ -22,7 +22,7 @@ class IsSuperuserOrAdminOrReadOnlyStaff(permissions.BasePermission):
         return can_edit or staff_and_read_only
 
 
-class CourseAdminViewSet(build_load_object_mixin(ag_models.Course),
+class CourseAdminViewSet(build_load_object_mixin(ag_models.Course, pk_key='course_pk'),
                          mixins.ListModelMixin,
                          viewsets.GenericViewSet):
     serializer_class = ag_serializers.UserSerializer
@@ -30,29 +30,31 @@ class CourseAdminViewSet(build_load_object_mixin(ag_models.Course),
                           IsSuperuserOrAdminOrReadOnlyStaff,)
 
     def get_queryset(self):
-        course = self.load_object(self.kwargs['course_pk'])
+        course = self.get_object()
         return course.administrators.all()
 
     @transaction.atomic()
-    def post(self, request, course_pk):
-        users_to_add = [
-            User.objects.get_or_create(username=username)[0]
-            for username in request.data['new_admins']]
-        self.load_object(course_pk).administrators.add(*users_to_add)
+    def patch(self, request, *args, **kwargs):
+        course = self.get_object()
+        if 'new_admins' in request.data:
+            self.add_admins(course, request.data['new_admins'])
+        elif 'remove_admins' in request.data:
+            self.remove_admins(course, request.data['remove_admins'])
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @transaction.atomic()
-    def delete(self, request, course_pk):
-        users_to_remove = [
+    def add_admins(self, course, usernames):
+        users_to_add = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data['remove_admins']]
+            for username in usernames]
+        course.administrators.add(*users_to_add)
 
-        if request.user in users_to_remove:
+    def remove_admins(self, course, users_json):
+        users_to_remove = User.objects.filter(pk__in=[user['pk'] for user in users_json])
+
+        if self.request.user in users_to_remove:
             raise exceptions.ValidationError(
                 {'remove_admins':
                     ["You cannot remove your own admin privileges."]})
 
-        self.load_object(course_pk).administrators.remove(*users_to_remove)
-
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
+        course.administrators.remove(*users_to_remove)
