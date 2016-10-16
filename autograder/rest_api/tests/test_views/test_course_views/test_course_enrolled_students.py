@@ -62,7 +62,7 @@ class AddEnrolledStudentsTestCase(_EnrolledSetUp, UnitTestBase):
         self.assertEqual(len(self.current_students),
                          self.course.enrolled_students.count())
 
-        response = self.client.post(
+        response = self.client.patch(
             self.url,
             {'new_enrolled_students': new_student_names})
 
@@ -76,7 +76,7 @@ class AddEnrolledStudentsTestCase(_EnrolledSetUp, UnitTestBase):
     def test_other_add_enrolled_students_permission_denied(self):
         for user in self.staff, self.current_students[0], self.nobody:
             self.client.force_authenticate(user)
-            response = self.client.post(
+            response = self.client.patch(
                 self.url, {'new_enrolled_students': ['steve']})
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
@@ -129,12 +129,12 @@ class RemoveEnrolledStudentsTestCase(_EnrolledSetUp,
 
         self.request_body = {
             'remove_enrolled_students':
-                [user.username for user in self.students_to_remove]
+                ag_serializers.UserSerializer(self.students_to_remove, many=True).data
         }
 
     def test_admin_remove_enrolled_students(self):
         self.client.force_authenticate(self.admin)
-        response = self.client.delete(self.url, self.request_body)
+        response = self.client.patch(self.url, self.request_body)
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
         self.assertCountEqual(self.remaining_students,
@@ -143,5 +143,5 @@ class RemoveEnrolledStudentsTestCase(_EnrolledSetUp,
     def test_other_remove_enrolled_students_permission_denied(self):
         for user in self.staff, self.remaining_students[0], self.nobody:
             self.client.force_authenticate(user)
-            response = self.client.delete(self.url, self.request_body)
+            response = self.client.patch(self.url, self.request_body)
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)

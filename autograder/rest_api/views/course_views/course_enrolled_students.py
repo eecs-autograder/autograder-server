@@ -12,24 +12,39 @@ from .permissions import IsAdminOrReadOnlyStaff
 from ..load_object_mixin import build_load_object_mixin
 
 
-class CourseEnrolledStudentsViewset(build_load_object_mixin(ag_models.Course),
+class CourseEnrolledStudentsViewset(build_load_object_mixin(ag_models.Course,
+                                                            pk_key='course_pk'),
                                     mixins.ListModelMixin,
                                     viewsets.GenericViewSet):
     serializer_class = ag_serializers.UserSerializer
     permission_classes = (permissions.IsAuthenticated, IsAdminOrReadOnlyStaff)
 
     def get_queryset(self):
-        course = self.load_object(self.kwargs['course_pk'])
+        course = self.get_object()
         return course.enrolled_students.all()
 
     @transaction.atomic()
-    def post(self, request, course_pk):
+    def patch(self, request, *args, **kwargs):
+        course = self.get_object()
+        if 'new_enrolled_students' in request.data:
+            self.add_enrolled_students(
+                course, request.data['new_enrolled_students'])
+        elif 'remove_enrolled_students' in request.data:
+            self.remove_enrolled_students(
+                course, request.data['remove_enrolled_students'])
+
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    def add_enrolled_students(self, course, usernames):
         students_to_add = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data['new_enrolled_students']
-        ]
-        self.load_object(course_pk).enrolled_students.add(*students_to_add)
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
+            for username in usernames]
+        self.get_object().enrolled_students.add(*students_to_add)
+
+    def remove_enrolled_students(self, course, users_json):
+        students_to_remove = User.objects.filter(
+            pk__in=[user['pk'] for user in users_json])
+        self.get_object().enrolled_students.remove(*students_to_remove)
 
     @transaction.atomic()
     def put(self, request, course_pk):
@@ -38,13 +53,4 @@ class CourseEnrolledStudentsViewset(build_load_object_mixin(ag_models.Course),
             for username in request.data['new_enrolled_students']
         ]
         self.load_object(course_pk).enrolled_students.set(new_roster, clear=True)
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
-
-    @transaction.atomic()
-    def delete(self, request, course_pk):
-        students_to_remove = [
-            User.objects.get_or_create(username=username)[0]
-            for username in request.data['remove_enrolled_students']
-        ]
-        self.load_object(course_pk).enrolled_students.remove(*students_to_remove)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
