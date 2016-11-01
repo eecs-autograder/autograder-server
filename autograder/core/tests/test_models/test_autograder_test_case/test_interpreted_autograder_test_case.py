@@ -182,11 +182,17 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, UnitTestBase):
         self.assertEqual('lulz\n', result.standard_error_output)
 
     def test_program_with_cmd_args(self):
+        self.do_cmd_args_test(['spam', 'egg', 'sausage'])
+
+    def test_shell_injection_in_cmd_args_does_not_work(self):
+        self.do_cmd_args_test(['; echo "hacked!"#'])
+
+    def do_cmd_args_test(self, command_line_arguments):
         with open(self.submitted_file_abspath, 'w') as f:
             f.write(PyProgs.with_cmd_args)
 
         self.test.validate_and_update(
-            command_line_arguments=['spam', 'egg', 'sausage'])
+            command_line_arguments=command_line_arguments)
         result = self.test.run(self.submission, self.sandbox)
         self.assertEqual(0, result.return_code)
         expected_output = (self.project_filename + '\n' +
@@ -194,6 +200,15 @@ class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, UnitTestBase):
                            '\nwaluigi\n')
 
         self.assertEqual(expected_output, result.standard_output)
+
+    def test_shell_injection_in_interpreter_flags_does_not_work(self):
+        with open(self.submitted_file_abspath, 'w') as f:
+            f.write(PyProgs.normal_exit)
+
+        self.test.validate_and_update(interpreter_flags=['; echo "Hacked!"#'])
+
+        result = self.test.run(self.submission, self.sandbox)
+        self.assertNotEqual(result.return_code, 0)
 
 
 class InterpretedAutograderTestCaseResourceLimitTestCase(_SetUpBase, UnitTestBase):

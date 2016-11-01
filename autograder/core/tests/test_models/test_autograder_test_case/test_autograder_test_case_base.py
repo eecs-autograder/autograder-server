@@ -369,17 +369,6 @@ class AGTestCmdArgErrorTestCase(_Shared, UnitTestBase):
         self.assertTrue(error_list[1])
         self.assertTrue(error_list[2])
 
-    def test_exception_on_invalid_chars_in_command_line_args(self):
-        with self.assertRaises(exceptions.ValidationError) as cm:
-            _DummyAutograderTestCase.objects.validate_and_create(
-                name=self.TEST_NAME, project=self.project,
-                command_line_arguments=["spam", "; echo 'haxorz!'"])
-
-        self.assertTrue('command_line_arguments' in cm.exception.message_dict)
-        error_list = cm.exception.message_dict['command_line_arguments']
-        self.assertFalse(error_list[0])
-        self.assertTrue(error_list[1])
-
 
 class AGTestResourceLimitErrorTestCase(_Shared, UnitTestBase):
     def test_exception_on_zero_time_limit(self):
@@ -527,18 +516,6 @@ class AGTestValgrindSettingsTestCase(_Shared, UnitTestBase):
                 name=self.TEST_NAME, project=self.project,
                 use_valgrind=True,
                 valgrind_flags=['', 'spam'])
-
-        self.assertTrue('valgrind_flags' in cm.exception.message_dict)
-        error_list = cm.exception.message_dict['valgrind_flags']
-        self.assertTrue(error_list[0])
-        self.assertFalse(error_list[1])
-
-    def test_exception_on_invalid_chars_in_valgrind_flags(self):
-        with self.assertRaises(exceptions.ValidationError) as cm:
-            _DummyAutograderTestCase.objects.validate_and_create(
-                name=self.TEST_NAME, project=self.project,
-                use_valgrind=True,
-                valgrind_flags=["; echo 'haxorz!'", '--leak-check=full'])
 
         self.assertTrue('valgrind_flags' in cm.exception.message_dict)
         error_list = cm.exception.message_dict['valgrind_flags']

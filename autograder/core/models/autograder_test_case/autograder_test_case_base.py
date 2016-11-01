@@ -172,8 +172,6 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     command_line_arguments = ag_fields.StringArrayField(
         strip_strings=True, allow_empty_strings=False,
-        string_validators=[
-            RegexValidator(const.COMMAND_LINE_ARG_WHITELIST_REGEX)],
         default=list, blank=True,
         help_text='''A list of arguments to be passed to the program
             being tested.
@@ -304,8 +302,6 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     valgrind_flags = ag_fields.StringArrayField(
         null=True,
         strip_strings=True, allow_empty_strings=False,
-        string_validators=[
-            RegexValidator(const.COMMAND_LINE_ARG_WHITELIST_REGEX)],
         default=const.DEFAULT_VALGRIND_FLAGS, blank=True,
         help_text='''If use_valgrind is True, this field should contain
             a list of command line arguments to be passed to the
@@ -406,8 +402,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             case executable.''')
 
     compiler_flags = ag_fields.StringArrayField(
-        default=list, blank=True, string_validators=[
-            RegexValidator(const.COMMAND_LINE_ARG_WHITELIST_REGEX)],
+        default=list, blank=True,
         help_text='''A list of option flags to be passed to the
             compiler. These flags are limited to the same character set
             as the command_line_arguments field.
@@ -454,8 +449,6 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     interpreter_flags = ag_fields.StringArrayField(
         blank=True, default=list,
-        string_validators=[
-            RegexValidator(const.COMMAND_LINE_ARG_WHITELIST_REGEX)],
         help_text='''A list of objtion flags to be passed to the
             interpreter. These flags are limited to the same character
             set as the command_line_argument_field.''')

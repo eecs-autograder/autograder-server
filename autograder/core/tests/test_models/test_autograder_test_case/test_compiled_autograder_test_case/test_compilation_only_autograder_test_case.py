@@ -33,3 +33,16 @@ class CompilationOnlyAutograderTestRunTestCase(
             submission=self.submission, autograder_sandbox=self.sandbox)
 
         self.assertNotEqual(0, result.compilation_return_code)
+
+    def test_shell_injection_compiler_flags_does_not_work(self):
+        with open(self.main_file.abspath, 'w') as f:
+            f.write(CppProgramStrs.PRINT_CMD_ARGS)
+
+        self.test_case_starter.validate_and_update(
+            compiler_flags=['; echo "Hacked!"#'])
+
+        result = self.test_case_starter.run(
+            submission=self.submission, autograder_sandbox=self.sandbox)
+
+        self.assertNotEqual(result.compilation_return_code, 0)
+        self.assertNotEqual(result.compilation_standard_error_output, '')

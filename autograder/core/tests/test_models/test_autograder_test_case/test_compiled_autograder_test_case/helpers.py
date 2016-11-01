@@ -105,15 +105,15 @@ int main()
 using namespace std;
 
 int main(int argc, char** argv)
-{{
+{
     for (int i = 1; i < argc - 1; ++i)
-    {{
+    {
         cout << argv[i] << " ";
-    }}
+    }
     cout << argv[argc - 1] << flush;
 
     return 0;
-}}
+}
 """
 
     PRINT_STDIN_CONTENT = """#include <iostream>

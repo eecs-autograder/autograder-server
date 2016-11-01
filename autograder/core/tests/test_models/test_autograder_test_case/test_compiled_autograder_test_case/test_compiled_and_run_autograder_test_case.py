@@ -162,6 +162,13 @@ class CompiledAutograderTestRunTestCase(
 
     def test_run_with_cmd_line_args(self):
         cmd_args = ['spam', 'egg', 'sausage']
+        self.do_cmd_line_arg_test(cmd_args)
+
+    def test_shell_injection_for_cmd_args_does_not_work(self):
+        cmd_args = ['; echo "Hacked!"#']
+        self.do_cmd_line_arg_test(cmd_args)
+
+    def do_cmd_line_arg_test(self, cmd_args):
         with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.PRINT_CMD_ARGS)
 
@@ -267,6 +274,19 @@ class CompiledAutograderTestRunTestCase(
         self.assertNotEqual(result.valgrind_return_code, 0)
         self.assertNotEqual(result.valgrind_output, '')
 
+    def test_shell_injection_valgrind_flags_does_not_work(self):
+        with open(self.main_file.abspath, 'w') as f:
+            f.write(CppProgramStrs.PRINT_CMD_ARGS)
+
+        self.test_case_starter.validate_and_update(
+            use_valgrind=True, valgrind_flags=['; echo "Hacked!"#'])
+
+        result = self.test_case_starter.run(
+            submission=self.submission, autograder_sandbox=self.sandbox)
+
+        self.assertNotEqual(result.valgrind_return_code, 0)
+        self.assertNotEqual(result.valgrind_output, '')
+
     def test_run_compile_error(self):
         with open(self.main_file.abspath, 'w') as f:
             f.write(CppProgramStrs.COMPILE_ERROR)
@@ -275,6 +295,19 @@ class CompiledAutograderTestRunTestCase(
             submission=self.submission, autograder_sandbox=self.sandbox)
         result.save()
         result.refresh_from_db()
+
+        self.assertNotEqual(result.compilation_return_code, 0)
+        self.assertNotEqual(result.compilation_standard_error_output, '')
+
+    def test_shell_injection_compiler_flags_does_not_work(self):
+        with open(self.main_file.abspath, 'w') as f:
+            f.write(CppProgramStrs.PRINT_CMD_ARGS)
+
+        self.test_case_starter.validate_and_update(
+            compiler_flags=['; echo "Hacked!"#'])
+
+        result = self.test_case_starter.run(
+            submission=self.submission, autograder_sandbox=self.sandbox)
 
         self.assertNotEqual(result.compilation_return_code, 0)
         self.assertNotEqual(result.compilation_standard_error_output, '')
