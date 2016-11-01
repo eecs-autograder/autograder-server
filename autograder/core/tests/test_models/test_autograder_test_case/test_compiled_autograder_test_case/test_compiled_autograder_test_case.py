@@ -96,21 +96,6 @@ class CompiledAutograderTestCaseTestCase(UnitTestBase):
 
         self.assertTrue('compiler' in cm.exception.message_dict)
 
-    def test_exception_on_invalid_compiler_flag_values(self):
-        self.compiled_test_kwargs['compiler_flags'] = [
-            '; echo "haxorz!"#', '', '       ']
-
-        with self.assertRaises(ValidationError) as cm:
-            _DummyCompiledAutograderTestCase.objects.validate_and_create(
-                name=self.test_name, project=self.project,
-                **self.compiled_test_kwargs)
-
-        self.assertTrue('compiler_flags' in cm.exception.message_dict)
-        error_list = cm.exception.message_dict['compiler_flags']
-        self.assertTrue(error_list[0])
-        self.assertTrue(error_list[1])
-        self.assertTrue(error_list[2])
-
     def test_exception_on_empty_executable_name(self):
         test = _DummyCompiledAutograderTestCase.objects.validate_and_create(
             name=self.test_name, project=self.project,

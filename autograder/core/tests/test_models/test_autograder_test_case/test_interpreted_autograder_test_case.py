@@ -99,17 +99,6 @@ class InterpretedAGTestMiscTestCase(_SetUpBase, UnitTestBase):
 
         self.assertTrue('interpreter' in cm.exception.message_dict)
 
-    def test_invalid_interpreter_flags(self):
-        with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.AutograderTestCaseFactory.validate_and_create(
-                'interpreted_test_case',
-                interpreter='python',
-                interpreter_flags=['good', 'bad; #><'],
-                entry_point_filename=self.project_filename,
-                **self.starter_args)
-
-        self.assertTrue('interpreter_flags'in cm.exception.message_dict)
-
     def test_error_missing_entry_point_filename(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AutograderTestCaseFactory.validate_and_create(
