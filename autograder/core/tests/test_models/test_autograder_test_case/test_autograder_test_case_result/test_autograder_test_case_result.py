@@ -261,3 +261,11 @@ class TotalScoreTestCase(test_ut.UnitTestBase):
                          result.get_max_feedback().total_points_possible)
         self.assertEqual(expected_total_points,
                          result.get_max_feedback().total_points)
+
+    def test_feedback_total_points_does_not_go_negative(self):
+        result = obj_build.build_compiled_ag_test_result()
+        result.test_case.validate_and_update(
+            deduction_for_valgrind_errors=(
+                obj_build.build_compiled_ag_test.points_with_all_used * 2))
+
+        self.assertEqual(0, result.get_max_feedback().total_points)
