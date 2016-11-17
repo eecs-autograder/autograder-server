@@ -143,7 +143,7 @@ def queue_submissions():
     # TODO: update this to support multiple courses in one system
     with transaction.atomic():
         to_queue = list(ag_models.Submission.objects.select_for_update().filter(
-            status=ag_models.Submission.GradingStatus.received))
+            status=ag_models.Submission.GradingStatus.received).reverse())
         print(to_queue)
 
         for submission in to_queue:

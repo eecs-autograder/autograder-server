@@ -107,6 +107,8 @@ class Submission(ag_model_base.AutograderModel):
 
         'count_towards_daily_limit',
         'is_past_daily_limit',
+
+        'position_in_queue',
     ]
 
     @classmethod
@@ -268,6 +270,21 @@ class Submission(ag_model_base.AutograderModel):
     @property
     def basic_score_cache_key(self):
         return 'submission_basic_score{}'.format(self.pk)
+
+    @property
+    def position_in_queue(self):
+        '''
+        Returns this submissions position in the queue of submissions to
+        be graded for the associated project.
+        '''
+        if self.status != Submission.GradingStatus.queued:
+            return 0
+
+        return Submission.objects.filter(
+            status=Submission.GradingStatus.queued,
+            submission_group__project=self.submission_group.project,
+            pk__lte=self.pk
+        ).count()
 
     # -------------------------------------------------------------------------
 

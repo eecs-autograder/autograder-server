@@ -62,6 +62,8 @@ class SubmissionTestCase(test_ut.UnitTestBase):
 
             'count_towards_daily_limit',
             'is_past_daily_limit',
+
+            'position_in_queue',
         ]
         self.assertCountEqual(
             expected,
@@ -271,6 +273,72 @@ class SubmissionTestCase(test_ut.UnitTestBase):
         self.assertCountEqual(
             statuses,
             ag_models.Submission.GradingStatus.active_statuses)
+
+
+class PositionInQueueTestCase(test_ut.UnitTestBase):
+    def test_position_in_queue_multiple_projects(self):
+        '''
+        Makes sure that position in queue is calculated per-project
+        '''
+        project1 = obj_build.build_project()
+        group1_proj1 = obj_build.build_submission_group(
+            group_kwargs={'project': project1})
+        group2_proj1 = obj_build.build_submission_group(
+            group_kwargs={'project': project1})
+
+        project2 = obj_build.build_project()
+        group1_proj2 = obj_build.build_submission_group(
+            group_kwargs={'project': project2})
+        group2_proj2 = obj_build.build_submission_group(
+            group_kwargs={'project': project2})
+
+        submission_group1_p1 = obj_build.build_submission(
+            submission_group=group1_proj1)
+        submission_group1_p1.status = (
+            ag_models.Submission.GradingStatus.queued)
+        submission_group1_p1.save()
+        submission_group1_p1_queue_pos = 1
+
+        submission_group2_p1 = obj_build.build_submission(
+            submission_group=group2_proj1)
+        submission_group2_p1.status = (
+            ag_models.Submission.GradingStatus.queued)
+        submission_group2_p1.save()
+        submission_group2_p1_queue_pos = 2
+
+        submission_group1_p2 = obj_build.build_submission(
+            submission_group=group1_proj2)
+        submission_group1_p2.status = (
+            ag_models.Submission.GradingStatus.queued)
+        submission_group1_p2.save()
+        submission_group1_p2_queue_pos = 1
+
+        submission_group2_p2 = obj_build.build_submission(
+            submission_group=group2_proj2)
+        submission_group2_p2.status = (
+            ag_models.Submission.GradingStatus.queued)
+        submission_group2_p2.save()
+        submission_group2_p2_queue_pos = 2
+
+        self.assertEqual(submission_group1_p1_queue_pos,
+                         submission_group1_p1.position_in_queue)
+        self.assertEqual(submission_group2_p1_queue_pos,
+                         submission_group2_p1.position_in_queue)
+        self.assertEqual(submission_group1_p2_queue_pos,
+                         submission_group1_p2.position_in_queue)
+        self.assertEqual(submission_group2_p2_queue_pos,
+                         submission_group2_p2.position_in_queue)
+
+    def test_position_in_queue_for_non_queued_submission(self):
+        submission = obj_build.build_submission()
+
+        non_queued_statuses = list(ag_models.Submission.GradingStatus.values)
+        non_queued_statuses.remove(ag_models.Submission.GradingStatus.queued)
+
+        for status in non_queued_statuses:
+            submission.status = status
+            submission.save()
+            self.assertEqual(0, submission.position_in_queue)
 
 
 class TotalPointsTestCase(test_ut.UnitTestBase):

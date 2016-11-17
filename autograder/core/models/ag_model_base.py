@@ -28,6 +28,7 @@ class _AutograderModelManagerMixin:
 
             return instance
 
+
 _INVALID_FIELD_NAMES_KEY = 'invalid_field_names'
 
 
