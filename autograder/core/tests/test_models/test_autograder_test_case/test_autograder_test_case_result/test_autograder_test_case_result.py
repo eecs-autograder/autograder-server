@@ -163,7 +163,7 @@ class MiscAutograderTestCaseResultTestCase(_SetUp, test_ut.UnitTestBase):
             standard_error_output=stderr,
             valgrind_output=valgrind,
             compilation_standard_output=comp_stdout,
-            compilation_standard_error_output=comp_stderr,)
+            compilation_standard_error_output=comp_stderr)
 
         result.refresh_from_db()
 
