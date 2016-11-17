@@ -5,6 +5,7 @@ from django.utils import timezone
 
 import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case import feedback_config
+import autograder.core.constants as const
 
 import autograder.utils.testing as test_ut
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -149,28 +150,38 @@ class MiscAutograderTestCaseResultTestCase(_SetUp, test_ut.UnitTestBase):
             result, self.test_case.feedback_configuration)
         self.assertIn('pk', fdbk.to_dict())
 
-    # def test_very_large_output(self):
-    #     stdout = 'a' * 300000000
-    #     stderr = 'b' * 300000000
-    #     valgrind = 'c' * 300000000
-    #     comp_stdout = 'd' * 300000000
-    #     comp_stderr = 'e' * 300000000
-    #     result = ag_models.AutograderTestCaseResult.objects.create(
-    #         test_case=self.test_case,
-    #         submission=self.submission,
-    #         standard_output=stdout,
-    #         standard_error_output=stderr,
-    #         valgrind_output=valgrind,
-    #         compilation_standard_output=comp_stdout,
-    #         compilation_standard_error_output=comp_stderr,)
+    def test_very_large_output_truncated(self):
+        stdout = 'a' * 300000000
+        stderr = 'b' * 300000000
+        valgrind = 'c' * 300000000
+        comp_stdout = 'd' * 300000000
+        comp_stderr = 'e' * 300000000
+        result = ag_models.AutograderTestCaseResult.objects.create(
+            test_case=self.test_case,
+            submission=self.submission,
+            standard_output=stdout,
+            standard_error_output=stderr,
+            valgrind_output=valgrind,
+            compilation_standard_output=comp_stdout,
+            compilation_standard_error_output=comp_stderr,)
 
-    #     result.refresh_from_db()
+        result.refresh_from_db()
 
-    #     self.assertEqual(result.standard_output, stdout)
-    #     self.assertEqual(result.standard_error_output, stderr)
-    #     self.assertEqual(result.valgrind_output, valgrind)
-    #     self.assertEqual(result.compilation_standard_output, comp_stdout)
-    #     self.assertEqual(result.compilation_standard_error_output, comp_stderr)
+        self.assertEqual(
+            result.standard_output,
+            stdout[:const.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
+        self.assertEqual(
+            result.standard_error_output,
+            stderr[:const.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
+        self.assertEqual(
+            result.valgrind_output,
+            valgrind[:const.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
+        self.assertEqual(
+            result.compilation_standard_output,
+            comp_stdout[:const.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
+        self.assertEqual(
+            result.compilation_standard_error_output,
+            comp_stderr[:const.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
 
 
 class TotalScoreTestCase(test_ut.UnitTestBase):

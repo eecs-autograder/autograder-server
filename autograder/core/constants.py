@@ -2,6 +2,8 @@ import re
 
 MAX_CHAR_FIELD_LEN = 255
 
+MAX_OUTPUT_LENGTH = pow(10, 7)  # 10 million characters
+
 # For a given project, the name of the directory that
 # user-uploaded project files should be placed in.
 PROJECT_FILES_DIRNAME = 'project_files'

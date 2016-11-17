@@ -5,7 +5,7 @@ import uuid
 
 from django.core.cache import cache
 from django.core.validators import (
-    MinValueValidator, MaxValueValidator, RegexValidator)
+    MinValueValidator, MaxValueValidator, MaxLengthValidator)
 from django.db import models, transaction
 
 from ..ag_model_base import (
@@ -280,6 +280,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     expected_standard_output = models.TextField(
         blank=True,
+        validators=[MaxLengthValidator(const.MAX_OUTPUT_LENGTH)],
         help_text='''A string whose contents should be compared to the
             standard output of the program being tested. A value of the
             empty string indicates that this test case should not check
@@ -287,6 +288,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     expected_standard_error_output = models.TextField(
         blank=True,
+        validators=[MaxLengthValidator(const.MAX_OUTPUT_LENGTH)],
         help_text='''A string whose contents should be compared to the
             standard error output of the program being tested. A value
             of the empty string indicates that this test case should not

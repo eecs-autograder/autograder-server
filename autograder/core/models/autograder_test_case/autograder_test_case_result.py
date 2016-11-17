@@ -5,6 +5,7 @@ from django.core.cache import cache
 from django.db import models
 
 from autograder.core.models.ag_model_base import ToDictMixin
+import autograder.core.constants as const
 
 from . import feedback_config as fdbk_conf
 
@@ -63,8 +64,20 @@ class AutograderTestCaseResult(models.Model):
     # -------------------------------------------------------------------------
 
     def save(self, *args, **kwargs):
+        self._check_len_and_truncate('standard_output')
+        self._check_len_and_truncate('standard_error_output')
+        self._check_len_and_truncate('valgrind_output')
+        self._check_len_and_truncate('compilation_standard_output')
+        self._check_len_and_truncate('compilation_standard_error_output')
+
         super().save(*args, **kwargs)
         cache.delete(self.submission.basic_score_cache_key)
+
+    def _check_len_and_truncate(self, field_name):
+        value = getattr(self, field_name)
+        if len(value) > const.MAX_OUTPUT_LENGTH:
+            setattr(self, field_name,
+                    value[:const.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
 
     @property
     def basic_score(self):

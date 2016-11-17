@@ -370,6 +370,29 @@ class AGTestCmdArgErrorTestCase(_Shared, UnitTestBase):
         self.assertTrue(error_list[2])
 
 
+class AGTestOutputLimitTestCase(UnitTestBase):
+    def setUp(self):
+        self.project = obj_build.build_project()
+
+        self.output = 'A' * (const.MAX_OUTPUT_LENGTH + 1)
+
+    def test_expected_stdout_too_long(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name='Too Much Output :o', project=self.project,
+                expected_standard_output=self.output)
+
+        self.assertIn('expected_standard_output', cm.exception.message_dict)
+
+    def test_expected_stderr_too_long(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            _DummyAutograderTestCase.objects.validate_and_create(
+                name='Too Much Error :o', project=self.project,
+                expected_standard_error_output=self.output)
+
+        self.assertIn('expected_standard_error_output', cm.exception.message_dict)
+
+
 class AGTestResourceLimitErrorTestCase(_Shared, UnitTestBase):
     def test_exception_on_zero_time_limit(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
