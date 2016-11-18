@@ -54,7 +54,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         'num_submits_towards_limit',
     )
 
-    EDITABLE_FIELDS = ('extended_due_date')
+    EDITABLE_FIELDS = ('extended_due_date',)
 
     objects = SubmissionGroupManager()
 

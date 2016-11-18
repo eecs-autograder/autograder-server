@@ -9,8 +9,9 @@ class NotificationTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-    def test_to_dict_default_fields(self):
+    def test_serializable_fields(self):
         expected_fields = [
+            'pk',
             'timestamp',
             'message',
             'recipient',

@@ -3,7 +3,7 @@ import itertools
 from django.contrib.auth.models import User
 from django.db import transaction
 
-from rest_framework import viewsets, mixins, permissions
+from rest_framework import viewsets, mixins, permissions, exceptions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -41,11 +41,15 @@ class ProjectGroupInvitationsViewset(
 
     @transaction.atomic()
     def create(self, request, project_pk, *args, **kwargs):
+        for key in request.data:
+            if key != 'invited_usernames':
+                raise exceptions.ValidationError({'invalid_fields': [key]})
+
         request.data['project'] = self.load_object(project_pk)
 
         invited_users = [
             User.objects.get_or_create(username=username)[0]
-            for username in request.data['invited_usernames']]
+            for username in request.data.pop('invited_usernames')]
 
         utils.lock_users(itertools.chain([request.user], invited_users))
 

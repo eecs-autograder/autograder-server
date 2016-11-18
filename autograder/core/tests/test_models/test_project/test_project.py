@@ -89,10 +89,11 @@ class ProjectMiscTestCase(UnitTestBase):
             self.assertEqual(value, getattr(new_project, field_name),
                              msg=field_name)
 
-    def test_to_dict_default_fields(self):
+    def test_serializable_fields(self):
         project = obj_build.build_project()
 
         expected_fields = [
+            'pk',
             'name',
             'course',
             'visible_to_students',

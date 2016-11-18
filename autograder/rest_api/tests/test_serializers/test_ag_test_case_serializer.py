@@ -58,7 +58,8 @@ class AGTestCaseSerializerTestCase(_SetUp, SerializerTestCase):
         expected = copy.deepcopy(data)
         expected['project'] = data['project'].pk
         expected['pk'] = loaded.pk
-        self.assertEqual(expected, loaded.to_dict(include_fields=data.keys()))
+        self.assertEqual(
+            expected, loaded.to_dict(include_fields=['pk'] + list(data.keys())))
 
     def test_create_and_update_feedback_configs(self):
         for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:

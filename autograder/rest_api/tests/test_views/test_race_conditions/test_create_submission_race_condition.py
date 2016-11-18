@@ -1,3 +1,5 @@
+from django.test import tag
+
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -7,6 +9,7 @@ import autograder.utils.testing as test_ut
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
+@tag('slow')
 class RaceConditionTestCase(test_data.Client,
                             test_data.Project,
                             test_data.Group,

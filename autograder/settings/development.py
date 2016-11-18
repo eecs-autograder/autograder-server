@@ -18,18 +18,6 @@ if os.environ.get('USE_REAL_AUTH', 'true').lower() == 'false':
         )
     })
 
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('AG_DB_NAME', 'postgres'),
-        'USER': os.environ.get('AG_DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('AG_DB_PASSWORD', 'postgres'),
-        'HOST': os.environ.get('AG_DB_HOST', 'localhost'),
-        'PORT': os.environ.get('AG_DB_PORT', '5432')
-    },
-}
-
 # ----- Celery settings ----- #
 
 # For testing without celery server running

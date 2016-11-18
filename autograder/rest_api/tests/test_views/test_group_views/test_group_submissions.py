@@ -290,8 +290,18 @@ class CreateSubmissionTestCase(test_data.Client,
 
             self.assertEqual(num_submissions, group.submissions.count())
 
-    def test_invalid_more_fields_than_files_in_request(self):
-        self.fail()
+    def test_invalid_fields_fields_other_than_submitted_files_in_request(self):
+        group = self.admin_group(self.project)
+        response = self.do_invalid_create_object_test(
+            group.submissions, self.client,
+            group.members.first(),
+            self.submissions_url(group),
+            {'submitted_files': self.files_to_submit,
+             'count_towards_daily_limit': False},
+            format='multipart')
+        self.assertIn('invalid_fields', response.data)
+        self.assertIn('count_towards_daily_limit',
+                      response.data['invalid_fields'])
 
     def do_normal_submit_test(self, group, user):
         self.add_expected_patterns(group.project)

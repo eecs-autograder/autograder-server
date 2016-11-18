@@ -101,8 +101,9 @@ class MiscAutograderTestCaseResultTestCase(_SetUp, test_ut.UnitTestBase):
         self.assertEqual(result.compilation_standard_output, '')
         self.assertEqual(result.compilation_standard_error_output, '')
 
-    def test_feedback_calculator_default_to_dict_fields(self):
+    def test_feedback_calculator_serializable_fields(self):
         expected = [
+            'pk',
             'ag_test_name',
             'return_code_correct',
             'expected_return_code',

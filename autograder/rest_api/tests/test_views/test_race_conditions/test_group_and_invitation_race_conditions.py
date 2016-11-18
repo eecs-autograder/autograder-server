@@ -1,3 +1,5 @@
+from django.test import tag
+
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -12,6 +14,7 @@ from autograder.rest_api.views.project_views.project_groups import (
 from autograder.rest_api.views.group_views.group_view import GroupViewset
 
 
+@tag('slow')
 class RaceConditionTestCase(test_data.Client,
                             test_data.Project,
                             test_data.Group,

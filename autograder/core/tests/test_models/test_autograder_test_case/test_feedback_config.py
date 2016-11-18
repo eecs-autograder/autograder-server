@@ -155,7 +155,7 @@ class AutograderFeedbackConfigurationTestCase(UnitTestBase):
         self.assertIn('valgrind_fdbk', cm.exception.message_dict)
         self.assertIn('points_fdbk', cm.exception.message_dict)
 
-    def test_to_dict_default_fields(self):
+    def test_serializable_fields(self):
         field_names = [
             'ag_test_name_fdbk',
             'return_code_fdbk',

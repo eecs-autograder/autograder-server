@@ -1,3 +1,5 @@
+from django.test import tag
+
 from autograder.utils.testing import UnitTestBase
 
 from .helpers import (
@@ -5,15 +7,13 @@ from .helpers import (
     CppProgramStrs)
 
 
+@tag('slow', 'sandbox')
 class CompilationOnlyAutograderTestRunTestCase(
         SharedSetUpTearDownForRunTestsWithCompilation,
         UnitTestBase):
 
     def get_ag_test_type_str_for_factory(self):
         return 'compilation_only_test_case'
-
-    def test_to_dict(self):
-        self.assertTrue(self.test_case_starter.to_dict())
 
     def test_compilation_success(self):
         cpp_file_content = CppProgramStrs.RETURN_ONLY_TEMPLATE.format(42)

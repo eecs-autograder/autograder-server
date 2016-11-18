@@ -45,12 +45,13 @@ class SubmissionTestCase(test_ut.UnitTestBase):
             ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
                 **pattern_settings)
 
-    def test_to_dict_default_fields(self):
+    def test_serializable_fields(self):
         # Note: Do NOT add basic_score to this list, as that will leak
         # information in certain scenarios (such as when a student
         # requests feedback on a submission that is past the daily
         # limit).
         expected = [
+            'pk',
             'submission_group',
             'timestamp',
             'submitter',

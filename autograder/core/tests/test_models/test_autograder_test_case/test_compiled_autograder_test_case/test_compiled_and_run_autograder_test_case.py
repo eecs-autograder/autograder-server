@@ -3,6 +3,7 @@ from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 # from django.core.exceptions import ValidationError
+from django.test import tag
 
 import autograder.core.models as ag_models
 
@@ -15,6 +16,7 @@ from .helpers import (
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
+@tag('slow', 'sandbox')
 class CompiledAutograderTestRunTestCase(
         SharedSetUpTearDownForRunTestsWithCompilation,
         UnitTestBase):

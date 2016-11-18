@@ -44,6 +44,10 @@ class GroupSubmissionsViewset(
 
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
+        for key in request.data:
+            if key != 'submitted_files':
+                raise exceptions.ValidationError({'invalid_fields': [key]})
+
         timestamp = timezone.now()
         group = self.get_object()
         self._validate_can_submit(request, group, timestamp)

@@ -4,6 +4,7 @@ from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core import exceptions
+from django.test import tag
 
 from autograder_sandbox import AutograderSandbox
 import autograder.core.models as ag_models
@@ -120,6 +121,7 @@ class InterpretedAGTestMiscTestCase(_SetUpBase, UnitTestBase):
         self.assertTrue('entry_point_filename' in cm.exception.message_dict)
 
 
+@tag('slow', 'sandbox')
 class RunInterpretedAutograderTestCaseTestCase(_SetUpBase, UnitTestBase):
     def setUp(self):
         super().setUp()

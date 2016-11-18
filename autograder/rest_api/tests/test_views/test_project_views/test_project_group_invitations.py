@@ -155,5 +155,12 @@ class CreateInvitationTestCase(_InvitationsSetUp,
             self.clone_user(self.staff), self.get_invitations_url(self.project),
             args)
 
-    def test_invalid_more_fields_than_invited_usernames_in_request(self):
-        self.fail()
+    def test_invalid_fields_other_than_invited_usernames_in_request(self):
+        self.project.validate_and_update(max_group_size=3)
+        args = {'invited_usernames': [self.staff.username],
+                '_invitees_who_accepted': [self.staff.username]}
+        response = self.do_invalid_create_object_test(
+            self.project.submission_group_invitations, self.client,
+            self.admin, self.get_invitations_url(self.project), args)
+        self.assertIn('invalid_fields', response.data)
+        self.assertIn('_invitees_who_accepted', response.data['invalid_fields'])

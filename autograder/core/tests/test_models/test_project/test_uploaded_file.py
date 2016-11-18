@@ -142,8 +142,9 @@ class DeleteUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
 
 
 class UploadedFileMiscTestCase(_SetUp, test_ut.UnitTestBase):
-    def test_default_to_dict_fields(self):
+    def test_serializable_fields(self):
         expected = [
+            'pk',
             'name',
             'size',
             'project'
@@ -159,5 +160,4 @@ class UploadedFileMiscTestCase(_SetUp, test_ut.UnitTestBase):
 
     def test_editable_fields(self):
         expected = []
-
         self.assertCountEqual(expected, UploadedFile.get_editable_fields())

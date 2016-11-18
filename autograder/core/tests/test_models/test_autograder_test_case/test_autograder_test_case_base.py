@@ -2,8 +2,8 @@ import itertools
 import random
 
 from django.core import exceptions
-
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import tag
 
 import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case.feedback_config import (
@@ -141,8 +141,9 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
         for key, value in vals.items():
             self.assertEqual(value, getattr(new_test_case, key))
 
-    def test_to_dict_default_fields(self):
+    def test_serializable_fields(self):
         expected_fields = [
+            'pk',
             'type_str',
 
             'name',
@@ -546,6 +547,7 @@ class AGTestValgrindSettingsTestCase(_Shared, UnitTestBase):
         self.assertFalse(error_list[1])
 
 
+@tag('slow', 'sandbox')
 class AddRequiredFilesToSandboxTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()

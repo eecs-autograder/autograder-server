@@ -35,8 +35,9 @@ class CourseTestCase(UnitTestBase):
             Course.objects.validate_and_create(name=course.name)
         self.assertTrue('name' in cm.exception.message_dict)
 
-    def test_to_dict_default_fields(self):
+    def test_serializable_fields(self):
         expected_fields = [
+            'pk',
             'name'
         ]
 

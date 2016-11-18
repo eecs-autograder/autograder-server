@@ -30,8 +30,9 @@ class _SetUp:
 
 
 class MiscSubmissionGroupTestCase(_SetUp, test_ut.UnitTestBase):
-    def test_to_dict_default_fields(self):
+    def test_serializable_fields(self):
         expected_fields = [
+            'pk',
             'member_names',
             'project',
             'extended_due_date',

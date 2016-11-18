@@ -26,8 +26,9 @@ class _SetUp:
 
 
 class MiscSubmissionGroupInvitationTestCase(_SetUp, UnitTestBase):
-    def test_to_dict_default_fields(self):
+    def test_serializable_fields(self):
         expected_fields = [
+            'pk',
             'project',
             'invited_usernames',
             'invitees_who_accepted',

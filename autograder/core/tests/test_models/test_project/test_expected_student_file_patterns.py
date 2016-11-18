@@ -16,8 +16,9 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
 
         self.valid_pattern = 'test_[0-4][!a-z]?.*.cpp'
 
-    def test_default_to_dict_fields(self):
+    def test_serializable_fields(self):
         expected = [
+            'pk',
             'project',
             'pattern',
             'min_num_matches',
