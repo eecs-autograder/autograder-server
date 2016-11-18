@@ -7,12 +7,6 @@ MEDIA_ROOT += '_dev'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-INSTALLED_APPS += [
-    # Dummy testing models
-    'autograder.core.tests.test_models',
-    'autograder.core.tests.test_models.test_autograder_test_case',
-]
-
 REST_FRAMEWORK.update({
     'TEST_REQUEST_DEFAULT_FORMAT': 'json'
 })

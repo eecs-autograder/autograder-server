@@ -150,7 +150,7 @@ class UploadedFileMiscTestCase(_SetUp, test_ut.UnitTestBase):
         ]
 
         self.assertCountEqual(expected,
-                              UploadedFile.get_default_to_dict_fields())
+                              UploadedFile.get_serializable_fields())
 
         uploaded_file = UploadedFile.objects.validate_and_create(
             project=self.project,

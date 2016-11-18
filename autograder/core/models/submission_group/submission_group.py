@@ -46,21 +46,15 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         submissions -- The Submissions that this group has made for the
             associated Project.
     """
-    _DEFAULT_TO_DICT_FIELDS = [
+    SERIALIZABLE_FIELDS = (
         'project',
         'extended_due_date',
         'member_names',
 
         'num_submits_towards_limit',
-    ]
+    )
 
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    @classmethod
-    def get_editable_fields(class_):
-        return ['extended_due_date']
+    EDITABLE_FIELDS = ('extended_due_date')
 
     objects = SubmissionGroupManager()
 

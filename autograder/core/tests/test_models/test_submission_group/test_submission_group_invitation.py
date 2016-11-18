@@ -36,7 +36,7 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp, UnitTestBase):
 
         self.assertCountEqual(
             expected_fields,
-            ag_models.SubmissionGroupInvitation.get_default_to_dict_fields())
+            ag_models.SubmissionGroupInvitation.get_serializable_fields())
 
         invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,

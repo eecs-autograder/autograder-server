@@ -95,7 +95,7 @@ class Submission(ag_model_base.AutograderModel):
     class Meta:
         ordering = ['-pk']
 
-    _DEFAULT_TO_DICT_FIELDS = [
+    SERIALIZABLE_FIELDS = (
         "submission_group",
         "timestamp",
         "submitter",
@@ -109,17 +109,9 @@ class Submission(ag_model_base.AutograderModel):
         'is_past_daily_limit',
 
         'position_in_queue',
-    ]
+    )
 
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    _EDITABLE_FIELDS = frozenset(['count_towards_daily_limit'])
-
-    @classmethod
-    def get_editable_fields(class_):
-        return class_._EDITABLE_FIELDS
+    EDITABLE_FIELDS = ('count_towards_daily_limit',)
 
     # -------------------------------------------------------------------------
 

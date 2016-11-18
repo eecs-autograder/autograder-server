@@ -9,16 +9,8 @@ class Notification(AutograderModel):
     message = models.CharField(max_length=500)
     recipient = models.ForeignKey(User, related_name='notifications')
 
-    _DEFAULT_TO_DICT_FIELDS = frozenset([
+    SERIALIZABLE_FIELDS = (
         'timestamp',
         'message',
         'recipient',
-    ])
-
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    @classmethod
-    def is_read_only(class_):
-        return True
+    )

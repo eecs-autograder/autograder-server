@@ -4,6 +4,7 @@ import string
 from django.contrib.auth.models import User
 from django.core import exceptions
 
+from autograder.core.models.ag_model_base import AutograderModel
 from autograder.utils.testing import UnitTestBase
 
 from .models import (
@@ -47,7 +48,7 @@ class AGModelBaseToDictTest(_SetUp, UnitTestBase):
     def test_include_fields(self):
         self.ag_model.many_to_many.set(self.many_to_manys, clear=True)
         result = self.ag_model.to_dict(
-            include_fields=['pos_num_val', 'many_to_many'])
+            include_fields=['pk', 'pos_num_val', 'many_to_many'])
         expected = {
             'pk': self.ag_model.pk,
             'pos_num_val': self.ag_model.pos_num_val,
@@ -66,7 +67,7 @@ class AGModelBaseToDictTest(_SetUp, UnitTestBase):
         self.assertDictContentsEqual(expected, result)
 
     def test_include_and_exclude_fields(self):
-        include = ['pos_num_val', 'non_empty_str_val', 'the_answer']
+        include = ['pk', 'pos_num_val', 'non_empty_str_val', 'the_answer']
         exclude = ['non_empty_str_val', 'the_answer']
         result = self.ag_model.to_dict(include_fields=include,
                                        exclude_fields=exclude)
@@ -81,13 +82,16 @@ class AGModelBaseToDictTest(_SetUp, UnitTestBase):
             self.ag_model.to_dict(
                 include_fields=['pos_num_val', 'not_a_field_name'])
 
-        self.assertIn('invalid_field_names', cm.exception.message_dict)
-        self.assertIn('not_a_field_name',
-                      cm.exception.message_dict['invalid_field_names'])
+        self.assertIn(AutograderModel.INVALID_FIELD_NAMES_KEY,
+                      cm.exception.message_dict)
+        self.assertIn(
+            'not_a_field_name',
+            cm.exception.message_dict[AutograderModel.INVALID_FIELD_NAMES_KEY])
 
     def test_no_error_bad_exclude_field_name(self):
         result = self.ag_model.to_dict(
-            exclude_fields=['pos_num_val', 'the_answer', 'not_a_field_name', 'users'])
+            exclude_fields=['pos_num_val', 'the_answer',
+                            'not_a_field_name', 'users'])
         expected = {
             'pk': self.ag_model.pk,
             'non_empty_str_val': self.ag_model.non_empty_str_val,
@@ -130,7 +134,7 @@ class AGModelValidateAndCreateTestCase(_SetUp, UnitTestBase):
         self.assertEqual(str_val, ag_model.non_empty_str_val)
         self.assertCountEqual(self.many_to_manys, ag_model.many_to_many.all())
 
-    def test_invalid_create(self):
+    def test_invalid_create_bad_values(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderModel.objects.validate_and_create(
                 pos_num_val=-42,
@@ -187,8 +191,12 @@ class AGModelValidateAndUpdateTestCase(_SetUp, UnitTestBase):
         self.assertDictContentsEqual(old_vals, self.ag_model.to_dict())
 
     def test_invalid_update_nonexistant_field(self):
-        with self.assertRaises(exceptions.ValidationError):
+        with self.assertRaises(exceptions.ValidationError) as cm:
             self.ag_model.validate_and_update(not_a_field_name='spam')
+
+        self.assertIn(
+            'not_a_field_name',
+            cm.exception.message_dict[AutograderModel.INVALID_FIELD_NAMES_KEY])
 
     def test_invalid_update_non_editable_field(self):
         with self.assertRaises(exceptions.ValidationError) as cm:

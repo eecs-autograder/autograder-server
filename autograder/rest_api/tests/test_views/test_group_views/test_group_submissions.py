@@ -290,6 +290,9 @@ class CreateSubmissionTestCase(test_data.Client,
 
             self.assertEqual(num_submissions, group.submissions.count())
 
+    def test_invalid_more_fields_than_files_in_request(self):
+        self.fail()
+
     def do_normal_submit_test(self, group, user):
         self.add_expected_patterns(group.project)
         response = self.do_create_object_test(

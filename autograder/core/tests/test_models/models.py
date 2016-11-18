@@ -12,9 +12,7 @@ from autograder.core.models import AutograderModel
 class _DummyToManyModel(AutograderModel):
     name = models.CharField(max_length=255)
 
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return frozenset(['name'])
+    SERIALIZABLE_FIELDS = ('name',)
 
 
 class _DummyAutograderModel(AutograderModel):
@@ -23,6 +21,7 @@ class _DummyAutograderModel(AutograderModel):
     non_empty_str_val = models.TextField(
         validators=[validators.MinLengthValidator(1)])
     read_only_field = models.TextField(blank=True)
+    not_settable_on_create_field = models.IntegerField(blank=True, default=77)
 
     many_to_many = models.ManyToManyField(_DummyToManyModel)
 
@@ -32,27 +31,21 @@ class _DummyAutograderModel(AutograderModel):
     def the_answer(self):
         return 42
 
-    _DEFAULT_TO_DICT_FIELDS = frozenset([
+    SERIALIZABLE_FIELDS = (
         'pos_num_val',
         'non_empty_str_val',
         'the_answer',
         'many_to_many',
         'users'
-    ])
+    )
 
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    _EDITABLE_FIELDS = [
+    EDITABLE_FIELDS = (
         'pos_num_val',
         'non_empty_str_val',
         'many_to_many'
-    ]
+    )
 
-    @classmethod
-    def get_editable_fields(class_):
-        return class_._EDITABLE_FIELDS
+    SETTABLE_ON_CREATE_FIELDS = EDITABLE_FIELDS + ('read_only_field',)
 
 
 class _DummyForeignAutograderModel(AutograderModel):
@@ -65,13 +58,9 @@ class _DummyForeignAutograderModel(AutograderModel):
         blank=True, null=True, default=None,
         related_name='nullables')
 
-    _DEFAULT_TO_DICT_FIELDS = frozenset([
+    SERIALIZABLE_FIELDS = (
         'name',
         'one_to_one',
         'foreign_key',
         'nullable_one_to_one'
-    ])
-
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
+    )

@@ -113,7 +113,7 @@ class ProjectMiscTestCase(UnitTestBase):
         ]
 
         self.assertCountEqual(expected_fields,
-                              ag_models.Project.get_default_to_dict_fields())
+                              ag_models.Project.get_serializable_fields())
         project = obj_build.build_project()
         self.assertTrue(project.to_dict())
 

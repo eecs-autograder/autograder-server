@@ -67,7 +67,7 @@ class SubmissionTestCase(test_ut.UnitTestBase):
         ]
         self.assertCountEqual(
             expected,
-            ag_models.Submission.get_default_to_dict_fields())
+            ag_models.Submission.get_serializable_fields())
         group = obj_build.build_submission_group()
         submission = ag_models.Submission(submission_group=group)
         self.assertTrue(submission.to_dict())

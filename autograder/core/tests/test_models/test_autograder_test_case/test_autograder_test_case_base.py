@@ -201,7 +201,7 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
 
         self.assertCountEqual(
             expected_fields,
-            ag_models.AutograderTestCaseBase.get_default_to_dict_fields())
+            ag_models.AutograderTestCaseBase.get_serializable_fields())
 
         ag_test = _DummyAutograderTestCase.objects.validate_and_create(
             name='steve',

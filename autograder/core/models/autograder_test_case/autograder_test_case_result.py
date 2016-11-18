@@ -157,7 +157,7 @@ class AutograderTestCaseResult(models.Model):
             self._fdbk = fdbk_conf
             self._result = result
 
-        _DEFAULT_TO_DICT_FIELDS = frozenset([
+        SERIALIZABLE_FIELDS = (
             'ag_test_name',
 
             'return_code_correct',
@@ -190,11 +190,7 @@ class AutograderTestCaseResult(models.Model):
 
             'total_points',
             'total_points_possible'
-        ])
-
-        @classmethod
-        def get_default_to_dict_fields(class_):
-            return class_._DEFAULT_TO_DICT_FIELDS
+        )
 
         @property
         def fdbk_conf(self):

@@ -41,7 +41,7 @@ class CourseTestCase(UnitTestBase):
         ]
 
         self.assertCountEqual(expected_fields,
-                              Course.get_default_to_dict_fields())
+                              Course.get_serializable_fields())
 
         course = obj_build.build_course()
         self.assertTrue(course.to_dict())

@@ -16,26 +16,18 @@ class ExpectedStudentFilePattern(AutograderModel):
     class Meta:
         unique_together = ('pattern', 'project')
 
-    _DEFAULT_TO_DICT_FIELDS = frozenset([
+    SERIALIZABLE_FIELDS = (
         'project',
         'pattern',
         'min_num_matches',
         'max_num_matches',
-    ])
+    )
 
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    _EDITABLE_FIELDS = frozenset([
+    EDITABLE_FIELDS = (
         'pattern',
         'min_num_matches',
         'max_num_matches',
-    ])
-
-    @classmethod
-    def get_editable_fields(class_):
-        return class_._EDITABLE_FIELDS
+    )
 
     project = models.ForeignKey(Project,
                                 related_name='expected_student_file_patterns')

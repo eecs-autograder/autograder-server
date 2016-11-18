@@ -26,7 +26,7 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
 
         self.assertCountEqual(
             expected,
-            ExpectedStudentFilePattern.get_default_to_dict_fields())
+            ExpectedStudentFilePattern.get_serializable_fields())
 
         pattern = ExpectedStudentFilePattern.objects.validate_and_create(
             project=self.project,

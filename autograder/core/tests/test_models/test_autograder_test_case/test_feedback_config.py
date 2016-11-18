@@ -170,7 +170,7 @@ class AutograderFeedbackConfigurationTestCase(UnitTestBase):
         ]
 
         self.assertCountEqual(
-            field_names, ag_models.FeedbackConfig.get_default_to_dict_fields())
+            field_names, ag_models.FeedbackConfig.get_serializable_fields())
 
         self.assertTrue(ag_models.FeedbackConfig().to_dict())
 

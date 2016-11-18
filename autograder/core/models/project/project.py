@@ -36,7 +36,7 @@ class Project(AutograderModel):
     class Meta:
         unique_together = ('name', 'course')
 
-    _DEFAULT_TO_DICT_FIELDS = frozenset([
+    SERIALIZABLE_FIELDS = (
         'name',
         'course',
         'visible_to_students',
@@ -54,13 +54,9 @@ class Project(AutograderModel):
 
         'ultimate_submission_selection_method',
         'hide_ultimate_submission_fdbk',
-    ])
+    )
 
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    _EDITABLE_FIELDS = frozenset([
+    EDITABLE_FIELDS = (
         'name',
         'visible_to_students',
         'closing_time',
@@ -77,11 +73,7 @@ class Project(AutograderModel):
 
         'ultimate_submission_selection_method',
         'hide_ultimate_submission_fdbk',
-    ])
-
-    @classmethod
-    def get_editable_fields(class_):
-        return class_._EDITABLE_FIELDS
+    )
 
     name = ag_fields.ShortStringField(
         help_text='''The name used to identify this project.

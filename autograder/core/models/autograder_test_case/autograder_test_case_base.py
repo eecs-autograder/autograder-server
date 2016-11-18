@@ -32,7 +32,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     objects = PolymorphicAutograderModelManager()
 
-    _DEFAULT_TO_DICT_FIELDS = frozenset([
+    SERIALIZABLE_FIELDS = (
         'type_str',
 
         'name',
@@ -87,13 +87,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'interpreter',
         'interpreter_flags',
         'entry_point_filename',
-    ])
+    )
 
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    _EDITABLE_FIELDS = frozenset([
+    EDITABLE_FIELDS = (
         'name',
 
         'deferred',
@@ -145,13 +141,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'interpreter',
         'interpreter_flags',
         'entry_point_filename',
-    ])
+    )
 
-    @classmethod
-    def get_editable_fields(class_):
-        return class_._EDITABLE_FIELDS
-
-    # BASE FIELDS
+    # BASE FIELDS ------------------------------------------------------
 
     name = ag_fields.ShortStringField(
         help_text='''The name used to identify this test case.

@@ -50,19 +50,11 @@ class UploadedFile(AutograderModel):
     """
     objects = UploadedFileManager()
 
-    _DEFAULT_TO_DICT_FIELDS = frozenset([
+    SERIALIZABLE_FIELDS = (
         'project',
         'name',
         'size',
-    ])
-
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    @classmethod
-    def is_read_only(class_):
-        return True
+    )
 
     project = models.ForeignKey(Project, related_name='uploaded_files')
     file_obj = models.FileField(

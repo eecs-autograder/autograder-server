@@ -139,7 +139,7 @@ class MiscAutograderTestCaseResultTestCase(_SetUp, test_ut.UnitTestBase):
         self.assertCountEqual(
             expected,
             (ag_models.AutograderTestCaseResult
-                      .FeedbackCalculator.get_default_to_dict_fields()))
+                      .FeedbackCalculator.get_serializable_fields()))
 
     def test_to_dict_pk_included(self):
         result = ag_models.AutograderTestCaseResult.objects.create(

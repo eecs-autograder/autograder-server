@@ -18,7 +18,7 @@ class NotificationTestCase(UnitTestBase):
 
         self.assertCountEqual(
             expected_fields,
-            ag_models.Notification.get_default_to_dict_fields())
+            ag_models.Notification.get_serializable_fields())
 
         notification = ag_models.Notification.objects.validate_and_create(
             message='waaaaaaaaaluigi',

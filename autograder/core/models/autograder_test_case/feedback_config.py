@@ -89,7 +89,11 @@ class PointsFdbkLevel:
 
 
 class FeedbackConfig(AutograderModel):
-    _DEFAULT_TO_DICT_FIELDS = [
+    @classmethod
+    def get_serializable_fields(class_):
+        return class_.SERIALIZABLE_FIELDS
+
+    SERIALIZABLE_FIELDS = (
         'ag_test_name_fdbk',
         'return_code_fdbk',
         'show_return_code',
@@ -100,13 +104,9 @@ class FeedbackConfig(AutograderModel):
         'compilation_fdbk',
         'valgrind_fdbk',
         'points_fdbk',
-    ]
+    )
 
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    _EDITABLE_FIELDS = frozenset([
+    EDITABLE_FIELDS = (
         'ag_test_name_fdbk',
         'return_code_fdbk',
         'show_return_code',
@@ -117,11 +117,7 @@ class FeedbackConfig(AutograderModel):
         'compilation_fdbk',
         'valgrind_fdbk',
         'points_fdbk',
-    ])
-
-    @classmethod
-    def get_editable_fields(class_):
-        return class_._EDITABLE_FIELDS
+    )
 
     @classmethod
     def create_with_max_fdbk(class_):

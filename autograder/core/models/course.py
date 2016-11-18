@@ -18,15 +18,8 @@ class Course(AutograderModel):
     Related object fields:
         projects -- The group of Projects that belong to this Course.
     """
-    _DEFAULT_TO_DICT_FIELDS = frozenset(['name'])
-
-    @classmethod
-    def get_default_to_dict_fields(class_):
-        return class_._DEFAULT_TO_DICT_FIELDS
-
-    @classmethod
-    def get_editable_fields(class_):
-        return frozenset(['name'])
+    SERIALIZABLE_FIELDS = ('name',)
+    EDITABLE_FIELDS = ('name',)
 
     name = ag_fields.ShortStringField(
         unique=True,
