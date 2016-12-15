@@ -145,7 +145,7 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(0, self.submission.basic_score)
 
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
-    def test_deferred_retry_on_called_process_error(self, impl_mock):
+    def test_deferred_retry_on_error(self, impl_mock):
         self.interpreted_test.validate_and_update(deferred=True)
         self.compiled_test.delete()
         impl_mock.side_effect = TasksTestCase._SideEffectSequence([

@@ -1,4 +1,5 @@
 import os
+from typing import Iterable
 
 from django.db import models
 from django.core import validators
@@ -47,20 +48,20 @@ class Course(AutograderModel):
                   SubmissionGroups together.''')
 
     @property
-    def administrator_names(self):
+    def administrator_names(self) -> Iterable[str]:
         """
         The usernames of Users that are administrators for this Course.
         """
         return tuple(user.username for user in self.administrators.all())
 
-    def is_administrator(self, user):
+    def is_administrator(self, user: User) -> bool:
         """
         Convenience method for determining if the given user
         is an administrator.
         """
         return self.administrators.filter(pk=user.pk).exists()
 
-    def is_course_staff(self, user):
+    def is_course_staff(self, user: User) -> bool:
         """
         Returns True if the given user is a staff member for this
         Course. Note that admins are also considered staff members.

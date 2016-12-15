@@ -29,6 +29,7 @@ def grade_submission(submission_id):
         # print(list(signatures))
         # celery.chord(signatures, callback).apply_async(queue='deferred')
     except Exception:
+        print('caught a doodlydoo')
         traceback.print_exc()
         with transaction.atomic():
             submission = ag_models.Submission.objects.select_for_update().get(
