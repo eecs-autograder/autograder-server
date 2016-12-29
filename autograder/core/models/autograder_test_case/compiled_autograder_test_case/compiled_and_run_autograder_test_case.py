@@ -23,7 +23,7 @@ class CompiledAndRunAutograderTestCase(CompiledAutograderTestCase):
 
         self.add_needed_files_to_sandbox(submission, autograder_sandbox)
 
-        result = AutograderTestCaseResult(
+        result = AutograderTestCaseResult.objects.get(
             test_case=self, submission=submission)
 
         # result is modified by reference in this function

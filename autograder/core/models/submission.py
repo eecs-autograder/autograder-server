@@ -13,6 +13,8 @@ import autograder.core.constants as const
 import autograder.core.fields as ag_fields
 
 from . import ag_model_base
+from .autograder_test_case.autograder_test_case_result import (
+    AutograderTestCaseResult)
 
 
 def _get_submission_file_upload_to_dir(submission, filename):
@@ -56,6 +58,11 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
         self.check_for_missing_files(submission)
 
         submission.save()
+        ag_tests = submission.submission_group.project.autograder_test_cases.all()
+        AutograderTestCaseResult.objects.bulk_create([
+            AutograderTestCaseResult(test_case=test_case, submission=submission)
+            for test_case in ag_tests
+        ])
         return submission
 
     def check_for_missing_files(self, submission):
@@ -103,7 +110,6 @@ class Submission(ag_model_base.AutograderModel):
         "discarded_files",
         "missing_files",
         "status",
-        "grading_errors",
 
         'count_towards_daily_limit',
         'is_past_daily_limit',
@@ -300,25 +306,6 @@ class Submission(ag_model_base.AutograderModel):
 
     def _get_submitted_file_dir(self, filename):
         return os.path.join(core_ut.get_submission_dir(self), filename)
-
-    @staticmethod
-    def get_most_recent_submissions(project):
-        """
-        Returns a list containing each SubmissionGroup's most
-        recent Submission for the given project.
-
-        # TODO: REMOVE
-        """
-        submissions = []
-        for group in project.submission_groups.all():
-            try:
-                group_sub = group.submissions.first()
-            except IndexError:
-                continue
-            if group_sub:
-                submissions.append(group_sub)
-
-        return submissions
 
     def get_submitted_file_basenames(self):
         return self.submitted_filenames

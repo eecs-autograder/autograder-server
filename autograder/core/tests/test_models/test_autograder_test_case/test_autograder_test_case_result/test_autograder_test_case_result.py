@@ -30,8 +30,7 @@ class _SetUp:
 
         self.test_name = 'my_test'
         self.test_case = _DummyAutograderTestCase.objects.validate_and_create(
-            name=self.test_name,
-            project=self.project)
+            name=self.test_name, project=self.project)
 
 
 class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
@@ -82,7 +81,7 @@ class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
             self.result.get_max_feedback().fdbk_conf.to_dict())
 
 
-class MiscAutograderTestCaseResultTestCase(_SetUp, test_ut.UnitTestBase):
+class MiscAGTestResultTestCase(_SetUp, test_ut.UnitTestBase):
     def test_default_init(self):
         result = ag_models.AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
@@ -91,6 +90,12 @@ class MiscAutograderTestCaseResultTestCase(_SetUp, test_ut.UnitTestBase):
         result.refresh_from_db()
 
         self.assertEqual(result.test_case, self.test_case)
+        self.assertEqual(result.submission, self.submission)
+        self.assertEqual(
+            result.status,
+            ag_models.AutograderTestCaseResult.ResultStatus.pending)
+        self.assertEqual('', result.error_msg)
+
         self.assertIsNone(result.return_code)
         self.assertEqual(result.standard_output, '')
         self.assertEqual(result.standard_error_output, '')
@@ -100,6 +105,25 @@ class MiscAutograderTestCaseResultTestCase(_SetUp, test_ut.UnitTestBase):
         self.assertIsNone(result.compilation_return_code)
         self.assertEqual(result.compilation_standard_output, '')
         self.assertEqual(result.compilation_standard_error_output, '')
+
+    def test_result_obj_serializable_fields(self):
+        expected = [
+            'pk',
+            'status',
+            'error_msg',
+            'return_code',
+            'standard_output',
+            'standard_error_output',
+            'timed_out',
+            'valgrind_return_code',
+            'valgrind_output',
+            'compilation_return_code',
+            'compilation_standard_output',
+            'compilation_standard_error_output',
+        ]
+        self.assertCountEqual(
+            expected,
+            ag_models.AutograderTestCaseResult.get_serializable_fields())
 
     def test_feedback_calculator_serializable_fields(self):
         expected = [
@@ -142,7 +166,7 @@ class MiscAutograderTestCaseResultTestCase(_SetUp, test_ut.UnitTestBase):
             (ag_models.AutograderTestCaseResult
                       .FeedbackCalculator.get_serializable_fields()))
 
-    def test_to_dict_pk_included(self):
+    def test_fdbk_calc_to_dict_pk_included(self):
         result = ag_models.AutograderTestCaseResult.objects.create(
             test_case=self.test_case,
             submission=self.submission)
@@ -218,12 +242,12 @@ class TotalScoreTestCase(test_ut.UnitTestBase):
 
         test_case = result.test_case
 
-        result = obj_build.build_compiled_ag_test_result(
-            test_case=test_case)
+        result = obj_build.build_compiled_ag_test_result(test_case=test_case)
         result.test_case.feedback_configuration = (
             feedback_config.FeedbackConfig.create_with_max_fdbk())
         results.append(result)
 
+        self.assertEqual(2, len(results))
         self.assertEqual(results[0].test_case, results[1].test_case)
 
         for result in results:

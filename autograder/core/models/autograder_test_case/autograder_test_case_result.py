@@ -6,15 +6,33 @@ from django.db import models
 
 from autograder.core.models.ag_model_base import ToDictMixin
 import autograder.core.constants as const
+import autograder.core.fields as ag_fields
 
 from . import feedback_config as fdbk_conf
 
 
-class AutograderTestCaseResult(models.Model):
+class AutograderTestCaseResult(ToDictMixin, models.Model):
     """
     This class stores the data from an autograder test case
-    and provides an interface for serializing the data.
+    and provides an interface for serializing the data with different
+    feedback levels.
     """
+    class Meta:
+        unique_together = ('test_case', 'submission')
+
+    class ResultStatus:
+        pending = 'pending'
+        grading = 'grading'
+        finished = 'finished'
+        error = 'error'
+
+        values = [
+            pending,
+            grading,
+            finished,
+            error,
+        ]
+
     # Using a string here instead of class to get around circular dependency
     test_case = models.ForeignKey(
         "AutograderTestCaseBase", related_name='dependent_results',
@@ -24,6 +42,15 @@ class AutograderTestCaseResult(models.Model):
         'Submission',
         related_name='results',
         help_text='''The submission the test case was run for.''')
+
+    status = ag_fields.ShortStringField(
+        choices=zip(ResultStatus.values, ResultStatus.values),
+        default=ResultStatus.pending,
+        help_text='''The grading status of this result.''')
+
+    error_msg = models.TextField(
+        blank=True,
+        help_text='''If status is "error", an error message will be stored here.''')
 
     return_code = models.IntegerField(
         null=True, default=None,
@@ -60,6 +87,20 @@ class AutograderTestCaseResult(models.Model):
     compilation_standard_error_output = models.TextField(
         help_text='''The contents of the standard error stream of the
             command used to compile the program being tested.''')
+
+    SERIALIZABLE_FIELDS = (
+        'status',
+        'error_msg',
+        'return_code',
+        'standard_output',
+        'standard_error_output',
+        'timed_out',
+        'valgrind_return_code',
+        'valgrind_output',
+        'compilation_return_code',
+        'compilation_standard_output',
+        'compilation_standard_error_output',
+    )
 
     # -------------------------------------------------------------------------
 

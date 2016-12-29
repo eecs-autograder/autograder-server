@@ -45,38 +45,6 @@ class SubmissionTestCase(test_ut.UnitTestBase):
             ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
                 **pattern_settings)
 
-    def test_serializable_fields(self):
-        # Note: Do NOT add basic_score to this list, as that will leak
-        # information in certain scenarios (such as when a student
-        # requests feedback on a submission that is past the daily
-        # limit).
-        expected = [
-            'pk',
-            'submission_group',
-            'timestamp',
-            'submitter',
-            'submitted_filenames',
-            'discarded_files',
-            'missing_files',
-            'status',
-            'grading_errors',
-
-            'count_towards_daily_limit',
-            'is_past_daily_limit',
-
-            'position_in_queue',
-        ]
-        self.assertCountEqual(
-            expected,
-            ag_models.Submission.get_serializable_fields())
-        group = obj_build.build_submission_group()
-        submission = ag_models.Submission(submission_group=group)
-        self.assertTrue(submission.to_dict())
-
-    def test_editable_fields(self):
-        self.assertCountEqual(['count_towards_daily_limit'],
-                              ag_models.Submission.get_editable_fields())
-
     def test_valid_init(self):
         SimpleFileTuple = namedtuple('SimpleFileTuple', ['name', 'content'])
 
@@ -97,6 +65,10 @@ class SubmissionTestCase(test_ut.UnitTestBase):
             submitter=submitter)
 
         submission.refresh_from_db()
+
+        # Make sure initial set of results was created
+        for test in self.submission_group.project.autograder_test_cases.all():
+            submission.results.get(test_case=test)
 
         self.assertEqual(submitter, submission.submitter)
         self.assertEqual(
@@ -275,6 +247,37 @@ class SubmissionTestCase(test_ut.UnitTestBase):
             statuses,
             ag_models.Submission.GradingStatus.active_statuses)
 
+    def test_serializable_fields(self):
+        # Note: Do NOT add basic_score to this list, as that will leak
+        # information in certain scenarios (such as when a student
+        # requests feedback on a submission that is past the daily
+        # limit).
+        expected = [
+            'pk',
+            'submission_group',
+            'timestamp',
+            'submitter',
+            'submitted_filenames',
+            'discarded_files',
+            'missing_files',
+            'status',
+
+            'count_towards_daily_limit',
+            'is_past_daily_limit',
+
+            'position_in_queue',
+        ]
+        self.assertCountEqual(
+            expected,
+            ag_models.Submission.get_serializable_fields())
+        group = obj_build.build_submission_group()
+        submission = ag_models.Submission(submission_group=group)
+        self.assertTrue(submission.to_dict())
+
+    def test_editable_fields(self):
+        self.assertCountEqual(['count_towards_daily_limit'],
+                              ag_models.Submission.get_editable_fields())
+
 
 class PositionInQueueTestCase(test_ut.UnitTestBase):
     def test_position_in_queue_multiple_projects(self):
@@ -420,20 +423,13 @@ class TotalPointsTestCase(test_ut.UnitTestBase):
         other_sub = submissions[1]
 
         result = submission.results.first()
-        test_case = result.test_case
-        result.delete()
+        result.return_code = 123
+        result.standard_output = 'this output is very very wrong'
+        result.standard_error_output = 'this output is even wrongier'
+        result.compilation_return_code = 456
+
+        result.save()
         self.assertEqual(0, submission.basic_score)
-
-        self.assertEqual(
-            obj_build.build_compiled_ag_test.points_with_all_used,
-            other_sub.basic_score)
-
-        result = obj_build.build_compiled_ag_test_result(
-            test_case=test_case, submission=submission)
-
-        self.assertEqual(
-            obj_build.build_compiled_ag_test.points_with_all_used,
-            submission.basic_score)
 
         self.assertEqual(
             obj_build.build_compiled_ag_test.points_with_all_used,
@@ -444,39 +440,3 @@ class TotalPointsTestCase(test_ut.UnitTestBase):
         submission = ag_models.Submission.objects.validate_and_create(
             [], submission_group=group)
         self.assertEqual(0, submission.basic_score)
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-
-class SubmissionQueryFunctionTests(test_ut.UnitTestBase):
-    def setUp(self):
-        super().setUp()
-
-        self.project = obj_build.build_project()
-
-    def test_get_most_recent_submissions_normal(self):
-        groups = [
-            obj_build.build_submission_group(
-                group_kwargs={'project': self.project})
-            for i in range(10)
-        ]
-
-        expected_final_subs = []
-        for group in groups:
-            num_submissions = 4
-            for i in range(num_submissions):
-                sub = ag_models.Submission.objects.validate_and_create(
-                    submitted_files=[], submission_group=group)
-                if i == num_submissions - 1:
-                    expected_final_subs.append(sub)
-
-        self.assertCountEqual(
-            expected_final_subs,
-            ag_models.Submission.get_most_recent_submissions(self.project))
-
-    def test_get_most_recent_submissions_group_has_no_submissions(self):
-        group = obj_build.build_submission_group()
-        self.assertCountEqual([], group.submissions.all())
-        self.assertCountEqual(
-            [], ag_models.Submission.get_most_recent_submissions(self.project))

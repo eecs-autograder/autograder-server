@@ -22,7 +22,7 @@ class CompilationOnlyAutograderTestCase(CompiledAutograderTestCase):
 
     def run(self, submission, autograder_sandbox):
         print('running test: ' + self.name)
-        result = AutograderTestCaseResult(
+        result = AutograderTestCaseResult.objects.get(
             test_case=self, submission=submission)
         self.add_needed_files_to_sandbox(submission, autograder_sandbox)
         self._compile_program(submission, result, autograder_sandbox)

@@ -36,7 +36,10 @@ def create_dummy_users(num_users, is_superuser=False):
     return users
 
 
-def build_course(course_kwargs=None):
+def build_course(course_kwargs: dict=None) -> ag_models.Course:
+    '''
+    Constructs a Course with some random default arguments.
+    '''
     if course_kwargs is None:
         course_kwargs = {}
 
@@ -105,23 +108,24 @@ def build_compiled_ag_test_result(ag_test_with_points=True,
     if ag_test_kwargs is None:
         ag_test_kwargs = {}
 
-    if 'project' not in ag_test_kwargs:
+    if 'test_case' not in result_kwargs and 'project' not in ag_test_kwargs:
         if 'submission' in result_kwargs:
             ag_test_kwargs['project'] = (
                 result_kwargs['submission'].submission_group.project)
         else:
             ag_test_kwargs['project'] = build_project()
 
-    if 'submission' not in result_kwargs:
-        group = build_submission_group(
-            group_kwargs={'project': ag_test_kwargs['project']})
-        result_kwargs['submission'] = build_submission(submission_group=group)
-
-    if 'test_case' not in result_kwargs:
         result_kwargs['test_case'] = build_compiled_ag_test(
             with_points=ag_test_with_points, **ag_test_kwargs)
 
+    if 'submission' not in result_kwargs:
+        group = build_submission_group(
+            group_kwargs={'project': result_kwargs['test_case'].project})
+        result_kwargs['submission'] = build_submission(submission_group=group)
+
     ag_test = result_kwargs['test_case']
+    result_queryset = ag_models.AutograderTestCaseResult.objects.filter(
+        test_case=ag_test, submission=result_kwargs['submission'])
     if all_points_used:
         result_kwargs.update({
             'return_code': ag_test.expected_return_code,
@@ -131,7 +135,13 @@ def build_compiled_ag_test_result(ag_test_with_points=True,
             'compilation_return_code': 0
         })
 
-    return ag_models.AutograderTestCaseResult.objects.create(**result_kwargs)
+    result_queryset.all().update(**result_kwargs)
+    # This makes sure that the Python AutograderTestCaseBase object that
+    # the result has a reference to is the same one that was passed in
+    # to result_kwargs, if any.
+    result = result_queryset.get()
+    result.test_case = ag_test
+    return result
 
 
 def build_submission_group(num_members=1,
@@ -182,7 +192,13 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
     if test_fdbk is None:
         test_fdbk = FeedbackConfig.create_with_max_fdbk()
 
-    project = build_project()
+    if 'submission_group' not in submission_kwargs:
+        project = build_project()
+        submission_kwargs['submission_group'] = build_submission_group(
+            group_kwargs={'project': project})
+    else:
+        project = submission_kwargs['submission_group'].project
+
     tests = []
     for i in range(num_tests):
         fdbk = FeedbackConfig.objects.validate_and_create(**test_fdbk.to_dict())
@@ -190,17 +206,11 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
             with_points=True, project=project, feedback_configuration=fdbk)
         tests.append(test)
 
-    if 'submission_group' not in submission_kwargs:
-        submission_kwargs['submission_group'] = build_submission_group(
-            group_kwargs={'project': project})
-
     submissions = []
     for i in range(num_submissions):
         submission = build_submission(**submission_kwargs)
-
         for test in tests:
-            build_compiled_ag_test_result(test_case=test,
-                                          submission=submission)
+            build_compiled_ag_test_result(test_case=test, submission=submission)
 
         submissions.append(submission)
 
