@@ -10,6 +10,50 @@ import celery
 import autograder.core.models as ag_models
 
 
+def retry(max_num_retries=settings.AG_TEST_MAX_RETRIES,
+          retry_delay_start=settings.AG_TEST_MIN_RETRY_DELAY,
+          retry_delay_end=settings.AG_TEST_MAX_RETRY_DELAY,
+          retry_delay_step=None):
+    '''
+    This decorator applies a synchronous retry loop to the decorated
+    function.
+
+    :param max_num_retries: The maximum number of times the decorated
+        function can be retried before raising an exception. This
+        parameter must be greater than zero.
+
+    :param retry_delay_start: The delay time, in seconds, before retrying
+        the function for the first time.
+
+    :param retry_delay_end: The delay time, in seconds, before retrying
+        the function for the last time.
+
+    :param retry_delay_step: The number of seconds to increase the retry
+        delay for each consecutive retry. If not specified, defaults to
+        (retry_delay_end - retry_delay_start) / max_num_retries
+    '''
+    if retry_delay_step is None:
+        retry_delay_step = (retry_delay_end - retry_delay_start) / max_num_retries
+
+    def decorator(func):
+        def func_with_retry(*args, **kwargs):
+            num_retries_remaining = max_num_retries
+            retry_delay = retry_delay_start
+            while num_retries_remaining >= 0:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    num_retries_remaining -= 1
+                    time.sleep(retry_delay)
+                    retry_delay += retry_delay_step
+
+            raise celery.exceptions.MaxRetriesExceededError
+
+        return func_with_retry
+
+    return decorator
+
+
 @celery.shared_task
 def grade_submission(submission_id):
     try:
@@ -23,7 +67,7 @@ def grade_submission(submission_id):
         deferred_queryset = project.autograder_test_cases.filter(deferred=True)
         for ag_test in deferred_queryset:
             grade_ag_test.apply_async([ag_test.pk, submission_id], queue='deferred')
-        # signatures = (grade_ag_test.s(ag_test.pk, submission_id)
+        # signatures = (grade_ag_test.signature(args=(ag_test.pk, submission_id), queue='deferred')
         #               for ag_test in deferred_queryset)
         # callback = mark_as_finished.s(submission_id)
         # print(list(signatures))
