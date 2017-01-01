@@ -10,8 +10,6 @@ from django.test import tag
 from rest_framework import status
 from rest_framework.test import APIClient
 
-import celery
-
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.utils.testing as test_ut
@@ -51,7 +49,7 @@ class RetryDecoratorTestCase(test_ut.UnitTestBase):
         def func_to_retry():
             raise Exception('Errrrror')
 
-        with self.assertRaises(celery.exceptions.MaxRetriesExceededError):
+        with self.assertRaises(tasks.MaxRetriesExceeded):
             func_to_retry()
 
     @mock.patch('autograder.grading_tasks.tasks.time.sleep')
@@ -67,7 +65,7 @@ class RetryDecoratorTestCase(test_ut.UnitTestBase):
         def func_to_retry():
             raise Exception
 
-        with self.assertRaises(celery.exceptions.MaxRetriesExceededError):
+        with self.assertRaises(tasks.MaxRetriesExceeded):
             func_to_retry()
 
         mocked_sleep.assert_has_calls(
@@ -82,7 +80,7 @@ class RetryDecoratorTestCase(test_ut.UnitTestBase):
         def func_to_retry():
             raise Exception
 
-        with self.assertRaises(celery.exceptions.MaxRetriesExceededError):
+        with self.assertRaises(tasks.MaxRetriesExceeded):
             func_to_retry()
 
         mocked_sleep.assert_has_calls([mock.call(0) for i in range(max_num_retries)])
@@ -144,7 +142,6 @@ class TasksTestCase(test_ut.UnitTestBase):
     def test_grade_submission_no_deferred(self):
         print(self.submission.pk)
         tasks.grade_submission(self.submission.pk)
-        tasks.check_for_finished_deferreds()
 
         self.submission.refresh_from_db()
         self.assertEqual(2, self.submission.basic_score)
@@ -155,7 +152,6 @@ class TasksTestCase(test_ut.UnitTestBase):
     def test_grade_submission_some_deferred(self):
         self.compiled_test.validate_and_update(deferred=True)
         tasks.grade_submission(self.submission.pk)
-        tasks.check_for_finished_deferreds()
 
         self.submission.refresh_from_db()
         self.assertEqual(2, self.submission.basic_score)
@@ -165,7 +161,6 @@ class TasksTestCase(test_ut.UnitTestBase):
     def test_grade_submission_all_deferred(self):
         self._mark_all_as_deferred()
         tasks.grade_submission(self.submission.pk)
-        tasks.check_for_finished_deferreds()
 
         self.submission.refresh_from_db()
         self.assertEqual(2, self.submission.basic_score)
@@ -177,7 +172,6 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.submission.status = ag_models.Submission.GradingStatus.removed_from_queue
         self.submission.save()
         tasks.grade_submission(self.submission.pk)
-        tasks.check_for_finished_deferreds()
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.removed_from_queue,
@@ -193,7 +187,7 @@ class TasksTestCase(test_ut.UnitTestBase):
         tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
-        self.assertEqual(ag_models.Submission.GradingStatus.waiting_for_deferred,
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
         self.assertEqual(2, self.submission.basic_score)
 
@@ -202,13 +196,16 @@ class TasksTestCase(test_ut.UnitTestBase):
         impl_mock.side_effect = [
             subprocess.CalledProcessError(42, ['waaaluigi'])
             for i in range(settings.AG_TEST_MAX_RETRIES + 1)]
-        with self.assertRaises(subprocess.CalledProcessError):
+        with self.assertRaises(tasks.MaxRetriesExceeded):
             tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.error,
                          self.submission.status)
+        self.assertNotEqual('', self.submission.error_msg)
         self.assertEqual(0, self.submission.basic_score)
+
+        self.fail('TODO: check ag test result status')
 
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
     def test_deferred_retry_on_error(self, impl_mock):
@@ -221,11 +218,15 @@ class TasksTestCase(test_ut.UnitTestBase):
 
         self.submission.refresh_from_db()
         self.assertEqual(1, self.submission.basic_score)
-        self.assertEqual(ag_models.Submission.GradingStatus.waiting_for_deferred,
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl')
     def test_deferred_ag_test_max_retries_exceeded(self, impl_mock):
+        self.fail('TODO: cause a deferred test to fail, check ag test '
+                  'and submission statuses, make sure error callback '
+                  'for the chord works correctly')
+
         impl_mock.side_effect = [
             subprocess.CalledProcessError(42, ['waaaluigi'])
             for i in range(settings.AG_TEST_MAX_RETRIES + 1)]
@@ -350,34 +351,11 @@ class RaceConditionTestCase(gen_data.Project,
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
         time_waited = 0
-        while (submission.status !=
+        while (submission.status !=  # TODO: get rid of this loop?
                 ag_models.Submission.GradingStatus.finished_grading):
-            tasks.check_for_finished_deferreds()
             print(submission.status)
             if time_waited > 10:
                 self.fail('spent too long waiting')
             time.sleep(2)
             time_waited += 2
             submission.refresh_from_db()
-
-    def test_mark_as_waiting_for_deferred_and_finished_grading_at_same_time_race_prevented(self):
-        group = self.admin_group(self.project)
-        submission = self.build_submission(group)
-
-        path = 'autograder.grading_tasks.tasks.mark_as_finished.mocking_hook'
-
-        @test_ut.sleeper_subtest(path)
-        def do_mark_as_finished():
-            tasks.mark_as_finished([], submission.pk)
-            submission.refresh_from_db()
-            self.assertEqual(
-                ag_models.Submission.GradingStatus.finished_grading,
-                submission.status)
-
-        subtest = do_mark_as_finished()
-        tasks.mark_as_waiting_for_deferred(submission.pk)
-        subtest.join()
-        submission.refresh_from_db()
-        self.assertEqual(
-            ag_models.Submission.GradingStatus.finished_grading,
-            submission.status)

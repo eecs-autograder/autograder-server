@@ -240,10 +240,9 @@ class Submission(ag_model_base.AutograderModel):
 
         return num_submissions_before_self >= project.submission_limit_per_day
 
-    grading_errors = ag_fields.StringArrayField(
-        default=list, blank=True,
-        help_text='''A list of errors that occurred while grading this
-            submission''')
+    error_msg = models.TextField(
+        blank=True,
+        help_text='''If status is "error", an error message will be stored here.''')
 
     # Note: Don't include basic_score in to_dict() serialization. If you
     # want to expose it as part of the server api, do so with a

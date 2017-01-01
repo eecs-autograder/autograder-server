@@ -74,7 +74,7 @@ class SubmissionTestCase(test_ut.UnitTestBase):
         self.assertEqual(
             submission.status,
             ag_models.Submission.GradingStatus.received)
-        self.assertCountEqual(submission.grading_errors, [])
+        self.assertEqual(submission.error_msg, '')
         self.assertCountEqual(submission.missing_files, [])
         self.assertCountEqual(
             (file_.name for file_ in files_to_submit),

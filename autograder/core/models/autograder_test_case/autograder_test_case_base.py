@@ -520,9 +520,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         """
         Runs this autograder test case and returns an
         AutograderTestCaseResult object that is linked to the given
-        submission. The test case will be run inside the given
-        AutograderSandbox. Any needed files will be added to the sandbox
-        by this method.
+        submission and this test case. The test case will be run inside
+        the given AutograderSandbox. Any needed files will be added to
+        the sandbox by this method.
 
         NOTE: This method does NOT save the result object to the
             database.

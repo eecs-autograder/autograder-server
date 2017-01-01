@@ -1,7 +1,6 @@
 import random
 import uuid
 import base64
-from typing import List
 
 from django.contrib.auth.models import User
 
@@ -12,12 +11,18 @@ from autograder.core.models.autograder_test_case.feedback_config import (
     ValgrindFdbkLevel, PointsFdbkLevel)
 
 
-def get_unique_id():
-    user_id = base64.urlsafe_b64encode(uuid.uuid4().bytes)
-    return user_id.decode('utf-8')
+def get_unique_id() -> str:
+    '''
+    Returns a base64 encoded uuid as a string. The value returned can
+    be added to a database object's fields to make them unique.
+    A base64 representation is used because it is short enough to fit
+    within the length restrictions of the "username" field of django
+    User objects.
+    '''
+    return base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8')
 
 
-def create_dummy_user(is_superuser=False):
+def create_dummy_user(is_superuser: bool=False):
     '''
     Creates a User with a random username. If is_superuser is True,
     creates the User with superuser status.
@@ -25,7 +30,7 @@ def create_dummy_user(is_superuser=False):
     return create_dummy_users(1, is_superuser=is_superuser)[0]
 
 
-def create_dummy_users(num_users, is_superuser=False):
+def create_dummy_users(num_users: int, is_superuser: bool=False):
     '''
     Creates list of num_users Users with random usernames.
     If is_superuser is True, creates each User with superuser status.
@@ -149,7 +154,7 @@ def build_compiled_ag_test(with_points=True,
     return ag_models.AutograderTestCaseFactory.validate_and_create(
         'compiled_and_run_test_case', **ag_test_kwargs
     )
-build_compiled_ag_test.points_with_all_used = 16
+build_compiled_ag_test.points_with_all_used = 16  # type: ignore
 
 
 def build_compiled_ag_test_result(ag_test_with_points=True,
