@@ -4,7 +4,7 @@ class JsonSerializable:
     serialized to and deserialized from JSON objects.
     """
     @classmethod
-    def from_json(class_, json):
+    def from_json(cls, json):
         raise NotImplementedError('This method must be overridden')
 
     def to_json(self):

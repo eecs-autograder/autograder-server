@@ -90,8 +90,8 @@ class PointsFdbkLevel:
 
 class FeedbackConfig(AutograderModel):
     @classmethod
-    def get_serializable_fields(class_):
-        return class_.SERIALIZABLE_FIELDS
+    def get_serializable_fields(cls):
+        return cls.SERIALIZABLE_FIELDS
 
     SERIALIZABLE_FIELDS = (
         'ag_test_name_fdbk',
@@ -120,8 +120,8 @@ class FeedbackConfig(AutograderModel):
     )
 
     @classmethod
-    def create_with_max_fdbk(class_):
-        return class_.objects.validate_and_create(
+    def create_with_max_fdbk(cls):
+        return cls.objects.validate_and_create(
             ag_test_name_fdbk=AGTestNameFdbkLevel.max_lvl,
             return_code_fdbk=ReturnCodeFdbkLevel.max_lvl,
             show_return_code=True,
@@ -135,13 +135,13 @@ class FeedbackConfig(AutograderModel):
         )
 
     @classmethod
-    def create_ultimate_submission_default(class_):
+    def create_ultimate_submission_default(cls):
         '''
         Returns a feedback configuration that will show the points
         awarded for each test criterion without showing details (such as
         an output comparison) about why those criteria were not met.
         '''
-        return class_.objects.validate_and_create(
+        return cls.objects.validate_and_create(
             ag_test_name_fdbk=AGTestNameFdbkLevel.show_real_name,
             return_code_fdbk=ReturnCodeFdbkLevel.correct_or_incorrect_only,
             show_return_code=False,
