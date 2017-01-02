@@ -408,10 +408,6 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
 
         group = obj_build.build_submission_group()
 
-        self.submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=group,
-            submitted_files=[])
-
         self.test = ag_models.AutograderTestCaseFactory.validate_and_create(
             'compiled_and_run_test_case',
             name='testy',
@@ -421,14 +417,17 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
             virtual_memory_limit=self.virtual_mem_limit,
             compiler='g++')
 
-    @mock.patch('autograder_sandbox.AutograderSandbox',
-                autospec=True)
-    def test_resource_limits_set(self, MockSandbox):
+        self.submission = ag_models.Submission.objects.validate_and_create(
+            submission_group=group,
+            submitted_files=[])
+
+    @mock.patch('autograder_sandbox.AutograderSandbox', autospec=True)
+    def test_resource_limits_set(self, mock_sandbox_class):
         run_cmd_mock_result = mock.Mock()
         type(run_cmd_mock_result).return_code = (
             mock.PropertyMock(return_value=0))
 
-        sandbox = MockSandbox()
+        sandbox = mock_sandbox_class()
         sandbox.run_command.return_value = run_cmd_mock_result
         self.test.run(self.submission, sandbox)
 
@@ -442,7 +441,7 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
 
     @mock.patch('autograder_sandbox.AutograderSandbox',
                 autospec=True)
-    def test_resource_limits_used_with_valgrind(self, MockSandbox):
+    def test_resource_limits_used_with_valgrind(self, mock_sandbox_class):
         self.test.use_valgrind = True
         self.test.valgrind_flags = ['asdf']
         self.test.save()
@@ -451,7 +450,7 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
         type(run_cmd_mock_result).return_code = (
             mock.PropertyMock(return_value=0))
 
-        sandbox = MockSandbox()
+        sandbox = mock_sandbox_class()
         sandbox.run_command.return_value = run_cmd_mock_result
         self.test.run(self.submission, sandbox)
 

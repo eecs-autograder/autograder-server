@@ -31,6 +31,13 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
     @transaction.atomic()
     def validate_and_create(self, submitted_files, **kwargs):
         """
+        This method override handles additional details required for
+        creating a Submission.
+        - Submitted files are filtered based on the patterns students
+          are supposed to submit. Extra files are discarded.
+        - A set of AutograderTestCaseResults is created--one for each
+          autograder test case associated with this Submission's
+          Project.
         Positional args:
             submitted_files -- A list of files being submitted. The
                 following checks are performed on this argument:

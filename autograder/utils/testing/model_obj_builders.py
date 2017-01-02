@@ -188,7 +188,10 @@ def build_compiled_ag_test_result(ag_test_with_points=True,
     test_case = result_kwargs.get('test_case', None)
     project = ag_test_kwargs.get('project', None)
     if project is None:
-        project = build_project()
+        if test_case is not None:
+            project = test_case.project
+        else:
+            project = build_project()
         ag_test_kwargs['project'] = project
 
     test_case_is_new = False
