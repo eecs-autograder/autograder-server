@@ -1,5 +1,4 @@
 import subprocess
-import time
 from unittest import mock  # type: ignore
 
 from django.conf import settings
@@ -177,8 +176,9 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.removed_from_queue,
                          self.submission.status)
 
+    @mock.patch('autograder.grading_tasks.tasks.time.sleep')
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
-    def test_non_deferred_retry_on_error(self, impl_mock):
+    def test_non_deferred_retry_on_error(self, impl_mock, *args):
         impl_mock.side_effect = TasksTestCase._SideEffectSequence([
             _MockException('retry me I am an error'),
             lambda: None,
@@ -191,8 +191,9 @@ class TasksTestCase(test_ut.UnitTestBase):
                          self.submission.status)
         self.assertEqual(2, self.submission.basic_score)
 
-    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl')
-    def test_non_deferred_max_num_retries_exceeded(self, impl_mock):
+    @mock.patch('autograder.grading_tasks.tasks.time.sleep')
+    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
+    def test_non_deferred_max_num_retries_exceeded(self, impl_mock, *args):
         impl_mock.side_effect = [
             subprocess.CalledProcessError(42, ['waaaluigi'])
             for i in range(settings.AG_TEST_MAX_RETRIES + 1)]
@@ -205,10 +206,17 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertNotEqual('', self.submission.error_msg)
         self.assertEqual(0, self.submission.basic_score)
 
-        self.fail('TODO: check ag test result status')
+        pending_result = self.submission.results.get(
+            status=ag_models.AutograderTestCaseResult.ResultStatus.pending)
+        error_result = self.submission.results.get(
+            status=ag_models.AutograderTestCaseResult.ResultStatus.error)
 
+        self.assertEqual('', pending_result.error_msg)
+        self.assertNotEqual('', error_result.error_msg)
+
+    @mock.patch('autograder.grading_tasks.tasks.time.sleep')
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
-    def test_deferred_retry_on_error(self, impl_mock):
+    def test_deferred_retry_on_error(self, impl_mock, *args):
         self.interpreted_test.validate_and_update(deferred=True)
         self.compiled_test.delete()
         impl_mock.side_effect = TasksTestCase._SideEffectSequence([
@@ -221,17 +229,26 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl')
-    def test_deferred_ag_test_max_retries_exceeded(self, impl_mock):
-        self.fail('TODO: cause a deferred test to fail, check ag test '
-                  'and submission statuses, make sure error callback '
-                  'for the chord works correctly')
+    @mock.patch('autograder.grading_tasks.tasks.time.sleep')
+    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
+    def test_deferred_ag_test_error(self, impl_mock, *args):
+        self.compiled_test.delete()
+        self.interpreted_test.validate_and_update(deferred=True)
+        impl_mock.side_effect = _MockException('zomg error!')
 
-        impl_mock.side_effect = [
-            subprocess.CalledProcessError(42, ['waaaluigi'])
-            for i in range(settings.AG_TEST_MAX_RETRIES + 1)]
-        with self.assertRaises(subprocess.CalledProcessError):
-            tasks.grade_ag_test(self.compiled_test.pk, self.submission.pk)
+        with self.assertRaises(Exception):
+            tasks.grade_submission(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.error,
+                         self.submission.status)
+        self.assertNotEqual('', self.submission.error_msg)
+
+        interpreted_result = self.submission.results.get(
+            test_case=self.interpreted_test)
+        self.assertEqual(ag_models.AutograderTestCaseResult.ResultStatus.error,
+                         interpreted_result.status)
+        self.assertNotEqual('', interpreted_result.error_msg)
 
     def _mark_all_as_deferred(self):
         self.compiled_test.validate_and_update(deferred=True)
@@ -350,12 +367,5 @@ class RaceConditionTestCase(gen_data.Project,
             submission.status)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-        time_waited = 0
-        while (submission.status !=  # TODO: get rid of this loop?
-                ag_models.Submission.GradingStatus.finished_grading):
-            print(submission.status)
-            if time_waited > 10:
-                self.fail('spent too long waiting')
-            time.sleep(2)
-            time_waited += 2
-            submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+                         submission.status)

@@ -97,7 +97,10 @@ def grade_submission(submission_pk):
             _mark_submission_as_finished_impl(submission_pk)
             return
 
-        celery.chord(signatures)(mark_submission_as_finished.s(submission_pk))
+        callback = mark_submission_as_finished.s(
+            submission_pk
+        ).on_error(on_chord_error.s())
+        celery.chord(signatures)(callback)
     except Exception:
         print('Error grading submission')
         traceback.print_exc()
@@ -125,6 +128,7 @@ def grade_deferred_ag_test(self, ag_test_pk, submission_pk):
         print('Error grading deferred test')
         traceback.print_exc()
         _mark_submission_as_error(submission_pk, traceback.format_exc())
+        raise
 
 
 def grade_ag_test_impl(ag_test_pk, submission_pk):
@@ -139,20 +143,21 @@ def grade_ag_test_impl(ag_test_pk, submission_pk):
     def save_result(result):
         result.save()
 
-    # Leave this here
-    grade_ag_test_impl.mocking_hook()
-
     # If this fails, something is seriously wrong.
     result, ag_test, submission = load_data()
     _update_ag_test_result_status(
         result, ag_models.AutograderTestCaseResult.ResultStatus.grading)
     try:
+        # Leave this here
+        grade_ag_test_impl.mocking_hook()
+
         result = _run_ag_test(ag_test, submission)
         save_result(result)
         _update_ag_test_result_status(
             result, ag_models.AutograderTestCaseResult.ResultStatus.finished)
     except Exception:
         _mark_ag_test_result_as_error(result, traceback.format_exc())
+        raise
 grade_ag_test_impl.mocking_hook = lambda: None  # type: ignore
 
 
@@ -190,6 +195,15 @@ def _mark_submission_as_being_graded(submission_id):
 @celery.shared_task(queue='deferred')
 def mark_submission_as_finished(chord_results, submission_pk):
     _mark_submission_as_finished_impl(submission_pk)
+
+
+@celery.shared_task(queue='deferred')
+def on_chord_error(request, exc, traceback):
+    print('Error in deferred test case chord. '
+          'This most likely means that a deferred test '
+          'case exceeded the retry limit.')
+    print(traceback)
+    print(exc)
 
 
 @retry_should_recover
