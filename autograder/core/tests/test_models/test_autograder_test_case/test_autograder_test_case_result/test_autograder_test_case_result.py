@@ -1,5 +1,7 @@
 import datetime
+from unittest import mock  # type: ignore
 
+from django.db.utils import IntegrityError
 from django.core.cache import cache
 from django.utils import timezone
 
@@ -24,33 +26,33 @@ class _SetUp:
             project_kwargs={'closing_time': self.closing_time})
         self.project = group.project
 
-        self.submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=group,
-            submitted_files=[])
-
         self.test_name = 'my_test'
         self.test_case = _DummyAutograderTestCase.objects.validate_and_create(
             name=self.test_name, project=self.project)
+
+        self.submission = ag_models.Submission.objects.validate_and_create(
+            submission_group=group,
+            submitted_files=[])
 
 
 class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.result = ag_models.AutograderTestCaseResult.objects.create(
+        self.result = ag_models.AutograderTestCaseResult.objects.get(
             test_case=self.test_case,
             submission=self.submission)
 
     def test_get_normal_feedback(self):
         fdbk = obj_build.random_fdbk()
-        self.test_case.feedback_configuration = fdbk
+        self.test_case.validate_and_update(feedback_configuration=fdbk)
 
         self.assertEqual(fdbk.to_dict(),
                          self.result.get_normal_feedback().fdbk_conf.to_dict())
 
     def test_get_ultimate_submission_feedback(self):
         fdbk = obj_build.random_fdbk()
-        self.test_case.ultimate_submission_fdbk_conf = fdbk
+        self.test_case.validate_and_update(ultimate_submission_fdbk_conf=fdbk)
 
         self.assertEqual(
             fdbk.to_dict(),
@@ -58,7 +60,7 @@ class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
 
     def test_get_staff_viewer_feedback(self):
         fdbk = obj_build.random_fdbk()
-        self.test_case.staff_viewer_fdbk_conf = fdbk
+        self.test_case.validate_and_update(staff_viewer_fdbk_conf=fdbk)
 
         self.assertEqual(
             fdbk.to_dict(),
@@ -66,7 +68,7 @@ class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
 
     def test_get_past_submission_limit_feedback(self):
         fdbk = obj_build.random_fdbk()
-        self.test_case.past_submission_limit_fdbk_conf = fdbk
+        self.test_case.validate_and_update(past_submission_limit_fdbk_conf=fdbk)
 
         self.assertEqual(
             fdbk.to_dict(),
@@ -74,7 +76,7 @@ class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
 
     def test_get_max_feedback(self):
         fdbk = ag_models.FeedbackConfig.create_with_max_fdbk()
-        self.test_case.ultimate_submission_fdbk_conf = fdbk
+        self.test_case.validate_and_update(ultimate_submission_fdbk_conf=fdbk)
 
         self.assertEqual(
             fdbk.to_dict(),
@@ -83,11 +85,9 @@ class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
 
 class MiscAGTestResultTestCase(_SetUp, test_ut.UnitTestBase):
     def test_default_init(self):
-        result = ag_models.AutograderTestCaseResult.objects.create(
+        result = ag_models.AutograderTestCaseResult.objects.get(
             test_case=self.test_case,
             submission=self.submission)
-
-        result.refresh_from_db()
 
         self.assertEqual(result.test_case, self.test_case)
         self.assertEqual(result.submission, self.submission)
@@ -105,6 +105,12 @@ class MiscAGTestResultTestCase(_SetUp, test_ut.UnitTestBase):
         self.assertIsNone(result.compilation_return_code)
         self.assertEqual(result.compilation_standard_output, '')
         self.assertEqual(result.compilation_standard_error_output, '')
+
+    def test_invalid_create_duplicate(self):
+        with self.assertRaises(IntegrityError):
+            ag_models.AutograderTestCaseResult.objects.create(
+                test_case=self.test_case,
+                submission=self.submission)
 
     def test_result_obj_serializable_fields(self):
         expected = [
@@ -167,7 +173,7 @@ class MiscAGTestResultTestCase(_SetUp, test_ut.UnitTestBase):
                       .FeedbackCalculator.get_serializable_fields()))
 
     def test_fdbk_calc_to_dict_pk_included(self):
-        result = ag_models.AutograderTestCaseResult.objects.create(
+        result = ag_models.AutograderTestCaseResult.objects.get(
             test_case=self.test_case,
             submission=self.submission)
 
@@ -181,16 +187,17 @@ class MiscAGTestResultTestCase(_SetUp, test_ut.UnitTestBase):
         valgrind = 'c' * 300000000
         comp_stdout = 'd' * 300000000
         comp_stderr = 'e' * 300000000
-        result = ag_models.AutograderTestCaseResult.objects.create(
-            test_case=self.test_case,
-            submission=self.submission,
-            standard_output=stdout,
-            standard_error_output=stderr,
-            valgrind_output=valgrind,
-            compilation_standard_output=comp_stdout,
-            compilation_standard_error_output=comp_stderr)
 
-        result.refresh_from_db()
+        result = ag_models.AutograderTestCaseResult.objects.get(
+            test_case=self.test_case,
+            submission=self.submission)
+
+        result.standard_output = stdout
+        result.standard_error_output = stderr
+        result.valgrind_output = valgrind
+        result.compilation_standard_output = comp_stdout
+        result.compilation_standard_error_output = comp_stderr
+        result.save()
 
         self.assertEqual(
             result.standard_output,
@@ -305,3 +312,90 @@ class TotalScoreTestCase(test_ut.UnitTestBase):
                 obj_build.build_compiled_ag_test.points_with_all_used * 2))
 
         self.assertEqual(0, result.get_max_feedback().total_points)
+
+
+class FlexibleOutputDiffTestCase(_SetUp, test_ut.UnitTestBase):
+    def test_all_diff_options_false_stdout_correct_stderr_incorrect(self):
+        self.do_diff_options_test(
+            expected_stdout='spam', actual_stdout='spam',
+            expected_stderr='yes', actual_stderr='no',
+            expect_stdout_correct=True,
+            expect_stderr_correct=False,
+            **self._get_diff_options(False))
+
+    def test_all_diff_options_false_stderr_correct_stdout_incorrect(self):
+        self.do_diff_options_test(
+            expected_stdout='yes', actual_stdout='no',
+            expected_stderr='egg', actual_stderr='egg',
+            expect_stdout_correct=False,
+            expect_stderr_correct=True,
+            **self._get_diff_options(False))
+
+    def test_all_diff_options_true_stdout_correct_stderr_incorrect(self):
+        self.do_diff_options_test(
+            expected_stdout='SPAM', actual_stdout='spam',
+            expected_stderr='yes', actual_stderr='no',
+            expect_stdout_correct=True,
+            expect_stderr_correct=False,
+            **self._get_diff_options(True))
+
+    def test_all_diff_options_true_stderr_correct_stdout_incorrect(self):
+        self.do_diff_options_test(
+            expected_stdout='yes', actual_stdout='no',
+            expected_stderr='egg', actual_stderr='EGG',
+            expect_stdout_correct=False,
+            expect_stderr_correct=True,
+            **self._get_diff_options(True))
+
+    def do_diff_options_test(self, expected_stdout='', actual_stdout='',
+                             expected_stderr='', actual_stderr='',
+                             expect_stdout_correct=True,
+                             expect_stderr_correct=True,
+                             **diff_options):
+        self.test_case.validate_and_update(
+            expected_standard_output=expected_stdout,
+            expected_standard_error_output=expected_stderr,
+            **diff_options)
+
+        result_queryset = ag_models.AutograderTestCaseResult.objects.filter(
+            test_case=self.test_case, submission=self.submission)
+        result_queryset.update(
+            standard_output=actual_stdout, standard_error_output=actual_stderr)
+        result = result_queryset.get()
+
+        mock_path = ('autograder.core.models.autograder_test_case.'
+                     'autograder_test_case_result.superdiff.Differ')
+        with mock.patch(mock_path) as mock_differ_cls:
+            result.get_max_feedback().stdout_diff
+            mock_differ_cls.assert_called_with(**diff_options)
+
+        with mock.patch(mock_path) as mock_differ_cls:
+            result.get_max_feedback().stderr_diff
+            mock_differ_cls.assert_called_with(**diff_options)
+
+        if expect_stdout_correct:
+            self.assertEqual([], result.get_max_feedback().stdout_diff)
+        else:
+            self.assertNotEqual([], result.get_max_feedback().stdout_diff)
+
+        self.assertEqual(expect_stdout_correct,
+                         result.get_max_feedback().stdout_correct)
+
+        if expect_stderr_correct:
+            self.assertEqual([], result.get_max_feedback().stderr_diff)
+        else:
+            self.assertNotEqual([], result.get_max_feedback().stderr_diff)
+
+        self.assertEqual(expect_stderr_correct,
+                         result.get_max_feedback().stderr_correct)
+
+    def _get_diff_options(self, options_value):
+        return {
+            'ignore_case': options_value,
+            'ignore_non_newline_whitespace': options_value,
+            'ignore_non_newline_whitespace_changes': options_value,
+            'ignore_newline_changes': options_value,
+            'ignore_blank_lines': options_value,
+            'ignore_leading_whitespace': options_value,
+            'ignore_trailing_whitespace': options_value,
+        }
