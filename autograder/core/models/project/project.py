@@ -1,12 +1,17 @@
 import os
 import datetime
 
-from django.db import models
+from django.db import models, transaction
 from django.core import validators
 from django.core import exceptions
 
 from ..ag_model_base import AutograderModel
 from ..course import Course
+
+from .expected_student_file_pattern import ExpectedStudentFilePattern
+from .uploaded_files import UploadedFile
+from ..autograder_test_case import AutograderTestCaseFactory, AutograderTestCaseBase
+from ..autograder_test_case.feedback_config import FeedbackConfig
 
 import autograder.core.utils as core_ut
 import autograder.core.fields as ag_fields
@@ -232,3 +237,66 @@ class Project(AutograderModel):
                 raise exceptions.ValidationError(
                     {'soft_closing_time': (
                         'Soft closing time must be before hard closing time')})
+
+    def clone(self, course_name):
+        other_course = Course.objects.get(name=course_name)
+
+        with transaction.atomic():
+            new_proj = Project.objects.validate_and_create(
+                **self.to_dict(exclude_fields=['pk', 'course']), course=other_course)
+
+            for uploaded_file in self.uploaded_files.all():
+                UploadedFile.objects.validate_and_create(
+                    file_obj=uploaded_file.file_obj, project=new_proj)
+
+            for pattern in self.expected_student_file_patterns.all():
+                ExpectedStudentFilePattern.objects.validate_and_create(
+                    **pattern.to_dict(exclude_fields=['pk', 'project']), project=new_proj)
+
+            self._clone_test_cases(new_proj)
+
+            return new_proj
+
+    def _clone_test_cases(self, new_proj):
+        for test_case in self.autograder_test_cases.all():
+            test_case_dict = test_case.to_dict(
+                exclude_fields=['pk', 'project', 'test_resource_files', 'student_resource_files',
+                                'project_files_to_compile_together',
+                                'student_files_to_compile_together'])
+            for fdbk_field in AutograderTestCaseBase.FDBK_FIELD_NAMES:
+                test_case_dict[fdbk_field] = {
+                    FeedbackConfig.objects.validate_and_create(
+                        **test_case_dict[fdbk_field])
+                }
+
+            new_test_case = AutograderTestCaseFactory.validate_and_create(**test_case_dict)
+
+            test_resource_file_names = [file_obj.name for file_obj in
+                                        test_case.test_resource_files.all()]
+
+            new_test_case.test_resource_files.set(
+                new_proj.uploaded_files.filter(
+                    file_obj__name__in=test_resource_file_names))
+
+            student_patterns = [pattern.pattern for pattern in
+                                test_case.student_resource_files.all()]
+            new_test_case.student_resource_files.set(
+                new_proj.expected_student_file_patterns.filter(
+                    pattern__in=student_patterns))
+
+            compiled_project_file_names = [
+                file_obj.name for file_obj in
+                test_case.project_files_to_compile_together.all()
+            ]
+            new_test_case.project_files_to_compile_together.set(
+                new_proj.uploaded_files.filter(
+                    file_obj__name__in=compiled_project_file_names))
+
+            compiled_student_patterns = [
+                pattern.pattern for pattern in
+                test_case.student_files_to_compile_together.all()
+            ]
+            new_test_case.student_files_to_compile_together.set(
+                new_proj.expected_student_file_patterns.filter(
+                    pattern__in=compiled_student_patterns))
+
