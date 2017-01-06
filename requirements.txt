@@ -1,4 +1,4 @@
-amqp==2.1.1
+autograder-sandbox==1.0.0
 celery==4.0.0
 Django==1.10.4
 django-extensions==1.7.5
@@ -9,4 +9,3 @@ drf-nested-routers==0.11.1
 google-api-python-client==1.5.5
 psycopg2==2.6.2
 redis==2.10.5
-uWSGI==2.0.14

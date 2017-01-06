@@ -81,3 +81,5 @@ venv_ag
 .vscode
 .idea
 tags
+venv
+celerybeat-schedule
