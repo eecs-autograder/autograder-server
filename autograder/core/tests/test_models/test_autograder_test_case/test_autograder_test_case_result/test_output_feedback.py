@@ -1,5 +1,4 @@
 import random
-import difflib
 
 from autograder.utils.testing import UnitTestBase
 
@@ -11,7 +10,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.tests.test_models.test_autograder_test_case.models import (
     _DummyAutograderTestCase)
 
-_DIFFER = difflib.Differ()
+import superdiff
 
 
 class StdoutFdbkTestCase(UnitTestBase):
@@ -76,14 +75,13 @@ class StdoutFdbkTestCase(UnitTestBase):
 
         self.assertTrue(self.correct_result.get_normal_feedback().stdout_correct)
         self.assertIsNone(self.correct_result.get_normal_feedback().stdout_content)
-        self.assertEqual('', self.correct_result.get_normal_feedback().stdout_diff)
+        self.assertEqual([], self.correct_result.get_normal_feedback().stdout_diff)
 
         self.assertFalse(self.incorrect_result.get_normal_feedback().stdout_correct)
         self.assertIsNone(self.correct_result.get_normal_feedback().stdout_content)
-        diff = _DIFFER.compare(
-            self.stdout_ag_test.expected_standard_output.splitlines(
-                keepends=True),
-            self.incorrect_result.standard_output.splitlines(keepends=True))
+        diff = superdiff.Differ().compare(
+            self.stdout_ag_test.expected_standard_output,
+            self.incorrect_result.standard_output)
         self.assertEqual(list(diff),
                          self.incorrect_result.get_normal_feedback().stdout_diff)
 
@@ -215,15 +213,13 @@ class StderrFdbkTestCase(UnitTestBase):
 
         self.assertTrue(self.correct_result.get_normal_feedback().stderr_correct)
         self.assertIsNone(self.correct_result.get_normal_feedback().stderr_content)
-        self.assertEqual('', self.correct_result.get_normal_feedback().stderr_diff)
+        self.assertEqual([], self.correct_result.get_normal_feedback().stderr_diff)
 
         self.assertFalse(self.incorrect_result.get_normal_feedback().stderr_correct)
         self.assertIsNone(self.correct_result.get_normal_feedback().stderr_content)
-        diff = _DIFFER.compare(
-            self.stderr_ag_test.expected_standard_error_output.splitlines(
-                keepends=True),
-            self.incorrect_result.standard_error_output.splitlines(
-                keepends=True))
+        diff = superdiff.Differ().compare(
+            self.stderr_ag_test.expected_standard_error_output,
+            self.incorrect_result.standard_error_output)
         self.assertEqual(list(diff),
                          self.incorrect_result.get_normal_feedback().stderr_diff)
 

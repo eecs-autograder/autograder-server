@@ -1,0 +1,8 @@
+ipython>=5.1.0
+jedi>=0.9.0
+mypy-lang>=0.4.6
+pep8-naming>=0.4.1
+pep8>=1.7.0
+prospector>=0.12.4
+sphinx-autodoc-typehints==1.1.0
+Sphinx==1.5.1

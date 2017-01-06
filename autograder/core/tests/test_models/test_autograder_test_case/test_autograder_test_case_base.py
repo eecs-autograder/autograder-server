@@ -165,6 +165,14 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
             'expected_standard_output',
             'expected_standard_error_output',
 
+            'ignore_case',
+            'ignore_non_newline_whitespace',
+            'ignore_non_newline_whitespace_changes',
+            'ignore_newline_changes',
+            'ignore_blank_lines',
+            'ignore_leading_whitespace',
+            'ignore_trailing_whitespace',
+
             'use_valgrind',
             'valgrind_flags',
 
@@ -250,6 +258,14 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
             'expect_any_nonzero_return_code',
             'expected_standard_output',
             'expected_standard_error_output',
+
+            'ignore_case',
+            'ignore_non_newline_whitespace',
+            'ignore_non_newline_whitespace_changes',
+            'ignore_newline_changes',
+            'ignore_blank_lines',
+            'ignore_leading_whitespace',
+            'ignore_trailing_whitespace',
 
             'use_valgrind',
             'valgrind_flags',

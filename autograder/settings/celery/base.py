@@ -28,17 +28,9 @@ CELERYBEAT_SCHEDULE = {
     'queue-submissions': {
         'task': 'autograder.grading_tasks.tasks.queue_submissions',
         'schedule': datetime.timedelta(
-            seconds=int(os.environ.get('AG_SUBMISSION_LISTENER_INTERVAL', 5))),
+            seconds=int(os.environ.get('AG_SUBMISSION_LISTENER_INTERVAL', '5'))),
         'options': {
             'queue': 'background_tasks'
         }
     },
-    'check-for-finished-deferreds': {
-        'task': 'autograder.grading_tasks.tasks.check_for_finished_deferreds',
-        'schedule': datetime.timedelta(
-            seconds=int(os.environ.get('AG_DEFERRED_CHECKER_INTERVAL', 5))),
-        'options': {
-            'queue': 'background_tasks'
-        }
-    }
 }

@@ -359,7 +359,7 @@ class StudentListOwnResultsTestCase(_Shared,
         self.do_permission_denied_list_results_test(
             submission, submission.submission_group.members.first(), 'normal')
 
-    def test_ultimate_fdbk_requested_deadline_and_extension_none_or_past_and_submission_is_ultimate(self):
+    def test_ultimate_fdbk_requested_deadline_and_extension_none_or_past_and_submission_is_ultimate(self):  # noqa
         submission = self.build_submission(
             self.enrolled_group(self.visible_private_project))
         expected_results = [self.visible_in_ultimate_result(submission)]

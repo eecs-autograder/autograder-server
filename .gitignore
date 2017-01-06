@@ -77,3 +77,9 @@ celerybeat.pid
 dev_filesystem
 media_root_dev
 media_root
+venv_ag
+.vscode
+.idea
+tags
+venv
+celerybeat-schedule

@@ -11,16 +11,30 @@ from autograder.core.models.autograder_test_case.feedback_config import (
     ValgrindFdbkLevel, PointsFdbkLevel)
 
 
-def get_unique_id():
-    user_id = base64.urlsafe_b64encode(uuid.uuid4().bytes)
-    return user_id.decode('utf-8')
+def get_unique_id() -> str:
+    '''
+    Returns a base64 encoded uuid as a string. The value returned can
+    be added to a database object's fields to make them unique.
+    A base64 representation is used because it is short enough to fit
+    within the length restrictions of the "username" field of django
+    User objects.
+    '''
+    return base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8')
 
 
-def create_dummy_user(is_superuser=False):
+def create_dummy_user(is_superuser: bool=False):
+    '''
+    Creates a User with a random username. If is_superuser is True,
+    creates the User with superuser status.
+    '''
     return create_dummy_users(1, is_superuser=is_superuser)[0]
 
 
-def create_dummy_users(num_users, is_superuser=False):
+def create_dummy_users(num_users: int, is_superuser: bool=False):
+    '''
+    Creates list of num_users Users with random usernames.
+    If is_superuser is True, creates each User with superuser status.
+    '''
     users = []
 
     for i in range(num_users):
@@ -36,7 +50,16 @@ def create_dummy_users(num_users, is_superuser=False):
     return users
 
 
-def build_course(course_kwargs=None):
+def build_course(course_kwargs: dict=None) -> ag_models.Course:
+    '''
+    Creates a Course with a unique name.
+    Any fields present in course_kwargs will be used instead of
+    defaults.
+    course_kwargs can also contain the following keys: admins, staff,
+    and students. The values should be lists of Users, and those users
+    will be added to the new course as admins, staff, or students,
+    respectively.
+    '''
     if course_kwargs is None:
         course_kwargs = {}
 
@@ -54,7 +77,14 @@ def build_course(course_kwargs=None):
     return course
 
 
-def build_project(project_kwargs=None, course_kwargs=None):
+def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_models.Project:
+    '''
+    Creates a Project with a unique name.
+    Any fields in project_kwargs will be used instead of defaults.
+    If the key "course" is present in project_kwargs, its value must
+    be a Course that the new project will be linked to. The course will
+    be initialized by calling build_course(course_kwargs).
+    '''
     if project_kwargs is None:
         project_kwargs = {}
 
@@ -67,10 +97,39 @@ def build_project(project_kwargs=None, course_kwargs=None):
     return project
 
 
-def build_compiled_ag_test(with_points=True, **ag_test_kwargs):
+def build_compiled_ag_test(with_points=True,
+                           **ag_test_kwargs) -> ag_models.CompiledAndRunAutograderTestCase:
+    '''
+    Creates a CompiledAndRunAutograderTestCase object with a unique
+    name.
+
+    If with_points is True, then an arbitrary number of points will
+    be assigned to each "points_" field on the object. Note that this
+    includes an arbitrary deduction for valgrind errors.
+    The total number of points to be awarded assuming all point
+    allocations are awarded or deducted can be found in
+    build_compiled_ag_test.points_with_all_used
+
+    Any other keyword arguments specified will be set on the created
+    object.
+    If "project" is not specified as a keyword argument, then a
+    Project will be created using build_project(), and the new object
+    will be linked to that project.
+    NOTE: If with_points is True, the following keyword arguments will
+    be ignored:
+        'points_for_correct_return_code'
+        'expected_return_code'
+        'points_for_correct_stdout'
+        'expected_standard_output'
+        'points_for_correct_stderr'
+        'expected_standard_error_output'
+        'deduction_for_valgrind_errors'
+        'points_for_compilation_success'
+        'use_valgrind'
+    '''
     if with_points:
         ag_test_kwargs.update({
-            'points_for_correct_return_code': 1,
+            'points_for_correct_return_code': 3,
             'expected_return_code': 0,
             'points_for_correct_stdout': 2,
             'expected_standard_output': 'spam' * 1000,
@@ -95,49 +154,92 @@ def build_compiled_ag_test(with_points=True, **ag_test_kwargs):
     return ag_models.AutograderTestCaseFactory.validate_and_create(
         'compiled_and_run_test_case', **ag_test_kwargs
     )
-build_compiled_ag_test.points_with_all_used = 14
+build_compiled_ag_test.points_with_all_used = 16  # type: ignore
 
 
 def build_compiled_ag_test_result(ag_test_with_points=True,
                                   all_points_used=True,
                                   ag_test_kwargs=None,
-                                  **result_kwargs):
+                                  **result_kwargs) -> ag_models.AutograderTestCaseResult:
+    '''
+    Creates an AutograderTestCaseResult object using the given data.
+    If "test_case" is not passed as a keyword argument, then a new
+    CompiledAndRunAutograderTestCase object will be created using
+    build_compiled_ag_test(with_points=ag_test_with_points, **ag_test_kwargs)
+
+    Similar to the other methods in this module, this function will try
+    to use related objects passed through ag_test_kwargs or as keyword
+    arguments, but will create new objects if none are passed.
+
+    If all_points_used is True, then the result will be populated with
+    data such that all the points for the associated
+    CompiledAndRunAutograderTestCase object will be applied (including
+    deductions). Specifically, the following fields will be overwritten:
+        'return_code'
+        'standard_output'
+        'standard_error_output'
+        'valgrind_return_code'
+        'compilation_return_code'
+    '''
     if ag_test_kwargs is None:
         ag_test_kwargs = {}
 
-    if 'project' not in ag_test_kwargs:
-        if 'submission' in result_kwargs:
-            ag_test_kwargs['project'] = (
-                result_kwargs['submission'].submission_group.project)
+    submission = result_kwargs.get('submission', None)
+    test_case = result_kwargs.get('test_case', None)
+    project = ag_test_kwargs.get('project', None)
+    if project is None:
+        if test_case is not None:
+            project = test_case.project
         else:
-            ag_test_kwargs['project'] = build_project()
+            project = build_project()
+        ag_test_kwargs['project'] = project
 
-    if 'submission' not in result_kwargs:
-        group = build_submission_group(
-            group_kwargs={'project': ag_test_kwargs['project']})
-        result_kwargs['submission'] = build_submission(submission_group=group)
-
-    if 'test_case' not in result_kwargs:
-        result_kwargs['test_case'] = build_compiled_ag_test(
+    test_case_is_new = False
+    if test_case is None:
+        test_case = build_compiled_ag_test(
             with_points=ag_test_with_points, **ag_test_kwargs)
+        result_kwargs['test_case'] = test_case
+        test_case_is_new = True
 
-    ag_test = result_kwargs['test_case']
+    if submission is None:
+        group = build_submission_group(group_kwargs={'project': project})
+        submission = build_submission(submission_group=group)
+        result_kwargs['submission'] = submission
+    elif test_case_is_new:
+        # If we were given an existing submission and created a new test
+        # case, we need to create an empty result for the new test case.
+        ag_models.AutograderTestCaseResult.objects.create(
+            test_case=test_case, submission=submission)
+
+    result_queryset = ag_models.AutograderTestCaseResult.objects.filter(
+        test_case=test_case, submission=submission)
     if all_points_used:
         result_kwargs.update({
-            'return_code': ag_test.expected_return_code,
-            'standard_output': ag_test.expected_standard_output,
-            'standard_error_output': ag_test.expected_standard_error_output,
+            'return_code': test_case.expected_return_code,
+            'standard_output': test_case.expected_standard_output,
+            'standard_error_output': test_case.expected_standard_error_output,
             'valgrind_return_code': 1,
             'compilation_return_code': 0
         })
 
-    return ag_models.AutograderTestCaseResult.objects.create(**result_kwargs)
+    result_queryset.all().update(**result_kwargs)
+    # This makes sure that the Python AutograderTestCaseBase object that
+    # the result has a reference to is the same one that was passed in
+    # to result_kwargs, if any.
+    result = result_queryset.get()
+    result.test_case = test_case
+    return result
 
 
 def build_submission_group(num_members=1,
                            group_kwargs=None,
                            project_kwargs=None,
-                           course_kwargs=None):
+                           course_kwargs=None) -> ag_models.SubmissionGroup:
+    '''
+    Creates a SubmissionGroup with the specified data.
+    If the "members" key is not present in group_kwargs, then
+    num_members Users will be created and added to the group instead.
+    '''
     if group_kwargs is None:
         group_kwargs = {}
 
@@ -162,7 +264,13 @@ def build_submission_group(num_members=1,
     return group
 
 
-def build_submission(**submission_kwargs):
+def build_submission(**submission_kwargs) -> ag_models.Submission:
+    '''
+    Creates a Submission with the given keyword arguments.
+    If the "submission_group" argument is not specified, then a
+    SubmissionGroup will be created with build_submission_group() and
+    used instead.
+    '''
     if 'submission_group' not in submission_kwargs:
         submission_kwargs['submission_group'] = build_submission_group()
 
@@ -176,13 +284,41 @@ def build_submission(**submission_kwargs):
 def build_submissions_with_results(num_submissions=1, num_tests=1,
                                    test_fdbk=None, make_one_best=False,
                                    **submission_kwargs):
+    '''
+    Creates a list of Submissions, each with a set of results.
+    All the submissions will be linked to the same SubmissionGroup. That
+    group will either be specified as the "submission_group" keyword
+    argument or created using "build_submission_group".
+
+    The list will contain num_submissions submissions.
+    num_tests CompiledAndRunAutograderTestCase objects will be created
+    and added to the project that belongs to the SubmissionGroup being
+    used. Therefore, you are advised to make sure that if you specify
+    a SubmissionGroup and Project to use there are no test cases that
+    belong to that Project.
+
+    If make_one_best is True, then one of the Submissions besides the
+    most recently created one will be modified so that it gets a
+    higher score than all the other Submissions. In this case, this
+    function returns a 3-tuple containing the list of submissions, the
+    best submission, and the newly created test cases.
+
+    Otherwise, returns a 2-tuple containing the list of submissions and
+    the newly created test cases.
+    '''
     if num_submissions < 1:
         raise ValueError('num_submissions must be at least 1')
 
     if test_fdbk is None:
         test_fdbk = FeedbackConfig.create_with_max_fdbk()
 
-    project = build_project()
+    if 'submission_group' not in submission_kwargs:
+        project = build_project()
+        submission_kwargs['submission_group'] = build_submission_group(
+            group_kwargs={'project': project})
+    else:
+        project = submission_kwargs['submission_group'].project
+
     tests = []
     for i in range(num_tests):
         fdbk = FeedbackConfig.objects.validate_and_create(**test_fdbk.to_dict())
@@ -190,17 +326,11 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
             with_points=True, project=project, feedback_configuration=fdbk)
         tests.append(test)
 
-    if 'submission_group' not in submission_kwargs:
-        submission_kwargs['submission_group'] = build_submission_group(
-            group_kwargs={'project': project})
-
     submissions = []
     for i in range(num_submissions):
         submission = build_submission(**submission_kwargs)
-
         for test in tests:
-            build_compiled_ag_test_result(test_case=test,
-                                          submission=submission)
+            build_compiled_ag_test_result(test_case=test, submission=submission)
 
         submissions.append(submission)
 
@@ -225,7 +355,11 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
     return submissions, tests
 
 
-def random_fdbk():
+def random_fdbk() -> ag_models.FeedbackConfig:
+    '''
+    Creates and returns a FeedbackConfig object with random (valid)
+    values assigned to each of its fields.
+    '''
     fdbk = ag_models.FeedbackConfig.objects.validate_and_create(
         ag_test_name_fdbk=random.choice(
             [AGTestNameFdbkLevel.show_real_name,

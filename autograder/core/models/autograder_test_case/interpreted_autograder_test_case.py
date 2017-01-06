@@ -28,7 +28,7 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
 
     def run(self, submission, autograder_sandbox):
         print('running test: ' + self.name)
-        result = AutograderTestCaseResult(
+        result = AutograderTestCaseResult.objects.get(
             test_case=self, submission=submission)
         run_program_cmd = (
             [self.interpreter] + self.interpreter_flags +

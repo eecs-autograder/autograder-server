@@ -54,6 +54,13 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'expected_standard_output',
         'expected_standard_error_output',
 
+        'ignore_case',
+        'ignore_non_newline_whitespace',
+        'ignore_non_newline_whitespace_changes',
+        'ignore_newline_changes',
+        'ignore_blank_lines',
+        'ignore_leading_whitespace',
+        'ignore_trailing_whitespace',
         'use_valgrind',
         'valgrind_flags',
 
@@ -107,6 +114,14 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'expect_any_nonzero_return_code',
         'expected_standard_output',
         'expected_standard_error_output',
+
+        'ignore_case',
+        'ignore_non_newline_whitespace',
+        'ignore_non_newline_whitespace_changes',
+        'ignore_newline_changes',
+        'ignore_blank_lines',
+        'ignore_leading_whitespace',
+        'ignore_trailing_whitespace',
 
         'use_valgrind',
         'valgrind_flags',
@@ -286,6 +301,24 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             of the empty string indicates that this test case should not
             check the standard error output of the program being
             tested.''')
+
+    # The following options are passed to the superdiff.differ.Differ
+    # object used to compare expected and actual output (Stdout and
+    # Stderr).
+    ignore_case = models.BooleanField(
+        default=False, help_text='See superdiff.Differ.__init__')
+    ignore_non_newline_whitespace = models.BooleanField(
+        default=False, help_text='See superdiff.Differ.__init__')
+    ignore_non_newline_whitespace_changes = models.BooleanField(
+        default=False, help_text='See superdiff.Differ.__init__')
+    ignore_newline_changes = models.BooleanField(
+        default=False, help_text='See superdiff.Differ.__init__')
+    ignore_blank_lines = models.BooleanField(
+        default=False, help_text='See superdiff.Differ.__init__')
+    ignore_leading_whitespace = models.BooleanField(
+        default=False, help_text='See superdiff.Differ.__init__')
+    ignore_trailing_whitespace = models.BooleanField(
+        default=False, help_text='See superdiff.Differ.__init__')
 
     use_valgrind = models.BooleanField(
         default=False,
@@ -520,9 +553,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         """
         Runs this autograder test case and returns an
         AutograderTestCaseResult object that is linked to the given
-        submission. The test case will be run inside the given
-        AutograderSandbox. Any needed files will be added to the sandbox
-        by this method.
+        submission and this test case. The test case will be run inside
+        the given AutograderSandbox. Any needed files will be added to
+        the sandbox by this method.
 
         NOTE: This method does NOT save the result object to the
             database.

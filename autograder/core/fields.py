@@ -8,10 +8,10 @@ from . import constants as const
 
 
 class JsonSerializableClassField(pg_fields.JSONField):
-    def __init__(self, class_, **kwargs):
-        self._class = class_
+    def __init__(self, cls, **kwargs):
+        self._class = cls
 
-        if not issubclass(class_, JsonSerializable):
+        if not issubclass(cls, JsonSerializable):
             raise TypeError(
                 'Error preparing the field {}. '
                 'Class must implement the JsonSerializable interface.')
@@ -21,7 +21,7 @@ class JsonSerializableClassField(pg_fields.JSONField):
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
         kwargs.update({
-            'class_': self._class
+            'cls': self._class
         })
         return name, path, args, kwargs
 

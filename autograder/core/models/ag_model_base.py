@@ -31,7 +31,7 @@ class _AutograderModelManagerMixin:
 
 class ToDictMixin:
     @classmethod
-    def get_serializable_fields(class_):
+    def get_serializable_fields(cls):
         """
         Returns a collection of the names of member variables to include
         by default in the dictionary returned by to_dict()
@@ -49,10 +49,10 @@ class ToDictMixin:
         relationships.
 
         The base class version of this function returns the value of
-        class_.SERIALIZABLE_FIELDS, which defaults to an empty tuple,
+        cls.SERIALIZABLE_FIELDS, which defaults to an empty tuple,
         plus the tuple ('pk',).
         """
-        return class_.SERIALIZABLE_FIELDS + ('pk',)
+        return cls.SERIALIZABLE_FIELDS + ('pk',)
 
     SERIALIZABLE_FIELDS = tuple()
 
@@ -120,17 +120,17 @@ class ToDictMixin:
 
 class _AutograderModelMixin(ToDictMixin):
     @classmethod
-    def get_editable_fields(class_):
+    def get_editable_fields(cls):
         """
         Returns a collection of the names of database fields that can be
         edited on this model type using model.validate_and_update()
 
         The base class version of this function returns the value of
-        class_.EDITABLE_FIELDS, which defaults to an empty
+        cls.EDITABLE_FIELDS, which defaults to an empty
         tuple. Thus, you can either set EDITABLE_FIELDS in
         derived classes or override this method.
         """
-        return class_.EDITABLE_FIELDS
+        return cls.EDITABLE_FIELDS
 
     EDITABLE_FIELDS = tuple()
 

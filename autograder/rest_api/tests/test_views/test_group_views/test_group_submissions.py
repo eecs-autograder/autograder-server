@@ -326,7 +326,6 @@ class CreateSubmissionTestCase(test_data.Client,
                               response.data['submitted_filenames'])
         self.assertCountEqual([], response.data['missing_files'])
         self.assertCountEqual([], response.data['discarded_files'])
-        self.assertCountEqual([], response.data['grading_errors'])
         self.assertEqual(user.username, response.data['submitter'])
 
         loaded.status = ag_models.Submission.GradingStatus.finished_grading

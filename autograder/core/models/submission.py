@@ -13,6 +13,8 @@ import autograder.core.constants as const
 import autograder.core.fields as ag_fields
 
 from . import ag_model_base
+from .autograder_test_case.autograder_test_case_result import (
+    AutograderTestCaseResult)
 
 
 def _get_submission_file_upload_to_dir(submission, filename):
@@ -29,6 +31,13 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
     @transaction.atomic()
     def validate_and_create(self, submitted_files, **kwargs):
         """
+        This method override handles additional details required for
+        creating a Submission.
+        - Submitted files are filtered based on the patterns students
+          are supposed to submit. Extra files are discarded.
+        - A set of AutograderTestCaseResults is created--one for each
+          autograder test case associated with this Submission's
+          Project.
         Positional args:
             submitted_files -- A list of files being submitted. The
                 following checks are performed on this argument:
@@ -56,6 +65,11 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
         self.check_for_missing_files(submission)
 
         submission.save()
+        ag_tests = submission.submission_group.project.autograder_test_cases.all()
+        AutograderTestCaseResult.objects.bulk_create([
+            AutograderTestCaseResult(test_case=test_case, submission=submission)
+            for test_case in ag_tests
+        ])
         return submission
 
     def check_for_missing_files(self, submission):
@@ -103,7 +117,6 @@ class Submission(ag_model_base.AutograderModel):
         "discarded_files",
         "missing_files",
         "status",
-        "grading_errors",
 
         'count_towards_daily_limit',
         'is_past_daily_limit',
@@ -234,10 +247,9 @@ class Submission(ag_model_base.AutograderModel):
 
         return num_submissions_before_self >= project.submission_limit_per_day
 
-    grading_errors = ag_fields.StringArrayField(
-        default=list, blank=True,
-        help_text='''A list of errors that occurred while grading this
-            submission''')
+    error_msg = models.TextField(
+        blank=True,
+        help_text='''If status is "error", an error message will be stored here.''')
 
     # Note: Don't include basic_score in to_dict() serialization. If you
     # want to expose it as part of the server api, do so with a
@@ -255,6 +267,7 @@ class Submission(ag_model_base.AutograderModel):
         if score is not None:
             return score
 
+        # TODO: one cache hit instead of a lot
         score = sum((result.basic_score for result in self.results.all()))
         cache.set(key, score, timeout=None)
         return score
@@ -299,25 +312,6 @@ class Submission(ag_model_base.AutograderModel):
 
     def _get_submitted_file_dir(self, filename):
         return os.path.join(core_ut.get_submission_dir(self), filename)
-
-    @staticmethod
-    def get_most_recent_submissions(project):
-        """
-        Returns a list containing each SubmissionGroup's most
-        recent Submission for the given project.
-
-        # TODO: REMOVE
-        """
-        submissions = []
-        for group in project.submission_groups.all():
-            try:
-                group_sub = group.submissions.first()
-            except IndexError:
-                continue
-            if group_sub:
-                submissions.append(group_sub)
-
-        return submissions
 
     def get_submitted_file_basenames(self):
         return self.submitted_filenames

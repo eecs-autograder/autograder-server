@@ -9,10 +9,6 @@ def build_load_object_mixin(ag_model_class, pk_key='pk',
     that can be used in a Django Rest Framework generic viewset:
     http://www.django-rest-framework.org/api-guide/viewsets/#genericviewset
 
-    If lock_on_unsafe_method is True, implementation of get_object will
-    also call select_for_update() on the default manager if the request
-    method is not a 'safe method'.
-
     Note: The implementation of get_object will raise an HTTP 404 error
     if the object being looked up does not exist.
 
@@ -25,6 +21,10 @@ def build_load_object_mixin(ag_model_class, pk_key='pk',
             of the object being loaded. The primary key will be loaded
             from the kwargs dictionary that is built from parsing the
             url. By default, this value is 'pk'.
+
+        lock_on_unsafe_method -- If True, the implementation of
+            get_object will also call select_for_update() on the default
+            manager if the request method is not a 'safe method'.
     """
     class LoadObjectMixin:
         def load_object(self, pk):
