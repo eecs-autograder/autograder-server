@@ -134,10 +134,11 @@ def grade_deferred_ag_test(self, ag_test_pk, submission_pk):
 def grade_ag_test_impl(ag_test_pk, submission_pk):
     @retry_should_recover
     def load_data():
-        result = ag_models.AutograderTestCaseResult.objects.get(
-            test_case__pk=ag_test_pk,
-            submission__pk=submission_pk)
-        return result, result.test_case, result.submission
+        test_case = ag_models.AutograderTestCaseBase.objects.get(pk=ag_test_pk)
+        submission = ag_models.Submission.objects.get(pk=submission_pk)
+        result = ag_models.AutograderTestCaseResult.objects.get_or_create(
+            test_case=test_case, submission=submission)[0]
+        return result, test_case, submission
 
     @retry_should_recover
     def save_result(result):

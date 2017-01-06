@@ -86,6 +86,7 @@ class RetryDecoratorTestCase(test_ut.UnitTestBase):
 
 
 @tag('slow', 'sandbox')
+@mock.patch('autograder.grading_tasks.tasks.time.sleep')
 class TasksTestCase(test_ut.UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -138,7 +139,7 @@ class TasksTestCase(test_ut.UnitTestBase):
             test_files + [SimpleUploadedFile('impl.cpp', _IMPL_CPP)],
             submission_group=self.group)
 
-    def test_grade_submission_no_deferred(self):
+    def test_grade_submission_no_deferred(self, *args):
         print(self.submission.pk)
         tasks.grade_submission(self.submission.pk)
 
@@ -148,7 +149,7 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_grade_submission_some_deferred(self):
+    def test_grade_submission_some_deferred(self, *args):
         self.compiled_test.validate_and_update(deferred=True)
         tasks.grade_submission(self.submission.pk)
 
@@ -157,7 +158,7 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_grade_submission_all_deferred(self):
+    def test_grade_submission_all_deferred(self, *args):
         self._mark_all_as_deferred()
         tasks.grade_submission(self.submission.pk)
 
@@ -166,7 +167,7 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_grade_submission_removed_from_queue(self):
+    def test_grade_submission_removed_from_queue(self, *args):
         self.compiled_test.validate_and_update(deferred=True)
         self.submission.status = ag_models.Submission.GradingStatus.removed_from_queue
         self.submission.save()
@@ -176,7 +177,6 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.removed_from_queue,
                          self.submission.status)
 
-    @mock.patch('autograder.grading_tasks.tasks.time.sleep')
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
     def test_non_deferred_retry_on_error(self, impl_mock, *args):
         impl_mock.side_effect = TasksTestCase._SideEffectSequence([
@@ -191,7 +191,6 @@ class TasksTestCase(test_ut.UnitTestBase):
                          self.submission.status)
         self.assertEqual(2, self.submission.basic_score)
 
-    @mock.patch('autograder.grading_tasks.tasks.time.sleep')
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
     def test_non_deferred_max_num_retries_exceeded(self, impl_mock, *args):
         impl_mock.side_effect = [
@@ -214,7 +213,6 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual('', pending_result.error_msg)
         self.assertNotEqual('', error_result.error_msg)
 
-    @mock.patch('autograder.grading_tasks.tasks.time.sleep')
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
     def test_deferred_retry_on_error(self, impl_mock, *args):
         self.interpreted_test.validate_and_update(deferred=True)
@@ -229,7 +227,6 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    @mock.patch('autograder.grading_tasks.tasks.time.sleep')
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
     def test_deferred_ag_test_error(self, impl_mock, *args):
         self.compiled_test.delete()
@@ -249,6 +246,16 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.AutograderTestCaseResult.ResultStatus.error,
                          interpreted_result.status)
         self.assertNotEqual('', interpreted_result.error_msg)
+
+    def test_extra_tests_added_after_submission_created_grade_ag_test_impl_adds_results(
+            self, *args):
+        new_tests = [obj_build.build_compiled_ag_test(project=self.project)
+                     for i in range(2)]
+
+        for test in new_tests:
+            self.assertEqual(0, test.dependent_results.count())
+            tasks.grade_ag_test_impl(test.pk, self.submission.pk)
+            self.assertEqual(1, test.dependent_results.count())
 
     def _mark_all_as_deferred(self):
         self.compiled_test.validate_and_update(deferred=True)
