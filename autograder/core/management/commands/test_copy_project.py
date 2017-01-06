@@ -57,11 +57,13 @@ class CloneProjectTestCase(UnitTestBase):
             self.assertEqual([], list(ag_test.dependent_results.all()))
 
         exclude_fields = ['pk', 'project']
-        self.check_project_relationship("uploaded_files",
-                                        orig_proj=project,
-                                        clone_proj=cloned,
-                                        exclude_fields=exclude_fields,
-                                        sort_field='file_obj')
+        cloned_files, orig_files = self.check_project_relationship(
+            "uploaded_files", orig_proj=project, clone_proj=cloned,
+            exclude_fields=exclude_fields, sort_field='file_obj')
+        for cloned_file, orig_file in zip(cloned_files, orig_files):
+            self.assertNotEqual(cloned_file.file_obj.name,
+                                orig_file.file_obj.name)
+
         self.check_project_relationship("expected_student_file_patterns",
                                         orig_proj=project,
                                         clone_proj=cloned,
@@ -83,10 +85,12 @@ class CloneProjectTestCase(UnitTestBase):
 
     def check_project_relationship(self, relationship_name, orig_proj,
                                    clone_proj, exclude_fields, sort_field):
-        cloned_objs = getattr(clone_proj, relationship_name).all().order_by(sort_field)
-        orig_objs = getattr(orig_proj, relationship_name).all().order_by(sort_field)
+        cloned_objs = list(
+            getattr(clone_proj, relationship_name).all().order_by(sort_field))
+        orig_objs = list(
+            getattr(orig_proj, relationship_name).all().order_by(sort_field))
 
-        self.assertEqual(cloned_objs.count(), orig_objs.count())
+        self.assertEqual(len(cloned_objs), len(orig_objs))
 
         for cloned_obj, orig_obj in zip(cloned_objs, orig_objs):
             cloned_obj_dict = cloned_obj.to_dict(exclude_fields=exclude_fields)
@@ -94,6 +98,8 @@ class CloneProjectTestCase(UnitTestBase):
             self.assertEqual(cloned_obj_dict, orig_obj_dict)
             self.assertNotEqual(cloned_obj.pk, orig_obj.pk)
             self.assertNotEqual(cloned_obj.project, orig_obj.project)
+
+        return cloned_objs, orig_objs
 
     def check_ag_test_relationships(self, orig_proj, clone_proj):
         exclude_fields = ['pk', 'project']
