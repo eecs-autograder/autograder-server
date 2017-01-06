@@ -188,10 +188,6 @@ class FeedbackConfig(AutograderModel):
         choices=zip(PointsFdbkLevel.values, PointsFdbkLevel.values),
         default=PointsFdbkLevel.hide)
 
-    @property
-    def _include_pk(self):
-        return False
-
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         try:

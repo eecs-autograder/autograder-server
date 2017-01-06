@@ -1,5 +1,5 @@
-import difflib
 import uuid
+from typing import List
 
 from django.core.cache import cache
 from django.db import models
@@ -9,6 +9,8 @@ import autograder.core.constants as const
 import autograder.core.fields as ag_fields
 
 from . import feedback_config as fdbk_conf
+
+import superdiff
 
 
 class AutograderTestCaseResult(ToDictMixin, models.Model):
@@ -198,6 +200,9 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
             self._fdbk = fdbk_conf
             self._result = result
 
+            self._stdout_diff = None  # type: List
+            self._stderr_diff = None  # type: List
+
         SERIALIZABLE_FIELDS = (
             'ag_test_name',
 
@@ -325,8 +330,7 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
                     not self._stdout_checked()):
                 return None
 
-            return (self._result.standard_output ==
-                    self._result.test_case.expected_standard_output)
+            return self._get_stdout_diff() == []
 
         @property
         def stdout_content(self):
@@ -340,11 +344,7 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
             if not self._show_stdout_diff() or not self._stdout_checked():
                 return None
 
-            if self.stdout_correct:
-                return ''
-
-            return _get_diff(self._result.test_case.expected_standard_output,
-                             self._result.standard_output)
+            return self._get_stdout_diff()
 
         @property
         def stdout_points(self):
@@ -382,8 +382,7 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
                     not self._stderr_checked()):
                 return None
 
-            return (self._result.standard_error_output ==
-                    self._result.test_case.expected_standard_error_output)
+            return self._get_stderr_diff() == []
 
         @property
         def stderr_content(self):
@@ -397,12 +396,7 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
             if not self._stderr_checked() or not self._show_stderr_diff():
                 return None
 
-            if self.stderr_correct:
-                return ''
-
-            return _get_diff(
-                self._result.test_case.expected_standard_error_output,
-                self._result.standard_error_output)
+            return self._get_stderr_diff()
 
         @property
         def stderr_points(self):
@@ -431,6 +425,41 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
 
         def _stderr_checked(self):
             return self._result.test_case.expected_standard_error_output
+
+        # ---------------------------------------------------------------------
+
+        def _get_stdout_diff(self) -> List:
+            if self._stdout_diff is None:
+                self._stdout_diff = self._get_diff(
+                    self._result.test_case.expected_standard_output,
+                    self._result.standard_output)
+
+            return self._stdout_diff
+
+        def _get_stderr_diff(self) -> List:
+            if self._stderr_diff is None:
+                self._stderr_diff = self._get_diff(
+                    self._result.test_case.expected_standard_error_output,
+                    self._result.standard_error_output)
+
+            return self._stderr_diff
+
+        def _get_diff(self, first, second) -> List:
+            differ = superdiff.Differ(
+                ignore_case=self._result.test_case.ignore_case,
+                ignore_non_newline_whitespace=(
+                    self._result.test_case.ignore_non_newline_whitespace),
+                ignore_non_newline_whitespace_changes=(
+                    self._result.test_case.ignore_non_newline_whitespace_changes),
+                ignore_newline_changes=(
+                    self._result.test_case.ignore_newline_changes),
+                ignore_blank_lines=self._result.test_case.ignore_blank_lines,
+                ignore_leading_whitespace=(
+                    self._result.test_case.ignore_leading_whitespace),
+                ignore_trailing_whitespace=(
+                    self._result.test_case.ignore_trailing_whitespace),
+            )
+            return list(differ.compare(first, second))
 
         # ---------------------------------------------------------------------
 
@@ -545,10 +574,3 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
                       self.stderr_points_possible, self.compilation_points_possible)
             return sum((val for val in values if val is not None))
 
-
-_DIFFER = difflib.Differ()
-
-
-def _get_diff(first, second):
-    return list(_DIFFER.compare(
-        first.splitlines(keepends=True), second.splitlines(keepends=True)))
