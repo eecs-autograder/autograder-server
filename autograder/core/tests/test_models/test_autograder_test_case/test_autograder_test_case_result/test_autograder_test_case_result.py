@@ -112,29 +112,11 @@ class MiscAGTestResultTestCase(_SetUp, test_ut.UnitTestBase):
                 test_case=self.test_case,
                 submission=self.submission)
 
-    def test_result_obj_serializable_fields(self):
-        expected = [
-            'pk',
-            'status',
-            'error_msg',
-            'return_code',
-            'standard_output',
-            'standard_error_output',
-            'timed_out',
-            'valgrind_return_code',
-            'valgrind_output',
-            'compilation_return_code',
-            'compilation_standard_output',
-            'compilation_standard_error_output',
-        ]
-        self.assertCountEqual(
-            expected,
-            ag_models.AutograderTestCaseResult.get_serializable_fields())
-
     def test_feedback_calculator_serializable_fields(self):
         expected = [
             'pk',
             'ag_test_name',
+            'result',
             'return_code_correct',
             'expected_return_code',
             'actual_return_code',

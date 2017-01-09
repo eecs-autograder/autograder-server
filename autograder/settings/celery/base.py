@@ -15,7 +15,8 @@ CELERY_RESULT_SERIALIZER = 'json'
 
 CELERYD_MAX_TASKS_PER_CHILD = 1000
 
-CELERY_RESULT_BACKEND = 'rpc://'
+CELERY_RESULT_BACKEND = os.environ.get('AG_CELERY_RESULTS_BACKEND_URL',
+                                       'redis://localhost:6379/0')
 CELERY_RESULT_PERSISTENT = True
 
 # Probably want to set some high max for this

@@ -48,6 +48,7 @@ def retry(max_num_retries,
                     return func(*args, **kwargs)
                 except Exception as e:
                     print('Error in', func.__name__)
+                    traceback.print_exc()
                     print('Will try again in', retry_delay, 'seconds')
                     num_retries_remaining -= 1
                     time.sleep(retry_delay)
@@ -87,6 +88,7 @@ def grade_submission(submission_pk):
         def mark_as_waiting_for_deferred():
             submission.status = (
                 ag_models.Submission.GradingStatus.waiting_for_deferred)
+            submission.save()
 
         mark_as_waiting_for_deferred()
 
@@ -97,10 +99,15 @@ def grade_submission(submission_pk):
             _mark_submission_as_finished_impl(submission_pk)
             return
 
-        callback = mark_submission_as_finished.s(
-            submission_pk
-        ).on_error(on_chord_error.s())
-        celery.chord(signatures)(callback)
+        if len(signatures) == 1:
+            signatures[0].apply_async(
+                link_error=on_chord_error.s(),
+                link=mark_submission_as_finished.s(submission_pk))
+        else:
+            callback = mark_submission_as_finished.s(
+                submission_pk
+            ).on_error(on_chord_error.s())
+            celery.chord(signatures)(callback)
     except Exception:
         print('Error grading submission')
         traceback.print_exc()

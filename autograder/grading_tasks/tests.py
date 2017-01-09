@@ -149,7 +149,7 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_grade_submission_some_deferred(self, *args):
+    def test_grade_submission_one_deferred(self, *args):
         self.compiled_test.validate_and_update(deferred=True)
         tasks.grade_submission(self.submission.pk)
 

@@ -13,7 +13,7 @@ from . import feedback_config as fdbk_conf
 import superdiff
 
 
-class AutograderTestCaseResult(ToDictMixin, models.Model):
+class AutograderTestCaseResult(models.Model):
     """
     This class stores the data from an autograder test case
     and provides an interface for serializing the data with different
@@ -89,20 +89,6 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
     compilation_standard_error_output = models.TextField(
         help_text='''The contents of the standard error stream of the
             command used to compile the program being tested.''')
-
-    SERIALIZABLE_FIELDS = (
-        'status',
-        'error_msg',
-        'return_code',
-        'standard_output',
-        'standard_error_output',
-        'timed_out',
-        'valgrind_return_code',
-        'valgrind_output',
-        'compilation_return_code',
-        'compilation_standard_output',
-        'compilation_standard_error_output',
-    )
 
     # -------------------------------------------------------------------------
 
@@ -206,6 +192,8 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
         SERIALIZABLE_FIELDS = (
             'ag_test_name',
 
+            'status',
+
             'return_code_correct',
             'expected_return_code',
             'actual_return_code',
@@ -249,6 +237,10 @@ class AutograderTestCaseResult(ToDictMixin, models.Model):
         @property
         def pk(self):
             return self._result.pk
+
+        @property
+        def status(self):
+            return self._result.status
 
         @property
         def ag_test_name(self):
