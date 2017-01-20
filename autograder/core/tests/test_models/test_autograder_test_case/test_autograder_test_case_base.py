@@ -41,6 +41,8 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
 
         self.assertEqual(new_test_case, new_test_case)
         self.assertEqual(self.TEST_NAME, new_test_case.name)
+        self.assertEqual(const.DEFAULT_RANDOMLY_OBFUSCATED_TEST_NAME_PREFIX,
+                         new_test_case.randomly_obfuscated_name_prefix)
         self.assertEqual(self.project, new_test_case.project)
 
         self.assertFalse(new_test_case.deferred)
@@ -92,6 +94,7 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
     def test_valid_initialization_custom_values(self):
         vals = {
             'name': self.TEST_NAME,
+            'randomly_obfuscated_name_prefix': 'whatever you want',
             'project': self.project,
 
             'deferred': True,
