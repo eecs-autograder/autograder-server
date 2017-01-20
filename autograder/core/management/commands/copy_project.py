@@ -24,8 +24,13 @@ class Command(BaseCommand):
 def clone_project(project, target_course):
 
     with transaction.atomic():
+        proj_dict = project.to_dict(
+            exclude_fields=['pk', 'course', 'visible_to_students',
+                            'hide_ultimate_submission_fdbk'])
+
         new_proj = ag_models.Project.objects.validate_and_create(
-            **project.to_dict(exclude_fields=['pk', 'course']), course=target_course)
+            course=target_course, visible_to_students=False,
+            hide_ultimate_submission_fdbk=True, **proj_dict)
 
         for uploaded_file in project.uploaded_files.all():
             new_file = SimpleUploadedFile(uploaded_file.name, uploaded_file.file_obj.read())
@@ -34,7 +39,8 @@ def clone_project(project, target_course):
 
         for pattern in project.expected_student_file_patterns.all():
             ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
-                **pattern.to_dict(exclude_fields=['pk', 'project']), project=new_proj)
+                 project=new_proj,
+                **pattern.to_dict(exclude_fields=['pk', 'project']))
 
         _clone_test_cases(orig_proj=project, new_proj=new_proj)
 
