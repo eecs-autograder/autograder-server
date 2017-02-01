@@ -191,8 +191,9 @@ class AutograderTestCaseResult(models.Model):
 
         SERIALIZABLE_FIELDS = (
             'ag_test_name',
-
             'status',
+
+            'timed_out',
 
             'return_code_correct',
             'expected_return_code',
@@ -256,6 +257,20 @@ class AutograderTestCaseResult(models.Model):
                 return 'test{}'.format(self._result.test_case.pk)
 
             return self._result.test_case.name
+
+        @property
+        def timed_out(self):
+            '''
+            Note: feedback on whether the test case timed out is given
+            only if feedback would be given on return code correctness,
+            stdout correctness, or stderr correctness.
+            '''
+            if (self.return_code_correct is not None or
+                    self.stdout_correct is not None or
+                    self.stderr_correct is not None):
+                return self._result.timed_out
+
+            return None
 
         @property
         def return_code_correct(self):

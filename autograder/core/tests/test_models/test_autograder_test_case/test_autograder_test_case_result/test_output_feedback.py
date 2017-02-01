@@ -29,11 +29,13 @@ class StdoutFdbkTestCase(UnitTestBase):
 
         self.correct_result = ag_models.AutograderTestCaseResult(
             test_case=self.stdout_ag_test,
-            standard_output=expected_stdout)
+            standard_output=expected_stdout,
+            timed_out=False)
 
         self.incorrect_result = ag_models.AutograderTestCaseResult(
             test_case=self.stdout_ag_test,
-            standard_output=expected_stdout + 'wrong')
+            standard_output=expected_stdout + 'wrong',
+            timed_out=True)
 
     def test_no_fdbk(self):
         self.stdout_ag_test.feedback_configuration.validate_and_update(
@@ -45,6 +47,7 @@ class StdoutFdbkTestCase(UnitTestBase):
         self.assertIsNone(self.correct_result.get_normal_feedback().stdout_points)
         self.assertIsNone(
             self.correct_result.get_normal_feedback().stdout_points_possible)
+        self.assertIsNone(self.correct_result.get_normal_feedback().timed_out)
 
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stdout_correct)
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stdout_content)
@@ -52,6 +55,7 @@ class StdoutFdbkTestCase(UnitTestBase):
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stdout_points)
         self.assertIsNone(
             self.incorrect_result.get_normal_feedback().stdout_points_possible)
+        self.assertIsNone(self.incorrect_result.get_normal_feedback().timed_out)
 
     def test_correct_or_incorrect_only_fdbk(self):
         self.stdout_ag_test.feedback_configuration.validate_and_update(
@@ -61,10 +65,12 @@ class StdoutFdbkTestCase(UnitTestBase):
         self.assertTrue(self.correct_result.get_normal_feedback().stdout_correct)
         self.assertIsNone(self.correct_result.get_normal_feedback().stdout_content)
         self.assertIsNone(self.correct_result.get_normal_feedback().stdout_diff)
+        self.assertFalse(self.correct_result.get_normal_feedback().timed_out)
 
         self.assertFalse(self.incorrect_result.get_normal_feedback().stdout_correct)
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stdout_content)
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stdout_diff)
+        self.assertTrue(self.incorrect_result.get_normal_feedback().timed_out)
 
         self._check_points_fdbk_shown_and_hidden()
 
@@ -167,11 +173,13 @@ class StderrFdbkTestCase(UnitTestBase):
 
         self.correct_result = ag_models.AutograderTestCaseResult(
             test_case=self.stderr_ag_test,
-            standard_error_output=expected_stderr)
+            standard_error_output=expected_stderr,
+            timed_out=False)
 
         self.incorrect_result = ag_models.AutograderTestCaseResult(
             test_case=self.stderr_ag_test,
-            standard_error_output=expected_stderr + 'wrong')
+            standard_error_output=expected_stderr + 'wrong',
+            timed_out=True)
 
     def test_no_fdbk(self):
         self.stderr_ag_test.feedback_configuration.validate_and_update(
@@ -183,6 +191,7 @@ class StderrFdbkTestCase(UnitTestBase):
         self.assertIsNone(self.correct_result.get_normal_feedback().stderr_points)
         self.assertIsNone(
             self.correct_result.get_normal_feedback().stderr_points_possible)
+        self.assertIsNone(self.correct_result.get_normal_feedback().timed_out)
 
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stderr_correct)
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stderr_content)
@@ -190,6 +199,7 @@ class StderrFdbkTestCase(UnitTestBase):
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stderr_points)
         self.assertIsNone(
             self.incorrect_result.get_normal_feedback().stderr_points_possible)
+        self.assertIsNone(self.incorrect_result.get_normal_feedback().timed_out)
 
     def test_correct_or_incorrect_only_fdbk(self):
         self.stderr_ag_test.feedback_configuration.validate_and_update(
@@ -199,10 +209,12 @@ class StderrFdbkTestCase(UnitTestBase):
         self.assertTrue(self.correct_result.get_normal_feedback().stderr_correct)
         self.assertIsNone(self.correct_result.get_normal_feedback().stderr_content)
         self.assertIsNone(self.correct_result.get_normal_feedback().stderr_diff)
+        self.assertFalse(self.correct_result.get_normal_feedback().timed_out)
 
         self.assertFalse(self.incorrect_result.get_normal_feedback().stderr_correct)
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stderr_content)
         self.assertIsNone(self.incorrect_result.get_normal_feedback().stderr_diff)
+        self.assertTrue(self.incorrect_result.get_normal_feedback().timed_out)
 
         self._check_points_fdbk_shown_and_hidden()
 
