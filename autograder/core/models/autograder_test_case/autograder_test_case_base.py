@@ -36,6 +36,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'type_str',
 
         'name',
+        'randomly_obfuscated_name_prefix',
         'project',
 
         'deferred',
@@ -98,6 +99,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     EDITABLE_FIELDS = (
         'name',
+        'randomly_obfuscated_name_prefix',
 
         'deferred',
 
@@ -165,6 +167,12 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             Must be non-empty and non-null. Must be unique among test
             cases associated with a given project.
             This field is REQUIRED.''')
+    randomly_obfuscated_name_prefix = ag_fields.ShortStringField(
+        blank=True, default=const.DEFAULT_RANDOMLY_OBFUSCATED_TEST_NAME_PREFIX,
+        help_text='''If a randomly obfuscated name is requested for this
+            test case, that obfuscated name will begin with this
+            value.''')
+
     project = models.ForeignKey(
         Project,
         related_name='autograder_test_cases',

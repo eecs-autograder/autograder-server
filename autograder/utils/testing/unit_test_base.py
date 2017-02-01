@@ -10,8 +10,8 @@ from django.test.utils import override_settings
 @override_settings(MEDIA_ROOT=os.path.join(settings.BASE_DIR, 'tmp_filesystem'))
 class UnitTestBase(TransactionTestCase):
     """
-    Base class for test cases that test code that performs
-    filesystem operations. Overrides the MEDIA_ROOT setting
+    Base class for test cases that use either the filesystem or the
+    cache. Overrides the MEDIA_ROOT setting.
 
     The setUp() method does the following:
         - Creates a temporary directory for the test to use.

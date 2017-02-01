@@ -246,7 +246,9 @@ class AutograderTestCaseResult(models.Model):
         def ag_test_name(self):
             random = fdbk_conf.AGTestNameFdbkLevel.randomly_obfuscate_name
             if self._fdbk.ag_test_name_fdbk == random:
-                return 'test{}'.format(uuid.uuid4().hex)
+                return '{} {} (name randomly obfuscated)'.format(
+                    self._result.test_case.randomly_obfuscated_name_prefix,
+                    uuid.uuid4().hex)
 
             deterministic = (
                 fdbk_conf.AGTestNameFdbkLevel.deterministically_obfuscate_name)

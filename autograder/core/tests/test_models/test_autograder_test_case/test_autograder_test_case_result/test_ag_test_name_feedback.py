@@ -25,6 +25,8 @@ class AgTestNameFdbkTestCase(UnitTestBase):
             test_case=self.ag_test)
 
     def test_randomly_obfuscated_name(self):
+        self.ag_test.validate_and_update(
+            randomly_obfuscated_name_prefix='WAAALUOOGIO')
         self.ag_test.feedback_configuration.validate_and_update(
             ag_test_name_fdbk=(
                 fdbk_lvls.AGTestNameFdbkLevel.randomly_obfuscate_name))
@@ -33,7 +35,9 @@ class AgTestNameFdbkTestCase(UnitTestBase):
         for i in range(1000):
             name = self.result.get_normal_feedback().ag_test_name
             self.assertNotEqual(name, self.ag_test_name)
-            self.assertTrue(name.startswith('test'))
+            # FIXME >:D
+            self.assertTrue(
+                name.startswith(self.ag_test.randomly_obfuscated_name_prefix))
             generated_names.append(name)
 
         self.assertCountEqual(set(generated_names), generated_names)
