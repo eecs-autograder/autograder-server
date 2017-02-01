@@ -150,6 +150,7 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
             'type_str',
 
             'name',
+            'randomly_obfuscated_name_prefix',
             'project',
 
             'deferred',
@@ -245,6 +246,7 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
     def test_editable_fields(self):
         expected = [
             'name',
+            'randomly_obfuscated_name_prefix',
 
             'deferred',
 

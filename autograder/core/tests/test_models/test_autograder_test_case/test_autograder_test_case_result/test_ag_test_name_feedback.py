@@ -5,7 +5,6 @@ from autograder.utils.testing import UnitTestBase
 
 import autograder.core.models as ag_models
 import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
-import autograder.core.constants as const
 
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.tests.test_models.test_autograder_test_case.models \
@@ -26,6 +25,8 @@ class AgTestNameFdbkTestCase(UnitTestBase):
             test_case=self.ag_test)
 
     def test_randomly_obfuscated_name(self):
+        self.ag_test.validate_and_update(
+            randomly_obfuscated_name_prefix='WAAALUOOGIO')
         self.ag_test.feedback_configuration.validate_and_update(
             ag_test_name_fdbk=(
                 fdbk_lvls.AGTestNameFdbkLevel.randomly_obfuscate_name))
@@ -36,7 +37,7 @@ class AgTestNameFdbkTestCase(UnitTestBase):
             self.assertNotEqual(name, self.ag_test_name)
             # FIXME >:D
             self.assertTrue(
-                name.startswith(const.DEFAULT_RANDOMLY_OBFUSCATED_TEST_NAME_PREFIX))
+                name.startswith(self.ag_test.randomly_obfuscated_name_prefix))
             generated_names.append(name)
 
         self.assertCountEqual(set(generated_names), generated_names)
