@@ -34,9 +34,10 @@ class _UltimateSubmissionPermissions(_Permissions):
         if is_staff and group.members.filter(pk=request.user.pk).exists():
             return True
 
-        # FIXME: account for extensions
-        closing_time_passed = (project.closing_time is None or
-                               timezone.now() > project.closing_time)
+        closing_time = (project.closing_time if group.extended_due_date is None
+                        else group.extended_due_date)
+        closing_time_passed = (closing_time is None or
+                               timezone.now() > closing_time)
         if not closing_time_passed:
             return False
 
