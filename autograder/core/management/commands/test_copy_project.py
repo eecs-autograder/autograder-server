@@ -8,6 +8,12 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 class CloneProjectTestCase(UnitTestBase):
+    def test_visible_and_ultimate_values_overridden(self):
+        proj = obj_build.build_project(
+            {'visible_to_students': True,
+             'hide_ultimate_submission_fdbk': False})
+        self.do_clone_project_test(proj)
+
     def test_empty_relationships(self):
         proj = obj_build.build_project(
             {'disallow_student_submissions': True,
@@ -49,6 +55,8 @@ class CloneProjectTestCase(UnitTestBase):
         cloned = clone_project(project, obj_build.build_course())
         cloned_dict = cloned.to_dict(exclude_fields=['pk', 'course'])
         project_dict = project.to_dict(exclude_fields=['pk', 'course'])
+        project_dict['visible_to_students'] = False
+        project_dict['hide_ultimate_submission_fdbk'] = True
         self.assertEqual([], list(cloned.submission_groups.all()))
         self.assertEqual(cloned_dict, project_dict)
         self.assertNotEqual(cloned, project)

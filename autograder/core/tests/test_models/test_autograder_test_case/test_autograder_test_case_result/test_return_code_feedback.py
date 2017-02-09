@@ -29,7 +29,8 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
         self.expected_ret_code_incorrect_result = (
             ag_models.AutograderTestCaseResult(
                 test_case=self.expected_ret_code_ag_test,
-                return_code=expected_ret_code + 2))
+                return_code=expected_ret_code + 2,
+                timed_out=True))
 
         self.expect_nonzero_ret_code_ag_test = (
             _DummyAutograderTestCase.objects.validate_and_create(
@@ -44,7 +45,7 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
         self.expect_nonzero_ret_code_incorrect_result = (
             ag_models.AutograderTestCaseResult(
                 test_case=self.expect_nonzero_ret_code_ag_test,
-                return_code=0))
+                return_code=0, timed_out=True))
 
         self.tests_and_results = (
             (self.expected_ret_code_ag_test,
@@ -72,6 +73,8 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
             self.assertIsNone(
                 correct.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
+            self.assertIsNone(correct.get_normal_feedback().timed_out,
+                              msg=test.name)
 
             self.assertIsNone(incorrect.get_normal_feedback().return_code_correct,
                               msg=test.name)
@@ -84,6 +87,8 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
             self.assertIsNone(
                 incorrect.get_normal_feedback().return_code_points_possible,
                 msg=test.name)
+            self.assertIsNone(incorrect.get_normal_feedback().timed_out,
+                              msg=test.name)
 
     def test_correct_or_incorrect_only_fdbk(self):
         for test, correct, incorrect in self.tests_and_results:
@@ -97,6 +102,8 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
 
             self.assertTrue(correct.get_normal_feedback().return_code_correct,
                             msg=test.name)
+            self.assertFalse(correct.get_normal_feedback().timed_out,
+                             msg=test.name)
             self.assertEqual(test.points_for_correct_return_code,
                              correct.get_normal_feedback().return_code_points,
                              msg=test.name)
@@ -109,6 +116,8 @@ class ReturnCodeFdbkTestCase(UnitTestBase):
             self.assertFalse(incorrect.get_normal_feedback().return_code_correct,
                              msg=test.name)
             self.assertEqual(0, incorrect.get_normal_feedback().return_code_points)
+            self.assertTrue(incorrect.get_normal_feedback().timed_out,
+                            msg=test.name)
             self.assertEqual(
                 test.points_for_correct_return_code,
                 incorrect.get_normal_feedback().return_code_points_possible)

@@ -117,6 +117,9 @@ class MiscAGTestResultTestCase(_SetUp, test_ut.UnitTestBase):
             'pk',
             'ag_test_name',
             'status',
+
+            'timed_out',
+
             'return_code_correct',
             'expected_return_code',
             'actual_return_code',
