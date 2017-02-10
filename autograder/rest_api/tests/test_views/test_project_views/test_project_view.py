@@ -1,7 +1,10 @@
 from rest_framework import status
+from django.core.urlresolvers import reverse
 
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
+import autograder.utils.testing.model_obj_builders as obj_build
+import autograder.core.models as ag_models
 
 
 class _ProjectSetUp(test_data.Client, test_data.Project):
@@ -103,3 +106,54 @@ class UpdateProjectTestCase(_ProjectSetUp, UnitTestBase):
 
             self.project.refresh_from_db()
             self.assertEqual(original_name, self.project.name)
+
+
+class NumQueuedSubmissionsTestCase(_ProjectSetUp, UnitTestBase):
+    def get_num_queued_submissiosn(self):
+        course = obj_build.build_course()
+        proj_args = {
+            'course': course,
+            'visible_to_students': True,
+            'allow_submissions_from_non_enrolled_students': True
+        }
+        no_submits = obj_build.build_project(proj_args)
+        with_submits1 = obj_build.build_project(proj_args)
+        with_submits2 = obj_build.build_project(proj_args)
+
+        group_with_submits1 = obj_build.build_submission_group(
+            group_kwargs={'project': with_submits1})
+        group_with_submits2 = obj_build.build_submission_group(
+            group_kwargs={'project': with_submits2})
+
+        g1_statuses = [ag_models.Submission.GradingStatus.queued,
+                       ag_models.Submission.GradingStatus.finished_grading,
+                       ag_models.Submission.GradingStatus.removed_from_queue,
+                       ag_models.Submission.GradingStatus.received,
+                       ag_models.Submission.GradingStatus.being_graded,
+                       ag_models.Submission.GradingStatus.error]
+
+        for grading_status in g1_statuses:
+            obj_build.build_submission(
+                status=grading_status,
+                submission_group=group_with_submits1)
+
+        for i in range(3):
+            obj_build.build_submission(
+                status=ag_models.Submission.GradingStatus.queued,
+                submission_group=group_with_submits2)
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(
+            reverse('project-num-queued-submissions', kwargs={'pk': no_submits}))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(0, response.data)
+
+        response = self.client.get(
+            reverse('project-num-queued-submissions', kwargs={'pk': with_submits1}))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(1, response.data)
+
+        response = self.client.get(
+            reverse('project-num-queued-submissions', kwargs={'pk': with_submits2}))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(3, response.data)
