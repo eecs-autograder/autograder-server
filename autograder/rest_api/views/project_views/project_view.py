@@ -1,4 +1,4 @@
-from rest_framework import viewsets, mixins, permissions, decorators
+from rest_framework import viewsets, mixins, permissions, decorators, response
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -17,4 +17,9 @@ class ProjectViewSet(build_load_object_mixin(ag_models.Project),  # type: ignore
 
     @decorators.detail_route()
     def num_queued_submissions(self, *args, **kwargs):
-        pass
+        project = self.get_object()
+        num_queued_submissions = ag_models.Submission.objects.filter(
+            status=ag_models.Submission.GradingStatus.queued,
+            submission_group__project=project).count()
+
+        return response.Response(data=num_queued_submissions)

@@ -109,7 +109,7 @@ class UpdateProjectTestCase(_ProjectSetUp, UnitTestBase):
 
 
 class NumQueuedSubmissionsTestCase(_ProjectSetUp, UnitTestBase):
-    def get_num_queued_submissiosn(self):
+    def test_get_num_queued_submissions(self):
         course = obj_build.build_course()
         proj_args = {
             'course': course,
@@ -144,16 +144,19 @@ class NumQueuedSubmissionsTestCase(_ProjectSetUp, UnitTestBase):
 
         self.client.force_authenticate(self.admin)
         response = self.client.get(
-            reverse('project-num-queued-submissions', kwargs={'pk': no_submits}))
+            reverse('project-num-queued-submissions',
+                    kwargs={'pk': no_submits.pk}))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(0, response.data)
 
         response = self.client.get(
-            reverse('project-num-queued-submissions', kwargs={'pk': with_submits1}))
+            reverse('project-num-queued-submissions',
+                    kwargs={'pk': with_submits1.pk}))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(1, response.data)
 
         response = self.client.get(
-            reverse('project-num-queued-submissions', kwargs={'pk': with_submits2}))
+            reverse('project-num-queued-submissions',
+                    kwargs={'pk': with_submits2.pk}))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(3, response.data)

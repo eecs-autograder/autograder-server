@@ -1,3 +1,4 @@
+import copy
 import random
 import uuid
 import base64
@@ -62,6 +63,8 @@ def build_course(course_kwargs: dict=None) -> ag_models.Course:
     '''
     if course_kwargs is None:
         course_kwargs = {}
+    else:
+        course_kwargs = copy.deepcopy(course_kwargs)
 
     if 'name' not in course_kwargs:
         course_kwargs['name'] = 'course{}'.format(get_unique_id())
@@ -87,6 +90,8 @@ def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_mod
     '''
     if project_kwargs is None:
         project_kwargs = {}
+    else:
+        project_kwargs = copy.deepcopy(project_kwargs)
 
     if 'name' not in project_kwargs:
         project_kwargs['name'] = 'project{}'.format(get_unique_id())
@@ -183,6 +188,8 @@ def build_compiled_ag_test_result(ag_test_with_points=True,
     '''
     if ag_test_kwargs is None:
         ag_test_kwargs = {}
+    else:
+        ag_test_kwargs = copy.deepcopy(ag_test_kwargs)
 
     submission = result_kwargs.get('submission', None)
     test_case = result_kwargs.get('test_case', None)
@@ -242,6 +249,8 @@ def build_submission_group(num_members=1,
     '''
     if group_kwargs is None:
         group_kwargs = {}
+    else:
+        group_kwargs = copy.deepcopy(group_kwargs)
 
     if 'project' not in group_kwargs:
         group_kwargs['project'] = build_project(
