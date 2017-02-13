@@ -39,7 +39,7 @@ DEFAULT_VALGRIND_FLAGS = ['--leak-check=full', '--error-exitcode=1']
 
 SUPPORTED_COMPILERS = ['g++', 'clang++', 'gcc', 'clang']
 
-SUPPORTED_INTERPRETERS = ['python', 'python3']
+SUPPORTED_INTERPRETERS = ['python', 'python3', 'bash']
 
 # Sandbox resource limit settings
 DEFAULT_SUBPROCESS_TIMEOUT = 10
