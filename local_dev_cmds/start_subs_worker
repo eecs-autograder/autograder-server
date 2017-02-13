@@ -1,4 +1,5 @@
 export AG_DB_HOST='localhost'
 export AG_DB_PASSWORD='postgres'
+export AG_DB_USER='postgres'
 export DJANGO_SETTINGS_MODULE='autograder.settings.development'
 celery -A autograder worker -Q submissions -n submissions@%h --loglevel=info -c 1
