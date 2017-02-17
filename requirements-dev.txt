@@ -6,3 +6,4 @@ pep8>=1.7.0
 prospector>=0.12.4
 sphinx-autodoc-typehints==1.1.0
 Sphinx==1.5.1
+autopep8==1.2.4

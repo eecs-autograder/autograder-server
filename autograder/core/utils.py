@@ -186,4 +186,7 @@ def get_submission_relative_dir(submission):
     """
     return os.path.join(
         get_student_submission_group_relative_dir(submission.submission_group),
-        'submission{}'.format(submission.pk))
+        get_submission_dir_basename(submission))
+
+def get_submission_dir_basename(submission):
+    return 'submission{}'.format(submission.pk)

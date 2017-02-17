@@ -1,5 +1,11 @@
+import tempfile
+import os
+import shutil
+import itertools
+
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.db import transaction
 
 from rest_framework import viewsets, mixins, permissions, decorators, response
 
@@ -9,6 +15,7 @@ from autograder.rest_api import transaction_mixins
 
 from autograder import utils
 import autograder.utils.testing as test_ut
+import autograder.core.utils as core_ut
 
 from ..permission_components import user_can_view_group
 from ..load_object_mixin import build_load_object_mixin
@@ -48,7 +55,7 @@ class _UltimateSubmissionPermissions(_Permissions):
         return not project.hide_ultimate_submission_fdbk
 
 
-class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
+class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),  # type: ignore
                    mixins.RetrieveModelMixin,
                    transaction_mixins.TransactionUpdateMixin,
                    viewsets.GenericViewSet):
@@ -92,3 +99,31 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
         content = ag_serializers.SubmissionSerializer(
             group.ultimate_submission).data
         return response.Response(content)
+
+    @decorators.detail_route()
+    @transaction.atomic()
+    def merge_with(self, request, *args, **kwargs):
+        group1 = self.get_object()
+        group2 = ag_models.SubmissionGroup.objects.select_for_update().get(
+            pk=request.query_params.get('other_group_pk'))
+
+        merged_group = ag_models.SubmissionGroup.objects.validate_and_create(
+            members=list(group1.members.all()) + list(group2.members.all()))
+        tempdir_path = tempfile.mkdtemp()
+
+        for submission in itertools.chain(group1.submissions.all(),
+                                          group2.submissions.all()):
+            shutil.copytree(
+                core_ut.get_submission_dir(submission),
+                os.path.join(tempdir_path,
+                             core_ut.get_submission_dir_basename(submission)))
+
+            submission.submission_group = merged_group
+            submission.save()
+
+        # TODO: move tempdir to direction, consider how to handle save
+        #       making stuff on the file system.
+
+        group1.delete()
+        group2.delete()
+
