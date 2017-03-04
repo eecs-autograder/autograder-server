@@ -9,6 +9,7 @@ import autograder.core.models as ag_models
 from autograder.utils.testing import model_obj_builders as obj_build
 
 # TODO: clean up unused submission methods
+# TODO: DOCUMENT, especially about caching
 
 
 class Superuser:

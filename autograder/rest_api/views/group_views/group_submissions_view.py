@@ -92,4 +92,5 @@ class GroupSubmissionsViewset(
         if (group.num_submits_towards_limit >=
                 group.project.submission_limit_per_day):
             raise exceptions.ValidationError(
-                {'submission': 'Unable to resubmit while current submission is being processed'})
+                {'submission': 'Submissions past the daily limit are '
+                               'not allowed for this project'})
