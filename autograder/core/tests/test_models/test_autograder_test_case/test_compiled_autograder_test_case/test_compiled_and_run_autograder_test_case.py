@@ -424,7 +424,7 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
     @mock.patch('autograder_sandbox.AutograderSandbox', autospec=True)
     def test_resource_limits_set(self, mock_sandbox_class):
         run_cmd_mock_result = mock.Mock()
-        type(run_cmd_mock_result).return_code = (
+        type(run_cmd_mock_result).returncode = (
             mock.PropertyMock(return_value=0))
 
         sandbox = mock_sandbox_class()
@@ -433,7 +433,7 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
 
         sandbox.run_command.assert_called_with(
             ['./' + self.test.executable_name],
-            input_content='',
+            input='',
             timeout=self.test.time_limit,
             max_num_processes=self.process_limit,
             max_stack_size=self.stack_limit,
@@ -447,7 +447,7 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
         self.test.save()
 
         run_cmd_mock_result = mock.Mock()
-        type(run_cmd_mock_result).return_code = (
+        type(run_cmd_mock_result).returncode = (
             mock.PropertyMock(return_value=0))
 
         sandbox = mock_sandbox_class()
@@ -457,7 +457,7 @@ class CompiledAGTestResourceLimitTestCase(UnitTestBase):
         sandbox.run_command.assert_called_with(
             ['valgrind'] + self.test.valgrind_flags +
             ['./' + self.test.executable_name],
-            input_content='',
+            input='',
             timeout=self.test.time_limit,
             max_num_processes=self.process_limit,
             max_stack_size=self.stack_limit,

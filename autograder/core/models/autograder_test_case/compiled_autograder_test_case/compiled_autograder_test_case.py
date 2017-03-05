@@ -4,6 +4,8 @@ from django.core import exceptions
 
 from ..autograder_test_case_base import AutograderTestCaseBase
 
+from autograder_sandbox import AutograderSandbox
+
 
 class CompiledAutograderTestCase(AutograderTestCaseBase):
     """
@@ -45,7 +47,8 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
 
         return files_to_compile
 
-    def _compile_program(self, submission, result_ref, autograder_sandbox):
+    def _compile_program(self, submission, result_ref,
+                         autograder_sandbox: AutograderSandbox):
         compilation_command = (
             [self.compiler] +
             self.get_filenames_to_compile_together(submission) +
@@ -60,4 +63,4 @@ class CompiledAutograderTestCase(AutograderTestCaseBase):
         result_ref.submission = submission
         result_ref.compilation_standard_output = compile_result.stdout
         result_ref.compilation_standard_error_output = compile_result.stderr
-        result_ref.compilation_return_code = compile_result.return_code
+        result_ref.compilation_return_code = compile_result.returncode

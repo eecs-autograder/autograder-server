@@ -17,6 +17,8 @@ import autograder.core.constants as const
 import autograder.core.utils as core_ut
 import autograder.core.fields as ag_fields
 
+from autograder_sandbox import AutograderSandbox
+
 
 def get_random_executable_name():
     return 'prog-{}'.format(uuid.uuid4().hex)
@@ -557,7 +559,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     # -------------------------------------------------------------------------
 
-    def run(self, submission, autograder_sandbox):
+    def run(self, submission, autograder_sandbox: AutograderSandbox):
         """
         Runs this autograder test case and returns an
         AutograderTestCaseResult object that is linked to the given
@@ -572,7 +574,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         """
         raise NotImplementedError("Derived classes must override this method.")
 
-    def add_needed_files_to_sandbox(self, submission, autograder_sandbox):
+    def add_needed_files_to_sandbox(self, submission, autograder_sandbox: AutograderSandbox):
         """
         Adds all the files needed to run this test case to the given
         sandbox. This method should be called by derived-class

@@ -582,4 +582,3 @@ class AutograderTestCaseResult(models.Model):
             values = (self.return_code_points_possible, self.stdout_points_possible,
                       self.stderr_points_possible, self.compilation_points_possible)
             return sum((val for val in values if val is not None))
-
