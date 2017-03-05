@@ -231,7 +231,7 @@ class InterpretedAutograderTestCaseResourceLimitTestCase(_SetUpBase, UnitTestBas
 
         sandbox.run_command.assert_called_once_with(
             [self.interpreter, self.project_filename],
-            input_content='',
+            input='',
             timeout=self.test.time_limit,
             max_num_processes=self.process_limit,
             max_stack_size=self.stack_limit,

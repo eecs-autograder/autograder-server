@@ -1,6 +1,7 @@
 ipython>=5.1.0
 jedi>=0.9.0
-mypy-lang>=0.4.6
+mypy>=0.501
+autopep8>=1.2.4
 pep8-naming>=0.4.1
 pep8>=1.7.0
 prospector>=0.12.4

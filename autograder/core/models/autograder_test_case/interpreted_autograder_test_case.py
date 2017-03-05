@@ -1,7 +1,11 @@
+import subprocess
+
 from django.core import exceptions
 
 from .autograder_test_case_base import AutograderTestCaseBase
 from .autograder_test_case_result import AutograderTestCaseResult
+
+from autograder_sandbox import AutograderSandbox
 
 
 class InterpretedAutograderTestCase(AutograderTestCaseBase):
@@ -26,7 +30,7 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
                 {'entry_point_filename': 'The "entry_point_filename" field '
                                          'cannot be empty for this AG test type.'})
 
-    def run(self, submission, autograder_sandbox):
+    def run(self, submission, autograder_sandbox: AutograderSandbox):
         print('running test: ' + self.name)
         result = AutograderTestCaseResult.objects.get(
             test_case=self, submission=submission)
@@ -36,17 +40,22 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
 
         self.add_needed_files_to_sandbox(submission, autograder_sandbox)
 
-        runner = autograder_sandbox.run_command(
-            run_program_cmd,
-            timeout=self.time_limit,
-            max_num_processes=self.process_spawn_limit,
-            max_stack_size=self.stack_size_limit,
-            max_virtual_memory=self.virtual_memory_limit,
-            input_content=self.standard_input)
+        # TODO: pull this "run one command and record results" part into a function?
+        try:
+            run_result = autograder_sandbox.run_command(
+                run_program_cmd,
+                timeout=self.time_limit,
+                max_num_processes=self.process_spawn_limit,
+                max_stack_size=self.stack_size_limit,
+                max_virtual_memory=self.virtual_memory_limit,
+                input=self.standard_input)
 
-        result.return_code = runner.return_code
-        result.standard_output = runner.stdout
-        result.standard_error_output = runner.stderr
-        result.timed_out = runner.timed_out
+            result.return_code = run_result.returncode
+            result.standard_output = run_result.stdout
+            result.standard_error_output = run_result.stderr
+        except subprocess.TimeoutExpired as run_result:
+            result.timed_out = True
+            result.standard_output = run_result.stdout
+            result.standard_error_output = run_result.stderr
 
         return result
