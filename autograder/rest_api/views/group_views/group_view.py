@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db import transaction
 
-from rest_framework import viewsets, mixins, permissions, decorators, response
+from rest_framework import viewsets, mixins, permissions, decorators, response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -100,15 +100,25 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),  # type: 
             group.ultimate_submission).data
         return response.Response(content)
 
-    @decorators.detail_route()
+    @decorators.detail_route(methods=['POST'])
     @transaction.atomic()
     def merge_with(self, request, *args, **kwargs):
+        print(request.query_params.get('other_group_pk'))
         group1 = self.get_object()
         group2 = ag_models.SubmissionGroup.objects.select_for_update().get(
             pk=request.query_params.get('other_group_pk'))
 
+        merged_members = list(group1.members.all()) + list(group2.members.all())
+        project = group1.project
+
+        # Can't have duplicate members between groups in a project,
+        # but still need to copy submissions before they get
+        # cascade-deleted
+        group1.members.clear()
+        group2.members.clear()
+
         merged_group = ag_models.SubmissionGroup.objects.validate_and_create(
-            members=list(group1.members.all()) + list(group2.members.all()))
+            members=merged_members, project=project, check_group_size_limits=False)
         tempdir_path = tempfile.mkdtemp()
 
         for submission in itertools.chain(group1.submissions.all(),
@@ -121,9 +131,12 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),  # type: 
             submission.submission_group = merged_group
             submission.save()
 
-        # TODO: move tempdir to direction, consider how to handle save
-        #       making stuff on the file system.
+        merged_group_dir = core_ut.get_student_submission_group_dir(merged_group)
+        shutil.rmtree(merged_group_dir)
+        os.rename(tempdir_path, merged_group_dir)
 
         group1.delete()
         group2.delete()
 
+        content = ag_serializers.SubmissionGroupSerializer(merged_group).data
+        return response.Response(content, status=status.HTTP_201_CREATED)

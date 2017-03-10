@@ -1,0 +1,6 @@
+docker stop postypost
+docker rm -f postypost
+
+export AG_DB_HOST='localhost'
+export AG_DB_USER='postgres'
+docker run -d --name postypost -p 5432:5432 postgres

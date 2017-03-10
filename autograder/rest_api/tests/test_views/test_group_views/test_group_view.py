@@ -417,7 +417,10 @@ class MergeGroupsTestCase(test_data.Client,
         expected_member_names = group1.member_names + group2.member_names
         self.assertEqual(2, ag_models.SubmissionGroup.objects.count())
 
+        self.client.force_authenticate(self.admin)
+
         response = self.client.post(self.get_merge_url(group1, group2))
+        print(self.get_merge_url(group1, group2))
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
@@ -458,4 +461,4 @@ class MergeGroupsTestCase(test_data.Client,
 
     def get_merge_url(self, group1, group2):
         return (reverse('group-merge-with', kwargs={'pk': group1.pk}) +
-                '?pk=' + str(group2.pk))
+                '?other_group_pk=' + str(group2.pk))
