@@ -103,10 +103,21 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),  # type: 
     @decorators.detail_route(methods=['POST'])
     @transaction.atomic()
     def merge_with(self, request, *args, **kwargs):
-        print(request.query_params.get('other_group_pk'))
+        other_group_pk = request.query_params.get('other_group_pk')
+
+        if other_group_pk is None:
+            return response.Response(
+                data={'other_group_pk': 'Missing required query param: other_group_pk'},
+                status=status.HTTP_400_BAD_REQUEST)
+
         group1 = self.get_object()
-        group2 = ag_models.SubmissionGroup.objects.select_for_update().get(
-            pk=request.query_params.get('other_group_pk'))
+        group2 = self.load_object(pk=other_group_pk)
+
+        if group1.project != group2.project:
+            return response.Response(
+                data={'groups': 'Cannot merge groups from different projects'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         merged_members = list(group1.members.all()) + list(group2.members.all())
         project = group1.project
@@ -117,8 +128,24 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),  # type: 
         group1.members.clear()
         group2.members.clear()
 
-        merged_group = ag_models.SubmissionGroup.objects.validate_and_create(
-            members=merged_members, project=project, check_group_size_limits=False)
+        merged_group_serializer = ag_serializers.SubmissionGroupSerializer(
+            data={'members': merged_members,
+                  'project': project,
+                  'extended_due_date': self._get_merged_extended_due_date(group1, group2),
+                  'check_group_size_limits': False})
+        merged_group_serializer.is_valid()
+        merged_group_serializer.save()
+        merged_group = merged_group_serializer.instance
+
+        self._merge_group_files(group1=group1, group2=group2, merged_group=merged_group)
+
+        group1.delete()
+        group2.delete()
+
+        content = ag_serializers.SubmissionGroupSerializer(merged_group).data
+        return response.Response(content, status=status.HTTP_201_CREATED)
+
+    def _merge_group_files(self, group1, group2, merged_group):
         tempdir_path = tempfile.mkdtemp()
 
         for submission in itertools.chain(group1.submissions.all(),
@@ -135,8 +162,10 @@ class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),  # type: 
         shutil.rmtree(merged_group_dir)
         os.rename(tempdir_path, merged_group_dir)
 
-        group1.delete()
-        group2.delete()
+    def _get_merged_extended_due_date(self, group1, group2):
+        if group1.extended_due_date is None:
+            return group2.extended_due_date
+        if group2.extended_due_date is None:
+            return group1.extended_due_date
 
-        content = ag_serializers.SubmissionGroupSerializer(merged_group).data
-        return response.Response(content, status=status.HTTP_201_CREATED)
+        return max(group1.extended_due_date, group2.extended_due_date)

@@ -388,7 +388,14 @@ class MergeGroupsTestCase(test_data.Client,
                           test_data.Submission,
                           test_impls.PermissionDeniedGetTest,
                           UnitTestBase):
-    # def setUp(self):
+    def setUp(self):
+        super().setUp()
+        self.group1 = obj_build.build_submission_group(
+            group_kwargs={'project': self.visible_public_project})
+        self.group2 = obj_build.build_submission_group(
+            group_kwargs={'project': self.visible_public_project})
+        self.original_num_groups = 2
+        self.assertEqual(self.original_num_groups, ag_models.SubmissionGroup.objects.count())
 
     def test_normal_merge(self):
         files = []
@@ -400,27 +407,21 @@ class MergeGroupsTestCase(test_data.Client,
                 SimpleUploadedFile(file_name,
                                    ('heeey' + str(i)).encode('utf-8')))
 
-        group1 = obj_build.build_submission_group(
-            group_kwargs={'project': self.visible_public_project})
-        group2 = obj_build.build_submission_group(
-            group_kwargs={'project': self.visible_public_project})
-
         for i in range(2):
-            obj_build.build_submission(submission_group=group1,
+            obj_build.build_submission(submission_group=self.group1,
                                        submitted_files=files)
         for i in range(3):
-            obj_build.build_submission(submission_group=group2,
+            obj_build.build_submission(submission_group=self.group2,
                                        submitted_files=files)
 
-        expected_submission_count = (group1.submissions.count() +
-                                     group2.submissions.count())
-        expected_member_names = group1.member_names + group2.member_names
+        expected_submission_count = (self.group1.submissions.count() +
+                                     self.group2.submissions.count())
+        expected_member_names = self.group1.member_names + self.group2.member_names
         self.assertEqual(2, ag_models.SubmissionGroup.objects.count())
 
         self.client.force_authenticate(self.admin)
 
-        response = self.client.post(self.get_merge_url(group1, group2))
-        print(self.get_merge_url(group1, group2))
+        response = self.client.post(self.get_merge_url(self.group1, self.group2))
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
@@ -436,29 +437,79 @@ class MergeGroupsTestCase(test_data.Client,
                                  file_.read())
 
     def test_non_admin_permission_denied(self):
-        self.fail()
+        for user in self.staff, self.enrolled, self.nobody:
+            with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+                self.client.force_authenticate(user)
+                response = self.client.post(self.get_merge_url(self.group1, self.group2))
+
+            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_one_group_with_extension(self):
-        self.fail()
+        extension_date = timezone.now()
+        self.client.force_authenticate(self.admin)
+        self.group1.validate_and_update(extended_due_date=extension_date)
+        response = self.client.post(self.get_merge_url(self.group1, self.group2))
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertEqual(response.data['extended_due_date'], extension_date)
 
     def test_both_have_extension(self):
-        self.fail()
+        earlier_extension_date = timezone.now()
+        later_extension_date = earlier_extension_date + timezone.timedelta(hours=1)
+        self.client.force_authenticate(self.admin)
+        self.group1.validate_and_update(extended_due_date=earlier_extension_date)
+        self.group2.validate_and_update(extended_due_date=later_extension_date)
+        response = self.client.post(self.get_merge_url(self.group1, self.group2))
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertEqual(response.data['extended_due_date'], later_extension_date)
 
     def test_error_merge_staff_and_non_staff(self):
-        self.fail()
+        staff_group = self.staff_group(self.group1.project)
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(self.get_merge_url(self.group1, staff_group))
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('members', response.data)
 
     def test_error_merge_enrolled_and_non_enrolled(self):
-        self.fail()
+        non_enrolled_group = self.non_enrolled_group(self.group1.project)
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(self.get_merge_url(self.group1, non_enrolled_group))
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('members', response.data)
 
     def test_missing_query_param(self):
-        self.fail()
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(reverse('group-merge-with',
+                                                kwargs={'pk': self.group1.pk}))
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('other_group_pk', response.data)
 
     def test_query_param_pk_not_found(self):
-        self.fail()
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(reverse('group-merge-with',
+                                                kwargs={'pk': self.group1.pk}) +
+                                        '?other_group_pk=' + str(9001))
+
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
     def test_error_merge_groups_diff_projects(self):
-        self.fail()
+        group_diff_proj = obj_build.build_submission_group(
+            group_kwargs={'project': self.visible_private_project})
+        self.assertNotEqual(self.group1.project, group_diff_proj.project)
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(self.get_merge_url(self.group1, group_diff_proj))
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('groups', response.data)
 
     def get_merge_url(self, group1, group2):
         return (reverse('group-merge-with', kwargs={'pk': group1.pk}) +
                 '?other_group_pk=' + str(group2.pk))
+
