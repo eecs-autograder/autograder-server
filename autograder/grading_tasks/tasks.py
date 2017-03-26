@@ -120,11 +120,14 @@ def grade_non_deferred_ag_test(ag_test_pk, submission_pk):
     def _grade_non_deferred__ag_test_impl():
         grade_ag_test_impl(ag_test_pk, submission_pk)
 
+    # TODO: add a try catch here (see note below in grade_ag_test_impl)
     _grade_non_deferred__ag_test_impl()
 
 
 @celery.shared_task(bind=True, max_retries=1, queue='deferred')
 def grade_deferred_ag_test(self, ag_test_pk, submission_pk):
+    # TODO: update result status so that if the test is being regraded,
+    # its status will reflect the stage it's in
     @retry_should_recover
     def _grade_deferred_ag_test_impl():
         grade_ag_test_impl(ag_test_pk, submission_pk)
@@ -155,6 +158,9 @@ def grade_ag_test_impl(ag_test_pk, submission_pk):
     result, ag_test, submission = load_data()
     _update_ag_test_result_status(
         result, ag_models.AutograderTestCaseResult.ResultStatus.grading)
+
+    # TODO: get rid of this try catch, and add a try catch in
+    # grade_non_deferred_ag_test
     try:
         # Leave this here
         grade_ag_test_impl.mocking_hook()

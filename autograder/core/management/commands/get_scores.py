@@ -27,7 +27,8 @@ class Command(BaseCommand):
         submissions = [group.ultimate_submission for group in groups if group.submissions.count()]
 
         row_headers = (['usernames', 'timestamp'] +
-                       [test.name for test in project.autograder_test_cases.all()])
+                       [test.name for test in project.autograder_test_cases.all()] +
+                       ['total'])
         with open(options['csv_filename'], 'w') as f:
             writer = csv.DictWriter(f, fieldnames=row_headers)
             writer.writeheader()
@@ -36,9 +37,13 @@ class Command(BaseCommand):
                     continue
                 row = {'usernames': '_'.join(submission.submission_group.member_names),
                        'timestamp': submission.timestamp}
+                total = 0
                 for result in submission.results.all():
                     fdbk = result.get_max_feedback()
                     row[fdbk.ag_test_name] = fdbk.total_points
+                    total += fdbk.total_points
+
+                row['total'] = total
                 writer.writerow(row)
 
 
