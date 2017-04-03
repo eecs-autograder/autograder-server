@@ -58,12 +58,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'expected_standard_error_output',
 
         'ignore_case',
-        'ignore_non_newline_whitespace',
-        'ignore_non_newline_whitespace_changes',
-        'ignore_newline_changes',
+        'ignore_whitespace',
+        'ignore_whitespace_changes',
         'ignore_blank_lines',
-        'ignore_leading_whitespace',
-        'ignore_trailing_whitespace',
         'use_valgrind',
         'valgrind_flags',
 
@@ -120,12 +117,9 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
         'expected_standard_error_output',
 
         'ignore_case',
-        'ignore_non_newline_whitespace',
-        'ignore_non_newline_whitespace_changes',
-        'ignore_newline_changes',
+        'ignore_whitespace',
+        'ignore_whitespace_changes',
         'ignore_blank_lines',
-        'ignore_leading_whitespace',
-        'ignore_trailing_whitespace',
 
         'use_valgrind',
         'valgrind_flags',
@@ -312,23 +306,18 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
             check the standard error output of the program being
             tested.''')
 
-    # The following options are passed to the superdiff.differ.Differ
-    # object used to compare expected and actual output (Stdout and
-    # Stderr).
     ignore_case = models.BooleanField(
-        default=False, help_text='See superdiff.Differ.__init__')
-    ignore_non_newline_whitespace = models.BooleanField(
-        default=False, help_text='See superdiff.Differ.__init__')
-    ignore_non_newline_whitespace_changes = models.BooleanField(
-        default=False, help_text='See superdiff.Differ.__init__')
-    ignore_newline_changes = models.BooleanField(
-        default=False, help_text='See superdiff.Differ.__init__')
+        default=False,
+        help_text='Ignore case when checking output. Equivalent to diff -i')
+    ignore_whitespace = models.BooleanField(
+        default=False,
+        help_text='Ignore inline whitespace when checking output. Equivalent to diff -w')
+    ignore_whitespace_changes = models.BooleanField(
+        default=False,
+        help_text='Ignore whitespace changes when checking output. Equivalent to diff -b')
     ignore_blank_lines = models.BooleanField(
-        default=False, help_text='See superdiff.Differ.__init__')
-    ignore_leading_whitespace = models.BooleanField(
-        default=False, help_text='See superdiff.Differ.__init__')
-    ignore_trailing_whitespace = models.BooleanField(
-        default=False, help_text='See superdiff.Differ.__init__')
+        default=False,
+        help_text='Ignore changes in blank lines when checking output. Equivalent to diff -B')
 
     use_valgrind = models.BooleanField(
         default=False,

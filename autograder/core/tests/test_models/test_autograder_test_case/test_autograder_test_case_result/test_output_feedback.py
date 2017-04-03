@@ -3,14 +3,12 @@ import random
 from autograder.utils.testing import UnitTestBase
 
 import autograder.core.models as ag_models
-
 import autograder.core.models.autograder_test_case.feedback_config as fdbk_lvls
+import autograder.core.utils as core_ut
 
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.tests.test_models.test_autograder_test_case.models import (
     _DummyAutograderTestCase)
-
-import superdiff
 
 
 class StdoutFdbkTestCase(UnitTestBase):
@@ -85,7 +83,7 @@ class StdoutFdbkTestCase(UnitTestBase):
 
         self.assertFalse(self.incorrect_result.get_normal_feedback().stdout_correct)
         self.assertIsNone(self.correct_result.get_normal_feedback().stdout_content)
-        diff = superdiff.Differ().compare(
+        diff = core_ut.get_diff(
             self.stdout_ag_test.expected_standard_output,
             self.incorrect_result.standard_output)
         self.assertEqual(list(diff),
@@ -229,7 +227,7 @@ class StderrFdbkTestCase(UnitTestBase):
 
         self.assertFalse(self.incorrect_result.get_normal_feedback().stderr_correct)
         self.assertIsNone(self.correct_result.get_normal_feedback().stderr_content)
-        diff = superdiff.Differ().compare(
+        diff = core_ut.get_diff(
             self.stderr_ag_test.expected_standard_error_output,
             self.incorrect_result.standard_error_output)
         self.assertEqual(list(diff),

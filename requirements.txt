@@ -9,4 +9,3 @@ drf-nested-routers==0.11.1
 google-api-python-client==1.5.5
 psycopg2==2.6.2
 redis==2.10.5
-superdiff==1.0.1

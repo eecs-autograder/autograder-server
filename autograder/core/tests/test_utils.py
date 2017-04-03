@@ -13,6 +13,62 @@ import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
+class DiffTestCase(TestCase):
+    def test_diff_content(self):
+        str1 = '\n'.join(('q', 'a', 'b', 'x', 'c', 'd', 'e\n'))
+        str2 = '\n'.join(('a', 'b', 'y', 'c', 'd', 'f', 'e\n'))
+
+        expected = [
+            '- q\n',
+            '  a\n',
+            '  b\n',
+            '- x\n',
+            '+ y\n',
+            '  c\n',
+            '  d\n',
+            '+ f\n',
+            '  e\n'
+        ]
+
+        diff = core_ut.get_diff(str1, str2)
+
+        self.assertEqual(expected, list(diff))
+
+    def test_ignore_case(self):
+        str1 = 'SPAM'
+        str2 = 'spam'
+        self.assertEqual([], core_ut.get_diff(str1, str2, ignore_case=True))
+
+    def test_ignore_whitespace(self):
+        str1 = 'spam egg'
+        str2 = '   spam   \tegg  '
+        self.assertEqual(
+            [], core_ut.get_diff(str1, str2, ignore_whitespace=True))
+
+    def test_ignore_whitespace_changes(self):
+        str1 = 'spam egg'
+        str2 = 'spam   \tegg'
+        self.assertEqual(
+            [], core_ut.get_diff(str1, str2, ignore_whitespace_changes=True))
+
+    def test_ignore_blank_lines(self):
+        str1 = 'spam\n\n\negg\n'
+        str2 = 'spam\negg\n'
+        self.assertEqual(
+            [], core_ut.get_diff(str1, str2, ignore_blank_lines=True))
+
+    def test_all_ignore_options(self):
+        str1 = 'spam sausage\n\n\negg\n'
+        str2 = 'SPAM   \tsausage\negg\n'
+        self.assertEqual([],
+                         core_ut.get_diff(
+                             str1, str2,
+                             ignore_case=True,
+                             ignore_whitespace=True,
+                             ignore_whitespace_changes=True,
+                             ignore_blank_lines=True))
+
+
 class CheckUserProvidedFilenameTest(TestCase):
     def test_valid_filename(self):
         core_ut.check_user_provided_filename('spAM-eggs_42.cpp')

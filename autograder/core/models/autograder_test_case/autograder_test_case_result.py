@@ -1,5 +1,5 @@
-import uuid
 from typing import List
+import uuid
 
 from django.core.cache import cache
 from django.db import models
@@ -7,10 +7,9 @@ from django.db import models
 from autograder.core.models.ag_model_base import ToDictMixin
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
+import autograder.core.utils as core_ut
 
 from . import feedback_config as fdbk_conf
-
-import superdiff
 
 
 class AutograderTestCaseResult(models.Model):
@@ -439,36 +438,31 @@ class AutograderTestCaseResult(models.Model):
 
         def _get_stdout_diff(self) -> List:
             if self._stdout_diff is None:
-                self._stdout_diff = self._get_diff(
+                self._stdout_diff = core_ut.get_diff(
                     self._result.test_case.expected_standard_output,
-                    self._result.standard_output)
+                    self._result.standard_output,
+                    **self._get_diff_options())
 
             return self._stdout_diff
 
         def _get_stderr_diff(self) -> List:
             if self._stderr_diff is None:
-                self._stderr_diff = self._get_diff(
+                self._stderr_diff = core_ut.get_diff(
                     self._result.test_case.expected_standard_error_output,
-                    self._result.standard_error_output)
+                    self._result.standard_error_output,
+                    **self._get_diff_options())
 
             return self._stderr_diff
 
-        def _get_diff(self, first, second) -> List:
-            differ = superdiff.Differ(
-                ignore_case=self._result.test_case.ignore_case,
-                ignore_non_newline_whitespace=(
-                    self._result.test_case.ignore_non_newline_whitespace),
-                ignore_non_newline_whitespace_changes=(
-                    self._result.test_case.ignore_non_newline_whitespace_changes),
-                ignore_newline_changes=(
-                    self._result.test_case.ignore_newline_changes),
-                ignore_blank_lines=self._result.test_case.ignore_blank_lines,
-                ignore_leading_whitespace=(
-                    self._result.test_case.ignore_leading_whitespace),
-                ignore_trailing_whitespace=(
-                    self._result.test_case.ignore_trailing_whitespace),
-            )
-            return list(differ.compare(first, second))
+        def _get_diff_options(self):
+            return {
+                'ignore_case': self._result.test_case.ignore_case,
+                'ignore_whitespace': (
+                    self._result.test_case.ignore_whitespace),
+                'ignore_whitespace_changes': (
+                    self._result.test_case.ignore_whitespace_changes),
+                'ignore_blank_lines': self._result.test_case.ignore_blank_lines
+            }
 
         # ---------------------------------------------------------------------
 

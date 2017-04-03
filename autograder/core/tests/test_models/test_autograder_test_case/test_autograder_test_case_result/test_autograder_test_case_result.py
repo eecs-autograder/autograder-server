@@ -348,15 +348,16 @@ class FlexibleOutputDiffTestCase(_SetUp, test_ut.UnitTestBase):
             standard_output=actual_stdout, standard_error_output=actual_stderr)
         result = result_queryset.get()
 
-        mock_path = ('autograder.core.models.autograder_test_case.'
-                     'autograder_test_case_result.superdiff.Differ')
+        mock_path = 'autograder.core.utils.get_diff'
         with mock.patch(mock_path) as mock_differ_cls:
             result.get_max_feedback().stdout_diff
-            mock_differ_cls.assert_called_with(**diff_options)
+            mock_differ_cls.assert_called_with(expected_stdout, actual_stdout,
+                                               **diff_options)
 
         with mock.patch(mock_path) as mock_differ_cls:
             result.get_max_feedback().stderr_diff
-            mock_differ_cls.assert_called_with(**diff_options)
+            mock_differ_cls.assert_called_with(expected_stderr, actual_stderr,
+                                               **diff_options)
 
         if expect_stdout_correct:
             self.assertEqual([], result.get_max_feedback().stdout_diff)
@@ -377,10 +378,7 @@ class FlexibleOutputDiffTestCase(_SetUp, test_ut.UnitTestBase):
     def _get_diff_options(self, options_value):
         return {
             'ignore_case': options_value,
-            'ignore_non_newline_whitespace': options_value,
-            'ignore_non_newline_whitespace_changes': options_value,
-            'ignore_newline_changes': options_value,
-            'ignore_blank_lines': options_value,
-            'ignore_leading_whitespace': options_value,
-            'ignore_trailing_whitespace': options_value,
+            'ignore_whitespace': options_value,
+            'ignore_whitespace_changes': options_value,
+            'ignore_blank_lines': options_value
         }
