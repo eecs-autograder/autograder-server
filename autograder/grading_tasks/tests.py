@@ -107,8 +107,9 @@ class TasksTestCase(test_ut.UnitTestBase):
             file_obj=SimpleUploadedFile('unit_test.cpp', _UNIT_TEST),
             project=self.project)
 
+        self.impl_cpp_name = 'impl.cpp'
         impl_cpp = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
-            pattern='impl.cpp',
+            pattern=self.impl_cpp_name,
             project=self.project)
 
         test_star_cpp = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
@@ -136,7 +137,7 @@ class TasksTestCase(test_ut.UnitTestBase):
         test_files = [SimpleUploadedFile('test{}.cpp'.format(i), b'waaaa')
                       for i in range(2)]
         self.submission = ag_models.Submission.objects.validate_and_create(
-            test_files + [SimpleUploadedFile('impl.cpp', _IMPL_CPP)],
+            test_files + [SimpleUploadedFile(self.impl_cpp_name, _IMPL_CPP)],
             submission_group=self.group)
 
     def test_grade_submission_no_deferred(self, *args):
@@ -257,6 +258,17 @@ class TasksTestCase(test_ut.UnitTestBase):
             tasks.grade_ag_test_impl(test.pk, self.submission.pk)
             self.assertEqual(1, test.dependent_results.count())
 
+    def test_program_prints_too_much_output(self, *args):
+        submission = ag_models.Submission.objects.validate_and_create(
+            [SimpleUploadedFile(self.impl_cpp_name, _TOO_MUCH_OUTPUT_IMPL_CPP)],
+            submission_group=self.group)
+        tasks.grade_ag_test_impl(self.compiled_test.pk, submission.pk)
+        result = ag_models.AutograderTestCaseResult.objects.get(
+            test_case=self.compiled_test, submission=submission)
+        self.assertEqual(ag_models.AutograderTestCaseResult.ResultStatus.finished,
+                         result.status)
+        self.assertTrue(result.timed_out)
+
     def _mark_all_as_deferred(self):
         self.compiled_test.validate_and_update(deferred=True)
         self.interpreted_test.validate_and_update(deferred=True)
@@ -336,6 +348,21 @@ _IMPL_CPP = b'''
 
 int spam()
 {
+    return 42;
+}
+'''
+
+_TOO_MUCH_OUTPUT_IMPL_CPP = b'''
+#include <iostream>
+#include <string>
+using namespace std;
+
+int spam()
+{
+    while (true)
+    {
+        cout << string(1000000, 'x') << endl;
+    }
     return 42;
 }
 '''
