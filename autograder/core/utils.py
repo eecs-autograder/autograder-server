@@ -1,3 +1,4 @@
+import enum
 import os
 import tempfile
 import subprocess
@@ -231,3 +232,63 @@ def get_submission_relative_dir(submission):
     return os.path.join(
         get_student_submission_group_relative_dir(submission.submission_group),
         'submission{}'.format(submission.pk))
+
+# -----------------------------------------------------------------------------
+
+
+class OrderedEnum(enum.Enum):
+    """
+    In addition to the core properties of enum.Enum, OrderedEnums are comparable using
+    <, >, <=, and >=. The ordering of enum values is the same as the order they are defined in.
+
+    Example:
+    >>> class MyEnum(OrderedEnum):
+    ...:    spam = 'spam'
+    ...:    egg = 'egg'
+    ...:
+    >>> print(MyEnum.spam < MyEnum.egg)
+    True
+    >>> print(MyEnum.spam > MyEnum.egg)
+    False
+    """
+
+    def __new__(cls, value):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj._weight = len(cls.__members__)
+        return obj
+
+    def __ge__(self, other):
+        if self.__class__ is other.__class__:
+            return self._compare_to(other) >= 0
+
+        return NotImplemented
+
+    def __gt__(self, other):
+        if self.__class__ is other.__class__:
+            return self._compare_to(other) > 0
+
+        return NotImplemented
+
+    def __le__(self, other):
+        if self.__class__ is other.__class__:
+            return self._compare_to(other) <= 0
+
+        return NotImplemented
+
+    def __lt__(self, other):
+        if self.__class__ is other.__class__:
+            return self._compare_to(other) < 0
+
+        return NotImplemented
+
+    def _compare_to(self, other):
+        return self._weight - other._weight
+
+    @classmethod
+    def get_min(cls):
+        return list(cls)[0]
+
+    @classmethod
+    def get_max(cls):
+        return list(cls)[-1]

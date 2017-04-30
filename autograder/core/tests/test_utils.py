@@ -209,3 +209,34 @@ class FileSystemUtilTestCase(test_ut.UnitTestBase):
             settings.MEDIA_ROOT, expected_relative)
         actual_absolute = core_ut.get_submission_dir(submission)
         self.assertEqual(expected_absolute, actual_absolute)
+
+# -----------------------------------------------------------------------------
+
+
+class MyOrderedEnum(core_ut.OrderedEnum):
+    spam = 'spam'
+    egg = 'egg'
+
+
+class OrderedEnumTestCase(TestCase):
+    def test_comparison(self):
+        self.assertTrue(MyOrderedEnum.spam < MyOrderedEnum.egg)
+        self.assertFalse(MyOrderedEnum.spam > MyOrderedEnum.egg)
+
+        self.assertTrue(MyOrderedEnum.spam <= MyOrderedEnum.egg)
+        self.assertFalse(MyOrderedEnum.spam >= MyOrderedEnum.egg)
+
+        self.assertTrue(MyOrderedEnum.egg > MyOrderedEnum.spam)
+        self.assertFalse(MyOrderedEnum.egg < MyOrderedEnum.spam)
+
+        self.assertTrue(MyOrderedEnum.egg >= MyOrderedEnum.spam)
+        self.assertFalse(MyOrderedEnum.egg <= MyOrderedEnum.spam)
+
+        self.assertTrue(MyOrderedEnum.spam <= MyOrderedEnum.spam)
+        self.assertTrue(MyOrderedEnum.egg >= MyOrderedEnum.egg)
+
+    def test_get_min(self):
+        self.assertEqual(MyOrderedEnum.spam, MyOrderedEnum.get_min())
+
+    def test_get_max(self):
+        self.assertEqual(MyOrderedEnum.egg, MyOrderedEnum.get_max())

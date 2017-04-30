@@ -1,65 +1,11 @@
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.contrib.postgres import fields as pg_fields
+import typing
+from enum import Enum
 
-from autograder.utils.json_serializable_interface import JsonSerializable
+from django.contrib.postgres import fields as pg_fields
+from django.core.exceptions import ValidationError
+from django.db import models
 
 from . import constants as const
-
-
-class JsonSerializableClassField(pg_fields.JSONField):
-    def __init__(self, cls, **kwargs):
-        self._class = cls
-
-        if not issubclass(cls, JsonSerializable):
-            raise TypeError(
-                'Error preparing the field {}. '
-                'Class must implement the JsonSerializable interface.')
-
-        super().__init__(**kwargs)
-
-    def deconstruct(self):
-        name, path, args, kwargs = super().deconstruct()
-        kwargs.update({
-            'cls': self._class
-        })
-        return name, path, args, kwargs
-
-    def get_prep_value(self, value):
-        if value is None:
-            return super().get_prep_value(value)
-
-        if isinstance(value, self._class):
-            value = value.to_json()
-
-        return super().get_prep_value(value)
-
-    def to_python(self, value):
-        value = super().to_python(value)
-        if value is None:
-            return None
-
-        if isinstance(value, self._class):
-            return value
-
-        return self._class.from_json(value)
-
-    def from_db_value(self, value, expression, connection, context):
-        return self.to_python(value)
-
-    def validate(self, value, model_instance):
-        if not isinstance(value, self._class):
-            raise TypeError(
-                'Error preparing value of type {} for the field {}. '
-                'Expected value of type {}'.format(
-                    type(value), self.name, self._class))
-
-        # The postgres JSONField tries to parse the JSON, but at this
-        # point we have an unserialized class object. Rather
-        # than wasting time converting to json and parsing just
-        # for validation, we'll call the base field class's
-        # validate() method to check the other properties of the field.
-        super(pg_fields.JSONField, self).validate(value, model_instance)
 
 
 class ValidatedArrayField(pg_fields.ArrayField):
@@ -181,15 +127,37 @@ class ShortStringField(models.CharField):
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        # del kwargs['max_length']
-        kwargs.update({
-            'strip': self.strip
-        })
+        kwargs['strip'] = self.strip
         return name, path, args, kwargs
 
     def to_python(self, value):
         if value is not None:
             value = value.strip()
+
+        return super().to_python(value)
+
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
+
+
+class EnumField(models.CharField):
+    def __init__(self, enum_type: typing.Type[Enum], max_length=const.MAX_CHAR_FIELD_LEN,
+                 **kwargs):
+        self.enum_type = enum_type
+        if 'choices' not in kwargs:
+            strings = [item.value for item in enum_type]
+            kwargs['choices'] = zip(strings, strings)
+
+        super().__init__(max_length=max_length, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs['enum_type'] = self.enum_type
+        return name, path, args, kwargs
+
+    def to_python(self, value):
+        if value is not None:
+            value = self.enum_type(value)
 
         return super().to_python(value)
 

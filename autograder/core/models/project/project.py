@@ -20,6 +20,7 @@ class Project(AutograderModel):
     Related object fields:
         autograder_test_cases -- The autograder test cases that belong
             to this Project.
+            DEPRECATED
 
         uploaded_files -- Resource files to be used in project test
             cases.
@@ -35,45 +36,6 @@ class Project(AutograderModel):
     """
     class Meta:
         unique_together = ('name', 'course')
-
-    SERIALIZABLE_FIELDS = (
-        'name',
-        'course',
-        'visible_to_students',
-        'closing_time',
-        'soft_closing_time',
-        'disallow_student_submissions',
-        'disallow_group_registration',
-        'allow_submissions_from_non_enrolled_students',
-        'min_group_size',
-        'max_group_size',
-
-        'submission_limit_per_day',
-        'allow_submissions_past_limit',
-        'submission_limit_reset_time',
-
-        'ultimate_submission_selection_method',
-        'hide_ultimate_submission_fdbk',
-    )
-
-    EDITABLE_FIELDS = (
-        'name',
-        'visible_to_students',
-        'closing_time',
-        'soft_closing_time',
-        'disallow_student_submissions',
-        'disallow_group_registration',
-        'allow_submissions_from_non_enrolled_students',
-        'min_group_size',
-        'max_group_size',
-
-        'submission_limit_per_day',
-        'allow_submissions_past_limit',
-        'submission_limit_reset_time',
-
-        'ultimate_submission_selection_method',
-        'hide_ultimate_submission_fdbk',
-    )
 
     name = ag_fields.ShortStringField(
         help_text='''The name used to identify this project.
@@ -232,3 +194,42 @@ class Project(AutograderModel):
                 raise exceptions.ValidationError(
                     {'soft_closing_time': (
                         'Soft closing time must be before hard closing time')})
+
+    SERIALIZABLE_FIELDS = (
+        'name',
+        'course',
+        'visible_to_students',
+        'closing_time',
+        'soft_closing_time',
+        'disallow_student_submissions',
+        'disallow_group_registration',
+        'allow_submissions_from_non_enrolled_students',
+        'min_group_size',
+        'max_group_size',
+
+        'submission_limit_per_day',
+        'allow_submissions_past_limit',
+        'submission_limit_reset_time',
+
+        'ultimate_submission_selection_method',
+        'hide_ultimate_submission_fdbk',
+    )
+
+    EDITABLE_FIELDS = (
+        'name',
+        'visible_to_students',
+        'closing_time',
+        'soft_closing_time',
+        'disallow_student_submissions',
+        'disallow_group_registration',
+        'allow_submissions_from_non_enrolled_students',
+        'min_group_size',
+        'max_group_size',
+
+        'submission_limit_per_day',
+        'allow_submissions_past_limit',
+        'submission_limit_reset_time',
+
+        'ultimate_submission_selection_method',
+        'hide_ultimate_submission_fdbk',
+    )
