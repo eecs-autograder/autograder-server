@@ -13,6 +13,7 @@ from .submission_group import SubmissionGroup, SubmissionGroupInvitation
 from .submission import Submission
 
 from .ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
+from .ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 
 # These next imports need to be in this order to get around
 # circular dependency.

@@ -1,3 +1,5 @@
+from django.core import exceptions
+
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase, generic_data
@@ -62,6 +64,20 @@ class AGTestSuiteTestCase(generic_data.Project, UnitTestBase):
         self.assertCountEqual(student_files_needed, suite.student_files_needed.all())
         self.assertEqual(allow_network_access, suite.allow_network_access)
         self.assertEqual(deferred, suite.deferred)
+
+    def test_error_suite_name_not_unique(self):
+        name = 'steve'
+        ag_models.AGTestSuite.objects.validate_and_create(name=name, project=self.project)
+        with self.assertRaises(exceptions.ValidationError):
+            ag_models.AGTestSuite.objects.validate_and_create(name=name, project=self.project)
+
+    def test_error_suite_name_empty_or_null(self):
+        bad_names = ['', None]
+        for name in bad_names:
+            with self.assertRaises(exceptions.ValidationError) as cm:
+                ag_models.AGTestSuite.objects.validate_and_create(name=name, project=self.project)
+
+            self.assertIn('name', cm.exception.message_dict)
 
     def test_suite_ordering(self):
         suite1 = ag_models.AGTestSuite.objects.validate_and_create(
