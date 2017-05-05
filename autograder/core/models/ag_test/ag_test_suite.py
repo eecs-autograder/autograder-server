@@ -10,6 +10,7 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
     """
     Contains feedback options for an AGTestSuite.
     """
+
     show_individual_tests = models.BooleanField(
         default=True,
         help_text="""Whether to show information about individual tests in a suite or just a
@@ -19,19 +20,22 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
     show_setup_command = models.BooleanField(
         default=True, help_text="Whether to show information about a suite's setup command.")
 
-    SERIALIZABLE_FIELDS = [
+    SERIALIZABLE_FIELDS = (
         'show_individual_tests',
         'show_setup_command',
-    ]
+    )
 
-    EDITABLE_FIELDS = [
+    EDITABLE_FIELDS = (
         'show_individual_tests',
         'show_setup_command',
-    ]
+    )
 
 
-def make_default_suite_fdbk() -> AGTestSuiteFeedbackConfig:
-    return AGTestSuiteFeedbackConfig.objects.validate_and_create()
+def make_default_suite_fdbk() -> int:
+    """
+    Creates a new default AGTestSuiteFeedbackConfig object and returns its pk
+    """
+    return AGTestSuiteFeedbackConfig.objects.validate_and_create().pk
 
 
 class AGTestSuite(AutograderModel):
@@ -46,6 +50,7 @@ class AGTestSuite(AutograderModel):
 
     class Meta:
         unique_together = ('name', 'project')
+        order_with_respect_to = 'project'
 
     name = ag_fields.ShortStringField(
         help_text="""The name used to identify this suite.
@@ -85,44 +90,35 @@ class AGTestSuite(AutograderModel):
 
     normal_fdbk_config = models.OneToOneField(
         AGTestSuiteFeedbackConfig, default=make_default_suite_fdbk,
+        related_name='+',
         help_text="""Feedback settings for a normal submission.""")
     ultimate_submission_fdbk_config = models.OneToOneField(
         AGTestSuiteFeedbackConfig, default=make_default_suite_fdbk,
+        related_name='+',
         help_text="""Feedback settings for an ultimate submission.""")
     past_limit_submission_fdbk_config = models.OneToOneField(
         AGTestSuiteFeedbackConfig, default=make_default_suite_fdbk,
+        related_name='+',
         help_text="""Feedback settings for a submission that is past the daily limit.""")
     staff_viewer_fdbk_config = models.OneToOneField(
         AGTestSuiteFeedbackConfig, default=make_default_suite_fdbk,
+        related_name='+',
         help_text="""Feedback settings for a staff member viewing a submission from another
                      group.""")
 
-    SERIALIZABLE_FIELDS = [
+    SERIALIZABLE_FIELDS = (
         'name',
         'project',
-
         'project_files_needed',
         'student_files_needed',
-
-        'docker_image_to_use',
         'allow_network_access',
         'deferred',
+    )
 
-        'setup_command',
-
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
-    ]
-
-    EDITABLE_FIELDS = [
+    EDITABLE_FIELDS = (
         'name',
-
         'project_files_needed',
         'student_files_needed',
-
-        'docker_image_to_use',
-        'allow_allow_network_access',
+        'allow_network_access',
         'deferred',
-    ]
+    )

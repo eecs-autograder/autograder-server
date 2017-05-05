@@ -12,6 +12,8 @@ from .project.uploaded_file import UploadedFile
 from .submission_group import SubmissionGroup, SubmissionGroupInvitation
 from .submission import Submission
 
+from .ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
+
 # These next imports need to be in this order to get around
 # circular dependency.
 from .autograder_test_case.autograder_test_case_result import AutograderTestCaseResult

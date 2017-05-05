@@ -252,38 +252,38 @@ class OrderedEnum(enum.Enum):
     False
     """
 
+    # Adopted from https://docs.python.org/3.5/library/enum.html#autonumber
     def __new__(cls, value):
         obj = object.__new__(cls)
         obj._value_ = value
+        # OrderedEnum values are ordered by _weight.
         obj._weight = len(cls.__members__)
         return obj
 
+    # Comparators adopted from https://docs.python.org/3.5/library/enum.html#orderedenum
     def __ge__(self, other):
         if self.__class__ is other.__class__:
-            return self._compare_to(other) >= 0
+            return self._weight >= other._weight
 
         return NotImplemented
 
     def __gt__(self, other):
         if self.__class__ is other.__class__:
-            return self._compare_to(other) > 0
+            return self._weight > other._weight
 
         return NotImplemented
 
     def __le__(self, other):
         if self.__class__ is other.__class__:
-            return self._compare_to(other) <= 0
+            return self._weight <= other._weight
 
         return NotImplemented
 
     def __lt__(self, other):
         if self.__class__ is other.__class__:
-            return self._compare_to(other) < 0
+            return self._weight < other._weight
 
         return NotImplemented
-
-    def _compare_to(self, other):
-        return self._weight - other._weight
 
     @classmethod
     def get_min(cls):

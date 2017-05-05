@@ -48,7 +48,6 @@ class CreateUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
         with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(self.file_obj.name))
 
-    # Note: Enforcing file uniqueness is done at the rest api level
     def test_create_file_exception_file_already_exists(self):
         self.file_obj.seek(0)
         uploaded_file = UploadedFile.objects.validate_and_create(

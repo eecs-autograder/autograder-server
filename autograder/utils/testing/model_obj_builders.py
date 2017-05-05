@@ -4,6 +4,7 @@ import uuid
 import base64
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case.feedback_config import (
@@ -100,6 +101,12 @@ def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_mod
 
     project = ag_models.Project.objects.validate_and_create(**project_kwargs)
     return project
+
+
+def make_uploaded_file(project: ag_models.Project) -> ag_models.UploadedFile:
+    return ag_models.UploadedFile.objects.validate_and_create(
+        file_obj=SimpleUploadedFile('file' + get_unique_id(), b'content'),
+        project=project)
 
 
 def build_compiled_ag_test(with_points=True,

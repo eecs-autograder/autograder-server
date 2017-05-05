@@ -1,11 +1,9 @@
 import copy
-import random
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 import autograder.core.models as ag_models
-
 from autograder.utils.testing import model_obj_builders as obj_build
 
 # TODO: clean up unused submission methods
@@ -65,9 +63,7 @@ class Project(Course):
     @property
     def project(self):
         if not hasattr(self, '_project'):
-            self._project = ag_models.Project.objects.validate_and_create(
-                name='spammy' + random.choice('qewiurqelrhjk'),
-                course=self.course)
+            self._project = obj_build.build_project(project_kwargs={'course': self.course})
 
         return self._project
 
