@@ -33,34 +33,33 @@ class AGTestCase(AutograderModel):
         order_with_respect_to = 'ag_test_suite'
 
     name = ag_fields.ShortStringField(
-        help_text="""The name used to identify this autograder test.
+        help_text='''The name used to identify this autograder test.
                      Must be non-empty and non-null.
                      Must be unique among autograder tests that belong to the same suite.
-                     This field is REQUIRED.""")
+                     This field is REQUIRED.''')
 
     ag_test_suite = models.ForeignKey(
         AGTestSuite,
         related_name='ag_test_cases',
-        help_text="""The suite this autograder test belongs to.
-                     This field is REQUIRED.""")
+        help_text='''The suite this autograder test belongs to.
+                     This field is REQUIRED.''')
 
     normal_fdbk_config = models.OneToOneField(
         AGTestCaseFeedbackConfig, default=make_default_test_fdbk,
         related_name='+',
-        help_text="""Feedback settings for a normal Submission.""")
+        help_text='Feedback settings for a normal Submission.')
     ultimate_submission_fdbk_config = models.OneToOneField(
         AGTestCaseFeedbackConfig, default=make_default_test_fdbk,
         related_name='+',
-        help_text="""Feedback settings for an ultimate Submission.""")
+        help_text='Feedback settings for an ultimate Submission.')
     past_limit_submission_fdbk_config = models.OneToOneField(
         AGTestCaseFeedbackConfig, default=make_default_test_fdbk,
         related_name='+',
-        help_text="""Feedback settings for a Submission that is past the daily limit.""")
+        help_text='Feedback settings for a Submission that is past the daily limit.')
     staff_viewer_fdbk_config = models.OneToOneField(
         AGTestCaseFeedbackConfig, default=make_default_test_fdbk,
         related_name='+',
-        help_text="""Feedback settings for a staff member viewing a Submission from another
-                     group.""")
+        help_text='Feedback settings for a staff member viewing a Submission from another group.')
 
     SERIALIZABLE_FIELDS = ('name', 'ag_test_suite')
     EDITABLE_FIELDS = ('name',)

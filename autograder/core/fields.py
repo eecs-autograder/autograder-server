@@ -140,15 +140,10 @@ class ShortStringField(models.CharField):
         return self.to_python(value)
 
 
-class EnumField(models.CharField):
-    def __init__(self, enum_type: typing.Type[Enum], max_length=const.MAX_CHAR_FIELD_LEN,
-                 **kwargs):
+class EnumField(models.TextField):
+    def __init__(self, enum_type: typing.Type[Enum], **kwargs):
         self.enum_type = enum_type
-        if 'choices' not in kwargs:
-            strings = [item.value for item in enum_type]
-            kwargs['choices'] = zip(strings, strings)
-
-        super().__init__(max_length=max_length, **kwargs)
+        super().__init__(**kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
@@ -156,10 +151,20 @@ class EnumField(models.CharField):
         return name, path, args, kwargs
 
     def to_python(self, value):
-        if value is not None:
-            value = self.enum_type(value)
+        if value is None:
+            return None
 
-        return super().to_python(value)
+        try:
+            return self.enum_type(value)
+        except ValueError:
+            raise ValidationError(
+                '"{}" is not a valid {}'.format(value, self.enum_type.__name__))
 
     def from_db_value(self, value, expression, connection, context):
         return self.to_python(value)
+
+    def get_prep_value(self, value):
+        if value is None:
+            return None
+
+        return value.value

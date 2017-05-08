@@ -14,6 +14,10 @@ from .submission import Submission
 
 from .ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
 from .ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
+from .ag_test.ag_test_command import (
+    AGTestCommand, AGTestCommandFeedbackConfig, ValueFeedbackLevel, StdinSource,
+    ExpectedOutputSource, ExpectedOutputSource, ExpectedReturnCode)
+
 
 # These next imports need to be in this order to get around
 # circular dependency.

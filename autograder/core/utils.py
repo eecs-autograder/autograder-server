@@ -10,6 +10,7 @@ from django.utils import timezone
 from . import constants as const
 
 
+# TODO: update so that it can take in strings or file objects
 def get_diff(first, second,
              ignore_case=False,
              ignore_whitespace=False,
