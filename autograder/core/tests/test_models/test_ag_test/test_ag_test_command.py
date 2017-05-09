@@ -39,21 +39,27 @@ class AGTestCommandMiscTestCase(_SetUp):
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, cmd=self.cmd)
 
+    def test_invalid_create_part_of_ag_test_and_setup_for_suite(self):
+        with self.assertRaises(exceptions.ValidationError):
+            ag_models.AGTestCommand.objects.validate_and_create(
+                name=self.name, cmd=self.cmd, ag_test_case=self.ag_test,
+                ag_test_suite_is_setup_for=self.ag_suite)
+
     def test_default_vals(self):
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
 
         self.assertEqual(ag_models.StdinSource.none, ag_cmd.stdin_source)
-        self.assertIsNone(ag_cmd.stdin_text)
-        self.assertIsNone(ag_cmd.stin_project_file)
+        self.assertEqual('', ag_cmd.stdin_text)
+        self.assertIsNone(ag_cmd.stdin_project_file)
 
-        self.assertIsNone(ag_cmd.expected_return_code)
+        self.assertEqual(ag_models.ExpectedReturnCode.none, ag_cmd.expected_return_code)
 
         self.assertEqual(ag_models.ExpectedOutputSource.none, ag_cmd.expected_stdout_source)
         self.assertEqual('', ag_cmd.expected_stdout_text)
         self.assertIsNone(ag_cmd.expected_stdout_project_file)
 
-        self.assertEqual(ag_models.ExpectedOutputSource.none, ag_cmd.epected_stderr_source)
+        self.assertEqual(ag_models.ExpectedOutputSource.none, ag_cmd.expected_stderr_source)
         self.assertEqual('', ag_cmd.expected_stderr_text)
         self.assertIsNone(ag_cmd.expected_stderr_project_file)
 
@@ -64,10 +70,10 @@ class AGTestCommandMiscTestCase(_SetUp):
                          ag_cmd.normal_fdbk_config.stdout_fdbk_level)
         self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
                          ag_cmd.normal_fdbk_config.stderr_fdbk_level)
-        self.assertFalse(ag_cmd.normal_fdbk_config.show_points
-        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_return_code
-        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stdout
-        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stderr
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_points)
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_return_code)
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stdout)
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stderr)
 
         self.assertIsNotNone(ag_cmd.ultimate_submission_fdbk_config)
         self.assertIsNotNone(ag_cmd.past_limit_submission_fdbk_config)
@@ -118,12 +124,6 @@ class AGTestCommandMiscTestCase(_SetUp):
         self.assertEqual(deduction_for_wrong_stderr, ag_cmd.deduction_for_wrong_stderr)
         self.assertEqual(expected_return_code, ag_cmd.expected_return_code)
 
-    def test_serializable_fields(self):
-        self.fail()
-
-    def test_editable_fields(self):
-        self.fail()
-
 
 class ReverseLookupTestCase(_SetUp):
     def test_ag_test_case_ag_test_commands_reverse_lookup_and_ordering(self):
@@ -135,10 +135,10 @@ class ReverseLookupTestCase(_SetUp):
         self.assertCountEqual([ag_cmd1, ag_cmd2], self.ag_test.ag_test_commands.all())
 
         self.ag_test.set_agtestcommand_order([ag_cmd2.pk, ag_cmd1.pk])
-        self.assertSequenceEqual([ag_cmd2.pk, ag_cmd1.pk], self.ag_test.get_agtestcommand_order)
+        self.assertSequenceEqual([ag_cmd2.pk, ag_cmd1.pk], self.ag_test.get_agtestcommand_order())
 
         self.ag_test.set_agtestcommand_order([ag_cmd1.pk, ag_cmd2.pk])
-        self.assertSequenceEqual([ag_cmd1.pk, ag_cmd2.pk], self.ag_test.get_agtestcommand_order)
+        self.assertSequenceEqual([ag_cmd1.pk, ag_cmd2.pk], self.ag_test.get_agtestcommand_order())
 
     def test_suite_setup_command_reverse_lookup(self):
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
@@ -166,6 +166,23 @@ class IOSettingsTestCase(_SetUp):
         self.assertEqual(stdout, ag_cmd.expected_stdout_text)
         self.assertEqual(ag_models.ExpectedOutputSource.text, ag_cmd.expected_stderr_source)
         self.assertEqual(stderr, ag_cmd.expected_stderr_text)
+
+    def test_file_io_sources(self):
+        stdin = obj_build.make_uploaded_file(self.project)
+        stdout = obj_build.make_uploaded_file(self.project)
+        stderr = obj_build.make_uploaded_file(self.project)
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            stdin_source=ag_models.StdinSource.project_file,
+            stdin_project_file=stdin,
+            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_project_file=stdout,
+            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_project_file=stderr)
+
+        self.assertEqual(stdin, ag_cmd.stdin_project_file)
+        self.assertEqual(stdout, ag_cmd.expected_stdout_project_file)
+        self.assertEqual(stderr, ag_cmd.expected_stderr_project_file)
 
     def test_error_missing_stdin_project_file(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -220,13 +237,34 @@ class IOSettingsTestCase(_SetUp):
 
 class MiscErrorTestCase(_SetUp):
     def test_error_name_not_unique(self):
-        self.fail()
+        ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
+        with self.assertRaises(exceptions.ValidationError):
+            ag_models.AGTestCommand.objects.validate_and_create(
+                name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
 
     def test_error_name_empty_or_null(self):
-        self.fail()
+        for bad_name in ['', None]:
+            with self.assertRaises(exceptions.ValidationError) as cm:
+                ag_models.AGTestCommand.objects.validate_and_create(
+                    name=bad_name, ag_test_case=self.ag_test, cmd=self.cmd)
+
+            self.assertIn('name', cm.exception.message_dict)
 
     def test_error_empty_cmd(self):
-        self.fail()
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestCommand.objects.validate_and_create(
+                name=self.name, ag_test_case=self.ag_test, cmd='')
+
+        self.assertIn('cmd', cm.exception.message_dict)
+
+    def test_error_invalid_expected_return_code(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestCommand.objects.validate_and_create(
+                name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+                expected_return_code='forget_about_it')
+
+        self.assertIn('expected_return_code', cm.exception.message_dict)
 
     def test_error_points_out_of_range(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -250,14 +288,12 @@ class MiscErrorTestCase(_SetUp):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
-                points_for_correct_return_code=-1,
                 time_limit=-1,
                 stack_size_limit=-1,
                 virtual_memory_limit=-1,
                 process_spawn_limit=-1,
             )
 
-        self.assertIn('points_for_correct_return_code', cm.exception.message_dict)
         self.assertIn('time_limit', cm.exception.message_dict)
         self.assertIn('stack_size_limit', cm.exception.message_dict)
         self.assertIn('virtual_memory_limit', cm.exception.message_dict)
@@ -266,153 +302,98 @@ class MiscErrorTestCase(_SetUp):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
-                points_for_correct_return_code
-            time_limit
-            stack_size_limit
-            virtual_memory_limit
-            process_spawn_limit
-            )
+                time_limit=constants.MAX_SUBPROCESS_TIMEOUT + 1,
+                stack_size_limit=constants.MAX_STACK_SIZE_LIMIT + 1,
+                virtual_memory_limit=constants.MAX_VIRTUAL_MEM_LIMIT + 1,
+                process_spawn_limit=constants.MAX_PROCESS_LIMIT + 1)
 
-        self.assertIn('points_for_correct_return_code', cm.exception.message_dict)
         self.assertIn('time_limit', cm.exception.message_dict)
         self.assertIn('stack_size_limit', cm.exception.message_dict)
         self.assertIn('virtual_memory_limit', cm.exception.message_dict)
         self.assertIn('process_spawn_limit', cm.exception.message_dict)
 
-        self.fail()
 
+class SerializationTestCase(UnitTestBase):
 
-# class AGTestOutputLimitTestCase(UnitTestBase):
-#     def setUp(self):
-#         self.project = obj_build.build_project()
-#
-#         self.output = 'A' * (const.MAX_OUTPUT_LENGTH + 1)
-#
-#     def test_expected_stdout_too_long(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name='Too Much Output :o', project=self.project,
-#                 expected_standard_output=self.output)
-#
-#         self.assertIn('expected_standard_output', cm.exception.message_dict)
-#
-#     def test_expected_stderr_too_long(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name='Too Much Error :o', project=self.project,
-#                 expected_standard_error_output=self.output)
-#
-#         self.assertIn('expected_standard_error_output', cm.exception.message_dict)
+    def test_serializable_fields(self):
+        expected = (
+            'pk',
+            'name',
+            'ag_test_case',
+            'ag_test_suite_is_setup_for',
 
-#
-# class AGTestResourceLimitErrorTestCase(_Shared, UnitTestBase):
-#     def test_exception_on_zero_time_limit(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 time_limit=0)
-#
-#         self.assertTrue('time_limit' in cm.exception.message_dict)
-#
-#     def test_exception_on_negative_time_limit(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 time_limit=-1)
-#
-#         self.assertTrue('time_limit' in cm.exception.message_dict)
-#
-#     def test_exception_on_time_limit_too_large(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 time_limit=const.MAX_SUBPROCESS_TIMEOUT + 1)
-#
-#         self.assertTrue('time_limit' in cm.exception.message_dict)
-#
-#     def test_exception_on_time_limit_not_integer(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 time_limit='spam')
-#
-#         self.assertTrue('time_limit' in cm.exception.message_dict)
-#
-#     def test_no_exception_on_time_limit_is_parseable_int(self):
-#         ag_test = _DummyAutograderTestCase.objects.validate_and_create(
-#             name=self.TEST_NAME, project=self.project,
-#             time_limit='2')
-#
-#         ag_test.refresh_from_db()
-#         self.assertEqual(ag_test.time_limit, 2)
-#
-#     # -------------------------------------------------------------------------
-#
-#     def test_exception_negative_stack_size_limit(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 stack_size_limit=-1)
-#
-#         self.assertTrue('stack_size_limit' in cm.exception.message_dict)
-#
-#     def test_exception_zero_stack_size_limit(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 stack_size_limit=0)
-#
-#         self.assertTrue('stack_size_limit' in cm.exception.message_dict)
-#
-#     def test_exception_stack_size_limit_too_large(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 stack_size_limit=const.MAX_STACK_SIZE_LIMIT + 1)
-#
-#         self.assertTrue('stack_size_limit' in cm.exception.message_dict)
-#
-#     # -------------------------------------------------------------------------
-#
-#     def test_exception_negative_virtual_memory_limit(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 virtual_memory_limit=-1)
-#
-#         self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
-#
-#     def test_exception_zero_virtual_memory_limit(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 virtual_memory_limit=0)
-#
-#         self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
-#
-#     def test_exception_virtual_mem_limit_too_large(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 virtual_memory_limit=const.MAX_VIRTUAL_MEM_LIMIT + 1)
-#
-#         self.assertTrue('virtual_memory_limit' in cm.exception.message_dict)
-#
-#     # -------------------------------------------------------------------------
-#
-#     def test_exception_negative_process_limit(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 process_spawn_limit=-1)
-#
-#         self.assertTrue('process_spawn_limit' in cm.exception.message_dict)
-#
-#     def test_exception_process_limit_too_large(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             _DummyAutograderTestCase.objects.validate_and_create(
-#                 name=self.TEST_NAME, project=self.project,
-#                 process_spawn_limit=const.MAX_PROCESS_LIMIT + 1)
-#
-#         self.assertTrue('process_spawn_limit' in cm.exception.message_dict)
-#
+            'cmd',
+
+            'stdin_source',
+            'stdin_text',
+            'stdin_project_file',
+
+            'expected_return_code',
+            'expected_stdout_source',
+            'expected_stdout_text',
+            'expected_stdout_project_file',
+            'expected_stderr_source',
+            'expected_stderr_text',
+            'expected_stderr_project_file',
+
+            'ignore_case',
+            'ignore_whitespace',
+            'ignore_whitespace_changes',
+            'ignore_blank_lines',
+
+            'points_for_correct_return_code',
+            'points_for_correct_stdout',
+            'points_for_correct_stderr',
+
+            'deduction_for_wrong_return_code',
+            'deduction_for_wrong_stdout',
+            'deduction_for_wrong_stderr',
+
+            'normal_fdbk_config',
+            'ultimate_submission_fdbk_config',
+            'past_limit_submission_fdbk_config',
+            'staff_viewer_fdbk_config',
+
+            'time_limit',
+            'stack_size_limit',
+            'virtual_memory_limit',
+            'process_spawn_limit',
+        )
+        self.assertCountEqual(expected, ag_models.AGTestCommand.get_serializable_fields())
+
+    def test_editable_fields(self):
+        expected = (
+            'name',
+            'cmd',
+
+            'stdin_source',
+            'stdin_text',
+            'stdin_project_file',
+
+            'expected_return_code',
+            'expected_stdout_source',
+            'expected_stdout_text',
+            'expected_stdout_project_file',
+            'expected_stderr_source',
+            'expected_stderr_text',
+            'expected_stderr_project_file',
+
+            'ignore_case',
+            'ignore_whitespace',
+            'ignore_whitespace_changes',
+            'ignore_blank_lines',
+
+            'points_for_correct_return_code',
+            'points_for_correct_stdout',
+            'points_for_correct_stderr',
+
+            'deduction_for_wrong_return_code',
+            'deduction_for_wrong_stdout',
+            'deduction_for_wrong_stderr',
+
+            'time_limit',
+            'stack_size_limit',
+            'virtual_memory_limit',
+            'process_spawn_limit',
+        )
+        self.assertCountEqual(expected, ag_models.AGTestCommand.get_editable_fields())
