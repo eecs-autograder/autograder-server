@@ -6,7 +6,7 @@ import zipfile
 
 from django.core.management.base import BaseCommand
 
-from autograder.core.models import Course
+from autograder.core.models import Project
 
 import autograder.core.utils as ut
 import autograder.utils as misc_ut
@@ -16,16 +16,15 @@ class Command(BaseCommand):
     help = 'Saves a zip archive of ultimate submissions for the specified project'
 
     def add_arguments(self, parser):
-        parser.add_argument('course_name')
-        parser.add_argument('project_name')
+        parser.add_argument('project_pk', type=int)
         parser.add_argument('archive_name')
 
         parser.add_argument(
             '--include_staff', '-s', action='store_true', default=False)
 
     def handle(self, *args, **options):
-        course = Course.objects.get(name=options['course_name'])
-        project = course.projects.get(name=options['project_name'])
+        project = Project.objects.get(pk=options['project_pk'])
+        course = project.course
 
         groups = project.submission_groups.all()
         submissions = [group.ultimate_submission for group in groups if group.submissions.count()]
