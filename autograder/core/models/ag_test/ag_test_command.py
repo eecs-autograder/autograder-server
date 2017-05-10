@@ -37,6 +37,7 @@ class AGTestCommandFeedbackConfig(AutograderModel):
     show_actual_return_code = models.BooleanField(default=False)
     show_actual_stdout = models.BooleanField(default=False)
     show_actual_stderr = models.BooleanField(default=False)
+    show_whether_timed_out = models.BooleanField(default=False)
 
 
 def make_default_command_fdbk() -> int:

@@ -74,6 +74,7 @@ class AGTestCommandMiscTestCase(_SetUp):
         self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_return_code)
         self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stdout)
         self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stderr)
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_whether_timed_out)
 
         self.assertIsNotNone(ag_cmd.ultimate_submission_fdbk_config)
         self.assertIsNotNone(ag_cmd.past_limit_submission_fdbk_config)
