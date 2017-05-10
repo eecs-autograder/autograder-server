@@ -1,5 +1,6 @@
 import time
 import traceback
+import uuid
 
 from django.conf import settings
 from django.db import transaction
@@ -73,7 +74,7 @@ retry_ag_test = retry(max_num_retries=settings.AG_TEST_MAX_RETRIES,
                       retry_delay_end=settings.AG_TEST_MAX_RETRY_DELAY)
 
 
-@celery.shared_task(queue='submissions')
+@celery.shared_task(queue='submissions', acks_late=True)
 def grade_submission(submission_pk):
     try:
         submission = _mark_submission_as_being_graded(submission_pk)
@@ -124,7 +125,7 @@ def grade_non_deferred_ag_test(ag_test_pk, submission_pk):
     _grade_non_deferred__ag_test_impl()
 
 
-@celery.shared_task(bind=True, max_retries=1, queue='deferred')
+@celery.shared_task(bind=True, max_retries=1, queue='deferred', acks_late=True)
 def grade_deferred_ag_test(self, ag_test_pk, submission_pk):
     # TODO: update result status so that if the test is being regraded,
     # its status will reflect the stage it's in
@@ -181,7 +182,7 @@ def _run_ag_test(ag_test, submission):
     group = submission.submission_group
 
     sandbox = AutograderSandbox(
-        name='submission{}-test{}'.format(submission.pk, ag_test.pk),
+        name='submission{}-test{}-{}'.format(submission.pk, ag_test.pk, uuid.uuid4().hex),
         environment_variables={
             'usernames': ' '.join(sorted(group.member_names))},
         allow_network_access=ag_test.allow_network_connections)
@@ -206,12 +207,12 @@ def _mark_submission_as_being_graded(submission_id):
         return submission
 
 
-@celery.shared_task(queue='deferred')
+@celery.shared_task(queue='deferred', acks_late=True)
 def mark_submission_as_finished(chord_results, submission_pk):
     _mark_submission_as_finished_impl(submission_pk)
 
 
-@celery.shared_task(queue='deferred')
+@celery.shared_task(queue='deferred', acks_late=True)
 def on_chord_error(request, exc, traceback):
     print('Error in deferred test case chord. '
           'This most likely means that a deferred test '
