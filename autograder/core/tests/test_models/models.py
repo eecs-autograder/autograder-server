@@ -10,6 +10,15 @@ from autograder.core.models import AutograderModel
 
 
 class _DummyToManyModel(AutograderModel):
+    class Meta:
+        ordering = ('name',)
+
+    name = models.CharField(max_length=255)
+
+    SERIALIZABLE_FIELDS = ('name',)
+
+
+class _DummyForeignAutograderModel(AutograderModel):
     name = models.CharField(max_length=255)
 
     SERIALIZABLE_FIELDS = ('name',)
@@ -23,7 +32,15 @@ class _DummyAutograderModel(AutograderModel):
     read_only_field = models.TextField(blank=True)
     not_settable_on_create_field = models.IntegerField(blank=True, default=77)
 
-    many_to_many = models.ManyToManyField(_DummyToManyModel)
+    one_to_one = models.OneToOneField(_DummyForeignAutograderModel, related_name='+')
+    nullable_one_to_one = models.OneToOneField(
+        _DummyForeignAutograderModel, related_name='+', blank=True, null=True, default=None)
+
+    foreign_key = models.ForeignKey(_DummyForeignAutograderModel, related_name='+')
+    nullable_foreign_key = models.ForeignKey(
+        _DummyForeignAutograderModel, related_name='+', blank=True, null=True, default=None)
+
+    many_to_many = models.ManyToManyField(_DummyToManyModel, related_name='many_to_manys')
 
     users = models.ManyToManyField(User)
 
@@ -35,32 +52,22 @@ class _DummyAutograderModel(AutograderModel):
         'pos_num_val',
         'non_empty_str_val',
         'the_answer',
+
+        'one_to_one',
+        'nullable_one_to_one',
+        'foreign_key',
+        'nullable_foreign_key',
         'many_to_many',
+
         'users'
     )
 
     EDITABLE_FIELDS = (
         'pos_num_val',
         'non_empty_str_val',
-        'many_to_many'
-    )
 
-    SETTABLE_ON_CREATE_FIELDS = EDITABLE_FIELDS + ('read_only_field',)
-
-
-class _DummyForeignAutograderModel(AutograderModel):
-    name = models.CharField(max_length=255)
-    one_to_one = models.OneToOneField(_DummyAutograderModel)
-    foreign_key = models.ForeignKey(_DummyAutograderModel,
-                                    related_name='dummies')
-    nullable_one_to_one = models.OneToOneField(
-        _DummyAutograderModel,
-        blank=True, null=True, default=None,
-        related_name='nullables')
-
-    SERIALIZABLE_FIELDS = (
-        'name',
         'one_to_one',
+        'nullable_one_to_one',
         'foreign_key',
-        'nullable_one_to_one'
+        'many_to_many'
     )

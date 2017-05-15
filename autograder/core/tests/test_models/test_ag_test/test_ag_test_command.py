@@ -398,3 +398,11 @@ class SerializationTestCase(UnitTestBase):
             'process_spawn_limit',
         )
         self.assertCountEqual(expected, ag_models.AGTestCommand.get_editable_fields())
+
+
+class AGTestCommandFeedbackTestCase(UnitTestBase):
+    def test_serializable_fields(self):
+        self.fail()
+
+    def test_editable_fields(self):
+        self.fail()

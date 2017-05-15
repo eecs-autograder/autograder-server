@@ -56,43 +56,26 @@ class ToDictMixin:
 
     SERIALIZABLE_FIELDS = tuple()
 
-    def to_dict(self, include_fields=None, exclude_fields=None):
+    @classmethod
+    def get_serialize_related_fields(cls):
+        """
+        Returns a collection of the names of database related fields that
+        should be serialized (by calling <related_obj>.to_dict()) when
+        an instance of this class is serialized with <obj>.to_dict().
+        This overrides the default behavior of representing related
+        objects as only a primary key.
+        """
+        return cls.SERIALIZE_RELATED
+
+    SERIALIZE_RELATED = tuple()
+
+    def to_dict(self):
         """
         Returns a dictionary representation of this model instance.
-
-        Keyword arguments:
-            include_fields -- The names of fields that should be
-                included in the dictionary. If this value is None, then
-                all fields listed in get_serializable_fields() will
-                be included. Names specified here must be present in
-                get_serializable_fields(), otherwise ValidationError
-                will be raised.
-
-            exclude_fields -- The names of fields that should NOT
-                be included in the dictionary. Fields specified both
-                here and in include_fields will be excluded. Any fields
-                names specified here that are not listed in
-                get_serializable_fields() will be ignored.
         """
-        default_fields = frozenset(self.get_serializable_fields())
-        if include_fields is None:
-            include_fields = default_fields
-
-        if exclude_fields is None:
-            exclude_fields = set()
-
-        include_fields = set(include_fields)
-        illegal_fields = include_fields - default_fields
-        if illegal_fields:
-            raise exceptions.ValidationError(
-                {AutograderModel.INVALID_FIELD_NAMES_KEY: list(illegal_fields)})
-
-        to_include = (include_fields if include_fields is not None
-                      else default_fields)
-        to_include -= set(exclude_fields)
         result = {}
 
-        for field_name in to_include:
+        for field_name in self.get_serializable_fields():
             result[field_name] = getattr(self, field_name)
 
             # If this isn't a Django Model, skip the field logic
@@ -105,13 +88,17 @@ class ToDictMixin:
                     field_val = getattr(self, field_name)
                     if field_val is None:
                         continue
-                    result[field_name] = field_val.pk
+
+                    if field_name in self.get_serialize_related_fields():
+                        result[field_name] = field_val.to_dict()
+                    else:
+                        result[field_name] = field_val.pk
                 elif field.many_to_many:
-                    try:
+                    if field_name in self.get_serialize_related_fields():
                         result[field_name] = [
                             obj.to_dict() for obj in getattr(self, field_name).all()]
-                    except AttributeError:
-                        result[field_name] = list(getattr(self, field_name).all())
+                    else:
+                        result[field_name] = [obj.pk for obj in getattr(self, field_name).all()]
             except exceptions.FieldDoesNotExist:
                 pass
 
@@ -124,6 +111,9 @@ class _AutograderModelMixin(ToDictMixin):
         """
         Returns a collection of the names of database fields that can be
         edited on this model type using model.validate_and_update()
+        Note: Any database relationship fields listed in
+        <Class>.get_serialize_related_fields() will be deserialized
+        if needed before updating their values.
 
         The base class version of this function returns the value of
         cls.EDITABLE_FIELDS, which defaults to an empty

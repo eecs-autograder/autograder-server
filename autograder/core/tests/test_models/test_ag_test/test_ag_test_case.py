@@ -73,13 +73,14 @@ class AGTestCaseTestCase(generic_data.Project, UnitTestBase):
         ]
         self.assertCountEqual(expected, ag_models.AGTestCase.get_editable_fields())
 
-    class AGTestCaseFeedbackConfigTestCase(UnitTestBase):
-        def test_serializable_fields(self):
-            expected = ['show_individual_commands']
-            self.assertCountEqual(expected,
-                                  ag_models.AGTestCaseFeedbackConfig.get_serializable_fields())
 
-        def test_editable_fields(self):
-            expected = ['show_individual_commands']
-            self.assertCountEqual(expected,
-                                  ag_models.AGTestCaseFeedbackConfig.get_editable_fields())
+class AGTestCaseFeedbackConfigTestCase(UnitTestBase):
+    def test_serializable_fields(self):
+        expected = ['show_individual_commands']
+        self.assertCountEqual(expected,
+                              ag_models.AGTestCaseFeedbackConfig.get_serializable_fields())
+
+    def test_editable_fields(self):
+        expected = ['show_individual_commands']
+        self.assertCountEqual(expected,
+                              ag_models.AGTestCaseFeedbackConfig.get_editable_fields())

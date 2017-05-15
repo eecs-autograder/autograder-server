@@ -29,7 +29,7 @@ def _validate_filename(file_):
 
 class _SubmissionManager(ag_model_base.AutograderModelManager):
     @transaction.atomic()
-    def validate_and_create(self, submitted_files, **kwargs):
+    def validate_and_create(self, submitted_files, submission_group, timestamp):
         """
         This method override handles additional details required for
         creating a Submission.
@@ -45,7 +45,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
                 - Any missing files are recorded as such, but the
                     Submission is still accepted.
         """
-        submission = self.model(**kwargs)
+        submission = self.model(submission_group, timestamp)
         # The submission needs to be saved so that a directory is
         # created for it.
         submission.save()

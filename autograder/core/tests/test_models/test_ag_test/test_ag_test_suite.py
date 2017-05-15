@@ -79,6 +79,12 @@ class AGTestSuiteTestCase(generic_data.Project, UnitTestBase):
 
             self.assertIn('name', cm.exception.message_dict)
 
+    def test_error_project_files_dont_belong_to_same_project(self):
+        self.fail()
+
+    def test_error_expected_student_file_patterns_dont_belong_to_same_project(self):
+        self.fail()
+
     def test_suite_ordering(self):
         suite1 = ag_models.AGTestSuite.objects.validate_and_create(
             name='suite1', project=self.project)

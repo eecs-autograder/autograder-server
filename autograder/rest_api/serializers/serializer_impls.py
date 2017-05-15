@@ -48,7 +48,7 @@ class ExpectedStudentFilePatternSerializer(AGModelSerializer):
 class AGTestCaseSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         if 'data' not in kwargs:
-            return super().__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
         data = copy.copy(kwargs.pop('data'))
         for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:
@@ -57,7 +57,7 @@ class AGTestCaseSerializer(AGModelSerializer):
                     ag_models.FeedbackConfig.objects.validate_and_create(
                         **data[fdbk_field]))
 
-        return super().__init__(*args, data=data, **kwargs)
+        super().__init__(*args, data=data, **kwargs)
 
     def validate_and_create(self, data):
         return ag_models.AutograderTestCaseFactory.validate_and_create(**data)
@@ -100,6 +100,7 @@ class AGTestCaseSerializer(AGModelSerializer):
 
         return result
 
+    # TODO: filter files/patterns to only allow ones that belong to the same project as this test
     def _load_uploaded_files(self, dicts):
         try:
             pk_list = [obj['pk'] for obj in dicts]
@@ -109,6 +110,7 @@ class AGTestCaseSerializer(AGModelSerializer):
         return ag_models.UploadedFile.objects.filter(
             pk__in=pk_list)
 
+    # TODO: filter files/patterns to only allow ones that belong to the same project as this test
     def _load_patterns(self, dicts):
         try:
             pk_list = [obj['pk'] for obj in dicts]
@@ -127,7 +129,7 @@ class AGTestResultSerializer(AGModelSerializer):
 
         self._fdbk_type = feedback_type
 
-        return super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         raise NotImplementedError(
@@ -172,7 +174,7 @@ class SubmissionSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         data = kwargs.pop('data', None)
         if data is None:
-            return super().__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
         try:
             # If this fails, then we know we don't have a query dict.
@@ -181,7 +183,7 @@ class SubmissionSerializer(AGModelSerializer):
         except AttributeError:
             fixed_data = data
 
-        return super().__init__(*args, data=fixed_data, **kwargs)
+        super().__init__(*args, data=fixed_data, **kwargs)
 
     def get_ag_model_manager(self):
         return ag_models.Submission.objects

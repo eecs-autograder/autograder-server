@@ -43,11 +43,8 @@ class AGTestCommandResult(AutograderModel):
     stderr_correct = models.BooleanField(null=True, default=None)
 
     def save(self, *args, **kwargs):
-        self._check_len_and_truncate('standard_output')
-        self._check_len_and_truncate('standard_error_output')
-        self._check_len_and_truncate('valgrind_output')
-        self._check_len_and_truncate('compilation_standard_output')
-        self._check_len_and_truncate('compilation_standard_error_output')
+        self._check_len_and_truncate('stdout')
+        self._check_len_and_truncate('stderr')
 
         super().save(*args, **kwargs)
 
@@ -115,18 +112,14 @@ class AGTestCommandResult(AutograderModel):
         feedback data to give for an AGTestCommandResult.
         """
 
-        def __init__(self, result, fdbk_conf):
-            '''
-            Initializes the object with the given result and feedback settings.
-            '''
+        def __init__(self, result: 'AGTestCommandResult',
+                     fdbk_conf: 'AGTestCommandFeedbackConfig'):
             self._fdbk = fdbk_conf
             self._result = result
 
-            self._stdout_diff = None  # type: List
-            self._stderr_diff = None  # type: List
-
         SERIALIZABLE_FIELDS = (
-            'ag_test_name',
+            'ag_test_case_command',
+            'ag_test_case_command_name',
             'status',
 
             'timed_out',
@@ -149,26 +142,16 @@ class AGTestCommandResult(AutograderModel):
             'stderr_points',
             'stderr_points_possible',
 
-            'compilation_succeeded',
-            'compilation_stdout',
-            'compilation_stderr',
-            'compilation_points',
-            'compilation_points_possible',
-
-            'valgrind_errors_reported',
-            'valgrind_output',
-            'valgrind_points_deducted',
-
             'total_points',
             'total_points_possible'
         )
 
         @property
         def fdbk_conf(self):
-            '''
+            """
             Returns the FeedbackConfig object that this object was
             initialized with.
-            '''
+            """
             return self._fdbk
 
         @property
@@ -180,218 +163,84 @@ class AGTestCommandResult(AutograderModel):
             return self._result.status
 
         @property
-        def ag_test_name(self):
-            random = fdbk_conf.AGTestNameFdbkLevel.randomly_obfuscate_name
-            if self._fdbk.ag_test_name_fdbk == random:
-                return '{} {} (name randomly obfuscated)'.format(
-                    self._result.test_case.randomly_obfuscated_name_prefix,
-                    uuid.uuid4().hex)
+        def ag_test_command_name(self):
+            return self._result.ag_test_command.name
 
-            deterministic = (
-                fdbk_conf.AGTestNameFdbkLevel.deterministically_obfuscate_name)
-            if self._fdbk.ag_test_name_fdbk == deterministic:
-                return 'test{}'.format(self._result.test_case.pk)
-
-            return self._result.test_case.name
+        @property
+        def fdbk_settings(self) -> dict:
+            return self._result.ag_test_command.
 
         @property
         def timed_out(self):
-            '''
-            Note: feedback on whether the test case timed out is given
-            only if feedback would be given on return code correctness,
-            stdout correctness, or stderr correctness.
-            '''
-            if (self.return_code_correct is not None or
-                    self.stdout_correct is not None or
-                    self.stderr_correct is not None):
-                return self._result.timed_out
+            raise NotImplementedError
 
-            return None
 
         @property
         def return_code_correct(self):
-            if (not self._ret_code_checked() or
-                    self._no_ret_code_correctness_fdbk()):
-                return None
+            raise NotImplementedError
 
-            if self._result.test_case.expect_any_nonzero_return_code:
-                return self._result.return_code != 0
-
-            return (self._result.return_code ==
-                    self._result.test_case.expected_return_code)
 
         @property
         def expected_return_code(self):
-            if not self._ret_code_checked() or not self._show_ret_code_diff():
-                return None
-
-            return self._result.test_case.expected_return_code
+            raise NotImplementedError
 
         @property
         def actual_return_code(self):
-            if self._fdbk.show_return_code:
-                return self._result.return_code
-
-            if not self._ret_code_checked() or not self._show_ret_code_diff():
-                return None
-
-            return self._result.return_code
-
-        def _show_ret_code_diff(self):
-            return (
-                self._fdbk.return_code_fdbk ==
-                fdbk_conf.ReturnCodeFdbkLevel.show_expected_and_actual_values)
+            raise NotImplementedError
 
         @property
         def return_code_points(self):
-            possible = self.return_code_points_possible
-            if possible is None:
-                return None
-
-            return 0 if not self.return_code_correct else possible
+            raise NotImplementedError
 
         @property
         def return_code_points_possible(self):
-            if (not self._ret_code_checked() or
-                    self._no_ret_code_correctness_fdbk() or
-                    self._no_pts_fdbk()):
-                return None
-
-            return self._result.test_case.points_for_correct_return_code
-
-        def _no_ret_code_correctness_fdbk(self):
-            return (self._fdbk.return_code_fdbk ==
-                    fdbk_conf.ReturnCodeFdbkLevel.no_feedback)
-
-        def _ret_code_checked(self):
-            return (self._result.test_case.expected_return_code is not None or
-                    self._result.test_case.expect_any_nonzero_return_code)
-
-        # ---------------------------------------------------------------------
+            raise NotImplementedError
 
         @property
         def stdout_correct(self):
-            if (self._no_stdout_correctness_fdbk() or
-                    not self._stdout_checked()):
-                return None
-
-            return self._get_stdout_diff() == []
+            raise NotImplementedError
 
         @property
         def stdout_content(self):
-            if not self._fdbk.show_stdout_content:
-                return None
-
-            return self._result.standard_output
+            raise NotImplementedError
 
         @property
         def stdout_diff(self):
-            if not self._show_stdout_diff() or not self._stdout_checked():
-                return None
-
-            return self._get_stdout_diff()
+            raise NotImplementedError
 
         @property
         def stdout_points(self):
-            possible = self.stdout_points_possible
-            if possible is None:
-                return None
-
-            return 0 if not self.stdout_correct else possible
+            raise NotImplementedError
 
         @property
         def stdout_points_possible(self):
-            if (not self._stdout_checked() or
-                    self._no_stdout_correctness_fdbk() or
-                    self._no_pts_fdbk()):
-                return None
-
-            return self._result.test_case.points_for_correct_stdout
-
-        def _no_stdout_correctness_fdbk(self):
-            return (self._fdbk.stdout_fdbk ==
-                    fdbk_conf.StdoutFdbkLevel.no_feedback)
-
-        def _show_stdout_diff(self):
-            return (self._fdbk.stdout_fdbk ==
-                    fdbk_conf.StdoutFdbkLevel.show_expected_and_actual_values)
-
-        def _stdout_checked(self):
-            return self._result.test_case.expected_standard_output
-
-        # ---------------------------------------------------------------------
+            raise NotImplementedError
 
         @property
         def stderr_correct(self):
-            if (self._no_stderr_correctness_fdbk() or
-                    not self._stderr_checked()):
-                return None
-
-            return self._get_stderr_diff() == []
+            raise NotImplementedError
 
         @property
         def stderr_content(self):
-            if not self._fdbk.show_stderr_content:
-                return None
-
-            return self._result.standard_error_output
+            raise NotImplementedError
 
         @property
         def stderr_diff(self):
-            if not self._stderr_checked() or not self._show_stderr_diff():
-                return None
-
-            return self._get_stderr_diff()
+            raise NotImplementedError
 
         @property
         def stderr_points(self):
-            possible = self.stderr_points_possible
-            if possible is None:
-                return None
-
-            return 0 if not self.stderr_correct else possible
+            raise NotImplementedError
 
         @property
         def stderr_points_possible(self):
-            if (not self._stderr_checked() or
-                    self._no_stderr_correctness_fdbk() or
-                    self._no_pts_fdbk()):
-                return None
-
-            return self._result.test_case.points_for_correct_stderr
-
-        def _no_stderr_correctness_fdbk(self):
-            return (self._fdbk.stderr_fdbk ==
-                    fdbk_conf.StderrFdbkLevel.no_feedback)
-
-        def _show_stderr_diff(self):
-            return (self._fdbk.stderr_fdbk ==
-                    fdbk_conf.StderrFdbkLevel.show_expected_and_actual_values)
-
-        def _stderr_checked(self):
-            return self._result.test_case.expected_standard_error_output
-
-        # ---------------------------------------------------------------------
-
-        def _no_pts_fdbk(self):
-            return self._fdbk.points_fdbk == fdbk_conf.PointsFdbkLevel.hide
-
-        # ---------------------------------------------------------------------
+            raise NotImplementedError
 
         @property
         def total_points(self):
-            try:
-                valgrind_val = -self.valgrind_points_deducted
-            except Exception:
-                valgrind_val = None
-
-            values = (self.return_code_points, self.stdout_points,
-                      self.stderr_points)
-
-            return max(0, sum((val for val in values if val is not None)))
+            return self.return_code_points + self.stdout_points + self.stderr_points
 
         @property
         def total_points_possible(self):
-            values = (self.return_code_points_possible, self.stdout_points_possible,
-                      self.stderr_points_possible)
-            return sum((val for val in values if val is not None))
+            return (self.return_code_points_possible + self.stdout_points_possible +
+                    self.stderr_points_possible)

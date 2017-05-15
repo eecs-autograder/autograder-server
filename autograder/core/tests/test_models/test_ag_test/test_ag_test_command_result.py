@@ -16,7 +16,7 @@ from autograder.core.tests.test_models.test_autograder_test_case.models \
     import _DummyAutograderTestCase
 
 
-class _SetUp:
+class _SetUp(test_ut.UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -35,7 +35,7 @@ class _SetUp:
             submitted_files=[])
 
 
-class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
+class AGTestCaseResultFdbkGettersTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
@@ -83,7 +83,7 @@ class AGTestCaseResultFdbkGettersTestCase(_SetUp, test_ut.UnitTestBase):
             self.result.get_max_feedback().fdbk_conf.to_dict())
 
 
-class MiscAGTestResultTestCase(_SetUp, test_ut.UnitTestBase):
+class MiscAGTestResultTestCase(_SetUp):
     def test_default_init(self):
         result = ag_models.AutograderTestCaseResult.objects.get(
             test_case=self.test_case,
@@ -299,7 +299,7 @@ class TotalScoreTestCase(test_ut.UnitTestBase):
         self.assertEqual(0, result.get_max_feedback().total_points)
 
 
-class FlexibleOutputDiffTestCase(_SetUp, test_ut.UnitTestBase):
+class FlexibleOutputDiffTestCase(_SetUp):
     def test_all_diff_options_false_stdout_correct_stderr_incorrect(self):
         self.do_diff_options_test(
             expected_stdout='spam', actual_stdout='spam',
