@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from autograder.core.models import AutograderModel
 
 # -----------------------------------------------------------------------------
-# DUMMY MODELS FOR TESTING AUTOGRADER MODEL BASE CLASS
+# DUMMY MODELS FOR TESTING AutograderModel BASE CLASS
 # -----------------------------------------------------------------------------
 
 
@@ -16,6 +16,7 @@ class _DummyToManyModel(AutograderModel):
     name = models.CharField(max_length=255)
 
     SERIALIZABLE_FIELDS = ('name',)
+    EDITABLE_FIELDS = ('name',)
 
 
 class _DummyForeignAutograderModel(AutograderModel):
@@ -35,7 +36,6 @@ class _DummyAutograderModel(AutograderModel):
     non_empty_str_val = models.TextField(
         validators=[validators.MinLengthValidator(1)])
     read_only_field = models.TextField(blank=True)
-    not_settable_on_create_field = models.IntegerField(blank=True, default=77)
 
     one_to_one = models.OneToOneField(_DummyForeignAutograderModel, related_name='rev_one_to_one')
     nullable_one_to_one = models.OneToOneField(
@@ -74,6 +74,7 @@ class _DummyAutograderModel(AutograderModel):
         'transparent_foreign_key',
 
         'many_to_many',
+        'another_many_to_many',
 
         'users'
     )
@@ -90,7 +91,10 @@ class _DummyAutograderModel(AutograderModel):
         'nullable_foreign_key',
         'transparent_foreign_key',
 
-        'many_to_many'
+        'many_to_many',
+        'another_many_to_many',
+
+        'users'
     )
 
     TRANSPARENT_TO_ONE_FIELDS = (

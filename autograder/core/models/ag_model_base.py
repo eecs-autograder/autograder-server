@@ -27,18 +27,7 @@ class _AutograderModelManagerMixin:
                 continue
 
             related_model = instance._meta.get_field(field_name).related_model
-            if isinstance(objs[0], related_model):
-                many_to_many_to_set[field_name] = objs
-            elif isinstance(objs[0], int):
-                many_to_many_to_set[field_name] = list(related_model.objects.filter(pk__in=objs))
-            elif isinstance(objs[0], dict):
-                many_to_many_to_set[field_name] = list(
-                    related_model.objects.filter(pk__in=[obj['pk'] for obj in objs]))
-            else:
-                raise ValueError(
-                    'Invalid type for related objects. '
-                    'Expected {}, dict, or int, but was {}'.format(str(related_model),
-                                                                   type(objs[0])))
+            many_to_many_to_set[field_name] = _load_related_to_many_objs(related_model, objs)
 
         with transaction.atomic():
             for field_name, value in kwargs.items():
@@ -56,6 +45,23 @@ class _AutograderModelManagerMixin:
                 getattr(instance, field_name).set(value, clear=True)
 
             return instance
+
+
+def _load_related_to_many_objs(related_model, objs):
+    if not objs:
+        return []
+
+    if isinstance(objs[0], related_model):
+        return objs
+    elif isinstance(objs[0], int):
+        return list(related_model.objects.filter(pk__in=objs))
+    elif isinstance(objs[0], dict):
+        return list(related_model.objects.filter(pk__in=[obj['pk'] for obj in objs]))
+    else:
+        raise ValueError(
+            'Invalid type for related objects. '
+            'Expected {}, dict, or int, but was {}'.format(str(related_model),
+                                                           type(objs[0])))
 
 
 class ToDictMixin:
@@ -88,8 +94,9 @@ class ToDictMixin:
     @classmethod
     def get_serialize_related_fields(cls):
         """
-        Returns a collection of the names of database related fields that
-        should be serialized (by calling <related_obj>.to_dict()) when
+        Returns a collection of the names of database related fields
+        (-to-one or -to-many) that should be serialized
+        (by calling <related_obj>.to_dict()) when
         an instance of this class is serialized with <obj>.to_dict().
         This overrides the default behavior of representing related
         objects as only a primary key.
@@ -108,8 +115,8 @@ class ToDictMixin:
         that should be treated as "transparent" when serializing and
         updating instances of this class. In other words, the related
         objects will be recursively serialized using to_dict(), and
-        they will also be recursively set (created if necessar) and
-        updated in <manager>.validate_and_create() and
+        they will also be recursively set (created if necessary) and
+        updated from a dictionary in <manager>.validate_and_create() and
         <obj>.validate_and_update(), respectively. This gives the
         illusion that the related field is simply a normal member of
         the class rather than a database relationship.
@@ -182,8 +189,9 @@ class _AutograderModelMixin(ToDictMixin):
         model.
         Note: Iterables passed in for many-to-many relationships will be
         loaded from the database and set on the object. The related
-        objects can be represented either as their primary keys
-        or as the result of calling <related_obj>.to_dict().
+        objects can be represented either as the objects themselves,
+        their primary keys, or as the result of calling
+        <related_obj>.to_dict().
 
         Prefer using this method over setting values manually
         and calling full_clean() because this method can perform
@@ -201,8 +209,21 @@ class _AutograderModelMixin(ToDictMixin):
                 raise exceptions.ValidationError(
                     {'non_editable_fields': [field_name]})
 
-            if self._meta.get_field(field_name).many_to_many:
-                getattr(self, field_name).set(val, clear=True)
+            field = self._meta.get_field(field_name)
+
+            if field.many_to_many:
+                loaded_vals = _load_related_to_many_objs(field.related_model, val)
+                getattr(self, field_name).set(loaded_vals, clear=True)
+            elif field_name in self.get_transparent_to_one_fields():
+                if not isinstance(val, dict):
+                    raise ValueError(
+                        'Expected a dictionary when updating the transparent -to-one field {} '
+                        'on model object of type {}, but got {} instead.'.format(
+                            field_name, self.__class__, type(val)))
+
+                update_vals = {key: value for key, value in val.items()
+                               if key in field.related_model.get_editable_fields()}
+                getattr(self, field_name).validate_and_update(**update_vals)
             else:
                 setattr(self, field_name, val)
 

@@ -48,6 +48,7 @@ class AGModelBaseToDictTest(UnitTestBase):
             'transparent_foreign_key': self.ag_model.transparent_foreign_key.to_dict(),
 
             'many_to_many': [obj.pk for obj in self.many_to_manys],
+            'another_many_to_many': [],
 
             'users': [user.pk for user in self.users]
         }
@@ -75,6 +76,7 @@ class AGModelBaseToDictTest(UnitTestBase):
             'transparent_foreign_key': self.ag_model.transparent_foreign_key.to_dict(),
 
             'many_to_many': [obj.to_dict() for obj in self.many_to_manys],
+            'another_many_to_many': [],
 
             'users': [user.pk for user in self.users]
         }
@@ -152,69 +154,106 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
 
         self.assertFalse(_DummyAutograderModel.objects.exists())
 
-#
-#
-# class AGModelValidateAndUpdateTestCase(_SetUp):
-#     def setUp(self):
-#         super().setUp()
-#
-#         self.ag_model = _DummyAutograderModel.objects.validate_and_create(
-#             pos_num_val=15,
-#             non_empty_str_val='spam',
-#             read_only_field='blah',
-#             many_to_many=[_DummyToManyModel.objects.create(name='waaaluigi')])
-#
-#         self.assertEqual(1, self.ag_model.many_to_many.count())
-#
-#     def test_valid_update(self):
-#         new_num = random.randint(100, 200)
-#         new_str = random.choice(string.ascii_letters)
-#         self.ag_model.validate_and_update(
-#             pos_num_val=new_num, non_empty_str_val=new_str,
-#             many_to_many=self.many_to_manys)
-#
-#         self.ag_model.refresh_from_db()
-#         self.assertEqual(new_num, self.ag_model.pos_num_val)
-#         self.assertEqual(new_str, self.ag_model.non_empty_str_val)
-#         self.assertCountEqual(self.many_to_manys,
-#                               self.ag_model.many_to_many.all())
-#
-#         second_new_num = new_num + 1
-#         self.ag_model.validate_and_update(pos_num_val=second_new_num)
-#         self.ag_model.refresh_from_db()
-#         self.assertEqual(second_new_num, self.ag_model.pos_num_val)
-#
-#     def test_updated_to_one_and_to_many_loaded_from_pk(self):
-#         self.fail()
-#
-#     def test_update_to_one_and_to_many_in_serialize_related(self):
-#         self.fail()
-#
-#     def test_invalid_update_bad_values(self):
-#         old_vals = self.ag_model.to_dict()
-#
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             self.ag_model.validate_and_update(pos_num_val=-42,
-#                                               non_empty_str_val='')
-#
-#         self.assertIn('pos_num_val', cm.exception.message_dict)
-#         self.assertIn('non_empty_str_val', cm.exception.message_dict)
-#
-#         self.ag_model.refresh_from_db()
-#         self.assertDictContentsEqual(old_vals, self.ag_model.to_dict())
-#
-#     def test_invalid_update_nonexistant_field(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             self.ag_model.validate_and_update(not_a_field_name='spam')
-#
-#         self.assertIn(
-#             'not_a_field_name',
-#             cm.exception.message_dict[AutograderModel.INVALID_FIELD_NAMES_KEY])
-#
-#     def test_invalid_update_non_editable_field(self):
-#         with self.assertRaises(exceptions.ValidationError) as cm:
-#             self.ag_model.validate_and_update(read_only_field='steve')
-#
-#         self.assertIn('non_editable_fields', cm.exception.message_dict)
-#         self.assertIn('read_only_field',
-#                       cm.exception.message_dict['non_editable_fields'])
+
+class AGModelValidateAndUpdateTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.ag_model = _DummyAutograderModel.objects.validate_and_create(
+            pos_num_val=15,
+            non_empty_str_val='spam',
+            read_only_field='blah',
+
+            one_to_one=_DummyForeignAutograderModel.objects.create(name='qehkfdnm'),
+            foreign_key=_DummyForeignAutograderModel.objects.create(name='cmnbse'),
+            many_to_many=[_DummyToManyModel.objects.create(name='waaaluigi')])
+
+        self.assertEqual(1, self.ag_model.many_to_many.count())
+
+    def test_valid_update(self):
+        new_num = self.ag_model.pos_num_val + 1
+        new_str = self.ag_model.non_empty_str_val + 'aksdjhflaksdf'
+
+        one_to_one = _DummyForeignAutograderModel.objects.create(name='akjdnkajhsdf')
+        foreign_key = _DummyForeignAutograderModel.objects.create(name='qbdbfakdfl')
+
+        orig_transparent_to_one = self.ag_model.transparent_to_one
+        transparent_to_one_name = 'qiwefhsd'
+        orig_transparent_foreign_key = self.ag_model.transparent_foreign_key
+        transparent_foreign_key_name = 'aksjdhfakj'
+
+        many_to_manys = [
+            _DummyToManyModel.objects.create(name='wee{}'.format(i)) for i in range(3)]
+        users = [User.objects.create(username='usr{}'.format(i)) for i in range(2)]
+
+        self.ag_model.validate_and_update(
+            pos_num_val=new_num,
+            non_empty_str_val=new_str,
+
+            one_to_one=one_to_one,
+            foreign_key=foreign_key,
+            transparent_to_one={'name': transparent_to_one_name},
+            transparent_foreign_key={'name': transparent_foreign_key_name},
+            many_to_many=[obj.to_dict() for obj in many_to_manys],
+            another_many_to_many=many_to_manys,
+            users=users)
+
+        self.ag_model.refresh_from_db()
+
+        self.assertEqual(new_num, self.ag_model.pos_num_val)
+        self.assertEqual(new_str, self.ag_model.non_empty_str_val)
+
+        self.assertEqual(one_to_one, self.ag_model.one_to_one)
+        self.assertIsNone(self.ag_model.nullable_one_to_one)
+        # Make sure we updated the transparent object rather than replacing it
+        # with a new one.
+        self.assertEqual(orig_transparent_to_one, self.ag_model.transparent_to_one)
+        self.assertEqual(transparent_to_one_name, self.ag_model.transparent_to_one.name)
+
+        self.assertEqual(foreign_key, self.ag_model.foreign_key)
+        self.assertIsNone(self.ag_model.nullable_foreign_key)
+        self.assertEqual(orig_transparent_foreign_key, self.ag_model.transparent_foreign_key)
+        self.assertEqual(transparent_foreign_key_name, self.ag_model.transparent_foreign_key.name)
+
+        self.assertSequenceEqual(many_to_manys, self.ag_model.many_to_many.all())
+        self.assertSequenceEqual(many_to_manys, self.ag_model.another_many_to_many.all())
+        self.assertCountEqual(users, self.ag_model.users.all())
+
+        second_new_num = new_num + 1
+        self.ag_model.validate_and_update(
+            pos_num_val=second_new_num,
+            nullable_foreign_key=None,
+            many_to_many=[])
+        self.ag_model.refresh_from_db()
+        self.assertEqual(second_new_num, self.ag_model.pos_num_val)
+        self.assertIsNone(self.ag_model.nullable_foreign_key)
+        self.assertSequenceEqual([], self.ag_model.many_to_many.all())
+
+    def test_invalid_update_bad_values(self):
+        old_vals = self.ag_model.to_dict()
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.ag_model.validate_and_update(pos_num_val=-42,
+                                              non_empty_str_val='')
+
+        self.assertIn('pos_num_val', cm.exception.message_dict)
+        self.assertIn('non_empty_str_val', cm.exception.message_dict)
+
+        self.ag_model.refresh_from_db()
+        self.assertDictContentsEqual(old_vals, self.ag_model.to_dict())
+
+    def test_invalid_update_nonexistant_field(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.ag_model.validate_and_update(not_a_field_name='spam')
+
+        self.assertIn(
+            'not_a_field_name',
+            cm.exception.message_dict[AutograderModel.INVALID_FIELD_NAMES_KEY])
+
+    def test_invalid_update_non_editable_field(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.ag_model.validate_and_update(read_only_field='steve')
+
+        self.assertIn('non_editable_fields', cm.exception.message_dict)
+        self.assertIn('read_only_field',
+                      cm.exception.message_dict['non_editable_fields'])
