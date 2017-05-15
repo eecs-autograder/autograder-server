@@ -10,16 +10,45 @@ class _AutograderModelManagerMixin:
         This method is a shortcut for constructing a model object,
         calling full_clean(), and then calling save().
         Prefer using this method over <Model class>.objects.create().
+        Note: Iterables passed in for many-to-many relationships will be
+        loaded from the database and set on the object. The related
+        objects can be represented either as the objects themselves,
+        their primary keys, or as the result of calling
+        <related_obj>.to_dict().
         """
         instance = self.model()
         many_to_many_to_set = {}
         for field_name in list(kwargs.keys()):
-            if instance._meta.get_field(field_name).many_to_many:
-                many_to_many_to_set[field_name] = kwargs.pop(field_name)
+            if not instance._meta.get_field(field_name).many_to_many:
+                continue
+
+            objs = kwargs.pop(field_name)
+            if not objs:
+                continue
+
+            related_model = instance._meta.get_field(field_name).related_model
+            if isinstance(objs[0], related_model):
+                many_to_many_to_set[field_name] = objs
+            elif isinstance(objs[0], int):
+                many_to_many_to_set[field_name] = list(related_model.objects.filter(pk__in=objs))
+            elif isinstance(objs[0], dict):
+                many_to_many_to_set[field_name] = list(
+                    related_model.objects.filter(pk__in=[obj['pk'] for obj in objs]))
+            else:
+                raise ValueError(
+                    'Invalid type for related objects. '
+                    'Expected {}, dict, or int, but was {}'.format(str(related_model),
+                                                                   type(objs[0])))
 
         with transaction.atomic():
             for field_name, value in kwargs.items():
-                setattr(instance, field_name, value)
+                if field_name in instance.get_transparent_to_one_fields():
+                    related_model = instance._meta.get_field(field_name).related_model
+                    setattr(instance, field_name,
+                            related_model.objects.validate_and_create(**value))
+                else:
+                    setattr(instance, field_name, value)
+
             instance.full_clean()
             instance.save()
 
@@ -64,10 +93,33 @@ class ToDictMixin:
         an instance of this class is serialized with <obj>.to_dict().
         This overrides the default behavior of representing related
         objects as only a primary key.
+
+        The base class version of this function returns the value of
+        cls.SERIALIZE_RELATED, which defaults to an empty tuple.
         """
         return cls.SERIALIZE_RELATED
 
     SERIALIZE_RELATED = tuple()
+
+    @classmethod
+    def get_transparent_to_one_fields(cls):
+        """
+        Returns a collection of the names of database -to-one fields
+        that should be treated as "transparent" when serializing and
+        updating instances of this class. In other words, the related
+        objects will be recursively serialized using to_dict(), and
+        they will also be recursively set (created if necessar) and
+        updated in <manager>.validate_and_create() and
+        <obj>.validate_and_update(), respectively. This gives the
+        illusion that the related field is simply a normal member of
+        the class rather than a database relationship.
+
+        The base class version of this function returns the value of
+        cls.TRANSPARENT_TO_ONE_FIELDS, which defaults to an empty tuple.
+        """
+        return cls.TRANSPARENT_TO_ONE_FIELDS
+
+    TRANSPARENT_TO_ONE_FIELDS = tuple()
 
     def to_dict(self):
         """
@@ -89,7 +141,8 @@ class ToDictMixin:
                     if field_val is None:
                         continue
 
-                    if field_name in self.get_serialize_related_fields():
+                    if (field_name in self.get_serialize_related_fields() or
+                            field_name in self.get_transparent_to_one_fields()):
                         result[field_name] = field_val.to_dict()
                     else:
                         result[field_name] = field_val.pk
@@ -111,9 +164,6 @@ class _AutograderModelMixin(ToDictMixin):
         """
         Returns a collection of the names of database fields that can be
         edited on this model type using model.validate_and_update()
-        Note: Any database relationship fields listed in
-        <Class>.get_serialize_related_fields() will be deserialized
-        if needed before updating their values.
 
         The base class version of this function returns the value of
         cls.EDITABLE_FIELDS, which defaults to an empty
@@ -130,6 +180,11 @@ class _AutograderModelMixin(ToDictMixin):
         Updates the values of the fields specified as
         keyword arguments, runs model validation, and saves the
         model.
+        Note: Iterables passed in for many-to-many relationships will be
+        loaded from the database and set on the object. The related
+        objects can be represented either as their primary keys
+        or as the result of calling <related_obj>.to_dict().
+
         Prefer using this method over setting values manually
         and calling full_clean() because this method can perform
         extra validation that depends on the old and new values of
@@ -141,9 +196,11 @@ class _AutograderModelMixin(ToDictMixin):
             if not hasattr(self, field_name):
                 raise exceptions.ValidationError(
                     {AutograderModel.INVALID_FIELD_NAMES_KEY: [field_name]})
+
             if field_name not in self.get_editable_fields():
                 raise exceptions.ValidationError(
                     {'non_editable_fields': [field_name]})
+
             if self._meta.get_field(field_name).many_to_many:
                 getattr(self, field_name).set(val, clear=True)
             else:
