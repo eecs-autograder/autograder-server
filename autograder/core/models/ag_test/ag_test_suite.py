@@ -114,10 +114,28 @@ class AGTestSuite(AutograderModel):
         'deferred',
     )
 
+    SERIALIZE_RELATED = (
+        'project',
+        'project_files_needed',
+        'student_files_needed',
+    )
+
+    TRANSPARENT_TO_ONE_FIELDS = (
+        'normal_fdbk_config',
+        'ultimate_submission_fdbk_config',
+        'past_limit_submission_fdbk_config',
+        'staff_viewer_fdbk_config'
+    )
+
     EDITABLE_FIELDS = (
         'name',
         'project_files_needed',
         'student_files_needed',
         'allow_network_access',
         'deferred',
+
+        'normal_fdbk_config',
+        'ultimate_submission_fdbk_config',
+        'past_limit_submission_fdbk_config',
+        'staff_viewer_fdbk_config'
     )

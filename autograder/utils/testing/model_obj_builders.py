@@ -5,6 +5,7 @@ import base64
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 import autograder.core.models as ag_models
 from autograder.core.models.autograder_test_case.feedback_config import (
@@ -153,7 +154,7 @@ def build_compiled_ag_test(with_points=True,
         })
 
     if 'name' not in ag_test_kwargs:
-        ag_test_kwargs['name'] = 'ag_test{}'.format(get_unique_id())
+        ag_test_kwargs['name'] = 'ag_test_case{}'.format(get_unique_id())
 
     if 'project' not in ag_test_kwargs:
         ag_test_kwargs['project'] = build_project()
@@ -292,6 +293,9 @@ def build_submission(**submission_kwargs) -> ag_models.Submission:
 
     if 'submitted_files' not in submission_kwargs:
         submission_kwargs['submitted_files'] = []
+
+    if 'timestamp' not in submission_kwargs:
+        submission_kwargs['timestamp'] = timezone.now()
 
     return ag_models.Submission.objects.validate_and_create(
         **submission_kwargs)

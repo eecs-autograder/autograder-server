@@ -311,64 +311,101 @@ class AGTestCommand(AutograderModel):
 
     SERIALIZABLE_FIELDS = (
         'name',
+
         'ag_test_case',
         'ag_test_suite_is_setup_for',
+
         'cmd',
+
         'stdin_source',
         'stdin_text',
         'stdin_project_file',
+
         'expected_return_code',
+
         'expected_stdout_source',
         'expected_stdout_text',
         'expected_stdout_project_file',
+
         'expected_stderr_source',
         'expected_stderr_text',
         'expected_stderr_project_file',
+
         'ignore_case',
         'ignore_whitespace',
         'ignore_whitespace_changes',
         'ignore_blank_lines',
+
         'points_for_correct_return_code',
         'points_for_correct_stdout',
         'points_for_correct_stderr',
+
         'deduction_for_wrong_return_code',
         'deduction_for_wrong_stdout',
         'deduction_for_wrong_stderr',
+
         'normal_fdbk_config',
         'ultimate_submission_fdbk_config',
         'past_limit_submission_fdbk_config',
         'staff_viewer_fdbk_config',
+
         'time_limit',
         'stack_size_limit',
         'virtual_memory_limit',
         'process_spawn_limit',
     )
 
+    SERIALIZE_RELATED = (
+        'ag_test_case',
+        'ag_test_suite_is_setup_for',
+    )
+
     EDITABLE_FIELDS = (
         'name',
+
         'cmd',
+
         'stdin_source',
         'stdin_text',
         'stdin_project_file',
+
         'expected_return_code',
+
         'expected_stdout_source',
         'expected_stdout_text',
         'expected_stdout_project_file',
+
         'expected_stderr_source',
         'expected_stderr_text',
         'expected_stderr_project_file',
+
         'ignore_case',
         'ignore_whitespace',
         'ignore_whitespace_changes',
         'ignore_blank_lines',
+
         'points_for_correct_return_code',
         'points_for_correct_stdout',
         'points_for_correct_stderr',
+
         'deduction_for_wrong_return_code',
         'deduction_for_wrong_stdout',
         'deduction_for_wrong_stderr',
+
+        'normal_fdbk_config',
+        'ultimate_submission_fdbk_config',
+        'past_limit_submission_fdbk_config',
+        'staff_viewer_fdbk_config',
+
         'time_limit',
         'stack_size_limit',
         'virtual_memory_limit',
         'process_spawn_limit',
+    )
+
+    TRANSPARENT_TO_ONE_FIELDS = (
+        'normal_fdbk_config',
+        'ultimate_submission_fdbk_config',
+        'past_limit_submission_fdbk_config',
+        'staff_viewer_fdbk_config',
     )

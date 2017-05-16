@@ -17,6 +17,9 @@ from .ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from .ag_test.ag_test_command import (
     AGTestCommand, AGTestCommandFeedbackConfig, ValueFeedbackLevel, StdinSource,
     ExpectedOutputSource, ExpectedOutputSource, ExpectedReturnCode)
+from .ag_test.ag_test_suite_result import AGTestSuiteResult
+from .ag_test.ag_test_case_result import AGTestCaseResult
+from .ag_test.ag_test_command_result import AGTestCommandResult
 
 
 # These next imports need to be in this order to get around

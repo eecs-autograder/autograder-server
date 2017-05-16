@@ -58,29 +58,3 @@ class AGTestCaseTestCase(generic_data.Project, UnitTestBase):
             name='ag_test2', ag_test_suite=self.ag_suite)
 
         self.assertCountEqual([ag_test1, ag_test2], self.ag_suite.ag_test_cases.all())
-
-    def test_serializable_fields(self):
-        expected = [
-            'pk',
-            'name',
-            'ag_test_suite',
-        ]
-        self.assertCountEqual(expected, ag_models.AGTestCase.get_serializable_fields())
-
-    def test_editable_fields(self):
-        expected = [
-            'name'
-        ]
-        self.assertCountEqual(expected, ag_models.AGTestCase.get_editable_fields())
-
-
-class AGTestCaseFeedbackConfigTestCase(UnitTestBase):
-    def test_serializable_fields(self):
-        expected = ['show_individual_commands']
-        self.assertCountEqual(expected,
-                              ag_models.AGTestCaseFeedbackConfig.get_serializable_fields())
-
-    def test_editable_fields(self):
-        expected = ['show_individual_commands']
-        self.assertCountEqual(expected,
-                              ag_models.AGTestCaseFeedbackConfig.get_editable_fields())

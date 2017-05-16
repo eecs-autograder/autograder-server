@@ -62,4 +62,21 @@ class AGTestCase(AutograderModel):
         help_text='Feedback settings for a staff member viewing a Submission from another group.')
 
     SERIALIZABLE_FIELDS = ('name', 'ag_test_suite')
-    EDITABLE_FIELDS = ('name',)
+
+    SERIALIZE_RELATED = ('ag_test_suite',)
+
+    EDITABLE_FIELDS = (
+        'name',
+
+        'normal_fdbk_config',
+        'ultimate_submission_fdbk_config',
+        'past_limit_submission_fdbk_config',
+        'staff_viewer_fdbk_config',
+    )
+
+    TRANSPARENT_TO_ONE_FIELDS = (
+        'normal_fdbk_config',
+        'ultimate_submission_fdbk_config',
+        'past_limit_submission_fdbk_config',
+        'staff_viewer_fdbk_config',
+    )

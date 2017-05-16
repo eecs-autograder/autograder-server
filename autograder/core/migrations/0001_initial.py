@@ -236,7 +236,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='autogradertestcasebase',
             name='feedback_configuration',
-            field=models.OneToOneField(blank=True, help_text='Specifies how much information should be included\n            in serialized test case results in normal situations. If not\n            specified, this field is set to a default-constructed\n            FeedbackConfig object.', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='ag_test', to='core.FeedbackConfig'),
+            field=models.OneToOneField(blank=True, help_text='Specifies how much information should be included\n            in serialized test case results in normal situations. If not\n            specified, this field is set to a default-constructed\n            FeedbackConfig object.', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='ag_test_case', to='core.FeedbackConfig'),
         ),
         migrations.AddField(
             model_name='autogradertestcasebase',

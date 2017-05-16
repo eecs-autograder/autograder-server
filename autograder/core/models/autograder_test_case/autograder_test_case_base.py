@@ -378,7 +378,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     # FEEDBACK SETTINGS ------------------------------------------------
 
     feedback_configuration = models.OneToOneField(
-        FeedbackConfig, related_name='ag_test', blank=True, null=True,
+        FeedbackConfig, related_name='ag_test_case', blank=True, null=True,
         help_text='''Specifies how much information should be included
             in serialized test case results in normal situations. If not
             specified, this field is set to a default-constructed

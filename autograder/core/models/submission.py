@@ -45,7 +45,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
                 - Any missing files are recorded as such, but the
                     Submission is still accepted.
         """
-        submission = self.model(submission_group, timestamp)
+        submission = self.model(submission_group=submission_group, timestamp=timestamp)
         # The submission needs to be saved so that a directory is
         # created for it.
         submission.save()

@@ -137,7 +137,7 @@ class ToDictMixin:
         for field_name in self.get_serializable_fields():
             result[field_name] = getattr(self, field_name)
 
-            # If this isn't a Django Model, skip the field logic
+            # If this isn't a Django Model (or if it's None), skip the field logic
             if not hasattr(self, '_meta'):
                 continue
 
