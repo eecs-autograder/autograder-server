@@ -37,7 +37,31 @@ class AGTestCommandFeedbackConfig(AutograderModel):
     show_actual_return_code = models.BooleanField(default=False)
     show_actual_stdout = models.BooleanField(default=False)
     show_actual_stderr = models.BooleanField(default=False)
-    # show_whether_timed_out = models.BooleanField(default=False)
+    show_whether_timed_out = models.BooleanField(default=False)
+
+    SERIALIZABLE_FIELDS = (
+        'visible',
+        'return_code_fdbk_level',
+        'stdout_fdbk_level',
+        'stderr_fdbk_level',
+        'show_points',
+        'show_actual_return_code',
+        'show_actual_stdout',
+        'show_actual_stderr',
+        'show_whether_timed_out'
+    )
+
+    EDITABLE_FIELDS = (
+        'visible',
+        'return_code_fdbk_level',
+        'stdout_fdbk_level',
+        'stderr_fdbk_level',
+        'show_points',
+        'show_actual_return_code',
+        'show_actual_stdout',
+        'show_actual_stderr',
+        'show_whether_timed_out'
+    )
 
 
 def make_default_command_fdbk() -> int:
@@ -55,7 +79,8 @@ def make_default_ultimate_submission_command_fdbk() -> int:
         show_points=True,
         show_actual_return_code=True,
         show_actual_stdout=True,
-        show_actual_stderr=True
+        show_actual_stderr=True,
+        show_whether_timed_out=True
     ).pk
 
 
@@ -67,7 +92,8 @@ def make_max_command_fdbk() -> int:
         show_points=True,
         show_actual_return_code=True,
         show_actual_stdout=True,
-        show_actual_stderr=True
+        show_actual_stderr=True,
+        show_whether_timed_out=True
     ).pk
 
 

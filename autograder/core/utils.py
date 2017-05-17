@@ -2,6 +2,7 @@ import enum
 import os
 import tempfile
 import subprocess
+from typing import List
 
 from django.conf import settings
 from django.core import exceptions
@@ -11,18 +12,18 @@ from . import constants as const
 
 
 # TODO: update so that it can take in strings or file objects
-def get_diff(first, second,
+def get_diff(first: str, second: str,
              ignore_case=False,
              ignore_whitespace=False,
              ignore_whitespace_changes=False,
-             ignore_blank_lines=False):
-    '''
+             ignore_blank_lines=False) -> List[str]:
+    """
     Diffs first and second using the GNU diff command line utility.
     Returns an empty list if first and second are considered equivalent.
     Otherwise, returns a list of strings, each of which are prefixed
     with one of the two-letter opcodes used by
     https://docs.python.org/3.5/library/difflib.html#difflib.Differ
-    '''
+    """
     with tempfile.NamedTemporaryFile('w') as f1, tempfile.NamedTemporaryFile('w') as f2:
         f1.write(first)
         f1.seek(0)
@@ -54,11 +55,11 @@ def get_diff(first, second,
 
 
 def get_24_hour_period(start_time, contains_datetime):
-    '''
+    """
     Returns a tuple (start_datetime, end_datetime) representing a 24
     hour period that contains the current date and time and with the
     start and end time both being start_time.
-    '''
+    """
     start_date = contains_datetime.date()
     if contains_datetime.time() < start_time:
         start_date += timezone.timedelta(days=-1)

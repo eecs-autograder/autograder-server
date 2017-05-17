@@ -104,3 +104,6 @@ class UploadedFile(AutograderModel):
             os.remove(file_path)
 
             return return_val
+
+    def open(self, mode='r'):
+        return open(self.abspath)
