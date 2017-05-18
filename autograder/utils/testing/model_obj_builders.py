@@ -15,29 +15,29 @@ from autograder.core.models.autograder_test_case.feedback_config import (
 
 
 def get_unique_id() -> str:
-    '''
+    """
     Returns a base64 encoded uuid as a string. The value returned can
     be added to a database object's fields to make them unique.
     A base64 representation is used because it is short enough to fit
     within the length restrictions of the "username" field of django
     User objects.
-    '''
+    """
     return base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8')
 
 
 def create_dummy_user(is_superuser: bool=False):
-    '''
+    """
     Creates a User with a random username. If is_superuser is True,
     creates the User with superuser status.
-    '''
+    """
     return create_dummy_users(1, is_superuser=is_superuser)[0]
 
 
 def create_dummy_users(num_users: int, is_superuser: bool=False):
-    '''
+    """
     Creates list of num_users Users with random usernames.
     If is_superuser is True, creates each User with superuser status.
-    '''
+    """
     users = []
 
     for i in range(num_users):
@@ -54,7 +54,7 @@ def create_dummy_users(num_users: int, is_superuser: bool=False):
 
 
 def build_course(course_kwargs: dict=None) -> ag_models.Course:
-    '''
+    """
     Creates a Course with a unique name.
     Any fields present in course_kwargs will be used instead of
     defaults.
@@ -62,7 +62,7 @@ def build_course(course_kwargs: dict=None) -> ag_models.Course:
     and students. The values should be lists of Users, and those users
     will be added to the new course as admins, staff, or students,
     respectively.
-    '''
+    """
     if course_kwargs is None:
         course_kwargs = {}
     else:
@@ -83,13 +83,13 @@ def build_course(course_kwargs: dict=None) -> ag_models.Course:
 
 
 def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_models.Project:
-    '''
+    """
     Creates a Project with a unique name.
     Any fields in project_kwargs will be used instead of defaults.
     If the key "course" is present in project_kwargs, its value must
     be a Course that the new project will be linked to. The course will
     be initialized by calling build_course(course_kwargs).
-    '''
+    """
     if project_kwargs is None:
         project_kwargs = {}
     else:
@@ -112,7 +112,7 @@ def make_uploaded_file(project: ag_models.Project) -> ag_models.UploadedFile:
 
 def build_compiled_ag_test(with_points=True,
                            **ag_test_kwargs) -> ag_models.CompiledAndRunAutograderTestCase:
-    '''
+    """
     Creates a CompiledAndRunAutograderTestCase object with a unique
     name.
 
@@ -139,7 +139,7 @@ def build_compiled_ag_test(with_points=True,
         'deduction_for_valgrind_errors'
         'points_for_compilation_success'
         'use_valgrind'
-    '''
+    """
     if with_points:
         ag_test_kwargs.update({
             'points_for_correct_return_code': 3,
@@ -174,7 +174,7 @@ def build_compiled_ag_test_result(ag_test_with_points=True,
                                   all_points_used=True,
                                   ag_test_kwargs=None,
                                   **result_kwargs) -> ag_models.AutograderTestCaseResult:
-    '''
+    """
     Creates an AutograderTestCaseResult object using the given data.
     If "test_case" is not passed as a keyword argument, then a new
     CompiledAndRunAutograderTestCase object will be created using
@@ -193,7 +193,7 @@ def build_compiled_ag_test_result(ag_test_with_points=True,
         'standard_error_output'
         'valgrind_return_code'
         'compilation_return_code'
-    '''
+    """
     if ag_test_kwargs is None:
         ag_test_kwargs = {}
     else:
@@ -250,11 +250,11 @@ def build_submission_group(num_members=1,
                            group_kwargs=None,
                            project_kwargs=None,
                            course_kwargs=None) -> ag_models.SubmissionGroup:
-    '''
+    """
     Creates a SubmissionGroup with the specified data.
     If the "members" key is not present in group_kwargs, then
     num_members Users will be created and added to the group instead.
-    '''
+    """
     if group_kwargs is None:
         group_kwargs = {}
     else:
@@ -282,12 +282,12 @@ def build_submission_group(num_members=1,
 
 
 def build_submission(**submission_kwargs) -> ag_models.Submission:
-    '''
+    """
     Creates a Submission with the given keyword arguments.
     If the "submission_group" argument is not specified, then a
     SubmissionGroup will be created with build_submission_group() and
     used instead.
-    '''
+    """
     if 'submission_group' not in submission_kwargs:
         submission_kwargs['submission_group'] = build_submission_group()
 
@@ -304,7 +304,7 @@ def build_submission(**submission_kwargs) -> ag_models.Submission:
 def build_submissions_with_results(num_submissions=1, num_tests=1,
                                    test_fdbk=None, make_one_best=False,
                                    **submission_kwargs):
-    '''
+    """
     Creates a list of Submissions, each with a set of results.
     All the submissions will be linked to the same SubmissionGroup. That
     group will either be specified as the "submission_group" keyword
@@ -325,7 +325,7 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
 
     Otherwise, returns a 2-tuple containing the list of submissions and
     the newly created test cases.
-    '''
+    """
     if num_submissions < 1:
         raise ValueError('num_submissions must be at least 1')
 
@@ -376,10 +376,10 @@ def build_submissions_with_results(num_submissions=1, num_tests=1,
 
 
 def random_fdbk() -> ag_models.FeedbackConfig:
-    '''
+    """
     Creates and returns a FeedbackConfig object with random (valid)
     values assigned to each of its fields.
-    '''
+    """
     fdbk = ag_models.FeedbackConfig.objects.validate_and_create(
         ag_test_name_fdbk=random.choice(
             [AGTestNameFdbkLevel.show_real_name,
@@ -401,3 +401,99 @@ def random_fdbk() -> ag_models.FeedbackConfig:
         return random_fdbk()
 
     return fdbk
+
+
+def make_full_ag_test_command_with_max_normal_fdbk(
+        ag_test_case: ag_models.AGTestCase, set_arbitrary_points=True,
+        **ag_test_cmd_kwargs) -> ag_models.AGTestCommand:
+    base_kwargs = {
+        'name': 'ag_test_cmd-{}'.format(get_unique_id()),
+        'ag_test_case': ag_test_case,
+        'cmd': 'aksdjhfalsdf',
+
+        # These specific values don't matter, other than that
+        # they should indicate that return code, stdout, and
+        # stderr are checked. We'll be manually setting the
+        # correctness fields on AGTestCommandResults.
+        'expected_return_code': ag_models.ExpectedReturnCode.zero,
+        'expected_stdout_source': ag_models.ExpectedOutputSource.text,
+        'expected_stdout_text': 'some text that is here because',
+        'expected_stderr_source': ag_models.ExpectedOutputSource.text,
+        'expected_stderr_text': 'some error stuff that wat',
+
+        'normal_fdbk_config': {
+            'return_code_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
+            'stdout_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
+            'stderr_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
+            'show_points': True,
+            'show_actual_return_code': True,
+            'show_actual_stdout': True,
+            'show_actual_stderr': True,
+            'show_whether_timed_out': True
+        }
+    }
+
+    if set_arbitrary_points:
+        base_kwargs.update({
+            'points_for_correct_return_code': 1,
+            'points_for_correct_stdout': 2,
+            'points_for_correct_stderr': 3,
+            'deduction_for_wrong_return_code': -4,
+            'deduction_for_wrong_stdout': -2,
+            'deduction_for_wrong_stderr': -1
+        })
+
+    base_kwargs.update(ag_test_cmd_kwargs)
+    return ag_models.AGTestCommand.objects.validate_and_create(**base_kwargs)
+
+
+def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand,
+                                        ag_test_case_result: ag_models.AGTestCommandResult,
+                                        **result_kwargs):
+    return_code = (
+        0 if ag_test_command.expected_return_code == ag_models.ExpectedReturnCode.zero else 42)
+
+    stdout = ''
+    if ag_test_command.expected_stdout_source == ag_models.ExpectedOutputSource.text:
+        stdout = ag_test_command.expected_stdout_text
+    elif ag_test_command.expected_stdout_source == ag_models.ExpectedOutputSource.project_file:
+        with ag_test_command.expected_stdout_project_file.open() as f:
+            stdout = f.read()
+
+    stderr = ''
+    if ag_test_command.expected_stderr_source == ag_models.ExpectedOutputSource.text:
+        stderr = ag_test_command.expected_stderr_text
+    elif ag_test_command.expected_stderr_source == ag_models.ExpectedOutputSource.project_file:
+        with ag_test_command.expected_stderr_project_file.open() as f:
+            stderr = f.read()
+
+    kwargs = {
+        'ag_test_command': ag_test_command,
+        'ag_test_case_result': ag_test_case_result,
+        'return_code': return_code,
+        'stdout': stdout,
+        'stderr': stderr,
+
+        'return_code_correct': True,
+        'stdout_correct': True,
+        'stderr_correct': True,
+    }
+
+    kwargs.update(result_kwargs)
+
+    return ag_models.AGTestCommandResult.objects.validate_and_create(**kwargs)
+
+
+def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestCommand,
+                                          ag_test_case_result: ag_models.AGTestCaseResult,
+                                          **result_kwargs):
+    result = make_correct_ag_test_command_result(
+        ag_test_command, ag_test_case_result, **result_kwargs)
+    result.return_code = 42 if result.return_code == 0 else 0
+    result.stdout += 'laksdjhnflkajhdflkas'
+    result.stderr += 'ncbsljksdkfjas'
+    result.return_code_correct = False
+    result.stdout_correct = False
+    result.stderr_correct = False
+    result.save()
+    return result

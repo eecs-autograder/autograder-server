@@ -11,6 +11,7 @@ from .ag_test_command import (
     AGTestCommand, AGTestCommandFeedbackConfig, ExpectedReturnCode, ValueFeedbackLevel,
     ExpectedOutputSource)
 from .ag_test_case_result import AGTestCaseResult
+from .feedback_category import FeedbackCategory
 
 
 class AGTestCommandResult(AutograderModel):
@@ -26,7 +27,7 @@ class AGTestCommandResult(AutograderModel):
         AGTestCommand, help_text='The AGTestCommand this result belongs to.')
 
     ag_test_case_result = models.ForeignKey(
-        AGTestCaseResult, blank=True, null=True, default=None,
+        AGTestCaseResult, related_name='ag_test_command_results',
         help_text='''The AGTestCaseResult that this result belongs to.
                      A value of None indicates that this AGTestCommandResult
                      is the result of an AGTestSuite's setup command.''')
@@ -57,57 +58,8 @@ class AGTestCommandResult(AutograderModel):
             setattr(self, field_name,
                     value[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
 
-    def get_normal_feedback(self) -> 'AGTestCommandResult.FeedbackCalculator':
-        """
-        Returns a FeedbackCalculator object for this result initialized
-        with self.ag_test_command.normal_fdbk_config as its feedback
-        config.
-        """
-        return AGTestCommandResult.FeedbackCalculator(
-            self, self.ag_test_command.normal_fdbk_config)
-
-    def get_ultimate_submission_feedback(self) -> 'AGTestCommandResult.FeedbackCalculator':
-        """
-        Returns a FeedbackCalculator object for this result initialized
-        with self.ag_test_command.ultimate_submission_fdbk_config as its
-        feedback config.
-        """
-        return AGTestCommandResult.FeedbackCalculator(
-            self, self.ag_test_command.ultimate_submission_fdbk_config)
-
-    def get_staff_viewer_feedback(self) -> 'AGTestCommandResult.FeedbackCalculator':
-        """
-        Returns a FeedbackCalculator object for this result initialized
-        with self.ag_test_command.staff_viewer_fdbk_config as its feedback
-        config.
-        """
-        return AGTestCommandResult.FeedbackCalculator(
-            self, self.ag_test_command.staff_viewer_fdbk_config)
-
-    def get_past_submission_limit_feedback(self) -> 'AGTestCommandResult.FeedbackCalculator':
-        """
-        Returns a FeedbackCalculator object for this result initialized
-        with self.ag_test_command.past_limit_submission_fdbk_config as its
-        feedback config.
-        """
-        return AGTestCommandResult.FeedbackCalculator(
-            self, self.ag_test_command.past_limit_submission_fdbk_config)
-
-    def get_max_feedback(self) -> 'AGTestCommandResult.FeedbackCalculator':
-        """
-        Returns a FeedbackCalculator object for this result initialized
-        with maximum feedback settings.
-        """
-        fdbk_settings = AGTestCommandFeedbackConfig(
-            return_code_fdbk_level=ValueFeedbackLevel.get_max(),
-            stdout_fdbk_level=ValueFeedbackLevel.get_max(),
-            stderr_fdbk_level=ValueFeedbackLevel.get_max(),
-            show_points=True,
-            show_actual_return_code=True,
-            show_actual_stdout=True,
-            show_actual_stderr=True)
-
-        return AGTestCommandResult.FeedbackCalculator(self, fdbk_settings)
+    def get_fdbk(self, fdbk_category: FeedbackCategory):
+        return AGTestCommandResult.FeedbackCalculator(self, fdbk_category)
 
     class FeedbackCalculator(ToDictMixin):
         """
@@ -116,10 +68,28 @@ class AGTestCommandResult(AutograderModel):
         """
 
         def __init__(self, result: 'AGTestCommandResult',
-                     fdbk_conf: 'AGTestCommandFeedbackConfig'):
-            self._fdbk = fdbk_conf
+                     fdbk_category: FeedbackCategory):
             self._result = result
             self._cmd = self._result.ag_test_command
+
+            if fdbk_category == FeedbackCategory.normal:
+                self._fdbk = self._cmd.normal_fdbk_config
+            elif fdbk_category == FeedbackCategory.ultimate_submission:
+                self._fdbk = self._cmd.ultimate_submission_fdbk_config
+            elif fdbk_category == FeedbackCategory.past_limit_submission:
+                self._fdbk = self._cmd.past_limit_submission_fdbk_config
+            elif fdbk_category == FeedbackCategory.staff_viewer:
+                self._fdbk = self._cmd.staff_viewer_fdbk_config
+            elif fdbk_category == FeedbackCategory.max:
+                self._fdbk = AGTestCommandFeedbackConfig(
+                    return_code_fdbk_level=ValueFeedbackLevel.get_max(),
+                    stdout_fdbk_level=ValueFeedbackLevel.get_max(),
+                    stderr_fdbk_level=ValueFeedbackLevel.get_max(),
+                    show_points=True,
+                    show_actual_return_code=True,
+                    show_actual_stdout=True,
+                    show_actual_stderr=True
+                )
 
         @property
         def fdbk_conf(self):

@@ -1,4 +1,3 @@
-import os
 from unittest import mock
 
 import autograder.core.models as ag_models
@@ -11,7 +10,6 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 class AGTestCommandResultTestCase(UnitTestBase):
     def setUp(self):
-        # create an ag_test_command where normal feedback is set to max
         submission = obj_build.build_submission()
         self.project = submission.submission_group.project
         suite = ag_models.AGTestSuite.objects.validate_and_create(
@@ -24,85 +22,51 @@ class AGTestCommandResultTestCase(UnitTestBase):
             ag_test_case=self.ag_test_case, ag_test_suite_result=suite_result)
 
         # Normal feedback is set to max
-        self.ag_test_command = ag_models.AGTestCommand.objects.validate_and_create(
-            name='madsnbvihq',
-            ag_test_case=self.ag_test_case,
-            cmd='aksdjhfalsdf',
-
-            # These specific values don't matter, other than that
-            # they should indicate that return code, stdout, and
-            # stderr are checked. We'll be manually setting the
-            # correctness fields on AGTestCommandResults.
-            expected_return_code=ag_models.ExpectedReturnCode.zero,
-            expected_stdout_source=ag_models.ExpectedOutputSource.text,
-            expected_stdout_text='some text that is here because',
-            expected_stderr_source=ag_models.ExpectedOutputSource.text,
-            expected_stderr_text='some error stuff that wat',
-
-            points_for_correct_return_code=1,
-            points_for_correct_stdout=2,
-            points_for_correct_stderr=3,
-            deduction_for_wrong_return_code=-4,
-            deduction_for_wrong_stdout=-2,
-            deduction_for_wrong_stderr=-1,
-
-            normal_fdbk_config={
-                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
-                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
-                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
-                'show_points': True,
-                'show_actual_return_code': True,
-                'show_actual_stdout': True,
-                'show_actual_stderr': True,
-                'show_whether_timed_out': True
-            }
-        )  # type: ag_models.AGTestCommand
-        self.max_points_possible = 6
-        self.min_points_possible = -7
+        self.ag_test_command = obj_build.make_full_ag_test_command_with_max_normal_fdbk(
+            self.ag_test_case)
+        self.max_points_possible = (self.ag_test_command.points_for_correct_return_code +
+                                    self.ag_test_command.points_for_correct_stdout +
+                                    self.ag_test_command.points_for_correct_stderr)
+        self.min_points_possible = (self.ag_test_command.deduction_for_wrong_return_code +
+                                    self.ag_test_command.deduction_for_wrong_stdout +
+                                    self.ag_test_command.deduction_for_wrong_stderr)
 
     def make_correct_result(self) -> ag_models.AGTestCommandResult:
-        return ag_models.AGTestCommandResult.objects.validate_and_create(
+        return obj_build.make_correct_ag_test_command_result(
             ag_test_command=self.ag_test_command,
-            ag_test_case_result=self.ag_test_case_result,
-            return_code=0,
-            stdout=self.ag_test_command.expected_stdout_text,
-            stderr=self.ag_test_command.expected_stderr_text,
-
-            return_code_correct=True,
-            stdout_correct=True,
-            stderr_correct=True,
-            timed_out=False
-        )
+            ag_test_case_result=self.ag_test_case_result)
 
     def make_incorrect_result(self) -> ag_models.AGTestCommandResult:
-        return ag_models.AGTestCommandResult.objects.validate_and_create(
+        return obj_build.make_incorrect_ag_test_command_result(
             ag_test_command=self.ag_test_command,
             ag_test_case_result=self.ag_test_case_result,
-            return_code=42,
-            stdout=self.ag_test_command.expected_stdout_text + 'abdashlfkahsdvnalkjc',
-            stderr=self.ag_test_command.expected_stderr_text + 'amnbvalisuhlaksdhf',
-
-            return_code_correct=False,
-            stdout_correct=False,
-            stderr_correct=False,
-            timed_out=True
-        )
+            timed_out=True)
 
     def test_feedback_calculator_named_ctors(self):
         # check against the actual objects (their pks)
         result = self.make_correct_result()
         self.assertEqual(self.ag_test_command.normal_fdbk_config,
-                         result.get_normal_feedback().fdbk_conf)
+                         result.get_fdbk(ag_models.FeedbackCategory.normal).fdbk_conf)
         self.assertEqual(self.ag_test_command.ultimate_submission_fdbk_config,
-                         result.get_ultimate_submission_feedback().fdbk_conf)
+                         result.get_fdbk(ag_models.FeedbackCategory.ultimate_submission).fdbk_conf)
         self.assertEqual(self.ag_test_command.past_limit_submission_fdbk_config,
-                         result.get_past_submission_limit_feedback().fdbk_conf)
+                         result.get_fdbk(
+                             ag_models.FeedbackCategory.past_limit_submission).fdbk_conf)
         self.assertEqual(self.ag_test_command.staff_viewer_fdbk_config,
-                         result.get_staff_viewer_feedback().fdbk_conf)
+                         result.get_fdbk(ag_models.FeedbackCategory.staff_viewer).fdbk_conf)
+
+        max_fdbk = result.get_fdbk(ag_models.FeedbackCategory.max).fdbk_conf
+        self.assertEqual(ag_models.ValueFeedbackLevel.get_max(), max_fdbk.return_code_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.get_max(), max_fdbk.stdout_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.get_max(), max_fdbk.stderr_fdbk_level)
+        self.assertTrue(max_fdbk.show_points)
+        self.assertTrue(max_fdbk.show_actual_return_code)
+        self.assertTrue(max_fdbk.show_actual_stdout)
+        self.assertTrue(max_fdbk.show_actual_stderr)
 
     def test_points_everything_correct_max_fdbk(self):
         cmd_result = self.make_correct_result()
-        fdbk = cmd_result.get_max_feedback()
+        fdbk = cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
 
         self.assertEqual(self.ag_test_command.points_for_correct_return_code,
                          fdbk.return_code_points)
@@ -122,7 +86,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
 
     def test_points_everything_incorrect_max_fdbk(self):
         cmd_result = self.make_incorrect_result()
-        fdbk = cmd_result.get_max_feedback()
+        fdbk = cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
 
         self.assertEqual(self.ag_test_command.deduction_for_wrong_return_code,
                          fdbk.return_code_points)
@@ -145,7 +109,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             expected_return_code=ag_models.ExpectedReturnCode.none)
 
         correct_cmd_result = self.make_correct_result()
-        fdbk = correct_cmd_result.get_max_feedback()
+        fdbk = correct_cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertEqual(ag_models.ExpectedReturnCode.none, fdbk.expected_return_code)
         self.assertIsNone(fdbk.return_code_correct)
         self.assertEqual(0, fdbk.return_code_points)
@@ -160,7 +124,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_cmd_result.delete()
 
         incorrect_cmd_result = self.make_incorrect_result()
-        fdbk = incorrect_cmd_result.get_max_feedback()
+        fdbk = incorrect_cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.return_code_correct)
         self.assertEqual(0, fdbk.return_code_points)
         self.assertEqual(0, fdbk.return_code_points_possible)
@@ -175,7 +139,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             expected_stdout_source=ag_models.ExpectedOutputSource.none)
 
         correct_cmd_result = self.make_correct_result()
-        fdbk = correct_cmd_result.get_max_feedback()
+        fdbk = correct_cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_diff)
         self.assertEqual(correct_cmd_result.stdout, fdbk.stdout)
@@ -191,7 +155,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_cmd_result.delete()
 
         incorrect_cmd_result = self.make_incorrect_result()
-        fdbk = incorrect_cmd_result.get_max_feedback()
+        fdbk = incorrect_cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.stdout_correct)
         self.assertEqual(0, fdbk.stdout_points)
         self.assertEqual(0, fdbk.stdout_points_possible)
@@ -206,7 +170,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             expected_stderr_source=ag_models.ExpectedOutputSource.none)
 
         correct_cmd_result = self.make_correct_result()
-        fdbk = correct_cmd_result.get_max_feedback()
+        fdbk = correct_cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
         self.assertEqual(correct_cmd_result.stderr, fdbk.stderr)
@@ -222,7 +186,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_cmd_result.delete()
 
         incorrect_cmd_result = self.make_incorrect_result()
-        fdbk = incorrect_cmd_result.get_max_feedback()
+        fdbk = incorrect_cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.stderr_correct)
         self.assertEqual(0, fdbk.stderr_points)
         self.assertEqual(0, fdbk.stderr_points_possible)
@@ -237,7 +201,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             return_code_fdbk_level=ag_models.ValueFeedbackLevel.no_feedback)
 
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.return_code_correct)
         self.assertEqual(0, fdbk.return_code_points)
         self.assertEqual(0, fdbk.return_code_points_possible)
@@ -245,7 +209,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.return_code_correct)
         self.assertEqual(0, fdbk.return_code_points)
         self.assertEqual(0, fdbk.return_code_points_possible)
@@ -255,7 +219,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect)
 
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.return_code_correct)
         self.assertEqual(self.ag_test_command.points_for_correct_return_code,
                          fdbk.return_code_points)
@@ -265,7 +229,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertFalse(fdbk.return_code_correct)
         self.assertEqual(self.ag_test_command.deduction_for_wrong_return_code,
                          fdbk.return_code_points)
@@ -277,7 +241,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             return_code_fdbk_level=ag_models.ValueFeedbackLevel.expected_and_actual)
 
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.return_code_correct)
         self.assertEqual(self.ag_test_command.expected_return_code, fdbk.expected_return_code)
         self.assertEqual(correct_result.return_code, fdbk.actual_return_code)
@@ -289,7 +253,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertFalse(fdbk.return_code_correct)
         self.assertEqual(self.ag_test_command.expected_return_code, fdbk.expected_return_code)
         self.assertEqual(incorrect_result.return_code, fdbk.actual_return_code)
@@ -304,7 +268,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             return_code_fdbk_level=ag_models.ValueFeedbackLevel.no_feedback,
             show_actual_return_code=True)
         result = self.make_correct_result()
-        fdbk = result.get_normal_feedback()
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
         self.assertEqual(result.return_code, fdbk.actual_return_code)
         self.assertIsNone(fdbk.return_code_correct)
@@ -317,7 +281,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
             show_actual_return_code=False)
         result = self.make_correct_result()
-        fdbk = result.get_normal_feedback()
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
         self.assertIsNone(fdbk.actual_return_code)
         self.assertIsNone(fdbk.expected_return_code)
@@ -333,7 +297,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             return_code_fdbk_level=ag_models.ValueFeedbackLevel.expected_and_actual,
             show_actual_return_code=False)
         result = self.make_correct_result()
-        fdbk = result.get_normal_feedback()
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
         self.assertIsNotNone(fdbk.actual_return_code)
         self.assertIsNotNone(fdbk.expected_return_code)
@@ -343,30 +307,30 @@ class AGTestCommandResultTestCase(UnitTestBase):
 
     def test_show_timed_out(self):
         result = self.make_correct_result()
-        self.assertFalse(result.get_normal_feedback().timed_out)
+        self.assertFalse(result.get_fdbk(ag_models.FeedbackCategory.normal).timed_out)
 
         result.delete()
 
         result = self.make_incorrect_result()
-        self.assertTrue(result.get_normal_feedback().timed_out)
+        self.assertTrue(result.get_fdbk(ag_models.FeedbackCategory.normal).timed_out)
 
     def test_hide_timed_out(self):
         self.ag_test_command.normal_fdbk_config.validate_and_update(
             show_whether_timed_out=False)
 
         result = self.make_correct_result()
-        self.assertIsNone(result.get_normal_feedback().timed_out)
+        self.assertIsNone(result.get_fdbk(ag_models.FeedbackCategory.normal).timed_out)
 
         result.delete()
 
         result = self.make_incorrect_result()
-        self.assertIsNone(result.get_normal_feedback().timed_out)
+        self.assertIsNone(result.get_fdbk(ag_models.FeedbackCategory.normal).timed_out)
 
     def test_stdout_correctness_hidden(self):
         self.ag_test_command.normal_fdbk_config.validate_and_update(
             stdout_fdbk_level=ag_models.ValueFeedbackLevel.no_feedback)
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_diff)
         self.assertEqual(0, fdbk.stdout_points)
@@ -375,7 +339,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_diff)
         self.assertEqual(0, fdbk.stdout_points)
@@ -386,7 +350,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             stdout_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect)
 
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_diff)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
@@ -397,7 +361,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertFalse(fdbk.stdout_correct)
         self.assertEqual(self.ag_test_command.deduction_for_wrong_stdout,
                          fdbk.stdout_points)
@@ -409,7 +373,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             stdout_fdbk_level=ag_models.ValueFeedbackLevel.expected_and_actual)
 
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.stdout_correct)
         diff = core_ut.get_diff(self.ag_test_command.expected_stdout_text, correct_result.stdout)
         self.assertEqual(diff, fdbk.stdout_diff)
@@ -421,7 +385,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertFalse(fdbk.stdout_correct)
         diff = core_ut.get_diff(self.ag_test_command.expected_stdout_text, incorrect_result.stdout)
         self.assertEqual(diff, fdbk.stdout_diff)
@@ -442,19 +406,19 @@ class AGTestCommandResultTestCase(UnitTestBase):
         result.stdout = expected_stdout
         result.save()
         diff = core_ut.get_diff(expected_stdout, result.stdout)
-        self.assertEqual(diff, result.get_normal_feedback().stdout_diff)
+        self.assertEqual(diff, result.get_fdbk(ag_models.FeedbackCategory.normal).stdout_diff)
 
         result.stdout = 'the wrong stdout'
         result.save()
         diff = core_ut.get_diff(expected_stdout, result.stdout)
-        self.assertEqual(diff, result.get_normal_feedback().stdout_diff)
+        self.assertEqual(diff, result.get_fdbk(ag_models.FeedbackCategory.normal).stdout_diff)
 
     def test_stdout_show_actual(self):
         self.ag_test_command.normal_fdbk_config.validate_and_update(
             stdout_fdbk_level=ag_models.ValueFeedbackLevel.no_feedback,
             show_actual_stdout=True)
         result = self.make_correct_result()
-        fdbk = result.get_normal_feedback()
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
         self.assertEqual(result.stdout, fdbk.stdout)
         self.assertIsNone(fdbk.stdout_correct)
@@ -466,7 +430,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             stdout_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
             show_actual_stdout=False)
         result = self.make_correct_result()
-        fdbk = result.get_normal_feedback()
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
         self.assertIsNone(fdbk.stdout)
         self.assertTrue(fdbk.stdout_correct)
@@ -481,7 +445,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             stdout_fdbk_level=ag_models.ValueFeedbackLevel.expected_and_actual,
             show_actual_stdout=False)
         result = self.make_correct_result()
-        fdbk = result.get_normal_feedback()
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
         self.assertIsNotNone(fdbk.stdout_diff)
         self.assertIsNotNone(fdbk.stdout)
@@ -492,7 +456,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.ag_test_command.normal_fdbk_config.validate_and_update(
             stderr_fdbk_level=ag_models.ValueFeedbackLevel.no_feedback)
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
         self.assertEqual(0, fdbk.stderr_points)
@@ -501,7 +465,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
         self.assertEqual(0, fdbk.stderr_points)
@@ -512,7 +476,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             stderr_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect)
 
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
@@ -523,7 +487,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertFalse(fdbk.stderr_correct)
         self.assertEqual(self.ag_test_command.deduction_for_wrong_stderr,
                          fdbk.stderr_points)
@@ -535,7 +499,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             stderr_fdbk_level=ag_models.ValueFeedbackLevel.expected_and_actual)
 
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.stderr_correct)
         diff = core_ut.get_diff(self.ag_test_command.expected_stderr_text, correct_result.stderr)
         self.assertEqual(diff, fdbk.stderr_diff)
@@ -547,7 +511,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertFalse(fdbk.stderr_correct)
         diff = core_ut.get_diff(self.ag_test_command.expected_stderr_text, incorrect_result.stderr)
         self.assertEqual(diff, fdbk.stderr_diff)
@@ -568,19 +532,19 @@ class AGTestCommandResultTestCase(UnitTestBase):
         result.stderr = expected_stderr
         result.save()
         diff = core_ut.get_diff(expected_stderr, result.stderr)
-        self.assertEqual(diff, result.get_normal_feedback().stderr_diff)
+        self.assertEqual(diff, result.get_fdbk(ag_models.FeedbackCategory.normal).stderr_diff)
 
         result.stderr = 'the wrong stderr'
         result.save()
         diff = core_ut.get_diff(expected_stderr, result.stderr)
-        self.assertEqual(diff, result.get_normal_feedback().stderr_diff)
+        self.assertEqual(diff, result.get_fdbk(ag_models.FeedbackCategory.normal).stderr_diff)
 
     def test_stderr_show_actual(self):
         self.ag_test_command.normal_fdbk_config.validate_and_update(
             stderr_fdbk_level=ag_models.ValueFeedbackLevel.no_feedback,
             show_actual_stderr=True)
         result = self.make_correct_result()
-        fdbk = result.get_normal_feedback()
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
         self.assertEqual(result.stderr, fdbk.stderr)
         self.assertIsNone(fdbk.stderr_correct)
@@ -592,7 +556,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             stderr_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
             show_actual_stderr=False)
         result = self.make_correct_result()
-        fdbk = result.get_normal_feedback()
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
         self.assertIsNone(fdbk.stderr)
         self.assertTrue(fdbk.stderr_correct)
@@ -607,7 +571,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             stderr_fdbk_level=ag_models.ValueFeedbackLevel.expected_and_actual,
             show_actual_stderr=False)
         result = self.make_correct_result()
-        fdbk = result.get_normal_feedback()
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
         self.assertIsNotNone(fdbk.stderr_diff)
         self.assertIsNotNone(fdbk.stderr)
@@ -618,14 +582,14 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.ag_test_command.normal_fdbk_config.validate_and_update(show_points=False)
 
         correct_result = self.make_correct_result()
-        fdbk = correct_result.get_normal_feedback()
+        fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(0, fdbk.total_points)
         self.assertEqual(0, fdbk.total_points_possible)
 
         correct_result.delete()
 
         incorrect_result = self.make_incorrect_result()
-        fdbk = incorrect_result.get_normal_feedback()
+        fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(0, fdbk.total_points)
         self.assertEqual(0, fdbk.total_points_possible)
 
@@ -697,24 +661,24 @@ class AGTestCommandResultTestCase(UnitTestBase):
 
         mock_path = 'autograder.core.utils.get_diff'
         with mock.patch(mock_path) as mock_differ_cls:
-            result.get_max_feedback().stdout_diff
+            result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff
             mock_differ_cls.assert_called_with(expected_stdout, actual_stdout,
                                                **diff_options)
 
         with mock.patch(mock_path) as mock_differ_cls:
-            result.get_max_feedback().stderr_diff
+            result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff
             mock_differ_cls.assert_called_with(expected_stderr, actual_stderr,
                                                **diff_options)
 
         if expect_stdout_correct:
-            self.assertEqual([], result.get_max_feedback().stdout_diff)
+            self.assertEqual([], result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff)
         else:
-            self.assertNotEqual([], result.get_max_feedback().stdout_diff)
+            self.assertNotEqual([], result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff)
 
         if expect_stderr_correct:
-            self.assertEqual([], result.get_max_feedback().stderr_diff)
+            self.assertEqual([], result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff)
         else:
-            self.assertNotEqual([], result.get_max_feedback().stderr_diff)
+            self.assertNotEqual([], result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff)
 
     def _get_diff_options(self, options_value):
         return {
