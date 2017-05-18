@@ -403,7 +403,7 @@ def random_fdbk() -> ag_models.FeedbackConfig:
     return fdbk
 
 
-def make_full_ag_test_command_with_max_normal_fdbk(
+def make_full_ag_test_command(
         ag_test_case: ag_models.AGTestCase, set_arbitrary_points=True,
         **ag_test_cmd_kwargs) -> ag_models.AGTestCommand:
     base_kwargs = {
@@ -420,17 +420,6 @@ def make_full_ag_test_command_with_max_normal_fdbk(
         'expected_stdout_text': 'some text that is here because',
         'expected_stderr_source': ag_models.ExpectedOutputSource.text,
         'expected_stderr_text': 'some error stuff that wat',
-
-        'normal_fdbk_config': {
-            'return_code_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
-            'stdout_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
-            'stderr_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
-            'show_points': True,
-            'show_actual_return_code': True,
-            'show_actual_stdout': True,
-            'show_actual_stderr': True,
-            'show_whether_timed_out': True
-        }
     }
 
     if set_arbitrary_points:

@@ -18,9 +18,9 @@ class AGTestCaseResultTestCase(UnitTestBase):
             ag_test_case=self.ag_test_case, ag_test_suite_result=suite_result
         )  # type: ag_models.AGTestCaseResult
 
-        self.ag_test_cmd1 = obj_build.make_full_ag_test_command_with_max_normal_fdbk(
+        self.ag_test_cmd1 = obj_build.make_full_ag_test_command(
             self.ag_test_case, set_arbitrary_points=False)
-        self.ag_test_cmd2 = obj_build.make_full_ag_test_command_with_max_normal_fdbk(
+        self.ag_test_cmd2 = obj_build.make_full_ag_test_command(
             self.ag_test_case, set_arbitrary_points=False)
 
     def test_feedback_calculator_named_ctors(self):
@@ -48,40 +48,80 @@ class AGTestCaseResultTestCase(UnitTestBase):
         self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=5)
         self.ag_test_cmd2.validate_and_update(points_for_correct_stdout=3)
 
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1)
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2)
+        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1, self.ag_test_case_result)
+        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2, self.ag_test_case_result)
 
-        self.assertEqual(8, self.ag_test_case_result.get_fdbk().total_points)
-        self.assertEqual(8, self.ag_test_case_result.get_fdbk().total_points_possible)
+        self.assertEqual(
+            8, self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            8,
+            self.ag_test_case_result.get_fdbk(
+                ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_total_points_some_positive_some_negative_positive_total(self):
         self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=5)
         self.ag_test_cmd2.validate_and_update(deduction_for_wrong_stdout=-2)
 
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1)
-        obj_build.make_incorrect_ag_test_command_result(self.ag_test_cmd2)
+        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1, self.ag_test_case_result)
+        obj_build.make_incorrect_ag_test_command_result(
+            self.ag_test_cmd2, self.ag_test_case_result)
 
-        self.assertEqual(3, self.ag_test_case_result.get_fdbk().total_points)
-        self.assertEqual(5, self.ag_test_case_result.get_fdbk().total_points_possible)
+        self.assertEqual(
+            3,
+            self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            5,
+            self.ag_test_case_result.get_fdbk(
+                ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_total_points_not_below_zero(self):
         self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=5)
         self.ag_test_cmd2.validate_and_update(deduction_for_wrong_stdout=-10)
 
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1)
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2)
+        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1, self.ag_test_case_result)
+        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2, self.ag_test_case_result)
 
-        self.assertEqual(5, self.ag_test_case_result.get_fdbk().total_points)
-        self.assertEqual(0, self.ag_test_case_result.get_fdbk().total_points_possible)
+        self.assertEqual(
+            5,
+            self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            5,
+            self.ag_test_case_result.get_fdbk(
+                ag_models.FeedbackCategory.max).total_points_possible)
+
+    def test_total_points_minimum_ag_test_command_fdbk(self):
+        self.ag_test_cmd1.validate_and_update(
+            points_for_correct_return_code=1,
+            points_for_correct_stdout=2,
+            points_for_correct_stderr=3)
+        self.ag_test_cmd2.validate_and_update(
+            deduction_for_wrong_return_code=-4,
+            deduction_for_wrong_stdout=-2,
+            deduction_for_wrong_stderr=-1)
+
+        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1, self.ag_test_case_result)
+        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2, self.ag_test_case_result)
+
+        self.assertEqual(
+            0, self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.normal).total_points)
+        self.assertEqual(
+            0,
+            self.ag_test_case_result.get_fdbk(
+                ag_models.FeedbackCategory.normal).total_points_possible)
 
     def test_show_individual_commands(self):
-        result1 = obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1)
-        result2 = obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2)
+        result1 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd1, self.ag_test_case_result)
+        result2 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd2, self.ag_test_case_result)
 
         self.assertSequenceEqual(
             [result1, result2],
-            self.ag_test_case_result.get_fdbk().ag_test_command_results)
+            self.ag_test_case_result.get_fdbk(
+                ag_models.FeedbackCategory.max).ag_test_command_results)
 
         self.ag_test_case.normal_fdbk_config.validate_and_update(show_individual_commands=False)
         self.assertSequenceEqual(
-            [], self.ag_test_case_result.get_fdbk().ag_test_command_results)
+            [],
+            self.ag_test_case_result.get_fdbk(
+                ag_models.FeedbackCategory.normal).ag_test_command_results)

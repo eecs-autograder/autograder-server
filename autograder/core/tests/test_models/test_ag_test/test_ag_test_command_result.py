@@ -21,9 +21,20 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.ag_test_case_result = ag_models.AGTestCaseResult.objects.validate_and_create(
             ag_test_case=self.ag_test_case, ag_test_suite_result=suite_result)
 
-        # Normal feedback is set to max
-        self.ag_test_command = obj_build.make_full_ag_test_command_with_max_normal_fdbk(
-            self.ag_test_case)
+        # Set normal feedback to max
+        self.ag_test_command = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            normal_fdbk_config={
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
+                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.get_max(),
+                'show_points': True,
+                'show_actual_return_code': True,
+                'show_actual_stdout': True,
+                'show_actual_stderr': True,
+                'show_whether_timed_out': True
+            }
+        )
         self.max_points_possible = (self.ag_test_command.points_for_correct_return_code +
                                     self.ag_test_command.points_for_correct_stdout +
                                     self.ag_test_command.points_for_correct_stderr)

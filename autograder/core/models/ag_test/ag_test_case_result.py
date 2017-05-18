@@ -1,9 +1,11 @@
+from typing import Sequence
+
 from django.db import models
 
 from ..ag_model_base import AutograderModel, ToDictMixin
 from .ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from .ag_test_suite_result import AGTestSuiteResult
-from.feedback_category import FeedbackCategory
+from .feedback_category import FeedbackCategory
 
 
 class AGTestCaseResult(AutograderModel):
@@ -62,6 +64,21 @@ class AGTestCaseResult(AutograderModel):
 
         @property
         def total_points_possible(self):
-            return
+            return sum((cmd_res.get_fdbk(self._fdbk_category).total_points_possible for cmd_res in
+                        self._result.ag_test_command_results.all()))
 
-        pass
+        @property
+        def ag_test_command_results(self) -> Sequence['AGTestCommandResult']:
+            if not self._fdbk.show_individual_commands:
+                return []
+
+            return self._result.ag_test_command_results.all()
+
+        SERIALIZABLE_FIELDS = (
+            'pk',
+            'ag_test_case_name',
+            'ag_test_command_pk',
+            'fdbk_settings',
+            'total_points',
+            'total_points_possible',
+        )
