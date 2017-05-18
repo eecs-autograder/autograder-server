@@ -9,7 +9,6 @@ import autograder.core.fields as ag_fields
 from autograder.core import constants
 import autograder.core.utils as core_ut
 from .ag_test_case import AGTestCase
-from .ag_test_suite import AGTestSuite
 from ..ag_model_base import AutograderModel
 from ..project import UploadedFile
 
@@ -134,18 +133,11 @@ class AGTestCommand(AutograderModel):
                      This field is REQUIRED.''')
 
     ag_test_case = models.ForeignKey(
-        AGTestCase, null=True, blank=True, default=None,
+        AGTestCase,
         related_name='ag_test_commands',
         help_text='''When non-null, indicates that this command belongs to the specified
                      autograder test.
                      Either this field or ag_test_suite must be non-null.''')
-
-    ag_test_suite_is_setup_for = models.OneToOneField(
-        AGTestSuite, null=True, blank=True, default=None,
-        related_name='setup_command',
-        help_text='''When non-null, indicates that this command should be used as the setup
-                     command for the specified suite.
-                     Either this field or ag_test_case must be non-null.''')
 
     cmd = ag_fields.ShortStringField(
         help_text='''A string containing the command to be run.
@@ -309,15 +301,6 @@ class AGTestCommand(AutograderModel):
     def clean(self):
         error_dict = {}
 
-        belongs_to_ag_test_and_suite = (
-            self.ag_test_case is not None and self.ag_test_suite_is_setup_for is not None)
-        doesnt_belong_to_ag_test_or_suite = (
-            self.ag_test_case is None and self.ag_test_suite_is_setup_for is None)
-
-        if belongs_to_ag_test_and_suite or doesnt_belong_to_ag_test_or_suite:
-            error_dict['__all__'] = ['AGTestCommands must either belong to an AGTestCase or be '
-                                     'a setup command for an AGTestSuite']
-
         if self.stdin_source == StdinSource.project_file and self.stdin_project_file is None:
             error_dict['stdin_project_file'] = (
                 'This field may not be None when stdin source is project file.')
@@ -337,10 +320,7 @@ class AGTestCommand(AutograderModel):
 
     SERIALIZABLE_FIELDS = (
         'name',
-
         'ag_test_case',
-        'ag_test_suite_is_setup_for',
-
         'cmd',
 
         'stdin_source',
@@ -383,7 +363,6 @@ class AGTestCommand(AutograderModel):
 
     SERIALIZE_RELATED = (
         'ag_test_case',
-        'ag_test_suite_is_setup_for',
     )
 
     EDITABLE_FIELDS = (

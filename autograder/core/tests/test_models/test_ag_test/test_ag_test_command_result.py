@@ -698,3 +698,6 @@ class AGTestCommandResultTestCase(UnitTestBase):
             'ignore_whitespace_changes': options_value,
             'ignore_blank_lines': options_value
         }
+
+    def test_fdbk_to_dict(self):
+        self.fail()

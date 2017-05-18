@@ -16,7 +16,6 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
         help_text='''Whether to show information about individual tests in a suite or just a
                      points summary (if available).''')
 
-    # Is this redundant with the visibility setting in AGTestCommand?
     show_setup_command = models.BooleanField(
         default=True, help_text="Whether to show information about a suite's setup command.")
 
@@ -124,7 +123,10 @@ class AGTestSuite(AutograderModel):
         'normal_fdbk_config',
         'ultimate_submission_fdbk_config',
         'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config'
+        'staff_viewer_fdbk_config',
+
+        'setup_cmd',
+        'teardown_cmd'
     )
 
     EDITABLE_FIELDS = (
@@ -139,3 +141,7 @@ class AGTestSuite(AutograderModel):
         'past_limit_submission_fdbk_config',
         'staff_viewer_fdbk_config'
     )
+
+
+class SetUpTearDownCmd(AutograderModel):
+    pass

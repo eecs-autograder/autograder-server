@@ -23,7 +23,7 @@ class AGTestCaseResultTestCase(UnitTestBase):
         self.ag_test_cmd2 = obj_build.make_full_ag_test_command(
             self.ag_test_case, set_arbitrary_points=False)
 
-    def test_feedback_calculator_named_ctors(self):
+    def test_feedback_calculator_ctor(self):
         self.assertEqual(
             self.ag_test_case.normal_fdbk_config,
             self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.normal).fdbk_conf)
@@ -125,3 +125,6 @@ class AGTestCaseResultTestCase(UnitTestBase):
             [],
             self.ag_test_case_result.get_fdbk(
                 ag_models.FeedbackCategory.normal).ag_test_command_results)
+
+    def test_fdbk_to_dict(self):
+        self.fail()

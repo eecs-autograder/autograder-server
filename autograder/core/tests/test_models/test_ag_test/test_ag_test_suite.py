@@ -106,3 +106,6 @@ class AGTestSuiteTestCase(generic_data.Project, UnitTestBase):
             name='suite2', project=self.project)
 
         self.assertCountEqual([suite1, suite2], self.project.ag_test_suites.all())
+
+    def test_to_dict(self):
+        self.fail()

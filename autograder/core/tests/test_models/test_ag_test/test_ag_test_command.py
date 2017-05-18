@@ -28,22 +28,10 @@ class AGTestCommandMiscTestCase(_SetUp):
         self.assertEqual(self.ag_test, ag_cmd.ag_test_case)
         self.assertEqual(self.cmd, ag_cmd.cmd)
 
-    def test_valid_create_as_setup_for_suite(self):
-        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
-            name=self.name, ag_test_suite_is_setup_for=self.ag_suite, cmd=self.cmd)
-
-        self.assertEqual(self.ag_suite, ag_cmd.ag_test_suite_is_setup_for)
-
-    def test_invalid_create_not_part_of_ag_test_or_setup_for_suite(self):
+    def test_invalid_create_not_part_of_ag_test_case(self):
         with self.assertRaises(exceptions.ValidationError):
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, cmd=self.cmd)
-
-    def test_invalid_create_part_of_ag_test_and_setup_for_suite(self):
-        with self.assertRaises(exceptions.ValidationError):
-            ag_models.AGTestCommand.objects.validate_and_create(
-                name=self.name, cmd=self.cmd, ag_test_case=self.ag_test,
-                ag_test_suite_is_setup_for=self.ag_suite)
 
     def test_default_vals(self):
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
@@ -125,6 +113,9 @@ class AGTestCommandMiscTestCase(_SetUp):
         self.assertEqual(deduction_for_wrong_stderr, ag_cmd.deduction_for_wrong_stderr)
         self.assertEqual(expected_return_code, ag_cmd.expected_return_code)
 
+    def test_to_dict(self):
+        self.fail()
+
 
 class ReverseLookupTestCase(_SetUp):
     def test_ag_test_case_ag_test_commands_reverse_lookup_and_ordering(self):
@@ -140,11 +131,6 @@ class ReverseLookupTestCase(_SetUp):
 
         self.ag_test.set_agtestcommand_order([ag_cmd1.pk, ag_cmd2.pk])
         self.assertSequenceEqual([ag_cmd1.pk, ag_cmd2.pk], self.ag_test.get_agtestcommand_order())
-
-    def test_suite_setup_command_reverse_lookup(self):
-        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
-            name=self.name, ag_test_suite_is_setup_for=self.ag_suite, cmd=self.cmd)
-        self.assertEqual(ag_cmd, self.ag_suite.setup_command)
 
 
 class IOSettingsTestCase(_SetUp):
