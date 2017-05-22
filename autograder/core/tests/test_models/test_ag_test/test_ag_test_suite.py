@@ -2,10 +2,13 @@ from django.core import exceptions
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.utils.testing import UnitTestBase, generic_data
+from autograder.utils.testing import UnitTestBase
 
 
-class AGTestSuiteTestCase(generic_data.Project, UnitTestBase):
+class AGTestSuiteTestCase(UnitTestBase):
+    def setUp(self):
+        self.project = obj_build.build_project()
+
     def test_valid_create_with_defaults(self):
         suite_name = 'suity'
         suite = ag_models.AGTestSuite.objects.validate_and_create(
@@ -17,6 +20,9 @@ class AGTestSuiteTestCase(generic_data.Project, UnitTestBase):
         self.assertCountEqual([], suite.project_files_needed.all())
         self.assertCountEqual([], suite.student_files_needed.all())
 
+        self.assertEqual([], suite.setup_suite_cmds)
+        self.assertEqual([], suite.teardown_suite_cmds)
+
         self.assertFalse(suite.allow_network_access)
         self.assertFalse(suite.deferred)
 
@@ -26,16 +32,16 @@ class AGTestSuiteTestCase(generic_data.Project, UnitTestBase):
         self.assertIsNotNone(suite.staff_viewer_fdbk_config)
 
         self.assertTrue(suite.normal_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.normal_fdbk_config.show_setup_command)
+        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_commands)
 
         self.assertTrue(suite.ultimate_submission_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_command)
+        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_commands)
 
         self.assertTrue(suite.past_limit_submission_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_command)
+        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_commands)
 
         self.assertTrue(suite.staff_viewer_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_command)
+        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_commands)
 
     def test_valid_create_non_defaults(self):
         student_file = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
@@ -46,6 +52,8 @@ class AGTestSuiteTestCase(generic_data.Project, UnitTestBase):
         project = self.project
         project_files_needed = [obj_build.make_uploaded_file(self.project)]
         student_files_needed = [student_file]
+        setup_cmds = ["echo 'hello world'", "mkdir weeee"]
+        teardown_cmds = ["echo 'bye'", "rm -r weeee"]
         allow_network_access = True
         deferred = True
 
@@ -54,6 +62,8 @@ class AGTestSuiteTestCase(generic_data.Project, UnitTestBase):
             project=project,
             project_files_needed=project_files_needed,
             student_files_needed=student_files_needed,
+            setup_suite_cmds=setup_cmds,
+            teardown_suite_cmds=teardown_cmds,
             allow_network_access=allow_network_access,
             deferred=deferred,
         )
@@ -79,11 +89,20 @@ class AGTestSuiteTestCase(generic_data.Project, UnitTestBase):
 
             self.assertIn('name', cm.exception.message_dict)
 
-    def test_error_project_files_dont_belong_to_same_project(self):
-        self.fail()
+    def test_error_project_files_and_patterns_dont_belong_to_same_project(self):
+        other_project = obj_build.build_project()
+        other_proj_file = obj_build.make_uploaded_file(other_project)
+        other_proj_pattern = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            pattern='alsdnvaoweijf', project=other_project)
 
-    def test_error_expected_student_file_patterns_dont_belong_to_same_project(self):
-        self.fail()
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestSuite.objects.validate_and_create(
+                name='aldksjfnaweij', project=self.project,
+                project_files_needed=[other_proj_file],
+                student_files_needed=[other_proj_pattern])
+
+        self.assertIn('project_files_needed', cm.exception.message_dict)
+        self.assertIn('student_files_needed', cm.exception.message_dict)
 
     def test_suite_ordering(self):
         suite1 = ag_models.AGTestSuite.objects.validate_and_create(

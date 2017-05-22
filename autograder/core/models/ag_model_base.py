@@ -44,6 +44,10 @@ class _AutograderModelManagerMixin:
             for field_name, value in many_to_many_to_set.items():
                 getattr(instance, field_name).set(value, clear=True)
 
+            # This needs to be here in case the model's clean()
+            # method does any validation on many-to-many relationships.
+            instance.clean()
+
             return instance
 
 

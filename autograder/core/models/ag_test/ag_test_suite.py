@@ -1,4 +1,5 @@
 from django.db import models
+from django.core import exceptions
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
@@ -16,17 +17,18 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
         help_text='''Whether to show information about individual tests in a suite or just a
                      points summary (if available).''')
 
-    show_setup_command = models.BooleanField(
-        default=True, help_text="Whether to show information about a suite's setup command.")
+    show_setup_and_teardown_commands = models.BooleanField(
+        default=True,
+        help_text="Whether to show results from a suite's setup and teardown commands.")
 
     SERIALIZABLE_FIELDS = (
         'show_individual_tests',
-        'show_setup_command',
+        'show_setup_and_teardown_commands',
     )
 
     EDITABLE_FIELDS = (
         'show_individual_tests',
-        'show_setup_command',
+        'show_setup_and_teardown_commands',
     )
 
 
@@ -71,6 +73,20 @@ class AGTestSuite(AutograderModel):
         help_text='''Student-submitted files matching these patterns will be copied into the
                      sandbox before the suite's tests are run.''')
 
+    setup_suite_cmds = ag_fields.StringArrayField(
+        blank=True, default=list,
+        help_text="""A list of commands to be run before this suite's tests are run.
+                     These commands are only run once at the beginning of the suite.
+                     These commands will be run after the student and project files
+                     have been added to the sandbox.""")
+
+    teardown_suite_cmds = ag_fields.StringArrayField(
+        blank=True, default=list,
+        help_text="""A list of commands to be run after this suite's tests are run.
+                     These commands are only run once at the end of the suite.""")
+
+    # TODO: option to reset the filesystem and/or entire sandbox after each test
+
     docker_image_to_use = ag_fields.ShortStringField(
         choices=zip(constants.SUPPORTED_DOCKER_IMAGES, constants.SUPPORTED_DOCKER_IMAGES),
         default=constants.DEFAULT_DOCKER_IMAGE,
@@ -103,6 +119,26 @@ class AGTestSuite(AutograderModel):
         AGTestSuiteFeedbackConfig, default=make_default_suite_fdbk,
         related_name='+',
         help_text='Feedback settings for a staff member viewing a submission from another group.')
+
+    def clean(self):
+        if self.pk is None:
+            return
+
+        errors = {}
+
+        for proj_file in self.project_files_needed.all():
+            if proj_file.project != self.project:
+                errors['project_files_needed'] = (
+                    'File {} does not belong to this project.'.format(proj_file.name))
+
+        for pattern in self.student_files_needed.all():
+            if pattern.project != self.project:
+                errors['student_files_needed'] = (
+                    'Student file pattern {} does not belong to this project.'.format(
+                        pattern.pattern))
+
+        if errors:
+            raise exceptions.ValidationError(errors)
 
     SERIALIZABLE_FIELDS = (
         'name',
@@ -141,7 +177,3 @@ class AGTestSuite(AutograderModel):
         'past_limit_submission_fdbk_config',
         'staff_viewer_fdbk_config'
     )
-
-
-class SetUpTearDownCmd(AutograderModel):
-    pass

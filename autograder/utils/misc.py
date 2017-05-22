@@ -20,10 +20,10 @@ def find_if(iterable, unary_predicate):
 
 
 def lock_users(users_iterable):
-    '''
+    """
     Calls select_for_update() on a queryset that includes all the users
     in users_iterable.
-    '''
+    """
     # list() forces the queryset to be evaluated)
     queryset = auth.models.User.objects.select_for_update().filter(
         pk__in=(user.pk for user in users_iterable))

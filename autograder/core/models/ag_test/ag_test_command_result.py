@@ -67,10 +67,10 @@ class AGTestCommandResult(AutograderModel):
         feedback data to give for an AGTestCommandResult.
         """
 
-        def __init__(self, result: 'AGTestCommandResult',
+        def __init__(self, ag_test_command_result: 'AGTestCommandResult',
                      fdbk_category: FeedbackCategory):
-            self._result = result
-            self._cmd = self._result.ag_test_command
+            self._ag_test_command_result = ag_test_command_result
+            self._cmd = self._ag_test_command_result.ag_test_command
 
             if fdbk_category == FeedbackCategory.normal:
                 self._fdbk = self._cmd.normal_fdbk_config
@@ -101,7 +101,7 @@ class AGTestCommandResult(AutograderModel):
 
         @property
         def pk(self):
-            return self._result.pk
+            return self._ag_test_command_result.pk
 
         @property
         def ag_test_command_name(self):
@@ -117,7 +117,10 @@ class AGTestCommandResult(AutograderModel):
 
         @property
         def timed_out(self):
-            return self._result.timed_out if self._fdbk.show_whether_timed_out else None
+            if self._fdbk.show_whether_timed_out:
+                return self._ag_test_command_result.timed_out
+
+            return None
 
         @property
         def return_code_correct(self):
@@ -125,7 +128,7 @@ class AGTestCommandResult(AutograderModel):
                     self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.no_feedback):
                 return None
 
-            return self._result.return_code_correct
+            return self._ag_test_command_result.return_code_correct
 
         @property
         def expected_return_code(self):
@@ -138,7 +141,7 @@ class AGTestCommandResult(AutograderModel):
         def actual_return_code(self):
             if (self._fdbk.show_actual_return_code or
                     self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.expected_and_actual):
-                return self._result.return_code
+                return self._ag_test_command_result.return_code
 
             return None
 
@@ -147,8 +150,9 @@ class AGTestCommandResult(AutograderModel):
             if self.return_code_correct is None:
                 return 0
 
-            return (self._cmd.points_for_correct_return_code if self._result.return_code_correct
-                    else self._cmd.deduction_for_wrong_return_code)
+            if self._ag_test_command_result.return_code_correct:
+                return self._cmd.points_for_correct_return_code
+            return self._cmd.deduction_for_wrong_return_code
 
         @property
         def return_code_points_possible(self):
@@ -163,13 +167,13 @@ class AGTestCommandResult(AutograderModel):
                     self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.no_feedback):
                 return None
 
-            return self._result.stdout_correct
+            return self._ag_test_command_result.stdout_correct
 
         @property
         def stdout(self):
             if (self._fdbk.show_actual_stdout or
                     self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual):
-                return self._result.stdout
+                return self._ag_test_command_result.stdout
 
             return None
 
@@ -189,7 +193,7 @@ class AGTestCommandResult(AutograderModel):
                 raise ValueError(
                     'Invalid expected stdout source: {}'.format(self._cmd.expected_stdout_source))
 
-            return core_ut.get_diff(expected_stdout, self._result.stdout,
+            return core_ut.get_diff(expected_stdout, self._ag_test_command_result.stdout,
                                     ignore_blank_lines=self._cmd.ignore_blank_lines,
                                     ignore_case=self._cmd.ignore_case,
                                     ignore_whitespace=self._cmd.ignore_whitespace,
@@ -200,8 +204,10 @@ class AGTestCommandResult(AutograderModel):
             if self.stdout_correct is None:
                 return 0
 
-            return (self._cmd.points_for_correct_stdout if self._result.stdout_correct
-                    else self._cmd.deduction_for_wrong_stdout)
+            if self._ag_test_command_result.stdout_correct:
+                return self._cmd.points_for_correct_stdout
+
+            return self._cmd.deduction_for_wrong_stdout
 
         @property
         def stdout_points_possible(self):
@@ -216,13 +222,13 @@ class AGTestCommandResult(AutograderModel):
                     self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.no_feedback):
                 return None
 
-            return self._result.stderr_correct
+            return self._ag_test_command_result.stderr_correct
 
         @property
         def stderr(self):
             if (self._fdbk.show_actual_stderr or
                     self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual):
-                return self._result.stderr
+                return self._ag_test_command_result.stderr
 
             return None
 
@@ -241,7 +247,7 @@ class AGTestCommandResult(AutograderModel):
                 raise ValueError(
                     'Invalid expected stderr source: {}'.format(self._cmd.expected_stdout_source))
 
-            return core_ut.get_diff(expected_stderr, self._result.stderr,
+            return core_ut.get_diff(expected_stderr, self._ag_test_command_result.stderr,
                                     ignore_blank_lines=self._cmd.ignore_blank_lines,
                                     ignore_case=self._cmd.ignore_case,
                                     ignore_whitespace=self._cmd.ignore_whitespace,
@@ -252,8 +258,10 @@ class AGTestCommandResult(AutograderModel):
             if self.stderr_correct is None:
                 return 0
 
-            return (self._cmd.points_for_correct_stderr if self._result.stderr_correct
-                    else self._cmd.deduction_for_wrong_stderr)
+            if self._ag_test_command_result.stderr_correct:
+                return self._cmd.points_for_correct_stderr
+
+            return self._cmd.deduction_for_wrong_stderr
 
         @property
         def stderr_points_possible(self):

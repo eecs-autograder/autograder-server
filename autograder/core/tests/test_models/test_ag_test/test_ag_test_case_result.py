@@ -110,21 +110,41 @@ class AGTestCaseResultTestCase(UnitTestBase):
                 ag_models.FeedbackCategory.normal).total_points_possible)
 
     def test_show_individual_commands(self):
+        total_cmd_points = 6
+        self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=total_cmd_points)
+        self.ag_test_cmd1.normal_fdbk_config.validate_and_update(
+            return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
+            show_points=True)
+
+        self.assertTrue(self.ag_test_case.normal_fdbk_config.show_individual_commands)
         result1 = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd1, self.ag_test_case_result)
         result2 = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd2, self.ag_test_case_result)
 
-        self.assertSequenceEqual(
-            [result1, result2],
-            self.ag_test_case_result.get_fdbk(
-                ag_models.FeedbackCategory.max).ag_test_command_results)
+        fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
+
+        self.assertEqual([result1, result2], fdbk.ag_test_command_results)
+        self.assertEqual(total_cmd_points, fdbk.total_points)
+        self.assertEqual(total_cmd_points, fdbk.total_points_possible)
 
         self.ag_test_case.normal_fdbk_config.validate_and_update(show_individual_commands=False)
-        self.assertSequenceEqual(
-            [],
-            self.ag_test_case_result.get_fdbk(
-                ag_models.FeedbackCategory.normal).ag_test_command_results)
+        fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.normal)
+
+        self.assertEqual([], fdbk.ag_test_command_results)
+        self.assertEqual(total_cmd_points, fdbk.total_points)
+        self.assertEqual(total_cmd_points, fdbk.total_points_possible)
+
+    def test_individual_cmd_result_order(self):
+        result1 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd1, self.ag_test_case_result)
+        result2 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd2, self.ag_test_case_result)
+
+        self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd2.pk, self.ag_test_cmd1.pk])
+        fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual([result2, result1], fdbk.ag_test_command_results)
 
     def test_fdbk_to_dict(self):
+        # use mocking to make sure fdbk propagates
         self.fail()
