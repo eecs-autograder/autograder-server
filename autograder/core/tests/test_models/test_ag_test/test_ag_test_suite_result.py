@@ -58,15 +58,13 @@ class AGTestSuiteResultTestCase(UnitTestBase):
 
         max_config = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max).fdbk_conf
         self.assertTrue(max_config.show_individual_tests)
-        self.assertTrue(max_config.show_setup_and_teardown_commands)
+        self.assertTrue(max_config.show_setup_and_teardown_stdout)
+        self.assertTrue(max_config.show_setup_and_teardown_stderr)
 
     def test_points_max_fdbk(self):
-        self.assertEqual(
-            self.total_points,
-            self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
-        self.assertEqual(
-            self.total_points,
-            self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
+        fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual(self.total_points, fdbk.total_points)
+        self.assertEqual(self.total_points, fdbk.total_points_possible)
 
     def test_points_minimum_ag_test_command_fdbk(self):
         fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.normal)
@@ -101,8 +99,33 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         self.assertEqual([self.ag_test_case_result2, self.ag_test_case_result1],
                          fdbk.ag_test_case_results)
 
-    def test_show_setup_and_teardown_commands(self):
-        self.fail()
+    def test_show_setup_and_teardown_output(self):
+        setup_stdout = 'adfjka;dskjf'
+        setup_stderr = 'a,xcmvnaieo;sdf'
+        teardown_stdout = ',amcxnvawefj'
+        teardown_stderr = 'aldcvneailaksdjhf'
+
+        self.ag_test_suite_result.setup_stdout = setup_stdout
+        self.ag_test_suite_result.setup_stderr = setup_stderr
+        self.ag_test_suite_result.teardown_stdout = teardown_stdout
+        self.ag_test_suite_result.teardown_stderr = teardown_stderr
+        self.ag_test_suite_result.save()
+
+        fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual(setup_stdout, fdbk.setup_stdout)
+        self.assertEqual(setup_stderr, fdbk.setup_stderr)
+        self.assertEqual(teardown_stdout, fdbk.teardown_stdout)
+        self.assertEqual(teardown_stderr, fdbk.teardown_stderr)
+
+        self.ag_test_suite.normal_fdbk_config.validate_and_update(
+            show_setup_and_teardown_stdout=False,
+            show_setup_and_teardown_stderr=False)
+
+        fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.setup_stdout)
+        self.assertIsNone(fdbk.setup_stderr)
+        self.assertIsNone(fdbk.teardown_stdout)
+        self.assertIsNone(fdbk.teardown_stderr)
 
     def test_fdbk_to_dict(self):
         # use mocking to make sure fdbk propagates

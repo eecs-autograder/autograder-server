@@ -17,18 +17,24 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
         help_text='''Whether to show information about individual tests in a suite or just a
                      points summary (if available).''')
 
-    show_setup_and_teardown_commands = models.BooleanField(
+    show_setup_and_teardown_stdout = models.BooleanField(
         default=True,
-        help_text="Whether to show results from a suite's setup and teardown commands.")
+        help_text="Whether to show stdout content from a suite's setup and teardown commands.")
+
+    show_setup_and_teardown_stderr = models.BooleanField(
+        default=True,
+        help_text="Whether to show stderr content from a suite's setup and teardown commands.")
 
     SERIALIZABLE_FIELDS = (
         'show_individual_tests',
-        'show_setup_and_teardown_commands',
+        'show_setup_and_teardown_stdout',
+        'show_setup_and_teardown_stderr',
     )
 
     EDITABLE_FIELDS = (
         'show_individual_tests',
-        'show_setup_and_teardown_commands',
+        'show_setup_and_teardown_stdout',
+        'show_setup_and_teardown_stderr',
     )
 
 

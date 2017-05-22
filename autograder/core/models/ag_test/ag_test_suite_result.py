@@ -14,9 +14,14 @@ class AGTestSuiteResult(AutograderModel):
 
     submission = models.ForeignKey(Submission, help_text='The Submission that this result is for.')
 
-    # FIXME
-    setup_output = models.TextField(blank=True)
-    teardown_output = models.TextField(blank=True)
+    setup_stdout = models.TextField(
+        blank=True, help_text="The stdout content of this suite's setup command.")
+    setup_stderr = models.TextField(
+        blank=True, help_text="The stderr content of this suite's setup command.")
+    teardown_stdout = models.TextField(
+        blank=True, help_text="The stdout content of this suite's teardown command.")
+    teardown_stderr = models.TextField(
+        blank=True, help_text="The stderr content of this suite's teardown command.")
 
     def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestSuiteResult.FeedbackCalculator':
         return AGTestSuiteResult.FeedbackCalculator(self, fdbk_category)
@@ -37,8 +42,10 @@ class AGTestSuiteResult(AutograderModel):
             elif fdbk_category == FeedbackCategory.staff_viewer:
                 self._fdbk = self._ag_test_suite.staff_viewer_fdbk_config
             elif fdbk_category == FeedbackCategory.max:
-                self._fdbk = AGTestSuiteFeedbackConfig(show_individual_tests=True,
-                                                       show_setup_and_teardown_commands=True)
+                self._fdbk = AGTestSuiteFeedbackConfig(
+                    show_individual_tests=True,
+                    show_setup_and_teardown_stdout=True,
+                    show_setup_and_teardown_stderr=True)
 
         @property
         def fdbk_conf(self):
@@ -59,6 +66,34 @@ class AGTestSuiteResult(AutograderModel):
         @property
         def fdbk_settings(self) -> dict:
             return self._fdbk.to_dict()
+
+        @property
+        def setup_stdout(self):
+            if not self._fdbk.show_setup_and_teardown_stdout:
+                return None
+
+            return self._ag_test_suite_result.setup_stdout
+
+        @property
+        def setup_stderr(self):
+            if not self._fdbk.show_setup_and_teardown_stderr:
+                return None
+
+            return self._ag_test_suite_result.setup_stderr
+
+        @property
+        def teardown_stdout(self):
+            if not self._fdbk.show_setup_and_teardown_stdout:
+                return None
+
+            return self._ag_test_suite_result.teardown_stdout
+
+        @property
+        def teardown_stderr(self):
+            if not self._fdbk.show_setup_and_teardown_stderr:
+                return None
+
+            return self._ag_test_suite_result.teardown_stderr
 
         @property
         def total_points(self):
@@ -89,4 +124,8 @@ class AGTestSuiteResult(AutograderModel):
             'fdbk_settings',
             'total_points',
             'total_points_possible',
+            'setup_stdout',
+            'setup_stderr',
+            'teardown_stdout',
+            'teardown_stderr',
         )

@@ -32,16 +32,20 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertIsNotNone(suite.staff_viewer_fdbk_config)
 
         self.assertTrue(suite.normal_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_commands)
+        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_stdout)
+        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_stderr)
 
         self.assertTrue(suite.ultimate_submission_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_commands)
+        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_stdout)
+        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_stderr)
 
         self.assertTrue(suite.past_limit_submission_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_commands)
+        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_stdout)
+        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_stderr)
 
         self.assertTrue(suite.staff_viewer_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_commands)
+        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_stdout)
+        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_stderr)
 
     def test_valid_create_non_defaults(self):
         student_file = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
