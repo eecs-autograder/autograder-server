@@ -171,7 +171,6 @@ class AGTestSuiteTestCase(UnitTestBase):
         ]
         self.assertCountEqual(expected_keys, suite_dict.keys())
 
-        self.assertIsInstance(suite_dict['project'], dict)
         self.assertIsInstance(suite_dict['project_files_needed'][0], dict)
         self.assertIsInstance(suite_dict['student_files_needed'][0], dict)
 

@@ -167,7 +167,6 @@ class AGTestSuite(AutograderModel):
     )
 
     SERIALIZE_RELATED = (
-        'project',
         'project_files_needed',
         'student_files_needed',
     )

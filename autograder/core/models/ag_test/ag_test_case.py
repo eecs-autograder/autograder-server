@@ -102,8 +102,6 @@ class AGTestCase(AutograderModel):
         'staff_viewer_fdbk_config',
     )
 
-    SERIALIZE_RELATED = ('ag_test_suite',)
-
     EDITABLE_FIELDS = (
         'name',
         'ag_test_suite',

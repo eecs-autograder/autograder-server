@@ -1,14 +1,18 @@
+import copy
+
 from django.core import exceptions
 
 import autograder.core.models as ag_models
 from autograder.core import constants
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.utils.testing import UnitTestBase, generic_data
+from autograder.utils.testing import UnitTestBase
 
 
-class _SetUp(generic_data.Project, UnitTestBase):
+class AGTestCommandMiscTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
+
+        self.project = obj_build.build_project()
 
         self.ag_suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='suity', project=self.project)
@@ -18,8 +22,6 @@ class _SetUp(generic_data.Project, UnitTestBase):
         self.name = 'cmdy'
         self.cmd = 'echo "waaaluigi"'
 
-
-class AGTestCommandMiscTestCase(_SetUp):
     def test_valid_create_as_part_of_ag_test(self):
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
@@ -113,11 +115,6 @@ class AGTestCommandMiscTestCase(_SetUp):
         self.assertEqual(deduction_for_wrong_stderr, ag_cmd.deduction_for_wrong_stderr)
         self.assertEqual(expected_return_code, ag_cmd.expected_return_code)
 
-    def test_to_dict(self):
-        self.fail()
-
-
-class ReverseLookupTestCase(_SetUp):
     def test_ag_test_case_ag_test_commands_reverse_lookup_and_ordering(self):
         ag_cmd1 = ag_models.AGTestCommand.objects.validate_and_create(
             name='cmd1', ag_test_case=self.ag_test, cmd=self.cmd)
@@ -132,8 +129,6 @@ class ReverseLookupTestCase(_SetUp):
         self.ag_test.set_agtestcommand_order([ag_cmd1.pk, ag_cmd2.pk])
         self.assertSequenceEqual([ag_cmd1.pk, ag_cmd2.pk], self.ag_test.get_agtestcommand_order())
 
-
-class IOSettingsTestCase(_SetUp):
     def test_text_io_sources(self):
         stdin = 'spam'
         stdout = 'egg'
@@ -221,8 +216,6 @@ class IOSettingsTestCase(_SetUp):
         self.assertIn('expected_stdout_text', cm.exception.message_dict)
         self.assertIn('expected_stderr_text', cm.exception.message_dict)
 
-
-class MiscErrorTestCase(_SetUp):
     def test_error_name_not_unique(self):
         ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
@@ -298,3 +291,64 @@ class MiscErrorTestCase(_SetUp):
         self.assertIn('stack_size_limit', cm.exception.message_dict)
         self.assertIn('virtual_memory_limit', cm.exception.message_dict)
         self.assertIn('process_spawn_limit', cm.exception.message_dict)
+
+    def test_serialize(self):
+        expected_keys = [
+            'pk',
+            'name',
+            'ag_test_case',
+            'cmd',
+
+            'stdin_source',
+            'stdin_text',
+            'stdin_project_file',
+
+            'expected_return_code',
+
+            'expected_stdout_source',
+            'expected_stdout_text',
+            'expected_stdout_project_file',
+
+            'expected_stderr_source',
+            'expected_stderr_text',
+            'expected_stderr_project_file',
+
+            'ignore_case',
+            'ignore_whitespace',
+            'ignore_whitespace_changes',
+            'ignore_blank_lines',
+
+            'points_for_correct_return_code',
+            'points_for_correct_stdout',
+            'points_for_correct_stderr',
+            'deduction_for_wrong_return_code',
+            'deduction_for_wrong_stdout',
+            'deduction_for_wrong_stderr',
+
+            'normal_fdbk_config',
+            'ultimate_submission_fdbk_config',
+            'past_limit_submission_fdbk_config',
+            'staff_viewer_fdbk_config',
+
+            'time_limit',
+            'stack_size_limit',
+            'virtual_memory_limit',
+            'process_spawn_limit',
+        ]
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
+
+        cmd_dict = ag_cmd.to_dict()
+
+        self.assertCountEqual(expected_keys, cmd_dict.keys())
+
+        self.assertIsInstance(cmd_dict['normal_fdbk_config'], dict)
+        self.assertIsInstance(cmd_dict['ultimate_submission_fdbk_config'], dict)
+        self.assertIsInstance(cmd_dict['past_limit_submission_fdbk_config'], dict)
+        self.assertIsInstance(cmd_dict['staff_viewer_fdbk_config'], dict)
+
+        editable_dict = copy.deepcopy(cmd_dict)
+        for non_editable in ['pk', 'ag_test_case']:
+            editable_dict.pop(non_editable)
+
+        ag_cmd.validate_and_update(**editable_dict)

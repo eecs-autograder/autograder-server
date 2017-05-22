@@ -361,10 +361,6 @@ class AGTestCommand(AutograderModel):
         'process_spawn_limit',
     )
 
-    SERIALIZE_RELATED = (
-        'ag_test_case',
-    )
-
     EDITABLE_FIELDS = (
         'name',
 

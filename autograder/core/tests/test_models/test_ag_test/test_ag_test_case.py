@@ -152,7 +152,6 @@ class AGTestCaseTestCase(UnitTestBase):
 
         self.assertCountEqual(expected_keys, test_dict.keys())
 
-        self.assertIsInstance(test_dict['ag_test_suite'], dict)
         self.assertIsInstance(test_dict['normal_fdbk_config'], dict)
         self.assertIsInstance(test_dict['ultimate_submission_fdbk_config'], dict)
         self.assertIsInstance(test_dict['past_limit_submission_fdbk_config'], dict)
@@ -160,5 +159,4 @@ class AGTestCaseTestCase(UnitTestBase):
 
         update_dict = copy.deepcopy(test_dict)
         update_dict.pop('pk')
-        update_dict['ag_test_suite'] = update_dict['ag_test_suite']['pk']
         ag_test.validate_and_update(**update_dict)
