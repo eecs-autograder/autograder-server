@@ -234,6 +234,9 @@ class _AutograderModelMixin(ToDictMixin):
         self.full_clean()
         self.save()
 
+    def __str__(self):
+        return '<{}: {}>'.format(self.__class__.__name__, self.pk)
+
 
 class AutograderModelManager(_AutograderModelManagerMixin, models.Manager):
     """

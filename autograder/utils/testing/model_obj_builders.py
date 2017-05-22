@@ -438,7 +438,7 @@ def make_full_ag_test_command(
 
 def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand,
                                         ag_test_case_result: ag_models.AGTestCommandResult,
-                                        **result_kwargs):
+                                        **result_kwargs) -> ag_models.AGTestCommandResult:
     return_code = (
         0 if ag_test_command.expected_return_code == ag_models.ExpectedReturnCode.zero else 42)
 

@@ -1,4 +1,7 @@
-from django.db import models
+from typing import Union
+
+from django.core import exceptions
+from django.db import models, transaction
 
 import autograder.core.fields as ag_fields
 from .ag_test_suite import AGTestSuite
@@ -61,12 +64,49 @@ class AGTestCase(AutograderModel):
         related_name='+',
         help_text='Feedback settings for a staff member viewing a Submission from another group.')
 
-    SERIALIZABLE_FIELDS = ('name', 'ag_test_suite')
+    @transaction.atomic
+    def validate_and_update(self, ag_test_suite: Union[int, AGTestSuite]=None, **kwargs):
+        """
+        :param ag_test_suite:
+            An AGTestSuite (or its primary key) that this AGTestCase
+            should be moved to.
+            It is legal to assign an AGTestCase to a different
+            AGTestSuite as long as the old and new suites belong to
+            the same Project.
+        """
+        # If we're updating this test case's ag test suite, we need
+        # to steal all the suite results from the current suite and
+        # give them to the new one.
+        if ag_test_suite is None:
+            super().validate_and_update(**kwargs)
+            return
+
+        if isinstance(ag_test_suite, int):
+            ag_test_suite = AGTestSuite.objects.get(pk=ag_test_suite)
+
+        if ag_test_suite.project != self.ag_test_suite.project:
+            raise exceptions.ValidationError(
+                {'ag_test_suite':
+                    'AGTestCases can only be moved to AGTestSuites within the same Project.'})
+
+        self.ag_test_suite.agtestsuiteresult_set.update(ag_test_suite=ag_test_suite)
+        self.ag_test_suite = ag_test_suite
+        super().validate_and_update(**kwargs)
+
+    SERIALIZABLE_FIELDS = (
+        'name',
+        'ag_test_suite',
+        'normal_fdbk_config',
+        'ultimate_submission_fdbk_config',
+        'past_limit_submission_fdbk_config',
+        'staff_viewer_fdbk_config',
+    )
 
     SERIALIZE_RELATED = ('ag_test_suite',)
 
     EDITABLE_FIELDS = (
         'name',
+        'ag_test_suite',
 
         'normal_fdbk_config',
         'ultimate_submission_fdbk_config',
