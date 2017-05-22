@@ -20,8 +20,8 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertCountEqual([], suite.project_files_needed.all())
         self.assertCountEqual([], suite.student_files_needed.all())
 
-        self.assertEqual([], suite.setup_suite_cmds)
-        self.assertEqual([], suite.teardown_suite_cmds)
+        self.assertEqual('', suite.setup_suite_cmd)
+        self.assertEqual('', suite.teardown_suite_cmd)
 
         self.assertFalse(suite.allow_network_access)
         self.assertFalse(suite.deferred)
@@ -52,8 +52,8 @@ class AGTestSuiteTestCase(UnitTestBase):
         project = self.project
         project_files_needed = [obj_build.make_uploaded_file(self.project)]
         student_files_needed = [student_file]
-        setup_cmds = ["echo 'hello world'", "mkdir weeee"]
-        teardown_cmds = ["echo 'bye'", "rm -r weeee"]
+        setup_cmd = "echo 'hello world'"
+        teardown_cmd = "echo 'bye'"
         allow_network_access = True
         deferred = True
 
@@ -62,8 +62,8 @@ class AGTestSuiteTestCase(UnitTestBase):
             project=project,
             project_files_needed=project_files_needed,
             student_files_needed=student_files_needed,
-            setup_suite_cmds=setup_cmds,
-            teardown_suite_cmds=teardown_cmds,
+            setup_suite_cmd=setup_cmd,
+            teardown_suite_cmd=teardown_cmd,
             allow_network_access=allow_network_access,
             deferred=deferred,
         )

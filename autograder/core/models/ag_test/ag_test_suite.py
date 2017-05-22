@@ -73,17 +73,17 @@ class AGTestSuite(AutograderModel):
         help_text='''Student-submitted files matching these patterns will be copied into the
                      sandbox before the suite's tests are run.''')
 
-    setup_suite_cmds = ag_fields.StringArrayField(
-        blank=True, default=list,
-        help_text="""A list of commands to be run before this suite's tests are run.
-                     These commands are only run once at the beginning of the suite.
-                     These commands will be run after the student and project files
+    setup_suite_cmd = ag_fields.ShortStringField(
+        blank=True,
+        help_text="""A command to be run before this suite's tests are run.
+                     This command is only run once at the beginning of the suite.
+                     This command will be run after the student and project files
                      have been added to the sandbox.""")
 
-    teardown_suite_cmds = ag_fields.StringArrayField(
-        blank=True, default=list,
-        help_text="""A list of commands to be run after this suite's tests are run.
-                     These commands are only run once at the end of the suite.""")
+    teardown_suite_cmd = ag_fields.ShortStringField(
+        blank=True,
+        help_text="""A command to be run after this suite's tests are run.
+                     This command is only run once at the end of the suite.""")
 
     # TODO: option to reset the filesystem and/or entire sandbox after each test
 
@@ -160,9 +160,6 @@ class AGTestSuite(AutograderModel):
         'ultimate_submission_fdbk_config',
         'past_limit_submission_fdbk_config',
         'staff_viewer_fdbk_config',
-
-        'setup_cmd',
-        'teardown_cmd'
     )
 
     EDITABLE_FIELDS = (

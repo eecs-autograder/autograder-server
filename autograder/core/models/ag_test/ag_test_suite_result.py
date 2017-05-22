@@ -14,6 +14,10 @@ class AGTestSuiteResult(AutograderModel):
 
     submission = models.ForeignKey(Submission, help_text='The Submission that this result is for.')
 
+    # FIXME
+    setup_output = models.TextField(blank=True)
+    teardown_output = models.TextField(blank=True)
+
     def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestSuiteResult.FeedbackCalculator':
         return AGTestSuiteResult.FeedbackCalculator(self, fdbk_category)
 
