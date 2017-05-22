@@ -1,3 +1,4 @@
+import copy
 from django.core import exceptions
 
 import autograder.core.models as ag_models
@@ -130,5 +131,57 @@ class AGTestSuiteTestCase(UnitTestBase):
 
         self.assertCountEqual([suite1, suite2], self.project.ag_test_suites.all())
 
-    def test_to_dict(self):
-        self.fail()
+    def test_serialization(self):
+        student_file = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            pattern='filey',
+            project=self.project)
+
+        suite = ag_models.AGTestSuite.objects.validate_and_create(
+            name='a;dlskfj',
+            project=self.project,
+            project_files_needed=[obj_build.make_uploaded_file(self.project)],
+            student_files_needed=[student_file],
+            setup_suite_cmd="echo 'hello world'",
+            teardown_suite_cmd="echo 'bye'",
+            allow_network_access=True,
+            deferred=True
+        )  # type: ag_models.AGTestSuite
+
+        suite_dict = suite.to_dict()
+
+        expected_keys = [
+            'pk',
+            'name',
+            'project',
+
+            'project_files_needed',
+            'student_files_needed',
+
+            'setup_suite_cmd',
+            'teardown_suite_cmd',
+
+            'docker_image_to_use',
+            'allow_network_access',
+            'deferred',
+
+            'normal_fdbk_config',
+            'ultimate_submission_fdbk_config',
+            'past_limit_submission_fdbk_config',
+            'staff_viewer_fdbk_config',
+        ]
+        self.assertCountEqual(expected_keys, suite_dict.keys())
+
+        self.assertIsInstance(suite_dict['project'], dict)
+        self.assertIsInstance(suite_dict['project_files_needed'][0], dict)
+        self.assertIsInstance(suite_dict['student_files_needed'][0], dict)
+
+        self.assertIsInstance(suite_dict['normal_fdbk_config'], dict)
+        self.assertIsInstance(suite_dict['ultimate_submission_fdbk_config'], dict)
+        self.assertIsInstance(suite_dict['past_limit_submission_fdbk_config'], dict)
+        self.assertIsInstance(suite_dict['staff_viewer_fdbk_config'], dict)
+
+        update_dict = copy.deepcopy(suite_dict)
+        for non_editable in ['pk', 'project', 'docker_image_to_use']:
+            update_dict.pop(non_editable)
+
+        suite.validate_and_update(**update_dict)

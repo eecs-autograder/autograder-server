@@ -149,10 +149,21 @@ class AGTestSuite(AutograderModel):
     SERIALIZABLE_FIELDS = (
         'name',
         'project',
+
         'project_files_needed',
         'student_files_needed',
+
+        'setup_suite_cmd',
+        'teardown_suite_cmd',
+
+        'docker_image_to_use',
         'allow_network_access',
         'deferred',
+
+        'normal_fdbk_config',
+        'ultimate_submission_fdbk_config',
+        'past_limit_submission_fdbk_config',
+        'staff_viewer_fdbk_config',
     )
 
     SERIALIZE_RELATED = (
@@ -170,8 +181,13 @@ class AGTestSuite(AutograderModel):
 
     EDITABLE_FIELDS = (
         'name',
+
         'project_files_needed',
         'student_files_needed',
+
+        'setup_suite_cmd',
+        'teardown_suite_cmd',
+
         'allow_network_access',
         'deferred',
 
