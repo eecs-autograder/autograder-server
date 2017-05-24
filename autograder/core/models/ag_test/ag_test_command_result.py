@@ -1,5 +1,3 @@
-from typing import List
-
 from django.db import models
 
 from autograder.core.models.ag_model_base import ToDictMixin
@@ -286,8 +284,8 @@ class AGTestCommandResult(AutograderModel):
                     self.stderr_points_possible)
 
         SERIALIZABLE_FIELDS = (
-            'ag_test_case_command_pk',
-            'ag_test_case_command_name',
+            'ag_test_command_pk',
+            'ag_test_command_name',
             'fdbk_settings',
 
             'timed_out',

@@ -700,4 +700,35 @@ class AGTestCommandResultTestCase(UnitTestBase):
         }
 
     def test_fdbk_to_dict(self):
-        self.fail()
+        result = obj_build.make_correct_ag_test_command_result(
+            ag_test_command=self.ag_test_command,
+            ag_test_case_result=self.ag_test_case_result)
+
+        expected_keys = [
+            'pk',
+            'ag_test_command_name',
+            'ag_test_command_pk',
+            'fdbk_settings',
+
+            'timed_out',
+
+            'return_code_correct',
+            'expected_return_code',
+            'actual_return_code',
+            'return_code_points',
+            'return_code_points_possible',
+
+            'stdout_correct',
+            'stdout_points',
+            'stdout_points_possible',
+
+            'stderr_correct',
+            'stderr_points',
+            'stderr_points_possible',
+
+            'total_points',
+            'total_points_possible',
+        ]
+
+        self.assertCountEqual(expected_keys,
+                              result.get_fdbk(ag_models.FeedbackCategory.max).to_dict().keys())

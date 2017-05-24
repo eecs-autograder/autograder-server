@@ -5,6 +5,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 class AGTestSuiteResultTestCase(UnitTestBase):
     def setUp(self):
+        self.maxDiff = None
         submission = obj_build.build_submission()
         project = submission.submission_group.project
         self.ag_test_suite = ag_models.AGTestSuite.objects.validate_and_create(
@@ -128,5 +129,27 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         self.assertIsNone(fdbk.teardown_stderr)
 
     def test_fdbk_to_dict(self):
-        # use mocking to make sure fdbk propagates
-        self.fail()
+        self.ag_test_case1.normal_fdbk_config.validate_and_update(show_individual_commands=False)
+
+        expected_keys = [
+            'pk',
+            'ag_test_suite_name',
+            'ag_test_suite_pk',
+            'fdbk_settings',
+            'setup_stdout',
+            'setup_stderr',
+            'teardown_stdout',
+            'teardown_stderr',
+            'total_points',
+            'total_points_possible',
+            'ag_test_case_results',
+        ]
+
+        for fdbk_category in ag_models.FeedbackCategory:
+            result_dict = self.ag_test_suite_result.get_fdbk(fdbk_category).to_dict()
+            self.assertCountEqual(expected_keys, result_dict.keys())
+
+            self.assertCountEqual(
+                [self.ag_test_case_result1.get_fdbk(fdbk_category).to_dict(),
+                 self.ag_test_case_result2.get_fdbk(fdbk_category).to_dict()],
+                result_dict['ag_test_case_results'])

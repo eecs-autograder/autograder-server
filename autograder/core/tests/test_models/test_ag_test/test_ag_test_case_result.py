@@ -146,5 +146,33 @@ class AGTestCaseResultTestCase(UnitTestBase):
         self.assertEqual([result2, result1], fdbk.ag_test_command_results)
 
     def test_fdbk_to_dict(self):
-        # use mocking to make sure fdbk propagates
-        self.fail()
+        self.ag_test_cmd1.delete()
+        self.ag_test_cmd2.delete()
+        self.ag_test_cmd1 = obj_build.make_full_ag_test_command(
+            self.ag_test_case, set_arbitrary_points=True)
+        self.ag_test_cmd2 = obj_build.make_full_ag_test_command(
+            self.ag_test_case, set_arbitrary_points=True)
+
+        result1 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd1, self.ag_test_case_result)
+        result2 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd2, self.ag_test_case_result)
+
+        expected_keys = [
+            'pk',
+            'ag_test_case_name',
+            'ag_test_case_pk',
+            'fdbk_settings',
+            'total_points',
+            'total_points_possible',
+            'ag_test_command_results',
+        ]
+
+        for fdbk_category in ag_models.FeedbackCategory:
+            result_dict = self.ag_test_case_result.get_fdbk(fdbk_category).to_dict()
+            self.assertCountEqual(expected_keys, result_dict.keys())
+
+            self.assertCountEqual(
+                [result1.get_fdbk(fdbk_category).to_dict(),
+                 result2.get_fdbk(fdbk_category).to_dict()],
+                result_dict['ag_test_command_results'])

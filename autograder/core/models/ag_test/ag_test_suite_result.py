@@ -117,8 +117,15 @@ class AGTestSuiteResult(AutograderModel):
             return [next(filter(lambda result: result.ag_test_case.pk == test_pk, results))
                     for test_pk in test_order]
 
+        def to_dict(self):
+            result = super().to_dict()
+            result['ag_test_case_results'] = [
+                result.get_fdbk(self._fdbk_category).to_dict()
+                for result in self.ag_test_case_results
+            ]
+            return result
+
         SERIALIZABLE_FIELDS = (
-            'pk',
             'ag_test_suite_name',
             'ag_test_suite_pk',
             'fdbk_settings',

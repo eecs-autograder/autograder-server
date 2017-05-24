@@ -79,6 +79,14 @@ class AGTestCaseResult(AutograderModel):
             return [next(filter(lambda result: result.ag_test_command.pk == cmd_pk, results))
                     for cmd_pk in cmd_order]
 
+        def to_dict(self):
+            result = super().to_dict()
+            result['ag_test_command_results'] = [
+                result.get_fdbk(self._fdbk_category).to_dict()
+                for result in self.ag_test_command_results
+            ]
+            return result
+
         SERIALIZABLE_FIELDS = (
             'ag_test_case_name',
             'ag_test_case_pk',
