@@ -264,10 +264,10 @@ class Submission(ag_model_base.AutograderModel):
     # etc.).
     @property
     def basic_score(self):
-        '''
+        """
         The sum of the basic scores for each test case result belonging
         to this submission.
-        '''
+        """
         key = self.basic_score_cache_key
         score = cache.get(key)
         if score is not None:

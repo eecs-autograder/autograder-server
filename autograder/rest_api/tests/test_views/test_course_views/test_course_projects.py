@@ -32,10 +32,12 @@ class CourseListProjectsTestCase(_ProjectsSetUp, UnitTestBase):
         self.assertEqual(403, response.status_code)
 
     def do_valid_list_projects_test(self, user, expected_projects):
-        exclude_fields = None
-        exclude_fields = ['closing_time']
-        expected_data = [project.to_dict(exclude_fields=exclude_fields)
-                         for project in expected_projects]
+        expected_data = []
+        for project in expected_projects:
+            proj_dict = project.to_dict()
+            proj_dict.pop('closing_time', None)
+            expected_data.append(proj_dict)
+
         self.client.force_authenticate(user)
         response = self.client.get(self.url)
 

@@ -288,17 +288,20 @@ def build_submission(**submission_kwargs) -> ag_models.Submission:
     SubmissionGroup will be created with build_submission_group() and
     used instead.
     """
-    if 'submission_group' not in submission_kwargs:
-        submission_kwargs['submission_group'] = build_submission_group()
+    group = submission_kwargs.pop('submission_group', build_submission_group())
+    submitted_files = submission_kwargs.pop('submitted_files', [])
+    timestamp = submission_kwargs.pop('timestamp', timezone.now())
 
-    if 'submitted_files' not in submission_kwargs:
-        submission_kwargs['submitted_files'] = []
+    submission = ag_models.Submission.objects.validate_and_create(
+        submission_group=group,
+        submitted_files=submitted_files,
+        timestamp=timestamp
+    )
+    for key, value in submission_kwargs.items():
+        setattr(submission, key, value)
 
-    if 'timestamp' not in submission_kwargs:
-        submission_kwargs['timestamp'] = timezone.now()
-
-    return ag_models.Submission.objects.validate_and_create(
-        **submission_kwargs)
+    submission.save()
+    return submission
 
 
 def build_submissions_with_results(num_submissions=1, num_tests=1,

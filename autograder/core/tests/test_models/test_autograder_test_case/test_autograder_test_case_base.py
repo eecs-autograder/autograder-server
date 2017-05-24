@@ -253,6 +253,7 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
             'process_spawn_limit',
 
             'expected_return_code',
+
             'expect_any_nonzero_return_code',
             'expected_standard_output',
             'expected_standard_error_output',

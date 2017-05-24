@@ -34,7 +34,7 @@ class AGTestCaseSerializerTestCase(_SetUp, SerializerTestCase):
             student_resource_files=[self.expected_pattern],
             project_files_to_compile_together=[self.uploaded_file],
             student_files_to_compile_together=[self.expected_pattern])
-        print(ag_test.to_dict(include_fields=['test_resource_files']))
+        print(ag_test.to_dict()['test_resource_files'])
         self.do_basic_serialize_test(ag_test,
                                      ag_serializers.AGTestCaseSerializer)
 
@@ -58,8 +58,8 @@ class AGTestCaseSerializerTestCase(_SetUp, SerializerTestCase):
         expected = copy.deepcopy(data)
         expected['project'] = data['project'].pk
         expected['pk'] = loaded.pk
-        self.assertEqual(
-            expected, loaded.to_dict(include_fields=['pk'] + list(data.keys())))
+        for key, value in expected.items():
+            self.assertEqual(value, loaded.to_dict()[key])
 
     def test_create_and_update_feedback_configs(self):
         for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:

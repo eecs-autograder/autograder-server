@@ -20,12 +20,14 @@ class RetrieveProjectTestCase(_ProjectSetUp, UnitTestBase):
 
     def test_staff_get_project(self):
         for project in self.all_projects:
-            response = self.do_valid_load_project_test(self.staff, project)
+            response = self.do_valid_load_project_test(
+                self.staff, project, exclude_closing_time=True)
             self.assertNotIn('closing_time', response.data)
 
     def test_student_get_project(self):
         for project in self.visible_projects:
-            response = self.do_valid_load_project_test(self.enrolled, project)
+            response = self.do_valid_load_project_test(
+                self.enrolled, project, exclude_closing_time=True)
             self.assertNotIn('closing_time', response.data)
 
         for project in self.hidden_projects:
@@ -33,7 +35,7 @@ class RetrieveProjectTestCase(_ProjectSetUp, UnitTestBase):
 
     def test_other_get_project(self):
         response = self.do_valid_load_project_test(
-            self.nobody, self.visible_public_project)
+            self.nobody, self.visible_public_project, exclude_closing_time=True)
         self.assertNotIn('closing_time', response.data)
 
         self.do_permission_denied_test(self.nobody,
@@ -42,16 +44,15 @@ class RetrieveProjectTestCase(_ProjectSetUp, UnitTestBase):
         for project in self.hidden_projects:
             self.do_permission_denied_test(self.nobody, project)
 
-    def do_valid_load_project_test(self, user, project,
-                                   exclude_closing_time=True):
+    def do_valid_load_project_test(self, user, project, exclude_closing_time):
         self.client.force_authenticate(user)
         response = self.client.get(self.get_proj_url(project))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        exclude_fields = None
+
+        proj_dict = project.to_dict()
         if exclude_closing_time:
-            exclude_fields = ['closing_time']
-        self.assertEqual(project.to_dict(exclude_fields=exclude_fields),
-                         response.data)
+            proj_dict.pop('closing_time', None)
+        self.assertEqual(proj_dict, response.data)
 
         return response
 

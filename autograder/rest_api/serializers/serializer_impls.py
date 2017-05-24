@@ -16,20 +16,23 @@ class ProjectSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.context:
+            self.show_closing_time = None
             return
 
         request = self.context['request']
         try:
-            show_closing_time = self.instance.course.is_administrator(
-                request.user)
+            self.show_closing_time = self.instance.course.is_administrator(request.user)
         except AttributeError:
-            show_closing_time = False
+            # self.instance is a QuerySet, don't show closing time
+            # for any of the results.
+            self.show_closing_time = False
 
-        if not show_closing_time:
-            if self.exclude_fields is None:
-                self.exclude_fields = []
+    def to_representation(self, obj):
+        result = super().to_representation(obj)
+        if self.show_closing_time is not None and not self.show_closing_time:
+            result.pop('closing_time', None)
 
-            self.exclude_fields.append('closing_time')
+        return result
 
     def get_ag_model_manager(self):
         return ag_models.Project.objects
@@ -49,6 +52,7 @@ class AGTestCaseSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         if 'data' not in kwargs:
             super().__init__(*args, **kwargs)
+            return
 
         data = copy.copy(kwargs.pop('data'))
         for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:
@@ -100,7 +104,6 @@ class AGTestCaseSerializer(AGModelSerializer):
 
         return result
 
-    # TODO: filter files/patterns to only allow ones that belong to the same project as this test
     def _load_uploaded_files(self, dicts):
         try:
             pk_list = [obj['pk'] for obj in dicts]
@@ -110,7 +113,6 @@ class AGTestCaseSerializer(AGModelSerializer):
         return ag_models.UploadedFile.objects.filter(
             pk__in=pk_list)
 
-    # TODO: filter files/patterns to only allow ones that belong to the same project as this test
     def _load_patterns(self, dicts):
         try:
             pk_list = [obj['pk'] for obj in dicts]
@@ -175,6 +177,7 @@ class SubmissionSerializer(AGModelSerializer):
         data = kwargs.pop('data', None)
         if data is None:
             super().__init__(*args, **kwargs)
+            return
 
         try:
             # If this fails, then we know we don't have a query dict.

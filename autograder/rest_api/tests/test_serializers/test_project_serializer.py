@@ -28,16 +28,6 @@ class ClosingTimeShownTestCase(gen_data.Project,
 
         self.assertIn('closing_time', serializer.data)
 
-    def test_admin_closing_time_explicity_excluded(self):
-        query_params = {'exclude_fields': ['closing_time']}
-        get_request = request.Request(
-            APIRequestFactory().get('path', data=query_params))
-        get_request.user = self.admin
-        serializer = ag_serializers.ProjectSerializer(
-            self.visible_public_project, context={'request': get_request})
-
-        self.assertNotIn('closing_time', serializer.data)
-
     def test_non_admin_not_shown_closing_time(self):
         for user in self.staff, self.enrolled, self.nobody:
             get_request = request.Request(APIRequestFactory().get('path'))
