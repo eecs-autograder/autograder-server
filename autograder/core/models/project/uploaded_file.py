@@ -18,13 +18,8 @@ def _get_project_file_upload_to_path(instance, filename):
         core_ut.get_project_files_relative_dir(instance.project), filename)
 
 
-# For migrations backwards compatibility
-def _get_project_file_upload_to_dir(instance, filename):
-    return _get_project_file_upload_to_path(instance, filename)
-
-
 def _validate_filename(file_obj):
-    core_ut.check_user_provided_filename(file_obj.name)
+    core_ut.check_filename(file_obj.name)
 
 
 class UploadedFileManager(AutograderModelManager):
@@ -74,7 +69,7 @@ class UploadedFile(AutograderModel):
         """
         new_name = os.path.basename(new_name)
         try:
-            core_ut.check_user_provided_filename(new_name)
+            core_ut.check_filename(new_name)
         except exceptions.ValidationError as e:
             raise exceptions.ValidationError({'name': e.message})
 

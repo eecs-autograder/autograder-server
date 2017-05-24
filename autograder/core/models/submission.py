@@ -23,13 +23,9 @@ def _get_submission_file_upload_to_dir(submission, filename):
     return value
 
 
-def _validate_filename(file_):
-    core_ut.check_user_provided_filename(file_.name)
-
-
 class _SubmissionManager(ag_model_base.AutograderModelManager):
     @transaction.atomic()
-    def validate_and_create(self, submitted_files, submission_group, timestamp):
+    def validate_and_create(self, submitted_files, submission_group, timestamp=None, submitter=''):
         """
         This method override handles additional details required for
         creating a Submission.
@@ -45,12 +41,22 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
                 - Any missing files are recorded as such, but the
                     Submission is still accepted.
         """
-        submission = self.model(submission_group=submission_group, timestamp=timestamp)
+        if timestamp is None:
+            timestamp = timezone.now()
+        submission = self.model(submission_group=submission_group,
+                                timestamp=timestamp,
+                                submitter=submitter)
         # The submission needs to be saved so that a directory is
         # created for it.
         submission.save()
 
         for file_ in submitted_files:
+            try:
+                core_ut.check_filename(file_.name)
+            except exceptions.ValidationError:
+                submission.discarded_files.append(file_.name)
+                continue
+
             if self.file_is_extra(submission, file_.name):
                 submission.discarded_files.append(file_.name)
                 continue
@@ -294,13 +300,13 @@ class Submission(ag_model_base.AutograderModel):
     # -------------------------------------------------------------------------
 
     def get_file(self, filename, mode='rb'):
-        '''
+        """
         Returns a Django File object containing the submitted file with
         the given name. The file is opened using the specified mode
         (mode can be any valid value for the same argument to the Python
         open() function).
         If the file doesn't exist, ObjectDoesNotExist will be raised.
-        '''
+        """
         self._check_file_exists(filename)
         return File(
             open(self._get_submitted_file_dir(filename), mode),

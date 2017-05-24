@@ -9,7 +9,7 @@ from django.utils import timezone
 from autograder.core.models.autograder_test_case import feedback_config
 
 from autograder import utils
-import autograder.utils.testing as test_ut
+from autograder.utils.testing import UnitTestBase
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
@@ -17,7 +17,7 @@ import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class SubmissionTestCase(test_ut.UnitTestBase):
+class SubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -110,17 +110,13 @@ class SubmissionTestCase(test_ut.UnitTestBase):
 
     def test_init_custom_values(self):
         timestamp = timezone.now() + timezone.timedelta(hours=1)
-        count_towards_daily_limit = False
 
         sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group, timestamp=timestamp,
-            count_towards_daily_limit=count_towards_daily_limit)
+            [], submission_group=self.submission_group, timestamp=timestamp)
 
         sub.refresh_from_db()
 
         self.assertEqual(timestamp, sub.timestamp)
-        self.assertEqual(count_towards_daily_limit,
-                         sub.count_towards_daily_limit)
 
     def test_submission_missing_required_file(self):
         files = [
@@ -169,20 +165,7 @@ class SubmissionTestCase(test_ut.UnitTestBase):
             SimpleUploadedFile('test_sausage.cpp', b'cheeese')
         ]
 
-        submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
-            submitted_files=files + extra_files)
-
-        submission.refresh_from_db()
-
-        self.assertEqual(
-            submission.status, ag_models.Submission.GradingStatus.received)
-        self.assertCountEqual(
-            (file_.name for file_ in files),
-            submission.get_submitted_file_basenames())
-
-        self.assertCountEqual((file_.name for file_ in extra_files),
-                              submission.discarded_files)
+        self._do_files_discarded_test(files, extra_files)
 
     def test_extra_files_discarded(self):
         files = [
@@ -194,19 +177,7 @@ class SubmissionTestCase(test_ut.UnitTestBase):
             SimpleUploadedFile('extra.cpp', b'merp'),
             SimpleUploadedFile('extra_extra.cpp', b'spam')]
 
-        submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
-            submitted_files=files + extra_files)
-
-        submission.refresh_from_db()
-
-        self.assertEqual(ag_models.Submission.GradingStatus.received,
-                         submission.status)
-        self.assertCountEqual(submission.get_submitted_file_basenames(),
-                              (file_.name for file_ in files))
-
-        self.assertCountEqual(submission.discarded_files,
-                              (file_.name for file_ in extra_files))
+        submission = self._do_files_discarded_test(files, extra_files)
 
         with utils.ChangeDirectory(core_ut.get_submission_dir(submission)):
             for file_ in extra_files:
@@ -224,9 +195,23 @@ class SubmissionTestCase(test_ut.UnitTestBase):
             SimpleUploadedFile('eggs.cpp', b'merp')
         ]
 
+        self._do_files_discarded_test(files, duplicate_files)
+
+    def test_invalid_filenames(self):
+        bad_files = [
+            SimpleUploadedFile('..', b'blah'),
+            SimpleUploadedFile('.', b'merp'),
+            SimpleUploadedFile('', b'cheeese')
+        ]
+        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            project=self.project, pattern='*', max_num_matches=10)
+
+        self._do_files_discarded_test([SimpleUploadedFile('test_spam.cpp', b'cheeese')], bad_files)
+
+    def _do_files_discarded_test(self, files, files_to_discard):
         submission = ag_models.Submission.objects.validate_and_create(
             submission_group=self.submission_group,
-            submitted_files=files + duplicate_files)
+            submitted_files=files + files_to_discard)
 
         submission.refresh_from_db()
 
@@ -236,7 +221,8 @@ class SubmissionTestCase(test_ut.UnitTestBase):
                               (file_.name for file_ in files))
 
         self.assertCountEqual(submission.discarded_files,
-                              (file_.name for file_ in duplicate_files))
+                              (file_.name for file_ in files_to_discard))
+        return submission
 
     def test_active_statuses(self):
         statuses = [
@@ -279,11 +265,11 @@ class SubmissionTestCase(test_ut.UnitTestBase):
                               ag_models.Submission.get_editable_fields())
 
 
-class PositionInQueueTestCase(test_ut.UnitTestBase):
+class PositionInQueueTestCase(UnitTestBase):
     def test_position_in_queue_multiple_projects(self):
-        '''
+        """
         Makes sure that position in queue is calculated per-project
-        '''
+        """
         project1 = obj_build.build_project()
         group1_proj1 = obj_build.build_submission_group(
             group_kwargs={'project': project1})
@@ -345,7 +331,7 @@ class PositionInQueueTestCase(test_ut.UnitTestBase):
             self.assertEqual(0, submission.position_in_queue)
 
 
-class TotalPointsTestCase(test_ut.UnitTestBase):
+class TotalPointsTestCase(UnitTestBase):
     def test_basic_score(self):
         cache.clear()
 

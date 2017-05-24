@@ -7,20 +7,18 @@ from autograder.core.models.project.uploaded_file import UploadedFile
 
 from autograder import utils
 import autograder.core.utils as core_ut
-import autograder.utils.testing as test_ut
+from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
 _illegal_filenames = [
     '..',
-    '; echo "haxorz";#',
-    '.spam.txt',
     '',
-    '     '
+    '.'
 ]
 
 
-class _SetUp:
+class _SetUp(UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -30,7 +28,7 @@ class _SetUp:
             b'contents more contents.')
 
 
-class CreateUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
+class CreateUploadedFileTestCase(_SetUp):
     def test_valid_create(self):
         uploaded_file = UploadedFile.objects.validate_and_create(
             project=self.project,
@@ -91,7 +89,7 @@ class CreateUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
             self.assertIn('file_obj', cm.exception.message_dict)
 
 
-class RenameUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
+class RenameUploadedFileTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
@@ -129,7 +127,7 @@ class RenameUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
             self.assertIn('name', cm.exception.message_dict)
 
 
-class DeleteUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
+class DeleteUploadedFileTestCase(_SetUp):
     def test_file_deleted_from_filesystem(self):
         uploaded_file = UploadedFile.objects.validate_and_create(
             project=self.project,
@@ -140,7 +138,7 @@ class DeleteUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
         self.assertFalse(os.path.exists(uploaded_file.abspath))
 
 
-class UploadedFileMiscTestCase(_SetUp, test_ut.UnitTestBase):
+class UploadedFileMiscTestCase(_SetUp):
     def test_serializable_fields(self):
         expected = [
             'pk',

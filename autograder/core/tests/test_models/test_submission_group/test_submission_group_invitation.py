@@ -61,9 +61,6 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp, UnitTestBase):
         self.assertEqual(self.invitation_creator.username,
                          result['invitation_creator'])
 
-        result = invitation.to_dict(exclude_fields=['invitation_creator'])
-        self.assertNotIn('invitation_creator', result)
-
     def test_valid_initialization(self):
         invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,

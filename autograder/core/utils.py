@@ -11,7 +11,6 @@ from django.utils import timezone
 from . import constants as const
 
 
-# TODO: update so that it can take in strings or file objects
 def get_diff(first: str, second: str,
              ignore_case=False,
              ignore_whitespace=False,
@@ -73,53 +72,25 @@ def get_24_hour_period(start_time, contains_datetime):
     return start_datetime, end_datetime
 
 
-def check_user_provided_filename(filename, allow_empty=False):
+def check_filename(filename):
     """
     Verifies whether the given filename is valid according to the
     following requirements:
         - Filenames must be non-empty and non-null
-        - Filenames must only contain the characters specified in
-          autograder.shared.global_constants.PROJECT_FILENAME_WHITELIST_REGEX
-        - Filenames must start with an alphabetic character.
+        - Filenames must not include directories.
+        - Filenames must not be '..' or '.'.
 
     If the given filename does not meet these requirements, ValidationError
-    is raised. These restrictions are placed on filenames for security
-    purposes.
+    is raised.
     """
-    if filename is None:
-        raise exceptions.ValidationError("Filenames must be non-null")
+    if not filename:
+        raise exceptions.ValidationError("Filenames must not be empty.")
 
-    if not filename and not allow_empty:
-        raise exceptions.ValidationError("Filenames must be non-empty")
+    if os.path.basename(filename) != filename:
+        raise exceptions.ValidationError('Filenames must not include directories.')
 
-    if not const.PROJECT_FILENAME_WHITELIST_REGEX.fullmatch(filename):
-        raise exceptions.ValidationError(
-            "Invalid filename: {0} \n"
-            "Filenames must contain only alphanumeric characters, hyphen, "
-            "underscore, and period.".format(filename))
-
-
-def check_shell_style_file_pattern(pattern):
-    """
-    Verified whether the given file pattern is valid according to the
-    following requirements:
-        - Patterns must be non-empty and non-null
-        - Filenames myst only contain characters specified in
-          autograder.shared.global_constants.PROJECT_FILE_PATTERN_WHITELIST_REGEX
-
-    If the given pattern does not meet these requirements, ValidationError
-    is raised. These restrictions are placed on file patterns for security
-    purposes.
-    """
-    if not pattern:
-        raise exceptions.ValidationError("File patterns must be non-empty")
-
-    if not const.PROJECT_FILE_PATTERN_WHITELIST_REGEX.fullmatch(pattern):
-        raise exceptions.ValidationError(
-            "Invalid file pattern: {0} \n"
-            "Shell-style patterns must only contain "
-            "alphanumeric characters, hyphen, underscore, "
-            "period, * ? [ ] and !".format(pattern))
+    if filename == '..' or filename == '.':
+        raise exceptions.ValidationError('Filenames must not be ".." or ".".')
 
 # -----------------------------------------------------------------------------
 

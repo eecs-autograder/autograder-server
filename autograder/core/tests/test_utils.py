@@ -6,8 +6,8 @@ from django.core.exceptions import ValidationError
 
 import autograder.core.models as ag_models
 
-import autograder.utils.testing as test_ut
-import autograder.core.constants as const
+from autograder.utils.testing import UnitTestBase
+from autograder.core import constants
 import autograder.core.utils as core_ut
 
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -69,39 +69,17 @@ class DiffTestCase(TestCase):
                              ignore_blank_lines=True))
 
 
-class CheckUserProvidedFilenameTest(TestCase):
+class CheckFilenameTest(TestCase):
     def test_valid_filename(self):
-        core_ut.check_user_provided_filename('spAM-eggs_42.cpp')
+        core_ut.check_filename('spAM-eggs_42.cpp')
 
-    def test_exception_on_file_path_given(self):
-        with self.assertRaises(ValidationError):
-            core_ut.check_user_provided_filename('../spam.txt')
-
-        with self.assertRaises(ValidationError):
-            core_ut.check_user_provided_filename('..')
-
-    def test_exception_on_filename_with_shell_chars(self):
-        with self.assertRaises(ValidationError):
-            core_ut.check_user_provided_filename('; echo "haxorz"; # ')
-
-    def test_exception_on_filename_starts_with_dot(self):
-        with self.assertRaises(ValidationError):
-            core_ut.check_user_provided_filename('.spameggs')
-
-    def test_exception_null_filename(self):
-        with self.assertRaises(ValidationError):
-            core_ut.check_user_provided_filename(None)
-            core_ut.check_user_provided_filename(None, allow_empty=True)
-
-    def test_exception_empty_filename(self):
-        with self.assertRaises(ValidationError):
-            core_ut.check_user_provided_filename('')
-
-    def test_no_exception_empty_filename_allowed(self):
-        core_ut.check_user_provided_filename('', allow_empty=True)
+    def test_bad_filenames(self):
+        for filename in ('', '..', '.', '/spam', '../spam'):
+            with self.assertRaises(ValidationError):
+                core_ut.check_filename(filename)
 
 
-class FileSystemUtilTestCase(test_ut.UnitTestBase):
+class FileSystemUtilTestCase(UnitTestBase):
     def setUp(self):
         self.group = obj_build.build_submission_group()
         self.project = self.group.project
@@ -113,7 +91,7 @@ class FileSystemUtilTestCase(test_ut.UnitTestBase):
 
     def test_get_course_root_dir(self):
         expected_relative = "{0}/{1}".format(
-            const.FILESYSTEM_ROOT_COURSES_DIRNAME,
+            constants.FILESYSTEM_ROOT_COURSES_DIRNAME,
             self.course_dirname)
 
         actual_relative = core_ut.get_course_relative_root_dir(self.course)
@@ -127,7 +105,7 @@ class FileSystemUtilTestCase(test_ut.UnitTestBase):
 
     def test_get_project_root_dir(self):
         expected_relative = "{0}/{1}/{2}".format(
-            const.FILESYSTEM_ROOT_COURSES_DIRNAME,
+            constants.FILESYSTEM_ROOT_COURSES_DIRNAME,
             self.course_dirname,
             self.project_dirname)
 
@@ -142,9 +120,9 @@ class FileSystemUtilTestCase(test_ut.UnitTestBase):
 
     def test_get_project_files_dir(self):
         expected_relative = "{0}/{1}/{2}/{3}".format(
-            const.FILESYSTEM_ROOT_COURSES_DIRNAME,
+            constants.FILESYSTEM_ROOT_COURSES_DIRNAME,
             self.course_dirname,
-            self.project_dirname, const.PROJECT_FILES_DIRNAME)
+            self.project_dirname, constants.PROJECT_FILES_DIRNAME)
 
         actual_relative = core_ut.get_project_files_relative_dir(self.project)
         self.assertEqual(expected_relative, actual_relative)
@@ -157,10 +135,10 @@ class FileSystemUtilTestCase(test_ut.UnitTestBase):
 
     def test_get_project_submission_groups_dir(self):
         expected_relative = "{0}/{1}/{2}/{3}".format(
-            const.FILESYSTEM_ROOT_COURSES_DIRNAME,
+            constants.FILESYSTEM_ROOT_COURSES_DIRNAME,
             self.course_dirname,
             self.project_dirname,
-            const.PROJECT_SUBMISSIONS_DIRNAME)
+            constants.PROJECT_SUBMISSIONS_DIRNAME)
         actual_relative = core_ut.get_project_submission_groups_relative_dir(
             self.project)
         self.assertEqual(expected_relative, actual_relative)
@@ -173,10 +151,10 @@ class FileSystemUtilTestCase(test_ut.UnitTestBase):
 
     def test_get_student_submission_group_dir(self):
         expected_relative = "{0}/{1}/{2}/{3}/{4}".format(
-            const.FILESYSTEM_ROOT_COURSES_DIRNAME,
+            constants.FILESYSTEM_ROOT_COURSES_DIRNAME,
             self.course_dirname,
             self.project_dirname,
-            const.PROJECT_SUBMISSIONS_DIRNAME,
+            constants.PROJECT_SUBMISSIONS_DIRNAME,
             self.group_dir_basename)
 
         actual_relative = core_ut.get_student_submission_group_relative_dir(
@@ -195,10 +173,10 @@ class FileSystemUtilTestCase(test_ut.UnitTestBase):
         submission_dir_basename = 'submission{}'.format(submission.pk)
 
         expected_relative = "{0}/{1}/{2}/{3}/{4}/{5}".format(
-            const.FILESYSTEM_ROOT_COURSES_DIRNAME,
+            constants.FILESYSTEM_ROOT_COURSES_DIRNAME,
             self.course_dirname,
             self.project_dirname,
-            const.PROJECT_SUBMISSIONS_DIRNAME,
+            constants.PROJECT_SUBMISSIONS_DIRNAME,
             self.group_dir_basename,
             submission_dir_basename)
 

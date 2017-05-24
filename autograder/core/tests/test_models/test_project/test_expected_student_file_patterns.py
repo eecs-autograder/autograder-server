@@ -124,11 +124,10 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
 
     def test_exception_illegal_patterns(self):
         illegal_patterns = [
-            'test_*.; echo "haxorz";#',
+            '..',
             '../../../hack/you/now',
             '/usr/bin/haxorz',
             '',
-            '    '
         ]
 
         for pattern in illegal_patterns:

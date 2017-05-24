@@ -15,28 +15,6 @@ PROJECT_SUBMISSIONS_DIRNAME = 'submission_groups'
 # The subdirectory of settings.MEDIA_ROOT where courses will be placed.
 FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'
 
-# TODO: REMOVE
-# This regular expression provides the whitelist to be used when
-# validating the names of user-uploaded files.
-# Filenames must start with a capital or lowercase letter.
-# Filenames may contain:
-#   alphanumeric characters, hyphen, underscore, and period
-# Note that this allows the empty string, as emptiness should be
-# specified with the 'blank' argument to the respective field.
-PROJECT_FILENAME_WHITELIST_REGEX = re.compile('.*')
-    # r'[a-zA-Z][a-zA-Z0-9-_.]*|^$')
-# r"[a-zA-Z0-9-_.]+")
-
-# TODO: REMOVE
-# This regular expression provides the whitelist to be used
-# when validating shell-style file patterns.
-# File patterns can contain:
-#   alphanumeric characters, hyphen, underscore, period, * ? [ ] and !
-# Note that submitted files that are meant to match shell patterns
-# are still restricted to the same charset as other user-uploaded files.
-PROJECT_FILE_PATTERN_WHITELIST_REGEX = re.compile('.*')
-    # r"^[a-zA-Z0-9-_.\*\[\]\?\!]+$")
-
 DEFAULT_VALGRIND_FLAGS = ['--leak-check=full', '--error-exitcode=1']
 
 SUPPORTED_COMPILERS = ['g++', 'clang++', 'gcc', 'clang']
