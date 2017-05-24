@@ -24,9 +24,9 @@ class Command(BaseCommand):
 def clone_project(project, target_course):
 
     with transaction.atomic():
-        proj_dict = project.to_dict(
-            exclude_fields=['pk', 'course', 'visible_to_students',
-                            'hide_ultimate_submission_fdbk'])
+        exclude_fields = {'pk', 'course', 'visible_to_students', 'hide_ultimate_submission_fdbk'}
+        proj_dict = {key: value for key, value in project.to_dict().items()
+                     if key not in exclude_fields}
 
         new_proj = ag_models.Project.objects.validate_and_create(
             course=target_course, visible_to_students=False,
@@ -38,9 +38,10 @@ def clone_project(project, target_course):
                 file_obj=new_file, project=new_proj)
 
         for pattern in project.expected_student_file_patterns.all():
+            pattern_dict = {key: value for key, value in pattern.to_dict().items()
+                            if key not in {'pk', 'project'}}
             ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
-                 project=new_proj,
-                **pattern.to_dict(exclude_fields=['pk', 'project']))
+                 project=new_proj, **pattern_dict)
 
         _clone_test_cases(orig_proj=project, new_proj=new_proj)
 
@@ -48,11 +49,12 @@ def clone_project(project, target_course):
 
 
 def _clone_test_cases(orig_proj, new_proj):
+    exclude_fields = {'pk', 'project', 'test_resource_files', 'student_resource_files',
+                      'project_files_to_compile_together', 'student_files_to_compile_together'}
     for test_case in orig_proj.autograder_test_cases.all():
-        test_case_dict = test_case.to_dict(
-            exclude_fields=['pk', 'project', 'test_resource_files', 'student_resource_files',
-                            'project_files_to_compile_together',
-                            'student_files_to_compile_together'])
+        test_case_dict = {key: value for key, value in test_case.to_dict().items()
+                          if key not in exclude_fields}
+
         for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:
             test_case_dict[fdbk_field] = (
                 ag_models.FeedbackConfig.objects.validate_and_create(

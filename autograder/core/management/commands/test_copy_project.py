@@ -53,8 +53,8 @@ class CloneProjectTestCase(UnitTestBase):
     def do_clone_project_test(self, project):
         # compare properties
         cloned = clone_project(project, obj_build.build_course())
-        cloned_dict = cloned.to_dict(exclude_fields=['pk', 'course'])
-        project_dict = project.to_dict(exclude_fields=['pk', 'course'])
+        cloned_dict = _exclude_dict(cloned.to_dict(), ['pk', 'course'])
+        project_dict = _exclude_dict(project.to_dict(), ['pk', 'course'])
         project_dict['visible_to_students'] = False
         project_dict['hide_ultimate_submission_fdbk'] = True
         self.assertEqual([], list(cloned.submission_groups.all()))
@@ -101,8 +101,8 @@ class CloneProjectTestCase(UnitTestBase):
         self.assertEqual(len(cloned_objs), len(orig_objs))
 
         for cloned_obj, orig_obj in zip(cloned_objs, orig_objs):
-            cloned_obj_dict = cloned_obj.to_dict(exclude_fields=exclude_fields)
-            orig_obj_dict = orig_obj.to_dict(exclude_fields=exclude_fields)
+            cloned_obj_dict = _exclude_dict(cloned_obj.to_dict(), exclude_fields)
+            orig_obj_dict = _exclude_dict(orig_obj.to_dict(), exclude_fields)
             self.assertEqual(cloned_obj_dict, orig_obj_dict)
             self.assertNotEqual(cloned_obj.pk, orig_obj.pk)
             self.assertNotEqual(cloned_obj.project, orig_obj.project)
@@ -115,10 +115,12 @@ class CloneProjectTestCase(UnitTestBase):
         proj_tests = orig_proj.autograder_test_cases.all().order_by('name')
 
         for cloned_test, proj_test in zip(cloned_tests, proj_tests):
-            cloned_related_fields_dict = cloned_test.to_dict(
-                include_fields=ag_models.AutograderTestCaseBase.RELATED_FILE_FIELD_NAMES)
-            project_related_fields_dict = proj_test.to_dict(
-                include_fields=ag_models.AutograderTestCaseBase.RELATED_FILE_FIELD_NAMES)
+            cloned_related_fields_dict = _filter_dict(
+                cloned_test.to_dict(),
+                ag_models.AutograderTestCaseBase.RELATED_FILE_FIELD_NAMES)
+            project_related_fields_dict = _filter_dict(
+                proj_test.to_dict(),
+                ag_models.AutograderTestCaseBase.RELATED_FILE_FIELD_NAMES)
 
             for key, value in cloned_related_fields_dict.items():
                 if not value and not project_related_fields_dict[key]:
@@ -127,13 +129,12 @@ class CloneProjectTestCase(UnitTestBase):
                 self.assertNotEqual(set(project_related_fields_dict[key]), set(value))
 
                 cloned_test_dicts = [
-                    getattr(cloned_test, key).get(pk=pk).to_dict(
-                        exclude_fields=exclude_fields) for pk in value
+                    _exclude_dict(getattr(cloned_test, key).get(pk=pk).to_dict(), exclude_fields)
+                    for pk in value
                 ]
 
                 project_test_dicts = [
-                    getattr(proj_test, key).get(pk=pk).to_dict(
-                        exclude_fields=exclude_fields)
+                    _exclude_dict(getattr(proj_test, key).get(pk=pk).to_dict(), exclude_fields)
                     for pk in project_related_fields_dict[key]
                 ]
 
@@ -150,3 +151,11 @@ def random_uploaded_file(project):
 def random_pattern(project):
     return ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
         project=project, pattern='hi' + str(uuid.uuid4().hex))
+
+
+def _exclude_dict(dict_, exclude_fields):
+    return {key: value for key, value in dict_.items() if key not in exclude_fields}
+
+
+def _filter_dict(dict_, include_fields):
+    return {key: value for key, value in dict_.items() if key in include_fields}

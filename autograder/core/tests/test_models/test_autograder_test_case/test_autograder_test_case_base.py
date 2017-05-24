@@ -236,10 +236,6 @@ class AutograderTestCaseBaseMiscTestCase(_Shared, UnitTestBase):
             self.assertEqual(getattr(ag_test, fdbk_field).to_dict(),
                              ag_test.to_dict()[fdbk_field])
 
-            fdbk_excluded = ag_test.to_dict(exclude_fields=[fdbk_field])
-
-            self.assertNotIn(fdbk_field, fdbk_excluded)
-
     def test_editable_fields(self):
         expected = [
             'name',
