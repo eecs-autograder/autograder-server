@@ -192,6 +192,11 @@ class SubmissionSerializer(AGModelSerializer):
         return ag_models.Submission.objects
 
 
+class AGTestSuiteSerializer(AGModelSerializer):
+    def get_ag_model_manager(self):
+        return ag_models.AGTestSuite.objects
+
+
 class NotificationSerializer(AGModelSerializer):
     def get_ag_model_manager(self):
         return ag_models.Notification.objects

@@ -8,6 +8,7 @@ from .serializer_impls import (
     SubmissionGroupSerializer,
     SubmissionGroupInvitationSerializer,
     SubmissionSerializer,
+    AGTestSuiteSerializer,
     NotificationSerializer,
 )
 

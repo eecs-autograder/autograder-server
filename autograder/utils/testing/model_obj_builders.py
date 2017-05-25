@@ -406,9 +406,36 @@ def random_fdbk() -> ag_models.FeedbackConfig:
     return fdbk
 
 
+def make_ag_test_suite(project: ag_models.Project=None,
+                       **ag_test_suite_args) -> ag_models.AGTestSuite:
+    if project is None:
+        project = build_project()
+
+    if 'name' not in ag_test_suite_args:
+        ag_test_suite_args['name'] = 'ag_test_suite{}'.format(get_unique_id())
+
+    return ag_models.AGTestSuite.objects.validate_and_create(project=project, **ag_test_suite_args)
+
+
+def make_ag_test_case(ag_test_suite: ag_models.AGTestSuite=None,
+                      **ag_test_case_args) -> ag_models.AGTestCase:
+    if ag_test_suite is None:
+        ag_test_suite = make_ag_test_suite()
+
+    if 'name' not in ag_test_case_args:
+        ag_test_case_args['name'] = 'ag_test_case{}'.format(get_unique_id())
+
+    return ag_models.AGTestCase.objects.validate_and_create(
+        ag_test_suite=ag_test_suite, **ag_test_case_args)
+
+
 def make_full_ag_test_command(
-        ag_test_case: ag_models.AGTestCase, set_arbitrary_points=True,
+        ag_test_case: ag_models.AGTestCase=None,
+        set_arbitrary_points=True,
         **ag_test_cmd_kwargs) -> ag_models.AGTestCommand:
+    if ag_test_case is None:
+        ag_test_case = make_ag_test_case()
+
     base_kwargs = {
         'name': 'ag_test_cmd-{}'.format(get_unique_id()),
         'ag_test_case': ag_test_case,

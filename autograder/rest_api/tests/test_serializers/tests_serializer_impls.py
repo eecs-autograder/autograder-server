@@ -152,6 +152,15 @@ class SubmissionSerializerTestCase(SerializerTestCase):
         self.assertFalse(submission.count_towards_daily_limit)
 
 
+class AGTestSuiteSerializerTestCase(SerializerTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_serialize(self):
+        ag_test_suite = obj_build.make_ag_test_suite()
+        self.do_basic_serialize_test(ag_test_suite, ag_serializers.AGTestSuiteSerializer)
+
+
 class NotificationSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
         notification = ag_models.Notification.objects.validate_and_create(
