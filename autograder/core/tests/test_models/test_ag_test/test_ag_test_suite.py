@@ -188,7 +188,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertIsInstance(suite_dict['staff_viewer_fdbk_config'], dict)
 
         update_dict = copy.deepcopy(suite_dict)
-        for non_editable in ['pk', 'project', 'docker_image_to_use']:
+        for non_editable in ['pk', 'project', 'ag_test_cases', 'docker_image_to_use']:
             update_dict.pop(non_editable)
 
         suite.validate_and_update(**update_dict)

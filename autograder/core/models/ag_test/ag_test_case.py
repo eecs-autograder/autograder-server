@@ -96,11 +96,14 @@ class AGTestCase(AutograderModel):
     SERIALIZABLE_FIELDS = (
         'name',
         'ag_test_suite',
+        'ag_test_commands',
         'normal_fdbk_config',
         'ultimate_submission_fdbk_config',
         'past_limit_submission_fdbk_config',
         'staff_viewer_fdbk_config',
     )
+
+    SERIALIZE_RELATED = ('ag_test_commands',)
 
     EDITABLE_FIELDS = (
         'name',

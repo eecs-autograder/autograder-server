@@ -137,6 +137,7 @@ class AGTestCaseTestCase(UnitTestBase):
     def test_serialize(self):
         ag_test = ag_models.AGTestCase.objects.validate_and_create(
             name='a;sdklfjsdas;dkf', ag_test_suite=self.ag_suite)  # type: ag_models.AGTestCase
+        cmd = obj_build.make_full_ag_test_command(ag_test)
 
         test_dict = ag_test.to_dict()
 
@@ -144,6 +145,7 @@ class AGTestCaseTestCase(UnitTestBase):
             'pk',
             'name',
             'ag_test_suite',
+            'ag_test_commands',
             'normal_fdbk_config',
             'ultimate_submission_fdbk_config',
             'past_limit_submission_fdbk_config',
@@ -152,6 +154,8 @@ class AGTestCaseTestCase(UnitTestBase):
 
         self.assertCountEqual(expected_keys, test_dict.keys())
 
+        self.assertSequenceEqual([cmd.to_dict()], test_dict['ag_test_commands'])
+
         self.assertIsInstance(test_dict['normal_fdbk_config'], dict)
         self.assertIsInstance(test_dict['ultimate_submission_fdbk_config'], dict)
         self.assertIsInstance(test_dict['past_limit_submission_fdbk_config'], dict)
@@ -159,4 +163,5 @@ class AGTestCaseTestCase(UnitTestBase):
 
         update_dict = copy.deepcopy(test_dict)
         update_dict.pop('pk')
+        update_dict.pop('ag_test_commands')
         ag_test.validate_and_update(**update_dict)
