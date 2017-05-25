@@ -153,6 +153,8 @@ class AGTestSuite(AutograderModel):
         'project_files_needed',
         'student_files_needed',
 
+        'ag_test_cases',
+
         'setup_suite_cmd',
         'teardown_suite_cmd',
 
@@ -169,6 +171,8 @@ class AGTestSuite(AutograderModel):
     SERIALIZE_RELATED = (
         'project_files_needed',
         'student_files_needed',
+
+        'ag_test_cases',
     )
 
     TRANSPARENT_TO_ONE_FIELDS = (

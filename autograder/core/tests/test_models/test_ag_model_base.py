@@ -1,6 +1,3 @@
-import random
-import string
-
 from django.contrib.auth.models import User
 from django.core import exceptions
 
@@ -14,6 +11,8 @@ from .models import (
 class AGModelBaseToDictTest(UnitTestBase):
     def setUp(self):
         super().setUp()
+
+        self.maxDiff = None
 
         self.ag_model = _DummyAutograderModel.objects.create(
             pos_num_val=15,
@@ -58,6 +57,13 @@ class AGModelBaseToDictTest(UnitTestBase):
         print(result)
         self.assertEqual(expected, result)
 
+        expected_one_to_many = {
+            'pk': self.ag_model.foreign_key.pk,
+            'name': self.ag_model.foreign_key.name,
+            'rev_foreign_key': [self.ag_model.pk]
+        }
+        self.assertEqual(expected_one_to_many, self.ag_model.foreign_key.to_dict())
+
     def test_to_one_and_to_many_in_serialize_related(self):
         _DummyAutograderModel.SERIALIZE_RELATED = (
             'one_to_one', 'nullable_one_to_one', 'foreign_key', 'many_to_many')
@@ -86,6 +92,15 @@ class AGModelBaseToDictTest(UnitTestBase):
 
         print(result)
         self.assertEqual(expected, result)
+
+        _DummyAutograderModel.SERIALIZE_RELATED = tuple()
+        _DummyForeignAutograderModel.SERIALIZE_RELATED = ('rev_foreign_key',)
+        expected_one_to_many = {
+            'pk': self.ag_model.foreign_key.pk,
+            'name': self.ag_model.foreign_key.name,
+            'rev_foreign_key': [self.ag_model.to_dict()]
+        }
+        self.assertEqual(expected_one_to_many, self.ag_model.foreign_key.to_dict())
 
     def test_empty_to_many_serialized_correctly(self):
         self.ag_model.many_to_many.clear()

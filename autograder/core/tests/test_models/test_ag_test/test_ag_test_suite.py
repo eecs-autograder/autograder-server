@@ -147,6 +147,11 @@ class AGTestSuiteTestCase(UnitTestBase):
             deferred=True
         )  # type: ag_models.AGTestSuite
 
+        ag_test = ag_models.AGTestCase.objects.validate_and_create(
+            name='asdfkajewfiao',
+            ag_test_suite=suite
+        )
+
         suite_dict = suite.to_dict()
 
         expected_keys = [
@@ -156,6 +161,8 @@ class AGTestSuiteTestCase(UnitTestBase):
 
             'project_files_needed',
             'student_files_needed',
+
+            'ag_test_cases',
 
             'setup_suite_cmd',
             'teardown_suite_cmd',
@@ -173,6 +180,7 @@ class AGTestSuiteTestCase(UnitTestBase):
 
         self.assertIsInstance(suite_dict['project_files_needed'][0], dict)
         self.assertIsInstance(suite_dict['student_files_needed'][0], dict)
+        self.assertSequenceEqual([ag_test.to_dict()], suite_dict['ag_test_cases'])
 
         self.assertIsInstance(suite_dict['normal_fdbk_config'], dict)
         self.assertIsInstance(suite_dict['ultimate_submission_fdbk_config'], dict)

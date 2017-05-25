@@ -105,6 +105,10 @@ class ToDictMixin:
         This overrides the default behavior of representing related
         objects as only a primary key.
 
+        IMPORTANT: Do not register a relationship and its reverse
+        lookup in SERIALIZE_RELATED for their respective models,
+        or you will get infinite recursion!
+
         The base class version of this function returns the value of
         cls.SERIALIZE_RELATED, which defaults to an empty tuple.
         """
@@ -157,7 +161,7 @@ class ToDictMixin:
                         result[field_name] = field_val.to_dict()
                     else:
                         result[field_name] = field_val.pk
-                elif field.many_to_many:
+                elif field.many_to_many or field.one_to_many:
                     if field_name in self.get_serialize_related_fields():
                         result[field_name] = [
                             obj.to_dict() for obj in getattr(self, field_name).all()]

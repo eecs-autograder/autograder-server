@@ -22,7 +22,7 @@ class _DummyToManyModel(AutograderModel):
 class _DummyForeignAutograderModel(AutograderModel):
     name = models.CharField(max_length=255)
 
-    SERIALIZABLE_FIELDS = ('name',)
+    SERIALIZABLE_FIELDS = ('name', 'rev_foreign_key')
     EDITABLE_FIELDS = ('name',)
 
 
