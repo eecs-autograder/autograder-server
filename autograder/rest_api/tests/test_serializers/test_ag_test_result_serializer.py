@@ -18,7 +18,7 @@ class AGTestResultSerializerTestCase(SerializerTestCase):
         result = obj_build.build_compiled_ag_test_result()
         result.test_case.staff_viewer_fdbk = obj_build.random_fdbk()
         for fdbk_type, fdbk_method_name in _TYPE_STRS_TO_FDBK_METHOD_NAMES.items():
-            actual_data = ag_serializers.AGTestResultSerializer(
+            actual_data = ag_serializers.AutograderTestResultSerializer(
                 result, feedback_type=fdbk_type).data
 
             self.assertEqual(getattr(result, fdbk_method_name)().to_dict(),

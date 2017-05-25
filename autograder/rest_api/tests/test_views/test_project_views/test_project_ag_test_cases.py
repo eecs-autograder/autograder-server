@@ -49,7 +49,7 @@ class ListAGTestsTestCase(_AGTestsSetUp,
             'interpreted_test_case', name='interprety', project=project,
             interpreter='python', entry_point_filename='spam')
 
-        return ag_serializers.AGTestCaseSerializer(
+        return ag_serializers.AutograderTestCaseSerializer(
             [compiled_and_run, compiled_only, interpreted], many=True).data
 
 

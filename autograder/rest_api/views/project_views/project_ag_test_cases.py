@@ -14,7 +14,7 @@ class ProjectAGTestsViewset(build_load_object_mixin(ag_models.Project),
                             mixins.CreateModelMixin,
                             viewsets.GenericViewSet):
     permission_classes = (permissions.IsAuthenticated, IsAdminOrReadOnlyStaff)
-    serializer_class = ag_serializers.AGTestCaseSerializer
+    serializer_class = ag_serializers.AutograderTestCaseSerializer
 
     def get_queryset(self):
         project = self.load_object(self.kwargs['project_pk'])

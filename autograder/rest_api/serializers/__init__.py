@@ -3,12 +3,14 @@ from .serializer_impls import (
     ProjectSerializer,
     UploadedFileSerializer,
     ExpectedStudentFilePatternSerializer,
-    AGTestCaseSerializer,
-    AGTestResultSerializer,
+    AutograderTestCaseSerializer,
+    AutograderTestResultSerializer,
     SubmissionGroupSerializer,
     SubmissionGroupInvitationSerializer,
     SubmissionSerializer,
     AGTestSuiteSerializer,
+    AGTestCaseSerializer,
+    AGTestCommandSerializer,
     NotificationSerializer,
 )
 

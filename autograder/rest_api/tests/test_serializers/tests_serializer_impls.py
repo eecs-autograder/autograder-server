@@ -161,6 +161,24 @@ class AGTestSuiteSerializerTestCase(SerializerTestCase):
         self.do_basic_serialize_test(ag_test_suite, ag_serializers.AGTestSuiteSerializer)
 
 
+class AGTestCaseSerializerTestCase(SerializerTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_serialize(self):
+        ag_test_case = obj_build.make_ag_test_case()
+        self.do_basic_serialize_test(ag_test_case, ag_serializers.AGTestCaseSerializer)
+
+
+class AGTestCommandSerializerTestCase(SerializerTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_serialize(self):
+        ag_test_command = obj_build.make_full_ag_test_command()
+        self.do_basic_serialize_test(ag_test_command, ag_serializers.AGTestCommandSerializer)
+
+
 class NotificationSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
         notification = ag_models.Notification.objects.validate_and_create(

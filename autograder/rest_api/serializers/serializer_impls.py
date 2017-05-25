@@ -48,7 +48,7 @@ class ExpectedStudentFilePatternSerializer(AGModelSerializer):
         return ag_models.ExpectedStudentFilePattern.objects
 
 
-class AGTestCaseSerializer(AGModelSerializer):
+class AutograderTestCaseSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         if 'data' not in kwargs:
             super().__init__(*args, **kwargs)
@@ -123,7 +123,7 @@ class AGTestCaseSerializer(AGModelSerializer):
             pk__in=pk_list)
 
 
-class AGTestResultSerializer(AGModelSerializer):
+class AutograderTestResultSerializer(AGModelSerializer):
     def __init__(self, *args, feedback_type=None, **kwargs):
         if feedback_type is None:
             raise ValueError(
@@ -195,6 +195,16 @@ class SubmissionSerializer(AGModelSerializer):
 class AGTestSuiteSerializer(AGModelSerializer):
     def get_ag_model_manager(self):
         return ag_models.AGTestSuite.objects
+
+
+class AGTestCaseSerializer(AGModelSerializer):
+    def get_ag_model_manager(self):
+        return ag_models.AGTestCase.objects
+
+
+class AGTestCommandSerializer(AGModelSerializer):
+    def get_ag_model_manager(self):
+        return ag_models.AGTestCommand.objects
 
 
 class NotificationSerializer(AGModelSerializer):

@@ -19,6 +19,6 @@ class AGTestCaseViewset(
         transaction_mixins.TransactionUpdateMixin,
         transaction_mixins.TransactionDestroyMixin,
         viewsets.GenericViewSet):
-    serializer_class = ag_serializers.AGTestCaseSerializer
+    serializer_class = ag_serializers.AutograderTestCaseSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)
     queryset = ag_models.AutograderTestCaseBase.objects.all()

@@ -28,7 +28,7 @@ class SubmissionResultsViewset(
         fdbk_type = self.request.query_params.get('feedback_type')
 
         kwargs['context'] = self.get_serializer_context()
-        return ag_serializers.AGTestResultSerializer(
+        return ag_serializers.AutograderTestResultSerializer(
             *args, feedback_type=fdbk_type, **kwargs)
 
     def get_queryset(self):

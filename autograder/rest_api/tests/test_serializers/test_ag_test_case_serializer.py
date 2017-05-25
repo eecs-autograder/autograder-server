@@ -36,7 +36,7 @@ class AGTestCaseSerializerTestCase(_SetUp, SerializerTestCase):
             student_files_to_compile_together=[self.expected_pattern])
         print(ag_test.to_dict()['test_resource_files'])
         self.do_basic_serialize_test(ag_test,
-                                     ag_serializers.AGTestCaseSerializer)
+                                     ag_serializers.AutograderTestCaseSerializer)
 
     def test_create(self):
         self.assertEqual(0, ag_models.AutograderTestCaseBase.objects.count())
@@ -47,7 +47,7 @@ class AGTestCaseSerializerTestCase(_SetUp, SerializerTestCase):
             'type_str': 'compiled_and_run_test_case',
         }
 
-        serializer = ag_serializers.AGTestCaseSerializer(data=data)
+        serializer = ag_serializers.AutograderTestCaseSerializer(data=data)
         serializer.is_valid()
         serializer.save()
 
@@ -72,7 +72,7 @@ class AGTestCaseSerializerTestCase(_SetUp, SerializerTestCase):
                     ag_models.FeedbackConfig.create_with_max_fdbk().to_dict())
             }
 
-            serializer = ag_serializers.AGTestCaseSerializer(data=data)
+            serializer = ag_serializers.AutograderTestCaseSerializer(data=data)
             serializer.is_valid()
             serializer.save()
             loaded = ag_models.AutograderTestCaseBase.objects.get(
@@ -86,7 +86,7 @@ class AGTestCaseSerializerTestCase(_SetUp, SerializerTestCase):
                 feedback_config.ReturnCodeFdbkLevel.no_feedback)
             self.assertNotEqual(data[fdbk_field], updated_fdbk)
 
-            serializer = ag_serializers.AGTestCaseSerializer(
+            serializer = ag_serializers.AutograderTestCaseSerializer(
                 loaded, data={fdbk_field: updated_fdbk},
                 partial=True)
             serializer.is_valid()
@@ -120,7 +120,7 @@ class RelatedFileFieldsDeserializeTestCase(_SetUp, SerializerTestCase):
             'student_files_to_compile_together': [compile_student],
         })
 
-        serializer = ag_serializers.AGTestCaseSerializer(data=self.base_data)
+        serializer = ag_serializers.AutograderTestCaseSerializer(data=self.base_data)
         serializer.is_valid()
         serializer.save()
 
@@ -152,7 +152,7 @@ class RelatedFileFieldsDeserializeTestCase(_SetUp, SerializerTestCase):
                     student_file_to_compile_together.to_dict()]
             }
 
-            serializer = ag_serializers.AGTestCaseSerializer(
+            serializer = ag_serializers.AutograderTestCaseSerializer(
                 test_case, data=updated_data, partial=True)
             serializer.is_valid()
             serializer.save()
