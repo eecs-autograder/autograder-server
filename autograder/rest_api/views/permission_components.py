@@ -34,6 +34,7 @@ def user_can_view_group(user, group):
     return group.members.filter(pk=user.pk).exists()
 
 
+# TODO: update to use FeedbackCategory instead of string
 def user_can_request_feedback_type(user, feedback_type, submission):
     '''
     Returns True if the given user is allowed to request the specified
