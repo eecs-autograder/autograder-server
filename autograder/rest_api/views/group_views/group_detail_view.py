@@ -48,10 +48,10 @@ class _UltimateSubmissionPermissions(_Permissions):
         return not project.hide_ultimate_submission_fdbk
 
 
-class GroupViewset(build_load_object_mixin(ag_models.SubmissionGroup),
-                   mixins.RetrieveModelMixin,
-                   transaction_mixins.TransactionUpdateMixin,
-                   viewsets.GenericViewSet):
+class GroupDetailViewSet(build_load_object_mixin(ag_models.SubmissionGroup),
+                         mixins.RetrieveModelMixin,
+                         transaction_mixins.TransactionUpdateMixin,
+                         viewsets.GenericViewSet):
     queryset = ag_models.SubmissionGroup.objects.all()
     serializer_class = ag_serializers.SubmissionGroupSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)

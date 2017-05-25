@@ -14,7 +14,7 @@ class _Permissions(permissions.BasePermission):
                     request.user, request.query_params.get('feedback_type'), submission))
 
 
-class SubmissionResultsViewset(
+class SubmissionResultsViewSet(
         build_load_object_mixin(ag_models.Submission, pk_key='submission_pk'),
         mixins.ListModelMixin,
         viewsets.GenericViewSet):

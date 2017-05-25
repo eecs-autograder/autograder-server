@@ -10,8 +10,8 @@ import autograder.rest_api.serializers as ag_serializers
 from autograder import utils
 import autograder.utils.testing as test_ut
 
-from .permission_components import user_can_view_project
-from .load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.permission_components import user_can_view_project
+from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
 class _Permissions(permissions.BasePermission):
@@ -32,7 +32,7 @@ class _Permissions(permissions.BasePermission):
         return is_involved
 
 
-class GroupInvitationViewset(
+class GroupInvitationDetailViewSet(
         build_load_object_mixin(ag_models.SubmissionGroupInvitation),
         mixins.RetrieveModelMixin,
         viewsets.GenericViewSet):

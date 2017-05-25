@@ -6,7 +6,7 @@ from autograder.rest_api import views
 
 
 user_router = routers.SimpleRouter()
-user_router.register(r'users', views.UserViewset, base_name='user')
+user_router.register(r'users', views.UserViewSet, base_name='user')
 
 course_router = routers.SimpleRouter()
 course_router.register(r'courses', views.CourseViewSet, base_name='course')
@@ -23,40 +23,40 @@ enrolled_students_router = routers.NestedSimpleRouter(course_router,
                                                       r'courses',
                                                       lookup='course')
 enrolled_students_router.register(r'enrolled_students',
-                                  views.CourseEnrolledStudentsViewset,
+                                  views.CourseEnrolledStudentsViewSet,
                                   base_name='course-enrolled-students')
 course_projects_router = routers.NestedSimpleRouter(course_router, r'courses',
                                                     lookup='course')
 course_projects_router.register(r'projects',
-                                views.CourseProjectsViewSet,
+                                views.ProjectsViewSet,
                                 base_name='course-projects')
 
 
 project_router = routers.SimpleRouter()
-project_router.register(r'projects', views.ProjectViewSet, base_name='project')
+project_router.register(r'projects', views.ProjectDetailViewSet, base_name='project')
 
 expected_patterns_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 expected_patterns_router.register(
-    r'expected_patterns', views.ProjectExpectedStudentFilePatternsViewSet,
+    r'expected_patterns', views.ExpectedStudentFilePatternsViewSet,
     base_name='project-expected-patterns')
 
 uploaded_files_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 uploaded_files_router.register(
-    r'uploaded_files', views.ProjectUploadedFilesViewSet,
+    r'uploaded_files', views.UploadedFilesViewSet,
     base_name='project-uploaded-files')
 
 groups_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 groups_router.register(
-    r'submission_groups', views.ProjectGroupsViewSet,
+    r'submission_groups', views.GroupsViewSet,
     base_name='project-groups')
 
 invitations_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 invitations_router.register(
-    r'group_invitations', views.ProjectGroupInvitationsViewset,
+    r'group_invitations', views.GroupInvitationsViewSet,
     base_name='project-group-invitations')
 
 ag_tests_router = routers.NestedSimpleRouter(
@@ -68,12 +68,12 @@ ag_tests_router.register(
 
 expected_pattern_router = routers.SimpleRouter()
 expected_pattern_router.register(r'expected_patterns',
-                                 views.ExpectedStudentFilePatternViewset,
+                                 views.ExpectedStudentFilePatternDetailViewSet,
                                  base_name='expected-pattern')
 
 uploaded_file_router = routers.SimpleRouter()
 uploaded_file_router.register(r'uploaded_files',
-                              views.UploadedFileViewset,
+                              views.UploadedFileDetailViewSet,
                               base_name='uploaded-file')
 
 ag_test_router = routers.SimpleRouter()
@@ -82,27 +82,27 @@ ag_test_router.register(r'ag_test_cases', views.AGTestCaseViewset,
 
 group_invitation_router = routers.SimpleRouter()
 group_invitation_router.register(r'group_invitations',
-                                 views.GroupInvitationViewset,
+                                 views.GroupInvitationDetailViewSet,
                                  base_name='group-invitation')
 
 
 group_router = routers.SimpleRouter()
-group_router.register(r'groups', views.GroupViewset, base_name='group')
+group_router.register(r'groups', views.GroupDetailViewSet, base_name='group')
 
 group_submissions_router = routers.NestedSimpleRouter(group_router, r'groups',
                                                       lookup='group')
 group_submissions_router.register(r'submissions',
-                                  views.GroupSubmissionsViewset,
+                                  views.SubmissionsViewSet,
                                   base_name='group-submissions')
 
 
 submission_router = routers.SimpleRouter()
-submission_router.register(r'submissions', views.SubmissionViewset,
+submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            base_name='submission')
 
 submission_results_router = routers.NestedSimpleRouter(
     submission_router, r'submissions', lookup='submission')
-submission_results_router.register(r'results', views.SubmissionResultsViewset,
+submission_results_router.register(r'results', views.SubmissionResultsViewSet,
                                    base_name='submission-results')
 
 

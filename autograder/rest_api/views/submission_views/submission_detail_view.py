@@ -31,10 +31,10 @@ class _RemoveFromQueuePermissions(permissions.BasePermission):
         return group.members.filter(pk=request.user.pk).exists()
 
 
-class SubmissionViewset(build_load_object_mixin(ag_models.Submission),
-                        mixins.RetrieveModelMixin,
-                        transaction_mixins.TransactionUpdateMixin,
-                        viewsets.GenericViewSet):
+class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
+                              mixins.RetrieveModelMixin,
+                              transaction_mixins.TransactionUpdateMixin,
+                              viewsets.GenericViewSet):
     queryset = ag_models.Submission.objects.all()
     serializer_class = ag_serializers.SubmissionSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)

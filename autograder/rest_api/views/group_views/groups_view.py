@@ -11,8 +11,8 @@ from autograder.rest_api.views.permission_components import user_can_view_projec
 from autograder import utils
 import autograder.utils.testing as test_ut
 
-from .permissions import IsAdminOrReadOnlyStaff
-from ..load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.project_views.permissions import IsAdminOrReadOnlyStaff
+from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
 class _CreateSoloGroupPermissions(permissions.BasePermission):
@@ -23,7 +23,7 @@ class _CreateSoloGroupPermissions(permissions.BasePermission):
         return user_can_view_project(request.user, project)
 
 
-class ProjectGroupsViewSet(
+class GroupsViewSet(
         build_load_object_mixin(ag_models.Project, lock_on_unsafe_method=False,
                                 pk_key='project_pk'),
         mixins.ListModelMixin,

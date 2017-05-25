@@ -8,10 +8,10 @@ from .permissions import ProjectPermissions
 from ..load_object_mixin import build_load_object_mixin
 
 
-class ProjectViewSet(build_load_object_mixin(ag_models.Project),  # type: ignore
+class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),  # type: ignore
                      mixins.RetrieveModelMixin,
-                     transaction_mixins.TransactionUpdateMixin,
-                     viewsets.GenericViewSet):
+                           transaction_mixins.TransactionUpdateMixin,
+                           viewsets.GenericViewSet):
     serializer_class = ag_serializers.ProjectSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermissions)
 

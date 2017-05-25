@@ -5,11 +5,11 @@ from rest_framework import viewsets, mixins, permissions
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from .permissions import ProjectPermissions
-from ..load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.project_views.permissions import ProjectPermissions
+from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
-class ProjectExpectedStudentFilePatternsViewSet(
+class ExpectedStudentFilePatternsViewSet(
         build_load_object_mixin(ag_models.Project),
         mixins.CreateModelMixin,
         mixins.ListModelMixin,

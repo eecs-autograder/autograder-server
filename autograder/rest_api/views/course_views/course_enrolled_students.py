@@ -12,7 +12,7 @@ from .permissions import IsAdminOrReadOnlyStaff
 from ..load_object_mixin import build_load_object_mixin
 
 
-class CourseEnrolledStudentsViewset(build_load_object_mixin(ag_models.Course,
+class CourseEnrolledStudentsViewSet(build_load_object_mixin(ag_models.Course,
                                                             pk_key='course_pk'),
                                     mixins.ListModelMixin,
                                     viewsets.GenericViewSet):

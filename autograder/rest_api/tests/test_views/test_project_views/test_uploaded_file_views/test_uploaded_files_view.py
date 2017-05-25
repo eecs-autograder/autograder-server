@@ -85,7 +85,7 @@ class CreateUploadedFileTestCase(_UploadedFilesSetUp,
         self.assertEqual(self.file_obj.read(), loaded.file_obj.read())
 
     def test_admin_create_uploaded_file_invalid_settings(self):
-        bad_file = SimpleUploadedFile(';bad name # #$%^', b'waaaario')
+        bad_file = SimpleUploadedFile('..', b'waaaario')
         self.assertEqual(0, self.project.uploaded_files.count())
         args = {'file_obj': bad_file}
         self.client.force_authenticate(self.admin)

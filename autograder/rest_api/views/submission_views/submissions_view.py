@@ -6,8 +6,8 @@ from rest_framework import viewsets, mixins, permissions, exceptions
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from ..permission_components import user_can_view_group
-from ..load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.permission_components import user_can_view_group
+from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
 class _Permissions(permissions.BasePermission):
@@ -31,7 +31,7 @@ class _Permissions(permissions.BasePermission):
         return group.members.filter(pk=request.user.pk).exists()
 
 
-class GroupSubmissionsViewset(
+class SubmissionsViewSet(
         build_load_object_mixin(ag_models.SubmissionGroup, pk_key='group_pk'),
         mixins.ListModelMixin,
         mixins.CreateModelMixin,

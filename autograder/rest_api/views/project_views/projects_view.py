@@ -5,7 +5,7 @@ from rest_framework import viewsets, mixins, permissions
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from ..load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
 class IsAdminOrReadOnlyStaffOrStudent(permissions.BasePermission):
@@ -18,10 +18,10 @@ class IsAdminOrReadOnlyStaffOrStudent(permissions.BasePermission):
         return is_admin or (read_only and (is_staff or is_enrolled))
 
 
-class CourseProjectsViewSet(build_load_object_mixin(ag_models.Course),
-                            mixins.CreateModelMixin,
-                            mixins.ListModelMixin,
-                            viewsets.GenericViewSet):
+class ProjectsViewSet(build_load_object_mixin(ag_models.Course),
+                      mixins.CreateModelMixin,
+                      mixins.ListModelMixin,
+                      viewsets.GenericViewSet):
     serializer_class = ag_serializers.ProjectSerializer
     permission_classes = (permissions.IsAuthenticated,
                           IsAdminOrReadOnlyStaffOrStudent)

@@ -11,7 +11,7 @@ import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
 
-from .load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
 class _Permissions(permissions.BasePermission):
@@ -25,10 +25,10 @@ class _Permissions(permissions.BasePermission):
         return True
 
 
-class UploadedFileViewset(build_load_object_mixin(ag_models.UploadedFile),
-                          mixins.RetrieveModelMixin,
-                          transaction_mixins.TransactionDestroyMixin,
-                          viewsets.GenericViewSet):
+class UploadedFileDetailViewSet(build_load_object_mixin(ag_models.UploadedFile),
+                                mixins.RetrieveModelMixin,
+                                transaction_mixins.TransactionDestroyMixin,
+                                viewsets.GenericViewSet):
     queryset = ag_models.UploadedFile.objects.all()
     serializer_class = ag_serializers.UploadedFileSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)

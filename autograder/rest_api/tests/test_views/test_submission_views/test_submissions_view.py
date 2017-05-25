@@ -9,6 +9,7 @@ import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
 from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -226,8 +227,7 @@ class CreateSubmissionTestCase(test_data.Client,
                         ag_models.Submission.GradingStatus.active_statuses):
                     continue
 
-                ag_models.Submission.objects.validate_and_create(
-                    [], submission_group=group, status=grading_status)
+                obj_build.build_submission(submission_group=group, status=grading_status)
 
                 self.do_normal_submit_test(group, group.members.first())
 

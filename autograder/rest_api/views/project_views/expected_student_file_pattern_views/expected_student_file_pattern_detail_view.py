@@ -4,8 +4,8 @@ import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
 
-from .permission_components import user_can_view_project
-from .load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.permission_components import user_can_view_project
+from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
 class _Permissions(permissions.BasePermission):
@@ -16,7 +16,7 @@ class _Permissions(permissions.BasePermission):
         return pattern.project.course.is_administrator(request.user)
 
 
-class ExpectedStudentFilePatternViewset(
+class ExpectedStudentFilePatternDetailViewSet(
         build_load_object_mixin(ag_models.ExpectedStudentFilePattern),
         mixins.RetrieveModelMixin,
         transaction_mixins.TransactionUpdateMixin,

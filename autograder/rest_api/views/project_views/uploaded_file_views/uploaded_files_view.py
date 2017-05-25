@@ -5,14 +5,14 @@ from rest_framework import viewsets, mixins, permissions
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from .permissions import IsAdminOrReadOnlyStaff
-from ..load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.project_views.permissions import IsAdminOrReadOnlyStaff
+from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
-class ProjectUploadedFilesViewSet(build_load_object_mixin(ag_models.Project),
-                                  mixins.CreateModelMixin,
-                                  mixins.ListModelMixin,
-                                  viewsets.GenericViewSet):
+class UploadedFilesViewSet(build_load_object_mixin(ag_models.Project),
+                           mixins.CreateModelMixin,
+                           mixins.ListModelMixin,
+                           viewsets.GenericViewSet):
     serializer_class = ag_serializers.UploadedFileSerializer
     permission_classes = (permissions.IsAuthenticated,
                           IsAdminOrReadOnlyStaff)

@@ -10,8 +10,8 @@ import autograder.rest_api.serializers as ag_serializers
 
 from autograder import utils
 
-from .permissions import IsAdminOrReadOnlyStaff, user_can_view_project
-from ..load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.project_views.permissions import IsAdminOrReadOnlyStaff, user_can_view_project
+from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
 class GroupInvitationsPermissions(IsAdminOrReadOnlyStaff):
@@ -26,7 +26,7 @@ class GroupInvitationsPermissions(IsAdminOrReadOnlyStaff):
         return user_can_view_project(request.user, project)
 
 
-class ProjectGroupInvitationsViewset(
+class GroupInvitationsViewSet(
         build_load_object_mixin(ag_models.Project, lock_on_unsafe_method=False),
         mixins.ListModelMixin,
         mixins.CreateModelMixin,
