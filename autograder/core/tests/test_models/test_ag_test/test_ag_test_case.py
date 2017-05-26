@@ -9,6 +9,8 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 class AGTestCaseTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
+
         self.project = obj_build.build_project()
         self.ag_suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='suitey', project=self.project

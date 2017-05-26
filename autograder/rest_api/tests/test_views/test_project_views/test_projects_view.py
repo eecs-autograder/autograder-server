@@ -12,8 +12,8 @@ import autograder.rest_api.tests.test_views.common_generic_data as test_data
 class _ProjectsSetUp(test_data.Client, test_data.Project):
     def setUp(self):
         super().setUp()
-        self.url = reverse('course-projects-list',
-                           kwargs={'course_pk': self.course.pk})
+        self.url = reverse('projects',
+                           kwargs={'pk': self.course.pk})
 
 
 class CourseListProjectsTestCase(_ProjectsSetUp, UnitTestBase):

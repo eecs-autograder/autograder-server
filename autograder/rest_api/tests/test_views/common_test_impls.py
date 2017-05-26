@@ -28,6 +28,9 @@ class ListObjectsTest(PermissionDeniedGetTest):
         return response
 
 
+
+
+
 class GetObjectTest(ListObjectsTest):
     def do_get_object_test(self, client, user, url, expected_data,
                            format='json'):

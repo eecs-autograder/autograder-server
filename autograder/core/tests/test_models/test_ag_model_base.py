@@ -109,6 +109,8 @@ class AGModelBaseToDictTest(UnitTestBase):
 
 class AGModelValidateAndCreateTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
+
         self.many_to_manys = [
             _DummyToManyModel.objects.create(name='wee{}'.format(i)) for i in range(3)]
         self.users = [

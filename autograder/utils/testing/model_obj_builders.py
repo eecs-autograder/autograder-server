@@ -2,6 +2,7 @@ import copy
 import random
 import uuid
 import base64
+import typing
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -80,6 +81,28 @@ def build_course(course_kwargs: dict=None) -> ag_models.Course:
     course.enrolled_students.add(*students)
 
     return course
+
+
+def make_admin_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+    users = create_dummy_users(num_users=num_users)
+    course.administrators.add(*users)
+    return users
+
+
+def make_staff_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+    users = create_dummy_users(num_users=num_users)
+    course.staff.add(*users)
+    return users
+
+
+def make_enrolled_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+    users = create_dummy_users(num_users=num_users)
+    course.enrolled_students.add(*users)
+    return users
+
+
+def make_users(num_users: int) -> typing.Sequence[User]:
+    return create_dummy_users(num_users=num_users)
 
 
 def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_models.Project:

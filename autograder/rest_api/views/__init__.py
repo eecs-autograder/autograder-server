@@ -14,7 +14,7 @@ from .project_views.expected_student_file_pattern_views\
     .expected_student_file_patterns_view import ExpectedStudentFilePatternsViewSet
 from .project_views.project_ag_test_cases import ProjectAGTestsViewset
 from .project_views.project_detail_view import ProjectDetailViewSet
-from .project_views.projects_view import ProjectsViewSet
+from .project_views.projects_view import ListCreateProjectView
 from .project_views.uploaded_file_views.uploaded_file_detail_view import \
     UploadedFileDetailViewSet
 from .project_views.uploaded_file_views.uploaded_files_view import UploadedFilesViewSet

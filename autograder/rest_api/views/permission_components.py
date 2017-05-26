@@ -2,6 +2,9 @@ from django.utils import timezone
 from rest_framework import permissions, exceptions
 
 
+# TODO: replace usages of these functions with autograder.rest_api.permissions
+
+
 def is_admin_or_read_only_staff(request, course):
     is_admin = course.is_administrator(request.user)
     staff_and_read_only = (course.is_course_staff(request.user) and

@@ -27,9 +27,9 @@ enrolled_students_router.register(r'enrolled_students',
                                   base_name='course-enrolled-students')
 course_projects_router = routers.NestedSimpleRouter(course_router, r'courses',
                                                     lookup='course')
-course_projects_router.register(r'projects',
-                                views.ProjectsViewSet,
-                                base_name='course-projects')
+# course_projects_router.register(r'projects',
+#                                 views.ListCreateProjectView,
+#                                 base_name='course-projects')
 
 
 project_router = routers.SimpleRouter()
@@ -134,4 +134,7 @@ urlpatterns = [
 
     url(r'', include(submission_router.urls)),
     url(r'', include(submission_results_router.urls)),
+
+    url(r'^courses/(?P<pk>[0-9]+)/projects/$',
+        views.ListCreateProjectView.as_view(), name='projects')
 ]

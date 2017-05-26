@@ -5,7 +5,7 @@ from rest_framework import viewsets, mixins, permissions
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.ag_model_views import ListCreateNestedModelView
 
 
 class IsAdminOrReadOnlyStaffOrStudent(permissions.BasePermission):
@@ -18,22 +18,10 @@ class IsAdminOrReadOnlyStaffOrStudent(permissions.BasePermission):
         return is_admin or (read_only and (is_staff or is_enrolled))
 
 
-class ProjectsViewSet(build_load_object_mixin(ag_models.Course),
-                      mixins.CreateModelMixin,
-                      mixins.ListModelMixin,
-                      viewsets.GenericViewSet):
+class ListCreateProjectView(ListCreateNestedModelView):
     serializer_class = ag_serializers.ProjectSerializer
-    permission_classes = (permissions.IsAuthenticated,
-                          IsAdminOrReadOnlyStaffOrStudent)
+    permission_classes = (IsAdminOrReadOnlyStaffOrStudent,)
 
-    def get_queryset(self):
-        course = self.load_object(self.kwargs['course_pk'])
-        if course.is_course_staff(self.request.user):
-            return course.projects.all()
-
-        return course.projects.filter(visible_to_students=True)
-
-    @transaction.atomic()
-    def create(self, request, course_pk, *args, **kwargs):
-        request.data['course'] = self.load_object(course_pk)
-        return super().create(request, *args, **kwargs)
+    model_manager = ag_models.Course.objects
+    foreign_key_field_name = 'course'
+    reverse_foreign_key_field_name = 'projects'

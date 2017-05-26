@@ -127,8 +127,8 @@ class UpdateCourseTestCase(test_data.Client, test_data.Course,
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
-class IsRoleForCourseTestCase(test_data.Client, test_data.Course,
-                              test_impls.GetObjectTest, UnitTestBase):
+class UserRolesForCourseTestCase(test_data.Client, test_data.Course,
+                                 test_impls.GetObjectTest, UnitTestBase):
     def expected_response_base(self):
         return {
             "is_admin": False,
