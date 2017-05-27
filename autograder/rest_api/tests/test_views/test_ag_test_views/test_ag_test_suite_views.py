@@ -3,8 +3,11 @@ from django.core.urlresolvers import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
+import autograder.core.models as ag_models
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
+
+import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
 class ListAGTestSuitesTestCase(UnitTestBase):
@@ -14,7 +17,7 @@ class ListAGTestSuitesTestCase(UnitTestBase):
         self.project = self.suite1.project
         self.suite2 = obj_build.make_ag_test_suite(self.project)
         self.client = APIClient()
-        self.url = reverse('project-ag-test-suites-list', kwargs={'project_pk': self.project.pk})
+        self.url = reverse('ag_test_suites', kwargs={'project_pk': self.project.pk})
 
     def test_staff_valid_list_suites(self):
         [staff] = obj_build.make_staff_users(self.project.course, 1)
@@ -32,9 +35,20 @@ class ListAGTestSuitesTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class CreateAGTestSuiteTestCase(UnitTestBase):
+class CreateAGTestSuiteTestCase(test_impls.CreateObjectTest, UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.project = obj_build.make_project()
+        self.client = APIClient()
+        self.url = reverse('ag_test_suites', kwargs={'project_pk': self.project.pk})
+
     def test_admin_valid_create(self):
-        self.fail()
+        [admin] = obj_build.make_admin_users(self.project.course, 1)
+        data = {
+            'name': 'adslkfjals;dkjfa;lsdkjf'
+        }
+        self.do_create_object_test(
+            ag_models.AGTestSuite.objects, self.client, admin, self.url, data)
 
     def test_non_admin_create_permission_denied(self):
         self.fail()

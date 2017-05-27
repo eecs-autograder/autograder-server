@@ -107,3 +107,9 @@ class ListCreateNestedModelView(GetObjectLockOnUnsafeMixin,
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
+
+
+class TransactionRetrieveUpdateDestroyMixin(mixins.RetrieveModelMixin,
+                                            TransactionUpdateMixin,
+                                            TransactionDestroyMixin):
+    pass

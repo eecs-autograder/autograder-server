@@ -127,12 +127,6 @@ def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_mod
     return project
 
 
-def make_uploaded_file(project: ag_models.Project) -> ag_models.UploadedFile:
-    return ag_models.UploadedFile.objects.validate_and_create(
-        file_obj=SimpleUploadedFile('file' + get_unique_id(), b'content'),
-        project=project)
-
-
 def build_compiled_ag_test(with_points=True,
                            **ag_test_kwargs) -> ag_models.CompiledAndRunAutograderTestCase:
     """
@@ -429,10 +423,33 @@ def random_fdbk() -> ag_models.FeedbackConfig:
     return fdbk
 
 
+def make_course(**kwargs):
+    if 'name' not in kwargs:
+        kwargs['name'] = 'course{}'.format(get_unique_id())
+
+    return ag_models.Course.objects.validate_and_create(**kwargs)
+
+
+def make_project(course: ag_models.Course=None, **project_kwargs) -> ag_models.Project:
+    if course is None:
+        course = make_course()
+
+    if 'name' not in project_kwargs:
+        project_kwargs['name'] = 'project{}'.format(get_unique_id())
+
+    return ag_models.Project.objects.validate_and_create(course=course, **project_kwargs)
+
+
+def make_uploaded_file(project: ag_models.Project) -> ag_models.UploadedFile:
+    return ag_models.UploadedFile.objects.validate_and_create(
+        file_obj=SimpleUploadedFile('file' + get_unique_id(), b'content'),
+        project=project)
+
+
 def make_ag_test_suite(project: ag_models.Project=None,
                        **ag_test_suite_args) -> ag_models.AGTestSuite:
     if project is None:
-        project = build_project()
+        project = make_project()
 
     if 'name' not in ag_test_suite_args:
         ag_test_suite_args['name'] = 'ag_test_suite{}'.format(get_unique_id())
