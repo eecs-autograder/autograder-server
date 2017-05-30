@@ -10,6 +10,17 @@ import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
+class AGTestCaseOrderTestCase(UnitTestBase):
+    def test_staff_get_order(self):
+        self.fail()
+
+    def test_admin_set_order(self):
+        self.fail()
+
+    def test_non_admin_set_order_permission_denied(self):
+        self.fail()
+
+
 class ListAGTestCasesTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()

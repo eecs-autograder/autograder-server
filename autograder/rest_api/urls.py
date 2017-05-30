@@ -142,11 +142,14 @@ urlpatterns = [
     url(r'^courses/(?P<pk>[0-9]+)/projects/$',
         views.ListCreateProjectView.as_view(), name='project-list-create'),
 
-    url(r'projects/(?P<project_pk>[0-9]+)/ag_test_suites',
+    url(r''
+        r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/$',
         views.AGTestSuiteListCreateView.as_view(), name='ag_test_suites'),
+    url(r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/order/$',
+        views.AGTestSuiteOrderView.as_view(), name='ag_test_suite_order'),
     url(r'', include(ag_test_suite_detail_router.urls)),
 
-    url(r'ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases',
+    url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/$',
         views.AGTestCaseListCreateView.as_view(), name='ag_test_cases'),
     url(r'', include(ag_test_case_detail_router.urls)),
 
