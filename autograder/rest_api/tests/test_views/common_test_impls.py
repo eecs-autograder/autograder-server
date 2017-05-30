@@ -28,9 +28,6 @@ class ListObjectsTest(PermissionDeniedGetTest):
         return response
 
 
-
-
-
 class GetObjectTest(ListObjectsTest):
     def do_get_object_test(self, client, user, url, expected_data,
                            format='json'):
@@ -93,13 +90,17 @@ class UpdateObjectTest:
     def do_patch_object_test(self, ag_model_obj, client, user, url,
                              request_data, format='json'):
         expected_data = ag_model_obj.to_dict()
-        expected_data.update(request_data)
+        for key, value in request_data.items():
+            if isinstance(value, dict):
+                expected_data[key].update(value)
+            else:
+                expected_data[key] = value
 
         client.force_authenticate(user)
         response = client.patch(url, request_data, format=format)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
-        ag_model_obj.refresh_from_db()
+        ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
         self.assertDictContentsEqual(expected_data, ag_model_obj.to_dict())
         self.assertDictContentsEqual(expected_data, response.data)
 
@@ -127,7 +128,7 @@ class UpdateObjectTest:
         response = client.put(url, request_data, format=format)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
-        ag_model_obj.refresh_from_db()
+        ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
         self.assertDictContentsEqual(expected_data, ag_model_obj.to_dict())
         self.assertDictContentsEqual((expected_data), (response.data))
 
@@ -153,7 +154,7 @@ class UpdateObjectTest:
         response = client_method(url, request_data, format=format)
         self.assertEqual(expected_status, response.status_code)
 
-        ag_model_obj.refresh_from_db()
+        ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
         self.assertDictContentsEqual(expected_data, ag_model_obj.to_dict())
 
         return response

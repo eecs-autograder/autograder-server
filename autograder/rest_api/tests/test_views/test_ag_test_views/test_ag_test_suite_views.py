@@ -51,31 +51,66 @@ class CreateAGTestSuiteTestCase(test_impls.CreateObjectTest, UnitTestBase):
             ag_models.AGTestSuite.objects, self.client, admin, self.url, data)
 
     def test_non_admin_create_permission_denied(self):
-        self.fail()
+        [enrolled] = obj_build.make_enrolled_users(self.project.course, 1)
+        data = {
+            'name': 'werjaisdlf;j'
+        }
+        self.do_permission_denied_create_test(
+            ag_models.AGTestSuite.objects, self.client, enrolled, self.url, data)
 
 
-class GetAGTestSuiteTestCase(UnitTestBase):
-    def test_admin_or_staff_valid_get(self):
-        self.fail()
+class GetUpdateDeleteAGTestSuiteTestCase(test_impls.GetObjectTest,
+                                         test_impls.UpdateObjectTest,
+                                         test_impls.DestroyObjectTest,
+                                         UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.ag_test_suite = obj_build.make_ag_test_suite()
+        self.course = self.ag_test_suite.project.course
+        self.client = APIClient()
+        self.url = reverse('ag-test-suite-detail', kwargs={'pk': self.ag_test_suite.pk})
+
+    def test_staff_valid_get(self):
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        self.do_get_object_test(self.client, staff, self.url, self.ag_test_suite.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        self.fail()
+        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
-
-class UpdateAGTestSuiteTestCase(UnitTestBase):
     def test_admin_valid_update(self):
-        self.fail()
-
-    def test_non_admin_update_permission_denied(self):
-        self.fail()
+        patch_data = {
+            'name': 'asdf;aliena,cskvnaksd;fasdkjfaklsd',
+            'setup_suite_cmd': 'echo "weeeeeeeeee"',
+            'ultimate_submission_fdbk_config': {
+                'show_setup_and_teardown_stderr': False
+            },
+            'deferred': True
+        }
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.do_patch_object_test(self.ag_test_suite, self.client, admin, self.url, patch_data)
 
     def test_admin_update_bad_values(self):
-        self.fail()
+        patch_data = {
+            'name': '',
+            'ultimate_submission_fdbk_config': {
+                'not_a_field': False
+            }
+        }
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.do_patch_object_invalid_args_test(
+            self.ag_test_suite, self.client, admin, self.url, patch_data)
 
+    def test_non_admin_update_permission_denied(self):
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        self.do_patch_object_permission_denied_test(
+            self.ag_test_suite, self.client, staff, self.url, {'name': 'hello'})
 
-class DeleteAGTestSuiteTestCase(UnitTestBase):
     def test_admin_valid_delete(self):
-        self.fail()
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.do_delete_object_test(self.ag_test_suite, self.client, admin, self.url)
 
     def test_non_admin_delete_permission_denied(self):
-        self.fail()
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        self.do_delete_object_permission_denied_test(
+            self.ag_test_suite, self.client, staff, self.url)

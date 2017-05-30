@@ -102,6 +102,10 @@ submission_results_router.register(r'results', views.SubmissionResultsViewSet,
                                    base_name='submission-results')
 
 
+ag_test_suite_detail_router = routers.SimpleRouter()
+ag_test_suite_detail_router.register(r'ag_test_suites', views.AGTestSuiteDetailViewSet,
+                                     base_name='ag-test-suite')
+
 urlpatterns = [
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
 
@@ -135,5 +139,6 @@ urlpatterns = [
         views.ListCreateProjectView.as_view(), name='project-list-create'),
 
     url(r'projects/(?P<project_pk>[0-9]+)/ag_test_suites',
-        views.AGTestSuiteListCreateView.as_view(), name='ag_test_suites')
+        views.AGTestSuiteListCreateView.as_view(), name='ag_test_suites'),
+    url(r'', include(ag_test_suite_detail_router.urls))
 ]
