@@ -58,7 +58,7 @@ invitations_router.register(
 ag_tests_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 ag_tests_router.register(
-    r'ag_test_cases', views.ProjectAGTestsViewset,
+    r'autograder_test_cases', views.ProjectAGTestsViewset,
     base_name='project-ag-tests')
 
 
@@ -73,7 +73,7 @@ uploaded_file_router.register(r'uploaded_files',
                               base_name='uploaded-file')
 
 ag_test_router = routers.SimpleRouter()
-ag_test_router.register(r'ag_test_cases', views.AGTestCaseViewset,
+ag_test_router.register(r'autograder_test_cases', views.AGTestCaseViewset,
                         base_name='ag-test')
 
 group_invitation_router = routers.SimpleRouter()
@@ -105,6 +105,10 @@ submission_results_router.register(r'results', views.SubmissionResultsViewSet,
 ag_test_suite_detail_router = routers.SimpleRouter()
 ag_test_suite_detail_router.register(r'ag_test_suites', views.AGTestSuiteDetailViewSet,
                                      base_name='ag-test-suite')
+
+ag_test_case_detail_router = routers.SimpleRouter()
+ag_test_case_detail_router.register(r'ag_test_cases', views.AGTestCaseDetailViewSet,
+                                    base_name='ag-test-case')
 
 urlpatterns = [
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
@@ -140,5 +144,10 @@ urlpatterns = [
 
     url(r'projects/(?P<project_pk>[0-9]+)/ag_test_suites',
         views.AGTestSuiteListCreateView.as_view(), name='ag_test_suites'),
-    url(r'', include(ag_test_suite_detail_router.urls))
+    url(r'', include(ag_test_suite_detail_router.urls)),
+
+    url(r'ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases',
+        views.AGTestCaseListCreateView.as_view(), name='ag_test_cases'),
+    url(r'', include(ag_test_case_detail_router.urls)),
+
 ]

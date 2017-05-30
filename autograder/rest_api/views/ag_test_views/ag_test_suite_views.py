@@ -1,5 +1,3 @@
-from rest_framework import viewsets, mixins, permissions
-
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.permissions as ag_permissions
@@ -25,4 +23,10 @@ class AGTestSuiteDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGen
         ag_permissions.is_admin_or_read_only_staff(
             lambda ag_test_suite: ag_test_suite.project.course)
     ]
-    model_manager = ag_models.AGTestSuite.objects.select_related('project__course')
+    model_manager = ag_models.AGTestSuite.objects.select_related(
+        'project__course',
+        'normal_fdbk_config',
+        'ultimate_submission_fdbk_config',
+        'past_limit_submission_fdbk_config',
+        'staff_viewer_fdbk_config',
+    )
