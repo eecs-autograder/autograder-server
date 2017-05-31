@@ -86,6 +86,8 @@ class ToDictMixin:
         "-to-many" fields can only be serialized in instances of the
         model class they are defined in, not reverse-lookup
         relationships.
+        By default, EnumFields are serialized by accessing the .value
+        attribute of the enum instance.
 
         The base class version of this function returns the value of
         cls.SERIALIZABLE_FIELDS, which defaults to an empty tuple,

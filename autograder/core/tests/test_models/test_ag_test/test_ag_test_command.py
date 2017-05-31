@@ -342,10 +342,21 @@ class AGTestCommandMiscTestCase(UnitTestBase):
 
         self.assertCountEqual(expected_keys, cmd_dict.keys())
 
-        self.assertIsInstance(cmd_dict['normal_fdbk_config'], dict)
-        self.assertIsInstance(cmd_dict['ultimate_submission_fdbk_config'], dict)
-        self.assertIsInstance(cmd_dict['past_limit_submission_fdbk_config'], dict)
-        self.assertIsInstance(cmd_dict['staff_viewer_fdbk_config'], dict)
+        fdbk_config_keys = ['normal_fdbk_config',
+                            'ultimate_submission_fdbk_config',
+                            'past_limit_submission_fdbk_config',
+                            'staff_viewer_fdbk_config']
+        for key in fdbk_config_keys:
+            self.assertIsInstance(cmd_dict[key], dict)
+
+            self.assertIsInstance(cmd_dict[key]['return_code_fdbk_level'], str)
+            self.assertIsInstance(cmd_dict[key]['stdout_fdbk_level'], str)
+            self.assertIsInstance(cmd_dict[key]['stderr_fdbk_level'], str)
+
+        self.assertIsInstance(cmd_dict['stdin_source'], str)
+        self.assertIsInstance(cmd_dict['expected_return_code'], str)
+        self.assertIsInstance(cmd_dict['expected_stdout_source'], str)
+        self.assertIsInstance(cmd_dict['expected_stderr_source'], str)
 
         editable_dict = copy.deepcopy(cmd_dict)
         for non_editable in ['pk', 'ag_test_case']:

@@ -10,6 +10,57 @@ import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
+class ListAGTestCasesTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.case1 = obj_build.make_ag_test_case()
+        self.ag_test_suite = self.case1.ag_test_suite
+        self.case2 = obj_build.make_ag_test_case(self.ag_test_suite)
+        self.course = self.ag_test_suite.project.course
+        self.client = APIClient()
+        self.url = reverse('ag_test_cases', kwargs={'ag_test_suite_pk':self.ag_test_suite.pk})
+
+    def test_staff_valid_list_cases(self):
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        self.client.force_authenticate(staff)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual([self.case1.to_dict(), self.case2.to_dict()], response.data)
+
+    def test_non_staff_list_cases_permission_denied(self):
+        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        self.client.force_authenticate(enrolled)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+
+class CreateAGTestCaseTestCase(test_impls.CreateObjectTest, UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.ag_test_suite = obj_build.make_ag_test_suite()
+        self.course = self.ag_test_suite.project.course
+        self.client = APIClient()
+        self.url = reverse('ag_test_cases', kwargs={'ag_test_suite_pk':self.ag_test_suite.pk})
+
+    def test_admin_valid_create(self):
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        data = {
+            'name': 'adsjkfa;jeifae;fjakjxc,mcaj'
+        }
+        self.do_create_object_test(
+            ag_models.AGTestCase.objects, self.client, admin, self.url, data)
+
+    def test_non_admin_create_permission_denied(self):
+        [enrolled] = obj_build.make_enrolled_users(self.ag_test_suite.project.course, 1)
+        data = {
+            'name': 'advnaieroa;'
+        }
+        self.do_permission_denied_create_test(
+            ag_models.AGTestCase.objects, self.client, enrolled, self.url, data)
+
+
 class AGTestCaseOrderTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -60,57 +111,6 @@ class AGTestCaseOrderTestCase(UnitTestBase):
 
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertSequenceEqual(original_order, self.ag_test_suite.get_agtestcase_order())
-
-
-class ListAGTestCasesTestCase(UnitTestBase):
-    def setUp(self):
-        super().setUp()
-        self.case1 = obj_build.make_ag_test_case()
-        self.ag_test_suite = self.case1.ag_test_suite
-        self.case2 = obj_build.make_ag_test_case(self.ag_test_suite)
-        self.course = self.ag_test_suite.project.course
-        self.client = APIClient()
-        self.url = reverse('ag_test_cases', kwargs={'ag_test_suite_pk':self.ag_test_suite.pk})
-
-    def test_staff_valid_list_cases(self):
-        [staff] = obj_build.make_staff_users(self.course, 1)
-        self.client.force_authenticate(staff)
-
-        response = self.client.get(self.url)
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual([self.case1.to_dict(), self.case2.to_dict()], response.data)
-
-    def test_non_staff_list_cases_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
-        self.client.force_authenticate(enrolled)
-
-        response = self.client.get(self.url)
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-
-
-class CreateAGTestCaseTestCase(test_impls.CreateObjectTest, UnitTestBase):
-    def setUp(self):
-        super().setUp()
-        self.ag_test_suite = obj_build.make_ag_test_suite()
-        self.course = self.ag_test_suite.project.course
-        self.client = APIClient()
-        self.url = reverse('ag_test_cases', kwargs={'ag_test_suite_pk':self.ag_test_suite.pk})
-
-    def test_admin_valid_create(self):
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        data = {
-            'name': 'adsjkfa;jeifae;fjakjxc,mcaj'
-        }
-        self.do_create_object_test(
-            ag_models.AGTestCase.objects, self.client, admin, self.url, data)
-
-    def test_non_admin_create_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.ag_test_suite.project.course, 1)
-        data = {
-            'name': 'advnaieroa;'
-        }
-        self.do_permission_denied_create_test(
-            ag_models.AGTestCase.objects, self.client, enrolled, self.url, data)
 
 
 class GetUpdateDeleteAGTestCaseTestCase(test_impls.GetObjectTest,

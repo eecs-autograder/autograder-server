@@ -24,6 +24,8 @@ from .submission_views.submissions_view import SubmissionsViewSet
 from .user_views import UserViewSet
 
 from .ag_test_views.ag_test_suite_views import (
-    AGTestSuiteListCreateView, AGTestSuiteDetailViewSet, AGTestSuiteOrderView)
+    AGTestSuiteListCreateView, AGTestSuiteOrderView, AGTestSuiteDetailViewSet)
 from .ag_test_views.ag_test_case_views import (
-    AGTestCaseListCreateView, AGTestCaseDetailViewSet, AGTestCaseOrderView)
+    AGTestCaseListCreateView, AGTestCaseOrderView, AGTestCaseDetailViewSet)
+from .ag_test_views.ag_test_command_views import (
+    AGTestCommandListCreateView, AGTestCommandOrderView, AGTestCommandDetailViewSet)

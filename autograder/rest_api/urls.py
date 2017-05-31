@@ -110,6 +110,10 @@ ag_test_case_detail_router = routers.SimpleRouter()
 ag_test_case_detail_router.register(r'ag_test_cases', views.AGTestCaseDetailViewSet,
                                     base_name='ag-test-case')
 
+ag_test_command_detail_router = routers.SimpleRouter()
+ag_test_command_detail_router.register(r'ag_test_commands', views.AGTestCommandDetailViewSet,
+                                       base_name='ag-test-command')
+
 urlpatterns = [
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
 
@@ -154,5 +158,11 @@ urlpatterns = [
     url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/order/$',
         views.AGTestCaseOrderView.as_view(), name='ag_test_case_order'),
     url(r'', include(ag_test_case_detail_router.urls)),
+
+    url(r'^ag_test_cases/(?P<ag_test_case_pk>[0-9]+)/ag_test_commands/$',
+        views.AGTestCommandListCreateView.as_view(), name='ag_test_commands'),
+    url(r'^ag_test_cases/(?P<ag_test_case_pk>[0-9]+)/ag_test_commands/order/$',
+        views.AGTestCommandOrderView.as_view(), name='ag_test_command_order'),
+    url(r'', include(ag_test_command_detail_router.urls)),
 
 ]
