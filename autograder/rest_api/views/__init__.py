@@ -25,4 +25,5 @@ from .user_views import UserViewSet
 
 from .ag_test_views.ag_test_suite_views import (
     AGTestSuiteListCreateView, AGTestSuiteDetailViewSet, AGTestSuiteOrderView)
-from .ag_test_views.ag_test_case_views import AGTestCaseListCreateView, AGTestCaseDetailViewSet
+from .ag_test_views.ag_test_case_views import (
+    AGTestCaseListCreateView, AGTestCaseDetailViewSet, AGTestCaseOrderView)

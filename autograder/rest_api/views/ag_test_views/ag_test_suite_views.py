@@ -11,13 +11,24 @@ from autograder.rest_api.views.ag_model_views import (
     GetObjectLockOnUnsafeMixin)
 
 
+class AGTestSuiteListCreateView(ListCreateNestedModelView):
+    serializer_class = ag_serializers.AGTestSuiteSerializer
+    permission_classes = [
+        ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
+
+    pk_key = 'project_pk'
+    model_manager = ag_models.Project.objects.select_related('course')
+    foreign_key_field_name = 'project'
+    reverse_foreign_key_field_name = 'ag_test_suites'
+
+
 class AGTestSuiteOrderView(GetObjectLockOnUnsafeMixin, generics.GenericAPIView):
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)
     ]
 
     pk_key = 'project_pk'
-    model_manager = ag_models.Project.objects
+    model_manager = ag_models.Project.objects.select_related('course')
 
     def get(self, request, *args, **kwargs):
         project = self.get_object()
@@ -28,17 +39,6 @@ class AGTestSuiteOrderView(GetObjectLockOnUnsafeMixin, generics.GenericAPIView):
             project = self.get_object()
             project.set_agtestsuite_order(request.data)
             return response.Response(list(project.get_agtestsuite_order()))
-
-
-class AGTestSuiteListCreateView(ListCreateNestedModelView):
-    serializer_class = ag_serializers.AGTestSuiteSerializer
-    permission_classes = [
-        ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
-
-    pk_key = 'project_pk'
-    model_manager = ag_models.Project.objects.select_related('course')
-    foreign_key_field_name = 'project'
-    reverse_foreign_key_field_name = 'ag_test_suites'
 
 
 class AGTestSuiteDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):

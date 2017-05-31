@@ -27,10 +27,18 @@ class AGTestSuitesOrderTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertSequenceEqual([self.suite1.pk, self.suite2.pk], response.data)
 
-        self.project.set_agtestsuite_order([self.suite2.pk, self.suite1.pk])
+        new_order = [self.suite2.pk, self.suite1.pk]
+        self.project.set_agtestsuite_order(new_order)
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual([self.suite2.pk, self.suite1.pk], response.data)
+        self.assertSequenceEqual(new_order, response.data)
+
+    def test_non_staff_get_order_permission_denied(self):
+        [enrolled] = obj_build.make_enrolled_users(self.project.course, 1)
+        self.client.force_authenticate(enrolled)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_admin_set_order(self):
         [admin] = obj_build.make_admin_users(self.project.course, 1)

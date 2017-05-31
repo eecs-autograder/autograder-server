@@ -11,14 +11,55 @@ import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
 class AGTestCaseOrderTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.case1 = obj_build.make_ag_test_case()
+        self.ag_test_suite = self.case1.ag_test_suite
+        self.case2 = obj_build.make_ag_test_case(self.case1.ag_test_suite)
+        self.course = self.ag_test_suite.project.course
+        self.client = APIClient()
+        self.url = reverse('ag_test_case_order',
+                           kwargs={'ag_test_suite_pk': self.ag_test_suite.pk})
+
     def test_staff_get_order(self):
-        self.fail()
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        self.client.force_authenticate(staff)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual([self.case1.pk, self.case2.pk], response.data)
+
+        new_order = [self.case2.pk, self.case1.pk]
+        self.ag_test_suite.set_agtestcase_order(new_order)
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual([self.case2.pk, self.case1.pk], response.data)
+
+    def test_non_staff_get_order_permission_denied(self):
+        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        self.client.force_authenticate(enrolled)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_admin_set_order(self):
-        self.fail()
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.client.force_authenticate(admin)
+
+        reverse_order = self.ag_test_suite.get_agtestcase_order()[::-1]
+        response = self.client.put(self.url, reverse_order)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual(reverse_order, response.data)
 
     def test_non_admin_set_order_permission_denied(self):
-        self.fail()
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        self.client.force_authenticate(staff)
+
+        original_order = list(self.ag_test_suite.get_agtestcase_order())
+        response = self.client.put(self.url, original_order[::-1])
+
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+        self.assertSequenceEqual(original_order, self.ag_test_suite.get_agtestcase_order())
 
 
 class ListAGTestCasesTestCase(UnitTestBase):

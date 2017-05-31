@@ -151,6 +151,8 @@ urlpatterns = [
 
     url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/$',
         views.AGTestCaseListCreateView.as_view(), name='ag_test_cases'),
+    url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/order/$',
+        views.AGTestCaseOrderView.as_view(), name='ag_test_case_order'),
     url(r'', include(ag_test_case_detail_router.urls)),
 
 ]
