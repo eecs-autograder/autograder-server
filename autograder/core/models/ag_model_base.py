@@ -3,6 +3,8 @@ from django.core import exceptions
 
 import polymorphic.models as poly_models
 
+import autograder.core.fields as ag_fields
+
 
 class _AutograderModelManagerMixin:
     def validate_and_create(self, **kwargs):
@@ -86,6 +88,7 @@ class ToDictMixin:
         "-to-many" fields can only be serialized in instances of the
         model class they are defined in, not reverse-lookup
         relationships.
+
         By default, EnumFields are serialized by accessing the .value
         attribute of the enum instance.
 
@@ -153,6 +156,10 @@ class ToDictMixin:
 
             try:
                 field = self._meta.get_field(field_name)
+
+                if isinstance(field, ag_fields.EnumField):
+                    result[field_name] = getattr(self, field_name).value
+
                 if field.many_to_one or field.one_to_one:
                     field_val = getattr(self, field_name)
                     if field_val is None:

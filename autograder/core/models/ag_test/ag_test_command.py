@@ -38,13 +38,6 @@ class AGTestCommandFeedbackConfig(AutograderModel):
     show_actual_stderr = models.BooleanField(default=False)
     show_whether_timed_out = models.BooleanField(default=False)
 
-    def to_dict(self):
-        result = super().to_dict()
-        result['return_code_fdbk_level'] = self.return_code_fdbk_level.value
-        result['stdout_fdbk_level'] = self.stdout_fdbk_level.value
-        result['stderr_fdbk_level'] = self.stderr_fdbk_level.value
-        return result
-
     SERIALIZABLE_FIELDS = (
         'visible',
         'return_code_fdbk_level',
@@ -324,15 +317,6 @@ class AGTestCommand(AutograderModel):
 
         if error_dict:
             raise exceptions.ValidationError(error_dict)
-
-    def to_dict(self):
-        result = super().to_dict()
-        result['stdin_source'] = self.stdin_source.value
-        result['expected_return_code'] = self.expected_return_code.value
-        result['expected_stdout_source'] = self.expected_stdout_source.value
-        result['expected_stderr_source'] = self.expected_stderr_source.value
-
-        return result
 
     SERIALIZABLE_FIELDS = (
         'name',

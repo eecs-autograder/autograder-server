@@ -1,8 +1,11 @@
+import enum
+
 from django.core import validators
 from django.db import models
 from django.contrib.auth.models import User
 
 from autograder.core.models import AutograderModel
+import autograder.core.fields as ag_fields
 
 # -----------------------------------------------------------------------------
 # DUMMY MODELS FOR TESTING AutograderModel BASE CLASS
@@ -30,12 +33,19 @@ def _make_default_dummy_foreign_ag_model():
     return _DummyForeignAutograderModel.objects.create().pk
 
 
+class AnEnum(enum.Enum):
+    spam = 'spam'
+    egg = 'egg'
+
+
 class _DummyAutograderModel(AutograderModel):
     pos_num_val = models.IntegerField(
         validators=[validators.MinValueValidator(0)])
     non_empty_str_val = models.TextField(
         validators=[validators.MinLengthValidator(1)])
     read_only_field = models.TextField(blank=True)
+
+    enum_field = ag_fields.EnumField(AnEnum, blank=True, default=AnEnum.spam)
 
     one_to_one = models.OneToOneField(_DummyForeignAutograderModel, related_name='rev_one_to_one')
     nullable_one_to_one = models.OneToOneField(
@@ -65,6 +75,8 @@ class _DummyAutograderModel(AutograderModel):
         'non_empty_str_val',
         'the_answer',
 
+        'enum_field',
+
         'one_to_one',
         'nullable_one_to_one',
         'transparent_to_one',
@@ -82,6 +94,8 @@ class _DummyAutograderModel(AutograderModel):
     EDITABLE_FIELDS = (
         'pos_num_val',
         'non_empty_str_val',
+
+        'enum_field',
 
         'one_to_one',
         'nullable_one_to_one',

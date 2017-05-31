@@ -5,7 +5,7 @@ from autograder.core.models.ag_model_base import AutograderModel
 from autograder.utils.testing import UnitTestBase
 
 from .models import (
-    _DummyAutograderModel, _DummyForeignAutograderModel, _DummyToManyModel)
+    _DummyAutograderModel, _DummyForeignAutograderModel, _DummyToManyModel, AnEnum)
 
 
 class AGModelBaseToDictTest(UnitTestBase):
@@ -37,6 +37,8 @@ class AGModelBaseToDictTest(UnitTestBase):
             'pos_num_val': self.ag_model.pos_num_val,
             'non_empty_str_val': self.ag_model.non_empty_str_val,
             'the_answer': 42,
+
+            'enum_field': 'spam',
 
             'one_to_one': self.ag_model.one_to_one.pk,
             'nullable_one_to_one': None,
@@ -72,6 +74,8 @@ class AGModelBaseToDictTest(UnitTestBase):
             'pos_num_val': self.ag_model.pos_num_val,
             'non_empty_str_val': self.ag_model.non_empty_str_val,
             'the_answer': 42,
+
+            'enum_field': 'spam',
 
             'one_to_one': self.ag_model.one_to_one.to_dict(),
             'nullable_one_to_one': None,
@@ -191,6 +195,8 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         new_num = self.ag_model.pos_num_val + 1
         new_str = self.ag_model.non_empty_str_val + 'aksdjhflaksdf'
 
+        enum_field = 'egg'
+
         one_to_one = _DummyForeignAutograderModel.objects.create(name='akjdnkajhsdf')
         foreign_key = _DummyForeignAutograderModel.objects.create(name='qbdbfakdfl')
 
@@ -207,6 +213,8 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
             pos_num_val=new_num,
             non_empty_str_val=new_str,
 
+            enum_field=enum_field,
+
             one_to_one=one_to_one,
             foreign_key=foreign_key,
             transparent_to_one={'name': transparent_to_one_name},
@@ -219,6 +227,7 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
 
         self.assertEqual(new_num, self.ag_model.pos_num_val)
         self.assertEqual(new_str, self.ag_model.non_empty_str_val)
+        self.assertEqual(AnEnum.egg, self.ag_model.enum_field)
 
         self.assertEqual(one_to_one, self.ag_model.one_to_one)
         self.assertIsNone(self.ag_model.nullable_one_to_one)
