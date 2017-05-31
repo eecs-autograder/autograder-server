@@ -71,3 +71,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
         submission.save()
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    @decorators.detail_route()
+    def ag_test_results(self, request, *args, **kwargs):
+        pass

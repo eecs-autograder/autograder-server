@@ -141,7 +141,7 @@ class ToDictMixin:
 
     TRANSPARENT_TO_ONE_FIELDS = tuple()
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """
         Returns a dictionary representation of this model instance.
         """

@@ -54,6 +54,7 @@ class Course(AutograderModel):
         """
         return tuple(user.username for user in self.administrators.all())
 
+    # TODO: change to "get_role", which returns an ordered enum.
     def is_administrator(self, user: User) -> bool:
         """
         Convenience method for determining if the given user

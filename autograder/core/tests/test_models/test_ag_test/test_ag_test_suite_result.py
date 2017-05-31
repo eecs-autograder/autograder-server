@@ -128,6 +128,10 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         self.assertIsNone(fdbk.teardown_stdout)
         self.assertIsNone(fdbk.teardown_stderr)
 
+    def test_some_ag_test_cases_not_visible(self):
+        # TODO: points and individual tests when some not visible
+        self.fail()
+
     def test_fdbk_to_dict(self):
         self.ag_test_case1.normal_fdbk_config.validate_and_update(show_individual_commands=False)
 

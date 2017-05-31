@@ -24,9 +24,13 @@ class AGTestCaseTestCase(UnitTestBase):
         self.assertEqual(name, ag_test.name)
         self.assertEqual(self.ag_suite, ag_test.ag_test_suite)
 
+        self.assertTrue(ag_test.normal_fdbk_config.visible)
         self.assertTrue(ag_test.normal_fdbk_config.show_individual_commands)
+        self.assertTrue(ag_test.ultimate_submission_fdbk_config.visible)
         self.assertTrue(ag_test.ultimate_submission_fdbk_config.show_individual_commands)
+        self.assertTrue(ag_test.past_limit_submission_fdbk_config.visible)
         self.assertTrue(ag_test.past_limit_submission_fdbk_config.show_individual_commands)
+        self.assertTrue(ag_test.staff_viewer_fdbk_config.visible)
         self.assertTrue(ag_test.staff_viewer_fdbk_config.show_individual_commands)
 
     def test_error_ag_test_name_not_unique(self):

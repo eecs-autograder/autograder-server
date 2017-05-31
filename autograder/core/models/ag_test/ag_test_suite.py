@@ -12,6 +12,8 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
     Contains feedback options for an AGTestSuite.
     """
 
+    visible = models.BooleanField(default=True)
+
     show_individual_tests = models.BooleanField(
         default=True,
         help_text='''Whether to show information about individual tests in a suite or just a
@@ -26,12 +28,14 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
         help_text="Whether to show stderr content from a suite's setup and teardown commands.")
 
     SERIALIZABLE_FIELDS = (
+        'visible',
         'show_individual_tests',
         'show_setup_and_teardown_stdout',
         'show_setup_and_teardown_stderr',
     )
 
     EDITABLE_FIELDS = (
+        'visible',
         'show_individual_tests',
         'show_setup_and_teardown_stdout',
         'show_setup_and_teardown_stderr',

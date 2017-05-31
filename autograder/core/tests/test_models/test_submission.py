@@ -331,6 +331,24 @@ class PositionInQueueTestCase(UnitTestBase):
             self.assertEqual(0, submission.position_in_queue)
 
 
+class SubmissionFeedbackTestCase(UnitTestBase):
+    def test_points_max_fdbk(self):
+        self.fail()
+
+    def test_points_minimum_ag_test_command_fdbk(self):
+        self.fail()
+
+    def test_individual_suite_result_order(self):
+        self.fail()
+
+    def test_some_ag_test_suites_not_visible(self):
+        # TODO: points and individual suites when some not visible
+        self.fail()
+
+    def test_fdbk_to_dict(self):
+        self.fail()
+
+
 class TotalPointsTestCase(UnitTestBase):
     def test_basic_score(self):
         cache.clear()

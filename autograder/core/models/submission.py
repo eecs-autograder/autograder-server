@@ -1,5 +1,6 @@
 import fnmatch
 import os
+from typing import List
 
 from django.core import exceptions
 from django.core.cache import cache
@@ -11,10 +12,12 @@ from django.utils import timezone
 import autograder.core.utils as core_ut
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
+from autograder.core.models.ag_model_base import ToDictMixin
 
 from . import ag_model_base
 from .autograder_test_case.autograder_test_case_result import (
     AutograderTestCaseResult)
+from .ag_test.feedback_category import FeedbackCategory
 
 
 def _get_submission_file_upload_to_dir(submission, filename):
@@ -284,10 +287,10 @@ class Submission(ag_model_base.AutograderModel):
 
     @property
     def position_in_queue(self):
-        '''
+        """
         Returns this submissions position in the queue of submissions to
         be graded for the associated project.
-        '''
+        """
         if self.status != Submission.GradingStatus.queued:
             return 0
 
@@ -328,3 +331,26 @@ class Submission(ag_model_base.AutograderModel):
         submission_dir = core_ut.get_submission_dir(self)
         if not os.path.isdir(submission_dir):
             os.makedirs(submission_dir)
+
+    def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'Submission.FeedbackCalculator':
+        return Submission.FeedbackCalculator(self, fdbk_category)
+
+    class FeedbackCalculator(ToDictMixin):
+        def __init__(self, submission: 'Submission', fdbk_category: FeedbackCategory):
+            self.submission = submission
+            self.fdbk_category = fdbk_category
+
+        @property
+        def total_points(self):
+            raise NotImplementedError
+
+        @property
+        def total_points_possible(self):
+            raise NotImplementedError
+
+        @property
+        def ag_test_suite_results(self) -> List['AGTestSuiteResult']:
+            raise NotImplementedError
+
+        def to_dict(self):
+            raise NotImplementedError

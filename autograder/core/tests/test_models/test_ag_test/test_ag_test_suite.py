@@ -32,18 +32,22 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertIsNotNone(suite.past_limit_submission_fdbk_config)
         self.assertIsNotNone(suite.staff_viewer_fdbk_config)
 
+        self.assertTrue(suite.normal_fdbk_config.visible)
         self.assertTrue(suite.normal_fdbk_config.show_individual_tests)
         self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_stdout)
         self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_stderr)
 
+        self.assertTrue(suite.ultimate_submission_fdbk_config.visible)
         self.assertTrue(suite.ultimate_submission_fdbk_config.show_individual_tests)
         self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_stdout)
         self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_stderr)
 
+        self.assertTrue(suite.past_limit_submission_fdbk_config.visible)
         self.assertTrue(suite.past_limit_submission_fdbk_config.show_individual_tests)
         self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_stdout)
         self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_stderr)
 
+        self.assertTrue(suite.staff_viewer_fdbk_config.visible)
         self.assertTrue(suite.staff_viewer_fdbk_config.show_individual_tests)
         self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_stdout)
         self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_stderr)
@@ -71,14 +75,17 @@ class AGTestSuiteTestCase(UnitTestBase):
             teardown_suite_cmd=teardown_cmd,
             allow_network_access=allow_network_access,
             deferred=deferred,
+            normal_fdbk_config={'visible': False}
         )
 
+        suite.refresh_from_db()
         self.assertEqual(name, suite.name)
         self.assertEqual(project, suite.project)
         self.assertCountEqual(project_files_needed, suite.project_files_needed.all())
         self.assertCountEqual(student_files_needed, suite.student_files_needed.all())
         self.assertEqual(allow_network_access, suite.allow_network_access)
         self.assertEqual(deferred, suite.deferred)
+        self.assertFalse(suite.normal_fdbk_config.visible)
 
     def test_error_suite_name_not_unique(self):
         name = 'steve'

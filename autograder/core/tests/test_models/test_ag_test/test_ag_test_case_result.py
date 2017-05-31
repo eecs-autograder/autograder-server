@@ -145,6 +145,37 @@ class AGTestCaseResultTestCase(UnitTestBase):
         fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertEqual([result2, result1], fdbk.ag_test_command_results)
 
+    def test_some_commands_not_visible(self):
+        self.ag_test_cmd1.ultimate_submission_fdbk_config.validate_and_update(visible=False)
+        cmd1_pts = 5
+        cmd2_pts = 3
+        self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=cmd1_pts)
+        self.ag_test_cmd2.validate_and_update(points_for_correct_return_code=cmd2_pts)
+
+        cmd_result1 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd1, self.ag_test_case_result)
+        cmd_result2 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd2, self.ag_test_case_result)
+
+        self.assertEqual(
+            cmd1_pts + cmd2_pts,
+            self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            cmd1_pts + cmd2_pts,
+            self.ag_test_case_result.get_fdbk(
+                ag_models.FeedbackCategory.max).total_points_possible)
+
+        fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.ultimate_submission)
+        self.assertSequenceEqual([cmd_result2], fdbk.ag_test_command_results)
+        self.assertEqual(
+            cmd2_pts,
+            self.ag_test_case_result.get_fdbk(
+                ag_models.FeedbackCategory.ultimate_submission).total_points)
+        self.assertEqual(
+            cmd2_pts,
+            self.ag_test_case_result.get_fdbk(
+                ag_models.FeedbackCategory.ultimate_submission).total_points_possible)
+
     def test_fdbk_to_dict(self):
         self.ag_test_cmd1.delete()
         self.ag_test_cmd2.delete()

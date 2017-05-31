@@ -141,7 +141,7 @@ urlpatterns = [
     url(r'', include(group_submissions_router.urls)),
 
     url(r'', include(submission_router.urls)),
-    url(r'', include(submission_results_router.urls)),
+    # url(r'', include(submission_results_router.urls)),
 
     url(r'^courses/(?P<pk>[0-9]+)/projects/$',
         views.ListCreateProjectView.as_view(), name='project-list-create'),

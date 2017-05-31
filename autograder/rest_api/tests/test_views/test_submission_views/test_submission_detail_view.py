@@ -8,6 +8,7 @@ from rest_framework import status
 from autograder.core.models import Submission
 
 from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -255,6 +256,134 @@ class RemoveFromQueueTestCase(test_data.Client,
         submission.refresh_from_db()
 
         self.assertEqual(original_status, submission.status)
+
+
+class GetAGTestResultsTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        # ag test suites, cases, and commands created:
+        # suite1:
+        #     - case1:
+        #         - cmd1
+        #         - cmd2
+        #     - case2:
+        #         - cmd3
+        # suite2:
+        #     - case3:
+        #         - cmd5
+        #         - cmd6
+        #         - cmd7
+        self.project = obj_build.make_project()
+
+        self.suite1 = obj_build.make_ag_test_suite(self.project)
+        self.case1 = obj_build.make_ag_test_case(self.suite1)
+        self.cmd1 = obj_build.make_full_ag_test_command(self.case1)
+        self.cmd2 = obj_build.make_full_ag_test_command(self.case1)
+        self.case2 = obj_build.make_ag_test_case(self.suite1)
+        self.cmd3 = obj_build.make_full_ag_test_command(self.case2)
+
+        self.suite2 = obj_build.make_ag_test_suite(self.project)
+        self.case3 = obj_build.make_ag_test_case(self.suite2)
+        self.cmd5 = obj_build.make_full_ag_test_command(self.case3)
+        self.cmd6 = obj_build.make_full_ag_test_command(self.case3)
+        self.cmd7 = obj_build.make_full_ag_test_command(self.case3)
+
+
+class NormalFdbkTestCase(UnitTestBase):
+
+    def setUp(self):
+        super().setUp()
+        # FIXME
+
+    def test_student_get_normal_fdbk_on_owned_submission(self):
+        self.fail()
+
+    def test_student_get_normal_fdbk_on_non_owned_submission_permission_denied(self):
+        self.fail()
+
+    def test_student_get_normal_fdbk_on_owned_past_limit_submission_permission_denied(self):
+        self.fail()
+
+    def test_staff_get_normal_fdbk_on_owned_submission(self):
+        self.fail()
+
+    def test_staff_get_normal_fdbk_on_owned_past_limit_submission(self):
+        self.fail()
+
+    def test_staff_get_normal_fdbk_on_non_owned_submission_permission_denied(self):
+        self.fail()
+
+
+    def test_student_get_past_limit_fdbk_on_owned_past_limit_submission(self):
+        self.fail()
+
+    def test_student_get_past_limit_fdbk_on_owned_non_past_limit_submission_permission_denied(self):
+        self.fail()
+
+    def test_staff_get_past_limit_fdbk_on_owned_submission(self):
+        self.fail()
+
+    def test_staff_get_past_limit_fdbk_on_owned_non_past_limit_submission(self):
+        self.fail()
+
+    def test_staff_get_past_limit_fdbk_on_non_owned_past_limit_submission_permission_denied(self):
+        self.fail()
+
+
+    def test_student_get_ultimate_fdbk_on_owned_ultimate_submission(self):
+        self.fail()
+
+    def test_student_get_ultimate_fdbk_on_owned_non_ultimate_submission_permission_denied(self):
+        # most recent
+        # best normal (keep?)
+        # best max
+        self.fail()
+
+    def test_student_get_ultimate_fdbk_but_ultimate_fdbk_hidden_permission_denied(self):
+        self.fail()
+
+    def test_student_get_ultimate_fdbk_but_deadline_not_past_permission_denied(self):
+        self.fail()
+
+    def test_student_get_ultimate_fdbk_but_extension_not_past_permission_denied(self):
+        self.fail()
+
+    def test_staff_get_ultimate_fdbk_on_owned_ultimate_submission(self):
+        self.fail()
+
+    def test_staff_get_ultimate_fdbk_on_owned_non_ultimate_submission(self):
+        self.fail()
+
+    def test_staff_get_ultimate_fdbk_before_deadline(self):
+        self.fail()
+
+    def test_staff_get_ultimate_fdbk_on_non_owned_ultimate_submission_permission_denied(self):
+        self.fail()
+
+
+    def test_student_get_max_fdbk_permission_denied(self):
+        self.fail()
+
+    def test_staff_get_max_fdbk_on_owned_submission(self):
+        self.fail()
+
+    def test_staff_get_max_fdbk_on_non_owned_ultimate_submission(self):
+        self.fail()
+
+    def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_despite_ultimate_fdbk_hidden(self):
+        self.fail()
+
+    def test_staff_get_max_fdbk_on_non_owned_non_ultimate_submission_permission_denied(self):
+        # most recent
+        # best normal (keep?)
+        # best max
+        self.fail()
+
+    def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_before_deadline_permission_denied(self):
+        self.fail()
+
+    def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_before_extension_permission_denied(self):
+        self.fail()
 
 
 def submission_url(submission):

@@ -12,10 +12,11 @@ class AGTestCaseFeedbackConfig(AutograderModel):
     """
     Contains feedback options for an AGTestCase.
     """
+    visible = models.BooleanField(default=True)
     show_individual_commands = models.BooleanField(default=True)
 
-    SERIALIZABLE_FIELDS = ('show_individual_commands',)
-    EDITABLE_FIELDS = ('show_individual_commands',)
+    SERIALIZABLE_FIELDS = ('visible', 'show_individual_commands',)
+    EDITABLE_FIELDS = ('visible', 'show_individual_commands',)
 
 
 def make_default_test_fdbk() -> int:

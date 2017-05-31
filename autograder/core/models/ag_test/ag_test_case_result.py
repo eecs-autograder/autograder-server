@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Iterable
 
 from django.db import models
 
@@ -61,23 +61,29 @@ class AGTestCaseResult(AutograderModel):
         @property
         def total_points(self):
             points = sum((cmd_res.get_fdbk(self._fdbk_category).total_points for cmd_res in
-                          self._ag_test_case_result.ag_test_command_results.all()))
+                          self._visible_cmd_results))
             return max(0, points)
 
         @property
         def total_points_possible(self):
             return sum((cmd_res.get_fdbk(self._fdbk_category).total_points_possible for cmd_res in
-                        self._ag_test_case_result.ag_test_command_results.all()))
+                        self._visible_cmd_results))
 
         @property
         def ag_test_command_results(self) -> List['AGTestCommandResult']:
             if not self._fdbk.show_individual_commands:
                 return []
 
-            cmd_order = self._ag_test_case.get_agtestcommand_order()
-            results = list(self._ag_test_case_result.ag_test_command_results.all())
-            return [next(filter(lambda result: result.ag_test_command.pk == cmd_pk, results))
-                    for cmd_pk in cmd_order]
+            cmd_order = list(self._ag_test_case.get_agtestcommand_order())
+            results = self._visible_cmd_results
+            results = sorted(results, key=lambda result: cmd_order.index(result.pk))
+            return list(results)
+
+        @property
+        def _visible_cmd_results(self) -> Iterable['AGTestCommandResult']:
+            return filter(
+                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
+                self._ag_test_case_result.ag_test_command_results.all())
 
         def to_dict(self):
             result = super().to_dict()
