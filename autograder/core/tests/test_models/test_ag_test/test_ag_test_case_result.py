@@ -177,12 +177,17 @@ class AGTestCaseResultTestCase(UnitTestBase):
                 ag_models.FeedbackCategory.ultimate_submission).total_points_possible)
 
     def test_fdbk_to_dict(self):
-        self.ag_test_cmd1.delete()
-        self.ag_test_cmd2.delete()
-        self.ag_test_cmd1 = obj_build.make_full_ag_test_command(
-            self.ag_test_case, set_arbitrary_points=True)
-        self.ag_test_cmd2 = obj_build.make_full_ag_test_command(
-            self.ag_test_case, set_arbitrary_points=True)
+        self.ag_test_cmd1.validate_and_update(
+            points_for_correct_return_code=2,
+            points_for_correct_stdout=3,
+            points_for_correct_stderr=8
+        )
+
+        self.ag_test_cmd2.validate_and_update(
+            points_for_correct_return_code=4,
+            points_for_correct_stdout=5,
+            points_for_correct_stderr=7
+        )
 
         result1 = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd1, self.ag_test_case_result)

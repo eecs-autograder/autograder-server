@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Iterable
 
 from django.db import models
 
@@ -99,23 +99,29 @@ class AGTestSuiteResult(AutograderModel):
         def total_points(self):
             return sum((ag_test_case_result.get_fdbk(self._fdbk_category).total_points
                         for ag_test_case_result in
-                        self._ag_test_suite_result.ag_test_case_results.all()))
+                        self._visible_ag_test_case_results))
 
         @property
         def total_points_possible(self):
             return sum((ag_test_case_result.get_fdbk(self._fdbk_category).total_points_possible
                         for ag_test_case_result in
-                        self._ag_test_suite_result.ag_test_case_results.all()))
+                        self._visible_ag_test_case_results))
 
         @property
         def ag_test_case_results(self) -> List['AGTestCaseResult']:
             if not self._fdbk.show_individual_tests:
                 return []
 
-            test_order = self._ag_test_suite.get_agtestcase_order()
-            results = list(self._ag_test_suite_result.ag_test_case_results.all())
-            return [next(filter(lambda result: result.ag_test_case.pk == test_pk, results))
-                    for test_pk in test_order]
+            test_order = list(self._ag_test_suite.get_agtestcase_order())
+            results = sorted(self._visible_ag_test_case_results,
+                             key=lambda result: test_order.index(result.ag_test_case.pk))
+            return list(results)
+
+        @property
+        def _visible_ag_test_case_results(self) -> Iterable['AGTestCaseResult']:
+            return filter(
+                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
+                self._ag_test_suite_result.ag_test_case_results.all())
 
         def to_dict(self):
             result = super().to_dict()
