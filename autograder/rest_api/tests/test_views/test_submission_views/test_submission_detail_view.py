@@ -5,6 +5,7 @@ from django.http import QueryDict
 
 from rest_framework import status
 
+import autograder.core.models as ag_models
 from autograder.core.models import Submission
 
 from autograder.utils.testing import UnitTestBase
@@ -258,42 +259,77 @@ class RemoveFromQueueTestCase(test_data.Client,
         self.assertEqual(original_status, submission.status)
 
 
-class GetAGTestResultsTestCase(UnitTestBase):
-    def setUp(self):
-        super().setUp()
-        # ag test suites, cases, and commands created:
-        # suite1:
-        #     - case1:
-        #         - cmd1
-        #         - cmd2
-        #     - case2:
-        #         - cmd3
-        # suite2:
-        #     - case3:
-        #         - cmd5
-        #         - cmd6
-        #         - cmd7
-        self.project = obj_build.make_project()
+class SubmissionFeedbackTestCase(UnitTestBase):
 
-        self.suite1 = obj_build.make_ag_test_suite(self.project)
-        self.case1 = obj_build.make_ag_test_case(self.suite1)
-        self.cmd1 = obj_build.make_full_ag_test_command(self.case1)
-        self.cmd2 = obj_build.make_full_ag_test_command(self.case1)
-        self.case2 = obj_build.make_ag_test_case(self.suite1)
-        self.cmd3 = obj_build.make_full_ag_test_command(self.case2)
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.ag_test_cmd = obj_build.make_full_ag_test_command(
+            set_arbitrary_points=True,
+            normal_fdbk_config={
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'show_points': True,
+            },
+            past_limit_submission_fdbk_config={
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'show_points': True,
+            }
+        )
+        cls.ag_test_case = cls.ag_test_cmd.ag_test_case
+        cls.ag_test_suite = cls.ag_test_case.ag_test_suite
+        cls.project = cls.ag_test_suite.project
+        cls.project.validate_and_update(submission_limit_per_day=2)
+        cls.course = cls.project.course
 
-        self.suite2 = obj_build.make_ag_test_suite(self.project)
-        self.case3 = obj_build.make_ag_test_case(self.suite2)
-        self.cmd5 = obj_build.make_full_ag_test_command(self.case3)
-        self.cmd6 = obj_build.make_full_ag_test_command(self.case3)
-        self.cmd7 = obj_build.make_full_ag_test_command(self.case3)
+        # --------- student 1 --------------
+        cls.student_group1 = obj_build.make_group(project=cls.project)
+        cls.student1 = cls.student_group1.members.first()
 
+        cls.student_group1_normal_submission = obj_build.build_submission(
+            submission_group=cls.student_group1)
+        obj_build.make_correct_ag_test_command_result(
+            cls.ag_test_cmd, submission=cls.student_group1_normal_submission)
 
-class NormalFdbkTestCase(UnitTestBase):
+        cls.student_group1_best_submission = obj_build.build_submission(
+            submission_group=cls.student_group1)
+        obj_build.make_correct_ag_test_command_result(
+            cls.ag_test_cmd, submission=cls.student_group1_best_submission)
 
-    def setUp(self):
-        super().setUp()
-        # FIXME
+        cls.student_group1_past_limit_submission = obj_build.build_submission(
+            submission_group=cls.student_group1)
+        obj_build.make_incorrect_ag_test_command_result(
+            cls.ag_test_cmd, submission=cls.student_group1_past_limit_submission)
+
+        # --------- student 2 --------------
+        cls.student_group2 = obj_build.make_group(project=cls.project)
+        cls.student2 = submission=cls.student_group2.members.first()
+
+        cls.student_group2_submission = obj_build.build_submission(
+            submission_group=cls.student_group2)
+        obj_build.make_correct_ag_test_command_result(
+            cls.ag_test_cmd, submission=cls.student_group2_submission)
+
+        # --------- staff --------------
+        cls.staff_group = obj_build.make_group(
+            project=cls.project, members_role=ag_models.UserRole.staff)
+        cls.staff = cls.staff_group.members.first()
+
+        cls.staff_normal_submission = obj_build.build_submission(
+            submission_group=cls.staff_group)
+        obj_build.make_correct_ag_test_command_result(
+            cls.ag_test_cmd, submission=cls.staff_normal_submission)
+
+        cls.staff_best_submission = obj_build.build_submission(
+            submission_group=cls.staff_group)
+        obj_build.make_correct_ag_test_command_result(
+            cls.ag_test_cmd, submission=cls.staff_best_submission)
+
+        cls.staff_past_limit_submission = obj_build.build_submission(
+            submission_group=cls.staff_group)
+        obj_build.make_incorrect_ag_test_command_result(
+            cls.ag_test_cmd, submission=cls.staff_past_limit_submission)
+
+    # -------------------- Normal fdbk ----------------------------------
 
     def test_student_get_normal_fdbk_on_owned_submission(self):
         self.fail()
@@ -313,6 +349,7 @@ class NormalFdbkTestCase(UnitTestBase):
     def test_staff_get_normal_fdbk_on_non_owned_submission_permission_denied(self):
         self.fail()
 
+    # -------------------- Past limit fdbk ----------------------------------
 
     def test_student_get_past_limit_fdbk_on_owned_past_limit_submission(self):
         self.fail()
@@ -329,6 +366,7 @@ class NormalFdbkTestCase(UnitTestBase):
     def test_staff_get_past_limit_fdbk_on_non_owned_past_limit_submission_permission_denied(self):
         self.fail()
 
+    # -------------------- Ultimate fdbk ----------------------------------
 
     def test_student_get_ultimate_fdbk_on_owned_ultimate_submission(self):
         self.fail()
@@ -360,6 +398,7 @@ class NormalFdbkTestCase(UnitTestBase):
     def test_staff_get_ultimate_fdbk_on_non_owned_ultimate_submission_permission_denied(self):
         self.fail()
 
+    # -------------------- Max fdbk ----------------------------------
 
     def test_student_get_max_fdbk_permission_denied(self):
         self.fail()

@@ -456,7 +456,9 @@ def make_group(num_members=1,
     if 'members' not in group_kwargs:
         group_kwargs['members'] = create_dummy_users(num_members)
 
-    if members_role == ag_models.UserRole.student:
+    if members_role == ag_models.UserRole.guest:
+        project.validate_and_update(allow_submissions_from_non_enrolled_students=True)
+    elif members_role == ag_models.UserRole.student:
         project.course.enrolled_students.add(*group_kwargs['members'])
     elif members_role == ag_models.UserRole.staff:
         project.course.staff.add(*group_kwargs['members'])
@@ -528,8 +530,26 @@ def make_full_ag_test_command(
 
 
 def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand,
-                                        ag_test_case_result: ag_models.AGTestCommandResult,
+                                        ag_test_case_result: ag_models.AGTestCaseResult=None,
+                                        submission: ag_models.Submission=None,
                                         **result_kwargs) -> ag_models.AGTestCommandResult:
+    """
+    Creates an AGTestCommandResult that is completely
+    correct with respect to ag_test_command.
+    If ag_test_case_result is None, an AGTestCaseResult
+    and AGTestSuiteResult will be constructed that belong
+    to submission. In this case, submission must not be
+    None.
+    """
+    if ag_test_case_result is None:
+        if submission is None:
+            raise ValueError('submission must not be None when ag_test_case_result is None.')
+
+        ag_test_suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            submission=submission, ag_test_suite=ag_test_command.ag_test_case.ag_test_suite)
+        ag_test_case_result = ag_models.AGTestCaseResult.objects.validate_and_create(
+            ag_test_suite_result=ag_test_suite_result, ag_test_case=ag_test_command.ag_test_case)
+
     return_code = (
         0 if ag_test_command.expected_return_code == ag_models.ExpectedReturnCode.zero else 42)
 
@@ -565,10 +585,19 @@ def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand
 
 
 def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestCommand,
-                                          ag_test_case_result: ag_models.AGTestCaseResult,
-                                          **result_kwargs):
+                                          ag_test_case_result: ag_models.AGTestCaseResult=None,
+                                          submission: ag_models.Submission=None,
+                                          **result_kwargs) -> ag_models.AGTestCommandResult:
+    """
+    Creates an AGTestCommandResult that is completely
+    incorrect with respect to ag_test_command.
+    If ag_test_case_result is None, an AGTestCaseResult
+    and AGTestSuiteResult will be constructed that belong
+    to submission. In this case, submission must not be
+    None.
+    """
     result = make_correct_ag_test_command_result(
-        ag_test_command, ag_test_case_result, **result_kwargs)
+        ag_test_command, ag_test_case_result, submission, **result_kwargs)
     result.return_code = 42 if result.return_code == 0 else 0
     result.stdout += 'laksdjhnflkajhdflkas'
     result.stderr += 'ncbsljksdkfjas'
