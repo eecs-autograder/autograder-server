@@ -12,7 +12,9 @@ class AGTestSuiteResult(AutograderModel):
     ag_test_suite = models.ForeignKey(
         AGTestSuite, help_text='The AGTestSuite that this result belongs to.')
 
-    submission = models.ForeignKey(Submission, help_text='The Submission that this result is for.')
+    submission = models.ForeignKey(
+        Submission, related_name='ag_test_suite_results',
+        help_text='The Submission that this result is for.')
 
     setup_stdout = models.TextField(
         blank=True, help_text="The stdout content of this suite's setup command.")

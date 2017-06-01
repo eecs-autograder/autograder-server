@@ -70,10 +70,15 @@ class _DummyAutograderModel(AutograderModel):
     def the_answer(self):
         return 42
 
+    @property
+    def enum_property(self):
+        return AnEnum.egg
+
     SERIALIZABLE_FIELDS = (
         'pos_num_val',
         'non_empty_str_val',
         'the_answer',
+        'enum_property',
 
         'enum_field',
 

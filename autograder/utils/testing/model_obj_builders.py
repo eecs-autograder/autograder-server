@@ -446,6 +446,27 @@ def make_uploaded_file(project: ag_models.Project) -> ag_models.UploadedFile:
         project=project)
 
 
+def make_group(num_members=1,
+               members_role: ag_models.UserRole=ag_models.UserRole.student,
+               project: ag_models.Project=None,
+               **group_kwargs) -> ag_models.SubmissionGroup:
+    if project is None:
+        project = make_project()
+
+    if 'members' not in group_kwargs:
+        group_kwargs['members'] = create_dummy_users(num_members)
+
+    if members_role == ag_models.UserRole.student:
+        project.course.enrolled_students.add(*group_kwargs['members'])
+    elif members_role == ag_models.UserRole.staff:
+        project.course.staff.add(*group_kwargs['members'])
+    elif members_role == ag_models.UserRole.admin:
+        project.course.administrators.add(*group_kwargs['members'])
+
+    return ag_models.SubmissionGroup.objects.validate_and_create(
+        project=project, check_group_size_limits=False, **group_kwargs)
+
+
 def make_ag_test_suite(project: ag_models.Project=None,
                        **ag_test_suite_args) -> ag_models.AGTestSuite:
     if project is None:

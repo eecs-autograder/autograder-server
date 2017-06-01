@@ -1,6 +1,6 @@
 import fnmatch
 import os
-from typing import List
+from typing import List, Iterable
 
 from django.core import exceptions
 from django.core.cache import cache
@@ -337,20 +337,46 @@ class Submission(ag_model_base.AutograderModel):
 
     class FeedbackCalculator(ToDictMixin):
         def __init__(self, submission: 'Submission', fdbk_category: FeedbackCategory):
-            self.submission = submission
-            self.fdbk_category = fdbk_category
+            self._submission = submission
+            self._fdbk_category = fdbk_category
+            self._project = self._submission.submission_group.project
+
+        @property
+        def pk(self):
+            return self._submission.pk
 
         @property
         def total_points(self):
-            raise NotImplementedError
+            return sum((ag_test_suite_result.get_fdbk(self._fdbk_category).total_points
+                       for ag_test_suite_result in self._visible_ag_test_suite_results))
 
         @property
         def total_points_possible(self):
-            raise NotImplementedError
+            return sum((ag_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible
+                       for ag_test_suite_result in self._visible_ag_test_suite_results))
 
         @property
         def ag_test_suite_results(self) -> List['AGTestSuiteResult']:
-            raise NotImplementedError
+            suite_order = list(self._project.get_agtestsuite_order())
+            results = sorted(self._visible_ag_test_suite_results,
+                             key=lambda result: suite_order.index(result.ag_test_suite.pk))
+            return list(results)
+
+        @property
+        def _visible_ag_test_suite_results(self) -> Iterable['AGTestSuiteResult']:
+            return filter(
+                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
+                self._submission.ag_test_suite_results.all())
 
         def to_dict(self):
-            raise NotImplementedError
+            result = super().to_dict()
+            result['ag_test_suite_results'] = [result.get_fdbk(self._fdbk_category).to_dict()
+                                               for result in self.ag_test_suite_results]
+            return result
+
+        SERIALIZABLE_FIELDS = (
+            'pk',
+            'total_points',
+            'total_points_possible',
+            'ag_test_suite_results',
+        )

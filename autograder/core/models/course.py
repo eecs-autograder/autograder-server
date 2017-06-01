@@ -11,6 +11,14 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 
 
+# TODO: add this to permissions stuff
+class UserRole(core_ut.OrderedEnum):
+    guest = 'guest'
+    student = 'student'
+    staff = 'staff'
+    admin = 'admin'
+
+
 class Course(AutograderModel):
     """
     Represents a programming course for which students will be submitting

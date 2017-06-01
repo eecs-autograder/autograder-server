@@ -37,6 +37,7 @@ class AGModelBaseToDictTest(UnitTestBase):
             'pos_num_val': self.ag_model.pos_num_val,
             'non_empty_str_val': self.ag_model.non_empty_str_val,
             'the_answer': 42,
+            'enum_property': 'egg',
 
             'enum_field': 'spam',
 
@@ -74,6 +75,7 @@ class AGModelBaseToDictTest(UnitTestBase):
             'pos_num_val': self.ag_model.pos_num_val,
             'non_empty_str_val': self.ag_model.non_empty_str_val,
             'the_answer': 42,
+            'enum_property': 'egg',
 
             'enum_field': 'spam',
 

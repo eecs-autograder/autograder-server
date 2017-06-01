@@ -1,3 +1,5 @@
+import enum
+
 from django.db import models, transaction
 from django.core import exceptions
 
@@ -89,8 +91,8 @@ class ToDictMixin:
         model class they are defined in, not reverse-lookup
         relationships.
 
-        By default, EnumFields are serialized by accessing the .value
-        attribute of the enum instance.
+        By default, attributes that are subtypes of enum.Enum
+        are serialized by accessing the .value attribute of the enum.
 
         The base class version of this function returns the value of
         cls.SERIALIZABLE_FIELDS, which defaults to an empty tuple,
@@ -150,15 +152,16 @@ class ToDictMixin:
         for field_name in self.get_serializable_fields():
             result[field_name] = getattr(self, field_name)
 
+            if isinstance(result[field_name], enum.Enum):
+                result[field_name] = result[field_name].value
+                continue
+
             # If this isn't a Django Model (or if it's None), skip the field logic
             if not hasattr(self, '_meta'):
                 continue
 
             try:
                 field = self._meta.get_field(field_name)
-
-                if isinstance(field, ag_fields.EnumField):
-                    result[field_name] = getattr(self, field_name).value
 
                 if field.many_to_one or field.one_to_one:
                     field_val = getattr(self, field_name)
