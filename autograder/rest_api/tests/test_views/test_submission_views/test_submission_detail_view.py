@@ -4,6 +4,7 @@ from django.core.urlresolvers import reverse
 from django.http import QueryDict
 
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 from autograder.core.models import Submission
@@ -261,84 +262,111 @@ class RemoveFromQueueTestCase(test_data.Client,
 
 class SubmissionFeedbackTestCase(UnitTestBase):
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.ag_test_cmd = obj_build.make_full_ag_test_command(
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+        self.ag_test_cmd = obj_build.make_full_ag_test_command(
             set_arbitrary_points=True,
             normal_fdbk_config={
                 'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
                 'show_points': True,
+                'show_actual_stdout': True,
             },
             past_limit_submission_fdbk_config={
                 'stdout_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
                 'show_points': True,
+                'show_actual_stderr': True,
+            },
+            ultimate_submission_fdbk_config={
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual,
+                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual
             }
         )
-        cls.ag_test_case = cls.ag_test_cmd.ag_test_case
-        cls.ag_test_suite = cls.ag_test_case.ag_test_suite
-        cls.project = cls.ag_test_suite.project
-        cls.project.validate_and_update(submission_limit_per_day=2)
-        cls.course = cls.project.course
+        self.ag_test_case = self.ag_test_cmd.ag_test_case
+        self.ag_test_suite = self.ag_test_case.ag_test_suite
+        self.project = self.ag_test_suite.project
+        self.project.validate_and_update(submission_limit_per_day=2)
+        self.course = self.project.course
 
         # --------- student 1 --------------
-        cls.student_group1 = obj_build.make_group(project=cls.project)
-        cls.student1 = cls.student_group1.members.first()
+        self.student_group1 = obj_build.make_group(project=self.project)
+        self.student1 = self.student_group1.members.first()
 
-        cls.student_group1_normal_submission = obj_build.build_submission(
-            submission_group=cls.student_group1)
-        obj_build.make_correct_ag_test_command_result(
-            cls.ag_test_cmd, submission=cls.student_group1_normal_submission)
+        self.student_group1_normal_submission = obj_build.build_submission(
+            submission_group=self.student_group1)
+        self.student1_normal_res = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=self.student_group1_normal_submission)
 
-        cls.student_group1_best_submission = obj_build.build_submission(
-            submission_group=cls.student_group1)
-        obj_build.make_correct_ag_test_command_result(
-            cls.ag_test_cmd, submission=cls.student_group1_best_submission)
+        self.student_group1_best_submission = obj_build.build_submission(
+            submission_group=self.student_group1)
+        self.student1_best_res = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=self.student_group1_best_submission)
 
-        cls.student_group1_past_limit_submission = obj_build.build_submission(
-            submission_group=cls.student_group1)
-        obj_build.make_incorrect_ag_test_command_result(
-            cls.ag_test_cmd, submission=cls.student_group1_past_limit_submission)
+        self.student_group1_past_limit_submission = obj_build.build_submission(
+            submission_group=self.student_group1)
+        self.student1_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
+            self.ag_test_cmd, submission=self.student_group1_past_limit_submission)
 
         # --------- student 2 --------------
-        cls.student_group2 = obj_build.make_group(project=cls.project)
-        cls.student2 = submission=cls.student_group2.members.first()
+        self.student_group2 = obj_build.make_group(project=self.project)
+        self.student2 = submission = self.student_group2.members.first()
 
-        cls.student_group2_submission = obj_build.build_submission(
-            submission_group=cls.student_group2)
-        obj_build.make_correct_ag_test_command_result(
-            cls.ag_test_cmd, submission=cls.student_group2_submission)
+        self.student_group2_submission = obj_build.build_submission(
+            submission_group=self.student_group2)
+        self.student2_res = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=self.student_group2_submission)
 
         # --------- staff --------------
-        cls.staff_group = obj_build.make_group(
-            project=cls.project, members_role=ag_models.UserRole.staff)
-        cls.staff = cls.staff_group.members.first()
+        self.staff_group = obj_build.make_group(
+            project=self.project, members_role=ag_models.UserRole.staff)
+        self.staff = self.staff_group.members.first()
 
-        cls.staff_normal_submission = obj_build.build_submission(
-            submission_group=cls.staff_group)
-        obj_build.make_correct_ag_test_command_result(
-            cls.ag_test_cmd, submission=cls.staff_normal_submission)
+        self.staff_normal_submission = obj_build.build_submission(
+            submission_group=self.staff_group)
+        self. staff_normal_res = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=self.staff_normal_submission)
 
-        cls.staff_best_submission = obj_build.build_submission(
-            submission_group=cls.staff_group)
-        obj_build.make_correct_ag_test_command_result(
-            cls.ag_test_cmd, submission=cls.staff_best_submission)
+        self.staff_best_submission = obj_build.build_submission(
+            submission_group=self.staff_group)
+        self. staff_best_res = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=self.staff_best_submission)
 
-        cls.staff_past_limit_submission = obj_build.build_submission(
-            submission_group=cls.staff_group)
-        obj_build.make_incorrect_ag_test_command_result(
-            cls.ag_test_cmd, submission=cls.staff_past_limit_submission)
+        self.staff_past_limit_submission = obj_build.build_submission(
+            submission_group=self.staff_group)
+        self. staff_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
+            self.ag_test_cmd, submission=self.staff_past_limit_submission)
 
     # -------------------- Normal fdbk ----------------------------------
 
     def test_student_get_normal_fdbk_on_owned_submission(self):
-        self.fail()
+        self.client.force_authenticate(self.student1)
+        self.do_get_fdbk_test(self.client, self.student_group1_normal_submission,
+                              ag_models.FeedbackCategory.normal)
+
+        self.do_get_output_and_diff_test(self.client, self.student_group1_normal_submission,
+                                         self.student1_normal_res,
+                                         ag_models.FeedbackCategory.normal)
 
     def test_student_get_normal_fdbk_on_non_owned_submission_permission_denied(self):
-        self.fail()
+        self.client.force_authenticate(self.student1)
+        self.do_get_fdbk_permission_denied_test(self.client, self.student_group2_submission,
+                                                ag_models.FeedbackCategory.normal)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group2_submission,
+            self.student2_res, ag_models.FeedbackCategory.normal)
 
     def test_student_get_normal_fdbk_on_owned_past_limit_submission_permission_denied(self):
-        self.fail()
+        self.client.force_authenticate(self.student1)
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_past_limit_submission,
+            ag_models.FeedbackCategory.normal)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_past_limit_submission,
+            self.student1_past_limit_res,
+            ag_models.FeedbackCategory.normal)
 
     def test_staff_get_normal_fdbk_on_owned_submission(self):
         self.fail()
@@ -347,7 +375,15 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.fail()
 
     def test_staff_get_normal_fdbk_on_non_owned_submission_permission_denied(self):
-        self.fail()
+        self.client.force_authenticate(self.staff)
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_normal_submission,
+            ag_models.FeedbackCategory.normal)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_normal_submission,
+            self.student1_normal_res,
+            ag_models.FeedbackCategory.normal)
 
     # -------------------- Past limit fdbk ----------------------------------
 
@@ -423,6 +459,93 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
     def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_before_extension_permission_denied(self):
         self.fail()
+
+    # -------------------------------------------------------------
+
+    def test_output_or_diff_requested_on_cmd_in_not_visible_suite(self):
+        self.fail()
+
+    def test_output_or_diff_requested_on_cmd_in_not_visible_case(self):
+        self.fail()
+
+    def test_output_or_diff_requested_on_not_visible_cmd(self):
+        self.fail()
+
+    # -------------------------------------------------------------
+
+    def test_get_fdbk_user_can_view_project(self):
+        self.fail()
+
+    def test_get_fdbk_user_cannot_view_project_permission_denied(self):
+        self.fail()
+
+    # -------------------------------------------------------------
+
+    OUTPUT_AND_DIFF_FIELDS_TO_QUERY_PARAMS = {
+        'stdout': 'stdout_for_cmd_result',
+        'stderr': 'stderr_for_cmd_result',
+        'stdout_diff': 'stdout_diff_for_cmd_result',
+        'stderr_diff': 'stderr_diff_for_cmd_result',
+    }
+
+    def do_get_fdbk_test(self, client,
+                         submission: ag_models.Submission,
+                         fdbk_category: ag_models.FeedbackCategory):
+        query_params = QueryDict(mutable=True)
+        query_params.update({'feedback_category': fdbk_category.value})
+        url = (reverse('submission-feedback', kwargs={'pk': submission.pk}) + '?' +
+               query_params.urlencode())
+        response = client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(submission.get_fdbk(fdbk_category), response.data)
+
+    def do_get_fdbk_permission_denied_test(self, client,
+                                           submission: ag_models.Submission,
+                                           fdbk_category: ag_models.FeedbackCategory):
+        query_params = QueryDict(mutable=True)
+        query_params.update({'feedback_category': fdbk_category.value})
+        url = (reverse('submission-feedback', kwargs={'pk': submission.pk}) + '?' +
+               query_params.urlencode())
+        response = client.get(url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def do_get_output_and_diff_test(self, client,
+                                    submission: ag_models.Submission,
+                                    cmd_result: ag_models.AGTestCommandResult,
+                                    fdbk_category: ag_models.FeedbackCategory):
+        urls_and_field_names = self.get_output_and_diff_test_urls(
+            submission, cmd_result, fdbk_category)
+        for url, field_name in urls_and_field_names:
+            response = client.get(url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(getattr(submission.get_fdbk(fdbk_category), field_name),
+                             response.data)
+
+    def do_get_output_and_diff_permission_denied_test(self, client,
+                                                      submission: ag_models.Submission,
+                                                      cmd_result: ag_models.AGTestCommandResult,
+                                                      fdbk_category: ag_models.FeedbackCategory):
+        urls_and_field_names = self.get_output_and_diff_test_urls(
+            submission, cmd_result, fdbk_category)
+        for url, field_name in urls_and_field_names:
+            response = client.get(url)
+            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def get_output_and_diff_test_urls(self, submission: ag_models.Submission,
+                                      cmd_result: ag_models.AGTestCommandResult,
+                                      fdbk_category: ag_models.FeedbackCategory):
+        result = []
+        for field_name, query_param_name in self.OUTPUT_AND_DIFF_FIELDS_TO_QUERY_PARAMS.items():
+            query_params = QueryDict(mutable=True)
+            query_params.update({
+                query_param_name: cmd_result.pk,
+                'feedback_category': fdbk_category.value
+            })
+            url = (reverse('submission-feedback', kwargs={'pk': submission.pk}) + '?' +
+                   query_params.urlencode())
+            result.append((url, field_name))
+
+        return result
 
 
 def submission_url(submission):

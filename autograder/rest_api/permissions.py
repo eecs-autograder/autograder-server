@@ -46,6 +46,8 @@ def can_view_project(
             return (project.course.is_enrolled_student(request.user) or
                     project.allow_submissions_from_non_enrolled_students)
 
+    return CanViewProject
+
 
 def is_staff_or_group_member(
     get_group_fn: Callable[[Any], ag_models.SubmissionGroup]=lambda group: group
@@ -56,9 +58,11 @@ def is_staff_or_group_member(
             return (group.project.course.is_course_staff(request.user) or
                     group.members.filter(pk=request.user.pk).exists())
 
+    return IsStaffOrGroupMember
+
 
 def can_request_feedback_category(
-    get_submission_fn: Callable[[Any], ag_models.Submission]
+    get_submission_fn: Callable[[Any], ag_models.Submission]=lambda submission: submission
 ) -> Type[permissions.BasePermission]:
     class CanRequestFeedbackCategory(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
@@ -119,6 +123,8 @@ def can_request_feedback_category(
                         deadline_past)
 
             return False
+
+    return CanRequestFeedbackCategory
 
 
 def _deadline_is_past(submission):

@@ -8,6 +8,7 @@ from rest_framework import (
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
+import autograder.rest_api.permissions as ag_permissions
 
 from ..permission_components import user_can_view_group
 from ..load_object_mixin import build_load_object_mixin
@@ -72,6 +73,14 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @decorators.detail_route()
+    @decorators.detail_route(
+        permission_classes=(
+            permissions.IsAuthenticated,
+            ag_permissions.can_view_project(
+                lambda submission: submission.submission_group.project),
+            ag_permissions.is_staff_or_group_member(
+                lambda submission: submission.submission_group),
+            ag_permissions.can_request_feedback_category())
+    )
     def feedback(self, request, *args, **kwargs):
-        pass
+        submission = self.get_object()
