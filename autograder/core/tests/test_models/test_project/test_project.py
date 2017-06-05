@@ -34,7 +34,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertIsNone(new_project.soft_closing_time)
         self.assertFalse(new_project.disallow_student_submissions)
         self.assertFalse(new_project.disallow_group_registration)
-        self.assertFalse(new_project.allow_submissions_from_non_enrolled_students)
+        self.assertFalse(new_project.visible_to_guests)
         self.assertEqual(new_project.min_group_size, 1)
         self.assertEqual(new_project.max_group_size, 1)
 
@@ -45,7 +45,7 @@ class ProjectMiscTestCase(UnitTestBase):
 
         self.assertTrue(new_project.hide_ultimate_submission_fdbk)
         self.assertEqual(
-            ag_models.Project.UltimateSubmissionSelectionMethod.most_recent,
+            ag_models.UltimateSubmissionPolicy.most_recent,
             new_project.ultimate_submission_selection_method)
 
     def test_valid_create_non_defaults(self):
@@ -57,8 +57,7 @@ class ProjectMiscTestCase(UnitTestBase):
         sub_limit = random.randint(1, 5)
         reset_time = datetime.time(8, 0, 0)
 
-        selection_method = (ag_models.Project.UltimateSubmissionSelectionMethod
-                                             .best_basic_score)
+        selection_method = (ag_models.UltimateSubmissionPolicy.best)
         kwargs = {
             'name': self.project_name,
             'course': self.course,
@@ -67,7 +66,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'soft_closing_time': soft_closing_time,
             'disallow_student_submissions': True,
             'disallow_group_registration': True,
-            'allow_submissions_from_non_enrolled_students': True,
+            'visible_to_guests': True,
             'min_group_size': min_group_size,
             'max_group_size': max_group_size,
 
@@ -76,7 +75,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'submission_limit_reset_time': reset_time,
 
             'hide_ultimate_submission_fdbk': False,
-            'ultimate_submission_selection_method': selection_method,
+            'ultimate_submission_policy': selection_method,
         }
 
         new_project = ag_models.Project.objects.validate_and_create(
@@ -101,7 +100,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'soft_closing_time',
             'disallow_student_submissions',
             'disallow_group_registration',
-            'allow_submissions_from_non_enrolled_students',
+            'visible_to_guests',
             'min_group_size',
             'max_group_size',
 
@@ -109,7 +108,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
 
-            'ultimate_submission_selection_method',
+            'ultimate_submission_policy',
             'hide_ultimate_submission_fdbk',
         ]
 
@@ -126,7 +125,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'soft_closing_time',
             'disallow_student_submissions',
             'disallow_group_registration',
-            'allow_submissions_from_non_enrolled_students',
+            'visible_to_guests',
             'min_group_size',
             'max_group_size',
 
@@ -134,7 +133,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
 
-            'ultimate_submission_selection_method',
+            'ultimate_submission_policy',
             'hide_ultimate_submission_fdbk',
         ]
         self.assertCountEqual(expected,
@@ -188,7 +187,7 @@ class ProjectMiscErrorTestCase(UnitTestBase):
                 name='steve', course=self.course,
                 ultimate_submission_selection_method='not_a_method')
 
-        self.assertIn('ultimate_submission_selection_method',
+        self.assertIn('ultimate_submission_policy',
                       cm.exception.message_dict)
 
 

@@ -2,6 +2,7 @@ import os
 
 from django.core.urlresolvers import reverse
 from django.http import QueryDict
+from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -79,7 +80,7 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
     def test_non_enrolled_view_submission_project_private_forbidden(self):
         submission = self.non_enrolled_submission(self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False)
+            visible_to_guests=False)
         self.do_permission_denied_get_test(
             self.client, self.nobody, submission_url(submission))
         self.do_get_files_permission_denied_test_case(submission, self.nobody)
@@ -195,7 +196,7 @@ class RemoveFromQueueTestCase(test_data.Client,
     def test_non_enrolled_remove_from_queue_project_private_permission_denied(self):
         submission = self.non_enrolled_submission(self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False)
+            visible_to_guests=False)
         self.do_permission_denied_remove_from_queue_test(
             submission, submission.submission_group.members.first())
 
@@ -287,7 +288,9 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.ag_test_case = self.ag_test_cmd.ag_test_case
         self.ag_test_suite = self.ag_test_case.ag_test_suite
         self.project = self.ag_test_suite.project
-        self.project.validate_and_update(submission_limit_per_day=2)
+        self.project.validate_and_update(
+            submission_limit_per_day=2, visible_to_students=True,
+            hide_ultimate_submission_fdbk=False)
         self.course = self.project.course
 
         # --------- student 1 --------------
@@ -339,6 +342,42 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.staff_most_recent_submission = self.staff_past_limit_submission
         self.staff_most_recent_res = self.staff_past_limit_res
 
+        self.assertFalse(self.project.hide_ultimate_submission_fdbk)
+        self.assertTrue(self.project.visible_to_students)
+        self.assertTrue(self.student_group1_past_limit_submission.is_past_daily_limit)
+        self.assertTrue(self.staff_past_limit_submission.is_past_daily_limit)
+
+    def test_staff_get_any_fdbk_on_owned_submission(self):
+        self.project.validate_and_update(
+            closing_time = timezone.now() - timezone.timedelta(minutes=2))
+        self.client.force_authenticate(self.staff)
+        for submission, res in [(self.staff_normal_submission, self.staff_normal_res),
+                                (self.staff_best_submission, self.staff_best_res),
+                                (self.staff_past_limit_submission, self.staff_past_limit_res)]:
+            self.do_get_fdbk_test(self.client, submission, ag_models.FeedbackCategory.normal)
+
+            self.do_get_output_and_diff_test(self.client, submission, res,
+                                             ag_models.FeedbackCategory.normal)
+
+    def test_invalid_fdbk_category_requested(self):
+        self.client.force_authenticate(self.staff)
+        query_params = QueryDict(mutable=True)
+        query_params.update({'feedback_category': 'not a value'})
+        url = (reverse('submission-feedback',
+                       kwargs={'pk': self.staff_normal_submission.pk}) + '?' +
+               query_params.urlencode())
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('feedback_category', response.data)
+
+    def test_missing_fdbk_category(self):
+        self.client.force_authenticate(self.staff)
+        url = reverse('submission-feedback',
+                      kwargs={'pk': self.staff_normal_submission.pk})
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('feedback_category', response.data)
+
     # -------------------- Normal fdbk ----------------------------------
 
     def test_student_get_normal_fdbk_on_owned_submission(self):
@@ -370,12 +409,6 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             self.student1_past_limit_res,
             ag_models.FeedbackCategory.normal)
 
-    def test_staff_get_normal_fdbk_on_owned_submission(self):
-        self.fail()
-
-    def test_staff_get_normal_fdbk_on_owned_past_limit_submission(self):
-        self.fail()
-
     def test_staff_get_normal_fdbk_on_non_owned_submission_permission_denied(self):
         self.client.force_authenticate(self.staff)
         self.do_get_fdbk_permission_denied_test(
@@ -390,7 +423,13 @@ class SubmissionFeedbackTestCase(UnitTestBase):
     # -------------------- Past limit fdbk ----------------------------------
 
     def test_student_get_past_limit_fdbk_on_owned_past_limit_submission(self):
-        self.fail()
+        self.client.force_authenticate(self.student1)
+        self.do_get_fdbk_test(self.client, self.student_group1_past_limit_submission,
+                              ag_models.FeedbackCategory.past_limit_submission)
+
+        self.do_get_output_and_diff_test(self.client, self.student_group1_past_limit_submission,
+                                         self.student1_past_limit_res,
+                                         ag_models.FeedbackCategory.past_limit_submission)
 
     def test_student_get_past_limit_fdbk_on_non_owned_past_limit_submission_permission_denied(self):
         self.client.force_authenticate(self.student2)
@@ -414,12 +453,6 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             self.student1_past_limit_res,
             ag_models.FeedbackCategory.past_limit_submission)
 
-    def test_staff_get_past_limit_fdbk_on_owned_submission(self):
-        self.fail()
-
-    def test_staff_get_past_limit_fdbk_on_owned_non_past_limit_submission(self):
-        self.fail()
-
     def test_staff_get_past_limit_fdbk_on_non_owned_past_limit_submission_permission_denied(self):
         self.client.force_authenticate(self.staff)
         self.do_get_fdbk_permission_denied_test(
@@ -434,15 +467,63 @@ class SubmissionFeedbackTestCase(UnitTestBase):
     # -------------------- Ultimate fdbk ----------------------------------
 
     def test_student_get_ultimate_fdbk_on_owned_ultimate_submission(self):
-        # most recent
-        # best max FIXME
-        self.fail()
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+        self.client.force_authenticate(self.student1)
+
+        self.do_get_fdbk_test(self.client, self.student_group1_most_recent_submission,
+                              ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_test(self.client, self.student_group1_most_recent_submission,
+                                         self.student1_most_recent_res,
+                                         ag_models.FeedbackCategory.ultimate_submission)
+
+        self.project.validate_and_update(
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
+        self.do_get_fdbk_test(self.client, self.student_group1_best_submission,
+                              ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_test(self.client, self.student_group1_best_submission,
+                                         self.student1_best_res,
+                                         ag_models.FeedbackCategory.ultimate_submission)
+
+        past_deadline = timezone.now() - timezone.timedelta(2)
+        past_extension = timezone.now() - timezone.timedelta(2)
+        for closing_time, extension in [(past_deadline, None),
+                                        (past_deadline, past_extension)]:
+            self.project.validate_and_update(closing_time=closing_time)
+            self.student_group1.validate_and_update(extended_due_date=extension)
+            self.do_get_fdbk_test(self.client, self.student_group1_best_submission,
+                                  ag_models.FeedbackCategory.ultimate_submission)
+            self.do_get_output_and_diff_test(self.client, self.student_group1_best_submission,
+                                             self.student1_best_res,
+                                             ag_models.FeedbackCategory.ultimate_submission)
 
     def test_student_get_ultimate_fdbk_on_owned_non_ultimate_submission_permission_denied(self):
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
         self.client.force_authenticate(self.student1)
+
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_best_submission,
+            ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_best_submission,
+            self.student1_best_res, ag_models.FeedbackCategory.ultimate_submission)
+
         self.project.validate_and_update(
-            ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent))
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+
+    def test_student_get_ultimate_fdbk_on_non_owned_ultimate_submission_permission_denied(self):
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+        self.client.force_authenticate(self.student2)
 
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
@@ -452,73 +533,193 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
-        # best max FIXME
-
     def test_student_get_ultimate_fdbk_but_ultimate_fdbk_hidden_permission_denied(self):
-        self.fail()
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+        self.project.validate_and_update(hide_ultimate_submission_fdbk=True)
+        self.client.force_authenticate(self.student1)
+
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
     def test_student_get_ultimate_fdbk_but_deadline_not_past_permission_denied(self):
-        self.fail()
+        self.project.validate_and_update(
+            closing_time=timezone.now() + timezone.timedelta(minutes=3))
+
+        self.client.force_authenticate(self.student1)
+
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
     def test_student_get_ultimate_fdbk_but_extension_not_past_permission_denied(self):
-        self.fail()
+        self.project.validate_and_update(
+            closing_time=timezone.now() - timezone.timedelta(minutes=2))
+        self.student_group1.validate_and_update(
+            extended_due_date=timezone.now() + timezone.timedelta(minutes=3))
 
-    def test_staff_get_ultimate_fdbk_on_owned_ultimate_submission(self):
-        self.fail()
+        self.client.force_authenticate(self.student1)
 
-    def test_staff_get_ultimate_fdbk_on_owned_non_ultimate_submission(self):
-        self.fail()
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.ultimate_submission)
 
-    def test_staff_get_ultimate_fdbk_before_deadline(self):
-        self.fail()
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
     def test_staff_get_ultimate_fdbk_on_non_owned_ultimate_submission_permission_denied(self):
-        self.fail()
+        self.client.force_authenticate(self.staff)
+
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
     # -------------------- Max fdbk ----------------------------------
 
     def test_student_get_max_fdbk_permission_denied(self):
-        self.fail()
+        self.client.force_authenticate(self.student1)
 
-    def test_staff_get_max_fdbk_on_owned_submission(self):
-        self.fail()
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.max)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.max)
 
     def test_staff_get_max_fdbk_on_non_owned_ultimate_submission(self):
-        self.fail()
+        self.client.force_authenticate(self.staff)
+        for closing_time in None, timezone.now() - timezone.timedelta(minutes=5):
+            self.project.validate_and_update(
+                closing_time=closing_time,
+                ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.most_recent)
+
+            self.do_get_fdbk_test(self.client, self.student_group1_most_recent_submission,
+                                  ag_models.FeedbackCategory.max)
+            self.do_get_output_and_diff_test(
+                self.client, self.student_group1_most_recent_submission,
+                self.student1_most_recent_res, ag_models.FeedbackCategory.max)
+
+            self.project.validate_and_update(
+                ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
+
+            self.do_get_fdbk_test(self.client, self.student_group1_best_submission,
+                                  ag_models.FeedbackCategory.max)
+            self.do_get_output_and_diff_test(
+                self.client, self.student_group1_best_submission,
+                self.student1_best_res, ag_models.FeedbackCategory.max)
 
     def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_despite_ultimate_fdbk_hidden(self):
-        self.fail()
+        self.client.force_authenticate(self.staff)
+        self.project.validate_and_update(hide_ultimate_submission_fdbk=True)
+
+        self.do_get_fdbk_test(self.client, self.student_group1_most_recent_submission,
+                              ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.max)
 
     def test_staff_get_max_fdbk_on_non_owned_non_ultimate_submission_permission_denied(self):
-        # most recent
-        # best normal (keep?)
-        # best max
-        self.fail()
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+
+        self.client.force_authenticate(self.staff)
+        self.do_get_fdbk_permission_denied_test(self.client, self.student_group1_best_submission,
+                                                ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_best_submission,
+            self.student1_best_res, ag_models.FeedbackCategory.max)
+
+        self.project.validate_and_update(
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
+
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.max)
 
     def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_before_deadline_permission_denied(self):
-        self.fail()
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+
+        self.client.force_authenticate(self.staff)
+        self.project.validate_and_update(
+            closing_time=timezone.now() + timezone.timedelta(minutes=5))
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.max)
 
     def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_before_extension_permission_denied(self):
-        self.fail()
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+
+        self.client.force_authenticate(self.staff)
+        self.project.validate_and_update(
+            closing_time=timezone.now() - timezone.timedelta(minutes=2))
+        self.student_group1.validate_and_update(
+            extended_due_date=timezone.now() + timezone.timedelta(minutes=2))
+
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.max)
 
     # -------------------------------------------------------------
 
     def test_output_or_diff_requested_on_cmd_in_not_visible_suite(self):
-        self.fail()
+        self.ag_test_suite.normal_fdbk_config.validate_and_update(visible=False)
+        self.client.force_authenticate(self.student1)
+        self.do_get_output_and_diff_on_hidden_ag_test_test(
+            self.client, self.student_group1_normal_submission,
+            self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
     def test_output_or_diff_requested_on_cmd_in_not_visible_case(self):
-        self.fail()
+        self.ag_test_case.normal_fdbk_config.validate_and_update(visible=False)
+        self.client.force_authenticate(self.student1)
+        self.do_get_output_and_diff_on_hidden_ag_test_test(
+            self.client, self.student_group1_normal_submission,
+            self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
     def test_output_or_diff_requested_on_not_visible_cmd(self):
-        self.fail()
+        self.ag_test_cmd.normal_fdbk_config.validate_and_update(visible=False)
+        self.client.force_authenticate(self.student1)
+        self.do_get_output_and_diff_on_hidden_ag_test_test(
+            self.client, self.student_group1_normal_submission,
+            self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
     # -------------------------------------------------------------
 
-    def test_get_fdbk_user_can_view_project(self):
-        self.fail()
-
     def test_get_fdbk_user_cannot_view_project_permission_denied(self):
-        self.fail()
+        self.project.validate_and_update(visible_to_students=False)
+        self.client.force_authenticate(self.student1)
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_normal_submission,
+            ag_models.FeedbackCategory.normal)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_normal_submission,
+            self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
     # -------------------------------------------------------------
 
@@ -538,7 +739,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
                query_params.urlencode())
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual(submission.get_fdbk(fdbk_category), response.data)
+        self.assertEqual(submission.get_fdbk(fdbk_category).to_dict(), response.data)
 
     def do_get_fdbk_permission_denied_test(self, client,
                                            submission: ag_models.Submission,
@@ -559,8 +760,19 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         for url, field_name in urls_and_field_names:
             response = client.get(url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
-            self.assertEqual(getattr(submission.get_fdbk(fdbk_category), field_name),
+            self.assertEqual(getattr(cmd_result.get_fdbk(fdbk_category), field_name),
                              response.data)
+
+    def do_get_output_and_diff_on_hidden_ag_test_test(self, client,
+                                                      submission: ag_models.Submission,
+                                                      cmd_result: ag_models.AGTestCommandResult,
+                                                      fdbk_category: ag_models.FeedbackCategory):
+        urls_and_field_names = self.get_output_and_diff_test_urls(
+            submission, cmd_result, fdbk_category)
+        for url, field_name in urls_and_field_names:
+            response = client.get(url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertIsNone(response.data)
 
     def do_get_output_and_diff_permission_denied_test(self, client,
                                                       submission: ag_models.Submission,

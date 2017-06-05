@@ -23,7 +23,7 @@ def user_can_view_project(user, project):
     if project.course.is_enrolled_student(user):
         return True
 
-    return project.allow_submissions_from_non_enrolled_students
+    return project.visible_to_guests
 
 
 def user_can_view_group(user, group):

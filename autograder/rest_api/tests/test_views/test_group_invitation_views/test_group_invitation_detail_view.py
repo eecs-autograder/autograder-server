@@ -65,7 +65,7 @@ class GetGroupInvitationTestCase(test_data.Client,
         invitation = self.non_enrolled_group_invitation(
             self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False)
+            visible_to_guests=False)
         self.do_permission_denied_get_test(
             self.client, self.nobody, self.invitation_url(invitation))
 
@@ -113,7 +113,7 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         invitation = self.non_enrolled_group_invitation(
             self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False)
+            visible_to_guests=False)
         self.do_accept_permission_denied_test(invitation, self.nobody)
 
     def test_creator_accepts_nothing_happens(self):
@@ -282,7 +282,7 @@ class RejectGroupInvitationTestCase(test_data.Client,
         invitation = self.non_enrolled_group_invitation(
             self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False)
+            visible_to_guests=False)
         self.do_delete_object_permission_denied_test(
             invitation, self.client, self.nobody,
             self.invitation_url(invitation))

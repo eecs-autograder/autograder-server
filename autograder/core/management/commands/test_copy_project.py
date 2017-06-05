@@ -18,7 +18,7 @@ class CloneProjectTestCase(UnitTestBase):
         proj = obj_build.build_project(
             {'disallow_student_submissions': True,
              'disallow_group_registration': True,
-             'allow_submissions_from_non_enrolled_students': True,
+             'visible_to_guests': True,
              'min_group_size': 2,
              'max_group_size': 5})
         self.do_clone_project_test(proj)

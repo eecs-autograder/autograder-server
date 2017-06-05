@@ -75,7 +75,7 @@ class Project(Course):
                     name='visible_public_project',
                     course=self.course,
                     visible_to_students=True,
-                    allow_submissions_from_non_enrolled_students=True))
+                    visible_to_guests=True))
 
         return self._visible_public_project
 
@@ -87,7 +87,7 @@ class Project(Course):
                     name='visible_private_project',
                     course=self.course,
                     visible_to_students=True,
-                    allow_submissions_from_non_enrolled_students=False))
+                    visible_to_guests=False))
 
         return self._visible_private_project
 
@@ -99,7 +99,7 @@ class Project(Course):
                     name='hidden_public_project',
                     course=self.course,
                     visible_to_students=False,
-                    allow_submissions_from_non_enrolled_students=True))
+                    visible_to_guests=True))
 
         return self._hidden_public_project
 
@@ -111,7 +111,7 @@ class Project(Course):
                     name='hidden_private_project',
                     course=self.course,
                     visible_to_students=False,
-                    allow_submissions_from_non_enrolled_students=False))
+                    visible_to_guests=False))
 
         return self._hidden_private_project
 
@@ -285,7 +285,7 @@ class Submission(Group):
     def most_recent_ultimate_submission(self, group):
         group.project.validate_and_update(
             ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent),
+                ag_models.UltimateSubmissionPolicy.most_recent),
             hide_ultimate_submission_fdbk=False,
             closing_time=None
         )
@@ -300,7 +300,7 @@ class Submission(Group):
     def best_ultimate_submission(self, group):
         group.project.validate_and_update(
             ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score),
+                ag_models.UltimateSubmissionPolicy.best),
             hide_ultimate_submission_fdbk=False,
             closing_time=timezone.now() - timezone.timedelta(seconds=2))
         return self.best_submission(group)

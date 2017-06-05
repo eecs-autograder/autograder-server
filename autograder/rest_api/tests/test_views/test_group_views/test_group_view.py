@@ -62,7 +62,7 @@ class RetrieveGroupTestCase(test_data.Client,
     def test_non_enrolled_view_group_project_private_permission_denied(self):
         group = self.non_enrolled_group(self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False)
+            visible_to_guests=False)
         self.do_permission_denied_get_test(
             self.client, self.nobody, self.group_url(group))
 
@@ -251,7 +251,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
     def test_non_enrolled_get_ultimate_project_private_permission_denied(self):
         group = self.non_enrolled_group(self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False,
+            visible_to_guests=False,
             closing_time=self.past_closing_time,
             hide_ultimate_submission_fdbk=False)
         self.build_submissions(group)
@@ -347,9 +347,9 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
                                         closing_time, extension=None,
                                         hide_ultimates=False):
         most_recent = (
-            ag_models.Project.UltimateSubmissionSelectionMethod.most_recent)
+            ag_models.UltimateSubmissionPolicy.most_recent)
         best_basic = (
-            ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score)
+            ag_models.UltimateSubmissionPolicy.best)
         for project in projects:
             project.validate_and_update(
                 closing_time=closing_time,

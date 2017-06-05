@@ -5,7 +5,7 @@ from .ag_model_base import AutograderModel, PolymorphicAutograderModel
 from .notification import Notification
 
 from .course import Course, UserRole
-from .project import Project
+from .project import Project, UltimateSubmissionPolicy
 from .project.expected_student_file_pattern import ExpectedStudentFilePattern
 from .project.uploaded_file import UploadedFile
 

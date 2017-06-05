@@ -213,7 +213,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
     def test_no_exception_on_all_invitees_not_enrolled_and_unenrolled_allowed(self):
-        self.project.allow_submissions_from_non_enrolled_students = True
+        self.project.visible_to_guests = True
         self.project.save()
         for user in itertools.chain([self.invitation_creator], self.to_invite):
             user.courses_is_enrolled_in.remove(self.project.course)
@@ -253,7 +253,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
     def test_exception_invitation_creator_staff_invitees_not_enrolled(self):
-        self.project.allow_submissions_from_non_enrolled_students = True
+        self.project.visible_to_guests = True
         self.project.save()
 
         self.invitation_creator.courses_is_enrolled_in.remove(
@@ -286,7 +286,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
     def test_exception_invitation_creator_not_enrolled_invitees_enrolled(self):
-        self.project.allow_submissions_from_non_enrolled_students = True
+        self.project.visible_to_guests = True
         self.project.save()
 
         self.invitation_creator.courses_is_enrolled_in.remove(
@@ -301,7 +301,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
     def test_exception_invitation_creator_not_enrolled_invitees_staff(self):
-        self.project.allow_submissions_from_non_enrolled_students = True
+        self.project.visible_to_guests = True
         self.project.save()
 
         self.invitation_creator.courses_is_enrolled_in.remove(

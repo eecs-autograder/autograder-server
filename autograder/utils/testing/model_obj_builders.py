@@ -446,7 +446,7 @@ def make_uploaded_file(project: ag_models.Project) -> ag_models.UploadedFile:
         project=project)
 
 
-def make_group(num_members=1,
+def make_group(num_members: int=1,
                members_role: ag_models.UserRole=ag_models.UserRole.student,
                project: ag_models.Project=None,
                **group_kwargs) -> ag_models.SubmissionGroup:
@@ -457,7 +457,7 @@ def make_group(num_members=1,
         group_kwargs['members'] = create_dummy_users(num_members)
 
     if members_role == ag_models.UserRole.guest:
-        project.validate_and_update(allow_submissions_from_non_enrolled_students=True)
+        project.validate_and_update(visible_to_guests=True)
     elif members_role == ag_models.UserRole.student:
         project.course.enrolled_students.add(*group_kwargs['members'])
     elif members_role == ag_models.UserRole.staff:

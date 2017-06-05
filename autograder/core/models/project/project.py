@@ -1,3 +1,4 @@
+import enum
 import os
 import datetime
 
@@ -10,6 +11,22 @@ from ..course import Course
 
 import autograder.core.utils as core_ut
 import autograder.core.fields as ag_fields
+
+
+# TODO: Make this an enum
+class UltimateSubmissionPolicy(enum.Enum):
+    """
+    This class contains options for choosing which submissions are
+    used for final grading. AG test cases also have a feedback
+    option that will only be used for ultimate submissions.
+    """
+    # The submission that was made most recently
+    most_recent = 'most_recent'
+
+    # The submission with the highest score. The score used
+    # for comparison is computed using maximum feedback
+    # settings.
+    best = 'best'
 
 
 class Project(AutograderModel):
@@ -43,29 +60,6 @@ class Project(AutograderModel):
             Must be unique among Projects associated with
             a given course.
             This field is REQUIRED.''')
-
-    # -------------------------------------------------------------------------
-
-    # TODO: Make this an enum
-    class UltimateSubmissionSelectionMethod:
-        '''
-        This class contains options for choosing which submissions are
-        used for final grading. AG test cases also have a feedback
-        option that will only be used for ultimate submissions.
-        '''
-        # The submission that was made most recently
-        most_recent = 'most_recent'
-
-        # The submission for which the student sees the highest basic
-        # score. The basic score is the total score using the normal
-        # feedback config for each test case.
-        best_basic_score = 'best_basic_score'
-
-        # TODO: Best (max) and remove best basic score
-
-        values = [most_recent, best_basic_score]
-
-    # -------------------------------------------------------------------------
 
     course = models.ForeignKey(
         Course, related_name='projects',
@@ -105,7 +99,8 @@ class Project(AutograderModel):
             not be able to send, accept, or reject group
             invitations.''')
 
-    allow_submissions_from_non_enrolled_students = models.BooleanField(
+    # TODO: update docs
+    visible_to_guests = models.BooleanField(
         default=False,
         help_text='''By default, only admins, staff members, and enrolled
             students for a given Course can submit to its Projects.
@@ -150,10 +145,9 @@ class Project(AutograderModel):
             towards the daily limit. This value assumes use of the UTC
             timezone. Defaults to 0:0:0.''')
 
-    ultimate_submission_selection_method = ag_fields.ShortStringField(
-        choices=zip(UltimateSubmissionSelectionMethod.values,
-                    UltimateSubmissionSelectionMethod.values),
-        default=UltimateSubmissionSelectionMethod.most_recent,
+    ultimate_submission_policy = ag_fields.EnumField(
+        UltimateSubmissionPolicy,
+        default=UltimateSubmissionPolicy.most_recent,
         blank=True,
         help_text='''The "ultimate" submission for a group is the one
             that will be used for final grading. This field specifies
@@ -206,7 +200,7 @@ class Project(AutograderModel):
         'soft_closing_time',
         'disallow_student_submissions',
         'disallow_group_registration',
-        'allow_submissions_from_non_enrolled_students',
+        'visible_to_guests',
         'min_group_size',
         'max_group_size',
 
@@ -214,7 +208,7 @@ class Project(AutograderModel):
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
 
-        'ultimate_submission_selection_method',
+        'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
     )
 
@@ -225,7 +219,7 @@ class Project(AutograderModel):
         'soft_closing_time',
         'disallow_student_submissions',
         'disallow_group_registration',
-        'allow_submissions_from_non_enrolled_students',
+        'visible_to_guests',
         'min_group_size',
         'max_group_size',
 
@@ -233,6 +227,6 @@ class Project(AutograderModel):
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
 
-        'ultimate_submission_selection_method',
+        'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
     )

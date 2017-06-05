@@ -83,4 +83,41 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
             ag_permissions.can_request_feedback_category())
     )
     def feedback(self, request, *args, **kwargs):
-        submission = self.get_object()
+        self.queryset = self.queryset.prefetch_related(
+            'ag_test_suites__ag_test_cases__ag_test_commands')
+        submission = self.get_object()  # type: ag_models.Submission
+        fdbk_category = ag_models.FeedbackCategory(request.query_params.get('feedback_category'))
+        fdbk_calculator = submission.get_fdbk(fdbk_category)
+
+        if 'stdout_for_cmd_result' in request.query_params:
+            cmd_result_pk = request.query_params.get('stdout_for_cmd_result')
+            field_name = 'stdout'
+        elif 'stderr_for_cmd_result' in request.query_params:
+            cmd_result_pk = request.query_params.get('stderr_for_cmd_result')
+            field_name = 'stderr'
+        elif 'stdout_diff_for_cmd_result' in request.query_params:
+            cmd_result_pk = request.query_params.get('stdout_diff_for_cmd_result')
+            field_name = 'stdout_diff'
+        elif 'stderr_diff_for_cmd_result' in request.query_params:
+            cmd_result_pk = request.query_params.get('stderr_diff_for_cmd_result')
+            field_name = 'stderr_diff'
+        else:
+            return response.Response(fdbk_calculator.to_dict())
+
+        cmd_result = ag_models.AGTestCommandResult.objects.select_related(
+            'ag_test_case_result__ag_test_suite_result').get(pk=cmd_result_pk)
+
+        for suite_result in fdbk_calculator.ag_test_suite_results:
+            if suite_result.pk != cmd_result.ag_test_case_result.ag_test_suite_result.pk:
+                continue
+
+            for case_result in suite_result.get_fdbk(fdbk_category).ag_test_case_results:
+                if case_result.pk != cmd_result.ag_test_case_result.pk:
+                    continue
+
+                for cmd_res in case_result.get_fdbk(fdbk_category).ag_test_command_results:
+                    if cmd_res == cmd_result:
+                        return response.Response(
+                            getattr(cmd_res.get_fdbk(fdbk_category), field_name))
+
+        return response.Response(None)

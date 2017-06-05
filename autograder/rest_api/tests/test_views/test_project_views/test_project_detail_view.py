@@ -115,7 +115,7 @@ class NumQueuedSubmissionsTestCase(_ProjectSetUp, UnitTestBase):
         proj_args = {
             'course': course,
             'visible_to_students': True,
-            'allow_submissions_from_non_enrolled_students': True
+            'visible_to_guests': True
         }
         no_submits = obj_build.build_project(proj_args)
         with_submits1 = obj_build.build_project(proj_args)

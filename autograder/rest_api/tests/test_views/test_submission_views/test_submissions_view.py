@@ -85,7 +85,7 @@ class ListGroupSubmissionsTestCase(test_data.Client,
         group = self.non_enrolled_group(self.visible_public_project)
         self.build_submissions(group)
         self.visible_public_project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False)
+            visible_to_guests=False)
         self.do_permission_denied_get_test(
             self.client, self.nobody, self.submissions_url(group))
 
@@ -171,7 +171,7 @@ class CreateSubmissionTestCase(test_data.Client,
     def test_non_enrolled_submit_private_project_permission_denied(self):
         group = self.non_enrolled_group(self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False)
+            visible_to_guests=False)
         for user in group.members.all():
             self.do_permission_denied_submit_test(group, user)
 

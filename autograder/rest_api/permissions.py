@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework import exceptions, permissions
 
 import autograder.core.models as ag_models
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 
 
 def is_admin(
@@ -44,7 +45,7 @@ def can_view_project(
                 return False
 
             return (project.course.is_enrolled_student(request.user) or
-                    project.allow_submissions_from_non_enrolled_students)
+                    project.visible_to_guests)
 
     return CanViewProject
 
@@ -101,9 +102,10 @@ def can_request_feedback_category(
                     return False
 
                 # Staff can only request max feedback for other groups'
-                # submission if the project deadline and group's
+                # ultimate submissions if the project deadline and group's
                 # extension have passed.
-                return deadline_past
+                [group_ultimate_submission] = get_ultimate_submissions(project, group.pk)
+                return deadline_past and group_ultimate_submission == submission
 
             # Non-staff users cannot view other groups' submissions
             if not group.members.filter(pk=request.user.pk).exists():
@@ -116,10 +118,9 @@ def can_request_feedback_category(
                 return submission.is_past_daily_limit
 
             if fdbk_category == ag_models.FeedbackCategory.ultimate_submission:
+                [group_ultimate_submission] = get_ultimate_submissions(project, group.pk)
                 return (not project.hide_ultimate_submission_fdbk and
-                        # FIXME: change group.ultimate_submission to some
-                        # non-member function that uses new ag test models.
-                        group.ultimate_submission == submission and
+                        group_ultimate_submission == submission and
                         deadline_past)
 
             return False

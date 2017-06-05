@@ -86,7 +86,7 @@ class MiscSubmissionGroupTestCase(_SetUp, test_ut.UnitTestBase):
         other_project = obj_build.build_project(
             project_kwargs={
                 'max_group_size': 2,
-                'allow_submissions_from_non_enrolled_students': True})
+                'visible_to_guests': True})
 
         repeated_user = self.enrolled_group[0]
 
@@ -111,6 +111,7 @@ class MiscSubmissionGroupTestCase(_SetUp, test_ut.UnitTestBase):
         self.assertCountEqual([first_group, second_group], groups)
 
 
+# TODO: change to nonmember function defined elsewhere
 class GetUltimateSubmissionTestCase(test_ut.UnitTestBase):
     def test_get_ultimate_submission(self):
         submissions, best, tests = obj_build.build_submissions_with_results(
@@ -121,12 +122,12 @@ class GetUltimateSubmissionTestCase(test_ut.UnitTestBase):
 
         project.validate_and_update(
             ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent))
+                ag_models.UltimateSubmissionPolicy.most_recent))
         self.assertEqual(submissions[-1], group.ultimate_submission)
 
         project.validate_and_update(
             ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score))
+                ag_models.UltimateSubmissionPolicy.best))
         self.assertEqual(best, group.ultimate_submission)
 
     def test_get_ultimate_submission_high_score_tied_take_most_recent(self):
@@ -137,12 +138,12 @@ class GetUltimateSubmissionTestCase(test_ut.UnitTestBase):
 
         project.validate_and_update(
             ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent))
+                ag_models.UltimateSubmissionPolicy.most_recent))
         self.assertEqual(submissions[-1], group.ultimate_submission)
 
         project.validate_and_update(
             ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score))
+                ag_models.UltimateSubmissionPolicy.best))
         self.assertEqual(submissions[-1], group.ultimate_submission)
 
     def test_get_ultimate_submission_no_submissions(self):
@@ -350,7 +351,7 @@ class GroupMembershipTestCase(_SetUp, test_ut.UnitTestBase):
             ag_models.SubmissionGroup.objects.validate_and_create(
                 members=mixed_group, project=self.project)
 
-        self.project.allow_submissions_from_non_enrolled_students = True
+        self.project.visible_to_guests = True
         self.project.save()
 
         with self.assertRaises(exceptions.ValidationError):
@@ -372,7 +373,7 @@ class GroupMembershipTestCase(_SetUp, test_ut.UnitTestBase):
                 members=self.non_enrolled_group, project=self.project)
 
     def test_no_exception_on_all_members_not_enrolled_and_unenrolled_allowed(self):
-        self.project.allow_submissions_from_non_enrolled_students = True
+        self.project.visible_to_guests = True
         self.project.save()
 
         group = ag_models.SubmissionGroup.objects.validate_and_create(

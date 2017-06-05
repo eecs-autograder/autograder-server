@@ -263,7 +263,7 @@ class StaffListStudentOrOtherStaffResultsTestCase(_Shared,
         for group in self.all_groups(project):
             project.validate_and_update(
                 visible_to_students=False,
-                allow_submissions_from_non_enrolled_students=False)
+                visible_to_guests=False)
 
             project.validate_and_update(
                 closing_time=timezone.now() - datetime.timedelta(hours=1))
@@ -279,7 +279,7 @@ class StaffListStudentOrOtherStaffResultsTestCase(_Shared,
         for group in self.all_groups(project):
             project.validate_and_update(
                 visible_to_students=False,
-                allow_submissions_from_non_enrolled_students=False)
+                visible_to_guests=False)
             group.validate_and_update(extended_due_date=project.closing_time +
                                       datetime.timedelta(minutes=1))
 
@@ -494,6 +494,6 @@ class StudentListOwnResultsTestCase(_Shared,
         group = self.non_enrolled_group(project)
         submission = self.build_submission(group)
         project.validate_and_update(
-            allow_submissions_from_non_enrolled_students=False)
+            visible_to_guests=False)
 
         self.do_permission_denied_list_results_test(submission, group.members.first(), 'normal')
