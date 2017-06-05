@@ -346,10 +346,6 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
     def do_get_ultimate_submission_test(self, projects, group_funcs, users,
                                         closing_time, extension=None,
                                         hide_ultimates=False):
-        most_recent = (
-            ag_models.UltimateSubmissionPolicy.most_recent)
-        best_basic = (
-            ag_models.UltimateSubmissionPolicy.best)
         for project in projects:
             project.validate_and_update(
                 closing_time=closing_time,
@@ -357,21 +353,27 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             for group_func in group_funcs:
                 group = group_func(project)
                 group.validate_and_update(extended_due_date=extension)
-                submissions, best, tests = obj_build.build_submissions_with_results(
-                    num_submissions=4, make_one_best=True,
-                    submission_group=group)
+
+                suite = obj_build.make_ag_test_suite(project)
+                case = obj_build.make_ag_test_case(suite)
+                cmd = obj_build.make_full_ag_test_command(case)
+                best_submission = obj_build.build_submission(submission_group=group)
+                most_recent_submission = obj_build.build_submission(submission_group=group)
+
+                obj_build.make_correct_ag_test_command_result(cmd, submission=best_submission)
+                obj_build.make_incorrect_ag_test_command_result(
+                    cmd, submission=most_recent_submission)
+
                 for user in users:
                     url = self.ultimate_submission_url(group)
                     project.validate_and_update(
-                        ultimate_submission_selection_method=most_recent)
+                        ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.most_recent)
                     self.do_get_object_test(
-                        self.client, user, url, submissions[-1].to_dict())
+                        self.client, user, url, most_recent_submission.to_dict())
 
                     project.validate_and_update(
-                        ultimate_submission_selection_method=best_basic)
-                    self.do_get_object_test(
-                        self.client, user, url, best.to_dict())
+                        ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
+                    self.do_get_object_test(self.client, user, url, best_submission.to_dict())
 
     def ultimate_submission_url(self, group):
-        return reverse('group-ultimate-submission',
-                       kwargs={'pk': group.pk})
+        return reverse('group-ultimate-submission', kwargs={'pk': group.pk})

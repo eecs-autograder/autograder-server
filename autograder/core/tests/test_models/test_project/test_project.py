@@ -46,7 +46,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertTrue(new_project.hide_ultimate_submission_fdbk)
         self.assertEqual(
             ag_models.UltimateSubmissionPolicy.most_recent,
-            new_project.ultimate_submission_selection_method)
+            new_project.ultimate_submission_policy)
 
     def test_valid_create_non_defaults(self):
         tomorrow_date = timezone.now() + datetime.timedelta(days=1)
@@ -181,11 +181,11 @@ class ProjectMiscErrorTestCase(UnitTestBase):
 
         self.assertIn('submission_limit_per_day', cm.exception.message_dict)
 
-    def test_error_invalid_ultimate_submission_selection_method(self):
+    def test_error_invalid_ultimate_submission_policy(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
                 name='steve', course=self.course,
-                ultimate_submission_selection_method='not_a_method')
+                ultimate_submission_policy='not_a_method')
 
         self.assertIn('ultimate_submission_policy',
                       cm.exception.message_dict)

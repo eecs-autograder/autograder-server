@@ -284,7 +284,7 @@ class Submission(Group):
 
     def most_recent_ultimate_submission(self, group):
         group.project.validate_and_update(
-            ultimate_submission_selection_method=(
+            ultimate_submission_policy=(
                 ag_models.UltimateSubmissionPolicy.most_recent),
             hide_ultimate_submission_fdbk=False,
             closing_time=None
@@ -299,7 +299,7 @@ class Submission(Group):
 
     def best_ultimate_submission(self, group):
         group.project.validate_and_update(
-            ultimate_submission_selection_method=(
+            ultimate_submission_policy=(
                 ag_models.UltimateSubmissionPolicy.best),
             hide_ultimate_submission_fdbk=False,
             closing_time=timezone.now() - timezone.timedelta(seconds=2))

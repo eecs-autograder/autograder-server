@@ -121,12 +121,12 @@ class GetUltimateSubmissionTestCase(test_ut.UnitTestBase):
         project = group.project
 
         project.validate_and_update(
-            ultimate_submission_selection_method=(
+            ultimate_submission_policy=(
                 ag_models.UltimateSubmissionPolicy.most_recent))
         self.assertEqual(submissions[-1], group.ultimate_submission)
 
         project.validate_and_update(
-            ultimate_submission_selection_method=(
+            ultimate_submission_policy=(
                 ag_models.UltimateSubmissionPolicy.best))
         self.assertEqual(best, group.ultimate_submission)
 
@@ -137,12 +137,12 @@ class GetUltimateSubmissionTestCase(test_ut.UnitTestBase):
         project = group.project
 
         project.validate_and_update(
-            ultimate_submission_selection_method=(
+            ultimate_submission_policy=(
                 ag_models.UltimateSubmissionPolicy.most_recent))
         self.assertEqual(submissions[-1], group.ultimate_submission)
 
         project.validate_and_update(
-            ultimate_submission_selection_method=(
+            ultimate_submission_policy=(
                 ag_models.UltimateSubmissionPolicy.best))
         self.assertEqual(submissions[-1], group.ultimate_submission)
 

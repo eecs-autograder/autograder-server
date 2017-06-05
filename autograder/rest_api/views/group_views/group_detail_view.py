@@ -4,6 +4,7 @@ from django.utils import timezone
 from rest_framework import viewsets, mixins, permissions, decorators, response
 
 import autograder.core.models as ag_models
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
 
@@ -74,7 +75,7 @@ class GroupDetailViewSet(build_load_object_mixin(ag_models.SubmissionGroup),
     @decorators.detail_route(permission_classes=(
         permissions.IsAuthenticated, _UltimateSubmissionPermissions))
     def ultimate_submission(self, request, *args, **kwargs):
-        '''
+        """
         Permissions details:
         - The normal group and submission viewing permissions apply
           first.
@@ -87,8 +88,8 @@ class GroupDetailViewSet(build_load_object_mixin(ag_models.SubmissionGroup),
         - Students can view their ultimate submissions as long as the
           closing time has passed and ultimate submissions are not
           overridden as being hidden.
-        '''
+        """
         group = self.get_object()
-        content = ag_serializers.SubmissionSerializer(
-            group.ultimate_submission).data
+        [ultimate_submission] = get_ultimate_submissions(group.project, group.pk)
+        content = ag_serializers.SubmissionSerializer(ultimate_submission).data
         return response.Response(content)
