@@ -264,6 +264,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
     def setUp(self):
         super().setUp()
+
         self.client = APIClient()
 
         self.ag_test_cmd = obj_build.make_full_ag_test_command(
@@ -308,14 +309,12 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.student1_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group1_past_limit_submission)
 
+        self.student_group1_most_recent_submission = self.student_group1_past_limit_submission
+        self.student1_most_recent_res = self.student1_past_limit_res
+
         # --------- student 2 --------------
         self.student_group2 = obj_build.make_group(project=self.project)
-        self.student2 = submission = self.student_group2.members.first()
-
-        self.student_group2_submission = obj_build.build_submission(
-            submission_group=self.student_group2)
-        self.student2_res = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd, submission=self.student_group2_submission)
+        self.student2 = self.student_group2.members.first()
 
         # --------- staff --------------
         self.staff_group = obj_build.make_group(
@@ -324,18 +323,21 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
         self.staff_normal_submission = obj_build.build_submission(
             submission_group=self.staff_group)
-        self. staff_normal_res = obj_build.make_correct_ag_test_command_result(
+        self.staff_normal_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_normal_submission)
 
         self.staff_best_submission = obj_build.build_submission(
             submission_group=self.staff_group)
-        self. staff_best_res = obj_build.make_correct_ag_test_command_result(
+        self.staff_best_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_best_submission)
 
         self.staff_past_limit_submission = obj_build.build_submission(
             submission_group=self.staff_group)
-        self. staff_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
+        self.staff_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_past_limit_submission)
+
+        self.staff_most_recent_submission = self.staff_past_limit_submission
+        self.staff_most_recent_res = self.staff_past_limit_res
 
     # -------------------- Normal fdbk ----------------------------------
 
@@ -349,13 +351,13 @@ class SubmissionFeedbackTestCase(UnitTestBase):
                                          ag_models.FeedbackCategory.normal)
 
     def test_student_get_normal_fdbk_on_non_owned_submission_permission_denied(self):
-        self.client.force_authenticate(self.student1)
-        self.do_get_fdbk_permission_denied_test(self.client, self.student_group2_submission,
+        self.client.force_authenticate(self.student2)
+        self.do_get_fdbk_permission_denied_test(self.client, self.student_group1_normal_submission,
                                                 ag_models.FeedbackCategory.normal)
 
         self.do_get_output_and_diff_permission_denied_test(
-            self.client, self.student_group2_submission,
-            self.student2_res, ag_models.FeedbackCategory.normal)
+            self.client, self.student_group1_normal_submission,
+            self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
     def test_student_get_normal_fdbk_on_owned_past_limit_submission_permission_denied(self):
         self.client.force_authenticate(self.student1)
@@ -390,8 +392,27 @@ class SubmissionFeedbackTestCase(UnitTestBase):
     def test_student_get_past_limit_fdbk_on_owned_past_limit_submission(self):
         self.fail()
 
+    def test_student_get_past_limit_fdbk_on_non_owned_past_limit_submission_permission_denied(self):
+        self.client.force_authenticate(self.student2)
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_past_limit_submission,
+            ag_models.FeedbackCategory.past_limit_submission)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_past_limit_submission,
+            self.student1_past_limit_res,
+            ag_models.FeedbackCategory.past_limit_submission)
+
     def test_student_get_past_limit_fdbk_on_owned_non_past_limit_submission_permission_denied(self):
-        self.fail()
+        self.client.force_authenticate(self.student1)
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_normal_submission,
+            ag_models.FeedbackCategory.past_limit_submission)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_normal_submission,
+            self.student1_past_limit_res,
+            ag_models.FeedbackCategory.past_limit_submission)
 
     def test_staff_get_past_limit_fdbk_on_owned_submission(self):
         self.fail()
@@ -400,18 +421,38 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.fail()
 
     def test_staff_get_past_limit_fdbk_on_non_owned_past_limit_submission_permission_denied(self):
-        self.fail()
+        self.client.force_authenticate(self.staff)
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_past_limit_submission,
+            ag_models.FeedbackCategory.past_limit_submission)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_past_limit_submission,
+            self.student1_past_limit_res,
+            ag_models.FeedbackCategory.past_limit_submission)
 
     # -------------------- Ultimate fdbk ----------------------------------
 
     def test_student_get_ultimate_fdbk_on_owned_ultimate_submission(self):
+        # most recent
+        # best max FIXME
         self.fail()
 
     def test_student_get_ultimate_fdbk_on_owned_non_ultimate_submission_permission_denied(self):
-        # most recent
-        # best normal (keep?)
-        # best max
-        self.fail()
+        self.client.force_authenticate(self.student1)
+        self.project.validate_and_update(
+            ultimate_submission_selection_method=(
+                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent))
+
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+
+        # best max FIXME
 
     def test_student_get_ultimate_fdbk_but_ultimate_fdbk_hidden_permission_denied(self):
         self.fail()

@@ -46,6 +46,7 @@ class Project(AutograderModel):
 
     # -------------------------------------------------------------------------
 
+    # TODO: Make this an enum
     class UltimateSubmissionSelectionMethod:
         '''
         This class contains options for choosing which submissions are
@@ -59,6 +60,8 @@ class Project(AutograderModel):
         # score. The basic score is the total score using the normal
         # feedback config for each test case.
         best_basic_score = 'best_basic_score'
+
+        # TODO: Best (max) and remove best basic score
 
         values = [most_recent, best_basic_score]
 
