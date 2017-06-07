@@ -1,4 +1,5 @@
 import subprocess
+from typing import Iterable
 from unittest import mock  # type: ignore
 
 from django.conf import settings
@@ -11,8 +12,7 @@ from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
-import autograder.utils.testing as test_ut
-import autograder.utils.testing.generic_data as gen_data
+from autograder.utils.testing import UnitTestBase, sleeper_subtest
 
 from . import tasks
 
@@ -21,7 +21,7 @@ class _MockException(Exception):
     pass
 
 
-class RetryDecoratorTestCase(test_ut.UnitTestBase):
+class RetryDecoratorTestCase(UnitTestBase):
     def test_retry_and_succeed(self):
         arg_val = 42
         kwarg_val = "cheese"
@@ -85,91 +85,151 @@ class RetryDecoratorTestCase(test_ut.UnitTestBase):
         mocked_sleep.assert_has_calls([mock.call(0) for i in range(max_num_retries)])
 
 
+def _make_mock_grade_ag_test_cmd_fail_then_succeed(num_times_to_fail):
+    def side_effect(*args):
+        nonlocal num_times_to_fail
+        if num_times_to_fail is None:
+            raise _MockException('retry me i am error')
+
+        if num_times_to_fail:
+            num_times_to_fail -= 1
+            raise _MockException('retry me i am error')
+
+    return mock.Mock(wraps=tasks.grade_ag_test_command_impl, side_effect=side_effect)
+
+
 @tag('slow', 'sandbox')
 @mock.patch('autograder.grading_tasks.tasks.time.sleep')
-class TasksTestCase(test_ut.UnitTestBase):
+class GradeSubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
+        self.submission = obj_build.build_submission()
+        self.project = self.submission.submission_group.project
 
-        self.group = obj_build.build_submission_group()
-        self.project = self.group.project
-
-        impl_h = ag_models.UploadedFile.objects.validate_and_create(
-            file_obj=SimpleUploadedFile('impl.h', _IMPL_H),
-            project=self.project)
-
-        needs_files_test = ag_models.UploadedFile.objects.validate_and_create(
-            file_obj=SimpleUploadedFile('needs_files_test.py',
-                                        _NEEDS_FILES_TEST),
-            project=self.project)
-
-        unit_test = ag_models.UploadedFile.objects.validate_and_create(
-            file_obj=SimpleUploadedFile('unit_test.cpp', _UNIT_TEST),
-            project=self.project)
-
-        self.impl_cpp_name = 'impl.cpp'
-        impl_cpp = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
-            pattern=self.impl_cpp_name,
-            project=self.project)
-
-        test_star_cpp = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
-            pattern='test*.cpp', min_num_matches=1, max_num_matches=4,
-            project=self.project)
-
-        self.compiled_test = ag_models.AutograderTestCaseFactory.validate_and_create(
-            'compiled_and_run_test_case', name='compiley', compiler='g++',
-            expected_return_code=0, points_for_correct_return_code=1,
-            feedback_configuration=ag_models.FeedbackConfig.create_with_max_fdbk(),
-            project=self.project)
-        self.compiled_test.test_resource_files.add(impl_h)
-        self.compiled_test.project_files_to_compile_together.add(unit_test)
-        self.compiled_test.student_files_to_compile_together.add(impl_cpp)
-
-        self.interpreted_test = ag_models.AutograderTestCaseFactory.validate_and_create(
-            'interpreted_test_case', name='interprety', interpreter='python3',
-            entry_point_filename=needs_files_test.name,
-            expected_return_code=0, points_for_correct_return_code=1,
-            feedback_configuration=ag_models.FeedbackConfig.create_with_max_fdbk(),
-            project=self.project)
-        self.interpreted_test.test_resource_files.add(needs_files_test)
-        self.interpreted_test.student_resource_files.add(test_star_cpp)
-
-        test_files = [SimpleUploadedFile('test{}.cpp'.format(i), b'waaaa')
-                      for i in range(2)]
-        self.submission = ag_models.Submission.objects.validate_and_create(
-            test_files + [SimpleUploadedFile(self.impl_cpp_name, _IMPL_CPP)],
-            submission_group=self.group)
-
-    def test_grade_submission_no_deferred(self, *args):
-        print(self.submission.pk)
+    def test_one_suite_one_case_one_cmd(self, *args):
+        suite = obj_build.make_ag_test_suite(self.project)
+        case = obj_build.make_ag_test_case(suite)
+        print_to_stdout_and_stderr = "bash -c 'printf hello; printf whoops >&2'"
+        cmd = obj_build.make_full_ag_test_command(
+            case,
+            cmd=print_to_stdout_and_stderr,
+            set_arbitrary_points=False,
+            points_for_correct_return_code=4,
+            points_for_correct_stdout=1,
+            points_for_correct_stderr=1,
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            expected_stdout_text="hello",
+            expected_stderr_source=ag_models.ExpectedOutputSource.text,
+            expected_stderr_text="whoops")
         tasks.grade_submission(self.submission.pk)
 
-        self.submission.refresh_from_db()
-        self.assertEqual(2, self.submission.basic_score)
+        cmd_result = ag_models.AGTestCommandResult.objects.get(
+            ag_test_command=cmd,
+            ag_test_case_result__ag_test_suite_result__submission=self.submission)
+        self.assertEqual(0, cmd_result.return_code)
+        self.assertEqual('hello', cmd_result.stdout)
+        self.assertEqual('whoops', cmd_result.stderr)
+        self.assertTrue(cmd_result.stdout_correct)
+        self.assertTrue(cmd_result.stderr_correct)
 
+        self.assertEqual(
+            6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
+        self.assertEqual(6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_grade_submission_one_deferred(self, *args):
-        self.compiled_test.validate_and_update(deferred=True)
+    def test_multiple_suites_cases_and_cmds(self, *args):
+        suite1 = obj_build.make_ag_test_suite(self.project)
+        case1 = obj_build.make_ag_test_case(suite1)
+        case2 = obj_build.make_ag_test_case(suite1)
+
+        suite2 = obj_build.make_ag_test_suite(self.project)
+        case3 = obj_build.make_ag_test_case(suite2)
+        case4 = obj_build.make_ag_test_case(suite2)
+
+        print_to_stdout_and_stderr = "bash -c 'printf hello; printf whoops >&2'"
+        for case in case1, case2, case3, case4:
+            for i in range(2):
+                obj_build.make_full_ag_test_command(
+                    ag_test_case=case,
+                    cmd=print_to_stdout_and_stderr,
+                    set_arbitrary_points=False,
+                    points_for_correct_return_code=4,
+                    points_for_correct_stdout=1,
+                    points_for_correct_stderr=1,
+                    expected_return_code=ag_models.ExpectedReturnCode.zero,
+                    expected_stdout_source=ag_models.ExpectedOutputSource.text,
+                    expected_stdout_text="hello",
+                    expected_stderr_source=ag_models.ExpectedOutputSource.text,
+                    expected_stderr_text="whoops")
+
         tasks.grade_submission(self.submission.pk)
 
+        cmd_results = ag_models.AGTestCommandResult.objects.filter(
+            ag_test_case_result__ag_test_suite_result__submission=self.submission)
+
+        for res in cmd_results:
+            self.assertEqual(0, res.return_code)
+            self.assertEqual('hello', res.stdout)
+            self.assertEqual('whoops', res.stderr)
+            self.assertTrue(res.stdout_correct)
+            self.assertTrue(res.stderr_correct)
+
+        self.assertEqual(48, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
         self.submission.refresh_from_db()
-        self.assertEqual(2, self.submission.basic_score)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_grade_submission_all_deferred(self, *args):
-        self._mark_all_as_deferred()
+    def test_one_suite_deferred(self, *args):
+        suite1 = obj_build.make_ag_test_suite(self.project, deferred=False)
+        case1 = obj_build.make_ag_test_case(suite1)
+        cmd1 = obj_build.make_full_ag_test_command(
+            case1,
+            set_arbitrary_points=False,
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            points_for_correct_return_code=1)
+        suite2 = obj_build.make_ag_test_suite(self.project, deferred=True)
+        case2 = obj_build.make_ag_test_case(suite2)
+        cmd2 = obj_build.make_full_ag_test_command(
+            case2,
+            set_arbitrary_points=False,
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            points_for_correct_return_code=2)
         tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
-        self.assertEqual(2, self.submission.basic_score)
+        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_grade_submission_removed_from_queue(self, *args):
-        self.compiled_test.validate_and_update(deferred=True)
+    def test_all_suites_deferred(self, *args):
+        suite1 = obj_build.make_ag_test_suite(self.project, deferred=True)
+        case1 = obj_build.make_ag_test_case(suite1)
+        cmd1 = obj_build.make_full_ag_test_command(
+            case1,
+            set_arbitrary_points=False,
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            points_for_correct_return_code=1)
+        suite2 = obj_build.make_ag_test_suite(self.project, deferred=True)
+        case2 = obj_build.make_ag_test_case(suite2)
+        cmd2 = obj_build.make_full_ag_test_command(
+            case2,
+            set_arbitrary_points=False,
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            points_for_correct_return_code=2)
+        tasks.grade_submission(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+                         self.submission.status)
+
+    def test_submission_removed_from_queue(self, *args):
+        suite = obj_build.make_ag_test_suite(self.project, deferred=True)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(case)
         self.submission.status = ag_models.Submission.GradingStatus.removed_from_queue
         self.submission.save()
         tasks.grade_submission(self.submission.pk)
@@ -178,129 +238,219 @@ class TasksTestCase(test_ut.UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.removed_from_queue,
                          self.submission.status)
 
-    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
-    def test_non_deferred_retry_on_error(self, impl_mock, *args):
-        impl_mock.side_effect = TasksTestCase._SideEffectSequence([
-            _MockException('retry me I am an error'),
-            lambda: None,
-            _MockException('retry me I am an error'),
-            lambda: None])
+    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_command_impl',
+                new=_make_mock_grade_ag_test_cmd_fail_then_succeed(1))
+    def test_non_deferred_retry_on_error(self, *args):
+        suite = obj_build.make_ag_test_suite(self.project)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(
+            case,
+            set_arbitrary_points=False,
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            points_for_correct_return_code=3)
         tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
-        self.assertEqual(2, self.submission.basic_score)
+        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
 
-    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
+    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_command_impl',
+                new=_make_mock_grade_ag_test_cmd_fail_then_succeed(
+                    settings.AG_TEST_MAX_RETRIES + 1))
     def test_non_deferred_max_num_retries_exceeded(self, impl_mock, *args):
-        impl_mock.side_effect = [
-            subprocess.CalledProcessError(42, ['waaaluigi'])
-            for i in range(settings.AG_TEST_MAX_RETRIES + 1)]
+        suite = obj_build.make_ag_test_suite(self.project)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(
+            case,
+            set_arbitrary_points=False,
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            points_for_correct_return_code=3)
+
         with self.assertRaises(tasks.MaxRetriesExceeded):
             tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.error,
                          self.submission.status)
-        self.assertNotEqual('', self.submission.error_msg)
-        self.assertEqual(0, self.submission.basic_score)
+        self.assertTrue(self.submission.error_msg.find('MaxRetriesExceeded') != -1)
 
-        pending_result = self.submission.results.get(
-            status=ag_models.AutograderTestCaseResult.ResultStatus.pending)
-        error_result = self.submission.results.get(
-            status=ag_models.AutograderTestCaseResult.ResultStatus.error)
-
-        self.assertEqual('', pending_result.error_msg)
-        self.assertNotEqual('', error_result.error_msg)
-
-    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
+    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_command_impl',
+                new=_make_mock_grade_ag_test_cmd_fail_then_succeed(
+                    settings.AG_TEST_MAX_RETRIES * 4))
     def test_deferred_retry_on_error(self, impl_mock, *args):
-        self.interpreted_test.validate_and_update(deferred=True)
-        self.compiled_test.delete()
-        impl_mock.side_effect = TasksTestCase._SideEffectSequence([
-            _MockException('errorrr'),
-            lambda: None])
+        suite = obj_build.make_ag_test_suite(self.project, deferred=True)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(
+            case,
+            set_arbitrary_points=False,
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            points_for_correct_return_code=3)
+
         tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
-        self.assertEqual(1, self.submission.basic_score)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_impl.mocking_hook')
-    def test_deferred_ag_test_error(self, impl_mock, *args):
-        self.compiled_test.delete()
-        self.interpreted_test.validate_and_update(deferred=True)
-        impl_mock.side_effect = _MockException('zomg error!')
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(0, res.return_code)
+        self.assertTrue(res.return_code_correct)
 
-        with self.assertRaises(Exception):
+        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+
+    @mock.patch('autograder.grading_tasks.tasks.retry_should_recover',
+                new=tasks.retry(max_num_retries=2))
+    @mock.patch('autograder.grading_tasks.tasks.grade_ag_test_command_impl',
+                new=_make_mock_grade_ag_test_cmd_fail_then_succeed(None))
+    def test_deferred_ag_test_error(self, *args):
+        suite = obj_build.make_ag_test_suite(self.project, deferred=True)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(
+            case,
+            set_arbitrary_points=False,
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            points_for_correct_return_code=3)
+
+        with self.assertRaises(tasks.MaxRetriesExceeded):
             tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.error,
                          self.submission.status)
-        self.assertNotEqual('', self.submission.error_msg)
+        self.assertTrue(self.submission.error_msg.find('MaxRetriesExceeded') != -1)
 
-        interpreted_result = self.submission.results.get(
-            test_case=self.interpreted_test)
-        self.assertEqual(ag_models.AutograderTestCaseResult.ResultStatus.error,
-                         interpreted_result.status)
-        self.assertNotEqual('', interpreted_result.error_msg)
 
-    def test_extra_tests_added_after_submission_created_grade_ag_test_impl_adds_results(
-            self, *args):
-        new_tests = [obj_build.build_compiled_ag_test(project=self.project)
-                     for i in range(2)]
+@tag('slow', 'sandbox')
+class GradeAGTestCommandTestCase(UnitTestBase):
+    def test_points_awarded_and_deducted(self):
+        self.fail()
 
-        for test in new_tests:
-            self.assertEqual(0, test.dependent_results.count())
-            tasks.grade_ag_test_impl(test.pk, self.submission.pk)
-            self.assertEqual(1, test.dependent_results.count())
+    def test_flexible_diff_settings_used(self):
+        self.fail()
 
-    def test_program_prints_too_much_output(self, *args):
-        submission = ag_models.Submission.objects.validate_and_create(
-            [SimpleUploadedFile(self.impl_cpp_name, _TOO_MUCH_OUTPUT_IMPL_CPP)],
-            submission_group=self.group)
-        tasks.grade_ag_test_impl(self.compiled_test.pk, submission.pk)
-        result = ag_models.AutograderTestCaseResult.objects.get(
-            test_case=self.compiled_test, submission=submission)
-        self.assertEqual(ag_models.AutograderTestCaseResult.ResultStatus.finished,
-                         result.status)
-        self.assertTrue(result.timed_out)
+    def test_program_prints_too_much_output(self):
+        self.fail()
 
-    def _mark_all_as_deferred(self):
-        self.compiled_test.validate_and_update(deferred=True)
-        self.interpreted_test.validate_and_update(deferred=True)
-        for test in self.project.autograder_test_cases.all():
-            self.assertTrue(test.deferred)
+    def test_shell_injection_doesnt_work(self):
+        self.fail()
 
-    class _SideEffectSequence:
-        '''
-        In some situations, we want to pass a mix of values, exceptions,
-        and callables to the side_effects parameter of a mock object.
-        This class enables that.
-        '''
+    def test_files_added_to_sandbox(self):
+        self.fail()
 
-        def __init__(self, side_effects):
-            self._side_effects = side_effects
-            self._iter = iter(self._side_effects)
+    def test_patterns_expanded_to_student_files_in_cmd(self):
+        self.fail()
 
-        def __call__(self, *args, **kwargs):
-            print(args, kwargs)
-            next_item = next(self._iter)
-            try:
-                return next_item(*args, **kwargs)
-            except TypeError as e:
-                print(e)
+    # 1 correct, 1 incorrect for these
+    def test_expected_return_code_zero(self):
+        self.fail()
 
-            try:
-                raise next_item
-            except TypeError as e:
-                print(e)
+    def test_expected_return_code_nonzero(self):
+        self.fail()
 
-            return next_item
+    def test_expected_stdout_text(self):
+        self.fail()
 
+    def test_expected_stdout_proj_file(self):
+        self.fail()
+
+    def test_expected_stderr_text(self):
+        self.fail()
+
+    def test_expected_stderr_proj_file(self):
+        self.fail()
+
+    def test_stdin_source_text(self):
+        self.fail()
+
+    def test_stdin_source_proj_file(self):
+        self.fail()
+
+    def test_stdin_source_setup_stdout(self):
+        self.fail()
+
+    def test_stdin_source_setup_stderr(self):
+        self.fail()
+
+    def test_setup_prints_too_much_output(self):
+        self.fail()
+
+    def test_teardown_prints_too_much_output(self):
+        self.fail()
+
+    def test_setup_times_out(self):
+        self.fail()
+
+    def test_setup_exceeds_process_limit(self):
+        self.fail()
+
+    def test_setup_exceeds_stack_limit(self):
+        self.fail()
+
+    def test_setup_exceeds_virtual_mem_limit(self):
+        self.fail()
+
+    def test_teardown_times_out(self):
+        self.fail()
+
+    def test_teardown_exceeds_process_limit(self):
+        self.fail()
+
+    def test_teardown_exceeds_stack_limit(self):
+        self.fail()
+
+    def test_teardown_exceeds_virtual_mem_limit(self):
+        self.fail()
+
+    def test_program_times_out(self):
+        self.fail()
+
+    def test_program_exceeds_process_limit(self):
+        self.fail()
+
+    def test_program_exceeds_stack_limit(self):
+        self.fail()
+
+    def test_program_exceeds_virtual_mem_limit(self):
+        self.fail()
+
+
+@tag('slow')
+class RaceConditionTestCase(UnitTestBase):
+    def test_remove_from_queue_when_being_marked_as_being_graded_race_condition_prevented(self):
+        group = obj_build.make_group(members_role=ag_models.UserRole.admin)
+        submission = obj_build.build_submission(submission_group=group)
+
+        path = ('autograder.grading_tasks.tasks.ag_models'
+                '.Submission.GradingStatus.removed_from_queue')
+
+        @sleeper_subtest(
+            path,
+            new_callable=mock.PropertyMock,
+            return_value=(ag_models.Submission.GradingStatus.removed_from_queue))
+        def do_request_and_wait():
+            tasks.grade_submission(submission.pk)
+
+        subtest = do_request_and_wait()
+
+        print('sending remove from queue request')
+        client = APIClient()
+        client.force_authenticate(
+            submission.submission_group.members.first())
+        response = client.post(reverse('submission-remove-from-queue',
+                                       kwargs={'pk': submission.pk}))
+        subtest.join()
+        submission.refresh_from_db()
+        self.assertNotEqual(
+            ag_models.Submission.GradingStatus.removed_from_queue,
+            submission.status)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+                         submission.status)
+
+
+# --------------------------------------------------------------------------------------
 
 _NEEDS_FILES_TEST = b'''
 import os
@@ -366,40 +516,3 @@ int spam()
     return 42;
 }
 '''
-
-
-@tag('slow')
-class RaceConditionTestCase(gen_data.Project,
-                            gen_data.Submission,
-                            test_ut.UnitTestBase):
-    def test_remove_from_queue_when_being_marked_as_being_graded_race_condition_prevented(self):
-        group = self.admin_group(self.project)
-        submission = self.build_submission(group)
-
-        path = ('autograder.grading_tasks.tasks.ag_models'
-                '.Submission.GradingStatus.removed_from_queue')
-
-        @test_ut.sleeper_subtest(
-            path,
-            new_callable=mock.PropertyMock,
-            return_value=(ag_models.Submission.GradingStatus.removed_from_queue))
-        def do_request_and_wait():
-            tasks.grade_submission(submission.pk)
-
-        subtest = do_request_and_wait()
-
-        print('sending remove from queue request')
-        client = APIClient()
-        client.force_authenticate(
-            submission.submission_group.members.first())
-        response = client.post(reverse('submission-remove-from-queue',
-                                       kwargs={'pk': submission.pk}))
-        subtest.join()
-        submission.refresh_from_db()
-        self.assertNotEqual(
-            ag_models.Submission.GradingStatus.removed_from_queue,
-            submission.status)
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-
-        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
-                         submission.status)

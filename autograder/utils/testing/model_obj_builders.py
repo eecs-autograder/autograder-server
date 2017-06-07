@@ -502,7 +502,7 @@ def make_full_ag_test_command(
     base_kwargs = {
         'name': 'ag_test_cmd-{}'.format(get_unique_id()),
         'ag_test_case': ag_test_case,
-        'cmd': 'aksdjhfalsdf',
+        'cmd': 'printf ""',
 
         # These specific values don't matter, other than that
         # they should indicate that return code, stdout, and

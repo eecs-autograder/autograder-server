@@ -152,46 +152,6 @@ class GetUltimateSubmissionTestCase(test_ut.UnitTestBase):
             group.ultimate_submission
 
 
-class BestBasicSubmissionTestCase(test_ut.UnitTestBase):
-    def test_best_basic_submission(self):
-        cache.clear()
-        # Increase these numbers when benchmarking
-        num_submissions = 3
-        num_tests = 5
-        submissions, best, tests = obj_build.build_submissions_with_results(
-            num_submissions=num_submissions, num_tests=num_tests,
-            make_one_best=True)
-
-        group = submissions[0].submission_group
-        actual_num_tests = group.project.autograder_test_cases.count()
-        self.assertEqual(num_tests, actual_num_tests)
-        self.assertEqual(num_submissions, len(submissions))
-        self.assertEqual(num_submissions,
-                         best.submission_group.submissions.count())
-
-        # # Benchmarks
-        # for i in range(2):
-        #     cache.clear()
-        #     with test_ut.Timer('Max of {} submissions with {} tests from '
-        #                   'empty cache.'.format(num_submissions, num_tests)):
-        #         actual_best = group.submission_with_best_basic_score
-
-        # for i in range(10):
-        #     cache.delete_many(
-        #         [sub.basic_score_cache_key for sub in submissions])
-        #     with test_ut.Timer('Max of {} submissions with {} tests from '
-        #                   'results cache.'.format(num_submissions, num_tests)):
-        #         actual_best = group.submission_with_best_basic_score
-
-        # for i in range(10):
-        #     with test_ut.Timer('Max of {} submissions with {} tests from '
-        #                   'submissions cache.'.format(num_submissions,
-        #                                               num_tests)):
-        #         actual_best = group.submission_with_best_basic_score
-
-        self.assertEqual(best, group.submission_with_best_basic_score)
-
-
 class SubmissionGroupSizeTestCase(_SetUp, test_ut.UnitTestBase):
     def test_valid_override_group_max_size(self):
         self.enrolled_group += obj_build.create_dummy_users(3)

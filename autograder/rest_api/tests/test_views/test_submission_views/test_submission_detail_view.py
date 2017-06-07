@@ -708,6 +708,20 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             self.client, self.student_group1_normal_submission,
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
+    def test_output_or_diff_requested_individual_cmds_not_shown(self):
+        self.ag_test_case.normal_fdbk_config.validate_and_update(show_individual_commands=False)
+        self.client.force_authenticate(self.student1)
+        self.do_get_output_and_diff_on_hidden_ag_test_test(
+            self.client, self.student_group1_normal_submission,
+            self.student1_normal_res, ag_models.FeedbackCategory.normal)
+
+    def test_output_or_diff_requested_individual_cases_not_shown(self):
+        self.ag_test_suite.normal_fdbk_config.validate_and_update(show_individual_tests=False)
+        self.client.force_authenticate(self.student1)
+        self.do_get_output_and_diff_on_hidden_ag_test_test(
+            self.client, self.student_group1_normal_submission,
+            self.student1_normal_res, ag_models.FeedbackCategory.normal)
+
     # -------------------------------------------------------------
 
     def test_get_fdbk_user_cannot_view_project_permission_denied(self):

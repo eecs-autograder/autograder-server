@@ -605,8 +605,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.total_points_possible)
 
     def test_very_large_output_truncated(self):
-        stdout = 'a' * 3000000000
-        stderr = 'b' * 3000000000
+        stdout = 'a' * 100000000
+        stderr = 'b' * 100000000
 
         cmd_result = ag_models.AGTestCommandResult.objects.validate_and_create(
             ag_test_command=self.ag_test_command,

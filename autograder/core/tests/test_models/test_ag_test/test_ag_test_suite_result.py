@@ -1,4 +1,5 @@
 import autograder.core.models as ag_models
+from autograder.core import constants
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
@@ -129,6 +130,27 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_stderr)
         self.assertIsNone(fdbk.teardown_stdout)
         self.assertIsNone(fdbk.teardown_stderr)
+
+    def test_very_large_output_truncated(self):
+        setup_stdout = 'a' * 50000000
+        setup_stderr = 'b' * 50000000
+        teardown_stdout = 'c' * 50000000
+        teardown_stderr = 'd' * 50000000
+
+        self.ag_test_suite_result.setup_stdout = setup_stdout
+        self.ag_test_suite_result.setup_stderr = setup_stderr
+        self.ag_test_suite_result.teardown_stdout = teardown_stdout
+        self.ag_test_suite_result.teardown_stderr = teardown_stderr
+        self.ag_test_suite_result.save()
+
+        self.assertEqual(setup_stdout[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated',
+                         self.ag_test_suite_result.setup_stdout)
+        self.assertEqual(setup_stderr[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated',
+                         self.ag_test_suite_result.setup_stderr)
+        self.assertEqual(teardown_stdout[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated',
+                         self.ag_test_suite_result.teardown_stdout)
+        self.assertEqual(teardown_stderr[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated',
+                         self.ag_test_suite_result.teardown_stderr)
 
     def test_some_ag_test_cases_not_visible(self):
         self.ag_test_case2.ultimate_submission_fdbk_config.validate_and_update(visible=False)

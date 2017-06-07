@@ -71,7 +71,7 @@ class AGTestSuite(AutograderModel):
 
     project = models.ForeignKey(Project, related_name='ag_test_suites',
                                 help_text='''The project this suite belongs to.
-                                             This field is sREQUIRED.''')
+                                             This field is REQUIRED.''')
 
     project_files_needed = models.ManyToManyField(
         UploadedFile,

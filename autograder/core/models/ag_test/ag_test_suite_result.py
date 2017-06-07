@@ -2,6 +2,7 @@ from typing import List, Iterable
 
 from django.db import models
 
+from autograder.core import constants
 from ..ag_model_base import AutograderModel, ToDictMixin
 from .ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
 from .feedback_category import FeedbackCategory
@@ -24,6 +25,20 @@ class AGTestSuiteResult(AutograderModel):
         blank=True, help_text="The stdout content of this suite's teardown command.")
     teardown_stderr = models.TextField(
         blank=True, help_text="The stderr content of this suite's teardown command.")
+
+    def save(self, *args, **kwargs):
+        self._check_len_and_truncate('setup_stdout')
+        self._check_len_and_truncate('setup_stderr')
+        self._check_len_and_truncate('teardown_stdout')
+        self._check_len_and_truncate('teardown_stderr')
+
+        super().save(*args, **kwargs)
+
+    def _check_len_and_truncate(self, field_name):
+        value = getattr(self, field_name)
+        if len(value) > constants.MAX_OUTPUT_LENGTH:
+            setattr(self, field_name,
+                    value[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
 
     def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestSuiteResult.FeedbackCalculator':
         return AGTestSuiteResult.FeedbackCalculator(self, fdbk_category)
