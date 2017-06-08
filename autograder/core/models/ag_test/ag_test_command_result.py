@@ -30,7 +30,8 @@ class AGTestCommandResult(AutograderModel):
                      A value of None indicates that this AGTestCommandResult
                      is the result of an AGTestSuite's setup command.''')
 
-    return_code = models.IntegerField(help_text='The return code of the completed command.')
+    return_code = models.IntegerField(blank=True, null=True, default=None,
+                                      help_text='The return code of the completed command.')
 
     stdout = models.TextField(
         blank=True, help_text='The stdout contents from running the command.')

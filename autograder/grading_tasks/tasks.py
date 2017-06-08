@@ -1,6 +1,7 @@
 import fnmatch
 import os
 import shlex
+import subprocess
 import time
 import traceback
 import uuid
@@ -153,47 +154,63 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
     with sandbox:
         _add_files_to_sandbox(sandbox, ag_test_suite, submission)
 
-        setup_result = sandbox.run_command(shlex.split(ag_test_suite.setup_suite_cmd),
-                                           as_root=False,
-                                           max_num_processes=constants.MAX_PROCESS_LIMIT,
-                                           max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-                                           max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                           timeout=constants.MAX_SUBPROCESS_TIMEOUT)
-        suite_result.setup_stdout = setup_result.stdout
-        suite_result.setup_stderr = setup_result.stderr
-        suite_result.save()
+        try:
+            setup_result = sandbox.run_command(shlex.split(ag_test_suite.setup_suite_cmd),
+                                               as_root=False,
+                                               max_num_processes=constants.MAX_PROCESS_LIMIT,
+                                               max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
+                                               max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+                                               timeout=constants.MAX_SUBPROCESS_TIMEOUT)
+            suite_result.setup_return_code = setup_result.returncode
+            suite_result.setup_stdout = setup_result.stdout
+            suite_result.setup_stderr = setup_result.stderr
+        except subprocess.TimeoutExpired as e:
+            suite_result.setup_timed_out = True
+            suite_result.setup_stdout = e.stdout
+            suite_result.setup_stderr = e.stderr
+        finally:
+            suite_result.save()
 
         # run test cases
         for ag_test_case in ag_test_suite.ag_test_cases.all():
             grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
 
-        teardown_result = sandbox.run_command(shlex.split(ag_test_suite.teardown_suite_cmd),
-                                              as_root=False,
-                                              max_num_processes=constants.MAX_PROCESS_LIMIT,
-                                              max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-                                              max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                              timeout=constants.MAX_SUBPROCESS_TIMEOUT)
-        suite_result.teardown_stdout = teardown_result.stdout
-        suite_result.teardown_stderr = teardown_result.stderr
-        suite_result.save()
+        try:
+            teardown_result = sandbox.run_command(shlex.split(ag_test_suite.teardown_suite_cmd),
+                                                  as_root=False,
+                                                  max_num_processes=constants.MAX_PROCESS_LIMIT,
+                                                  max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
+                                                  max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+                                                  timeout=constants.MAX_SUBPROCESS_TIMEOUT)
+            suite_result.teardown_return_code = teardown_result.returncode
+            suite_result.teardown_stdout = teardown_result.stdout
+            suite_result.teardown_stderr = teardown_result.stderr
+        except subprocess.TimeoutExpired as e:
+            suite_result.teardown_timed_out = True
+            suite_result.teardown_stdout = e.stdout
+            suite_result.teardown_stderr = e.stderr
+        finally:
+            suite_result.save()
+
 
 # FIXME: TEST AND ADD RETRY STUFF
 def _add_files_to_sandbox(sandbox: AutograderSandbox,
                           ag_test_suite: ag_models.AGTestSuite,
                           submission: ag_models.Submission):
-    files_to_add = []
+    student_files_to_add = []
     for student_file in ag_test_suite.student_files_needed.all():
         matching_files = fnmatch.filter(submission.submitted_filenames,
                                         student_file.pattern)
-        files_to_add += [
+        student_files_to_add += [
             os.path.join(core_ut.get_submission_dir(submission), filename)
             for filename in matching_files]
 
-    if files_to_add:
-        sandbox.add_files(*files_to_add)
+    if student_files_to_add:
+        sandbox.add_files(*student_files_to_add)
 
-    project_files_to_add = (file_.abspath for file_ in ag_test_suite.project_files_needed.all())
-    sandbox.add_files(*project_files_to_add)
+    project_files_to_add = [file_.abspath for file_ in ag_test_suite.project_files_needed.all()]
+    if project_files_to_add:
+        sandbox.add_files(*project_files_to_add)
 
 # FIXME: TEST AND ADD RETRY STUFF
 def grade_ag_test_case_impl(sandbox: AutograderSandbox,
@@ -218,60 +235,72 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
     elif ag_test_cmd.stdin_source == ag_models.StdinSource.project_file:
         with ag_test_cmd.stdin_project_file.open() as f:
             stdin = f.read()
+    elif ag_test_cmd.stdin_source == ag_models.StdinSource.setup_stdout:
+        stdin = case_result.ag_test_suite_result.setup_stdout
+    elif ag_test_cmd.stdin_source == ag_models.StdinSource.setup_stderr:
+        stdin = case_result.ag_test_suite_result.setup_stderr
     else:
         stdin = ''
 
-    run_result = sandbox.run_command(shlex.split(ag_test_cmd.cmd),
-                                     input=stdin,
-                                     as_root=False,
-                                     max_num_processes=ag_test_cmd.process_spawn_limit,
-                                     max_stack_size=ag_test_cmd.stack_size_limit,
-                                     max_virtual_memory=ag_test_cmd.virtual_memory_limit,
-                                     timeout=ag_test_cmd.time_limit)
-    result_data = {
-        'stdout': run_result.stdout,
-        'stderr': run_result.stderr,
-        'return_code': run_result.returncode
-    }
-    if ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.zero:
-        result_data['return_code_correct'] = run_result.returncode == 0
-    elif ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.nonzero:
-        result_data['return_code'] = run_result.returncode != 0
+    try:
+        run_result = sandbox.run_command(shlex.split(ag_test_cmd.cmd),
+                                         input=stdin,
+                                         as_root=False,
+                                         max_num_processes=ag_test_cmd.process_spawn_limit,
+                                         max_stack_size=ag_test_cmd.stack_size_limit,
+                                         max_virtual_memory=ag_test_cmd.virtual_memory_limit,
+                                         timeout=ag_test_cmd.time_limit)
+        result_data = {
+            'stdout': run_result.stdout,
+            'stderr': run_result.stderr,
+            'return_code': run_result.returncode
+        }
+        if ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.zero:
+            result_data['return_code_correct'] = run_result.returncode == 0
+        elif ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.nonzero:
+            result_data['return_code_correct'] = run_result.returncode != 0
 
-    expected_stdout = None
-    if ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.text:
-        expected_stdout = ag_test_cmd.expected_stdout_text
-    elif ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.project_file:
-        with ag_test_cmd.expected_stdout_project_file.open() as f:
-            expected_stdout = f.read()
+        expected_stdout = None
+        if ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.text:
+            expected_stdout = ag_test_cmd.expected_stdout_text
+        elif ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.project_file:
+            with ag_test_cmd.expected_stdout_project_file.open() as f:
+                expected_stdout = f.read()
 
-    if expected_stdout is not None:
-        result_data['stdout_correct'] = not core_ut.get_diff(
-            expected_stdout, run_result.stdout,
-            ignore_case=ag_test_cmd.ignore_case,
-            ignore_whitespace=ag_test_cmd.ignore_whitespace,
-            ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
-            ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
+        if expected_stdout is not None:
+            result_data['stdout_correct'] = not core_ut.get_diff(
+                expected_stdout, run_result.stdout,
+                ignore_case=ag_test_cmd.ignore_case,
+                ignore_whitespace=ag_test_cmd.ignore_whitespace,
+                ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
+                ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
 
-    expected_stderr = None
-    if ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.text:
-        expected_stderr = ag_test_cmd.expected_stderr_text
-    elif ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.project_file:
-        with ag_test_cmd.expected_stderr_project_file.open() as f:
-            expected_stderr = f.read()
+        expected_stderr = None
+        if ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.text:
+            expected_stderr = ag_test_cmd.expected_stderr_text
+        elif ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.project_file:
+            with ag_test_cmd.expected_stderr_project_file.open() as f:
+                expected_stderr = f.read()
 
-    if expected_stderr is not None:
-        result_data['stderr_correct'] = not core_ut.get_diff(
-            expected_stderr, run_result.stderr,
-            ignore_case=ag_test_cmd.ignore_case,
-            ignore_whitespace=ag_test_cmd.ignore_whitespace,
-            ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
-            ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
+        if expected_stderr is not None:
+            result_data['stderr_correct'] = not core_ut.get_diff(
+                expected_stderr, run_result.stderr,
+                ignore_case=ag_test_cmd.ignore_case,
+                ignore_whitespace=ag_test_cmd.ignore_whitespace,
+                ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
+                ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
 
-    ag_models.AGTestCommandResult.objects.get_or_create(
-        ag_test_command=ag_test_cmd,
-        ag_test_case_result=case_result,
-        **result_data)
+        ag_models.AGTestCommandResult.objects.get_or_create(
+            ag_test_command=ag_test_cmd,
+            ag_test_case_result=case_result,
+            **result_data)
+    except subprocess.TimeoutExpired as e:
+        ag_models.AGTestCommandResult.objects.get_or_create(
+            ag_test_command=ag_test_cmd,
+            ag_test_case_result=case_result,
+            stdout=e.stdout,
+            stderr=e.stderr,
+            timed_out=True)
     # FIXME: TEST AND ADD RETRY STUFF)
 
 

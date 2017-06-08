@@ -337,6 +337,16 @@ class AGTestCommandResultTestCase(UnitTestBase):
         result = self.make_incorrect_result()
         self.assertIsNone(result.get_fdbk(ag_models.FeedbackCategory.normal).timed_out)
 
+    def test_timed_out_with_return_code_stdout_and_stderr_None_count_as_wrong(self):
+        result = ag_models.AGTestCommandResult.objects.validate_and_create(
+            ag_test_command=self.ag_test_command,
+            ag_test_case_result=self.ag_test_case_result,
+            timed_out=True)
+        fdbk = result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertFalse(fdbk.return_code_correct)
+        self.assertFalse(fdbk.stdout_correct)
+        self.assertFalse(fdbk.stderr_correct)
+
     def test_stdout_correctness_hidden(self):
         self.ag_test_command.normal_fdbk_config.validate_and_update(
             stdout_fdbk_level=ag_models.ValueFeedbackLevel.no_feedback)

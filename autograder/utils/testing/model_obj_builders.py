@@ -495,6 +495,7 @@ def make_ag_test_case(ag_test_suite: ag_models.AGTestSuite=None,
 def make_full_ag_test_command(
         ag_test_case: ag_models.AGTestCase=None,
         set_arbitrary_points=True,
+        set_arbitrary_expected_vals=True,
         **ag_test_cmd_kwargs) -> ag_models.AGTestCommand:
     if ag_test_case is None:
         ag_test_case = make_ag_test_case()
@@ -503,17 +504,20 @@ def make_full_ag_test_command(
         'name': 'ag_test_cmd-{}'.format(get_unique_id()),
         'ag_test_case': ag_test_case,
         'cmd': 'printf ""',
-
-        # These specific values don't matter, other than that
-        # they should indicate that return code, stdout, and
-        # stderr are checked. We'll be manually setting the
-        # correctness fields on AGTestCommandResults.
-        'expected_return_code': ag_models.ExpectedReturnCode.zero,
-        'expected_stdout_source': ag_models.ExpectedOutputSource.text,
-        'expected_stdout_text': 'some text that is here because',
-        'expected_stderr_source': ag_models.ExpectedOutputSource.text,
-        'expected_stderr_text': 'some error stuff that wat',
     }
+
+    if set_arbitrary_expected_vals:
+        base_kwargs.update({
+            # These specific values don't matter, other than that
+            # they should indicate that return code, stdout, and
+            # stderr are checked. We'll be manually setting the
+            # correctness fields on AGTestCommandResults.
+            'expected_return_code': ag_models.ExpectedReturnCode.zero,
+            'expected_stdout_source': ag_models.ExpectedOutputSource.text,
+            'expected_stdout_text': 'some text that is here because',
+            'expected_stderr_source': ag_models.ExpectedOutputSource.text,
+            'expected_stderr_text': 'some error stuff that wat',
+        })
 
     if set_arbitrary_points:
         base_kwargs.update({

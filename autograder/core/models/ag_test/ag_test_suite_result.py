@@ -17,10 +17,22 @@ class AGTestSuiteResult(AutograderModel):
         Submission, related_name='ag_test_suite_results',
         help_text='The Submission that this result is for.')
 
+    setup_return_code = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The return code of this suite's setup command.")
+    setup_timed_out = models.BooleanField(
+        blank=True, default=False,
+        help_text="Whether this suite's setup command took too long to run.")
     setup_stdout = models.TextField(
         blank=True, help_text="The stdout content of this suite's setup command.")
     setup_stderr = models.TextField(
         blank=True, help_text="The stderr content of this suite's setup command.")
+    teardown_return_code = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The return code of this suite's teardown command.")
+    teardown_timed_out = models.BooleanField(
+        blank=True, default=False,
+        help_text="Whether this suite's teardown command took too long to run.")
     teardown_stdout = models.TextField(
         blank=True, help_text="The stdout content of this suite's teardown command.")
     teardown_stderr = models.TextField(
@@ -85,18 +97,46 @@ class AGTestSuiteResult(AutograderModel):
             return self._fdbk.to_dict()
 
         @property
-        def setup_stdout(self):
+        def setup_return_code(self) -> int:
+            if not self._fdbk.show_setup_and_teardown_return_code:
+                return None
+
+            return self._ag_test_suite_result.setup_return_code
+
+        @property
+        def setup_timed_out(self) -> bool:
+            if not self._fdbk.show_setup_and_teardown_timed_out:
+                return None
+
+            return self._ag_test_suite_result.setup_timed_out
+
+        @property
+        def setup_stdout(self) -> str:
             if not self._fdbk.show_setup_and_teardown_stdout:
                 return None
 
             return self._ag_test_suite_result.setup_stdout
 
         @property
-        def setup_stderr(self):
+        def setup_stderr(self) -> str:
             if not self._fdbk.show_setup_and_teardown_stderr:
                 return None
 
             return self._ag_test_suite_result.setup_stderr
+
+        @property
+        def teardown_return_code(self) -> int:
+            if not self._fdbk.show_setup_and_teardown_return_code:
+                return None
+
+            return self._ag_test_suite_result.teardown_return_code
+
+        @property
+        def teardown_timed_out(self) -> bool:
+            if not self._fdbk.show_setup_and_teardown_timed_out:
+                return None
+
+            return self._ag_test_suite_result.teardown_timed_out
 
         @property
         def teardown_stdout(self):

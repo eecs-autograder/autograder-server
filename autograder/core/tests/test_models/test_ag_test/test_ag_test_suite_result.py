@@ -103,33 +103,51 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         self.assertEqual([self.ag_test_case_result2, self.ag_test_case_result1],
                          fdbk.ag_test_case_results)
 
-    def test_show_setup_and_teardown_output(self):
+    def test_show_setup_and_teardown_output_return_code_and_timed_out(self):
+        setup_return_code = 3
+        setup_timed_out = True
         setup_stdout = 'adfjka;dskjf'
         setup_stderr = 'a,xcmvnaieo;sdf'
+        teardown_return_code = 0
+        teardown_timed_out = False
         teardown_stdout = ',amcxnvawefj'
         teardown_stderr = 'aldcvneailaksdjhf'
 
+        self.ag_test_suite_result.setup_return_code = setup_return_code
+        self.ag_test_suite_result.setup_timed_out = setup_timed_out
         self.ag_test_suite_result.setup_stdout = setup_stdout
         self.ag_test_suite_result.setup_stderr = setup_stderr
+        self.ag_test_suite_result.teardown_return_code = teardown_return_code
+        self.ag_test_suite_result.teardown_timed_out = teardown_timed_out
         self.ag_test_suite_result.teardown_stdout = teardown_stdout
         self.ag_test_suite_result.teardown_stderr = teardown_stderr
         self.ag_test_suite_result.save()
 
         fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual(setup_return_code, fdbk.setup_return_code)
+        self.assertEqual(setup_timed_out, fdbk.setup_timed_out)
         self.assertEqual(setup_stdout, fdbk.setup_stdout)
         self.assertEqual(setup_stderr, fdbk.setup_stderr)
+        self.assertEqual(teardown_return_code, fdbk.teardown_return_code)
+        self.assertEqual(teardown_timed_out, fdbk.teardown_timed_out)
         self.assertEqual(teardown_stdout, fdbk.teardown_stdout)
         self.assertEqual(teardown_stderr, fdbk.teardown_stderr)
 
         self.ag_test_suite.normal_fdbk_config.validate_and_update(
+            show_setup_and_teardown_return_code=False,
+            show_setup_and_teardown_timed_out=False,
             show_setup_and_teardown_stdout=False,
             show_setup_and_teardown_stderr=False)
 
         fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.setup_return_code)
+        self.assertIsNone(fdbk.setup_timed_out)
         self.assertIsNone(fdbk.setup_stdout)
         self.assertIsNone(fdbk.setup_stderr)
         self.assertIsNone(fdbk.teardown_stdout)
         self.assertIsNone(fdbk.teardown_stderr)
+        self.assertIsNone(fdbk.teardown_return_code)
+        self.assertIsNone(fdbk.teardown_timed_out)
 
     def test_very_large_output_truncated(self):
         setup_stdout = 'a' * 50000000

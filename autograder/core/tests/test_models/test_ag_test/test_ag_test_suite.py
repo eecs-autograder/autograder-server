@@ -34,21 +34,30 @@ class AGTestSuiteTestCase(UnitTestBase):
 
         self.assertTrue(suite.normal_fdbk_config.visible)
         self.assertTrue(suite.normal_fdbk_config.show_individual_tests)
+        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_return_code)
+        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_timed_out)
         self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_stdout)
         self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_stderr)
 
         self.assertTrue(suite.ultimate_submission_fdbk_config.visible)
         self.assertTrue(suite.ultimate_submission_fdbk_config.show_individual_tests)
+        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_return_code)
+        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_timed_out)
         self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_stdout)
         self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_stderr)
 
         self.assertTrue(suite.past_limit_submission_fdbk_config.visible)
         self.assertTrue(suite.past_limit_submission_fdbk_config.show_individual_tests)
+        self.assertTrue(
+            suite.past_limit_submission_fdbk_config.show_setup_and_teardown_return_code)
+        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_timed_out)
         self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_stdout)
         self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_stderr)
 
         self.assertTrue(suite.staff_viewer_fdbk_config.visible)
         self.assertTrue(suite.staff_viewer_fdbk_config.show_individual_tests)
+        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_return_code)
+        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_timed_out)
         self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_stdout)
         self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_stderr)
 
@@ -75,7 +84,14 @@ class AGTestSuiteTestCase(UnitTestBase):
             teardown_suite_cmd=teardown_cmd,
             allow_network_access=allow_network_access,
             deferred=deferred,
-            normal_fdbk_config={'visible': False}
+            normal_fdbk_config={
+                'visible': False,
+                'show_individual_tests': False,
+                'show_setup_and_teardown_return_code': False,
+                'show_setup_and_teardown_timed_out': False,
+                'show_setup_and_teardown_stdout': False,
+                'show_setup_and_teardown_stderr': False,
+            }
         )
 
         suite.refresh_from_db()

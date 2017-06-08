@@ -19,6 +19,9 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
         help_text='''Whether to show information about individual tests in a suite or just a
                      points summary (if available).''')
 
+    show_setup_and_teardown_return_code = models.BooleanField(default=True)
+    show_setup_and_teardown_timed_out = models.BooleanField(default=True)
+
     show_setup_and_teardown_stdout = models.BooleanField(
         default=True,
         help_text="Whether to show stdout content from a suite's setup and teardown commands.")
@@ -30,6 +33,8 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
     SERIALIZABLE_FIELDS = (
         'visible',
         'show_individual_tests',
+        'show_setup_and_teardown_return_code',
+        'show_setup_and_teardown_timed_out',
         'show_setup_and_teardown_stdout',
         'show_setup_and_teardown_stderr',
     )
@@ -37,6 +42,8 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
     EDITABLE_FIELDS = (
         'visible',
         'show_individual_tests',
+        'show_setup_and_teardown_return_code',
+        'show_setup_and_teardown_timed_out',
         'show_setup_and_teardown_stdout',
         'show_setup_and_teardown_stderr',
     )
@@ -52,11 +59,6 @@ def make_default_suite_fdbk() -> int:
 class AGTestSuite(AutograderModel):
     """
     A group of autograder test cases to be run inside the same sandbox.
-
-    Related object fields:
-        setup_command -- A command to be run before any of the test cases in this suite are run.
-            This command is run exactly *once* at the beginning of the suite,
-            NOT before each individual test.
     """
 
     class Meta:

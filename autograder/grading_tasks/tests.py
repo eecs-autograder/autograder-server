@@ -1,7 +1,9 @@
-import subprocess
-from typing import Iterable
+import random
+import shlex
 from unittest import mock  # type: ignore
 
+import subprocess
+from autograder_sandbox import AutograderSandbox
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
@@ -11,6 +13,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
+from autograder.core import constants
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase, sleeper_subtest
 
@@ -100,7 +103,7 @@ def _make_mock_grade_ag_test_cmd_fail_then_succeed(num_times_to_fail):
 
 @tag('slow', 'sandbox')
 @mock.patch('autograder.grading_tasks.tasks.time.sleep')
-class GradeSubmissionTestCase(UnitTestBase):
+class GradeSubmissionBasicIntegrationTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.build_submission()
@@ -114,6 +117,7 @@ class GradeSubmissionTestCase(UnitTestBase):
             case,
             cmd=print_to_stdout_and_stderr,
             set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
             points_for_correct_return_code=4,
             points_for_correct_stdout=1,
             points_for_correct_stderr=1,
@@ -156,6 +160,7 @@ class GradeSubmissionTestCase(UnitTestBase):
                     ag_test_case=case,
                     cmd=print_to_stdout_and_stderr,
                     set_arbitrary_points=False,
+                    set_arbitrary_expected_vals=False,
                     points_for_correct_return_code=4,
                     points_for_correct_stdout=1,
                     points_for_correct_stderr=1,
@@ -182,12 +187,50 @@ class GradeSubmissionTestCase(UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
+    def test_compile_setup_and_run_tests(self, *args):
+        self.fail()
+
+    def test_files_added_to_sandbox(self, *args):
+        self.fail()
+
+    def test_patterns_expanded_to_student_files_in_cmd(self, *args):
+        self.fail()
+
+    def test_shell_injection_doesnt_work(self, *args):
+        suite = obj_build.make_ag_test_suite(self.project, allow_network_access=True)
+        case = obj_build.make_ag_test_case(suite)
+        bad_cmd = 'echo "haxorz"; sleep 20'
+        cmd = obj_build.make_full_ag_test_command(
+            case,
+            set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
+            cmd=bad_cmd)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(' '.join(shlex.split(bad_cmd)[1:]) + '\n', res.stdout)
+
+    def test_network_access_allowed_in_suite(self, *args):
+        suite1 = obj_build.make_ag_test_suite(self.project, allow_network_access=True)
+        case1 = obj_build.make_ag_test_case(suite1)
+        cmd = obj_build.make_full_ag_test_command(
+            case1, cmd='ping -c 2 www.google.com',
+            expected_return_code=ag_models.ExpectedReturnCode.zero)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.return_code_correct)
+
+    def test_group_member_names_in_environment(self, *args):
+        self.fail()
+
     def test_one_suite_deferred(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, deferred=False)
         case1 = obj_build.make_ag_test_case(suite1)
         cmd1 = obj_build.make_full_ag_test_command(
             case1,
             set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=1)
         suite2 = obj_build.make_ag_test_suite(self.project, deferred=True)
@@ -195,6 +238,7 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd2 = obj_build.make_full_ag_test_command(
             case2,
             set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=2)
         tasks.grade_submission(self.submission.pk)
@@ -210,6 +254,7 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd1 = obj_build.make_full_ag_test_command(
             case1,
             set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=1)
         suite2 = obj_build.make_ag_test_suite(self.project, deferred=True)
@@ -217,6 +262,7 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd2 = obj_build.make_full_ag_test_command(
             case2,
             set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=2)
         tasks.grade_submission(self.submission.pk)
@@ -246,6 +292,7 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd = obj_build.make_full_ag_test_command(
             case,
             set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
         tasks.grade_submission(self.submission.pk)
@@ -264,6 +311,7 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd = obj_build.make_full_ag_test_command(
             case,
             set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
 
@@ -284,6 +332,7 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd = obj_build.make_full_ag_test_command(
             case,
             set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
 
@@ -309,6 +358,7 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd = obj_build.make_full_ag_test_command(
             case,
             set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
 
@@ -322,97 +372,419 @@ class GradeSubmissionTestCase(UnitTestBase):
 
 
 @tag('slow', 'sandbox')
-class GradeAGTestCommandTestCase(UnitTestBase):
+class AGTestCommandCorrectnessTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.submission = obj_build.build_submission()
+        self.project = self.submission.submission_group.project
+        self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
+        self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
+
     def test_points_awarded_and_deducted(self):
-        self.fail()
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case, set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
+            cmd='printf hello',
+            expected_return_code=ag_models.ExpectedReturnCode.nonzero,
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            expected_stdout_text='hello',
+            deduction_for_wrong_return_code=-1,
+            points_for_correct_stdout=3)
+        tasks.grade_submission(self.submission.pk)
 
-    def test_flexible_diff_settings_used(self):
-        self.fail()
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.stdout_correct)
+        self.assertFalse(res.return_code_correct)
 
-    def test_program_prints_too_much_output(self):
-        self.fail()
+        self.assertEqual(2, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
 
-    def test_shell_injection_doesnt_work(self):
-        self.fail()
+    def test_diff_ignore_case_whitespace_changes_and_blank_lines(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case, set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
+            cmd="""bash -c 'printf "HELLO    world\n\n\n"; printf "lol WUT\n\n" >&2'""",
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            expected_stdout_text='hello world\n',
+            expected_stderr_source=ag_models.ExpectedOutputSource.text,
+            expected_stderr_text='lol wut\n',
+            points_for_correct_stdout=4,
+            points_for_correct_stderr=2,
+            ignore_case=True,
+            ignore_whitespace_changes=True,
+            ignore_blank_lines=True)
+        tasks.grade_submission(self.submission.pk)
 
-    def test_files_added_to_sandbox(self):
-        self.fail()
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.stdout_correct)
+        self.assertTrue(res.stderr_correct)
 
-    def test_patterns_expanded_to_student_files_in_cmd(self):
-        self.fail()
+        self.assertEqual(6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
 
-    # 1 correct, 1 incorrect for these
-    def test_expected_return_code_zero(self):
-        self.fail()
+    def test_diff_ignore_whitespace(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case, set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
+            cmd="""bash -c 'printf "helloworld"; printf "lolwut" >&2'""",
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            expected_stdout_text='hello world',
+            expected_stderr_source=ag_models.ExpectedOutputSource.text,
+            expected_stderr_text='lol   wut',
+            points_for_correct_stdout=2,
+            ignore_whitespace=True)
+        tasks.grade_submission(self.submission.pk)
 
-    def test_expected_return_code_nonzero(self):
-        self.fail()
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.stdout_correct)
 
-    def test_expected_stdout_text(self):
-        self.fail()
+        self.assertEqual(2, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
 
-    def test_expected_stdout_proj_file(self):
-        self.fail()
+    def test_correct_expected_return_code_zero(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='bash -c "exit 0"',
+            expected_return_code=ag_models.ExpectedReturnCode.zero)
+        tasks.grade_submission(self.submission.pk)
 
-    def test_expected_stderr_text(self):
-        self.fail()
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.return_code_correct)
 
-    def test_expected_stderr_proj_file(self):
-        self.fail()
+    def test_wrong_expected_return_code_zero(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='bash -c "exit 1"',
+            expected_return_code=ag_models.ExpectedReturnCode.zero)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertFalse(res.return_code_correct)
+
+    def test_correct_expected_return_code_nonzero(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='bash -c "exit 1"',
+            expected_return_code=ag_models.ExpectedReturnCode.nonzero)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.return_code_correct)
+
+    def test_wrong_expected_return_code_nonzero(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='bash -c "exit 0"',
+            expected_return_code=ag_models.ExpectedReturnCode.nonzero)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertFalse(res.return_code_correct)
+
+    def test_correct_expected_stdout_text(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='printf "hello"',
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            expected_stdout_text='hello')
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.stdout_correct)
+
+    def test_wrong_expected_stdout_text(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='printf "nope"',
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            expected_stdout_text='hello')
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertFalse(res.stdout_correct)
+
+    def test_correct_expected_stdout_proj_file(self):
+        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='printf "waluigi"',
+            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_project_file=proj_file)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.stdout_correct)
+
+    def test_wrong_expected_stdout_proj_file(self):
+        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='printf "nope"',
+            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_project_file=proj_file)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertFalse(res.stdout_correct)
+
+    def test_correct_expected_stderr_text(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='bash -c "printf hello >&2"',
+            expected_stderr_source=ag_models.ExpectedOutputSource.text,
+            expected_stderr_text='hello')
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.stderr_correct)
+
+    def test_wrong_expected_stderr_text(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='bash -c "printf nopers >&2"',
+            expected_stderr_source=ag_models.ExpectedOutputSource.text,
+            expected_stderr_text='hello')
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertFalse(res.stderr_correct)
+
+    def test_correct_expected_stderr_proj_file(self):
+        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='bash -c "printf waluigi >&2"',
+            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_project_file=proj_file)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.stderr_correct)
+
+    def test_wrong_expected_stderr_proj_file(self):
+        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='bash -c "printf norp >&2"',
+            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_project_file=proj_file)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertFalse(res.stderr_correct)
+
+
+class AGTestCommandStdinSourceTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.submission = obj_build.build_submission()
+        self.project = self.submission.submission_group.project
+        self.setup_stdout = 'setuppy stdouty'
+        self.setup_stderr = 'setuppy stderrrry'
+        self.ag_test_suite = obj_build.make_ag_test_suite(
+            self.project,
+            setup_suite_cmd='bash -c "printf \'{}\'; printf \'{}\' >&2"'.format(
+                self.setup_stdout, self.setup_stderr))
+        self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
 
     def test_stdin_source_text(self):
-        self.fail()
+        text = 'wuluigio'
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='cat',
+            stdin_source=ag_models.StdinSource.text,
+            stdin_text=text)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(text, res.stdout)
 
     def test_stdin_source_proj_file(self):
-        self.fail()
+        text = ',vnaejfal;skjdf;lakjsdfklajsl;dkjf;'
+        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile('filey.txt', text.encode()))
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='cat',
+            stdin_source=ag_models.StdinSource.project_file,
+            stdin_project_file=proj_file)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(text, res.stdout)
 
     def test_stdin_source_setup_stdout(self):
-        self.fail()
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='cat',
+            stdin_source=ag_models.StdinSource.setup_stdout)
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(self.setup_stdout, res.stdout)
 
     def test_stdin_source_setup_stderr(self):
-        self.fail()
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            cmd='cat',
+            stdin_source=ag_models.StdinSource.setup_stderr)
+        tasks.grade_submission(self.submission.pk)
 
-    def test_setup_prints_too_much_output(self):
-        self.fail()
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(self.setup_stderr, res.stdout)
 
-    def test_teardown_prints_too_much_output(self):
-        self.fail()
 
-    def test_setup_times_out(self):
-        self.fail()
+@tag('slow', 'sandbox')
+class ResourceLimitsExceededTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.submission = obj_build.build_submission()
+        self.project = self.submission.submission_group.project
+        self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
+        self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
 
-    def test_setup_exceeds_process_limit(self):
-        self.fail()
+        self.too_much_output_size = constants.MAX_OUTPUT_LENGTH * 10
+        too_much_output_prog = """
+import sys
+print('a' * {0})
+print('b' * {0}, file=sys.stderr)
+        """.format(self.too_much_output_size)
+        self.too_much_output_file = ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile('too_long.py', too_much_output_prog.encode())
+        )  # type: ag_models.UploadedFile
 
-    def test_setup_exceeds_stack_limit(self):
-        self.fail()
+        self.timeout_cmd = "sleep 10"
 
-    def test_setup_exceeds_virtual_mem_limit(self):
-        self.fail()
-
-    def test_teardown_times_out(self):
-        self.fail()
-
-    def test_teardown_exceeds_process_limit(self):
-        self.fail()
-
-    def test_teardown_exceeds_stack_limit(self):
-        self.fail()
-
-    def test_teardown_exceeds_virtual_mem_limit(self):
-        self.fail()
+        self.ag_test_suite.project_files_needed.add(self.too_much_output_file)
 
     def test_program_times_out(self):
-        self.fail()
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
+            cmd=self.timeout_cmd,
+            time_limit=1)
+        tasks.grade_submission(self.submission.pk)
 
-    def test_program_exceeds_process_limit(self):
-        self.fail()
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertTrue(res.timed_out)
 
-    def test_program_exceeds_stack_limit(self):
-        self.fail()
+    def test_program_prints_too_much_output(self):
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
+            cmd='python3 ' + self.too_much_output_file.name,
+            time_limit=30)
+        tasks.grade_submission(self.submission.pk)
 
-    def test_program_exceeds_virtual_mem_limit(self):
-        self.fail()
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(0, res.return_code)
+        self.assertFalse(res.timed_out)
+        print(len(res.stdout))
+        # Rather than checking again for the specific truncation message
+        # appended to the output, we'll just assert that the resulting
+        # output length is less than the max + 30 chars or so.
+        self.assertGreater(len(res.stdout), constants.MAX_OUTPUT_LENGTH)
+        self.assertLess(len(res.stdout), constants.MAX_OUTPUT_LENGTH + 30)
+        print(len(res.stderr))
+        self.assertGreater(len(res.stderr), constants.MAX_OUTPUT_LENGTH)
+        self.assertLess(len(res.stderr), constants.MAX_OUTPUT_LENGTH + 30)
+
+    def test_suite_setup_and_teardown_return_code_set(self):
+        self.ag_test_suite.validate_and_update(setup_suite_cmd='bash -c "exit 2"',
+                                               teardown_suite_cmd='bash -c "exit 3"')
+        tasks.grade_submission(self.submission.pk)
+        res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
+        self.assertEqual(2, res.setup_return_code)
+        self.assertEqual(3, res.teardown_return_code)
+
+    def test_setup_and_teardown_time_out(self):
+        self.ag_test_suite.validate_and_update(setup_suite_cmd=self.timeout_cmd,
+                                               teardown_suite_cmd=self.timeout_cmd)
+        with mock.patch('autograder.core.constants.MAX_SUBPROCESS_TIMEOUT', new=1):
+            tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
+        self.assertTrue(res.setup_timed_out)
+        self.assertTrue(res.teardown_timed_out)
+
+    def test_setup_and_teardown_print_too_much_output(self):
+        self.ag_test_suite.validate_and_update(
+            setup_suite_cmd='python3 ' + self.too_much_output_file.name,
+            teardown_suite_cmd='python3 ' + self.too_much_output_file.name)
+        tasks.grade_submission(self.submission.pk)
+        res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
+
+        print(len(res.setup_stdout))
+        # Rather than checking again for the specific truncation message
+        # appended to the output, we'll just assert that the resulting
+        # output length is less than the max + 30 chars or so.
+        self.assertGreater(len(res.setup_stdout), constants.MAX_OUTPUT_LENGTH)
+        self.assertLess(len(res.setup_stdout), constants.MAX_OUTPUT_LENGTH + 30)
+        print(len(res.setup_stderr))
+        self.assertGreater(len(res.setup_stderr), constants.MAX_OUTPUT_LENGTH)
+        self.assertLess(len(res.setup_stderr), constants.MAX_OUTPUT_LENGTH + 30)
+
+        print(len(res.teardown_stdout))
+        self.assertGreater(len(res.teardown_stdout), constants.MAX_OUTPUT_LENGTH)
+        self.assertLess(len(res.teardown_stdout), constants.MAX_OUTPUT_LENGTH + 30)
+        print(len(res.teardown_stderr))
+        self.assertGreater(len(res.teardown_stderr), constants.MAX_OUTPUT_LENGTH)
+        self.assertLess(len(res.teardown_stderr), constants.MAX_OUTPUT_LENGTH + 30)
+
+    def test_time_process_stack_and_virtual_mem_limits_passed_to_run_command(self,):
+        self.ag_test_suite.validate_and_update(setup_suite_cmd='printf waluigi',
+                                               teardown_suite_cmd='printf wuluigio')
+
+        time_limit = random.randint(1, constants.MAX_SUBPROCESS_TIMEOUT)
+        process_spawn_limit = random.randint(constants.DEFAULT_PROCESS_LIMIT + 1,
+                                             constants.MAX_PROCESS_LIMIT)
+        stack_size_limit = random.randint(constants.DEFAULT_STACK_SIZE_LIMIT,
+                                          constants.MAX_STACK_SIZE_LIMIT)
+        virtual_memory_limit = random.randint(constants.DEFAULT_VIRTUAL_MEM_LIMIT,
+                                              constants.MAX_VIRTUAL_MEM_LIMIT)
+        cmd = obj_build.make_full_ag_test_command(
+            self.ag_test_case, cmd='printf spam',
+            time_limit=time_limit,
+            process_spawn_limit=process_spawn_limit,
+            stack_size_limit=stack_size_limit,
+            virtual_memory_limit=virtual_memory_limit,
+        )
+
+        sandbox = AutograderSandbox()
+        run_command_mock = mock.Mock(return_value=subprocess.CompletedProcess(
+            ['asdf'], returncode=0, stdout='adflkjasdf', stderr='adklfjasdkfjasdj'))
+        sandbox.run_command = run_command_mock
+        with mock.patch('autograder.grading_tasks.tasks.AutograderSandbox', return_value=sandbox):
+            tasks.grade_submission(self.submission.pk)
+
+        expected_setup_and_teardown_resource_kwargs = {
+            'timeout': constants.MAX_SUBPROCESS_TIMEOUT,
+            'max_num_processes': constants.MAX_PROCESS_LIMIT,
+            'max_stack_size': constants.MAX_STACK_SIZE_LIMIT,
+            'max_virtual_memory': constants.MAX_VIRTUAL_MEM_LIMIT,
+        }
+        expected_cmd_args = {
+            'timeout': time_limit,
+            'max_num_processes': process_spawn_limit,
+            'max_stack_size': stack_size_limit,
+            'max_virtual_memory': virtual_memory_limit,
+        }
+        run_command_mock.assert_has_calls([
+            mock.call(shlex.split(self.ag_test_suite.setup_suite_cmd),
+                      as_root=False, **expected_setup_and_teardown_resource_kwargs),
+            mock.call(shlex.split(cmd.cmd), input='', as_root=False, **expected_cmd_args),
+            mock.call(shlex.split(self.ag_test_suite.teardown_suite_cmd),
+                      as_root=False, **expected_setup_and_teardown_resource_kwargs)
+        ])
+
+# --------------------------------------------------------------------------------------
 
 
 @tag('slow')
