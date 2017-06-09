@@ -187,17 +187,106 @@ class GradeSubmissionBasicIntegrationTestCase(UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_compile_setup_and_run_tests(self, *args):
-        self.fail()
+    def test_sample_cpp_prog_test_with_student_patterns_and_project_makefile(self, *args):
+        makefile = """
+cpps = $(wildcard *.cpp)
 
-    def test_files_added_to_sandbox(self, *args):
-        self.fail()
+program: $(cpps)
+\tg++ -Wall -Wextra -pedantic -O1 $^ -o prog.exe
+"""
+        main_cpp = """
+#include "file1.h"
+#include "file2.h"
 
-    def test_patterns_expanded_to_student_files_in_cmd(self, *args):
-        self.fail()
+int main() {
+    file1();
+    file2();
+    return 0;
+}
+"""
+        file1_h = """
+#ifndef FILE1_H
+#define FILE1_H
+    void file1();
+#endif
+"""
+        file1_cpp = """
+#include "file1.h"
+#include <iostream>
+using namespace std;
+void file1() {
+    cout << "file1" << endl;
+}
+"""
+        file2_h = """
+#ifndef FILE2_H
+#define FILE2_H
+    void file2();
+#endif
+"""
+        file2_cpp = """
+#include "file2.h"
+#include <iostream>
+using namespace std;
+void file2() {
+    cout << "file2" << endl;
+}
+"""
+        cpp_pattern = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            project=self.project,
+            pattern='*.cpp', max_num_matches=5)
+        h_pattern = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            project=self.project,
+            pattern='*.h', max_num_matches=5)
+
+        uploaded_makefile = ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile('Makefile', makefile.encode()))
+
+        suite = obj_build.make_ag_test_suite(self.project, setup_suite_cmd='make')
+        suite.project_files_needed.add(uploaded_makefile)
+        suite.student_files_needed.add(cpp_pattern, h_pattern)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name='run program',
+            ag_test_case=case,
+            cmd='./prog.exe',
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            expected_stdout_text='file1\nfile2\n')
+
+        submission = ag_models.Submission.objects.validate_and_create(
+            [SimpleUploadedFile('main.cpp', main_cpp.encode()),
+             SimpleUploadedFile('file1.h', file1_h.encode()),
+             SimpleUploadedFile('file1.cpp', file1_cpp.encode()),
+             SimpleUploadedFile('file2.h', file2_h.encode()),
+             SimpleUploadedFile('file2.cpp', file2_cpp.encode())],
+            submission_group=self.submission.submission_group)
+        tasks.grade_submission(submission.pk)
+
+        cmd_res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        suite_res = cmd_res.ag_test_case_result.ag_test_suite_result
+        print(suite_res.setup_stdout)
+        print(suite_res.setup_stderr)
+        self.assertEqual(0, suite_res.setup_return_code)
+        self.assertTrue(cmd_res.stdout_correct)
+
+    def test_regrade_submission(self, *args):
+        suite = obj_build.make_ag_test_suite(self.project)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(case, cmd='printf hello')
+
+        tasks.grade_submission(self.submission.pk)
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual('hello', res.stdout)
+
+        cmd.cmd = 'printf weee'
+        cmd.save()
+        tasks.grade_submission(self.submission.pk)
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual('weee', res.stdout)
 
     def test_shell_injection_doesnt_work(self, *args):
-        suite = obj_build.make_ag_test_suite(self.project, allow_network_access=True)
+        suite = obj_build.make_ag_test_suite(self.project)
         case = obj_build.make_ag_test_case(suite)
         bad_cmd = 'echo "haxorz"; sleep 20'
         cmd = obj_build.make_full_ag_test_command(
@@ -222,7 +311,13 @@ class GradeSubmissionBasicIntegrationTestCase(UnitTestBase):
         self.assertTrue(res.return_code_correct)
 
     def test_group_member_names_in_environment(self, *args):
-        self.fail()
+        suite = obj_build.make_ag_test_suite(self.project)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(case, cmd='bash -c "printf $usernames"')
+        tasks.grade_submission(self.submission.pk)
+
+        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
+        self.assertEqual(' '.join(self.submission.submission_group.member_names), res.stdout)
 
     def test_one_suite_deferred(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, deferred=False)
@@ -820,71 +915,3 @@ class RaceConditionTestCase(UnitTestBase):
 
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          submission.status)
-
-
-# --------------------------------------------------------------------------------------
-
-_NEEDS_FILES_TEST = b'''
-import os
-import fnmatch
-
-def main():
-    num_files = len(fnmatch.filter(os.listdir('.'), 'test*.cpp'))
-    if num_files != 2:
-        print('booooo')
-        raise SystemExit(1)
-
-    print('yay')
-
-
-if __name__ == '__main__':
-    main()
-'''
-
-_UNIT_TEST = b'''
-#include "impl.h"
-
-#include <iostream>
-#include <cassert>
-
-using namespace std;
-
-int main()
-{
-    assert(spam() == 42);
-    cout << "yay!" << endl;
-}
-'''
-
-_IMPL_H = b'''
-#ifndef IMPL_H
-#define IMPL_H
-
-int spam();
-
-#endif
-'''
-
-_IMPL_CPP = b'''
-#include "impl.h"
-
-int spam()
-{
-    return 42;
-}
-'''
-
-_TOO_MUCH_OUTPUT_IMPL_CPP = b'''
-#include <iostream>
-#include <string>
-using namespace std;
-
-int spam()
-{
-    while (true)
-    {
-        cout << string(1000000, 'x') << endl;
-    }
-    return 42;
-}
-'''

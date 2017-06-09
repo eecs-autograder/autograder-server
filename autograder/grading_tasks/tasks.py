@@ -89,7 +89,12 @@ def grade_submission(submission_pk):
             return
 
         project = submission.submission_group.project
-        for suite in project.ag_test_suites.filter(deferred=False):
+
+        @retry_should_recover
+        def load_non_deferred_suites():
+            return list(project.ag_test_suites.filter(deferred=False))
+
+        for suite in load_non_deferred_suites():
             grade_ag_test_suite_impl(suite, submission)
 
         @retry_should_recover
@@ -100,9 +105,12 @@ def grade_submission(submission_pk):
 
         mark_as_waiting_for_deferred()
 
-        deferred_queryset = project.ag_test_suites.filter(deferred=True)
+        @retry_should_recover
+        def load_deferred_suites():
+            return list(project.ag_test_suites.filter(deferred=True))
+
         signatures = [grade_deferred_ag_test_suite.s(ag_test_suite.pk, submission_pk)
-                      for ag_test_suite in deferred_queryset]
+                      for ag_test_suite in load_deferred_suites()]
         if not signatures:
             _mark_submission_as_finished_impl(submission_pk)
             return
@@ -142,8 +150,12 @@ def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
 # TODO: take in list of test cases to rerun
 def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
                              submission: ag_models.Submission):
-    suite_result = ag_models.AGTestSuiteResult.objects.get_or_create(
-        ag_test_suite=ag_test_suite, submission=submission)[0]
+    @retry_should_recover
+    def get_or_create_suite_result():
+        return ag_models.AGTestSuiteResult.objects.get_or_create(
+            ag_test_suite=ag_test_suite, submission=submission)[0]
+
+    suite_result = get_or_create_suite_result()
 
     sandbox = AutograderSandbox(
         name='submission{}-suite{}-{}'.format(submission.pk, ag_test_suite.pk, uuid.uuid4().hex),
@@ -154,43 +166,12 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
     with sandbox:
         _add_files_to_sandbox(sandbox, ag_test_suite, submission)
 
-        try:
-            setup_result = sandbox.run_command(shlex.split(ag_test_suite.setup_suite_cmd),
-                                               as_root=False,
-                                               max_num_processes=constants.MAX_PROCESS_LIMIT,
-                                               max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-                                               max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                               timeout=constants.MAX_SUBPROCESS_TIMEOUT)
-            suite_result.setup_return_code = setup_result.returncode
-            suite_result.setup_stdout = setup_result.stdout
-            suite_result.setup_stderr = setup_result.stderr
-        except subprocess.TimeoutExpired as e:
-            suite_result.setup_timed_out = True
-            suite_result.setup_stdout = e.stdout
-            suite_result.setup_stderr = e.stderr
-        finally:
-            suite_result.save()
+        _run_suite_setup(sandbox, ag_test_suite, suite_result)
 
-        # run test cases
         for ag_test_case in ag_test_suite.ag_test_cases.all():
             grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
 
-        try:
-            teardown_result = sandbox.run_command(shlex.split(ag_test_suite.teardown_suite_cmd),
-                                                  as_root=False,
-                                                  max_num_processes=constants.MAX_PROCESS_LIMIT,
-                                                  max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-                                                  max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                                  timeout=constants.MAX_SUBPROCESS_TIMEOUT)
-            suite_result.teardown_return_code = teardown_result.returncode
-            suite_result.teardown_stdout = teardown_result.stdout
-            suite_result.teardown_stderr = teardown_result.stderr
-        except subprocess.TimeoutExpired as e:
-            suite_result.teardown_timed_out = True
-            suite_result.teardown_stdout = e.stdout
-            suite_result.teardown_stderr = e.stderr
-        finally:
-            suite_result.save()
+        _run_suite_teardown(sandbox, ag_test_suite, suite_result)
 
 
 # FIXME: TEST AND ADD RETRY STUFF
@@ -212,12 +193,60 @@ def _add_files_to_sandbox(sandbox: AutograderSandbox,
     if project_files_to_add:
         sandbox.add_files(*project_files_to_add)
 
+
+@retry_ag_test_cmd
+def _run_suite_setup(sandbox: AutograderSandbox,
+                     ag_test_suite: ag_models.AGTestSuite,
+                     suite_result: ag_models.AGTestSuiteResult):
+    try:
+        setup_result = sandbox.run_command(shlex.split(ag_test_suite.setup_suite_cmd),
+                                           as_root=False,
+                                           max_num_processes=constants.MAX_PROCESS_LIMIT,
+                                           max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
+                                           max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+                                           timeout=constants.MAX_SUBPROCESS_TIMEOUT)
+        suite_result.setup_return_code = setup_result.returncode
+        suite_result.setup_stdout = setup_result.stdout
+        suite_result.setup_stderr = setup_result.stderr
+    except subprocess.TimeoutExpired as e:
+        suite_result.setup_timed_out = True
+        suite_result.setup_stdout = e.stdout
+        suite_result.setup_stderr = e.stderr
+    finally:
+        suite_result.save()
+
+
+@retry_ag_test_cmd
+def _run_suite_teardown(sandbox: AutograderSandbox,
+                     ag_test_suite: ag_models.AGTestSuite,
+                     suite_result: ag_models.AGTestSuiteResult):
+    try:
+        teardown_result = sandbox.run_command(shlex.split(ag_test_suite.teardown_suite_cmd),
+                                              as_root=False,
+                                              max_num_processes=constants.MAX_PROCESS_LIMIT,
+                                              max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
+                                              max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+                                              timeout=constants.MAX_SUBPROCESS_TIMEOUT)
+        suite_result.teardown_return_code = teardown_result.returncode
+        suite_result.teardown_stdout = teardown_result.stdout
+        suite_result.teardown_stderr = teardown_result.stderr
+    except subprocess.TimeoutExpired as e:
+        suite_result.teardown_timed_out = True
+        suite_result.teardown_stdout = e.stdout
+        suite_result.teardown_stderr = e.stderr
+    finally:
+        suite_result.save()
+
 # FIXME: TEST AND ADD RETRY STUFF
 def grade_ag_test_case_impl(sandbox: AutograderSandbox,
                             ag_test_case: ag_models.AGTestCase,
                             suite_result: ag_models.AGTestSuiteResult):
-    case_result = ag_models.AGTestCaseResult.objects.get_or_create(
-        ag_test_case=ag_test_case, ag_test_suite_result=suite_result)[0]
+    @retry_should_recover
+    def get_or_create_ag_test_case_result():
+        return ag_models.AGTestCaseResult.objects.get_or_create(
+            ag_test_case=ag_test_case, ag_test_suite_result=suite_result)[0]
+
+    case_result = get_or_create_ag_test_case_result()
 
     @retry_ag_test_cmd
     def _grade_ag_test_cmd_with_retry(sandbox, ag_test_cmd, case_result):
@@ -242,6 +271,7 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
     else:
         stdin = ''
 
+    result_data = {}
     try:
         run_result = sandbox.run_command(shlex.split(ag_test_cmd.cmd),
                                          input=stdin,
@@ -250,11 +280,10 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                                          max_stack_size=ag_test_cmd.stack_size_limit,
                                          max_virtual_memory=ag_test_cmd.virtual_memory_limit,
                                          timeout=ag_test_cmd.time_limit)
-        result_data = {
-            'stdout': run_result.stdout,
-            'stderr': run_result.stderr,
-            'return_code': run_result.returncode
-        }
+        result_data['stdout'] = run_result.stdout
+        result_data['stderr'] = run_result.stderr
+        result_data['return_code'] = run_result.returncode
+
         if ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.zero:
             result_data['return_code_correct'] = run_result.returncode == 0
         elif ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.nonzero:
@@ -289,19 +318,19 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                 ignore_whitespace=ag_test_cmd.ignore_whitespace,
                 ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
                 ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
-
-        ag_models.AGTestCommandResult.objects.get_or_create(
-            ag_test_command=ag_test_cmd,
-            ag_test_case_result=case_result,
-            **result_data)
     except subprocess.TimeoutExpired as e:
-        ag_models.AGTestCommandResult.objects.get_or_create(
-            ag_test_command=ag_test_cmd,
-            ag_test_case_result=case_result,
-            stdout=e.stdout,
-            stderr=e.stderr,
-            timed_out=True)
-    # FIXME: TEST AND ADD RETRY STUFF)
+        result_data['stdout'] = e.stdout
+        result_data['stderr'] = e.stderr
+        result_data['timed_out'] = True
+    finally:
+        @retry_should_recover
+        def save_ag_test_cmd_result():
+            ag_models.AGTestCommandResult.objects.update_or_create(
+                defaults=result_data,
+                ag_test_command=ag_test_cmd,
+                ag_test_case_result=case_result)
+
+        save_ag_test_cmd_result()
 
 
 @retry_should_recover
