@@ -1,6 +1,6 @@
 import random
 import shlex
-from unittest import mock  # type: ignore
+from unittest import mock
 
 import subprocess
 from autograder_sandbox import AutograderSandbox

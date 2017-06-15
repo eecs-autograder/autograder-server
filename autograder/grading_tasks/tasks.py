@@ -146,7 +146,6 @@ def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
         raise
 
 
-# FIXME: TEST AND ADD RETRY STUFF
 # TODO: take in list of test cases to rerun
 def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
                              submission: ag_models.Submission):
@@ -174,7 +173,6 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
         _run_suite_teardown(sandbox, ag_test_suite, suite_result)
 
 
-# FIXME: TEST AND ADD RETRY STUFF
 def _add_files_to_sandbox(sandbox: AutograderSandbox,
                           ag_test_suite: ag_models.AGTestSuite,
                           submission: ag_models.Submission):
@@ -237,7 +235,7 @@ def _run_suite_teardown(sandbox: AutograderSandbox,
     finally:
         suite_result.save()
 
-# FIXME: TEST AND ADD RETRY STUFF
+
 def grade_ag_test_case_impl(sandbox: AutograderSandbox,
                             ag_test_case: ag_models.AGTestCase,
                             suite_result: ag_models.AGTestSuiteResult):
@@ -255,7 +253,7 @@ def grade_ag_test_case_impl(sandbox: AutograderSandbox,
     for ag_test_cmd in ag_test_case.ag_test_commands.all():
         _grade_ag_test_cmd_with_retry(sandbox, ag_test_cmd, case_result)
 
-# FIXME: TEST AND ADD RETRY STUFF
+
 def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                                ag_test_cmd: ag_models.AGTestCommand,
                                case_result: ag_models.AGTestCaseResult):

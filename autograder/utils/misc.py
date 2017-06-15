@@ -1,4 +1,5 @@
 import os
+from typing import Sequence
 
 from django.contrib import auth
 
@@ -28,6 +29,14 @@ def lock_users(users_iterable):
     queryset = auth.models.User.objects.select_for_update().filter(
         pk__in=(user.pk for user in users_iterable))
     list(queryset)
+
+
+def exclude_dict(dict_: dict, exclude_fields: Sequence[str]):
+    return {key: value for key, value in dict_.items() if key not in exclude_fields}
+
+
+def filter_dict(dict_: dict, include_fields: Sequence[str]):
+    return {key: value for key, value in dict_.items() if key in include_fields}
 
 
 class ChangeDirectory:

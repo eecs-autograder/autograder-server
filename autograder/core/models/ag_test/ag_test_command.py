@@ -220,7 +220,7 @@ class AGTestCommand(AutograderModel):
     deduction_for_wrong_return_code = models.IntegerField(
         default=0, validators=[MaxValueValidator(0)],
         help_text='''The number of points to deduct when this command
-                     produces the wrong return_code (this value must be negative).
+                     produces the wrong return code (this value must be negative).
                      Note: The total points given for a single command may be negative,
                      but the total points for an AGTestCase will be capped at zero.''')
     deduction_for_wrong_stdout = models.IntegerField(
@@ -257,7 +257,7 @@ class AGTestCommand(AutograderModel):
         default=constants.DEFAULT_SUBPROCESS_TIMEOUT,
         validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_SUBPROCESS_TIMEOUT)],
         help_text='''The time limit in seconds to be placed on the
-            program being tested. This limit currently applies to each
+            command. This limit currently applies to each
             of: compilation, running the program, and running the
             program with Valgrind (the timeout is applied separately to
             each).
@@ -272,24 +272,21 @@ class AGTestCommand(AutograderModel):
         stack_size_limit -- The maximum stack size in bytes.
             Must be > 0
             Must be <= autograder.shared.global_constants.MAX_STACK_SIZE_LIMIT
-            NOTE: Setting this value too low may cause the program being
-                    tested to crash prematurely.''')
+            NOTE: Setting this value too low may cause the command to crash prematurely.''')
 
     virtual_memory_limit = models.IntegerField(
         default=constants.DEFAULT_VIRTUAL_MEM_LIMIT,
         validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_VIRTUAL_MEM_LIMIT)],
         help_text='''The maximum amount of virtual memory
-            (in bytes) the program being tested can use.
+            (in bytes) the command can use.
             Must be > 0
             Must be <= autograder.shared.global_constants.MAX_VIRTUAL_MEM_LIMIT
-            NOTE: Setting this value too low may cause the program being
-                    tested to crash prematurely.''')
+            NOTE: Setting this value too low may cause the command to crash prematurely.''')
 
     process_spawn_limit = models.IntegerField(
         default=constants.DEFAULT_PROCESS_LIMIT,
         validators=[MinValueValidator(0), MaxValueValidator(constants.MAX_PROCESS_LIMIT)],
-        help_text='''The maximum number of processes that the program
-            being tested is allowed to spawn.
+        help_text='''The maximum number of processes that the command is allowed to spawn.
             Must be >= 0
             Must be <= autograder.shared.global_constants.MAX_PROCESS_LIMIT
             NOTE: This limit applies cumulatively to the processes

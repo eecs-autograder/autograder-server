@@ -13,7 +13,6 @@ import autograder.core.utils as core_ut
 import autograder.core.fields as ag_fields
 
 
-# TODO: Make this an enum
 class UltimateSubmissionPolicy(enum.Enum):
     """
     This class contains options for choosing which submissions are
@@ -99,18 +98,15 @@ class Project(AutograderModel):
             not be able to send, accept, or reject group
             invitations.''')
 
-    # TODO: update docs
     visible_to_guests = models.BooleanField(
         default=False,
-        help_text='''By default, only admins, staff members, and enrolled
-            students for a given Course can submit to its Projects.
-            When this field is set to True, submissions will be accepted
-            from any authenticated Users, with the following caveats:
-                - In order to view the Project, non-enrolled students
-                must be given a direct link to a page where it can
-                be viewed.
-                - When group work is allowed, non-enrolled students can
-                only be in groups with other non-enrolled students.''')
+        help_text='''By default, only admins, staff, and students
+            for a given Course can view and submit to its Projects.
+            When True, submissions will be accepted from guests
+            with the following caveats:
+                - Guests must be given a direct link to the project.
+                - When group work is allowed, guests can
+                only be in groups with other guests.''')
 
     min_group_size = models.IntegerField(
         default=1, validators=[validators.MinValueValidator(1)],
