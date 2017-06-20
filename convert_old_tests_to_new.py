@@ -6,7 +6,7 @@ import django
 from django.db import transaction
 
 sys.path.append('.')
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "autograder.settings")
+# os.environ.setdefault("DJANGO_SETTINGS_MODULE", "autograder.settings.production")
 django.setup()
 
 from autograder.core.models import *
@@ -14,10 +14,9 @@ from autograder.core.models.autograder_test_case import feedback_config
 
 
 def main():
-    # with transaction.atomic():
-    convert_ag_tests()
+    with transaction.atomic():
+        convert_ag_tests()
     print('done')
-    # raise Exception('it worked!')
 
 
 def convert_ag_tests():
@@ -26,6 +25,7 @@ def convert_ag_tests():
         for old_test in p.autograder_test_cases.all():
             print(old_test.name)
             setup_cmd = ''
+            points_for_correct_return_code = old_test.points_for_correct_return_code
             if isinstance(old_test, CompiledAndRunAutograderTestCase):
                 setup_cmd = ' '.join(
                     [old_test.compiler] +
@@ -40,6 +40,7 @@ def convert_ag_tests():
                         (file_.name for file_ in old_test.project_files_to_compile_together.all()),
                         (pattern.pattern for pattern in old_test.student_files_to_compile_together.all()))) +
                     old_test.compiler_flags)
+                points_for_correct_return_code = old_test.points_for_compilation_success
 
             new_suite = AGTestSuite.objects.validate_and_create(
                 name=old_test.name,
@@ -57,10 +58,10 @@ def convert_ag_tests():
             )
             new_case = AGTestCase.objects.validate_and_create(name=new_suite.name,
                                                               ag_test_suite=new_suite)
-            if old_test.type_str == 'compiled_and_run_test_case':
+            if isinstance(old_test, CompiledAndRunAutograderTestCase):
                 cmd = './{} {}'.format(old_test.executable_name, ' '.join(
                     old_test.command_line_arguments))
-            elif old_test.type_str == 'interpreted_test_case':
+            elif isinstance(old_test, InterpretedAutograderTestCase):
                 cmd = '{} {} {} {}'.format(old_test.interpreter,
                                            ' '.join(old_test.interpreter_flags),
                                            old_test.entry_point_filename,
@@ -70,6 +71,8 @@ def convert_ag_tests():
             if old_test.expect_any_nonzero_return_code:
                 expected_return_code = ExpectedReturnCode.nonzero
             elif old_test.expected_return_code == 0:
+                expected_return_code = ExpectedReturnCode.zero
+            elif isinstance(old_test, CompilationOnlyAutograderTestCase):
                 expected_return_code = ExpectedReturnCode.zero
 
             expected_stdout = ''
@@ -104,7 +107,7 @@ def convert_ag_tests():
                 ignore_whitespace_changes=old_test.ignore_whitespace_changes,
                 ignore_blank_lines=old_test.ignore_blank_lines,
 
-                points_for_correct_return_code=old_test.points_for_correct_return_code,
+                points_for_correct_return_code=points_for_correct_return_code,
                 points_for_correct_stdout=old_test.points_for_correct_stdout,
                 points_for_correct_stderr=old_test.points_for_correct_stderr,
 
@@ -214,7 +217,8 @@ def convert_results(project, old_test: AutograderTestCaseBase, new_test_case: AG
             ag_test_suite_result=suite_result
         )
 
-
+        stdout_correct = None
+        stderr_correct = None
         if isinstance(old_test, CompilationOnlyAutograderTestCase):
             stdout = result.compilation_standard_output
             stderr = result.compilation_standard_error_output
@@ -230,8 +234,6 @@ def convert_results(project, old_test: AutograderTestCaseBase, new_test_case: AG
             stderr_correct = result.get_max_feedback().stderr_correct
             timed_out = result.timed_out
 
-        stdout_correct = None
-        stderr_correct = None
         cmd_result = AGTestCommandResult.objects.validate_and_create(
             ag_test_command=new_test_case.ag_test_commands.first(),
             ag_test_case_result=case_result,

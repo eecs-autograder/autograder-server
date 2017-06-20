@@ -194,8 +194,10 @@ class AGTestSuiteResult(AutograderModel):
             'fdbk_settings',
             'total_points',
             'total_points_possible',
+            'setup_return_code',
             'setup_stdout',
             'setup_stderr',
             'teardown_stdout',
             'teardown_stderr',
+            'teardown_return_code',
         )

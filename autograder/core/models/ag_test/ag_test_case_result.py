@@ -6,7 +6,6 @@ from ..ag_model_base import AutograderModel, ToDictMixin
 from .ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from .ag_test_suite_result import AGTestSuiteResult
 from .feedback_category import FeedbackCategory
-from autograder import utils
 
 
 class AGTestCaseResult(AutograderModel):

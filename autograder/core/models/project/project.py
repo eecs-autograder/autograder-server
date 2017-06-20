@@ -22,6 +22,10 @@ class UltimateSubmissionPolicy(enum.Enum):
     # The submission that was made most recently
     most_recent = 'most_recent'
 
+    # The submission with the highest score, using "normal"
+    # feedback settings to compute scores.
+    best_with_normal_fdbk = 'best_basic_score'
+
     # The submission with the highest score. The score used
     # for comparison is computed using maximum feedback
     # settings.
