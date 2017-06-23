@@ -85,6 +85,8 @@ class AGTestSuite(AutograderModel):
         help_text='''Student-submitted files matching these patterns will be copied into the
                      sandbox before the suite's tests are run.''')
 
+    # TODO: setup/teardown labels?
+
     setup_suite_cmd = ag_fields.ShortStringField(
         blank=True,
         help_text="""A command to be run before this suite's tests are run.

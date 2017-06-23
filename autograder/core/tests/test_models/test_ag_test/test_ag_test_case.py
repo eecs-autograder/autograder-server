@@ -70,8 +70,8 @@ class AGTestCaseTestCase(UnitTestBase):
 
         self.assertCountEqual([ag_test1, ag_test2], self.ag_suite.ag_test_cases.all())
 
-    def test_move_ag_test_to_different_suite_in_same_project(self):
-        suite2 = ag_models.AGTestSuite.objects.validate_and_create(
+    def test_move_ag_test_case_to_different_suite_in_same_project(self):
+        other_suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='fa;weifjawef', project=self.project
         )  # type: ag_models.AGTestSuite
 
@@ -82,6 +82,7 @@ class AGTestCaseTestCase(UnitTestBase):
             name='asdfknja;wej', ag_test_case=ag_test, cmd='asdklfja;sdjkfaldsf'
         )  # type: ag_models.AGTestCommand
 
+        # This group has results for ONLY self.ag_suite
         submission = obj_build.build_submission(
             submission_group=obj_build.build_submission_group(
                 group_kwargs={'project': self.project}))
@@ -93,6 +94,7 @@ class AGTestCaseTestCase(UnitTestBase):
         )  # type: ag_models.AGTestCaseResult
         cmd_result = obj_build.make_correct_ag_test_command_result(cmd, ag_test_result)
 
+        # This group has results for self.ag_suite and other_suite
         submission2 = obj_build.build_submission(
             submission_group=obj_build.build_submission_group(
                 group_kwargs={'project': self.project}))
@@ -103,28 +105,45 @@ class AGTestCaseTestCase(UnitTestBase):
             ag_test_case=ag_test, ag_test_suite_result=suite_result2
         )  # type: ag_models.AGTestCaseResult
         cmd_result2 = obj_build.make_correct_ag_test_command_result(cmd, ag_test_result2)
+        other_suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            submission=submission2, ag_test_suite=other_suite
+        )  # type: ag_models.AGTestSuiteResult
 
         self.assertEqual(self.ag_suite, ag_test.ag_test_suite)
 
         # This that should be re-wired after this line:
-        # - ag_test should belong to suite2
-        # - Any AGTestSuiteResults that belonged to self.ag_suite should belong
-        #   to suite2.
-        ag_test.validate_and_update(ag_test_suite=suite2)
+        # - ag_test should belong to other_suite
+        # - AGTestCaseResults should point to suite results in their
+        #   own submissions that belong to other_suite (creating them
+        #   if necessary).
+        ag_test.validate_and_update(ag_test_suite=other_suite)
 
-        suite2 = ag_models.AGTestSuite.objects.get(pk=suite2.pk)
-        self.assertSequenceEqual([ag_test], suite2.ag_test_cases.all())
+        other_suite = ag_models.AGTestSuite.objects.get(pk=other_suite.pk)
+        self.assertSequenceEqual([ag_test], other_suite.ag_test_cases.all())
 
         self.ag_suite.refresh_from_db()
         self.assertSequenceEqual([], self.ag_suite.ag_test_cases.all())
 
-        ag_test_result = ag_models.AGTestCaseResult.objects.get(pk=ag_test_result.pk)
-        self.assertEqual(suite2, ag_test_result.ag_test_suite_result.ag_test_suite)
-        ag_test_result2 = ag_models.AGTestCaseResult.objects.get(pk=ag_test_result2.pk)
-        self.assertEqual(suite2, ag_test_result2.ag_test_suite_result.ag_test_suite)
+        # An AGTestSuiteResult for other_suite should have been created for submission.
+        self.assertEqual(2, submission.ag_test_suite_results.count())
+        self.assertEqual(suite_result, submission.ag_test_suite_results.first())
+        new_other_suite_result = submission.ag_test_suite_results.last()
+        self.assertEqual(other_suite, new_other_suite_result.ag_test_suite)
 
-        self.assertEqual(ag_test_result, cmd_result.ag_test_case_result)
-        self.assertEqual(ag_test_result2, cmd_result2.ag_test_case_result)
+        # ag_test should belong to other_suite
+        self.assertEqual(other_suite, ag_test.ag_test_suite)
+
+        # ag_test_result should belong to new_other_suite_result
+        ag_test_result.refresh_from_db()
+        self.assertEqual(new_other_suite_result, ag_test_result.ag_test_suite_result)
+
+        # ag_test_result2 should belong to other_suite_result
+        ag_test_result2.refresh_from_db()
+        self.assertEqual(other_suite_result, ag_test_result2.ag_test_suite_result)
+
+        suite_result.get_fdbk(ag_models.FeedbackCategory.max).ag_test_case_results
+        suite_result2.get_fdbk(ag_models.FeedbackCategory.max).ag_test_case_results
+        new_other_suite_result.get_fdbk(ag_models.FeedbackCategory.max).ag_test_case_results
 
     def test_error_move_ag_test_to_suite_in_different_project(self):
         ag_test = ag_models.AGTestCase.objects.validate_and_create(

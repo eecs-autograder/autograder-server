@@ -176,9 +176,10 @@ class AGTestSuiteResult(AutograderModel):
 
         @property
         def _visible_ag_test_case_results(self) -> Iterable['AGTestCaseResult']:
-            return filter(
+            res =  list(filter(
                 lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
-                self._ag_test_suite_result.ag_test_case_results.all())
+                self._ag_test_suite_result.ag_test_case_results.all()))
+            return res
 
         def to_dict(self):
             result = super().to_dict()

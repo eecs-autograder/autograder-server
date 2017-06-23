@@ -10,7 +10,8 @@ from .feedback_category import FeedbackCategory
 
 class AGTestCaseResult(AutograderModel):
     ag_test_case = models.ForeignKey(
-        AGTestCase, help_text='The AGTestCase that this result belongs to.')
+        AGTestCase, related_name='related_ag_test_case_results',
+        help_text='The AGTestCase that this result belongs to.')
 
     ag_test_suite_result = models.ForeignKey(
         AGTestSuiteResult, related_name='ag_test_case_results',

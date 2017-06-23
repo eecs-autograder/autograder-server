@@ -5,6 +5,7 @@ from django.db import models, transaction
 
 import autograder.core.fields as ag_fields
 from .ag_test_suite import AGTestSuite
+from .ag_test_suite_result import AGTestSuiteResult
 from ..ag_model_base import AutograderModel
 
 
@@ -75,9 +76,6 @@ class AGTestCase(AutograderModel):
             AGTestSuite as long as the old and new suites belong to
             the same Project.
         """
-        # If we're updating this test case's ag test suite, we need
-        # to steal all the suite results from the current suite and
-        # give them to the new one.
         if ag_test_suite is None:
             super().validate_and_update(**kwargs)
             return
@@ -90,7 +88,18 @@ class AGTestCase(AutograderModel):
                 {'ag_test_suite':
                     'AGTestCases can only be moved to AGTestSuites within the same Project.'})
 
-        self.ag_test_suite.agtestsuiteresult_set.update(ag_test_suite=ag_test_suite)
+        # Update all the AGTestCaseResult objects that belong to this
+        # AGTestCase so that they belong to AGTestSuiteResults that
+        # belong to the destination AGTestSuite.
+
+        for ag_test_case_result in self.related_ag_test_case_results.select_related(
+                'ag_test_suite_result__submission').all():
+            dest_suite_result = AGTestSuiteResult.objects.get_or_create(
+                ag_test_suite=ag_test_suite,
+                submission=ag_test_case_result.ag_test_suite_result.submission)[0]
+            ag_test_case_result.ag_test_suite_result = dest_suite_result
+            ag_test_case_result.save()
+
         self.ag_test_suite = ag_test_suite
         super().validate_and_update(**kwargs)
 
