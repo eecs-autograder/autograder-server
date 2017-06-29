@@ -9,7 +9,7 @@ from ..load_object_mixin import build_load_object_mixin
 
 
 class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),  # type: ignore
-                     mixins.RetrieveModelMixin,
+                           mixins.RetrieveModelMixin,
                            transaction_mixins.TransactionUpdateMixin,
                            viewsets.GenericViewSet):
     serializer_class = ag_serializers.ProjectSerializer
