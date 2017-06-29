@@ -210,6 +210,14 @@ class Project(AutograderModel):
 
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
+
+        'uploaded_files',
+        'expected_student_file_patterns',
+    )
+
+    SERIALIZE_RELATED = (
+        'uploaded_files',
+        'expected_student_file_patterns',
     )
 
     EDITABLE_FIELDS = (

@@ -10,7 +10,7 @@ import autograder.core.fields as ag_fields
 
 class _AutograderModelManagerMixin:
     # TODO: Throw error if pk is in kwargs
-    def validate_and_create(self, **kwargs):
+    def validate_and_create(self, **kwargs) -> 'AutograderModel':
         """
         This method is a shortcut for constructing a model object,
         calling full_clean(), and then calling save().

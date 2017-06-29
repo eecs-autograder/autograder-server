@@ -1,3 +1,4 @@
+import copy
 import datetime
 import os
 import random
@@ -88,10 +89,17 @@ class ProjectMiscTestCase(UnitTestBase):
             self.assertEqual(value, getattr(new_project, field_name),
                              msg=field_name)
 
-    def test_serializable_fields(self):
-        project = obj_build.build_project()
+    def test_serialize(self):
+        project = ag_models.Project.objects.validate_and_create(
+            name='qeiruqioewiur', course=self.course
+        )  # type: ag_models.Project
+        proj_file = obj_build.make_uploaded_file(project)
+        pattern = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            project=project, pattern='qweiourqpweioru')
 
-        expected_fields = [
+        project_dict = project.to_dict()
+
+        expected_keys = [
             'pk',
             'name',
             'course',
@@ -110,34 +118,22 @@ class ProjectMiscTestCase(UnitTestBase):
 
             'ultimate_submission_policy',
             'hide_ultimate_submission_fdbk',
+
+            'uploaded_files',
+            'expected_student_file_patterns',
         ]
+        self.assertCountEqual(expected_keys, project_dict.keys())
 
-        self.assertCountEqual(expected_fields,
-                              ag_models.Project.get_serializable_fields())
-        project = obj_build.build_project()
-        self.assertTrue(project.to_dict())
+        self.assertSequenceEqual([proj_file.to_dict()], project_dict['uploaded_files'])
+        self.assertSequenceEqual([pattern.to_dict()],
+                                 project_dict['expected_student_file_patterns'])
 
-    def test_editable_fields(self):
-        expected = [
-            'name',
-            'visible_to_students',
-            'closing_time',
-            'soft_closing_time',
-            'disallow_student_submissions',
-            'disallow_group_registration',
-            'visible_to_guests',
-            'min_group_size',
-            'max_group_size',
-
-            'submission_limit_per_day',
-            'allow_submissions_past_limit',
-            'submission_limit_reset_time',
-
-            'ultimate_submission_policy',
-            'hide_ultimate_submission_fdbk',
-        ]
-        self.assertCountEqual(expected,
-                              ag_models.Project.get_editable_fields())
+        update_dict = copy.deepcopy(project_dict)
+        update_dict.pop('pk')
+        update_dict.pop('course')
+        update_dict.pop('uploaded_files')
+        update_dict.pop('expected_student_file_patterns')
+        project.validate_and_update(**update_dict)
 
 
 class HardAndSoftClosingTimeTestCase(UnitTestBase):

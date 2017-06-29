@@ -76,6 +76,8 @@ class AGTestCase(AutograderModel):
             AGTestSuite as long as the old and new suites belong to
             the same Project.
         """
+        # TODO: disallow moving a test case to a new suite if any results (or submissions?)
+        # exist already.
         if ag_test_suite is None:
             super().validate_and_update(**kwargs)
             return
@@ -101,6 +103,8 @@ class AGTestCase(AutograderModel):
             ag_test_case_result.save()
 
         self.ag_test_suite = ag_test_suite
+
+        # TODO: merge setup and teardown output and return code
         super().validate_and_update(**kwargs)
 
     SERIALIZABLE_FIELDS = (
