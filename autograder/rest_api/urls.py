@@ -96,11 +96,6 @@ submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            base_name='submission')
 
-submission_results_router = routers.NestedSimpleRouter(
-    submission_router, r'submissions', lookup='submission')
-submission_results_router.register(r'results', views.SubmissionResultsViewSet,
-                                   base_name='submission-results')
-
 
 ag_test_suite_detail_router = routers.SimpleRouter()
 ag_test_suite_detail_router.register(r'ag_test_suites', views.AGTestSuiteDetailViewSet,
@@ -141,7 +136,6 @@ urlpatterns = [
     url(r'', include(group_submissions_router.urls)),
 
     url(r'', include(submission_router.urls)),
-    # url(r'', include(submission_results_router.urls)),
 
     url(r'^courses/(?P<pk>[0-9]+)/projects/$',
         views.ListCreateProjectView.as_view(), name='project-list-create'),

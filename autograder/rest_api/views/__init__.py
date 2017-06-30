@@ -19,7 +19,6 @@ from .project_views.uploaded_file_views.uploaded_file_detail_view import \
     UploadedFileDetailViewSet
 from .project_views.uploaded_file_views.uploaded_files_view import UploadedFilesViewSet
 from .submission_views.submission_detail_view import SubmissionDetailViewSet
-from .submission_views.submission_results import SubmissionResultsViewSet
 from .submission_views.submissions_view import SubmissionsViewSet
 from .user_views import UserViewSet
 

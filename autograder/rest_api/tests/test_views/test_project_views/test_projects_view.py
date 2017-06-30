@@ -9,14 +9,14 @@ from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
-class _ProjectsSetUp(test_data.Client, test_data.Project):
+class _ProjectsSetUp(test_data.Client, test_data.Project, UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.url = reverse('projects',
+        self.url = reverse('project-list-create',
                            kwargs={'pk': self.course.pk})
 
 
-class CourseListProjectsTestCase(_ProjectsSetUp, UnitTestBase):
+class CourseListProjectsTestCase(_ProjectsSetUp):
     def test_admin_list_projects(self):
         self.do_valid_list_projects_test(self.admin, self.all_projects)
 
@@ -45,7 +45,7 @@ class CourseListProjectsTestCase(_ProjectsSetUp, UnitTestBase):
         self.assertCountEqual(expected_data, response.data)
 
 
-class CourseAddProjectTestCase(_ProjectsSetUp, UnitTestBase):
+class CourseAddProjectTestCase(_ProjectsSetUp):
     def test_course_admin_add_project(self):
         args = {'name': 'spam project',
                 'min_group_size': 2,
