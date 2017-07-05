@@ -80,10 +80,6 @@ INSTALLED_APPS = [
     'autograder.rest_api',
     'autograder.grading_tasks',
     'autograder.utils',
-
-    # Dummy testing models
-    'autograder.core.tests.test_models',
-    'autograder.core.tests.test_models.test_autograder_test_case',
 ]
 
 MIDDLEWARE_CLASSES = (
