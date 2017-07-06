@@ -168,7 +168,6 @@ class UpdateGroupTestCase(test_data.Client,
 
 class RetrieveUltimateSubmissionTestCase(test_data.Client,
                                          test_data.Project,
-                                         test_data.Submission,
                                          test_impls.GetObjectTest,
                                          UnitTestBase):
 

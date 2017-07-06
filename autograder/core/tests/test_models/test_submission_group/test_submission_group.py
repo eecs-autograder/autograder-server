@@ -111,47 +111,6 @@ class MiscSubmissionGroupTestCase(_SetUp, test_ut.UnitTestBase):
         self.assertCountEqual([first_group, second_group], groups)
 
 
-# TODO: change to nonmember function defined elsewhere
-class GetUltimateSubmissionTestCase(test_ut.UnitTestBase):
-    def test_get_ultimate_submission(self):
-        submissions, best, tests = obj_build.build_submissions_with_results(
-            num_submissions=5, make_one_best=True)
-        self.assertNotEqual(submissions[-1], best)
-        group = best.submission_group
-        project = group.project
-
-        project.validate_and_update(
-            ultimate_submission_policy=(
-                ag_models.UltimateSubmissionPolicy.most_recent))
-        self.assertEqual(submissions[-1], group.ultimate_submission)
-
-        project.validate_and_update(
-            ultimate_submission_policy=(
-                ag_models.UltimateSubmissionPolicy.best))
-        self.assertEqual(best, group.ultimate_submission)
-
-    def test_get_ultimate_submission_high_score_tied_take_most_recent(self):
-        submissions, tests = obj_build.build_submissions_with_results(
-            num_submissions=4)
-        group = submissions[0].submission_group
-        project = group.project
-
-        project.validate_and_update(
-            ultimate_submission_policy=(
-                ag_models.UltimateSubmissionPolicy.most_recent))
-        self.assertEqual(submissions[-1], group.ultimate_submission)
-
-        project.validate_and_update(
-            ultimate_submission_policy=(
-                ag_models.UltimateSubmissionPolicy.best))
-        self.assertEqual(submissions[-1], group.ultimate_submission)
-
-    def test_get_ultimate_submission_no_submissions(self):
-        group = obj_build.build_submission_group()
-        with self.assertRaises(Http404):
-            group.ultimate_submission
-
-
 class SubmissionGroupSizeTestCase(_SetUp, test_ut.UnitTestBase):
     def test_valid_override_group_max_size(self):
         self.enrolled_group += obj_build.create_dummy_users(3)
