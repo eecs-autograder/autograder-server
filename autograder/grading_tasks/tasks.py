@@ -7,9 +7,11 @@ import traceback
 import uuid
 
 from django.conf import settings
+from django.db.models.signals import post_save
 from django.db import transaction
 
 import celery
+from django.dispatch import receiver
 
 import autograder.core.models as ag_models
 from autograder.core import constants
@@ -81,7 +83,7 @@ retry_ag_test_cmd = retry(max_num_retries=settings.AG_TEST_MAX_RETRIES,
                           retry_delay_end=settings.AG_TEST_MAX_RETRY_DELAY)
 
 
-@celery.shared_task(queue='submissions', acks_late=True)
+@celery.shared_task(acks_late=True)
 def grade_submission(submission_pk):
     try:
         submission = _mark_submission_as_being_graded(submission_pk)
@@ -129,7 +131,7 @@ def grade_submission(submission_pk):
         raise
 
 
-@celery.shared_task(bind=True, max_retries=1, queue='deferred', acks_late=True)
+@celery.shared_task(bind=True, queue='deferred', max_retries=1, acks_late=True)
 def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
 
     @retry_should_recover
@@ -247,11 +249,11 @@ def grade_ag_test_case_impl(sandbox: AutograderSandbox,
     case_result = get_or_create_ag_test_case_result()
 
     @retry_ag_test_cmd
-    def _grade_ag_test_cmd_with_retry(sandbox, ag_test_cmd, case_result):
+    def _grade_ag_test_cmd_with_retry(ag_test_cmd, case_result):
         grade_ag_test_command_impl(sandbox, ag_test_cmd, case_result)
 
     for ag_test_cmd in ag_test_case.ag_test_commands.all():
-        _grade_ag_test_cmd_with_retry(sandbox, ag_test_cmd, case_result)
+        _grade_ag_test_cmd_with_retry(ag_test_cmd, case_result)
 
 
 def grade_ag_test_command_impl(sandbox: AutograderSandbox,
@@ -347,12 +349,12 @@ def _mark_submission_as_being_graded(submission_pk):
         return submission
 
 
-@celery.shared_task(queue='deferred', acks_late=True)
+@celery.shared_task(queue='small_tasks', acks_late=True)
 def mark_submission_as_finished(chord_results, submission_pk):
     _mark_submission_as_finished_impl(submission_pk)
 
 
-@celery.shared_task(queue='deferred', acks_late=True)
+@celery.shared_task(queue='small_tasks', acks_late=True)
 def on_chord_error(request, exc, traceback):
     print('Error in deferred test case chord. '
           'This most likely means that a deferred test '
@@ -378,14 +380,6 @@ def _mark_submission_as_error(submission_pk, error_msg):
 
 @celery.shared_task
 def queue_submissions():
-    # TODO: integration test
-    # TODO: update this to support multiple courses in one system.
-    #       To do this, load all submissions and group by project. Then,
-    #       do a "round robin" submission queueing so that one project
-    #       doesn't hog all the grading resources. Do we need to limit the
-    #       number of queued submissions to the number of grading workers?
-    #       We essentially want to create the illusion that each project gets
-    #       an equal number of dedicated workers.
     with transaction.atomic():
         to_queue = list(ag_models.Submission.objects.select_for_update().filter(
             status=ag_models.Submission.GradingStatus.received).reverse())
@@ -393,8 +387,34 @@ def queue_submissions():
 
         for submission in to_queue:
             print('adding submission{} to queue for grading'.format(submission.pk))
-            submission.status = 'queued'
+            submission.status = ag_models.Submission.GradingStatus.queued
             submission.save()
-            grade_submission.apply_async([submission.pk], queue='submissions')
+            grade_submission.apply_async([submission.pk],
+                                         queue=_get_submission_queue_name(submission))
 
         print('queued {} submissions'.format(to_queue))
+
+
+@celery.shared_task(acks_late=True, autoretry_for=(Exception,))
+def register_project_queues(worker_names=None, project_pks=None):
+    from autograder.celery import app
+
+    if not worker_names:
+        worker_names = [worker_name for worker_name in app.control.inspect().active()
+                        if worker_name.startswith(settings.SUBMISSION_WORKER_PREFIX)]
+
+    print('worker names', worker_names)
+    if not worker_names:
+        return
+
+    if not project_pks:
+        project_pks = [project.pk for project in ag_models.Project.objects.all()]
+
+    print('project pks:', project_pks)
+    for pk in project_pks:
+        res = app.control.add_consumer('project{}'.format(pk), destination=worker_names)
+        print(res)
+
+
+def _get_submission_queue_name(submission: ag_models.Submission):
+    return 'project{}'.format(submission.submission_group.project_id)

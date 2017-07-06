@@ -145,8 +145,7 @@ CACHES = {
     },
 }
 
-# TODO: figure out dynamic import or just condense to one celery settings thing
-from autograder.settings.celery.production import *  # noqa
+from autograder.settings.celery_settings import *  # noqa
 
 TEMPLATES = [
     {

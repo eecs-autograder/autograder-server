@@ -270,7 +270,7 @@ void file2() {
         self.assertEqual(0, suite_res.setup_return_code)
         self.assertTrue(cmd_res.stdout_correct)
 
-    def test_regrade_submission(self, *args):
+    def test_run_grade_submission_on_already_graded_submission(self, *args):
         suite = obj_build.make_ag_test_suite(self.project)
         case = obj_build.make_ag_test_case(suite)
         cmd = obj_build.make_full_ag_test_command(case, cmd='printf hello')

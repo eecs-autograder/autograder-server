@@ -19,7 +19,7 @@ CELERY_RESULT_BACKEND = os.environ.get('AG_CELERY_RESULTS_BACKEND_URL',
                                        'redis://localhost:6379/0')
 CELERY_RESULT_PERSISTENT = True
 
-# Probably want to set some high max for this
+# Probably want to set some high max for this?
 # CELERYD_TASK_TIME_LIMIT =
 
 # Set this using the -c flag for the worker
@@ -31,7 +31,9 @@ CELERYBEAT_SCHEDULE = {
         'schedule': datetime.timedelta(
             seconds=int(os.environ.get('AG_SUBMISSION_LISTENER_INTERVAL', '5'))),
         'options': {
-            'queue': 'background_tasks'
+            'queue': 'periodic_tasks'
         }
     },
 }
+
+SUBMISSION_WORKER_PREFIX = 'submission_grader'

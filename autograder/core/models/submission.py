@@ -2,6 +2,7 @@ import fnmatch
 import os
 from typing import List, Iterable
 
+from django import dispatch
 from django.core import exceptions
 from django.core.cache import cache
 from django.core.files import File
@@ -27,7 +28,6 @@ def _get_submission_file_upload_to_dir(submission, filename):
 
 
 class _SubmissionManager(ag_model_base.AutograderModelManager):
-    @transaction.atomic()
     def validate_and_create(self, submitted_files, submission_group, timestamp=None, submitter=''):
         """
         This method override handles additional details required for
@@ -46,40 +46,36 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
         """
         if timestamp is None:
             timestamp = timezone.now()
-        submission = self.model(submission_group=submission_group,
-                                timestamp=timestamp,
-                                submitter=submitter)
-        # The submission needs to be saved so that a directory is
-        # created for it.
-        submission.save()
 
-        for file_ in submitted_files:
-            try:
-                core_ut.check_filename(file_.name)
-            except exceptions.ValidationError:
-                submission.discarded_files.append(file_.name)
-                continue
+        with transaction.atomic():
+            submission = self.model(submission_group=submission_group,
+                                    timestamp=timestamp,
+                                    submitter=submitter)
+            # The submission needs to be saved so that a directory is
+            # created for it.
+            submission.save()
 
-            if self.file_is_extra(submission, file_.name):
-                submission.discarded_files.append(file_.name)
-                continue
+            for file_ in submitted_files:
+                try:
+                    core_ut.check_filename(file_.name)
+                except exceptions.ValidationError:
+                    submission.discarded_files.append(file_.name)
+                    continue
 
-            submission.submitted_filenames.append(file_.name)
-            write_dest = _get_submission_file_upload_to_dir(
-                submission, file_.name)
-            with open(write_dest, 'wb') as f:
-                for chunk in file_.chunks():
-                    f.write(chunk)
+                if self.file_is_extra(submission, file_.name):
+                    submission.discarded_files.append(file_.name)
+                    continue
 
-        self.check_for_missing_files(submission)
+                submission.submitted_filenames.append(file_.name)
+                write_dest = _get_submission_file_upload_to_dir(
+                    submission, file_.name)
+                with open(write_dest, 'wb') as f:
+                    for chunk in file_.chunks():
+                        f.write(chunk)
 
-        submission.save()
-        ag_tests = submission.submission_group.project.autograder_test_cases.all()
-        AutograderTestCaseResult.objects.bulk_create([
-            AutograderTestCaseResult(test_case=test_case, submission=submission)
-            for test_case in ag_tests
-        ])
-        return submission
+            self.check_for_missing_files(submission)
+            submission.save()
+            return submission
 
     def check_for_missing_files(self, submission):
         submitted_filenames = submission.get_submitted_file_basenames()
@@ -232,13 +228,13 @@ class Submission(ag_model_base.AutograderModel):
 
     @property
     def is_past_daily_limit(self):
-        '''
+        """
         Whether this submission is past the daily submission limit in
         its 24 hour period.
         This value is computed dynamically, and therefore can change
         if other submissions in the same 24 hour period are marked
         or unmarked as counting towards the daily limit.
-        '''
+        """
         project = self.submission_group.project
         if project.submission_limit_per_day is None:
             return False
