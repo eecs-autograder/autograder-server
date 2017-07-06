@@ -193,6 +193,7 @@ class Project(AutograderModel):
                         'Soft closing time must be before hard closing time')})
 
     SERIALIZABLE_FIELDS = (
+        'pk',
         'name',
         'course',
         'visible_to_students',

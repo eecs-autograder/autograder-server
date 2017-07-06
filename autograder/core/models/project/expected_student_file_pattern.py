@@ -17,6 +17,7 @@ class ExpectedStudentFilePattern(AutograderModel):
         unique_together = ('pattern', 'project')
 
     SERIALIZABLE_FIELDS = (
+        'pk',
         'project',
         'pattern',
         'min_num_matches',

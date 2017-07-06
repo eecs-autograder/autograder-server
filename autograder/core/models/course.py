@@ -27,7 +27,7 @@ class Course(AutograderModel):
     Related object fields:
         projects -- The group of Projects that belong to this Course.
     """
-    SERIALIZABLE_FIELDS = ('name',)
+    SERIALIZABLE_FIELDS = ('pk', 'name',)
     EDITABLE_FIELDS = ('name',)
 
     name = ag_fields.ShortStringField(

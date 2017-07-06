@@ -40,7 +40,6 @@ class InterpretedAutograderTestCase(AutograderTestCaseBase):
 
         self.add_needed_files_to_sandbox(submission, autograder_sandbox)
 
-        # TODO: pull this "run one command and record results" part into a function?
         try:
             run_result = autograder_sandbox.run_command(
                 run_program_cmd,

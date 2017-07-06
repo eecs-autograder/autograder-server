@@ -10,6 +10,7 @@ class Notification(AutograderModel):
     recipient = models.ForeignKey(User, related_name='notifications')
 
     SERIALIZABLE_FIELDS = (
+        'pk',
         'timestamp',
         'message',
         'recipient',

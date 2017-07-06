@@ -46,6 +46,7 @@ class UploadedFile(AutograderModel):
     objects = UploadedFileManager()
 
     SERIALIZABLE_FIELDS = (
+        'pk',
         'project',
         'name',
         'size',
@@ -101,4 +102,4 @@ class UploadedFile(AutograderModel):
             return return_val
 
     def open(self, mode='r'):
-        return open(self.abspath)
+        return open(self.abspath, mode)

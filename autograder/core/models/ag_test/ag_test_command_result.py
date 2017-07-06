@@ -285,6 +285,7 @@ class AGTestCommandResult(AutograderModel):
                     self.stderr_points_possible)
 
         SERIALIZABLE_FIELDS = (
+            'pk',
             'ag_test_command_pk',
             'ag_test_command_name',
             'fdbk_settings',

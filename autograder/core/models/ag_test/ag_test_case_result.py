@@ -94,6 +94,7 @@ class AGTestCaseResult(AutograderModel):
             return result
 
         SERIALIZABLE_FIELDS = (
+            'pk',
             'ag_test_case_name',
             'ag_test_case_pk',
             'fdbk_settings',

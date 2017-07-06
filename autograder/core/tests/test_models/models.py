@@ -18,14 +18,14 @@ class _DummyToManyModel(AutograderModel):
 
     name = models.CharField(max_length=255)
 
-    SERIALIZABLE_FIELDS = ('name',)
+    SERIALIZABLE_FIELDS = ('pk', 'name',)
     EDITABLE_FIELDS = ('name',)
 
 
 class _DummyForeignAutograderModel(AutograderModel):
     name = models.CharField(max_length=255)
 
-    SERIALIZABLE_FIELDS = ('name', 'rev_foreign_key')
+    SERIALIZABLE_FIELDS = ('pk', 'name', 'rev_foreign_key')
     EDITABLE_FIELDS = ('name',)
 
 
@@ -75,6 +75,7 @@ class _DummyAutograderModel(AutograderModel):
         return AnEnum.egg
 
     SERIALIZABLE_FIELDS = (
+        'pk',
         'pos_num_val',
         'non_empty_str_val',
         'the_answer',

@@ -202,7 +202,6 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertIn('expected_stdout_source', cm.exception.message_dict)
         self.assertIn('expected_stderr_source', cm.exception.message_dict)
 
-    # TODO: add setting for max file size, enforce in UploadedFile
     def test_error_expected_output_text_too_large(self):
         too_much_text = 'A' * (constants.MAX_OUTPUT_LENGTH + 1)
         with self.assertRaises(exceptions.ValidationError) as cm:

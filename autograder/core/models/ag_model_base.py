@@ -9,7 +9,6 @@ import autograder.core.fields as ag_fields
 
 
 class _AutograderModelManagerMixin:
-    # TODO: Throw error if pk is in kwargs
     def validate_and_create(self, **kwargs) -> 'AutograderModel':
         """
         This method is a shortcut for constructing a model object,
@@ -96,10 +95,9 @@ class ToDictMixin:
         are serialized by accessing the .value attribute of the enum.
 
         The base class version of this function returns the value of
-        cls.SERIALIZABLE_FIELDS, which defaults to an empty tuple,
-        plus the tuple ('pk',).
+        cls.SERIALIZABLE_FIELDS, which defaults to an empty tuple.
         """
-        return cls.SERIALIZABLE_FIELDS + ('pk',)
+        return cls.SERIALIZABLE_FIELDS
 
     SERIALIZABLE_FIELDS = tuple()
 

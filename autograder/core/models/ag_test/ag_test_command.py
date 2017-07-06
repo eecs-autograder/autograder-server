@@ -316,6 +316,7 @@ class AGTestCommand(AutograderModel):
             raise exceptions.ValidationError(error_dict)
 
     SERIALIZABLE_FIELDS = (
+        'pk',
         'name',
         'ag_test_case',
         'cmd',

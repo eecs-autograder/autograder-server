@@ -115,6 +115,7 @@ class Submission(ag_model_base.AutograderModel):
         ordering = ['-pk']
 
     SERIALIZABLE_FIELDS = (
+        'pk',
         "submission_group",
         "timestamp",
         "submitter",
@@ -272,7 +273,6 @@ class Submission(ag_model_base.AutograderModel):
         if score is not None:
             return score
 
-        # TODO: one cache hit instead of a lot
         score = sum((result.basic_score for result in self.results.all()))
         cache.set(key, score, timeout=None)
         return score

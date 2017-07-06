@@ -208,6 +208,11 @@ def make_uploaded_file(project: ag_models.Project) -> ag_models.UploadedFile:
         project=project)
 
 
+def make_expected_student_pattern(project: ag_models.Project) -> ag_models.ExpectedStudentFilePattern:
+    return ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        project=project,
+        pattern='pattern' + get_unique_id())
+
 def make_group(num_members: int=1,
                members_role: ag_models.UserRole=ag_models.UserRole.student,
                project: ag_models.Project=None,

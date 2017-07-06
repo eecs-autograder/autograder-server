@@ -48,6 +48,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
             associated Project.
     """
     SERIALIZABLE_FIELDS = (
+        'pk',
         'project',
         'extended_due_date',
         'member_names',
