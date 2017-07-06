@@ -30,7 +30,6 @@ class HandgradingRubric(ag_models.AutogarderModel):
         on_delete=models.CASCADE)
 
 
-
 class Criterion(ag_models.AutograderModel):
     short_description = models.TextField()
 

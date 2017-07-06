@@ -195,3 +195,27 @@ class ShortStringField(models.CharField):
 
     def from_db_value(self, value, expression, connection, context):
         return self.to_python(value)
+
+
+class EnumField(models.TextField):
+    def __init__(self, enum_type: typing.Type[Enum], **kwargs):
+        self.enum_type = enum_type
+        super().__init__(**kwargs)
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs['enum_type'] = self.enum_type
+        return name, path, args, kwargs
+    def to_python(self, value):
+        if value is None:
+            return None
+        try:
+            return self.enum_type(value)
+        except ValueError:
+            raise ValidationError(
+                '"{}" is not a valid {}'.format(value, self.enum_type.__name__))
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
+    def get_prep_value(self, value):
+        if value is None:
+            return None
+        return value.value
