@@ -1,4 +1,5 @@
 import itertools
+from typing import Sequence
 
 import autograder.core.models as ag_models
 from autograder.core.models.copy_project_and_course import copy_project
@@ -8,7 +9,6 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 class CopyProjectTestCase(UnitTestBase):
     def test_copy_project(self):
-        self.maxDiff = None
         project = obj_build.make_project()
         proj_file1 = obj_build.make_uploaded_file(project)
         proj_file2 = obj_build.make_uploaded_file(project)
@@ -36,8 +36,8 @@ class CopyProjectTestCase(UnitTestBase):
         self.assertNotEqual(project.course, other_course)
 
         ignore_fields = ['pk', 'course', 'uploaded_files', 'expected_student_file_patterns']
-        self.assertEqual(_pop_many(project.to_dict(), *ignore_fields),
-                         _pop_many(new_project.to_dict(), *ignore_fields))
+        self.assertEqual(_pop_many(project.to_dict(), ignore_fields),
+                         _pop_many(new_project.to_dict(), ignore_fields))
 
 
         self.assertEqual(project.uploaded_files.count(), new_project.uploaded_files.count())
@@ -58,8 +58,8 @@ class CopyProjectTestCase(UnitTestBase):
                 new_project.expected_student_file_patterns.order_by('pattern')):
             self.assertNotEqual(old_pattern.pk, new_pattern.pk)
 
-            self.assertEqual(_pop_many(old_pattern.to_dict(), 'pk', 'project'),
-                             _pop_many(new_pattern.to_dict(), 'pk', 'project'))
+            self.assertEqual(_pop_many(old_pattern.to_dict(), ['pk', 'project']),
+                             _pop_many(new_pattern.to_dict(), ['pk', 'project']))
 
         old_suite_pks = {suite.pk for suite in project.ag_test_suites.all()}
         new_suite_pks = {suite.pk for suite in new_project.ag_test_suites.all()}
@@ -81,32 +81,36 @@ class CopyProjectTestCase(UnitTestBase):
 
         ignore_fields = ['pk', 'project', 'ag_test_suite', 'ag_test_case', 'ag_test_command']
         expected = _recursive_pop(
-            [suite.to_dict() for suite in project.ag_test_suites.all()], *ignore_fields)
+            [suite.to_dict() for suite in project.ag_test_suites.all()], ignore_fields)
         actual = _recursive_pop(
-            [suite.to_dict() for suite in new_project.ag_test_suites.all()], *ignore_fields)
+            [suite.to_dict() for suite in new_project.ag_test_suites.all()], ignore_fields)
         # print(expected)
         # print(actual)
         self.assertEqual(expected, actual)
 
-    def test_copy_project_new_name(self):
-        # project =
-        self.fail()
+    def test_copy_project_new_name_same_course(self):
+        project = obj_build.make_project()
+        name = 'steve'
+        new_project = copy_project(project, project.course, name)
+        self.assertEqual(new_project.course, project.course)
+        self.assertNotEqual(project, new_project)
+        self.assertEqual(name, new_project.name)
 
 
-def _pop_many(dict_: dict, *keys: str):
+def _pop_many(dict_: dict, keys: Sequence[str]):
     for key in keys:
         dict_.pop(key, None)
 
     return dict_
 
 
-def _recursive_pop(obj, *keys: str):
+def _recursive_pop(obj, keys: Sequence[str]):
     if isinstance(obj, dict):
-        return _pop_many(obj, keys)
+        _pop_many(obj, keys)
+        for value in obj.values():
+            _recursive_pop(value, keys)
     elif isinstance(obj, list):
         for item in obj:
             _recursive_pop(item, keys)
-
-        return obj
 
     return obj
