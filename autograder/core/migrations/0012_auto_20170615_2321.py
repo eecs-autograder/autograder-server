@@ -173,7 +173,7 @@ class Migration(migrations.Migration):
         migrations.RenameField(
             model_name='project',
             old_name='allow_submissions_from_non_enrolled_students',
-            new_name='visible_to_guests'
+            new_name='guests_can_submit'
         ),
         migrations.RenameField(
             model_name='project',
@@ -187,7 +187,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterField(
             model_name='project',
-            name='visible_to_guests',
+            name='guests_can_submit',
             field=models.BooleanField(default=False, help_text='By default, only admins, staff, and students\n            for a given Course can view and submit to its Projects.\n            When True, submissions will be accepted from guests\n            with the following caveats:\n                - Guests must be given a direct link to the project.\n                - When group work is allowed, guests can\n                only be in groups with other guests.'),
         ),
         migrations.AlterField(

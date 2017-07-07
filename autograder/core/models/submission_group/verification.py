@@ -40,7 +40,7 @@ def verify_users_have_same_enrollment_status(users, project,
                     "must consist of only staff users")})
         return
 
-    if not project.visible_to_guests:
+    if not project.guests_can_submit:
         if not num_enrolled or num_enrolled != len(users):
             raise exceptions.ValidationError({
                 error_dict_field_name: (

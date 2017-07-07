@@ -45,7 +45,7 @@ def can_view_project(
                 return False
 
             return (project.course.is_enrolled_student(request.user) or
-                    project.visible_to_guests)
+                    project.guests_can_submit)
 
     return CanViewProject
 

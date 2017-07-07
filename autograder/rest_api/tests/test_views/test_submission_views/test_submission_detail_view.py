@@ -80,7 +80,7 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
     def test_non_enrolled_view_submission_project_private_forbidden(self):
         submission = self.non_enrolled_submission(self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            visible_to_guests=False)
+            guests_can_submit=False)
         self.do_permission_denied_get_test(
             self.client, self.nobody, submission_url(submission))
         self.do_get_files_permission_denied_test_case(submission, self.nobody)
@@ -196,7 +196,7 @@ class RemoveFromQueueTestCase(test_data.Client,
     def test_non_enrolled_remove_from_queue_project_private_permission_denied(self):
         submission = self.non_enrolled_submission(self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            visible_to_guests=False)
+            guests_can_submit=False)
         self.do_permission_denied_remove_from_queue_test(
             submission, submission.submission_group.members.first())
 

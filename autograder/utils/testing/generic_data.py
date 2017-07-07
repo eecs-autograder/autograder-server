@@ -75,7 +75,7 @@ class Project(Course):
                     name='visible_public_project',
                     course=self.course,
                     visible_to_students=True,
-                    visible_to_guests=True))
+                    guests_can_submit=True))
 
         return self._visible_public_project
 
@@ -87,7 +87,7 @@ class Project(Course):
                     name='visible_private_project',
                     course=self.course,
                     visible_to_students=True,
-                    visible_to_guests=False))
+                    guests_can_submit=False))
 
         return self._visible_private_project
 
@@ -99,7 +99,7 @@ class Project(Course):
                     name='hidden_public_project',
                     course=self.course,
                     visible_to_students=False,
-                    visible_to_guests=True))
+                    guests_can_submit=True))
 
         return self._hidden_public_project
 
@@ -111,7 +111,7 @@ class Project(Course):
                     name='hidden_private_project',
                     course=self.course,
                     visible_to_students=False,
-                    visible_to_guests=False))
+                    guests_can_submit=False))
 
         return self._hidden_private_project
 

@@ -2,20 +2,25 @@ import itertools
 from typing import Sequence
 
 import autograder.core.models as ag_models
-from autograder.core.models.copy_project_and_course import copy_project
+from autograder.core.models.copy_project_and_course import copy_project, copy_course
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class CopyProjectTestCase(UnitTestBase):
     def test_copy_project(self):
-        project = obj_build.make_project()
+        # In new project, hide_ultimate_submission_fdbk should be set to True,
+        # visible_to_students should be set to False,
+        # and guests_can_submit should be set to False
+        project = obj_build.make_project(hide_ultimate_submission_fdbk=False,
+                                         visible_to_students=True)
         proj_file1 = obj_build.make_uploaded_file(project)
         proj_file2 = obj_build.make_uploaded_file(project)
         student_file1 = obj_build.make_expected_student_pattern(project)
         student_file2 = obj_build.make_expected_student_pattern(project)
 
-        suite1 = obj_build.make_ag_test_suite(project, project_files_needed=[proj_file1],                                              student_files_needed=[student_file1])
+        suite1 = obj_build.make_ag_test_suite(project, project_files_needed=[proj_file1],
+                                              student_files_needed=[student_file1])
         case1 = obj_build.make_ag_test_case(suite1)
         cmd1 = obj_build.make_full_ag_test_command(case1)
         cmd2 = obj_build.make_full_ag_test_command(case1, set_arbitrary_points=False)
@@ -30,15 +35,17 @@ class CopyProjectTestCase(UnitTestBase):
 
         other_course = obj_build.make_course()
         new_project = copy_project(project, other_course)
+        self.assertTrue(new_project.hide_ultimate_submission_fdbk)
+        self.assertFalse(new_project.visible_to_students)
 
         self.assertEqual(project.name, new_project.name)
         self.assertEqual(other_course, new_project.course)
         self.assertNotEqual(project.course, other_course)
 
         ignore_fields = ['pk', 'course', 'uploaded_files', 'expected_student_file_patterns']
-        self.assertEqual(_pop_many(project.to_dict(), ignore_fields),
-                         _pop_many(new_project.to_dict(), ignore_fields))
-
+        expected = _pop_many(project.to_dict(), ignore_fields)
+        expected.update({'visible_to_students': False, 'hide_ultimate_submission_fdbk': True})
+        self.assertEqual(expected, _pop_many(new_project.to_dict(), ignore_fields))
 
         self.assertEqual(project.uploaded_files.count(), new_project.uploaded_files.count())
         for old_file, new_file in itertools.zip_longest(
@@ -114,3 +121,22 @@ def _recursive_pop(obj, keys: Sequence[str]):
             _recursive_pop(item, keys)
 
     return obj
+
+
+class CopyCourseTestCase(UnitTestBase):
+    def test_copy_course(self):
+        proj1 = obj_build.make_project()
+        course = proj1.course
+        proj2 = obj_build.make_project(course)
+
+        name = 'stove'
+        new_course = copy_course(course, name)
+
+        self.assertEqual(name, new_course.name)
+
+        old_project_pks = {proj.pk for proj in course.projects.all()}
+        new_project_pks = {proj.pk for proj in new_course.projects.all()}
+        self.assertTrue(old_project_pks.isdisjoint(new_project_pks))
+
+        self.assertSetEqual({proj.name for proj in course.projects.all()},
+                            {proj.name for proj in new_course.projects.all()})

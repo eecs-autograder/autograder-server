@@ -86,7 +86,7 @@ class MiscSubmissionGroupTestCase(_SetUp, test_ut.UnitTestBase):
         other_project = obj_build.build_project(
             project_kwargs={
                 'max_group_size': 2,
-                'visible_to_guests': True})
+                'guests_can_submit': True})
 
         repeated_user = self.enrolled_group[0]
 
@@ -270,7 +270,7 @@ class GroupMembershipTestCase(_SetUp, test_ut.UnitTestBase):
             ag_models.SubmissionGroup.objects.validate_and_create(
                 members=mixed_group, project=self.project)
 
-        self.project.visible_to_guests = True
+        self.project.guests_can_submit = True
         self.project.save()
 
         with self.assertRaises(exceptions.ValidationError):
@@ -292,7 +292,7 @@ class GroupMembershipTestCase(_SetUp, test_ut.UnitTestBase):
                 members=self.non_enrolled_group, project=self.project)
 
     def test_no_exception_on_all_members_not_enrolled_and_unenrolled_allowed(self):
-        self.project.visible_to_guests = True
+        self.project.guests_can_submit = True
         self.project.save()
 
         group = ag_models.SubmissionGroup.objects.validate_and_create(

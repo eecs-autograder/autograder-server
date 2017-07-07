@@ -87,7 +87,7 @@ class SubmissionGroupInvitationSerializerTestCase(SerializerTestCase):
         project = obj_build.build_project(
             project_kwargs={
                 'max_group_size': 5,
-                'visible_to_guests': True})
+                'guests_can_submit': True})
         invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             obj_build.create_dummy_user(),
             obj_build.create_dummy_users(2),

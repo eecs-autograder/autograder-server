@@ -62,7 +62,7 @@ class RetrieveGroupTestCase(test_data.Client,
     def test_non_enrolled_view_group_project_private_permission_denied(self):
         group = self.non_enrolled_group(self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            visible_to_guests=False)
+            guests_can_submit=False)
         self.do_permission_denied_get_test(
             self.client, self.nobody, self.group_url(group))
 
@@ -250,7 +250,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
     def test_non_enrolled_get_ultimate_project_private_permission_denied(self):
         group = self.non_enrolled_group(self.visible_public_project)
         self.visible_public_project.validate_and_update(
-            visible_to_guests=False,
+            guests_can_submit=False,
             closing_time=self.past_closing_time,
             hide_ultimate_submission_fdbk=False)
         self.build_submissions(group)

@@ -224,7 +224,7 @@ def make_group(num_members: int=1,
         group_kwargs['members'] = create_dummy_users(num_members)
 
     if members_role == ag_models.UserRole.guest:
-        project.validate_and_update(visible_to_guests=True)
+        project.validate_and_update(guests_can_submit=True)
     elif members_role == ag_models.UserRole.student:
         project.course.enrolled_students.add(*group_kwargs['members'])
     elif members_role == ag_models.UserRole.staff:

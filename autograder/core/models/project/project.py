@@ -102,7 +102,7 @@ class Project(AutograderModel):
             not be able to send, accept, or reject group
             invitations.''')
 
-    visible_to_guests = models.BooleanField(
+    guests_can_submit = models.BooleanField(
         default=False,
         help_text='''By default, only admins, staff, and students
             for a given Course can view and submit to its Projects.
@@ -201,7 +201,7 @@ class Project(AutograderModel):
         'soft_closing_time',
         'disallow_student_submissions',
         'disallow_group_registration',
-        'visible_to_guests',
+        'guests_can_submit',
         'min_group_size',
         'max_group_size',
 
@@ -228,7 +228,7 @@ class Project(AutograderModel):
         'soft_closing_time',
         'disallow_student_submissions',
         'disallow_group_registration',
-        'visible_to_guests',
+        'guests_can_submit',
         'min_group_size',
         'max_group_size',
 

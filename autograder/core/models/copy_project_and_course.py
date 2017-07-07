@@ -12,6 +12,8 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
     new_project = ag_models.Project.objects.get(pk=project.pk)
     new_project.pk = None
     new_project.course = target_course
+    new_project.hide_ultimate_submission_fdbk = True
+    new_project.visible_to_students = False
     if new_project_name is not None:
         new_project.name = new_project_name
 
@@ -70,10 +72,11 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
 def copy_course(course: ag_models.Course, new_course_name: str):
     new_course = ag_models.Course.objects.get(pk=course.pk)
     new_course.pk = None
-    if new_course_name is not None:
-        new_course.name = new_course_name
+    new_course.name = new_course_name
 
     new_course.save()
 
     for project in course.projects.all():
         copy_project(project, new_course)
+
+    return new_course

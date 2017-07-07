@@ -35,7 +35,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertIsNone(new_project.soft_closing_time)
         self.assertFalse(new_project.disallow_student_submissions)
         self.assertFalse(new_project.disallow_group_registration)
-        self.assertFalse(new_project.visible_to_guests)
+        self.assertFalse(new_project.guests_can_submit)
         self.assertEqual(new_project.min_group_size, 1)
         self.assertEqual(new_project.max_group_size, 1)
 
@@ -67,7 +67,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'soft_closing_time': soft_closing_time,
             'disallow_student_submissions': True,
             'disallow_group_registration': True,
-            'visible_to_guests': True,
+            'guests_can_submit': True,
             'min_group_size': min_group_size,
             'max_group_size': max_group_size,
 
@@ -108,7 +108,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'soft_closing_time',
             'disallow_student_submissions',
             'disallow_group_registration',
-            'visible_to_guests',
+            'guests_can_submit',
             'min_group_size',
             'max_group_size',
 

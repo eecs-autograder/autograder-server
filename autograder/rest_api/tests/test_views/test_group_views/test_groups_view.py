@@ -43,7 +43,7 @@ class ListGroupsTestCase(_GroupsSetUp,
 
     def build_groups(self, project):
         project.validate_and_update(
-            visible_to_guests=True)
+            guests_can_submit=True)
         for user in self.admin, self.staff, self.enrolled, self.nobody:
             ag_models.SubmissionGroup.objects.validate_and_create(
                 project=project, members=[user])
@@ -70,7 +70,7 @@ class CreateGroupTestCase(_GroupsSetUp,
 
     def test_admin_create_non_enrolled_group(self):
         self.project.validate_and_update(
-            visible_to_guests=True)
+            guests_can_submit=True)
         args = {'member_names': ['not_enrolled1', 'not_enrolled2']}
         self.do_create_object_test(self.project.submission_groups,
                                    self.client, self.admin, self.url, args)
