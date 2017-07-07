@@ -1,7 +1,11 @@
+import csv
 import os
 import zipfile
 
 import io
+from typing import Sequence
+
+import itertools
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from django.core.urlresolvers import reverse
@@ -233,7 +237,11 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
             reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
-    def do_download_submissions_test(self, url, expected_submissions):
+    def test_error_submissions_not_finished_grading(self):
+        self.fail()
+
+    def do_download_submissions_test(self, url,
+                                     expected_submissions: Sequence[ag_models.Submission]):
         self.client.force_authenticate(self.admin)
 
         response = self.client.get(url)
@@ -259,14 +267,109 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
 
 
 class DownloadGradesTestCase(test_data.Client, UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.project = obj_build.make_project(
+            visible_to_students=True,
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
+        self.suite1 = obj_build.make_ag_test_suite(self.project)
+        self.suite1_case = obj_build.make_ag_test_case(self.suite1)
+        self.suite1_cmd = obj_build.make_full_ag_test_command(self.suite1_case)
+        self.suite2 = obj_build.make_ag_test_suite(self.project)
+        self.suite2_case = obj_build.make_ag_test_case(self.suite2)
+        self.suite2_cmd = obj_build.make_full_ag_test_command(self.suite2_case)
+
+        self.student_group1 = obj_build.make_group(project=self.project)
+        self.group1_submission1_best = obj_build.build_submission(submission_group=self.student_group1)
+        obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
+                                                      submission=self.group1_submission1_best)
+        obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
+                                                      submission=self.group1_submission1_best)
+        self.group1_submission2 = obj_build.build_submission(submission_group=self.student_group1)
+        obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
+                                                      submission=self.group1_submission2)
+        obj_build.make_incorrect_ag_test_command_result(self.suite2_cmd,
+                                                        submission=self.group1_submission2)
+
+        self.student_group2 = obj_build.make_group(num_members=3, project=self.project)
+        self.group2_submission1 = obj_build.build_submission(submission_group=self.student_group2)
+        obj_build.make_incorrect_ag_test_command_result(self.suite1_cmd,
+                                                        submission=self.group2_submission1)
+        obj_build.make_incorrect_ag_test_command_result(self.suite2_cmd,
+                                                        submission=self.group2_submission1)
+
+        self.staff_group = obj_build.make_group(members_role=ag_models.UserRole.staff)
+        self.staff_submission1 = obj_build.build_submission(submission_group=self.staff_group)
+        obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
+                                                      submission=self.staff_submission1)
+        obj_build.make_correct_ag_test_command_result(self.suite2_cmd,
+                                                      submission=self.staff_submission1)
+
+        self.no_submissions_group = obj_build.make_group(project=self.project)
+
+        [self.admin] = obj_build.make_admin_users(self.project.course, 1)
+
     def test_download_all_scores(self):
-        self.fail()
+        url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
+        self.do_download_scores_test(
+            url, self.project,
+            [self.group1_submission1_best, self.group1_submission2, self.group2_submission1])
 
     def test_download_ultimate_submission_scores(self):
         self.fail()
 
-    def test_include_staff(self):
+    def test_include_staff_all_scores(self):
         self.fail()
 
-    def test_non_admin_permission_denied():
+    def test_include_staff_ultimate_submission_scores(self):
+        self.fail()
+
+    def test_non_admin_permission_denied(self):
+        self.fail()
+
+    def test_error_submissions_not_finished_grading(self):
+        self.fail()
+
+    def do_download_scores_test(self, url, project: ag_models.Project,
+                                expected_submissions: Sequence[ag_models.Submission]):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        expected_headers = ['Username {}'.format(i + 1) for i in range(project.max_group_size)]
+        expected_headers.append('Timestamp')
+        expected_headers += ['Total', 'Total Possible']
+        for suite in project.ag_test_suites.all():
+            expected_headers += ['{} Total'.format(suite.name),
+                                 '{} Total Possible'.format(suite.name)]
+            for case in suite.ag_test_cases.all():
+                expected_headers.append('{} - {}'.format(suite.name, case.name))
+
+        expected_result = []
+        for submission in expected_submissions:
+            values = []
+            user_padding_len = project.max_group_size - submission.submission_group.members.count()
+            usernames = itertools.chain(sorted(submission.submission_group.member_names),
+                                        itertools.repeat('', user_padding_len))
+            values.append(list(usernames))
+            values.append(submission.timestamp.isoformat())
+
+            fdbk = submission.get_fdbk(ag_models.FeedbackCategory.max)
+            values += [fdbk.total_points, fdbk.total_points_possible]
+            for suite_result in fdbk.ag_test_suite_results:
+                suite_fdbk = suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+                values += [suite_fdbk.total_points, suite_fdbk.total_points_possible]
+                for case_result in suite_fdbk.ag_test_case_results:
+                    values.append(
+                        case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+
+            self.assertEqual(len(expected_headers), len(values))
+            expected_result.append(dict(zip(expected_headers, values)))
+
+        file_ = io.StringIO(b''.join(response.streaming_content).decode())
+        actual_result = list(csv.DictReader(file_))
+        self.assertCountEqual(expected_result, actual_result)
+
         self.fail()
