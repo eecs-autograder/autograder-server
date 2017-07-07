@@ -1,3 +1,9 @@
+import os
+import tempfile
+import zipfile
+
+import io
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from django.core.urlresolvers import reverse
 
@@ -7,11 +13,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.core.models as ag_models
 
 
-class _ProjectSetUp(test_data.Client, test_data.Project):
-    pass
-
-
-class RetrieveProjectTestCase(_ProjectSetUp, UnitTestBase):
+class RetrieveProjectTestCase(test_data.Client, test_data.Project, UnitTestBase):
     def test_admin_get_project(self):
         for project in self.all_projects:
             response = self.do_valid_load_project_test(
@@ -62,7 +64,7 @@ class RetrieveProjectTestCase(_ProjectSetUp, UnitTestBase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class UpdateProjectTestCase(_ProjectSetUp, UnitTestBase):
+class UpdateProjectTestCase(test_data.Client, test_data.Project, UnitTestBase):
     def setUp(self):
         super().setUp()
         self.url = self.get_proj_url(self.project)
@@ -109,7 +111,7 @@ class UpdateProjectTestCase(_ProjectSetUp, UnitTestBase):
             self.assertEqual(original_name, self.project.name)
 
 
-class NumQueuedSubmissionsTestCase(_ProjectSetUp, UnitTestBase):
+class NumQueuedSubmissionsTestCase(test_data.Client, test_data.Project, UnitTestBase):
     def test_get_num_queued_submissions(self):
         course = obj_build.build_course()
         proj_args = {
@@ -161,3 +163,90 @@ class NumQueuedSubmissionsTestCase(_ProjectSetUp, UnitTestBase):
                     kwargs={'pk': with_submits2.pk}))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(3, response.data)
+
+
+class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.files = [
+            SimpleUploadedFile('file1.txt', b'adsfadslkfajsdkfj'),
+            SimpleUploadedFile('file2.txt', b'asdqeirueinfaksdnfaadf'),
+            SimpleUploadedFile('file3.txt', b'cmxcnajsddhadf')
+        ]
+
+        self.files_by_name = dict(zip([file_.name for file_ in self.files], self.files))
+
+        self.project = obj_build.make_project(visible_to_students=True)
+        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            project=self.project, pattern='*', max_num_matches=3)
+        self.student_group1 = obj_build.make_group(project=self.project)
+        self.submission1 = obj_build.build_submission(submitted_files=self.files[:1],
+                                                      submission_group=self.student_group1)
+        self.submission2 = obj_build.build_submission(submitted_files=self.files[:2],
+                                                      submission_group=self.student_group1)
+
+        self.student_group2 = obj_build.make_group(num_members=3, project=self.project)
+        self.submission3 = obj_build.build_submission(submitted_files=self.files[-1:],
+                                                      submission_group=self.student_group2)
+
+        self.staff_group = obj_build.make_group(members_role=ag_models.UserRole.staff)
+        self.submission4 = obj_build.build_submission(submitted_files=self.files,
+                                                      submission_group=self.staff_group)
+
+        self.no_submissions_group = obj_build.make_group(project=self.project)
+
+        [self.admin] = obj_build.make_admin_users(self.project.course, 1)
+
+        self.non_staff_groups = [self.student_group1, self.student_group2]
+        self.all_groups = [
+            self.student_group1, self.student_group2, self.staff_group, self.no_submissions_group
+        ]
+
+    def test_download_all_files(self):
+        self.maxDiff = None
+        url = reverse('project-all-submission-files', kwargs={'pk': self.project.pk})
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        expected_filenames = []
+        for submission in [self.submission1, self.submission2, self.submission3]:
+            for filename in submission.submitted_filenames:
+                expected_filenames.append(
+                    '{}_{}/{}-{}/{}'.format(
+                        self.project.course.name, self.project.name,
+                        '_'.join(sorted(submission.submission_group.member_names)),
+                        submission.timestamp.isoformat(), filename))
+
+        result = io.BytesIO(b''.join(response.streaming_content))
+        with zipfile.ZipFile(result) as z:
+            self.assertCountEqual(expected_filenames, [info.filename for info in z.infolist()])
+            for info in z.infolist():
+                with z.open(info.filename) as f:
+                    expected_file = self.files_by_name[os.path.basename(info.filename)]
+                    expected_file.open()
+                    self.assertEqual(expected_file.read(), f.read())
+
+    def test_download_ultimate_submission_files(self):
+        self.fail()
+
+    def test_include_staff(self):
+        self.fail()
+
+    def test_non_admin_permission_denied(self):
+        self.fail()
+
+
+class DownloadGradesTestCase(test_data.Client, UnitTestBase):
+    def test_download_all_scores(self):
+        self.fail()
+
+    def test_download_ultimate_submission_scores(self):
+        self.fail()
+
+    def test_include_staff(self):
+        self.fail()
+
+    def test_non_admin_permission_denied():
+        self.fail()
