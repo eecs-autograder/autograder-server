@@ -180,38 +180,68 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
         ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
             project=self.project, pattern='*', max_num_matches=3)
         self.student_group1 = obj_build.make_group(project=self.project)
-        self.submission1 = obj_build.build_submission(submitted_files=self.files[:1],
-                                                      submission_group=self.student_group1)
-        self.submission2 = obj_build.build_submission(submitted_files=self.files[:2],
-                                                      submission_group=self.student_group1)
+        self.group1_submission1 = obj_build.build_submission(submitted_files=self.files[:1],
+                                                             submission_group=self.student_group1)
+        self.group1_submission2 = obj_build.build_submission(submitted_files=self.files[:2],
+                                                             submission_group=self.student_group1)
 
         self.student_group2 = obj_build.make_group(num_members=3, project=self.project)
-        self.submission3 = obj_build.build_submission(submitted_files=self.files[-1:],
-                                                      submission_group=self.student_group2)
+        self.group2_submission1 = obj_build.build_submission(submitted_files=self.files[-1:],
+                                                             submission_group=self.student_group2)
 
         self.staff_group = obj_build.make_group(members_role=ag_models.UserRole.staff)
-        self.submission4 = obj_build.build_submission(submitted_files=self.files,
-                                                      submission_group=self.staff_group)
+        self.staff_submission1 = obj_build.build_submission(submitted_files=self.files,
+                                                            submission_group=self.staff_group)
 
         self.no_submissions_group = obj_build.make_group(project=self.project)
 
         [self.admin] = obj_build.make_admin_users(self.project.course, 1)
 
-        self.non_staff_groups = [self.student_group1, self.student_group2]
-        self.all_groups = [
-            self.student_group1, self.student_group2, self.staff_group, self.no_submissions_group
-        ]
-
     def test_download_all_files(self):
-        self.maxDiff = None
         url = reverse('project-all-submission-files', kwargs={'pk': self.project.pk})
+        self.do_download_submissions_test(
+            url, [self.group1_submission1, self.group1_submission2, self.group2_submission1])
+
+    def test_download_ultimate_submission_files(self):
+        url = reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk})
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+        most_recent_submissions = [self.group1_submission2, self.group2_submission1]
+        self.do_download_submissions_test(url, most_recent_submissions)
+
+    def test_all_files_include_staff(self):
+        url = reverse('project-all-submission-files', kwargs={'pk': self.project.pk})
+        self.do_download_submissions_test(
+            url, [self.group1_submission1, self.group1_submission2,
+                  self.group2_submission1, self.staff_submission1])
+
+    def test_ultimate_submission_files_include_staff(self):
+        url = reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk})
+        staff_submission2 = obj_build.build_submission(submitted_files=self.files[:-1],
+                                                       submission_group=self.staff_group)
+        most_recent_submissions = [
+            self.group1_submission2, self.group2_submission1, staff_submission2]
+        self.do_download_submissions_test(url, most_recent_submissions)
+
+    def test_non_admin_permission_denied(self):
+        [staff] = obj_build.make_staff_users(self.project.course, 1)
+        self.client.force_authenticate(staff)
+        response = self.client.get(
+            reverse('project-all-submission-files', kwargs={'pk': self.project.pk}))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        response = self.client.get(
+            reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk}))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def do_download_submissions_test(self, url, expected_submissions):
         self.client.force_authenticate(self.admin)
 
         response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         expected_filenames = []
-        for submission in [self.submission1, self.submission2, self.submission3]:
+        for submission in expected_submissions:
             for filename in submission.submitted_filenames:
                 expected_filenames.append(
                     '{}_{}/{}-{}/{}'.format(
@@ -227,15 +257,6 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
                     expected_file = self.files_by_name[os.path.basename(info.filename)]
                     expected_file.open()
                     self.assertEqual(expected_file.read(), f.read())
-
-    def test_download_ultimate_submission_files(self):
-        self.fail()
-
-    def test_include_staff(self):
-        self.fail()
-
-    def test_non_admin_permission_denied(self):
-        self.fail()
 
 
 class DownloadGradesTestCase(test_data.Client, UnitTestBase):
