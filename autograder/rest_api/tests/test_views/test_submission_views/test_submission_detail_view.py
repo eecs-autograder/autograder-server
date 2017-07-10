@@ -297,17 +297,17 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.student_group1 = obj_build.make_group(project=self.project)
         self.student1 = self.student_group1.members.first()
 
-        self.student_group1_normal_submission = obj_build.build_submission(
+        self.student_group1_normal_submission = obj_build.build_finished_submission(
             submission_group=self.student_group1)
         self.student1_normal_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group1_normal_submission)
 
-        self.student_group1_best_submission = obj_build.build_submission(
+        self.student_group1_best_submission = obj_build.build_finished_submission(
             submission_group=self.student_group1)
         self.student1_best_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group1_best_submission)
 
-        self.student_group1_past_limit_submission = obj_build.build_submission(
+        self.student_group1_past_limit_submission = obj_build.build_finished_submission(
             submission_group=self.student_group1)
         self.student1_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group1_past_limit_submission)
@@ -324,17 +324,17 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             project=self.project, members_role=ag_models.UserRole.staff)
         self.staff = self.staff_group.members.first()
 
-        self.staff_normal_submission = obj_build.build_submission(
+        self.staff_normal_submission = obj_build.build_finished_submission(
             submission_group=self.staff_group)
         self.staff_normal_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_normal_submission)
 
-        self.staff_best_submission = obj_build.build_submission(
+        self.staff_best_submission = obj_build.build_finished_submission(
             submission_group=self.staff_group)
         self.staff_best_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_best_submission)
 
-        self.staff_past_limit_submission = obj_build.build_submission(
+        self.staff_past_limit_submission = obj_build.build_finished_submission(
             submission_group=self.staff_group)
         self.staff_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_past_limit_submission)
