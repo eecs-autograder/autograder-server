@@ -48,21 +48,24 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
         ultimate_bests = get_ultimate_submissions(self.project, *group_pks)
         self.assertCountEqual(expected_bests, ultimate_bests)
 
-    # def test_benchmark_lots_of_data(self):
-    #     self.prepare_data(
-    #         self.project, num_suites=0,
-    #         num_groups=50, num_other_submissions=10)
-    #     print('prepared data')
-    #
-    #     ultimate_most_recents = get_ultimate_submissions(self.project)
-    #     with Timer('Getting most recent submissions'):
-    #         list(ultimate_most_recents)
-    #
-    #     self.project.validate_and_update(
-    #         ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
-    #     ultimate_bests = get_ultimate_submissions(self.project)
-    #     with Timer('Getting best submissions'):
-    #         list(ultimate_bests)
+    def test_get_ultimate_only_finished_grading_status_considered(self):
+        group = obj_build.make_group(project=self.project)
+        ultimate_submission = obj_build.build_finished_submission(submission_group=group)
+        non_considered_statuses = filter(
+            lambda val: val != ag_models.Submission.GradingStatus.finished_grading,
+            ag_models.Submission.GradingStatus.values)
+        for grading_status in non_considered_statuses:
+            obj_build.build_submission(submission_group=group, status=grading_status)
+
+        self.assertEqual(
+            1,
+            ag_models.Submission.objects.filter(
+                status=ag_models.Submission.GradingStatus.finished_grading).count())
+
+        for ultimate_submission_policy in ag_models.UltimateSubmissionPolicy:
+            self.project.validate_and_update(ultimate_submission_policy=ultimate_submission_policy)
+            self.assertSequenceEqual([ultimate_submission],
+                                     list(get_ultimate_submissions(self.project)))
 
     class GroupAndSubmissionData:
         def __init__(self, group: ag_models.SubmissionGroup,
@@ -94,16 +97,16 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             sys.stdout.write('\rBuilding group {}'.format(i))
             sys.stdout.flush()
             group = obj_build.make_group(project=project)
-            best_sub = obj_build.build_submission(submission_group=group)
+            best_sub = obj_build.build_finished_submission(submission_group=group)
             for cmd in cmds:
                 obj_build.make_correct_ag_test_command_result(cmd, submission=best_sub)
 
             for j in range(num_other_submissions):
-                sub = obj_build.build_submission(submission_group=group)
+                sub = obj_build.build_finished_submission(submission_group=group)
                 for cmd in cmds:
                     obj_build.make_incorrect_ag_test_command_result(cmd, submission=sub)
 
-            most_recent = obj_build.build_submission(submission_group=group)
+            most_recent = obj_build.build_finished_submission(submission_group=group)
             for cmd in cmds:
                 obj_build.make_incorrect_ag_test_command_result(cmd, submission=most_recent)
 

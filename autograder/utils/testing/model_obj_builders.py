@@ -185,6 +185,11 @@ def build_submission(**submission_kwargs) -> ag_models.Submission:
     return submission
 
 
+def build_finished_submission(**submission_kwargs) -> ag_models.Submission:
+    return build_submission(status=ag_models.Submission.GradingStatus.finished_grading,
+                            **submission_kwargs)
+
+
 def make_course(**kwargs):
     if 'name' not in kwargs:
         kwargs['name'] = 'course{}'.format(get_unique_id())

@@ -1,14 +1,13 @@
 import csv
 import os
-import tempfile
 import zipfile
 
 import io
-from typing import Sequence
+from typing import Sequence, Iterable
 
 from django.http import FileResponse
 from django.http import StreamingHttpResponse
-from rest_framework import viewsets, mixins, permissions, decorators, response
+from rest_framework import viewsets, mixins, permissions, decorators, response, exceptions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -42,6 +41,7 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),  # type: 
         permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def all_submission_files(self, *args, **kwargs):
         project = self.get_object()  # type: ag_models.Project
+        self._check_no_pending_submissions(project)
         groups = self._get_groups(project)
         submissions = ag_models.Submission.objects.filter(submission_group__in=groups)
         return FileResponse(self._make_submission_archive(project, submissions))
@@ -50,6 +50,7 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),  # type: 
         permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def ultimate_submission_files(self, *args, **kwargs):
         project = self.get_object()
+        self._check_no_pending_submissions(project)
         groups = self._get_groups(project)
         submissions = get_ultimate_submissions(project, *(group.pk for group in groups))
         return FileResponse(self._make_submission_archive(project, submissions))
@@ -74,28 +75,53 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),  # type: 
         permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def all_submission_scores(self, *args, **kwargs):
         project = self.get_object()  # type: ag_models.Project
+        self._check_no_pending_submissions(project)
         groups = self._get_groups(project)
-        submissions = ag_models.Submission.objects.filter(submission_group__in=groups)
+        submissions = ag_models.Submission.objects.filter(
+            submission_group__in=groups,
+            status=ag_models.Submission.GradingStatus.finished_grading)
 
-        psuedo_buffer = _Echo()
-        writer = csv.writer(psuedo_buffer)
-        response = StreamingHttpResponse((writer.writerow(row) for row in
-                                          self._make_scores_csv(project, submissions)),
-                                         content_type="text/csv")
-        response['Content-Disposition'] = 'attachment; filename="fixme.csv"'
-        return response
+        return self._make_csv_response(project, submissions)
 
     @decorators.detail_route(permission_classes=[
         permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def ultimate_submission_scores(self, *args, **kwargs):
         project = self.get_object()  # type: ag_models.Project
+        self._check_no_pending_submissions(project)
+        groups = self._get_groups(project)
+        submissions = get_ultimate_submissions(project, *(group.pk for group in groups))
 
-    def _make_scores_csv(self, project, submissions) -> io.StringIO:
+        return self._make_csv_response(project, submissions)
+
+    def _check_no_pending_submissions(self, project):
+        num_pending_submissions = ag_models.Submission.objects.filter(
+            submission_group__project=project
+        ).exclude(
+            status=ag_models.Submission.GradingStatus.finished_grading
+        ).exclude(
+            status=ag_models.Submission.GradingStatus.removed_from_queue
+        ).exclude(status=ag_models.Submission.GradingStatus.error).count()
+        if num_pending_submissions:
+            raise exceptions.ValidationError(
+                'You should wait for all submissions to finish before downloading results.')
+
+    def _make_csv_response(self, project, submissions):
+        psuedo_buffer = _Echo()
+        writer = csv.writer(psuedo_buffer)
+        streaming_response = StreamingHttpResponse(
+            (writer.writerow(row) for row in self._generate_scores_csv_rows(project, submissions)),
+            content_type="text/csv")
+        streaming_response['Content-Disposition'] = (
+            'attachment; filename="{} - {} - Scores.csv"'.format(project.course.name, project.name)
+        )
+        return streaming_response
+
+    def _generate_scores_csv_rows(self, project, submissions) -> io.StringIO:
         username_headers = ['Username {}'.format(i + 1) for i in range(project.max_group_size)]
-        row_headers = username_headers + ['Timestamp', 'Total Points', 'Total Points Possible']
+        row_headers = username_headers + ['Timestamp', 'Total', 'Total Possible']
         for suite in project.ag_test_suites.all():
-            row_headers += ['{} Total Points'.format(suite.name),
-                            '{} Total Points Possible'.format(suite.name)]
+            row_headers += ['{} Total'.format(suite.name),
+                            '{} Total Possible'.format(suite.name)]
             row_headers += ['{} - {}'.format(suite.name, case.name)
                             for case in suite.ag_test_cases.all()]
 
@@ -125,7 +151,8 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),  # type: 
         if not include_staff:
             groups = filter(
                 lambda group: not project.course.is_course_staff(group.members.first()), groups)
-        return list(groups)
+        groups = list(groups)
+        return groups
 
 
 class _Echo(object):

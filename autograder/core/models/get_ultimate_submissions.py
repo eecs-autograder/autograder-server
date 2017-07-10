@@ -1,13 +1,19 @@
 import warnings
 from typing import Sequence
 
+from django.db.models import Prefetch
+
 from .project import Project, UltimateSubmissionPolicy
 from .ag_test.feedback_category import FeedbackCategory
 from .submission import Submission
 
 
 def get_ultimate_submissions(project: Project, *group_pks) -> Sequence[Submission]:
-    groups = project.submission_groups.prefetch_related('submissions').all()
+    groups = project.submission_groups.prefetch_related(
+        Prefetch(
+            'submissions',
+            queryset=Submission.objects.filter(
+                status=Submission.GradingStatus.finished_grading))).all()
     if group_pks:
         groups = groups.filter(pk__in=group_pks)
 

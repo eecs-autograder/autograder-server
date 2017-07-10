@@ -171,6 +171,11 @@ class NumQueuedSubmissionsTestCase(test_data.Client, test_data.Project, UnitTest
 class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
     def setUp(self):
         super().setUp()
+
+        # This submission that belongs to another project shouldn't
+        # prevent us from downloading files for our project.
+        obj_build.build_submission(status=ag_models.Submission.GradingStatus.being_graded)
+
         self.files = [
             SimpleUploadedFile('file1.txt', b'adsfadslkfajsdkfj'),
             SimpleUploadedFile('file2.txt', b'asdqeirueinfaksdnfaadf'),
@@ -179,22 +184,30 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
 
         self.files_by_name = dict(zip([file_.name for file_ in self.files], self.files))
 
-        self.project = obj_build.make_project(visible_to_students=True)
+        max_group_size = 3
+        self.project = obj_build.make_project(visible_to_students=True,
+                                              max_group_size=max_group_size)
         ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
             project=self.project, pattern='*', max_num_matches=3)
         self.student_group1 = obj_build.make_group(project=self.project)
-        self.group1_submission1 = obj_build.build_submission(submitted_files=self.files[:1],
-                                                             submission_group=self.student_group1)
-        self.group1_submission2 = obj_build.build_submission(submitted_files=self.files[:2],
-                                                             submission_group=self.student_group1)
+        self.group1_submission1 = obj_build.build_finished_submission(
+            submitted_files=self.files[:1],
+            submission_group=self.student_group1)
+        self.group1_submission2 = obj_build.build_finished_submission(
+            submitted_files=self.files[:2],
+            submission_group=self.student_group1)
 
-        self.student_group2 = obj_build.make_group(num_members=3, project=self.project)
-        self.group2_submission1 = obj_build.build_submission(submitted_files=self.files[-1:],
-                                                             submission_group=self.student_group2)
+        self.student_group2 = obj_build.make_group(num_members=max_group_size,
+                                                   project=self.project)
+        self.group2_submission1 = obj_build.build_finished_submission(
+            submitted_files=self.files[-1:],
+            submission_group=self.student_group2)
 
-        self.staff_group = obj_build.make_group(members_role=ag_models.UserRole.staff)
-        self.staff_submission1 = obj_build.build_submission(submitted_files=self.files,
-                                                            submission_group=self.staff_group)
+        self.staff_group = obj_build.make_group(project=self.project,
+                                                members_role=ag_models.UserRole.staff)
+        self.staff_submission1 = obj_build.build_finished_submission(
+            submitted_files=self.files,
+            submission_group=self.staff_group)
 
         self.no_submissions_group = obj_build.make_group(project=self.project)
 
@@ -214,14 +227,17 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
 
     def test_all_files_include_staff(self):
         url = reverse('project-all-submission-files', kwargs={'pk': self.project.pk})
+        url += '?include_staff=true'
         self.do_download_submissions_test(
             url, [self.group1_submission1, self.group1_submission2,
                   self.group2_submission1, self.staff_submission1])
 
     def test_ultimate_submission_files_include_staff(self):
         url = reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk})
-        staff_submission2 = obj_build.build_submission(submitted_files=self.files[:-1],
-                                                       submission_group=self.staff_group)
+        url += '?include_staff=true'
+        staff_submission2 = obj_build.build_finished_submission(
+            submitted_files=self.files[:-1],
+            submission_group=self.staff_group)
         most_recent_submissions = [
             self.group1_submission2, self.group2_submission1, staff_submission2]
         self.do_download_submissions_test(url, most_recent_submissions)
@@ -237,8 +253,20 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
             reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_error_submissions_not_finished_grading(self):
-        self.fail()
+    def test_error_submissions_not_finished_grading_removed_or_error(self):
+        self.client.force_authenticate(self.admin)
+        not_finished = obj_build.build_submission(submission_group=self.student_group2)
+        for grading_status in ag_models.Submission.GradingStatus.active_statuses:
+            not_finished.status = grading_status
+            not_finished.save()
+
+            response = self.client.get(
+                reverse('project-all-submission-files', kwargs={'pk': self.project.pk}))
+            self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+            response = self.client.get(
+                reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk}))
+            self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
     def do_download_submissions_test(self, url,
                                      expected_submissions: Sequence[ag_models.Submission]):
@@ -270,9 +298,16 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
     def setUp(self):
         super().setUp()
 
+        # This submission that belongs to another project shouldn't
+        # prevent us from downloading grades for our project.
+        obj_build.build_submission(status=ag_models.Submission.GradingStatus.being_graded)
+
+        max_group_size = 3
         self.project = obj_build.make_project(
             visible_to_students=True,
-            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best,
+            max_group_size=max_group_size
+        )
         self.suite1 = obj_build.make_ag_test_suite(self.project)
         self.suite1_case = obj_build.make_ag_test_case(self.suite1)
         self.suite1_cmd = obj_build.make_full_ag_test_command(self.suite1_case)
@@ -281,26 +316,32 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
         self.suite2_cmd = obj_build.make_full_ag_test_command(self.suite2_case)
 
         self.student_group1 = obj_build.make_group(project=self.project)
-        self.group1_submission1_best = obj_build.build_submission(submission_group=self.student_group1)
+        self.group1_submission1_best = obj_build.build_finished_submission(
+            submission_group=self.student_group1)
         obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
                                                       submission=self.group1_submission1_best)
         obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
                                                       submission=self.group1_submission1_best)
-        self.group1_submission2 = obj_build.build_submission(submission_group=self.student_group1)
+        self.group1_submission2 = obj_build.build_finished_submission(
+            submission_group=self.student_group1)
         obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
                                                       submission=self.group1_submission2)
         obj_build.make_incorrect_ag_test_command_result(self.suite2_cmd,
                                                         submission=self.group1_submission2)
 
-        self.student_group2 = obj_build.make_group(num_members=3, project=self.project)
-        self.group2_submission1 = obj_build.build_submission(submission_group=self.student_group2)
+        self.student_group2 = obj_build.make_group(num_members=max_group_size,
+                                                   project=self.project)
+        self.group2_only_submission = obj_build.build_finished_submission(
+            submission_group=self.student_group2)
         obj_build.make_incorrect_ag_test_command_result(self.suite1_cmd,
-                                                        submission=self.group2_submission1)
+                                                        submission=self.group2_only_submission)
         obj_build.make_incorrect_ag_test_command_result(self.suite2_cmd,
-                                                        submission=self.group2_submission1)
+                                                        submission=self.group2_only_submission)
 
-        self.staff_group = obj_build.make_group(members_role=ag_models.UserRole.staff)
-        self.staff_submission1 = obj_build.build_submission(submission_group=self.staff_group)
+        self.staff_group = obj_build.make_group(project=self.project,
+                                                members_role=ag_models.UserRole.staff)
+        self.staff_submission1 = obj_build.build_finished_submission(
+            submission_group=self.staff_group)
         obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
                                                       submission=self.staff_submission1)
         obj_build.make_correct_ag_test_command_result(self.suite2_cmd,
@@ -314,22 +355,70 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
         url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
         self.do_download_scores_test(
             url, self.project,
-            [self.group1_submission1_best, self.group1_submission2, self.group2_submission1])
+            [self.group1_submission1_best, self.group1_submission2, self.group2_only_submission])
+
+    def test_download_all_scores_non_finished_grading_not_included(self):
+        obj_build.build_submission(
+            submission_group=self.student_group2,
+            status=ag_models.Submission.GradingStatus.removed_from_queue)
+        obj_build.build_submission(
+            submission_group=self.student_group2,
+            status=ag_models.Submission.GradingStatus.error)
+        url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
+        self.assertEqual(2, ag_models.Submission.objects.filter(
+            submission_group__project=self.project
+        ).exclude(
+            status=ag_models.Submission.GradingStatus.finished_grading).count())
+        self.do_download_scores_test(
+            url, self.project,
+            [self.group1_submission1_best, self.group1_submission2, self.group2_only_submission])
 
     def test_download_ultimate_submission_scores(self):
-        self.fail()
+        url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
+        self.do_download_scores_test(
+            url, self.project,
+            [self.group1_submission1_best, self.group2_only_submission])
 
     def test_include_staff_all_scores(self):
-        self.fail()
+        url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
+        url += '?include_staff=true'
+        self.do_download_scores_test(
+            url, self.project,
+            [self.group1_submission1_best, self.group1_submission2,
+             self.group2_only_submission, self.staff_submission1])
 
     def test_include_staff_ultimate_submission_scores(self):
-        self.fail()
+        url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
+        url += '?include_staff=true'
+        self.do_download_scores_test(
+            url, self.project,
+            [self.group1_submission1_best, self.group2_only_submission, self.staff_submission1])
 
     def test_non_admin_permission_denied(self):
-        self.fail()
+        [staff] = obj_build.make_staff_users(self.project.course, 1)
+        self.client.force_authenticate(staff)
+        response = self.client.get(
+            reverse('project-all-submission-scores', kwargs={'pk': self.project.pk}))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_error_submissions_not_finished_grading(self):
-        self.fail()
+        response = self.client.get(
+            reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk}))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_error_submissions_not_finished_grading_removed_or_error(self):
+        self.client.force_authenticate(self.admin)
+        not_finished = obj_build.build_submission(submission_group=self.student_group2)
+        for grading_status in ag_models.Submission.GradingStatus.active_statuses:
+            not_finished.status = grading_status
+            not_finished.save()
+
+            response = self.client.get(
+                reverse('project-all-submission-scores', kwargs={'pk': self.project.pk}))
+            self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+            response = self.client.get(
+                reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk}))
+            self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
     def do_download_scores_test(self, url, project: ag_models.Project,
                                 expected_submissions: Sequence[ag_models.Submission]):
@@ -353,17 +442,17 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             user_padding_len = project.max_group_size - submission.submission_group.members.count()
             usernames = itertools.chain(sorted(submission.submission_group.member_names),
                                         itertools.repeat('', user_padding_len))
-            values.append(list(usernames))
+            values += list(usernames)
             values.append(submission.timestamp.isoformat())
 
             fdbk = submission.get_fdbk(ag_models.FeedbackCategory.max)
-            values += [fdbk.total_points, fdbk.total_points_possible]
+            values += [str(fdbk.total_points), str(fdbk.total_points_possible)]
             for suite_result in fdbk.ag_test_suite_results:
                 suite_fdbk = suite_result.get_fdbk(ag_models.FeedbackCategory.max)
-                values += [suite_fdbk.total_points, suite_fdbk.total_points_possible]
+                values += [str(suite_fdbk.total_points), str(suite_fdbk.total_points_possible)]
                 for case_result in suite_fdbk.ag_test_case_results:
                     values.append(
-                        case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+                        str(case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points))
 
             self.assertEqual(len(expected_headers), len(values))
             expected_result.append(dict(zip(expected_headers, values)))
@@ -371,5 +460,3 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
         file_ = io.StringIO(b''.join(response.streaming_content).decode())
         actual_result = list(csv.DictReader(file_))
         self.assertCountEqual(expected_result, actual_result)
-
-        self.fail()
