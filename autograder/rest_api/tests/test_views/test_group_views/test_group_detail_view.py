@@ -1,5 +1,7 @@
 from django.core.urlresolvers import reverse
 from django.utils import timezone
+from django.core.files.uploadedfile import SimpleUploadedFile
+from rest_framework import status
 
 import autograder.core.models as ag_models
 
@@ -14,6 +16,7 @@ class RetrieveGroupTestCase(test_data.Client,
                             test_data.Group,
                             test_impls.GetObjectTest,
                             UnitTestBase):
+
     def test_admin_or_staff_get_group(self):
         for project in self.all_projects:
             for group in self.at_least_enrolled_groups(project):
@@ -72,6 +75,7 @@ class UpdateGroupTestCase(test_data.Client,
                           test_data.Group,
                           test_impls.UpdateObjectTest,
                           UnitTestBase):
+
     def setUp(self):
         super().setUp()
         self.new_due_date = timezone.now().replace(microsecond=0)
@@ -315,7 +319,8 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             closing_time=self.past_closing_time,
             hide_ultimate_submission_fdbk=False)
         for group in self.all_groups(self.visible_public_project):
-            group.validate_and_update(extended_due_date=self.not_past_extension)
+            group.validate_and_update(
+                extended_due_date=self.not_past_extension)
             for user in self.admin, self.staff:
                 if group.members.filter(pk=user.pk).exists():
                     continue
@@ -378,3 +383,135 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
 
     def ultimate_submission_url(self, group):
         return reverse('group-ultimate-submission', kwargs={'pk': group.pk})
+
+
+class MergeGroupsTestCase(test_data.Client,
+                          test_data.Project,
+                          test_data.Submission,
+                          test_impls.PermissionDeniedGetTest,
+                          UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.group1 = obj_build.build_submission_group(
+            group_kwargs={'project': self.visible_public_project})
+        self.group2 = obj_build.build_submission_group(
+            group_kwargs={'project': self.visible_public_project})
+        self.original_num_groups = 2
+        self.assertEqual(self.original_num_groups, ag_models.SubmissionGroup.objects.count())
+
+    def test_normal_merge(self):
+        files = []
+        for i in range(2):
+            file_name = 'whatever_you_want' + str(i)
+            ag_models.ExpectedStudentFilePattern.objects.create(
+                pattern=file_name, project=self.visible_public_project)
+            files.append(
+                SimpleUploadedFile(file_name,
+                                   ('heeey' + str(i)).encode('utf-8')))
+
+        for i in range(2):
+            obj_build.build_submission(submission_group=self.group1,
+                                       submitted_files=files)
+
+        for i in range(3):
+            obj_build.build_submission(submission_group=self.group2,
+                                       submitted_files=files)
+
+        expected_submission_count = (self.group1.submissions.count() +
+                                     self.group2.submissions.count())
+        expected_member_names = self.group1.member_names + self.group2.member_names
+        self.assertEqual(2, ag_models.SubmissionGroup.objects.count())
+
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.post(self.get_merge_url(self.group1, self.group2))
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        merged_group = ag_models.SubmissionGroup.objects.first()
+        self.assertEqual(merged_group.to_dict(), response.data)
+        self.assertCountEqual(expected_member_names, merged_group.member_names)
+
+        self.assertEqual(expected_submission_count, merged_group.submissions.count())
+        for submission in merged_group.submissions.all():
+            for file_ in files:
+                file_.seek(0)
+                self.assertEqual(submission.get_file(file_.name).read(),
+                                 file_.read())
+
+    def test_non_admin_permission_denied(self):
+        for user in self.staff, self.enrolled, self.nobody:
+            with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+                self.client.force_authenticate(user)
+                response = self.client.post(self.get_merge_url(self.group1, self.group2))
+
+            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_one_group_with_extension(self):
+        extension_date = timezone.now()
+        self.client.force_authenticate(self.admin)
+        self.group1.validate_and_update(extended_due_date=extension_date)
+        response = self.client.post(self.get_merge_url(self.group1, self.group2))
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertEqual(response.data['extended_due_date'], extension_date)
+
+    def test_both_have_extension(self):
+        earlier_extension_date = timezone.now()
+        later_extension_date = earlier_extension_date + timezone.timedelta(hours=1)
+        self.client.force_authenticate(self.admin)
+        self.group1.validate_and_update(extended_due_date=earlier_extension_date)
+        self.group2.validate_and_update(extended_due_date=later_extension_date)
+        response = self.client.post(self.get_merge_url(self.group1, self.group2))
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertEqual(response.data['extended_due_date'], later_extension_date)
+
+    def test_error_merge_staff_and_non_staff(self):
+        staff_group = self.staff_group(self.group1.project)
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(self.get_merge_url(self.group1, staff_group))
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('members', response.data)
+
+    def test_error_merge_enrolled_and_non_enrolled(self):
+        non_enrolled_group = self.non_enrolled_group(self.group1.project)
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(self.get_merge_url(self.group1, non_enrolled_group))
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('members', response.data)
+
+    def test_missing_query_param(self):
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(reverse('group-merge-with',
+                                                kwargs={'pk': self.group1.pk}))
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('other_group_pk', response.data)
+
+    def test_query_param_pk_not_found(self):
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(reverse('group-merge-with',
+                                                kwargs={'pk': self.group1.pk}) +
+                                        '?other_group_pk=' + str(9001))
+
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+    def test_error_merge_groups_diff_projects(self):
+        group_diff_proj = obj_build.build_submission_group(
+            group_kwargs={'project': self.visible_private_project})
+        self.assertNotEqual(self.group1.project, group_diff_proj.project)
+        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(self.get_merge_url(self.group1, group_diff_proj))
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('groups', response.data)
+
+    def get_merge_url(self, group1, group2):
+        return (reverse('group-merge-with', kwargs={'pk': group1.pk}) +
+                '?other_group_pk=' + str(group2.pk))

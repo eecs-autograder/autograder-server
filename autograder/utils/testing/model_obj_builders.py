@@ -169,7 +169,9 @@ def build_submission(**submission_kwargs) -> ag_models.Submission:
     SubmissionGroup will be created with build_submission_group() and
     used instead.
     """
-    group = submission_kwargs.pop('submission_group', build_submission_group())
+    group = submission_kwargs.pop('submission_group', None)
+    if group is None:
+        group = build_submission_group()
     submitted_files = submission_kwargs.pop('submitted_files', [])
     timestamp = submission_kwargs.pop('timestamp', timezone.now())
 
