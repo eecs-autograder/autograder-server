@@ -76,6 +76,8 @@ INSTALLED_APPS = [
 
     'django_extensions',
 
+    'timezone_field',
+
     'autograder.core',
     'autograder.rest_api',
     'autograder.grading_tasks',

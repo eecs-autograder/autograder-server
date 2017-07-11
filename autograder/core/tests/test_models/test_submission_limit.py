@@ -165,34 +165,36 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
         self.assertFalse(old_sub.is_past_daily_limit)
         self.assertFalse(new_sub.is_past_daily_limit)
 
-    def test_non_default_limit_reset_time(self):
-        reset_datetime = timezone.datetime.combine(
-            timezone.now().date(), datetime.time(hour=22))
-        reset_datetime = reset_datetime.replace(tzinfo=timezone.now().tzinfo)
+    def test_non_default_limit_reset_time_and_timezone(self):
+        reset_timezone = 'America/Detroit'
+        reset_datetime = timezone.now().astimezone(
+            timezone.pytz.timezone(reset_timezone)
+        ).replace(hour=22)
         self.project.validate_and_update(
             submission_limit_reset_time=reset_datetime.time(),
+            submission_limit_reset_timezone=reset_timezone,
             submission_limit_per_day=1)
 
-        old_timestamp = reset_datetime + timezone.timedelta(hours=-23)
-        old_sub = ag_models.Submission.objects.validate_and_create(
+        within_limit_timestamp = reset_datetime + timezone.timedelta(hours=-23)
+        within_limit_submission = ag_models.Submission.objects.validate_and_create(
             [], submission_group=self.submission_group,
-            timestamp=old_timestamp)
-        self.assertTrue(old_sub.count_towards_daily_limit)
-        self.assertFalse(old_sub.is_past_daily_limit)
+            timestamp=within_limit_timestamp)
+        self.assertTrue(within_limit_submission.count_towards_daily_limit)
+        self.assertFalse(within_limit_submission.is_past_daily_limit)
 
-        new_timestamp = reset_datetime + timezone.timedelta(hours=-1)
-        new_sub = ag_models.Submission.objects.validate_and_create(
+        past_limit_timestamp = reset_datetime + timezone.timedelta(hours=-1)
+        past_limit_submission = ag_models.Submission.objects.validate_and_create(
             [], submission_group=self.submission_group,
-            timestamp=new_timestamp)
-        self.assertTrue(new_sub.count_towards_daily_limit)
-        self.assertTrue(new_sub.is_past_daily_limit)
+            timestamp=past_limit_timestamp)
+        self.assertTrue(past_limit_submission.count_towards_daily_limit)
+        self.assertTrue(past_limit_submission.is_past_daily_limit)
 
         next_cycle_timestamp = reset_datetime
-        next_cycle_sub = ag_models.Submission.objects.validate_and_create(
+        next_cycle_submission = ag_models.Submission.objects.validate_and_create(
             [], submission_group=self.submission_group,
             timestamp=next_cycle_timestamp)
-        self.assertTrue(next_cycle_sub.count_towards_daily_limit)
-        self.assertFalse(next_cycle_sub.is_past_daily_limit)
+        self.assertTrue(next_cycle_submission.count_towards_daily_limit)
+        self.assertFalse(next_cycle_submission.is_past_daily_limit)
 
     def test_statuses_counted_towards_limit(self):
         count_towards_limit_statuses = [

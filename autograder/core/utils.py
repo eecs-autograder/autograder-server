@@ -1,3 +1,4 @@
+import datetime
 import enum
 import os
 import tempfile
@@ -53,7 +54,8 @@ def get_diff(first: str, second: str,
             'utf-8', 'backslashreplace').splitlines(keepends=True)
 
 
-def get_24_hour_period(start_time, contains_datetime):
+def get_24_hour_period(start_time, contains_datetime: datetime.datetime,
+                       convert_result_to_utc=True):
     """
     Returns a tuple (start_datetime, end_datetime) representing a 24
     hour period that contains the current date and time and with the
@@ -68,6 +70,10 @@ def get_24_hour_period(start_time, contains_datetime):
     start_datetime = start_datetime.replace(
         tzinfo=contains_datetime.tzinfo)
     end_datetime = start_datetime + timezone.timedelta(days=1)
+
+    if convert_result_to_utc:
+        return (start_datetime.astimezone(timezone.pytz.UTC),
+                end_datetime.astimezone(timezone.pytz.UTC))
 
     return start_datetime, end_datetime
 

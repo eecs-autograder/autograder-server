@@ -43,6 +43,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual(True, new_project.allow_submissions_past_limit)
         self.assertEqual(datetime.time(),
                          new_project.submission_limit_reset_time)
+        self.assertEqual(timezone.pytz.UTC, new_project.submission_limit_reset_timezone)
 
         self.assertTrue(new_project.hide_ultimate_submission_fdbk)
         self.assertEqual(
@@ -58,7 +59,7 @@ class ProjectMiscTestCase(UnitTestBase):
         sub_limit = random.randint(1, 5)
         reset_time = datetime.time(8, 0, 0)
 
-        selection_method = (ag_models.UltimateSubmissionPolicy.best)
+        selection_method = ag_models.UltimateSubmissionPolicy.best
         kwargs = {
             'name': self.project_name,
             'course': self.course,
@@ -79,15 +80,19 @@ class ProjectMiscTestCase(UnitTestBase):
             'ultimate_submission_policy': selection_method,
         }
 
+        reset_timezone = 'America/Chicago'
         new_project = ag_models.Project.objects.validate_and_create(
+            submission_limit_reset_timezone=reset_timezone,
             **kwargs
         )
 
         new_project.refresh_from_db()
 
         for field_name, value in kwargs.items():
-            self.assertEqual(value, getattr(new_project, field_name),
-                             msg=field_name)
+            self.assertEqual(value, getattr(new_project, field_name), msg=field_name)
+
+        self.assertEqual(timezone.pytz.timezone(reset_timezone),
+                         new_project.submission_limit_reset_timezone)
 
     def test_serialize(self):
         project = ag_models.Project.objects.validate_and_create(
@@ -115,6 +120,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'submission_limit_per_day',
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
+            'submission_limit_reset_timezone',
 
             'ultimate_submission_policy',
             'hide_ultimate_submission_fdbk',
@@ -123,6 +129,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'expected_student_file_patterns',
         ]
         self.assertCountEqual(expected_keys, project_dict.keys())
+        self.assertEqual('UTC', project_dict['submission_limit_reset_timezone'])
 
         self.assertSequenceEqual([proj_file.to_dict()], project_dict['uploaded_files'])
         self.assertSequenceEqual([pattern.to_dict()],
@@ -134,6 +141,11 @@ class ProjectMiscTestCase(UnitTestBase):
         update_dict.pop('uploaded_files')
         update_dict.pop('expected_student_file_patterns')
         project.validate_and_update(**update_dict)
+
+        other_timezone = 'America/Chicago'
+        project.validate_and_update(submission_limit_reset_timezone=other_timezone)
+        project.refresh_from_db()
+        self.assertEqual(other_timezone, project.to_dict()['submission_limit_reset_timezone'])
 
 
 class HardAndSoftClosingTimeTestCase(UnitTestBase):
@@ -278,8 +290,7 @@ class ProjectFilesystemTest(UnitTestBase):
         self.project_name = 'stats_project'
 
     def test_project_root_dir_created(self):
-        project = ag_models.Project(
-            name=self.project_name, course=self.course)
+        project = ag_models.Project(name=self.project_name, course=self.course)
 
         self.assertEqual(
             [],
@@ -292,8 +303,7 @@ class ProjectFilesystemTest(UnitTestBase):
         self.assertTrue(os.path.isdir(expected_project_root_dir))
 
     def test_project_files_dir_created(self):
-        project = ag_models.Project(
-            name=self.project_name, course=self.course)
+        project = ag_models.Project(name=self.project_name, course=self.course)
 
         self.assertFalse(
             os.path.exists(

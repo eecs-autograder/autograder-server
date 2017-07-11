@@ -241,7 +241,8 @@ class Submission(ag_model_base.AutograderModel):
             return False
 
         start_datetime, end_datetime = core_ut.get_24_hour_period(
-            project.submission_limit_reset_time, self.timestamp)
+            project.submission_limit_reset_time,
+            self.timestamp.astimezone(project.submission_limit_reset_timezone))
 
         num_submissions_before_self = self.submission_group.submissions.filter(
             timestamp__gte=start_datetime,

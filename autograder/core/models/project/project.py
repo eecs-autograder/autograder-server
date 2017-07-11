@@ -2,9 +2,12 @@ import enum
 import os
 import datetime
 
+import pytz
 from django.db import models
 from django.core import validators
 from django.core import exceptions
+from django.utils import timezone
+from timezone_field import TimeZoneField
 
 from ..ag_model_base import AutograderModel
 from ..course import Course
@@ -142,8 +145,12 @@ class Project(AutograderModel):
         default=datetime.time,
         help_text='''The time that marks the beginning and end of the 24
             hour period during which submissions should be counted
-            towards the daily limit. This value assumes use of the UTC
-            timezone. Defaults to 0:0:0.''')
+            towards the daily limit. Defaults to 0:0:0.''')
+
+    submission_limit_reset_timezone = TimeZoneField(
+        default='UTC',
+        help_text='''The timezone to use when computing how many
+            submissions a group has made in a 24 hour period.''')
 
     ultimate_submission_policy = ag_fields.EnumField(
         UltimateSubmissionPolicy,
@@ -192,6 +199,12 @@ class Project(AutograderModel):
                     {'soft_closing_time': (
                         'Soft closing time must be before hard closing time')})
 
+    def to_dict(self):
+        result = super().to_dict()
+        result['submission_limit_reset_timezone'] = (
+            self.submission_limit_reset_timezone.tzname(None))
+        return result
+
     SERIALIZABLE_FIELDS = (
         'pk',
         'name',
@@ -208,6 +221,7 @@ class Project(AutograderModel):
         'submission_limit_per_day',
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
+        'submission_limit_reset_timezone',
 
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
@@ -235,6 +249,7 @@ class Project(AutograderModel):
         'submission_limit_per_day',
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
+        'submission_limit_reset_timezone',
 
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
