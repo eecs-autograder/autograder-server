@@ -5,6 +5,7 @@ from django.core.urlresolvers import reverse
 
 from rest_framework import status
 import autograder.core.models as ag_models
+from autograder.core import constants
 
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
@@ -169,6 +170,19 @@ class UpdateUploadedFileContentTestCase(_BuildFile,
             file_.refresh_from_db()
             self.assertEqual(self.file_obj_kwargs['content'],
                              file_.file_obj.read())
+
+    def test_error_update_content_too_large(self):
+        self.client.force_authenticate(self.admin)
+        file_ = self.build_file(self.project)
+        too_big_updated_file = SimpleUploadedFile(
+            self.file_obj_kwargs['name'], b'a' * (constants.MAX_PROJECT_FILE_SIZE + 1))
+        response = self.client.put(file_content_url(file_),
+                                   {'file_obj': too_big_updated_file},
+                                   format='multipart')
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        file_.refresh_from_db()
+        with file_.open('rb') as f:
+            self.assertEqual(self.file_obj_kwargs['content'], f.read())
 
 
 class DeleteUploadedFileTestCase(_BuildFile,

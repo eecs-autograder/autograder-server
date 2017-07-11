@@ -1,6 +1,7 @@
+from django.core import exceptions
 from django.db import transaction
 
-from rest_framework import viewsets, mixins, permissions
+from rest_framework import viewsets, mixins, permissions, response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -23,7 +24,11 @@ class UploadedFilesViewSet(build_load_object_mixin(ag_models.Project),
 
     @transaction.atomic()
     def create(self, *args, **kwargs):
-        return super().create(*args, **kwargs)
+        try:
+            return super().create(*args, **kwargs)
+        except exceptions.ValidationError as e:
+            return response.Response(e.message_dict,
+                                     status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
         serializer.save(project=self.load_object(self.kwargs['project_pk']))

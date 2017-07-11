@@ -3,6 +3,7 @@ import os
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+from autograder.core import constants
 from autograder.core.models.project.uploaded_file import UploadedFile
 
 from autograder import utils
@@ -87,6 +88,13 @@ class CreateUploadedFileTestCase(_SetUp):
                     file_obj=self.file_obj)
 
             self.assertIn('file_obj', cm.exception.message_dict)
+
+    def test_error_file_too_big(self):
+        too_big = SimpleUploadedFile('wee', b'a' * (constants.MAX_PROJECT_FILE_SIZE + 1))
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            UploadedFile.objects.validate_and_create(project=self.project, file_obj=too_big)
+
+        self.assertIn('content', cm.exception.message_dict)
 
 
 class RenameUploadedFileTestCase(_SetUp):

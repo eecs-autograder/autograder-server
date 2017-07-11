@@ -6,6 +6,7 @@ from rest_framework import status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core import constants
 
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
@@ -91,6 +92,16 @@ class CreateUploadedFileTestCase(_UploadedFilesSetUp,
         self.client.force_authenticate(self.admin)
         response = self.client.post(
             self.get_uploaded_files_url(self.project), args,
+            format='multipart')
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(0, self.project.uploaded_files.count())
+
+    def test_invalid_create_too_large_uploaded_file(self):
+        too_big_file = SimpleUploadedFile('spam', b'a' * (constants.MAX_PROJECT_FILE_SIZE + 1))
+        self.assertEqual(0, self.project.uploaded_files.count())
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(
+            self.get_uploaded_files_url(self.project), {'file_obj': too_big_file},
             format='multipart')
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(0, self.project.uploaded_files.count())

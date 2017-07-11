@@ -9,6 +9,7 @@ from rest_framework import (
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core import constants
 from autograder.rest_api import transaction_mixins
 
 from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
@@ -49,6 +50,11 @@ class UploadedFileDetailViewSet(build_load_object_mixin(ag_models.UploadedFile),
     def content(self, request, pk):
         uploaded_file = self.load_object(pk)
         if request.method.lower() == 'put':
+            if request.data['file_obj'].size > constants.MAX_PROJECT_FILE_SIZE:
+                return response.Response(
+                    {'content': 'Project files cannot be bigger than {} bytes'.format(
+                        constants.MAX_PROJECT_FILE_SIZE)},
+                    status=status.HTTP_400_BAD_REQUEST)
             with open(uploaded_file.abspath, 'wb') as f:
                 for chunk in request.data['file_obj'].chunks():
                     f.write(chunk)
