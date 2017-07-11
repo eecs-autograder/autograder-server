@@ -97,6 +97,13 @@ class AGTestSuiteResult(AutograderModel):
             return self._fdbk.to_dict()
 
         @property
+        def setup_name(self) -> str:
+            if not self._show_setup_and_teardown_names:
+                return None
+
+            return self._ag_test_suite.setup_suite_cmd_name
+
+        @property
         def setup_return_code(self) -> int:
             if not self._fdbk.show_setup_and_teardown_return_code:
                 return None
@@ -125,6 +132,13 @@ class AGTestSuiteResult(AutograderModel):
             return self._ag_test_suite_result.setup_stderr
 
         @property
+        def teardown_name(self) -> str:
+            if not self._show_setup_and_teardown_names:
+                return None
+
+            return self._ag_test_suite.teardown_suite_cmd_name
+
+        @property
         def teardown_return_code(self) -> int:
             if not self._fdbk.show_setup_and_teardown_return_code:
                 return None
@@ -151,6 +165,13 @@ class AGTestSuiteResult(AutograderModel):
                 return None
 
             return self._ag_test_suite_result.teardown_stderr
+
+        @property
+        def _show_setup_and_teardown_names(self):
+            return (self._fdbk.show_setup_and_teardown_stdout or
+                    self._fdbk.show_setup_and_teardown_stderr or
+                    self._fdbk.show_setup_and_teardown_return_code or
+                    self._fdbk.show_setup_and_teardown_timed_out)
 
         @property
         def total_points(self):
@@ -196,9 +217,11 @@ class AGTestSuiteResult(AutograderModel):
             'fdbk_settings',
             'total_points',
             'total_points_possible',
+            'setup_name',
             'setup_return_code',
             'setup_stdout',
             'setup_stderr',
+            'teardown_name',
             'teardown_stdout',
             'teardown_stderr',
             'teardown_return_code',

@@ -97,6 +97,11 @@ class AGTestSuite(AutograderModel):
         help_text="""A command to be run after this suite's tests are run.
                      This command is only run once at the end of the suite.""")
 
+    setup_suite_cmd_name = ag_fields.ShortStringField(
+        blank=True, help_text="""The name of this suite's setup command.""")
+    teardown_suite_cmd_name = ag_fields.ShortStringField(
+        blank=True, help_text="""The name of this suite's teardown command.""")
+
     docker_image_to_use = ag_fields.ShortStringField(
         choices=zip(constants.SUPPORTED_DOCKER_IMAGES, constants.SUPPORTED_DOCKER_IMAGES),
         default=constants.DEFAULT_DOCKER_IMAGE,
@@ -163,6 +168,9 @@ class AGTestSuite(AutograderModel):
         'setup_suite_cmd',
         'teardown_suite_cmd',
 
+        'setup_suite_cmd_name',
+        'teardown_suite_cmd_name',
+
         'docker_image_to_use',
         'allow_network_access',
         'deferred',
@@ -195,6 +203,9 @@ class AGTestSuite(AutograderModel):
 
         'setup_suite_cmd',
         'teardown_suite_cmd',
+
+        'setup_suite_cmd_name',
+        'teardown_suite_cmd_name',
 
         'allow_network_access',
         'deferred',

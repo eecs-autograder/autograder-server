@@ -21,6 +21,9 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertCountEqual([], suite.project_files_needed.all())
         self.assertCountEqual([], suite.student_files_needed.all())
 
+        self.assertEqual('', suite.setup_suite_cmd_name)
+        self.assertEqual('', suite.teardown_suite_cmd_name)
+
         self.assertEqual('', suite.setup_suite_cmd)
         self.assertEqual('', suite.teardown_suite_cmd)
 
@@ -82,6 +85,8 @@ class AGTestSuiteTestCase(UnitTestBase):
             student_files_needed=student_files_needed,
             setup_suite_cmd=setup_cmd,
             teardown_suite_cmd=teardown_cmd,
+            setup_suite_cmd_name='steve',
+            teardown_suite_cmd_name='stove',
             allow_network_access=allow_network_access,
             deferred=deferred,
             normal_fdbk_config={
@@ -189,6 +194,9 @@ class AGTestSuiteTestCase(UnitTestBase):
 
             'setup_suite_cmd',
             'teardown_suite_cmd',
+
+            'setup_suite_cmd_name',
+            'teardown_suite_cmd_name',
 
             'docker_image_to_use',
             'allow_network_access',

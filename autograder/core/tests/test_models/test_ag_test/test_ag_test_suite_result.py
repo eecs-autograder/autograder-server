@@ -10,7 +10,9 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         submission = obj_build.build_submission()
         project = submission.submission_group.project
         self.ag_test_suite = ag_models.AGTestSuite.objects.validate_and_create(
-            name='kajsdhf', project=project
+            name='kajsdhf', project=project,
+            setup_suite_cmd_name='asdlkjfa;skldjf;aksdf',
+            teardown_suite_cmd_name='zxcmcnvm,xcn,z'
         )  # type: ag_models.AGTestSuite
 
         self.ag_test_case1 = ag_models.AGTestCase.objects.validate_and_create(
@@ -124,6 +126,8 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         self.ag_test_suite_result.save()
 
         fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual(self.ag_test_suite.setup_suite_cmd_name, fdbk.setup_name)
+        self.assertEqual(self.ag_test_suite.teardown_suite_cmd_name, fdbk.teardown_name)
         self.assertEqual(setup_return_code, fdbk.setup_return_code)
         self.assertEqual(setup_timed_out, fdbk.setup_timed_out)
         self.assertEqual(setup_stdout, fdbk.setup_stdout)
@@ -140,6 +144,8 @@ class AGTestSuiteResultTestCase(UnitTestBase):
             show_setup_and_teardown_stderr=False)
 
         fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.setup_name)
+        self.assertIsNone(fdbk.teardown_name)
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
         self.assertIsNone(fdbk.setup_stdout)
@@ -188,9 +194,11 @@ class AGTestSuiteResultTestCase(UnitTestBase):
             'ag_test_suite_name',
             'ag_test_suite_pk',
             'fdbk_settings',
+            'setup_name',
             'setup_return_code',
             'setup_stdout',
             'setup_stderr',
+            'teardown_name',
             'teardown_return_code',
             'teardown_stdout',
             'teardown_stderr',
