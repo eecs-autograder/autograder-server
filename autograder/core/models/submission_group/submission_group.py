@@ -86,12 +86,13 @@ class SubmissionGroup(ag_model_base.AutograderModel):
 
     @property
     def num_submits_towards_limit(self):
-        '''
+        """
         The number of submissions this group has made in the current 24
         hour period that are counted towards the daily submission limit.
-        '''
+        """
         start_datetime, end_datetime = core_ut.get_24_hour_period(
-            self.project.submission_limit_reset_time, timezone.now())
+            self.project.submission_limit_reset_time,
+            timezone.now().astimezone(self.project.submission_limit_reset_timezone))
         return self.submissions.filter(
             timestamp__gte=start_datetime,
             timestamp__lt=end_datetime,

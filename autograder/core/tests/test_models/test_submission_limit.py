@@ -97,7 +97,7 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
         for sub in submissions:
             self.assertFalse(sub.is_past_daily_limit)
 
-    def test_group_submissions_towards_limit_count(self):
+    def test_num_submits_towards_limit(self):
         limit = random.randint(3, 5)
         self.project.validate_and_update(submission_limit_per_day=limit)
         for i in range(limit + 2):
@@ -111,6 +111,24 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
 
         self.assertEqual(
             i + 1, self.submission_group.num_submits_towards_limit)
+
+    def test_num_submits_towards_limit_non_default_timezone(self):
+        local_timezone = 'America/Chicago'
+        now = timezone.now()
+        now_local = now.astimezone(timezone.pytz.timezone(local_timezone))
+
+        self.project.validate_and_update(
+            submission_limit_reset_time=now_local - timezone.timedelta(minutes=5),
+            submission_limit_reset_timezone=local_timezone)
+
+        before_reset_time_submission = obj_build.build_submission(
+            submission_group=self.submission_group,
+            timestamp=now - timezone.timedelta(hours=1))
+        after_reset_time_submission = obj_build.build_submission(
+            submission_group=self.submission_group,
+            timestamp=now + timezone.timedelta(hours=1))
+
+        self.assertEqual(1, self.submission_group.num_submits_towards_limit)
 
     def test_group_submissions_towards_limit_some_not_counted(self):
         limit = 3
