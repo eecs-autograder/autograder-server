@@ -15,6 +15,8 @@ PROJECT_SUBMISSIONS_DIRNAME = 'submission_groups'
 # The subdirectory of settings.MEDIA_ROOT where courses will be placed.
 FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'
 
+MAX_COMMAND_LENGTH = 1000
+
 DEFAULT_VALGRIND_FLAGS = ['--leak-check=full', '--error-exitcode=1']
 
 SUPPORTED_COMPILERS = ['g++', 'clang++', 'gcc', 'clang']

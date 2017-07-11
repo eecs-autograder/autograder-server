@@ -139,7 +139,8 @@ class AGTestCommand(AutograderModel):
                      autograder test.
                      Either this field or ag_test_suite must be non-null.''')
 
-    cmd = ag_fields.ShortStringField(
+    cmd = models.CharField(
+        max_length=constants.MAX_COMMAND_LENGTH,
         help_text='''A string containing the command to be run.
                      Note: This string will be split using shlex.split() before it is executed.''')
 

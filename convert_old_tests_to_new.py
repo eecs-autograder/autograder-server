@@ -14,175 +14,163 @@ from autograder.core.models.autograder_test_case import feedback_config
 
 
 def main():
-    with transaction.atomic():
-        convert_ag_tests()
+    convert_ag_tests()
     print('done')
 
 
 def convert_ag_tests():
-    for p in Project.objects.filter(pk__in=[4]):
+    for p in Project.objects.all():
         print(p.name)
-        for old_test in p.autograder_test_cases.all():
-            print(old_test.name)
-            setup_cmd = ''
-            points_for_correct_return_code = old_test.points_for_correct_return_code
-            if isinstance(old_test, CompiledAndRunAutograderTestCase):
-                setup_cmd = ' '.join(
-                    [old_test.compiler] +
-                    list(itertools.chain(
-                        (file_.name for file_ in old_test.project_files_to_compile_together.all()),
-                        (pattern.pattern for pattern in old_test.student_files_to_compile_together.all()))) +
-                    old_test.compiler_flags)
-            elif isinstance(old_test, CompilationOnlyAutograderTestCase):
-                cmd = ' '.join(
-                    [old_test.compiler] +
-                    list(itertools.chain(
-                        (file_.name for file_ in old_test.project_files_to_compile_together.all()),
-                        (pattern.pattern for pattern in old_test.student_files_to_compile_together.all()))) +
-                    old_test.compiler_flags)
-                points_for_correct_return_code = old_test.points_for_compilation_success
+        print(p.pk)
+        if p.ag_test_suites.count():
+            print('already converted, skipping...')
+            continue
+        with transaction.atomic():
+            for old_test in p.autograder_test_cases.all():
+                print(old_test.name)
+                setup_cmd = ''
+                points_for_correct_return_code = old_test.points_for_correct_return_code
+                if isinstance(old_test, CompiledAndRunAutograderTestCase):
+                    setup_cmd = ' '.join(
+                        [old_test.compiler] +
+                        list(itertools.chain(
+                            (file_.name for file_ in old_test.project_files_to_compile_together.all()),
+                            (pattern.pattern for pattern in old_test.student_files_to_compile_together.all()))) +
+                        old_test.compiler_flags)
+                elif isinstance(old_test, CompilationOnlyAutograderTestCase):
+                    cmd = ' '.join(
+                        [old_test.compiler] +
+                        list(itertools.chain(
+                            (file_.name for file_ in old_test.project_files_to_compile_together.all()),
+                            (pattern.pattern for pattern in old_test.student_files_to_compile_together.all()))) +
+                        old_test.compiler_flags)
+                    points_for_correct_return_code = old_test.points_for_compilation_success
 
-            new_suite = AGTestSuite.objects.validate_and_create(
-                name=old_test.name,
-                project=p,
-                project_files_needed=list(itertools.chain(
-                    old_test.test_resource_files.all(),
-                    old_test.project_files_to_compile_together.all())),
-                student_files_needed=list(itertools.chain(
-                    old_test.student_resource_files.all(),
-                    old_test.student_files_to_compile_together.all()
-                )),
-                setup_suite_cmd=setup_cmd,
-                allow_network_access=old_test.allow_network_connections,
-                deferred=old_test.deferred
-            )
-            new_case = AGTestCase.objects.validate_and_create(name=new_suite.name,
-                                                              ag_test_suite=new_suite)
-            if isinstance(old_test, CompiledAndRunAutograderTestCase):
-                cmd = './{} {}'.format(old_test.executable_name, ' '.join(
-                    old_test.command_line_arguments))
-            elif isinstance(old_test, InterpretedAutograderTestCase):
-                cmd = '{} {} {} {}'.format(old_test.interpreter,
-                                           ' '.join(old_test.interpreter_flags),
-                                           old_test.entry_point_filename,
-                                           ' '.join(old_test.command_line_arguments))
+                new_suite = AGTestSuite.objects.validate_and_create(
+                    name=old_test.name,
+                    project=p,
+                    project_files_needed=list(itertools.chain(
+                        old_test.test_resource_files.all(),
+                        old_test.project_files_to_compile_together.all())),
+                    student_files_needed=list(itertools.chain(
+                        old_test.student_resource_files.all(),
+                        old_test.student_files_to_compile_together.all()
+                    )),
+                    setup_suite_cmd=setup_cmd,
+                    allow_network_access=old_test.allow_network_connections,
+                    deferred=old_test.deferred
+                )
+                new_case = AGTestCase.objects.validate_and_create(name=new_suite.name,
+                                                                  ag_test_suite=new_suite)
+                if isinstance(old_test, CompiledAndRunAutograderTestCase):
+                    cmd = './{} {}'.format(old_test.executable_name, ' '.join(
+                        old_test.command_line_arguments))
+                elif isinstance(old_test, InterpretedAutograderTestCase):
+                    cmd = '{} {} {} {}'.format(old_test.interpreter,
+                                               ' '.join(old_test.interpreter_flags),
+                                               old_test.entry_point_filename,
+                                               ' '.join(old_test.command_line_arguments))
 
-            expected_return_code = ExpectedReturnCode.none
-            if old_test.expect_any_nonzero_return_code:
-                expected_return_code = ExpectedReturnCode.nonzero
-            elif old_test.expected_return_code == 0:
-                expected_return_code = ExpectedReturnCode.zero
-            elif isinstance(old_test, CompilationOnlyAutograderTestCase):
-                expected_return_code = ExpectedReturnCode.zero
+                expected_return_code = ExpectedReturnCode.none
+                if old_test.expect_any_nonzero_return_code:
+                    expected_return_code = ExpectedReturnCode.nonzero
+                elif old_test.expected_return_code == 0:
+                    expected_return_code = ExpectedReturnCode.zero
+                elif isinstance(old_test, CompilationOnlyAutograderTestCase):
+                    expected_return_code = ExpectedReturnCode.zero
 
-            expected_stdout = ''
-            expected_stdout_source = ExpectedOutputSource.none
-            if old_test.expected_standard_output:
-                expected_stdout = old_test.expected_standard_output
-                expected_stdout_source = ExpectedOutputSource.text
+                expected_stdout = ''
+                expected_stdout_source = ExpectedOutputSource.none
+                if old_test.expected_standard_output:
+                    expected_stdout = old_test.expected_standard_output
+                    expected_stdout_source = ExpectedOutputSource.text
 
-            expected_stderr = ''
-            expected_stderr_source = ExpectedOutputSource.none
-            if old_test.expected_standard_error_output:
-                expected_stderr = old_test.expected_standard_error_output
-                expected_stderr_source = ExpectedOutputSource.text
+                expected_stderr = ''
+                expected_stderr_source = ExpectedOutputSource.none
+                if old_test.expected_standard_error_output:
+                    expected_stderr = old_test.expected_standard_error_output
+                    expected_stderr_source = ExpectedOutputSource.text
 
-            new_cmd = AGTestCommand.objects.validate_and_create(
-                name=new_suite.name,
-                ag_test_case=new_case,
-                cmd=cmd,
-
-                stdin_source=StdinSource.text,
-                stdin_text=old_test.standard_input,
-
-                expected_return_code=expected_return_code,
-
-                expected_stdout_source=expected_stdout_source,
-                expected_stdout_text=expected_stdout,
-                expected_stderr_source=expected_stderr_source,
-                expected_stderr_text=expected_stderr,
-
-                ignore_case=old_test.ignore_case,
-                ignore_whitespace=old_test.ignore_whitespace,
-                ignore_whitespace_changes=old_test.ignore_whitespace_changes,
-                ignore_blank_lines=old_test.ignore_blank_lines,
-
-                points_for_correct_return_code=points_for_correct_return_code,
-                points_for_correct_stdout=old_test.points_for_correct_stdout,
-                points_for_correct_stderr=old_test.points_for_correct_stderr,
-
-                normal_fdbk_config={
-                    'visible': old_test.visible_to_students,
-                    'return_code_fdbk_level': convert_return_code_fdbk(
-                        old_test.feedback_configuration.return_code_fdbk),
-                    'stdout_fdbk_level': convert_output_fdbk(
-                        old_test.feedback_configuration.stdout_fdbk),
-                    'stderr_fdbk_level': convert_output_fdbk(
-                        old_test.feedback_configuration.stderr_fdbk),
-                    'show_points': old_test.feedback_configuration.points_fdbk == 'show_breakdown',
-                    'show_actual_return_code': old_test.feedback_configuration.show_return_code,
-                    'show_actual_stdout': old_test.feedback_configuration.show_stdout_content,
-                    'show_actual_stderr': old_test.feedback_configuration.show_stderr_content,
-                    'show_whether_timed_out': True
-                },
-                ultimate_submission_fdbk_config={
-                    'visible': old_test.visible_in_ultimate_submission,
-                    'return_code_fdbk_level': convert_return_code_fdbk(
-                        old_test.ultimate_submission_fdbk_conf.return_code_fdbk),
-                    'stdout_fdbk_level': convert_output_fdbk(
-                        old_test.ultimate_submission_fdbk_conf.stdout_fdbk),
-                    'stderr_fdbk_level': convert_output_fdbk(
-                        old_test.ultimate_submission_fdbk_conf.stderr_fdbk),
-                    'show_points': old_test.ultimate_submission_fdbk_conf.points_fdbk == 'show_breakdown',
-                    'show_actual_return_code': old_test.ultimate_submission_fdbk_conf.show_return_code,
-                    'show_actual_stdout': old_test.ultimate_submission_fdbk_conf.show_stdout_content,
-                    'show_actual_stderr': old_test.ultimate_submission_fdbk_conf.show_stderr_content,
-                    'show_whether_timed_out': True
-                },
-                past_limit_submission_fdbk_config={
-                    'visible': old_test.visible_in_past_limit_submission,
-                    'return_code_fdbk_level': convert_return_code_fdbk(
-                        old_test.past_submission_limit_fdbk_conf.return_code_fdbk),
-                    'stdout_fdbk_level': convert_output_fdbk(
-                        old_test.past_submission_limit_fdbk_conf.stdout_fdbk),
-                    'stderr_fdbk_level': convert_output_fdbk(
-                        old_test.past_submission_limit_fdbk_conf.stderr_fdbk),
-                    'show_points': old_test.past_submission_limit_fdbk_conf.points_fdbk == 'show_breakdown',
-                    'show_actual_return_code': old_test.past_submission_limit_fdbk_conf.show_return_code,
-                    'show_actual_stdout': old_test.past_submission_limit_fdbk_conf.show_stdout_content,
-                    'show_actual_stderr': old_test.past_submission_limit_fdbk_conf.show_stderr_content,
-                    'show_whether_timed_out': False
-                },
-                staff_viewer_fdbk_config={
-                    'visible': True,
-                    'return_code_fdbk_level': convert_return_code_fdbk(
-                        old_test.staff_viewer_fdbk_conf.return_code_fdbk),
-                    'stdout_fdbk_level': convert_output_fdbk(
-                        old_test.staff_viewer_fdbk_conf.stdout_fdbk),
-                    'stderr_fdbk_level': convert_output_fdbk(
-                        old_test.staff_viewer_fdbk_conf.stderr_fdbk),
-                    'show_points': old_test.staff_viewer_fdbk_conf.points_fdbk == 'show_breakdown',
-                    'show_actual_return_code': old_test.staff_viewer_fdbk_conf.show_return_code,
-                    'show_actual_stdout': old_test.staff_viewer_fdbk_conf.show_stdout_content,
-                    'show_actual_stderr': old_test.staff_viewer_fdbk_conf.show_stderr_content,
-                    'show_whether_timed_out': True
-                },
-
-                time_limit=old_test.time_limit,
-                stack_size_limit=old_test.stack_size_limit,
-                virtual_memory_limit=old_test.virtual_memory_limit,
-                process_spawn_limit=old_test.process_spawn_limit,
-            )
-
-            if old_test.use_valgrind:
-                valgrind_cmd = AGTestCommand.objects.validate_and_create(
-                    name='Valgrind',
+                new_cmd = AGTestCommand.objects.validate_and_create(
+                    name=new_suite.name,
                     ag_test_case=new_case,
-                    cmd='valgrind {} {}'.format(' '.join(old_test.valgrind_flags), new_cmd.cmd),
+                    cmd=cmd,
+
                     stdin_source=StdinSource.text,
                     stdin_text=old_test.standard_input,
-                    expected_return_code=ExpectedReturnCode.zero,
-                    deduction_for_wrong_return_code=-old_test.deduction_for_valgrind_errors,
+
+                    expected_return_code=expected_return_code,
+
+                    expected_stdout_source=expected_stdout_source,
+                    expected_stdout_text=expected_stdout,
+                    expected_stderr_source=expected_stderr_source,
+                    expected_stderr_text=expected_stderr,
+
+                    ignore_case=old_test.ignore_case,
+                    ignore_whitespace=old_test.ignore_whitespace,
+                    ignore_whitespace_changes=old_test.ignore_whitespace_changes,
+                    ignore_blank_lines=old_test.ignore_blank_lines,
+
+                    points_for_correct_return_code=points_for_correct_return_code,
+                    points_for_correct_stdout=old_test.points_for_correct_stdout,
+                    points_for_correct_stderr=old_test.points_for_correct_stderr,
+
+                    normal_fdbk_config={
+                        'visible': old_test.visible_to_students,
+                        'return_code_fdbk_level': convert_return_code_fdbk(
+                            old_test.feedback_configuration.return_code_fdbk),
+                        'stdout_fdbk_level': convert_output_fdbk(
+                            old_test.feedback_configuration.stdout_fdbk),
+                        'stderr_fdbk_level': convert_output_fdbk(
+                            old_test.feedback_configuration.stderr_fdbk),
+                        'show_points': old_test.feedback_configuration.points_fdbk == 'show_breakdown',
+                        'show_actual_return_code': old_test.feedback_configuration.show_return_code,
+                        'show_actual_stdout': old_test.feedback_configuration.show_stdout_content,
+                        'show_actual_stderr': old_test.feedback_configuration.show_stderr_content,
+                        'show_whether_timed_out': True
+                    },
+                    ultimate_submission_fdbk_config={
+                        'visible': old_test.visible_in_ultimate_submission,
+                        'return_code_fdbk_level': convert_return_code_fdbk(
+                            old_test.ultimate_submission_fdbk_conf.return_code_fdbk),
+                        'stdout_fdbk_level': convert_output_fdbk(
+                            old_test.ultimate_submission_fdbk_conf.stdout_fdbk),
+                        'stderr_fdbk_level': convert_output_fdbk(
+                            old_test.ultimate_submission_fdbk_conf.stderr_fdbk),
+                        'show_points': old_test.ultimate_submission_fdbk_conf.points_fdbk == 'show_breakdown',
+                        'show_actual_return_code': old_test.ultimate_submission_fdbk_conf.show_return_code,
+                        'show_actual_stdout': old_test.ultimate_submission_fdbk_conf.show_stdout_content,
+                        'show_actual_stderr': old_test.ultimate_submission_fdbk_conf.show_stderr_content,
+                        'show_whether_timed_out': True
+                    },
+                    past_limit_submission_fdbk_config={
+                        'visible': old_test.visible_in_past_limit_submission,
+                        'return_code_fdbk_level': convert_return_code_fdbk(
+                            old_test.past_submission_limit_fdbk_conf.return_code_fdbk),
+                        'stdout_fdbk_level': convert_output_fdbk(
+                            old_test.past_submission_limit_fdbk_conf.stdout_fdbk),
+                        'stderr_fdbk_level': convert_output_fdbk(
+                            old_test.past_submission_limit_fdbk_conf.stderr_fdbk),
+                        'show_points': old_test.past_submission_limit_fdbk_conf.points_fdbk == 'show_breakdown',
+                        'show_actual_return_code': old_test.past_submission_limit_fdbk_conf.show_return_code,
+                        'show_actual_stdout': old_test.past_submission_limit_fdbk_conf.show_stdout_content,
+                        'show_actual_stderr': old_test.past_submission_limit_fdbk_conf.show_stderr_content,
+                        'show_whether_timed_out': False
+                    },
+                    staff_viewer_fdbk_config={
+                        'visible': True,
+                        'return_code_fdbk_level': convert_return_code_fdbk(
+                            old_test.staff_viewer_fdbk_conf.return_code_fdbk),
+                        'stdout_fdbk_level': convert_output_fdbk(
+                            old_test.staff_viewer_fdbk_conf.stdout_fdbk),
+                        'stderr_fdbk_level': convert_output_fdbk(
+                            old_test.staff_viewer_fdbk_conf.stderr_fdbk),
+                        'show_points': old_test.staff_viewer_fdbk_conf.points_fdbk == 'show_breakdown',
+                        'show_actual_return_code': old_test.staff_viewer_fdbk_conf.show_return_code,
+                        'show_actual_stdout': old_test.staff_viewer_fdbk_conf.show_stdout_content,
+                        'show_actual_stderr': old_test.staff_viewer_fdbk_conf.show_stderr_content,
+                        'show_whether_timed_out': True
+                    },
 
                     time_limit=old_test.time_limit,
                     stack_size_limit=old_test.stack_size_limit,
@@ -190,7 +178,23 @@ def convert_ag_tests():
                     process_spawn_limit=old_test.process_spawn_limit,
                 )
 
-            convert_results(project, old_test, new_case)
+                if old_test.use_valgrind:
+                    valgrind_cmd = AGTestCommand.objects.validate_and_create(
+                        name='Valgrind',
+                        ag_test_case=new_case,
+                        cmd='valgrind {} {}'.format(' '.join(old_test.valgrind_flags), new_cmd.cmd),
+                        stdin_source=StdinSource.text,
+                        stdin_text=old_test.standard_input,
+                        expected_return_code=ExpectedReturnCode.zero,
+                        deduction_for_wrong_return_code=-old_test.deduction_for_valgrind_errors,
+
+                        time_limit=old_test.time_limit,
+                        stack_size_limit=old_test.stack_size_limit,
+                        virtual_memory_limit=old_test.virtual_memory_limit,
+                        process_spawn_limit=old_test.process_spawn_limit,
+                    )
+
+                convert_results(project, old_test, new_case)
 
 
 def convert_results(project, old_test: AutograderTestCaseBase, new_test_case: AGTestCase):
