@@ -4,6 +4,7 @@ Django==1.10.4
 django-extensions==1.7.5
 django-polymorphic==1.0.2
 django-redis-cache==1.7.1
+django-timezone-field==2.0
 djangorestframework==3.5.3
 drf-nested-routers==0.11.1
 google-api-python-client==1.5.5
