@@ -19,6 +19,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertEqual(self.project, suite.project)
 
         self.assertCountEqual([], suite.project_files_needed.all())
+        self.assertTrue(suite.read_only_project_files)
         self.assertCountEqual([], suite.student_files_needed.all())
 
         self.assertEqual('', suite.setup_suite_cmd_name)
@@ -82,6 +83,7 @@ class AGTestSuiteTestCase(UnitTestBase):
             name=name,
             project=project,
             project_files_needed=project_files_needed,
+            read_only_project_files=False,
             student_files_needed=student_files_needed,
             setup_suite_cmd=setup_cmd,
             teardown_suite_cmd=teardown_cmd,
@@ -103,6 +105,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertEqual(name, suite.name)
         self.assertEqual(project, suite.project)
         self.assertCountEqual(project_files_needed, suite.project_files_needed.all())
+        self.assertFalse(suite.read_only_project_files)
         self.assertCountEqual(student_files_needed, suite.student_files_needed.all())
         self.assertEqual(allow_network_access, suite.allow_network_access)
         self.assertEqual(deferred, suite.deferred)
@@ -188,6 +191,7 @@ class AGTestSuiteTestCase(UnitTestBase):
             'project',
 
             'project_files_needed',
+            'read_only_project_files',
             'student_files_needed',
 
             'ag_test_cases',

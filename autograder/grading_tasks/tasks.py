@@ -16,7 +16,7 @@ from django.dispatch import receiver
 import autograder.core.models as ag_models
 from autograder.core import constants
 import autograder.core.utils as core_ut
-from autograder_sandbox import AutograderSandbox
+from autograder_sandbox import AutograderSandbox, SANDBOX_USERNAME
 
 
 class MaxRetriesExceeded(Exception):
@@ -191,13 +191,19 @@ def _add_files_to_sandbox(sandbox: AutograderSandbox,
 
     project_files_to_add = [file_.abspath for file_ in ag_test_suite.project_files_needed.all()]
     if project_files_to_add:
-        sandbox.add_files(*project_files_to_add)
+        owner_and_read_only = {
+            'owner': 'root' if ag_test_suite.read_only_project_files else SANDBOX_USERNAME,
+            'read_only': ag_test_suite.read_only_project_files
+        }
+        sandbox.add_files(*project_files_to_add, **owner_and_read_only)
 
 
 @retry_ag_test_cmd
 def _run_suite_setup(sandbox: AutograderSandbox,
                      ag_test_suite: ag_models.AGTestSuite,
                      suite_result: ag_models.AGTestSuiteResult):
+    if not ag_test_suite.setup_suite_cmd:
+        return
     try:
         setup_result = sandbox.run_command(shlex.split(ag_test_suite.setup_suite_cmd),
                                            as_root=False,
@@ -220,6 +226,8 @@ def _run_suite_setup(sandbox: AutograderSandbox,
 def _run_suite_teardown(sandbox: AutograderSandbox,
                      ag_test_suite: ag_models.AGTestSuite,
                      suite_result: ag_models.AGTestSuiteResult):
+    if not ag_test_suite.teardown_suite_cmd:
+        return
     try:
         teardown_result = sandbox.run_command(shlex.split(ag_test_suite.teardown_suite_cmd),
                                               as_root=False,

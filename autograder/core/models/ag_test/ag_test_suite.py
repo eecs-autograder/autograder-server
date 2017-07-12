@@ -80,6 +80,11 @@ class AGTestSuite(AutograderModel):
         help_text='''The project files that will be copied into the sandbox before the suite's
                      tests are run.''')
 
+    read_only_project_files = models.BooleanField(
+        default=True,
+        help_text="""When True, project files needed for this suite will be read only when this
+                     suite is run.""")
+
     student_files_needed = models.ManyToManyField(
         ExpectedStudentFilePattern,
         help_text='''Student-submitted files matching these patterns will be copied into the
@@ -161,6 +166,7 @@ class AGTestSuite(AutograderModel):
         'project',
 
         'project_files_needed',
+        'read_only_project_files',
         'student_files_needed',
 
         'ag_test_cases',
@@ -183,6 +189,7 @@ class AGTestSuite(AutograderModel):
 
     SERIALIZE_RELATED = (
         'project_files_needed',
+        'read_only_project_files',
         'student_files_needed',
 
         'ag_test_cases',
@@ -199,6 +206,7 @@ class AGTestSuite(AutograderModel):
         'name',
 
         'project_files_needed',
+        'read_only_project_files',
         'student_files_needed',
 
         'setup_suite_cmd',

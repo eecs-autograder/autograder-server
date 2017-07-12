@@ -103,7 +103,7 @@ def _make_mock_grade_ag_test_cmd_fail_then_succeed(num_times_to_fail):
 
 @tag('slow', 'sandbox')
 @mock.patch('autograder.grading_tasks.tasks.time.sleep')
-class GradeSubmissionBasicIntegrationTestCase(UnitTestBase):
+class GradeSubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.build_submission()
@@ -731,6 +731,45 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(self.setup_stderr, res.stdout)
+
+
+class ProjectFilePermissionsTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        project_filename = 'filey.txt'
+        self.retcode_points = 42
+        self.cmd = obj_build.make_full_ag_test_command(
+            set_arbitrary_expected_vals=False, set_arbitrary_points=False,
+            cmd='touch {}'.format(project_filename),
+            expected_return_code=ag_models.ExpectedReturnCode.zero,
+            points_for_correct_return_code=self.retcode_points)
+
+        self.ag_suite = self.cmd.ag_test_case.ag_test_suite
+        self.project = self.ag_suite.project
+        self.project_file = ag_models.UploadedFile.objects.validate_and_create(
+            project=self.project, file_obj=SimpleUploadedFile(project_filename, b'asdkfasdjkf'))
+        self.group = obj_build.make_group(project=self.project)
+        self.ag_suite.project_files_needed.add(self.project_file)
+        self.submission = obj_build.build_submission(submission_group=self.group)
+
+    def test_project_files_read_only(self):
+        self.assertTrue(self.ag_suite.read_only_project_files)
+        tasks.grade_submission(self.submission.pk)
+        self.submission.refresh_from_db()
+        self.assertEqual(0, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            self.retcode_points,
+            self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
+
+    def test_project_files_not_read_only(self):
+        self.ag_suite.validate_and_update(read_only_project_files=False)
+        tasks.grade_submission(self.submission.pk)
+        self.submission.refresh_from_db()
+        self.assertEqual(self.retcode_points,
+                         self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            self.retcode_points,
+            self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
 
 
 @tag('slow', 'sandbox')
