@@ -208,6 +208,7 @@ class Project(AutograderModel):
     SERIALIZABLE_FIELDS = (
         'pk',
         'name',
+        'last_modified',
         'course',
         'visible_to_students',
         'closing_time',

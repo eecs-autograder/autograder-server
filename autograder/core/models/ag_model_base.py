@@ -4,6 +4,7 @@ from django.db import models, transaction
 from django.core import exceptions
 
 import polymorphic.models as poly_models
+from django.utils import timezone
 
 import autograder.core.fields as ag_fields
 
@@ -272,6 +273,8 @@ class AutograderModel(_AutograderModelMixin, models.Model):
     objects = AutograderModelManager()
 
     INVALID_FIELD_NAMES_KEY = 'invalid_field_names'
+
+    last_modified = models.DateTimeField(auto_now=True)
 
 
 class PolymorphicAutograderModelManager(_AutograderModelManagerMixin,

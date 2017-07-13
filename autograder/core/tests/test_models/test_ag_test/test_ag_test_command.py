@@ -296,6 +296,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             'pk',
             'name',
             'ag_test_case',
+            'last_modified',
             'cmd',
 
             'stdin_source',
@@ -358,7 +359,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertIsInstance(cmd_dict['expected_stderr_source'], str)
 
         editable_dict = copy.deepcopy(cmd_dict)
-        for non_editable in ['pk', 'ag_test_case']:
+        for non_editable in ['pk', 'last_modified', 'ag_test_case']:
             editable_dict.pop(non_editable)
 
         ag_cmd.validate_and_update(**editable_dict)

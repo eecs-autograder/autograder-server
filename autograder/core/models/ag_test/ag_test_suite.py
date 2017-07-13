@@ -164,6 +164,7 @@ class AGTestSuite(AutograderModel):
         'pk',
         'name',
         'project',
+        'last_modified',
 
         'project_files_needed',
         'read_only_project_files',

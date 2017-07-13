@@ -53,6 +53,7 @@ class UploadedFile(AutograderModel):
         'pk',
         'project',
         'name',
+        'last_modified',
         'size',
     )
 

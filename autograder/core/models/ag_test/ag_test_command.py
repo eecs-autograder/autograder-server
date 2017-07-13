@@ -320,6 +320,7 @@ class AGTestCommand(AutograderModel):
         'pk',
         'name',
         'ag_test_case',
+        'last_modified',
         'cmd',
 
         'stdin_source',

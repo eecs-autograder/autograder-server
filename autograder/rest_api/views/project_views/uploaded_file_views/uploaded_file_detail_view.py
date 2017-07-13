@@ -50,6 +50,7 @@ class UploadedFileDetailViewSet(build_load_object_mixin(ag_models.UploadedFile),
     def content(self, request, pk):
         uploaded_file = self.load_object(pk)
         if request.method.lower() == 'put':
+            uploaded_file.save(update_fields=['last_modified'])
             if request.data['file_obj'].size > constants.MAX_PROJECT_FILE_SIZE:
                 return response.Response(
                     {'content': 'Project files cannot be bigger than {} bytes'.format(

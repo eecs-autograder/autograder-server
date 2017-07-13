@@ -153,11 +153,13 @@ class UpdateUploadedFileContentTestCase(_BuildFile,
         self.client.force_authenticate(self.admin)
         for project in self.all_projects:
             file_ = self.build_file(project)
+            original_last_modified = file_.last_modified
             response = self.client.put(file_content_url(file_),
                                        {'file_obj': self.updated_file},
                                        format='multipart')
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             file_.refresh_from_db()
+            self.assertNotEqual(original_last_modified, file_.last_modified)
             self.assertEqual(self.new_content, file_.file_obj.read())
             self.assertEqual(file_.to_dict(), response.data)
 

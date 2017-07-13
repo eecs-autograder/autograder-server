@@ -108,6 +108,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'pk',
             'name',
             'course',
+            'last_modified',
             'visible_to_students',
             'closing_time',
             'soft_closing_time',
@@ -138,6 +139,7 @@ class ProjectMiscTestCase(UnitTestBase):
         update_dict = copy.deepcopy(project_dict)
         update_dict.pop('pk')
         update_dict.pop('course')
+        update_dict.pop('last_modified')
         update_dict.pop('uploaded_files')
         update_dict.pop('expected_student_file_patterns')
         project.validate_and_update(**update_dict)

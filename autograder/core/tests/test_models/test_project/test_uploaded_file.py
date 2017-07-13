@@ -106,11 +106,13 @@ class RenameUploadedFileTestCase(_SetUp):
             file_obj=self.file_obj)
 
     def test_valid_rename(self):
+        original_last_modified = self.uploaded_file.last_modified
         new_name = 'new_filename'
         self.uploaded_file.rename(new_name)
 
         self.uploaded_file.refresh_from_db()
 
+        self.assertNotEqual(original_last_modified, self.uploaded_file.last_modified)
         self.assertEqual(new_name, self.uploaded_file.name)
         with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(new_name))
@@ -152,7 +154,8 @@ class UploadedFileMiscTestCase(_SetUp):
             'pk',
             'name',
             'size',
-            'project'
+            'project',
+            'last_modified',
         ]
 
         self.assertCountEqual(expected,

@@ -169,6 +169,7 @@ class AGTestCaseTestCase(UnitTestBase):
         expected_keys = [
             'pk',
             'name',
+            'last_modified',
             'ag_test_suite',
             'ag_test_commands',
             'normal_fdbk_config',
@@ -188,5 +189,6 @@ class AGTestCaseTestCase(UnitTestBase):
 
         update_dict = copy.deepcopy(test_dict)
         update_dict.pop('pk')
+        update_dict.pop('last_modified')
         update_dict.pop('ag_test_commands')
         ag_test.validate_and_update(**update_dict)

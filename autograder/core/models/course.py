@@ -27,9 +27,6 @@ class Course(AutograderModel):
     Related object fields:
         projects -- The group of Projects that belong to this Course.
     """
-    SERIALIZABLE_FIELDS = ('pk', 'name',)
-    EDITABLE_FIELDS = ('name',)
-
     name = ag_fields.ShortStringField(
         unique=True,
         validators=[validators.MinLengthValidator(1)],
@@ -101,8 +98,6 @@ class Course(AutograderModel):
         """
         return list(user.username for user in self.enrolled_students.all())
 
-    # -------------------------------------------------------------------------
-
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
@@ -115,3 +110,6 @@ class Course(AutograderModel):
             # thrown by os.makedirs will be handled at a higher level.
 
             os.makedirs(course_root_dir)
+
+    SERIALIZABLE_FIELDS = ('pk', 'name', 'last_modified',)
+    EDITABLE_FIELDS = ('name',)

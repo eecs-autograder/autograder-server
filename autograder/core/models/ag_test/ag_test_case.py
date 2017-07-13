@@ -107,6 +107,7 @@ class AGTestCase(AutograderModel):
     SERIALIZABLE_FIELDS = (
         'pk',
         'name',
+        'last_modified',
         'ag_test_suite',
         'ag_test_commands',
         'normal_fdbk_config',
