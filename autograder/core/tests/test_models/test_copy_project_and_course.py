@@ -42,7 +42,8 @@ class CopyProjectTestCase(UnitTestBase):
         self.assertEqual(other_course, new_project.course)
         self.assertNotEqual(project.course, other_course)
 
-        ignore_fields = ['pk', 'course', 'uploaded_files', 'expected_student_file_patterns']
+        ignore_fields = ['pk', 'course', 'last_modified',
+                         'uploaded_files', 'expected_student_file_patterns']
         expected = _pop_many(project.to_dict(), ignore_fields)
         expected.update({'visible_to_students': False, 'hide_ultimate_submission_fdbk': True})
         self.assertEqual(expected, _pop_many(new_project.to_dict(), ignore_fields))
@@ -86,7 +87,8 @@ class CopyProjectTestCase(UnitTestBase):
                 ag_test_case__ag_test_suite__project=new_project)}
         self.assertTrue(old_cmd_pks.isdisjoint(new_cmd_pks))
 
-        ignore_fields = ['pk', 'project', 'ag_test_suite', 'ag_test_case', 'ag_test_command']
+        ignore_fields = ['pk', 'project', 'last_modified',
+                         'ag_test_suite', 'ag_test_case', 'ag_test_command']
         expected = _recursive_pop(
             [suite.to_dict() for suite in project.ag_test_suites.all()], ignore_fields)
         actual = _recursive_pop(

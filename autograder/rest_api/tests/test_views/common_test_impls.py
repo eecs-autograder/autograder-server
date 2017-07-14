@@ -7,6 +7,8 @@ from django.core import exceptions
 
 from rest_framework import status
 
+from autograder import utils
+
 
 class PermissionDeniedGetTest:
     def do_permission_denied_get_test(self, client, user, url, format='json'):
@@ -90,6 +92,7 @@ class UpdateObjectTest:
     def do_patch_object_test(self, ag_model_obj, client, user, url,
                              request_data, format='json'):
         expected_data = ag_model_obj.to_dict()
+        expected_data.pop('last_modified', None)
         for key, value in request_data.items():
             if isinstance(value, dict):
                 expected_data[key].update(value)
@@ -101,8 +104,10 @@ class UpdateObjectTest:
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
-        self.assertDictContentsEqual(expected_data, ag_model_obj.to_dict())
-        self.assertDictContentsEqual(expected_data, response.data)
+        self.assertDictContentsEqual(expected_data,
+                                     utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
+        self.assertDictContentsEqual(expected_data,
+                                     utils.exclude_dict(response.data, 'last_modified'))
 
         return response
 
@@ -122,6 +127,7 @@ class UpdateObjectTest:
     def do_put_object_test(self, ag_model_obj, client, user, url,
                            request_data, format='json'):
         expected_data = ag_model_obj.to_dict()
+        expected_data.pop('last_modified', None)
         expected_data.update(request_data)
 
         client.force_authenticate(user)
@@ -129,8 +135,10 @@ class UpdateObjectTest:
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
-        self.assertDictContentsEqual(expected_data, ag_model_obj.to_dict())
-        self.assertDictContentsEqual((expected_data), (response.data))
+        self.assertDictContentsEqual(expected_data,
+                                     utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
+        self.assertDictContentsEqual(expected_data,
+                                     utils.exclude_dict(response.data, 'last_modified'))
 
         return response
 
