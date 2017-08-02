@@ -1,4 +1,7 @@
-FROM python:3.5-onbuild
+FROM python:3.5
 
-VOLUME /usr/src/app/autograder/media_root
-VOLUME /usr/src/app/autograder/media_root_dev
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+WORKDIR /usr/src/app
+VOLUME /usr/src/app

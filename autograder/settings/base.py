@@ -16,7 +16,9 @@ import json
 
 from django.utils.crypto import get_random_string
 
+# This is the autograder-server directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# autograder-server/media_root
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media_root'))
 
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))

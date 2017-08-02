@@ -38,12 +38,13 @@ def oauth2_callback(request):
 
     email = email['value']
 
-    user = User.objects.get_or_create(username=email)[0]
-    # TODO: move first and last name setting into call to get_or_create
-    # once all current users have first and last name
+    first_name = user_info['name']['givenName'][:_DJANGO_NAME_MAX_LEN]
+    last_name = user_info['name']['familyName'][:_DJANGO_NAME_MAX_LEN]
+    user = User.objects.get_or_create(
+        username=email, defaults={'first_name': first_name,'last_name': last_name})[0]
     if not user.first_name:
-        user.first_name = user_info['name']['givenName'][:_DJANGO_NAME_MAX_LEN]
-        user.last_name = user_info['name']['familyName'][:_DJANGO_NAME_MAX_LEN]
+        user.first_name = first_name
+        user.last_name = last_name
         user.save()
 
     # Minor hack: Set the backend attribute of user manually to satisfy

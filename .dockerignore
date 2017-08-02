@@ -1,6 +1,6 @@
 tmp_filesystem
-media_root
-media_root_dev
+autograder/media_root
+autograder/media_root_dev
 old
 venv
 __pycache__
