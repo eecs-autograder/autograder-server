@@ -7,6 +7,7 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
+from autograder.core import constants
 from autograder.core.models.autograder_test_case import feedback_config
 
 from autograder import utils
@@ -90,6 +91,7 @@ class SubmissionTestCase(UnitTestBase):
         # Check file contents in the filesystem
         self.assertTrue(os.path.isdir(core_ut.get_submission_dir(submission)))
         with utils.ChangeDirectory(core_ut.get_submission_dir(submission)):
+            self.assertTrue(os.path.isdir(constants.FILESYSTEM_RESULT_OUTPUT_DIRNAME))
             for name, content in files_to_submit:
                 self.assertEqual(name, submission.get_file(name).name)
                 self.assertEqual(content, submission.get_file(name).read())

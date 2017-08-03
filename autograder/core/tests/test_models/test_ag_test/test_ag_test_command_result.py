@@ -1,3 +1,6 @@
+import tempfile
+from io import FileIO
+from typing import Callable
 from unittest import mock
 
 import autograder.core.models as ag_models
@@ -153,7 +156,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         fdbk = correct_cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_diff)
-        self.assertEqual(correct_cmd_result.stdout, fdbk.stdout)
+        self.assertEqual(_stdout_text(correct_cmd_result), _stdout_text(fdbk))
         self.assertEqual(0, fdbk.stdout_points)
         self.assertEqual(0, fdbk.stdout_points_possible)
 
@@ -184,7 +187,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         fdbk = correct_cmd_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
-        self.assertEqual(correct_cmd_result.stderr, fdbk.stderr)
+        self.assertEqual(_stderr_text(correct_cmd_result), _stderr_text(fdbk))
         self.assertEqual(0, fdbk.stderr_points)
         self.assertEqual(0, fdbk.stderr_points_possible)
 
@@ -396,8 +399,9 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result = self.make_correct_result()
         fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.stdout_correct)
-        diff = core_ut.get_diff(self.ag_test_command.expected_stdout_text, correct_result.stdout)
-        self.assertEqual(diff, fdbk.stdout_diff)
+        diff = _get_expected_diff(self.ag_test_command.expected_stdout_text,
+                                  correct_result.open_stdout)
+        self.assertEqual(diff.diff_content.read(), fdbk.stdout_diff.diff_content.read())
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
                          fdbk.stdout_points)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
@@ -408,8 +412,9 @@ class AGTestCommandResultTestCase(UnitTestBase):
         incorrect_result = self.make_incorrect_result()
         fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertFalse(fdbk.stdout_correct)
-        diff = core_ut.get_diff(self.ag_test_command.expected_stdout_text, incorrect_result.stdout)
-        self.assertEqual(diff, fdbk.stdout_diff)
+        diff = _get_expected_diff(self.ag_test_command.expected_stdout_text,
+                                  incorrect_result.open_stdout)
+        self.assertEqual(diff.diff_content.read(), fdbk.stdout_diff.diff_content.read())
         self.assertEqual(self.ag_test_command.deduction_for_wrong_stdout,
                          fdbk.stdout_points)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
@@ -426,13 +431,17 @@ class AGTestCommandResultTestCase(UnitTestBase):
             expected_stdout = f.read()
         result.stdout = expected_stdout
         result.save()
-        diff = core_ut.get_diff(expected_stdout, result.stdout)
-        self.assertEqual(diff, result.get_fdbk(ag_models.FeedbackCategory.normal).stdout_diff)
+        diff = _get_expected_diff(expected_stdout, result.open_stdout)
+        self.assertEqual(
+            diff.diff_content.read(),
+            result.get_fdbk(ag_models.FeedbackCategory.normal).stdout_diff.diff_content.read())
 
         result.stdout = 'the wrong stdout'
         result.save()
-        diff = core_ut.get_diff(expected_stdout, result.stdout)
-        self.assertEqual(diff, result.get_fdbk(ag_models.FeedbackCategory.normal).stdout_diff)
+        diff = _get_expected_diff(expected_stdout, result.open_stdout)
+        self.assertEqual(
+            diff.diff_content.read(),
+            result.get_fdbk(ag_models.FeedbackCategory.normal).stdout_diff.diff_content.read())
 
     def test_stdout_show_actual(self):
         self.ag_test_command.normal_fdbk_config.validate_and_update(
@@ -441,7 +450,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         result = self.make_correct_result()
         fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
-        self.assertEqual(result.stdout, fdbk.stdout)
+        self.assertEqual(_stdout_text(result), _stdout_text(fdbk))
         self.assertIsNone(fdbk.stdout_correct)
         self.assertEqual(0, fdbk.stdout_points)
         self.assertEqual(0, fdbk.stdout_points_possible)
@@ -522,8 +531,9 @@ class AGTestCommandResultTestCase(UnitTestBase):
         correct_result = self.make_correct_result()
         fdbk = correct_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.stderr_correct)
-        diff = core_ut.get_diff(self.ag_test_command.expected_stderr_text, correct_result.stderr)
-        self.assertEqual(diff, fdbk.stderr_diff)
+        diff = _get_expected_diff(self.ag_test_command.expected_stderr_text,
+                                  correct_result.open_stderr)
+        self.assertEqual(diff.diff_content.read(), fdbk.stderr_diff.diff_content.read())
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
                          fdbk.stderr_points)
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
@@ -534,8 +544,9 @@ class AGTestCommandResultTestCase(UnitTestBase):
         incorrect_result = self.make_incorrect_result()
         fdbk = incorrect_result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertFalse(fdbk.stderr_correct)
-        diff = core_ut.get_diff(self.ag_test_command.expected_stderr_text, incorrect_result.stderr)
-        self.assertEqual(diff, fdbk.stderr_diff)
+        diff = _get_expected_diff(self.ag_test_command.expected_stderr_text,
+                                  incorrect_result.open_stderr)
+        self.assertEqual(diff.diff_content.read(), fdbk.stderr_diff.diff_content.read())
         self.assertEqual(self.ag_test_command.deduction_for_wrong_stderr,
                          fdbk.stderr_points)
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
@@ -552,13 +563,17 @@ class AGTestCommandResultTestCase(UnitTestBase):
             expected_stderr = f.read()
         result.stderr = expected_stderr
         result.save()
-        diff = core_ut.get_diff(expected_stderr, result.stderr)
-        self.assertEqual(diff, result.get_fdbk(ag_models.FeedbackCategory.normal).stderr_diff)
+        diff = _get_expected_diff(expected_stderr, result.open_stderr)
+        self.assertEqual(
+            diff.diff_content.read(),
+            result.get_fdbk(ag_models.FeedbackCategory.normal).stderr_diff.diff_content.read())
 
         result.stderr = 'the wrong stderr'
         result.save()
-        diff = core_ut.get_diff(expected_stderr, result.stderr)
-        self.assertEqual(diff, result.get_fdbk(ag_models.FeedbackCategory.normal).stderr_diff)
+        diff = _get_expected_diff(expected_stderr, result.open_stderr)
+        self.assertEqual(
+            diff.diff_content.read(),
+            result.get_fdbk(ag_models.FeedbackCategory.normal).stderr_diff.diff_content.read())
 
     def test_stderr_show_actual(self):
         self.ag_test_command.normal_fdbk_config.validate_and_update(
@@ -567,7 +582,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         result = self.make_correct_result()
         fdbk = result.get_fdbk(ag_models.FeedbackCategory.normal)
 
-        self.assertEqual(result.stderr, fdbk.stderr)
+        self.assertEqual(_stderr_text(result), _stderr_text(fdbk))
         self.assertIsNone(fdbk.stderr_correct)
         self.assertEqual(0, fdbk.stderr_points)
         self.assertEqual(0, fdbk.stderr_points_possible)
@@ -676,30 +691,34 @@ class AGTestCommandResultTestCase(UnitTestBase):
             **diff_options)
 
         result = self.make_correct_result()
-        result.stdout = actual_stdout
-        result.stderr = actual_stderr
-        result.save()
+        with result.open_stdout('w') as f:
+            f.write(actual_stdout)
+            actual_stdout_filename = f.name
+        with result.open_stderr('w') as f:
+            f.write(actual_stderr)
+            actual_stderr_filename = f.name
 
         mock_path = 'autograder.core.utils.get_diff'
         with mock.patch(mock_path) as mock_differ_cls:
             result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff
-            mock_differ_cls.assert_called_with(expected_stdout, actual_stdout,
+            mock_differ_cls.assert_called_with(mock.ANY, actual_stdout_filename,
                                                **diff_options)
 
         with mock.patch(mock_path) as mock_differ_cls:
             result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff
-            mock_differ_cls.assert_called_with(expected_stderr, actual_stderr,
+            mock_differ_cls.assert_called_with(mock.ANY, actual_stderr_filename,
                                                **diff_options)
 
         if expect_stdout_correct:
-            self.assertEqual([], result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff)
+            diff = result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff
+            self.assertTrue(diff.diff_pass, msg=diff.diff_content.read().decode())
         else:
-            self.assertNotEqual([], result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff)
+            self.assertFalse(result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff.diff_pass)
 
         if expect_stderr_correct:
-            self.assertEqual([], result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff)
+            self.assertTrue(result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff.diff_pass)
         else:
-            self.assertNotEqual([], result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff)
+            self.assertFalse(result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff.diff_pass)
 
     def _get_diff_options(self, options_value):
         return {
@@ -742,3 +761,36 @@ class AGTestCommandResultTestCase(UnitTestBase):
 
         self.assertCountEqual(expected_keys,
                               result.get_fdbk(ag_models.FeedbackCategory.max).to_dict().keys())
+
+
+def _stdout_text(result_or_fdbk) -> str:
+    if isinstance(result_or_fdbk, ag_models.AGTestCommandResult):
+        with result_or_fdbk.open_stdout('r') as f:
+            return f.read()
+    elif isinstance(result_or_fdbk, ag_models.AGTestCommandResult.FeedbackCalculator):
+        return result_or_fdbk.stdout.read().decode()
+
+
+def _stderr_text(result_or_fdbk) -> str:
+    if isinstance(result_or_fdbk, ag_models.AGTestCommandResult):
+        with result_or_fdbk.open_stdout('r') as f:
+            return f.read()
+    elif isinstance(result_or_fdbk, ag_models.AGTestCommandResult.FeedbackCalculator):
+        return result_or_fdbk.stdout.read().decode()
+
+
+def _write_stdout(result, stdout):
+    with result.open_stdout('w') as f:
+        f.write(stdout)
+
+
+def _write_stderr(result, stderr):
+    with result.open_stderr('w') as f:
+        f.write(stderr)
+
+
+def _get_expected_diff(expected_text: str, actual_output_file_func: Callable[[], FileIO]):
+    with tempfile.NamedTemporaryFile('w') as f, actual_output_file_func() as actual:
+        f.write(expected_text)
+        f.flush()
+        return core_ut.get_diff(f.name, actual.name)

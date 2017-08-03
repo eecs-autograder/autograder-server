@@ -117,7 +117,15 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
 
                 for cmd_res in case_result.get_fdbk(fdbk_category).ag_test_command_results:
                     if cmd_res == cmd_result:
-                        return response.Response(
-                            getattr(cmd_res.get_fdbk(fdbk_category), field_name))
+                        data = getattr(cmd_res.get_fdbk(fdbk_category), field_name)
+                        if data is None:
+                            return response.Response(data)
+
+                        if field_name == 'stdout' or field_name == 'stderr':
+                            return FileResponse(data)
+                        elif field_name == 'stdout_diff' or field_name == 'stderr_diff':
+                            return FileResponse(data.diff_content)
+                        else:
+                            raise Exception('Invalid field name: {}'.format(field_name))
 
         return response.Response(None)

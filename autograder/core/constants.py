@@ -15,6 +15,7 @@ PROJECT_SUBMISSIONS_DIRNAME = 'submission_groups'
 
 # The subdirectory of settings.MEDIA_ROOT where courses will be placed.
 FILESYSTEM_ROOT_COURSES_DIRNAME = 'courses'
+FILESYSTEM_RESULT_OUTPUT_DIRNAME = 'output'
 
 MAX_COMMAND_LENGTH = 1000
 

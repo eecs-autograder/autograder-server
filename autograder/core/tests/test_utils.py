@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 from django.test import TestCase
 from django.conf import settings
@@ -14,59 +15,75 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class DiffTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.file1 = tempfile.NamedTemporaryFile()
+        self.file2 = tempfile.NamedTemporaryFile()
+
+    def tearDown(self):
+        super().tearDown()
+        self.file1.close()
+        self.file2.close()
+
+    def _write_and_seek(self, file_, content):
+        if isinstance(content, str):
+            content = content.encode()
+        file_.write(content)
+        file_.seek(0)
+
     def test_diff_content(self):
-        str1 = '\n'.join(('q', 'a', 'b', 'x', 'c', 'd', 'e\n'))
-        str2 = '\n'.join(('a', 'b', 'y', 'c', 'd', 'f', 'e\n'))
+        self._write_and_seek(self.file1, '\n'.join(('q', 'a', 'b', 'x', 'c', 'd', 'e\n')))
+        self._write_and_seek(self.file2, '\n'.join(('a', 'b', 'y', 'c', 'd', 'f', 'e\n')))
 
         expected = [
-            '- q\n',
-            '  a\n',
-            '  b\n',
-            '- x\n',
-            '+ y\n',
-            '  c\n',
-            '  d\n',
-            '+ f\n',
-            '  e\n'
+            b'- q\n',
+            b'  a\n',
+            b'  b\n',
+            b'- x\n',
+            b'+ y\n',
+            b'  c\n',
+            b'  d\n',
+            b'+ f\n',
+            b'  e\n'
         ]
 
-        diff = core_ut.get_diff(str1, str2)
+        diff = core_ut.get_diff(self.file1.name, self.file2.name)
 
-        self.assertEqual(expected, list(diff))
+        self.assertEqual(expected, list(diff.diff_content))
 
     def test_ignore_case(self):
-        str1 = 'SPAM'
-        str2 = 'spam'
-        self.assertEqual([], core_ut.get_diff(str1, str2, ignore_case=True))
+        self._write_and_seek(self.file1, 'SPAM')
+        self._write_and_seek(self.file2, 'spam')
+        result = core_ut.get_diff(self.file1.name, self.file2.name, ignore_case=True)
+        self.assertTrue(result.diff_pass)
 
     def test_ignore_whitespace(self):
-        str1 = 'spam egg'
-        str2 = '   spam   \tegg  '
-        self.assertEqual(
-            [], core_ut.get_diff(str1, str2, ignore_whitespace=True))
+        self._write_and_seek(self.file1, 'spam egg')
+        self._write_and_seek(self.file2, '   spam   \tegg  ')
+        result = core_ut.get_diff(self.file1.name, self.file2.name, ignore_whitespace=True)
+        self.assertTrue(result.diff_pass)
 
     def test_ignore_whitespace_changes(self):
-        str1 = 'spam egg'
-        str2 = 'spam   \tegg'
-        self.assertEqual(
-            [], core_ut.get_diff(str1, str2, ignore_whitespace_changes=True))
+        self._write_and_seek(self.file1, 'spam egg')
+        self._write_and_seek(self.file2, 'spam   \tegg')
+        result = core_ut.get_diff(self.file1.name, self.file2.name, ignore_whitespace_changes=True)
+        self.assertTrue(result.diff_pass)
 
     def test_ignore_blank_lines(self):
-        str1 = 'spam\n\n\negg\n'
-        str2 = 'spam\negg\n'
-        self.assertEqual(
-            [], core_ut.get_diff(str1, str2, ignore_blank_lines=True))
+        self._write_and_seek(self.file1, 'spam\n\n\negg\n')
+        self._write_and_seek(self.file2, 'spam\negg\n')
+        result = core_ut.get_diff(self.file1.name, self.file2.name, ignore_blank_lines=True)
+        self.assertTrue(result.diff_pass)
 
     def test_all_ignore_options(self):
-        str1 = 'spam sausage\n\n\negg\n'
-        str2 = 'SPAM   \tsausage\negg\n'
-        self.assertEqual([],
-                         core_ut.get_diff(
-                             str1, str2,
-                             ignore_case=True,
-                             ignore_whitespace=True,
-                             ignore_whitespace_changes=True,
-                             ignore_blank_lines=True))
+        self._write_and_seek(self.file1, 'spam sausage\n\n\negg\n')
+        self._write_and_seek(self.file2, 'SPAM   \tsausage\negg\n')
+        result = core_ut.get_diff(self.file1.name, self.file2.name,
+                                  ignore_case=True,
+                                  ignore_whitespace=True,
+                                  ignore_whitespace_changes=True,
+                                  ignore_blank_lines=True)
+        self.assertTrue(result.diff_pass)
 
 
 class CheckFilenameTest(TestCase):
@@ -186,6 +203,26 @@ class FileSystemUtilTestCase(UnitTestBase):
         expected_absolute = os.path.join(
             settings.MEDIA_ROOT, expected_relative)
         actual_absolute = core_ut.get_submission_dir(submission)
+        self.assertEqual(expected_absolute, actual_absolute)
+
+    def test_get_result_output_dir(self):
+        submission = ag_models.Submission.objects.validate_and_create(
+            submission_group=self.group, submitted_files=[])
+
+        submission_dir_basename = 'submission{}'.format(submission.pk)
+
+        expected_absolute = os.path.join(
+            settings.MEDIA_ROOT,
+            "{0}/{1}/{2}/{3}/{4}/{5}/{6}".format(
+                constants.FILESYSTEM_ROOT_COURSES_DIRNAME,
+                self.course_dirname,
+                self.project_dirname,
+                constants.PROJECT_SUBMISSIONS_DIRNAME,
+                self.group_dir_basename,
+                submission_dir_basename,
+                constants.FILESYSTEM_RESULT_OUTPUT_DIRNAME))
+
+        actual_absolute = core_ut.get_result_output_dir(submission)
         self.assertEqual(expected_absolute, actual_absolute)
 
 # -----------------------------------------------------------------------------

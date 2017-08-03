@@ -349,8 +349,6 @@ def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand
         'ag_test_command': ag_test_command,
         'ag_test_case_result': ag_test_case_result,
         'return_code': return_code,
-        'stdout': stdout,
-        'stderr': stderr,
 
         'return_code_correct': True,
         'stdout_correct': True,
@@ -359,7 +357,14 @@ def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand
 
     kwargs.update(result_kwargs)
 
-    return ag_models.AGTestCommandResult.objects.validate_and_create(**kwargs)
+    result = ag_models.AGTestCommandResult.objects.validate_and_create(**kwargs)
+    with result.open_stdout('w') as f:
+        f.write(stdout)
+
+    with result.open_stderr('w') as f:
+        f.write(stderr)
+
+    return result
 
 
 def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestCommand,
@@ -377,10 +382,15 @@ def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestComma
     result = make_correct_ag_test_command_result(
         ag_test_command, ag_test_case_result, submission, **result_kwargs)
     result.return_code = 42 if result.return_code == 0 else 0
-    result.stdout += 'laksdjhnflkajhdflkas'
-    result.stderr += 'ncbsljksdkfjas'
     result.return_code_correct = False
     result.stdout_correct = False
     result.stderr_correct = False
     result.save()
+
+    with result.open_stdout('a') as f:
+        f.write('laksdjhnflkajhdflkas')
+
+    with result.open_stderr('a') as f:
+        f.write('ncbsljksdkfjas')
+
     return result

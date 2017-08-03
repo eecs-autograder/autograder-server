@@ -3,7 +3,8 @@ import enum
 import os
 import tempfile
 import subprocess
-from typing import List
+from io import FileIO
+from typing import List, Union
 
 from django.conf import settings
 from django.core import exceptions
@@ -12,11 +13,17 @@ from django.utils import timezone
 from . import constants as const
 
 
-def get_diff(first: str, second: str,
+class DiffResult:
+    def __init__(self, diff_pass: bool, diff_content: FileIO):
+        self.diff_pass = diff_pass
+        self.diff_content = diff_content
+
+
+def get_diff(first_filename: str, second_filename: str,
              ignore_case=False,
              ignore_whitespace=False,
              ignore_whitespace_changes=False,
-             ignore_blank_lines=False) -> List[str]:
+             ignore_blank_lines=False) -> DiffResult:
     """
     Diffs first and second using the GNU diff command line utility.
     Returns an empty list if first and second are considered equivalent.
@@ -24,34 +31,25 @@ def get_diff(first: str, second: str,
     with one of the two-letter opcodes used by
     https://docs.python.org/3.5/library/difflib.html#difflib.Differ
     """
-    with tempfile.NamedTemporaryFile('w') as f1, tempfile.NamedTemporaryFile('w') as f2:
-        f1.write(first)
-        f1.seek(0)
-        f2.write(second)
-        f2.seek(0)
+    diff_cmd = ['diff',
+                '--new-line-format', '+ %L',
+                '--old-line-format', '- %L',
+                '--unchanged-line-format', '  %L']
+    if ignore_case:
+        diff_cmd.append('--ignore-case')
+    if ignore_whitespace:
+        diff_cmd.append('--ignore-all-space')
+    if ignore_whitespace_changes:
+        diff_cmd.append('--ignore-space-change')
+    if ignore_blank_lines:
+        diff_cmd.append('--ignore-blank-lines')
 
-        diff_cmd = ['diff',
-                    '--new-line-format', '+ %L',
-                    '--old-line-format', '- %L',
-                    '--unchanged-line-format', '  %L']
-        if ignore_case:
-            diff_cmd.append('--ignore-case')
-        if ignore_whitespace:
-            diff_cmd.append('--ignore-all-space')
-        if ignore_whitespace_changes:
-            diff_cmd.append('--ignore-space-change')
-        if ignore_blank_lines:
-            diff_cmd.append('--ignore-blank-lines')
+    diff_cmd += [first_filename, second_filename]
 
-        diff_cmd += [f1.name, f2.name]
-
-        diff_result = subprocess.run(
-            diff_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        if diff_result.returncode == 0:
-            return list()
-
-        return diff_result.stdout.decode(
-            'utf-8', 'backslashreplace').splitlines(keepends=True)
+    diff_stdout = tempfile.NamedTemporaryFile()
+    diff_result = subprocess.run(diff_cmd, stdout=diff_stdout, stderr=subprocess.STDOUT)
+    diff_stdout.seek(0)
+    return DiffResult(diff_result.returncode == 0, diff_stdout)
 
 
 def get_24_hour_period(start_time, contains_datetime: datetime.datetime,
@@ -215,6 +213,10 @@ def get_submission_relative_dir(submission):
 
 def get_submission_dir_basename(submission):
     return 'submission{}'.format(submission.pk)
+
+
+def get_result_output_dir(submission):
+    return os.path.join(get_submission_dir(submission),'output')
 
 
 # -----------------------------------------------------------------------------

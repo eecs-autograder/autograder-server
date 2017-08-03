@@ -1,6 +1,7 @@
 import os
 
 from django.core.urlresolvers import reverse
+from django.http import FileResponse
 from django.http import QueryDict
 from django.utils import timezone
 
@@ -9,6 +10,7 @@ from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 from autograder.core.models import Submission
+import autograder.core.utils as core_ut
 
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -774,8 +776,15 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         for url, field_name in urls_and_field_names:
             response = client.get(url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
-            self.assertEqual(getattr(cmd_result.get_fdbk(fdbk_category), field_name),
-                             response.data)
+            expected = getattr(cmd_result.get_fdbk(fdbk_category), field_name)
+            if not isinstance(response, FileResponse):
+                self.assertIsNone(response.data)
+                return
+            if isinstance(expected, core_ut.DiffResult):
+                expected = expected.diff_content.read()
+            else:
+                expected = expected.read()
+            self.assertEqual(expected, b''.join((chunk for chunk in response.streaming_content)))
 
     def do_get_output_and_diff_on_hidden_ag_test_test(self, client,
                                                       submission: ag_models.Submission,

@@ -1,3 +1,7 @@
+import os
+import tempfile
+from io import FileIO
+
 from django.db import models
 
 from autograder.core.models.ag_model_base import ToDictMixin
@@ -44,6 +48,12 @@ class AGTestCommandResult(AutograderModel):
     return_code_correct = models.NullBooleanField(null=True, default=None)
     stdout_correct = models.NullBooleanField(null=True, default=None)
     stderr_correct = models.NullBooleanField(null=True, default=None)
+
+    def open_stdout(self, mode='rb'):
+        return open(_get_cmd_result_stdout_filename(self), mode)
+
+    def open_stderr(self, mode='rb'):
+        return open(_get_cmd_result_stderr_filename(self), mode)
 
     def save(self, *args, **kwargs):
         self._check_len_and_truncate('stdout')
@@ -169,34 +179,41 @@ class AGTestCommandResult(AutograderModel):
             return self._ag_test_command_result.stdout_correct
 
         @property
-        def stdout(self):
+        def stdout(self) -> FileIO:
             if (self._fdbk.show_actual_stdout or
                     self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual):
-                return self._ag_test_command_result.stdout
+                return self._ag_test_command_result.open_stdout()
 
             return None
 
         @property
-        def stdout_diff(self):
+        def stdout_diff(self) -> core_ut.DiffResult:
             if (self._cmd.expected_stdout_source == ExpectedOutputSource.none or
                     self._fdbk.stdout_fdbk_level != ValueFeedbackLevel.expected_and_actual):
                 return None
 
+            stdout_filename = _get_cmd_result_stdout_filename(self._ag_test_command_result)
+            diff_whitespace_kwargs = {
+                'ignore_blank_lines': self._cmd.ignore_blank_lines,
+                'ignore_case': self._cmd.ignore_case,
+                'ignore_whitespace': self._cmd.ignore_whitespace,
+                'ignore_whitespace_changes': self._cmd.ignore_whitespace_changes
+            }
+
             # check source and return diff
             if self._cmd.expected_stdout_source == ExpectedOutputSource.text:
-                expected_stdout = self._cmd.expected_stdout_text
+                with tempfile.NamedTemporaryFile('w') as expected_stdout:
+                    expected_stdout.write(self._cmd.expected_stdout_text)
+                    expected_stdout.flush()
+                    return core_ut.get_diff(expected_stdout.name, stdout_filename,
+                                            **diff_whitespace_kwargs)
             elif self._cmd.expected_stdout_source == ExpectedOutputSource.project_file:
-                with self._cmd.expected_stdout_project_file.open() as f:
-                    expected_stdout = f.read()
+                return core_ut.get_diff(self._cmd.expected_stdout_project_file.abspath,
+                                        stdout_filename,
+                                        **diff_whitespace_kwargs)
             else:
                 raise ValueError(
                     'Invalid expected stdout source: {}'.format(self._cmd.expected_stdout_source))
-
-            return core_ut.get_diff(expected_stdout, self._ag_test_command_result.stdout,
-                                    ignore_blank_lines=self._cmd.ignore_blank_lines,
-                                    ignore_case=self._cmd.ignore_case,
-                                    ignore_whitespace=self._cmd.ignore_whitespace,
-                                    ignore_whitespace_changes=self._cmd.ignore_whitespace_changes)
 
         @property
         def stdout_points(self):
@@ -224,33 +241,40 @@ class AGTestCommandResult(AutograderModel):
             return self._ag_test_command_result.stderr_correct
 
         @property
-        def stderr(self):
+        def stderr(self) -> FileIO:
             if (self._fdbk.show_actual_stderr or
                     self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual):
-                return self._ag_test_command_result.stderr
+                return self._ag_test_command_result.open_stderr()
 
             return None
 
         @property
-        def stderr_diff(self):
+        def stderr_diff(self) -> core_ut.DiffResult:
             if (self._cmd.expected_stderr_source == ExpectedOutputSource.none or
                     self._fdbk.stderr_fdbk_level != ValueFeedbackLevel.expected_and_actual):
                 return None
 
+            stderr_filename = _get_cmd_result_stderr_filename(self._ag_test_command_result)
+            diff_whitespace_kwargs = {
+                'ignore_blank_lines': self._cmd.ignore_blank_lines,
+                'ignore_case': self._cmd.ignore_case,
+                'ignore_whitespace': self._cmd.ignore_whitespace,
+                'ignore_whitespace_changes': self._cmd.ignore_whitespace_changes
+            }
+
             if self._cmd.expected_stderr_source == ExpectedOutputSource.text:
-                expected_stderr = self._cmd.expected_stderr_text
+                with tempfile.NamedTemporaryFile('w') as expected_stderr:
+                    expected_stderr.write(self._cmd.expected_stderr_text)
+                    expected_stderr.flush()
+                    return core_ut.get_diff(expected_stderr.name, stderr_filename,
+                                            **diff_whitespace_kwargs)
             elif self._cmd.expected_stderr_source == ExpectedOutputSource.project_file:
-                with self._cmd.expected_stderr_project_file.open() as f:
-                    expected_stderr = f.read()
+                return core_ut.get_diff(self._cmd.expected_stderr_project_file.abspath,
+                                        stderr_filename,
+                                        **diff_whitespace_kwargs)
             else:
                 raise ValueError(
                     'Invalid expected stderr source: {}'.format(self._cmd.expected_stdout_source))
-
-            return core_ut.get_diff(expected_stderr, self._ag_test_command_result.stderr,
-                                    ignore_blank_lines=self._cmd.ignore_blank_lines,
-                                    ignore_case=self._cmd.ignore_case,
-                                    ignore_whitespace=self._cmd.ignore_whitespace,
-                                    ignore_whitespace_changes=self._cmd.ignore_whitespace_changes)
 
         @property
         def stderr_points(self):
@@ -309,3 +333,15 @@ class AGTestCommandResult(AutograderModel):
             'total_points',
             'total_points_possible'
         )
+
+
+def _get_cmd_result_stdout_filename(cmd_result: AGTestCommandResult):
+    result_output_dir = core_ut.get_result_output_dir(
+        cmd_result.ag_test_case_result.ag_test_suite_result.submission)
+    return os.path.join(result_output_dir, 'cmd_result_{}_stdout'.format(cmd_result.pk))
+
+
+def _get_cmd_result_stderr_filename(cmd_result: AGTestCommandResult):
+    result_output_dir = core_ut.get_result_output_dir(
+        cmd_result.ag_test_case_result.ag_test_suite_result.submission)
+    return os.path.join(result_output_dir, 'cmd_result_{}_stderr'.format(cmd_result.pk))
