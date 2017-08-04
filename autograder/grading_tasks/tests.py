@@ -1,10 +1,10 @@
 import os
 import random
 import shlex
+import tempfile
 from unittest import mock
 
-import subprocess
-from autograder_sandbox import AutograderSandbox
+from autograder_sandbox import AutograderSandbox, CompletedCommand
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
@@ -921,8 +921,13 @@ sys.stderr.flush()
         )
 
         sandbox = AutograderSandbox()
-        run_command_mock = mock.Mock(return_value=subprocess.CompletedProcess(
-            ['asdf'], returncode=0, stdout='adflkjasdf', stderr='adklfjasdkfjasdj'))
+
+        def make_run_command_ret_val(*args, **kwargs):
+            return CompletedCommand(
+                return_code=0, stdout=tempfile.NamedTemporaryFile(),
+                stderr=tempfile.NamedTemporaryFile(), timed_out=False)
+
+        run_command_mock = mock.Mock(side_effect=make_run_command_ret_val)
         sandbox.run_command = run_command_mock
         with mock.patch('autograder.grading_tasks.tasks.AutograderSandbox', return_value=sandbox):
             tasks.grade_submission(self.submission.pk)
@@ -942,7 +947,7 @@ sys.stderr.flush()
         run_command_mock.assert_has_calls([
             mock.call(shlex.split(self.ag_test_suite.setup_suite_cmd),
                       as_root=False, **expected_setup_and_teardown_resource_kwargs),
-            mock.call(shlex.split(cmd.cmd), input='', as_root=False, **expected_cmd_args),
+            mock.call(shlex.split(cmd.cmd), stdin=None, as_root=False, **expected_cmd_args),
             mock.call(shlex.split(self.ag_test_suite.teardown_suite_cmd),
                       as_root=False, **expected_setup_and_teardown_resource_kwargs)
         ])
