@@ -328,7 +328,7 @@ class Submission(ag_model_base.AutograderModel):
         # result_output_dir is a subdir of the submission dir
         result_output_dir = core_ut.get_result_output_dir(self)
         if not os.path.isdir(result_output_dir):
-            os.makedirs(result_output_dir)
+            os.makedirs(result_output_dir, exist_ok=True)
 
     def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'Submission.FeedbackCalculator':
         return Submission.FeedbackCalculator(self, fdbk_category)

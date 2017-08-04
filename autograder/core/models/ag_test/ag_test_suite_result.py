@@ -47,7 +47,7 @@ class AGTestSuiteResult(AutograderModel):
     @property
     def setup_stdout_filename(self):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'suite_result{}_setup_stdout')
+                            'suite_result_{}_setup_stdout'.format(self.pk))
 
     def open_setup_stderr(self, mode='rb'):
         return open(self.setup_stderr_filename, mode)
@@ -55,7 +55,7 @@ class AGTestSuiteResult(AutograderModel):
     @property
     def setup_stderr_filename(self):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'suite_result{}_setup_stderr')
+                            'suite_result_{}_setup_stderr'.format(self.pk))
 
     def open_teardown_stdout(self, mode='rb'):
         return open(self.teardown_stdout_filename, mode)
@@ -63,7 +63,7 @@ class AGTestSuiteResult(AutograderModel):
     @property
     def teardown_stdout_filename(self):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'suite_result{}_teardown_stdout')
+                            'suite_result_{}_teardown_stdout'.format(self.pk))
 
     def open_teardown_stderr(self, mode='rb'):
         return open(self.teardown_stderr_filename, mode)
@@ -71,7 +71,7 @@ class AGTestSuiteResult(AutograderModel):
     @property
     def teardown_stderr_filename(self):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'suite_result{}_teardown_stderr')
+                            'suite_result_{}_teardown_stderr'.format(self.pk))
 
     def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestSuiteResult.FeedbackCalculator':
         return AGTestSuiteResult.FeedbackCalculator(self, fdbk_category)

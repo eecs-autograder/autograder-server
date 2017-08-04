@@ -1,3 +1,4 @@
+import os
 import tempfile
 from io import FileIO
 from typing import Callable
@@ -55,6 +56,20 @@ class AGTestCommandResultTestCase(UnitTestBase):
             ag_test_command=self.ag_test_command,
             ag_test_case_result=self.ag_test_case_result,
             timed_out=True)
+
+    def test_output_filenames(self):
+        result = self.make_correct_result()
+        expected_stdout_name = os.path.join(
+            core_ut.get_result_output_dir(
+                result.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_' + str(result.pk) + '_stdout')
+        self.assertEqual(expected_stdout_name, result.stdout_filename)
+
+        expected_stderr_name = os.path.join(
+            core_ut.get_result_output_dir(
+                result.ag_test_case_result.ag_test_suite_result.submission),
+            'cmd_result_' + str(result.pk) + '_stderr')
+        self.assertEqual(expected_stderr_name, result.stderr_filename)
 
     def test_feedback_calculator_named_ctors(self):
         # check against the actual objects (their pks)

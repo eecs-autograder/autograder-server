@@ -1,6 +1,10 @@
+import os
+
 import autograder.core.models as ag_models
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
+
+import autograder.core.utils as core_ut
 
 
 class AGTestSuiteResultTestCase(UnitTestBase):
@@ -44,6 +48,31 @@ class AGTestSuiteResultTestCase(UnitTestBase):
             self.ag_test_cmd1, self.ag_test_case_result1)
         self.cmd_result2 = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd2, self.ag_test_case_result2)
+
+    def test_output_filenames(self):
+        expected_setup_stdout_filename = os.path.join(
+            core_ut.get_result_output_dir(self.ag_test_suite_result.submission),
+            'suite_result_' + str(self.ag_test_suite_result.pk) + '_setup_stdout')
+        self.assertEqual(expected_setup_stdout_filename,
+                         self.ag_test_suite_result.setup_stdout_filename)
+
+        expected_setup_stderr_filename = os.path.join(
+            core_ut.get_result_output_dir(self.ag_test_suite_result.submission),
+            'suite_result_' + str(self.ag_test_suite_result.pk) + '_setup_stderr')
+        self.assertEqual(expected_setup_stderr_filename,
+                         self.ag_test_suite_result.setup_stderr_filename)
+
+        expected_teardown_stdout_filename = os.path.join(
+            core_ut.get_result_output_dir(self.ag_test_suite_result.submission),
+            'suite_result_' + str(self.ag_test_suite_result.pk) + '_teardown_stdout')
+        self.assertEqual(expected_teardown_stdout_filename,
+                         self.ag_test_suite_result.teardown_stdout_filename)
+
+        expected_teardown_stderr_filename = os.path.join(
+            core_ut.get_result_output_dir(self.ag_test_suite_result.submission),
+            'suite_result_' + str(self.ag_test_suite_result.pk) + '_teardown_stderr')
+        self.assertEqual(expected_teardown_stderr_filename,
+                         self.ag_test_suite_result.teardown_stderr_filename)
 
     def test_feedback_calculator_ctor(self):
         self.assertEqual(
