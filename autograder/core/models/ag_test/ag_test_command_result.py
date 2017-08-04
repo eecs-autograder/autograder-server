@@ -50,10 +50,18 @@ class AGTestCommandResult(AutograderModel):
     stderr_correct = models.NullBooleanField(null=True, default=None)
 
     def open_stdout(self, mode='rb'):
-        return open(_get_cmd_result_stdout_filename(self), mode)
+        return open(self.stdout_filename, mode)
+
+    @property
+    def stdout_filename(self):
+        return _get_cmd_result_stdout_filename(self)
 
     def open_stderr(self, mode='rb'):
-        return open(_get_cmd_result_stderr_filename(self), mode)
+        return open(self.stderr_filename, mode)
+
+    @property
+    def stderr_filename(self):
+        return _get_cmd_result_stderr_filename(self)
 
     def get_fdbk(self, fdbk_category: FeedbackCategory):
         return AGTestCommandResult.FeedbackCalculator(self, fdbk_category)

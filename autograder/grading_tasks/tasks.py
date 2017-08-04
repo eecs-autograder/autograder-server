@@ -1,10 +1,14 @@
 import fnmatch
 import os
 import shlex
+import shutil
 import subprocess
+import tempfile
 import time
 import traceback
 import uuid
+from io import FileIO
+from typing import Tuple
 
 from django.conf import settings
 from django.db.models.signals import post_save
@@ -204,22 +208,19 @@ def _run_suite_setup(sandbox: AutograderSandbox,
                      suite_result: ag_models.AGTestSuiteResult):
     if not ag_test_suite.setup_suite_cmd:
         return
-    try:
-        setup_result = sandbox.run_command(shlex.split(ag_test_suite.setup_suite_cmd),
-                                           as_root=False,
-                                           max_num_processes=constants.MAX_PROCESS_LIMIT,
-                                           max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-                                           max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                           timeout=constants.MAX_SUBPROCESS_TIMEOUT)
-        suite_result.setup_return_code = setup_result.returncode
-        suite_result.setup_stdout = setup_result.stdout
-        suite_result.setup_stderr = setup_result.stderr
-    except subprocess.TimeoutExpired as e:
-        suite_result.setup_timed_out = True
-        suite_result.setup_stdout = e.stdout
-        suite_result.setup_stderr = e.stderr
-    finally:
-        suite_result.save()
+
+    setup_result = sandbox.run_command(shlex.split(ag_test_suite.setup_suite_cmd),
+                                       as_root=False,
+                                       max_num_processes=constants.MAX_PROCESS_LIMIT,
+                                       max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
+                                       max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+                                       timeout=constants.MAX_SUBPROCESS_TIMEOUT)
+    suite_result.setup_return_code = setup_result.return_code
+    suite_result.setup_timed_out = setup_result.timed_out
+    shutil.move(setup_result.stdout.name, suite_result.setup_stdout_filename)
+    shutil.move(setup_result.stderr.name, suite_result.setup_stderr_filename)
+
+    suite_result.save()
 
 
 @retry_ag_test_cmd
@@ -228,22 +229,19 @@ def _run_suite_teardown(sandbox: AutograderSandbox,
                      suite_result: ag_models.AGTestSuiteResult):
     if not ag_test_suite.teardown_suite_cmd:
         return
-    try:
-        teardown_result = sandbox.run_command(shlex.split(ag_test_suite.teardown_suite_cmd),
-                                              as_root=False,
-                                              max_num_processes=constants.MAX_PROCESS_LIMIT,
-                                              max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-                                              max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                              timeout=constants.MAX_SUBPROCESS_TIMEOUT)
-        suite_result.teardown_return_code = teardown_result.returncode
-        suite_result.teardown_stdout = teardown_result.stdout
-        suite_result.teardown_stderr = teardown_result.stderr
-    except subprocess.TimeoutExpired as e:
-        suite_result.teardown_timed_out = True
-        suite_result.teardown_stdout = e.stdout
-        suite_result.teardown_stderr = e.stderr
-    finally:
-        suite_result.save()
+
+    teardown_result = sandbox.run_command(shlex.split(ag_test_suite.teardown_suite_cmd),
+                                          as_root=False,
+                                          max_num_processes=constants.MAX_PROCESS_LIMIT,
+                                          max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
+                                          max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+                                          timeout=constants.MAX_SUBPROCESS_TIMEOUT)
+    suite_result.teardown_return_code = teardown_result.return_code
+    suite_result.teardown_timed_out = teardown_result.timed_out
+    shutil.move(teardown_result.stdout.name, suite_result.teardown_stdout_filename)
+    shutil.move(teardown_result.stderr.name, suite_result.teardown_stderr_filename)
+
+    suite_result.save()
 
 
 def grade_ag_test_case_impl(sandbox: AutograderSandbox,
@@ -267,78 +265,127 @@ def grade_ag_test_case_impl(sandbox: AutograderSandbox,
 def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                                ag_test_cmd: ag_models.AGTestCommand,
                                case_result: ag_models.AGTestCaseResult):
-    if ag_test_cmd.stdin_source == ag_models.StdinSource.text:
-        stdin = ag_test_cmd.stdin_text
-    elif ag_test_cmd.stdin_source == ag_models.StdinSource.project_file:
-        with ag_test_cmd.stdin_project_file.open() as f:
-            stdin = f.read()
-    elif ag_test_cmd.stdin_source == ag_models.StdinSource.setup_stdout:
-        stdin = case_result.ag_test_suite_result.setup_stdout
-    elif ag_test_cmd.stdin_source == ag_models.StdinSource.setup_stderr:
-        stdin = case_result.ag_test_suite_result.setup_stderr
-    else:
-        stdin = ''
+    with FileCloser() as file_closer:
+        stdin = _get_stdin_file(ag_test_cmd, case_result)
+        file_closer.register_file(stdin)
 
-    result_data = {}
-    try:
+        result_data = {}
+
         run_result = sandbox.run_command(shlex.split(ag_test_cmd.cmd),
-                                         input=stdin,
+                                         stdin=stdin,
                                          as_root=False,
                                          max_num_processes=ag_test_cmd.process_spawn_limit,
                                          max_stack_size=ag_test_cmd.stack_size_limit,
                                          max_virtual_memory=ag_test_cmd.virtual_memory_limit,
                                          timeout=ag_test_cmd.time_limit)
-        result_data['stdout'] = run_result.stdout
-        result_data['stderr'] = run_result.stderr
-        result_data['return_code'] = run_result.returncode
+
+        result_data['return_code'] = run_result.return_code
+        result_data['timed_out'] = run_result.timed_out
 
         if ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.zero:
-            result_data['return_code_correct'] = run_result.returncode == 0
+            result_data['return_code_correct'] = run_result.return_code == 0
         elif ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.nonzero:
-            result_data['return_code_correct'] = run_result.returncode != 0
+            result_data['return_code_correct'] = run_result.return_code != 0
 
-        expected_stdout = None
-        if ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.text:
-            expected_stdout = ag_test_cmd.expected_stdout_text
-        elif ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.project_file:
-            with ag_test_cmd.expected_stdout_project_file.open() as f:
-                expected_stdout = f.read()
+        expected_stdout, expected_stdout_filename = _get_expected_stdout_file_and_name(ag_test_cmd)
+        file_closer.register_file(expected_stdout)
 
-        if expected_stdout is not None:
-            result_data['stdout_correct'] = not core_ut.get_diff(
-                expected_stdout, run_result.stdout,
+        if expected_stdout_filename is not None:
+            diff = core_ut.get_diff(
+                expected_stdout_filename, run_result.stdout.name,
                 ignore_case=ag_test_cmd.ignore_case,
                 ignore_whitespace=ag_test_cmd.ignore_whitespace,
                 ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
                 ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
+            result_data['stdout_correct'] = diff.diff_pass
 
-        expected_stderr = None
-        if ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.text:
-            expected_stderr = ag_test_cmd.expected_stderr_text
-        elif ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.project_file:
-            with ag_test_cmd.expected_stderr_project_file.open() as f:
-                expected_stderr = f.read()
+        expected_stderr, expected_stderr_filename = _get_expected_stderr_file_and_name(ag_test_cmd)
+        file_closer.register_file(expected_stderr)
 
-        if expected_stderr is not None:
-            result_data['stderr_correct'] = not core_ut.get_diff(
-                expected_stderr, run_result.stderr,
+        if expected_stderr_filename is not None:
+            diff = core_ut.get_diff(
+                expected_stderr_filename, run_result.stderr.name,
                 ignore_case=ag_test_cmd.ignore_case,
                 ignore_whitespace=ag_test_cmd.ignore_whitespace,
                 ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
                 ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
-    except subprocess.TimeoutExpired as e:
-        result_data['stdout'] = e.stdout
-        result_data['stderr'] = e.stderr
-        result_data['timed_out'] = True
-    finally:
+            result_data['stderr_correct'] = diff.diff_pass
+
         @retry_should_recover
         def save_ag_test_cmd_result():
-            ag_models.AGTestCommandResult.objects.update_or_create(
+            cmd_result = ag_models.AGTestCommandResult.objects.update_or_create(
                 defaults=result_data,
                 ag_test_command=ag_test_cmd,
-                ag_test_case_result=case_result)
+                ag_test_case_result=case_result)[0]  # type: ag_models.AGTestCommandResult
+
+            shutil.move(run_result.stdout.name, cmd_result.stdout_filename)
+            shutil.move(run_result.stderr.name, cmd_result.stderr_filename)
 
         save_ag_test_cmd_result()
+
+
+def _get_stdin_file(ag_test_cmd: ag_models.AGTestCommand, case_result: ag_models.AGTestCaseResult):
+    if ag_test_cmd.stdin_source == ag_models.StdinSource.text:
+        stdin = tempfile.NamedTemporaryFile()
+        stdin.write(ag_test_cmd.stdin_text.encode())
+        stdin.flush()
+        stdin.seek(0)
+        return stdin
+    elif ag_test_cmd.stdin_source == ag_models.StdinSource.project_file:
+        return ag_test_cmd.stdin_project_file.open('rb')
+    elif ag_test_cmd.stdin_source == ag_models.StdinSource.setup_stdout:
+        return case_result.ag_test_suite_result.open_setup_stdout('rb')
+    elif ag_test_cmd.stdin_source == ag_models.StdinSource.setup_stderr:
+        return case_result.ag_test_suite_result.open_setup_stderr('rb')
+    else:
+        return None
+
+
+def _get_expected_stdout_file_and_name(
+        ag_test_cmd: ag_models.AGTestCommand) -> Tuple[FileIO, str]:
+    expected_stdout = None
+    expected_stdout_filename = None
+    if ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.text:
+        expected_stdout = tempfile.NamedTemporaryFile()
+        expected_stdout.write(ag_test_cmd.expected_stdout_text.encode())
+        expected_stdout.flush()
+        expected_stdout_filename = expected_stdout.name
+    elif ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.project_file:
+        expected_stdout_filename = ag_test_cmd.expected_stdout_project_file.abspath
+
+    return expected_stdout, expected_stdout_filename
+
+
+def _get_expected_stderr_file_and_name(
+        ag_test_cmd: ag_models.AGTestCommand) -> Tuple[FileIO, str]:
+    expected_stderr = None
+    expected_stderr_filename = None
+    if ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.text:
+        expected_stderr = tempfile.NamedTemporaryFile()
+        expected_stderr.write(ag_test_cmd.expected_stderr_text.encode())
+        expected_stderr.flush()
+        expected_stderr_filename = expected_stderr.name
+    elif ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.project_file:
+        expected_stderr_filename = ag_test_cmd.expected_stderr_project_file.abspath
+
+    return expected_stderr, expected_stderr_filename
+
+
+class FileCloser:
+    def __init__(self):
+        self._files_to_close = []  # type: List[FileIO]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for file_ in self._files_to_close:
+            file_.close()
+
+    def register_file(self, file_: FileIO):
+        if file_ is None:
+            return
+        self._files_to_close.append(file_)
 
 
 @retry_should_recover

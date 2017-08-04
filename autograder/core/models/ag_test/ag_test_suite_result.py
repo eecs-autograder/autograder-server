@@ -42,24 +42,36 @@ class AGTestSuiteResult(AutograderModel):
         blank=True, help_text="The stderr content of this suite's teardown command.")
 
     def open_setup_stdout(self, mode='rb'):
-        filename = os.path.join(core_ut.get_result_output_dir(self.submission),
-                                'suite_result{}_setup_stdout')
-        return open(filename, mode)
+        return open(self.setup_stdout_filename, mode)
+
+    @property
+    def setup_stdout_filename(self):
+        return os.path.join(core_ut.get_result_output_dir(self.submission),
+                            'suite_result{}_setup_stdout')
 
     def open_setup_stderr(self, mode='rb'):
-        filename = os.path.join(core_ut.get_result_output_dir(self.submission),
-                                'suite_result{}_setup_stderr')
-        return open(filename, mode)
+        return open(self.setup_stderr_filename, mode)
+
+    @property
+    def setup_stderr_filename(self):
+        return os.path.join(core_ut.get_result_output_dir(self.submission),
+                            'suite_result{}_setup_stderr')
 
     def open_teardown_stdout(self, mode='rb'):
-        filename = os.path.join(core_ut.get_result_output_dir(self.submission),
-                                'suite_result{}_teardown_stdout')
-        return open(filename, mode)
+        return open(self.teardown_stdout_filename, mode)
+
+    @property
+    def teardown_stdout_filename(self):
+        return os.path.join(core_ut.get_result_output_dir(self.submission),
+                            'suite_result{}_teardown_stdout')
 
     def open_teardown_stderr(self, mode='rb'):
-        filename = os.path.join(core_ut.get_result_output_dir(self.submission),
-                                'suite_result{}_teardown_stderr')
-        return open(filename, mode)
+        return open(self.teardown_stderr_filename, mode)
+
+    @property
+    def teardown_stderr_filename(self):
+        return os.path.join(core_ut.get_result_output_dir(self.submission),
+                            'suite_result{}_teardown_stderr')
 
     def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestSuiteResult.FeedbackCalculator':
         return AGTestSuiteResult.FeedbackCalculator(self, fdbk_category)
