@@ -1,5 +1,4 @@
 import autograder.core.models as ag_models
-from autograder.core import constants
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
@@ -117,12 +116,16 @@ class AGTestSuiteResultTestCase(UnitTestBase):
 
         self.ag_test_suite_result.setup_return_code = setup_return_code
         self.ag_test_suite_result.setup_timed_out = setup_timed_out
-        self.ag_test_suite_result.setup_stdout = setup_stdout
-        self.ag_test_suite_result.setup_stderr = setup_stderr
+        with self.ag_test_suite_result.open_setup_stdout('w') as f:
+            f.write(setup_stdout)
+        with self.ag_test_suite_result.open_setup_stderr('w') as f:
+            f.write(setup_stderr)
         self.ag_test_suite_result.teardown_return_code = teardown_return_code
         self.ag_test_suite_result.teardown_timed_out = teardown_timed_out
-        self.ag_test_suite_result.teardown_stdout = teardown_stdout
-        self.ag_test_suite_result.teardown_stderr = teardown_stderr
+        with self.ag_test_suite_result.open_teardown_stdout('w') as f:
+            f.write(teardown_stdout)
+        with self.ag_test_suite_result.open_teardown_stderr('w') as f:
+            f.write(teardown_stderr)
         self.ag_test_suite_result.save()
 
         fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
@@ -130,12 +133,12 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         self.assertEqual(self.ag_test_suite.teardown_suite_cmd_name, fdbk.teardown_name)
         self.assertEqual(setup_return_code, fdbk.setup_return_code)
         self.assertEqual(setup_timed_out, fdbk.setup_timed_out)
-        self.assertEqual(setup_stdout, fdbk.setup_stdout)
-        self.assertEqual(setup_stderr, fdbk.setup_stderr)
+        self.assertEqual(setup_stdout, fdbk.setup_stdout.read().decode())
+        self.assertEqual(setup_stderr, fdbk.setup_stderr.read().decode())
         self.assertEqual(teardown_return_code, fdbk.teardown_return_code)
         self.assertEqual(teardown_timed_out, fdbk.teardown_timed_out)
-        self.assertEqual(teardown_stdout, fdbk.teardown_stdout)
-        self.assertEqual(teardown_stderr, fdbk.teardown_stderr)
+        self.assertEqual(teardown_stdout, fdbk.teardown_stdout.read().decode())
+        self.assertEqual(teardown_stderr, fdbk.teardown_stderr.read().decode())
 
         self.ag_test_suite.normal_fdbk_config.validate_and_update(
             show_setup_and_teardown_return_code=False,
@@ -154,27 +157,6 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         self.assertIsNone(fdbk.teardown_stderr)
         self.assertIsNone(fdbk.teardown_return_code)
         self.assertIsNone(fdbk.teardown_timed_out)
-
-    def test_very_large_output_truncated(self):
-        setup_stdout = 'a' * 50000000
-        setup_stderr = 'b' * 50000000
-        teardown_stdout = 'c' * 50000000
-        teardown_stderr = 'd' * 50000000
-
-        self.ag_test_suite_result.setup_stdout = setup_stdout
-        self.ag_test_suite_result.setup_stderr = setup_stderr
-        self.ag_test_suite_result.teardown_stdout = teardown_stdout
-        self.ag_test_suite_result.teardown_stderr = teardown_stderr
-        self.ag_test_suite_result.save()
-
-        self.assertEqual(setup_stdout[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated',
-                         self.ag_test_suite_result.setup_stdout)
-        self.assertEqual(setup_stderr[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated',
-                         self.ag_test_suite_result.setup_stderr)
-        self.assertEqual(teardown_stdout[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated',
-                         self.ag_test_suite_result.teardown_stdout)
-        self.assertEqual(teardown_stderr[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated',
-                         self.ag_test_suite_result.teardown_stderr)
 
     def test_some_ag_test_cases_not_visible(self):
         self.ag_test_case2.ultimate_submission_fdbk_config.validate_and_update(visible=False)
@@ -196,12 +178,8 @@ class AGTestSuiteResultTestCase(UnitTestBase):
             'fdbk_settings',
             'setup_name',
             'setup_return_code',
-            'setup_stdout',
-            'setup_stderr',
             'teardown_name',
             'teardown_return_code',
-            'teardown_stdout',
-            'teardown_stderr',
             'total_points',
             'total_points_possible',
             'ag_test_case_results',

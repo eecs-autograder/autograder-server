@@ -629,25 +629,6 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.total_points)
         self.assertEqual(0, fdbk.total_points_possible)
 
-    def test_very_large_output_truncated(self):
-        stdout = 'a' * 100000000
-        stderr = 'b' * 100000000
-
-        cmd_result = ag_models.AGTestCommandResult.objects.validate_and_create(
-            ag_test_command=self.ag_test_command,
-            ag_test_case_result=self.ag_test_case_result,
-            return_code=0,
-            stdout=stdout,
-            stderr=stderr
-        )
-
-        self.assertEqual(
-            cmd_result.stdout,
-            stdout[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
-        self.assertEqual(
-            cmd_result.stderr,
-            stderr[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
-
     def test_all_diff_options_false_stdout_correct_stderr_incorrect(self):
         self.do_diff_options_test(
             expected_stdout='spam', actual_stdout='spam',

@@ -1,8 +1,11 @@
+import os
+from io import FileIO
 from typing import List, Iterable
 
 from django.db import models
 
 from autograder.core import constants
+import autograder.core.utils as core_ut
 from ..ag_model_base import AutograderModel, ToDictMixin
 from .ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
 from .feedback_category import FeedbackCategory
@@ -38,19 +41,25 @@ class AGTestSuiteResult(AutograderModel):
     teardown_stderr = models.TextField(
         blank=True, help_text="The stderr content of this suite's teardown command.")
 
-    def save(self, *args, **kwargs):
-        self._check_len_and_truncate('setup_stdout')
-        self._check_len_and_truncate('setup_stderr')
-        self._check_len_and_truncate('teardown_stdout')
-        self._check_len_and_truncate('teardown_stderr')
+    def open_setup_stdout(self, mode='rb'):
+        filename = os.path.join(core_ut.get_result_output_dir(self.submission),
+                                'suite_result{}_setup_stdout')
+        return open(filename, mode)
 
-        super().save(*args, **kwargs)
+    def open_setup_stderr(self, mode='rb'):
+        filename = os.path.join(core_ut.get_result_output_dir(self.submission),
+                                'suite_result{}_setup_stderr')
+        return open(filename, mode)
 
-    def _check_len_and_truncate(self, field_name):
-        value = getattr(self, field_name)
-        if len(value) > constants.MAX_OUTPUT_LENGTH:
-            setattr(self, field_name,
-                    value[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
+    def open_teardown_stdout(self, mode='rb'):
+        filename = os.path.join(core_ut.get_result_output_dir(self.submission),
+                                'suite_result{}_teardown_stdout')
+        return open(filename, mode)
+
+    def open_teardown_stderr(self, mode='rb'):
+        filename = os.path.join(core_ut.get_result_output_dir(self.submission),
+                                'suite_result{}_teardown_stderr')
+        return open(filename, mode)
 
     def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestSuiteResult.FeedbackCalculator':
         return AGTestSuiteResult.FeedbackCalculator(self, fdbk_category)
@@ -118,18 +127,18 @@ class AGTestSuiteResult(AutograderModel):
             return self._ag_test_suite_result.setup_timed_out
 
         @property
-        def setup_stdout(self) -> str:
+        def setup_stdout(self) -> FileIO:
             if not self._fdbk.show_setup_and_teardown_stdout:
                 return None
 
-            return self._ag_test_suite_result.setup_stdout
+            return self._ag_test_suite_result.open_setup_stdout()
 
         @property
-        def setup_stderr(self) -> str:
+        def setup_stderr(self) -> FileIO:
             if not self._fdbk.show_setup_and_teardown_stderr:
                 return None
 
-            return self._ag_test_suite_result.setup_stderr
+            return self._ag_test_suite_result.open_setup_stderr()
 
         @property
         def teardown_name(self) -> str:
@@ -153,18 +162,18 @@ class AGTestSuiteResult(AutograderModel):
             return self._ag_test_suite_result.teardown_timed_out
 
         @property
-        def teardown_stdout(self):
+        def teardown_stdout(self) -> FileIO:
             if not self._fdbk.show_setup_and_teardown_stdout:
                 return None
 
-            return self._ag_test_suite_result.teardown_stdout
+            return self._ag_test_suite_result.open_teardown_stdout()
 
         @property
-        def teardown_stderr(self):
+        def teardown_stderr(self) -> FileIO:
             if not self._fdbk.show_setup_and_teardown_stderr:
                 return None
 
-            return self._ag_test_suite_result.teardown_stderr
+            return self._ag_test_suite_result.open_teardown_stderr()
 
         @property
         def _show_setup_and_teardown_names(self):
@@ -219,10 +228,6 @@ class AGTestSuiteResult(AutograderModel):
             'total_points_possible',
             'setup_name',
             'setup_return_code',
-            'setup_stdout',
-            'setup_stderr',
             'teardown_name',
-            'teardown_stdout',
-            'teardown_stderr',
             'teardown_return_code',
         )

@@ -55,18 +55,6 @@ class AGTestCommandResult(AutograderModel):
     def open_stderr(self, mode='rb'):
         return open(_get_cmd_result_stderr_filename(self), mode)
 
-    def save(self, *args, **kwargs):
-        self._check_len_and_truncate('stdout')
-        self._check_len_and_truncate('stderr')
-
-        super().save(*args, **kwargs)
-
-    def _check_len_and_truncate(self, field_name):
-        value = getattr(self, field_name)
-        if len(value) > constants.MAX_OUTPUT_LENGTH:
-            setattr(self, field_name,
-                    value[:constants.MAX_OUTPUT_LENGTH] + '\nOutput truncated')
-
     def get_fdbk(self, fdbk_category: FeedbackCategory):
         return AGTestCommandResult.FeedbackCalculator(self, fdbk_category)
 

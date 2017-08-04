@@ -1,4 +1,5 @@
 import os
+import unittest
 
 from django.core.urlresolvers import reverse
 from django.http import FileResponse
@@ -689,40 +690,117 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
     # -------------------------------------------------------------
 
-    def test_output_or_diff_requested_on_cmd_in_not_visible_suite(self):
+    def test_cmd_result_output_or_diff_requested_on_cmd_in_not_visible_suite(self):
         self.ag_test_suite.normal_fdbk_config.validate_and_update(visible=False)
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
-    def test_output_or_diff_requested_on_cmd_in_not_visible_case(self):
+    def test_cmd_result_output_or_diff_requested_on_cmd_in_not_visible_case(self):
         self.ag_test_case.normal_fdbk_config.validate_and_update(visible=False)
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
-    def test_output_or_diff_requested_on_not_visible_cmd(self):
+    def test_cmd_result_output_or_diff_requested_on_not_visible_cmd(self):
         self.ag_test_cmd.normal_fdbk_config.validate_and_update(visible=False)
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
-    def test_output_or_diff_requested_individual_cmds_not_shown(self):
+    def test_cmd_result_output_or_diff_requested_individual_cmds_not_shown(self):
         self.ag_test_case.normal_fdbk_config.validate_and_update(show_individual_commands=False)
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
-    def test_output_or_diff_requested_individual_cases_not_shown(self):
+    def test_cmd_result_output_or_diff_requested_individual_cases_not_shown(self):
         self.ag_test_suite.normal_fdbk_config.validate_and_update(show_individual_tests=False)
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
+
+    @unittest.skip('not super important, but fixme eventually')
+    def test_cmd_result_output_or_diff_requested_cmd_doesnt_exist_404(self):
+        self.fail()
+
+    # -------------------------------------------------------------
+
+    def test_get_suite_result_setup_and_teardown_output_visible(self):
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_and_teardown_stdout)
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_and_teardown_stderr)
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.visible)
+
+        self.client.force_authenticate(self.student1)
+
+        suite_res = self.student1_normal_res.ag_test_case_result.ag_test_suite_result
+        self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
+                                          ag_models.FeedbackCategory.normal)
+
+    def test_get_suite_result_setup_and_teardown_output_hidden(self):
+        self.ag_test_suite.normal_fdbk_config.validate_and_update(
+            show_setup_and_teardown_stdout=False)
+        self.ag_test_suite.normal_fdbk_config.validate_and_update(
+            show_setup_and_teardown_stderr=False)
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.visible)
+
+        self.client.force_authenticate(self.student1)
+
+        suite_res = self.student1_normal_res.ag_test_case_result.ag_test_suite_result
+        self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
+                                          ag_models.FeedbackCategory.normal)
+
+    def test_suite_result_output_requested_on_not_visible_suite(self):
+        self.ag_test_suite.normal_fdbk_config.validate_and_update(visible=False)
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_and_teardown_stdout)
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_and_teardown_stderr)
+
+        self.client.force_authenticate(self.student1)
+
+        suite_res = self.student1_normal_res.ag_test_case_result.ag_test_suite_result
+        self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
+                                          ag_models.FeedbackCategory.normal)
+
+    @unittest.skip('not super important, but fixme eventually')
+    def test_suite_result_output_requested_suite_doesnt_exist_404(self):
+        self.fail()
+
+    def _do_suite_result_output_test(self, client, submission, suite_result, fdbk_category,
+                                     expect_404=False):
+        with suite_result.open_setup_stdout('w') as f:
+            f.write('adkjfaksdjf;akjsdf;')
+        with suite_result.open_setup_stderr('w') as f:
+            f.write('qewiruqpewpuir')
+
+        with suite_result.open_teardown_stdout('w') as f:
+            f.write('adkjfaksdjf;akjsdf;')
+        with suite_result.open_teardown_stderr('w') as f:
+            f.write('qewiruqpewpuir')
+
+        field_names = ['setup_stdout', 'setup_stderr', 'teardown_stdout', 'teardown_stderr']
+        query_keys = ['setup_stdout_for_suite', 'setup_stderr_for_suite',
+                      'teardown_stdout_for_suite', 'teardown_stderr_for_suite']
+        for field_name, query_key in zip(field_names, query_keys):
+            url = (reverse('submission-feedback', kwargs={'pk': submission.pk}) +
+                   '?{}={}'.format(query_key, suite_result.pk) +
+                   '&feedback_category={}'.format(fdbk_category.value))
+            response = client.get(url)
+            if expect_404:
+                self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+                continue
+
+            fdbk = suite_result.get_fdbk(fdbk_category)
+            expected = getattr(fdbk, field_name)
+            if expected is None or not fdbk.fdbk_conf.visible:
+                self.assertIsNone(response.data)
+            else:
+                self.assertEqual(expected.read(),
+                                 b''.join((chunk for chunk in response.streaming_content)))
 
     # -------------------------------------------------------------
 

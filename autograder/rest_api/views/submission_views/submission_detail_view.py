@@ -1,6 +1,7 @@
 from django.core import exceptions
 from django.db import transaction
-from django.http.response import FileResponse
+from django.http.response import FileResponse, Http404
+from django.shortcuts import get_object_or_404
 
 from rest_framework import (
     viewsets, mixins, permissions, decorators, response, status)
@@ -89,25 +90,145 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
         fdbk_category = ag_models.FeedbackCategory(request.query_params.get('feedback_category'))
         fdbk_calculator = submission.get_fdbk(fdbk_category)
 
-        if 'stdout_for_cmd_result' in request.query_params:
+        if 'setup_stdout_for_suite' in request.query_params:
+            suite_result_pk = int(request.query_params.get('setup_stdout_for_suite'))
+            return self._get_setup_stdout(fdbk_calculator, fdbk_category, suite_result_pk)
+        elif 'setup_stderr_for_suite' in request.query_params:
+            suite_result_pk = int(request.query_params.get('setup_stderr_for_suite'))
+            return self._get_setup_stderr(fdbk_calculator, fdbk_category, suite_result_pk)
+        elif 'teardown_stdout_for_suite' in request.query_params:
+            suite_result_pk = int(request.query_params.get('teardown_stdout_for_suite'))
+            return self._get_teardown_stdout(fdbk_calculator, fdbk_category, suite_result_pk)
+        elif 'teardown_stderr_for_suite' in request.query_params:
+            suite_result_pk = int(request.query_params.get('teardown_stderr_for_suite'))
+            return self._get_teardown_stderr(fdbk_calculator, fdbk_category, suite_result_pk)
+        elif 'stdout_for_cmd_result' in request.query_params:
             cmd_result_pk = request.query_params.get('stdout_for_cmd_result')
-            field_name = 'stdout'
+            return self._get_cmd_result_stdout(fdbk_calculator, fdbk_category, cmd_result_pk)
         elif 'stderr_for_cmd_result' in request.query_params:
             cmd_result_pk = request.query_params.get('stderr_for_cmd_result')
-            field_name = 'stderr'
+            return self._get_cmd_result_stderr(fdbk_calculator, fdbk_category, cmd_result_pk)
         elif 'stdout_diff_for_cmd_result' in request.query_params:
             cmd_result_pk = request.query_params.get('stdout_diff_for_cmd_result')
-            field_name = 'stdout_diff'
+            return self._get_cmd_result_stdout_diff(
+                fdbk_calculator, fdbk_category, cmd_result_pk)
         elif 'stderr_diff_for_cmd_result' in request.query_params:
             cmd_result_pk = request.query_params.get('stderr_diff_for_cmd_result')
-            field_name = 'stderr_diff'
+            return self._get_cmd_result_stderr_diff(
+                fdbk_calculator, fdbk_category, cmd_result_pk)
         else:
             return response.Response(fdbk_calculator.to_dict())
 
-        cmd_result = ag_models.AGTestCommandResult.objects.select_related(
-            'ag_test_case_result__ag_test_suite_result').get(pk=cmd_result_pk)
+    def _get_setup_stdout(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                          fdbk_category: ag_models.FeedbackCategory,
+                          suite_result_pk: int):
+        suite_result = self._find_suite_result(submission_fdbk, suite_result_pk)
+        if suite_result is None:
+            return response.Response(None)
+        stream_data = suite_result.get_fdbk(fdbk_category).setup_stdout
+        if stream_data is None:
+            return response.Response(None)
+        return FileResponse(stream_data)
 
-        for suite_result in fdbk_calculator.ag_test_suite_results:
+    def _get_setup_stderr(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                          fdbk_category: ag_models.FeedbackCategory,
+                          suite_result_pk: int):
+        suite_result = self._find_suite_result(submission_fdbk, suite_result_pk)
+        if suite_result is None:
+            return response.Response(None)
+        stream_data = suite_result.get_fdbk(fdbk_category).setup_stderr
+        if stream_data is None:
+            return response.Response(None)
+        return FileResponse(stream_data)
+
+    def _get_teardown_stdout(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                             fdbk_category: ag_models.FeedbackCategory,
+                             suite_result_pk: int):
+        suite_result = self._find_suite_result(submission_fdbk, suite_result_pk)
+        if suite_result is None:
+            return response.Response(None)
+        stream_data = suite_result.get_fdbk(fdbk_category).teardown_stdout
+        if stream_data is None:
+            return response.Response(None)
+        return FileResponse(stream_data)
+
+    def _get_teardown_stderr(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                             fdbk_category: ag_models.FeedbackCategory,
+                             suite_result_pk: int):
+        suite_result = self._find_suite_result(submission_fdbk, suite_result_pk)
+        if suite_result is None:
+            return response.Response(None)
+        stream_data = suite_result.get_fdbk(fdbk_category).teardown_stderr
+        if stream_data is None:
+            return response.Response(None)
+        return FileResponse(stream_data)
+
+    def _find_suite_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                           suite_result_pk: int) -> ag_models.AGTestSuiteResult:
+        for suite_result in submission_fdbk.ag_test_suite_results:
+            if suite_result.pk == suite_result_pk:
+                return suite_result
+
+        return None
+
+    def _get_cmd_result_stdout(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                               fdbk_category: ag_models.FeedbackCategory,
+                               cmd_result_pk: int):
+        cmd_result = self._find_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
+        if cmd_result is None:
+            return response.Response(None)
+        stream_data = cmd_result.get_fdbk(fdbk_category).stdout
+        if stream_data is None:
+            return response.Response(None)
+        return FileResponse(stream_data)
+
+    def _get_cmd_result_stderr(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                               fdbk_category: ag_models.FeedbackCategory,
+                               cmd_result_pk: int):
+        cmd_result = self._find_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
+        if cmd_result is None:
+            return response.Response(None)
+        stream_data = cmd_result.get_fdbk(fdbk_category).stderr
+        if stream_data is None:
+            return response.Response(None)
+        return FileResponse(stream_data)
+
+    def _get_cmd_result_stdout_diff(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                                    fdbk_category: ag_models.FeedbackCategory,
+                                    cmd_result_pk: int):
+        cmd_result = self._find_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
+        if cmd_result is None:
+            return response.Response(None)
+        diff = cmd_result.get_fdbk(fdbk_category).stdout_diff
+        if diff is None:
+            return response.Response(None)
+        return FileResponse(diff.diff_content)
+
+    def _get_cmd_result_stderr_diff(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                                    fdbk_category: ag_models.FeedbackCategory,
+                                    cmd_result_pk: int):
+        cmd_result = self._find_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
+        if cmd_result is None:
+            return response.Response(None)
+        diff = cmd_result.get_fdbk(fdbk_category).stderr_diff
+        if diff is None:
+            return response.Response(None)
+        return FileResponse(diff.diff_content)
+
+    def _find_cmd_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                         fdbk_category: ag_models.FeedbackCategory,
+                         cmd_result_pk: int):
+        """
+        :raises Http404 exception if a command result with the
+            given primary key doesn't exist.
+        :return: The command result with the given primary key
+            if it can be found in submission_fdbk, None otherwise.
+        """
+        queryset = ag_models.AGTestCommandResult.objects.select_related(
+            'ag_test_case_result__ag_test_suite_result')
+        cmd_result = get_object_or_404(queryset, pk=cmd_result_pk)
+
+        for suite_result in submission_fdbk.ag_test_suite_results:
             if suite_result.pk != cmd_result.ag_test_case_result.ag_test_suite_result.pk:
                 continue
 
@@ -117,15 +238,6 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
 
                 for cmd_res in case_result.get_fdbk(fdbk_category).ag_test_command_results:
                     if cmd_res == cmd_result:
-                        data = getattr(cmd_res.get_fdbk(fdbk_category), field_name)
-                        if data is None:
-                            return response.Response(data)
+                        return cmd_res
 
-                        if field_name == 'stdout' or field_name == 'stderr':
-                            return FileResponse(data)
-                        elif field_name == 'stdout_diff' or field_name == 'stderr_diff':
-                            return FileResponse(data.diff_content)
-                        else:
-                            raise Exception('Invalid field name: {}'.format(field_name))
-
-        return response.Response(None)
+        return None
