@@ -57,8 +57,6 @@ MIDDLEWARE_CLASSES = (
     # 'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    # TODO: Uncomment once set up on server?
-    # 'django.contrib.auth.middleware.RemoteUserMiddleware',
 )
 
 ROOT_URLCONF = 'urls'
@@ -114,7 +112,6 @@ USE_I18N = True
 
 USE_L10N = True
 
-# TODO: Be sure to test submission deadlines across timezones.
 USE_TZ = True
 
 

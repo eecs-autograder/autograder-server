@@ -16,7 +16,9 @@ import json
 
 from django.utils.crypto import get_random_string
 
+# This is the autograder-server directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# autograder-server/media_root
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media_root'))
 
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -76,14 +78,15 @@ INSTALLED_APPS = [
 
     'django_extensions',
 
+    'timezone_field',
+
     'autograder.core',
     'autograder.rest_api',
     'autograder.grading_tasks',
     'autograder.utils',
 
-    # Dummy testing models
+    # Used for testing ag_model_base
     'autograder.core.tests.test_models',
-    'autograder.core.tests.test_models.test_autograder_test_case',
 ]
 
 MIDDLEWARE_CLASSES = (
@@ -139,6 +142,7 @@ DATABASES = {
     },
 }
 
+
 CACHES = {
     'default': {
         'BACKEND': 'redis_cache.RedisCache',
@@ -148,8 +152,7 @@ CACHES = {
     },
 }
 
-# TODO: figure out dynamic import or just condense to one celery settings thing
-from autograder.settings.celery.production import *  # noqa
+from autograder.settings.celery_settings import *  # noqa
 
 TEMPLATES = [
     {

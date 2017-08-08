@@ -8,7 +8,8 @@ from django.utils import timezone
 import autograder.core.utils as core_ut
 
 from .. import ag_model_base
-from ..project import Project
+from ..project import Project, UltimateSubmissionPolicy
+
 from ..submission import Submission
 
 from . import verification
@@ -47,6 +48,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
             associated Project.
     """
     SERIALIZABLE_FIELDS = (
+        'pk',
         'project',
         'extended_due_date',
         'member_names',
@@ -84,12 +86,13 @@ class SubmissionGroup(ag_model_base.AutograderModel):
 
     @property
     def num_submits_towards_limit(self):
-        '''
+        """
         The number of submissions this group has made in the current 24
         hour period that are counted towards the daily submission limit.
-        '''
+        """
         start_datetime, end_datetime = core_ut.get_24_hour_period(
-            self.project.submission_limit_reset_time, timezone.now())
+            self.project.submission_limit_reset_time,
+            timezone.now().astimezone(self.project.submission_limit_reset_timezone))
         return self.submissions.filter(
             timestamp__gte=start_datetime,
             timestamp__lt=end_datetime,
@@ -116,22 +119,22 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         Returns the submission that should be used for final grading.
         The method used to choose which submission is the ultimate
         submission is specified in
-        self.project.ultimate_submission_selection_method
+        self.project.ultimate_submission_policy
         Raises Http404 if this group has no submissions.
         '''
         if not self.submissions.count():
             raise Http404('Group {} has no submissions'.format(self.pk))
 
-        if (self.project.ultimate_submission_selection_method ==
-                Project.UltimateSubmissionSelectionMethod.most_recent):
+        if (self.project.ultimate_submission_policy ==
+                UltimateSubmissionPolicy.most_recent):
             return self.submissions.first()
 
-        if (self.project.ultimate_submission_selection_method ==
-                Project.UltimateSubmissionSelectionMethod.best_basic_score):
+        if (self.project.ultimate_submission_policy ==
+                UltimateSubmissionPolicy.best):
             return self.submission_with_best_basic_score
 
         raise Exception('Invalid ultimate submission selection method ' +
-                        self.project.ultimate_submission_selection_method)
+                        self.project.ultimate_submission_policy)
 
     # -------------------------------------------------------------------------
 

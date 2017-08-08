@@ -1,3 +1,4 @@
+import copy
 import datetime
 import os
 import random
@@ -34,7 +35,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertIsNone(new_project.soft_closing_time)
         self.assertFalse(new_project.disallow_student_submissions)
         self.assertFalse(new_project.disallow_group_registration)
-        self.assertFalse(new_project.allow_submissions_from_non_enrolled_students)
+        self.assertFalse(new_project.guests_can_submit)
         self.assertEqual(new_project.min_group_size, 1)
         self.assertEqual(new_project.max_group_size, 1)
 
@@ -42,11 +43,12 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual(True, new_project.allow_submissions_past_limit)
         self.assertEqual(datetime.time(),
                          new_project.submission_limit_reset_time)
+        self.assertEqual(timezone.pytz.UTC, new_project.submission_limit_reset_timezone)
 
         self.assertTrue(new_project.hide_ultimate_submission_fdbk)
         self.assertEqual(
-            ag_models.Project.UltimateSubmissionSelectionMethod.most_recent,
-            new_project.ultimate_submission_selection_method)
+            ag_models.UltimateSubmissionPolicy.most_recent,
+            new_project.ultimate_submission_policy)
 
     def test_valid_create_non_defaults(self):
         tomorrow_date = timezone.now() + datetime.timedelta(days=1)
@@ -57,8 +59,7 @@ class ProjectMiscTestCase(UnitTestBase):
         sub_limit = random.randint(1, 5)
         reset_time = datetime.time(8, 0, 0)
 
-        selection_method = (ag_models.Project.UltimateSubmissionSelectionMethod
-                                             .best_basic_score)
+        selection_method = ag_models.UltimateSubmissionPolicy.best
         kwargs = {
             'name': self.project_name,
             'course': self.course,
@@ -67,7 +68,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'soft_closing_time': soft_closing_time,
             'disallow_student_submissions': True,
             'disallow_group_registration': True,
-            'allow_submissions_from_non_enrolled_students': True,
+            'guests_can_submit': True,
             'min_group_size': min_group_size,
             'max_group_size': max_group_size,
 
@@ -76,69 +77,77 @@ class ProjectMiscTestCase(UnitTestBase):
             'submission_limit_reset_time': reset_time,
 
             'hide_ultimate_submission_fdbk': False,
-            'ultimate_submission_selection_method': selection_method,
+            'ultimate_submission_policy': selection_method,
         }
 
+        reset_timezone = 'America/Chicago'
         new_project = ag_models.Project.objects.validate_and_create(
+            submission_limit_reset_timezone=reset_timezone,
             **kwargs
         )
 
         new_project.refresh_from_db()
 
         for field_name, value in kwargs.items():
-            self.assertEqual(value, getattr(new_project, field_name),
-                             msg=field_name)
+            self.assertEqual(value, getattr(new_project, field_name), msg=field_name)
 
-    def test_serializable_fields(self):
-        project = obj_build.build_project()
+        self.assertEqual(timezone.pytz.timezone(reset_timezone),
+                         new_project.submission_limit_reset_timezone)
 
-        expected_fields = [
+    def test_serialize(self):
+        project = ag_models.Project.objects.validate_and_create(
+            name='qeiruqioewiur', course=self.course
+        )  # type: ag_models.Project
+        proj_file = obj_build.make_uploaded_file(project)
+        pattern = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            project=project, pattern='qweiourqpweioru')
+
+        project_dict = project.to_dict()
+
+        expected_keys = [
             'pk',
             'name',
             'course',
+            'last_modified',
             'visible_to_students',
             'closing_time',
             'soft_closing_time',
             'disallow_student_submissions',
             'disallow_group_registration',
-            'allow_submissions_from_non_enrolled_students',
+            'guests_can_submit',
             'min_group_size',
             'max_group_size',
 
             'submission_limit_per_day',
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
+            'submission_limit_reset_timezone',
 
-            'ultimate_submission_selection_method',
+            'ultimate_submission_policy',
             'hide_ultimate_submission_fdbk',
+
+            'uploaded_files',
+            'expected_student_file_patterns',
         ]
+        self.assertCountEqual(expected_keys, project_dict.keys())
+        self.assertEqual('UTC', project_dict['submission_limit_reset_timezone'])
 
-        self.assertCountEqual(expected_fields,
-                              ag_models.Project.get_serializable_fields())
-        project = obj_build.build_project()
-        self.assertTrue(project.to_dict())
+        self.assertSequenceEqual([proj_file.to_dict()], project_dict['uploaded_files'])
+        self.assertSequenceEqual([pattern.to_dict()],
+                                 project_dict['expected_student_file_patterns'])
 
-    def test_editable_fields(self):
-        expected = [
-            'name',
-            'visible_to_students',
-            'closing_time',
-            'soft_closing_time',
-            'disallow_student_submissions',
-            'disallow_group_registration',
-            'allow_submissions_from_non_enrolled_students',
-            'min_group_size',
-            'max_group_size',
+        update_dict = copy.deepcopy(project_dict)
+        update_dict.pop('pk')
+        update_dict.pop('course')
+        update_dict.pop('last_modified')
+        update_dict.pop('uploaded_files')
+        update_dict.pop('expected_student_file_patterns')
+        project.validate_and_update(**update_dict)
 
-            'submission_limit_per_day',
-            'allow_submissions_past_limit',
-            'submission_limit_reset_time',
-
-            'ultimate_submission_selection_method',
-            'hide_ultimate_submission_fdbk',
-        ]
-        self.assertCountEqual(expected,
-                              ag_models.Project.get_editable_fields())
+        other_timezone = 'America/Chicago'
+        project.validate_and_update(submission_limit_reset_timezone=other_timezone)
+        project.refresh_from_db()
+        self.assertEqual(other_timezone, project.to_dict()['submission_limit_reset_timezone'])
 
 
 class HardAndSoftClosingTimeTestCase(UnitTestBase):
@@ -182,13 +191,13 @@ class ProjectMiscErrorTestCase(UnitTestBase):
 
         self.assertIn('submission_limit_per_day', cm.exception.message_dict)
 
-    def test_error_invalid_ultimate_submission_selection_method(self):
+    def test_error_invalid_ultimate_submission_policy(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.Project.objects.validate_and_create(
                 name='steve', course=self.course,
-                ultimate_submission_selection_method='not_a_method')
+                ultimate_submission_policy='not_a_method')
 
-        self.assertIn('ultimate_submission_selection_method',
+        self.assertIn('ultimate_submission_policy',
                       cm.exception.message_dict)
 
 
@@ -283,8 +292,7 @@ class ProjectFilesystemTest(UnitTestBase):
         self.project_name = 'stats_project'
 
     def test_project_root_dir_created(self):
-        project = ag_models.Project(
-            name=self.project_name, course=self.course)
+        project = ag_models.Project(name=self.project_name, course=self.course)
 
         self.assertEqual(
             [],
@@ -297,8 +305,7 @@ class ProjectFilesystemTest(UnitTestBase):
         self.assertTrue(os.path.isdir(expected_project_root_dir))
 
     def test_project_files_dir_created(self):
-        project = ag_models.Project(
-            name=self.project_name, course=self.course)
+        project = ag_models.Project(name=self.project_name, course=self.course)
 
         self.assertFalse(
             os.path.exists(

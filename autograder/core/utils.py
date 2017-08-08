@@ -1,6 +1,10 @@
+import datetime
+import enum
 import os
 import tempfile
 import subprocess
+from io import FileIO
+from typing import List, Union
 
 from django.conf import settings
 from django.core import exceptions
@@ -9,54 +13,52 @@ from django.utils import timezone
 from . import constants as const
 
 
-def get_diff(first, second,
+class DiffResult:
+    def __init__(self, diff_pass: bool, diff_content: FileIO):
+        self.diff_pass = diff_pass
+        self.diff_content = diff_content
+
+
+def get_diff(first_filename: str, second_filename: str,
              ignore_case=False,
              ignore_whitespace=False,
              ignore_whitespace_changes=False,
-             ignore_blank_lines=False):
-    '''
+             ignore_blank_lines=False) -> DiffResult:
+    """
     Diffs first and second using the GNU diff command line utility.
     Returns an empty list if first and second are considered equivalent.
     Otherwise, returns a list of strings, each of which are prefixed
     with one of the two-letter opcodes used by
     https://docs.python.org/3.5/library/difflib.html#difflib.Differ
-    '''
-    with tempfile.NamedTemporaryFile('w') as f1, tempfile.NamedTemporaryFile('w') as f2:
-        f1.write(first)
-        f1.seek(0)
-        f2.write(second)
-        f2.seek(0)
+    """
+    diff_cmd = ['diff',
+                '--new-line-format', '+ %L',
+                '--old-line-format', '- %L',
+                '--unchanged-line-format', '  %L']
+    if ignore_case:
+        diff_cmd.append('--ignore-case')
+    if ignore_whitespace:
+        diff_cmd.append('--ignore-all-space')
+    if ignore_whitespace_changes:
+        diff_cmd.append('--ignore-space-change')
+    if ignore_blank_lines:
+        diff_cmd.append('--ignore-blank-lines')
 
-        diff_cmd = ['diff',
-                    '--new-line-format', '+ %L',
-                    '--old-line-format', '- %L',
-                    '--unchanged-line-format', '  %L']
-        if ignore_case:
-            diff_cmd.append('--ignore-case')
-        if ignore_whitespace:
-            diff_cmd.append('--ignore-all-space')
-        if ignore_whitespace_changes:
-            diff_cmd.append('--ignore-space-change')
-        if ignore_blank_lines:
-            diff_cmd.append('--ignore-blank-lines')
+    diff_cmd += [first_filename, second_filename]
 
-        diff_cmd += [f1.name, f2.name]
-
-        diff_result = subprocess.run(
-            diff_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        if diff_result.returncode == 0:
-            return list()
-
-        return diff_result.stdout.decode(
-            'utf-8', 'backslashreplace').splitlines(keepends=True)
+    diff_stdout = tempfile.NamedTemporaryFile()
+    diff_result = subprocess.run(diff_cmd, stdout=diff_stdout, stderr=subprocess.STDOUT)
+    diff_stdout.seek(0)
+    return DiffResult(diff_result.returncode == 0, diff_stdout)
 
 
-def get_24_hour_period(start_time, contains_datetime):
-    '''
+def get_24_hour_period(start_time, contains_datetime: datetime.datetime,
+                       convert_result_to_utc=True):
+    """
     Returns a tuple (start_datetime, end_datetime) representing a 24
     hour period that contains the current date and time and with the
     start and end time both being start_time.
-    '''
+    """
     start_date = contains_datetime.date()
     if contains_datetime.time() < start_time:
         start_date += timezone.timedelta(days=-1)
@@ -67,56 +69,32 @@ def get_24_hour_period(start_time, contains_datetime):
         tzinfo=contains_datetime.tzinfo)
     end_datetime = start_datetime + timezone.timedelta(days=1)
 
+    if convert_result_to_utc:
+        return (start_datetime.astimezone(timezone.pytz.UTC),
+                end_datetime.astimezone(timezone.pytz.UTC))
+
     return start_datetime, end_datetime
 
 
-def check_user_provided_filename(filename, allow_empty=False):
+def check_filename(filename):
     """
     Verifies whether the given filename is valid according to the
     following requirements:
         - Filenames must be non-empty and non-null
-        - Filenames must only contain the characters specified in
-          autograder.shared.global_constants.PROJECT_FILENAME_WHITELIST_REGEX
-        - Filenames must start with an alphabetic character.
+        - Filenames must not include directories.
+        - Filenames must not be '..' or '.'.
 
     If the given filename does not meet these requirements, ValidationError
-    is raised. These restrictions are placed on filenames for security
-    purposes.
+    is raised.
     """
-    if filename is None:
-        raise exceptions.ValidationError("Filenames must be non-null")
+    if not filename:
+        raise exceptions.ValidationError("Filenames must not be empty.")
 
-    if not filename and not allow_empty:
-        raise exceptions.ValidationError("Filenames must be non-empty")
+    if os.path.basename(filename) != filename:
+        raise exceptions.ValidationError('Filenames must not include directories.')
 
-    if not const.PROJECT_FILENAME_WHITELIST_REGEX.fullmatch(filename):
-        raise exceptions.ValidationError(
-            "Invalid filename: {0} \n"
-            "Filenames must contain only alphanumeric characters, hyphen, "
-            "underscore, and period.".format(filename))
-
-
-def check_shell_style_file_pattern(pattern):
-    """
-    Verified whether the given file pattern is valid according to the
-    following requirements:
-        - Patterns must be non-empty and non-null
-        - Filenames myst only contain characters specified in
-          autograder.shared.global_constants.PROJECT_FILE_PATTERN_WHITELIST_REGEX
-
-    If the given pattern does not meet these requirements, ValidationError
-    is raised. These restrictions are placed on file patterns for security
-    purposes.
-    """
-    if not pattern:
-        raise exceptions.ValidationError("File patterns must be non-empty")
-
-    if not const.PROJECT_FILE_PATTERN_WHITELIST_REGEX.fullmatch(pattern):
-        raise exceptions.ValidationError(
-            "Invalid file pattern: {0} \n"
-            "Shell-style patterns must only contain "
-            "alphanumeric characters, hyphen, underscore, "
-            "period, * ? [ ] and !".format(pattern))
+    if filename == '..' or filename == '.':
+        raise exceptions.ValidationError('Filenames must not be ".." or ".".')
 
 # -----------------------------------------------------------------------------
 
@@ -230,4 +208,73 @@ def get_submission_relative_dir(submission):
     """
     return os.path.join(
         get_student_submission_group_relative_dir(submission.submission_group),
-        'submission{}'.format(submission.pk))
+        get_submission_dir_basename(submission))
+
+
+def get_submission_dir_basename(submission):
+    return 'submission{}'.format(submission.pk)
+
+
+def get_result_output_dir(submission):
+    return os.path.join(get_submission_dir(submission),'output')
+
+
+# -----------------------------------------------------------------------------
+
+
+class OrderedEnum(enum.Enum):
+    """
+    In addition to the core properties of enum.Enum, OrderedEnums are comparable using
+    <, >, <=, and >=. The ordering of enum values is the same as the order they are defined in.
+
+    Example:
+    >>> class MyEnum(OrderedEnum):
+    ...:    spam = 'spam'
+    ...:    egg = 'egg'
+    ...:
+    >>> print(MyEnum.spam < MyEnum.egg)
+    True
+    >>> print(MyEnum.spam > MyEnum.egg)
+    False
+    """
+
+    # Adopted from https://docs.python.org/3.5/library/enum.html#autonumber
+    def __new__(cls, value):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        # OrderedEnum values are ordered by _weight.
+        obj._weight = len(cls.__members__)
+        return obj
+
+    # Comparators adopted from https://docs.python.org/3.5/library/enum.html#orderedenum
+    def __ge__(self, other):
+        if self.__class__ is other.__class__:
+            return self._weight >= other._weight
+
+        return NotImplemented
+
+    def __gt__(self, other):
+        if self.__class__ is other.__class__:
+            return self._weight > other._weight
+
+        return NotImplemented
+
+    def __le__(self, other):
+        if self.__class__ is other.__class__:
+            return self._weight <= other._weight
+
+        return NotImplemented
+
+    def __lt__(self, other):
+        if self.__class__ is other.__class__:
+            return self._weight < other._weight
+
+        return NotImplemented
+
+    @classmethod
+    def get_min(cls):
+        return list(cls)[0]
+
+    @classmethod
+    def get_max(cls):
+        return list(cls)[-1]

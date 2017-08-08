@@ -15,7 +15,7 @@ class _Permissions(permissions.BasePermission):
         return view.kwargs['pk'] == str(request.user.pk)
 
 
-class UserViewset(build_load_object_mixin(User),
+class UserViewSet(build_load_object_mixin(User),
                   mixins.RetrieveModelMixin,
                   viewsets.GenericViewSet):
     queryset = User.objects.all()

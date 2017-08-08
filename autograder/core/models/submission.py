@@ -1,6 +1,8 @@
 import fnmatch
 import os
+from typing import List, Iterable
 
+from django import dispatch
 from django.core import exceptions
 from django.core.cache import cache
 from django.core.files import File
@@ -11,10 +13,12 @@ from django.utils import timezone
 import autograder.core.utils as core_ut
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
+from autograder.core.models.ag_model_base import ToDictMixin
 
 from . import ag_model_base
 from .autograder_test_case.autograder_test_case_result import (
     AutograderTestCaseResult)
+from .ag_test.feedback_category import FeedbackCategory
 
 
 def _get_submission_file_upload_to_dir(submission, filename):
@@ -23,13 +27,8 @@ def _get_submission_file_upload_to_dir(submission, filename):
     return value
 
 
-def _validate_filename(file_):
-    core_ut.check_user_provided_filename(file_.name)
-
-
 class _SubmissionManager(ag_model_base.AutograderModelManager):
-    @transaction.atomic()
-    def validate_and_create(self, submitted_files, **kwargs):
+    def validate_and_create(self, submitted_files, submission_group, timestamp=None, submitter=''):
         """
         This method override handles additional details required for
         creating a Submission.
@@ -45,32 +44,38 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
                 - Any missing files are recorded as such, but the
                     Submission is still accepted.
         """
-        submission = self.model(**kwargs)
-        # The submission needs to be saved so that a directory is
-        # created for it.
-        submission.save()
+        if timestamp is None:
+            timestamp = timezone.now()
 
-        for file_ in submitted_files:
-            if self.file_is_extra(submission, file_.name):
-                submission.discarded_files.append(file_.name)
-                continue
+        with transaction.atomic():
+            submission = self.model(submission_group=submission_group,
+                                    timestamp=timestamp,
+                                    submitter=submitter)
+            # The submission needs to be saved so that a directory is
+            # created for it.
+            submission.save()
 
-            submission.submitted_filenames.append(file_.name)
-            write_dest = _get_submission_file_upload_to_dir(
-                submission, file_.name)
-            with open(write_dest, 'wb') as f:
-                for chunk in file_.chunks():
-                    f.write(chunk)
+            for file_ in submitted_files:
+                try:
+                    core_ut.check_filename(file_.name)
+                except exceptions.ValidationError:
+                    submission.discarded_files.append(file_.name)
+                    continue
 
-        self.check_for_missing_files(submission)
+                if self.file_is_extra(submission, file_.name):
+                    submission.discarded_files.append(file_.name)
+                    continue
 
-        submission.save()
-        ag_tests = submission.submission_group.project.autograder_test_cases.all()
-        AutograderTestCaseResult.objects.bulk_create([
-            AutograderTestCaseResult(test_case=test_case, submission=submission)
-            for test_case in ag_tests
-        ])
-        return submission
+                submission.submitted_filenames.append(file_.name)
+                write_dest = _get_submission_file_upload_to_dir(
+                    submission, file_.name)
+                with open(write_dest, 'wb') as f:
+                    for chunk in file_.chunks():
+                        f.write(chunk)
+
+            self.check_for_missing_files(submission)
+            submission.save()
+            return submission
 
     def check_for_missing_files(self, submission):
         submitted_filenames = submission.get_submitted_file_basenames()
@@ -110,6 +115,7 @@ class Submission(ag_model_base.AutograderModel):
         ordering = ['-pk']
 
     SERIALIZABLE_FIELDS = (
+        'pk',
         "submission_group",
         "timestamp",
         "submitter",
@@ -223,19 +229,20 @@ class Submission(ag_model_base.AutograderModel):
 
     @property
     def is_past_daily_limit(self):
-        '''
+        """
         Whether this submission is past the daily submission limit in
         its 24 hour period.
         This value is computed dynamically, and therefore can change
         if other submissions in the same 24 hour period are marked
         or unmarked as counting towards the daily limit.
-        '''
+        """
         project = self.submission_group.project
         if project.submission_limit_per_day is None:
             return False
 
         start_datetime, end_datetime = core_ut.get_24_hour_period(
-            project.submission_limit_reset_time, self.timestamp)
+            project.submission_limit_reset_time,
+            self.timestamp.astimezone(project.submission_limit_reset_timezone))
 
         num_submissions_before_self = self.submission_group.submissions.filter(
             timestamp__gte=start_datetime,
@@ -258,16 +265,15 @@ class Submission(ag_model_base.AutograderModel):
     # etc.).
     @property
     def basic_score(self):
-        '''
+        """
         The sum of the basic scores for each test case result belonging
         to this submission.
-        '''
+        """
         key = self.basic_score_cache_key
         score = cache.get(key)
         if score is not None:
             return score
 
-        # TODO: one cache hit instead of a lot
         score = sum((result.basic_score for result in self.results.all()))
         cache.set(key, score, timeout=None)
         return score
@@ -278,10 +284,10 @@ class Submission(ag_model_base.AutograderModel):
 
     @property
     def position_in_queue(self):
-        '''
+        """
         Returns this submissions position in the queue of submissions to
         be graded for the associated project.
-        '''
+        """
         if self.status != Submission.GradingStatus.queued:
             return 0
 
@@ -294,13 +300,13 @@ class Submission(ag_model_base.AutograderModel):
     # -------------------------------------------------------------------------
 
     def get_file(self, filename, mode='rb'):
-        '''
+        """
         Returns a Django File object containing the submitted file with
         the given name. The file is opened using the specified mode
         (mode can be any valid value for the same argument to the Python
         open() function).
         If the file doesn't exist, ObjectDoesNotExist will be raised.
-        '''
+        """
         self._check_file_exists(filename)
         return File(
             open(self._get_submitted_file_dir(filename), mode),
@@ -319,6 +325,56 @@ class Submission(ag_model_base.AutograderModel):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        submission_dir = core_ut.get_submission_dir(self)
-        if not os.path.isdir(submission_dir):
-            os.makedirs(submission_dir)
+        # result_output_dir is a subdir of the submission dir
+        result_output_dir = core_ut.get_result_output_dir(self)
+        if not os.path.isdir(result_output_dir):
+            os.makedirs(result_output_dir, exist_ok=True)
+
+    def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'Submission.FeedbackCalculator':
+        return Submission.FeedbackCalculator(self, fdbk_category)
+
+    class FeedbackCalculator(ToDictMixin):
+        def __init__(self, submission: 'Submission', fdbk_category: FeedbackCategory):
+            self._submission = submission
+            self._fdbk_category = fdbk_category
+            self._project = self._submission.submission_group.project
+
+        @property
+        def pk(self):
+            return self._submission.pk
+
+        @property
+        def total_points(self):
+            return sum((ag_test_suite_result.get_fdbk(self._fdbk_category).total_points
+                       for ag_test_suite_result in self._visible_ag_test_suite_results))
+
+        @property
+        def total_points_possible(self):
+            return sum((ag_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible
+                       for ag_test_suite_result in self._visible_ag_test_suite_results))
+
+        @property
+        def ag_test_suite_results(self) -> List['AGTestSuiteResult']:
+            suite_order = list(self._project.get_agtestsuite_order())
+            results = sorted(self._visible_ag_test_suite_results,
+                             key=lambda result: suite_order.index(result.ag_test_suite.pk))
+            return list(results)
+
+        @property
+        def _visible_ag_test_suite_results(self) -> Iterable['AGTestSuiteResult']:
+            return filter(
+                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
+                self._submission.ag_test_suite_results.all())
+
+        def to_dict(self):
+            result = super().to_dict()
+            result['ag_test_suite_results'] = [result.get_fdbk(self._fdbk_category).to_dict()
+                                               for result in self.ag_test_suite_results]
+            return result
+
+        SERIALIZABLE_FIELDS = (
+            'pk',
+            'total_points',
+            'total_points_possible',
+            'ag_test_suite_results',
+        )

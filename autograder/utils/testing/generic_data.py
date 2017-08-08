@@ -1,11 +1,9 @@
 import copy
-import random
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 import autograder.core.models as ag_models
-
 from autograder.utils.testing import model_obj_builders as obj_build
 
 # TODO: clean up unused submission methods
@@ -65,9 +63,7 @@ class Project(Course):
     @property
     def project(self):
         if not hasattr(self, '_project'):
-            self._project = ag_models.Project.objects.validate_and_create(
-                name='spammy' + random.choice('qewiurqelrhjk'),
-                course=self.course)
+            self._project = obj_build.build_project(project_kwargs={'course': self.course})
 
         return self._project
 
@@ -79,7 +75,7 @@ class Project(Course):
                     name='visible_public_project',
                     course=self.course,
                     visible_to_students=True,
-                    allow_submissions_from_non_enrolled_students=True))
+                    guests_can_submit=True))
 
         return self._visible_public_project
 
@@ -91,7 +87,7 @@ class Project(Course):
                     name='visible_private_project',
                     course=self.course,
                     visible_to_students=True,
-                    allow_submissions_from_non_enrolled_students=False))
+                    guests_can_submit=False))
 
         return self._visible_private_project
 
@@ -103,7 +99,7 @@ class Project(Course):
                     name='hidden_public_project',
                     course=self.course,
                     visible_to_students=False,
-                    allow_submissions_from_non_enrolled_students=True))
+                    guests_can_submit=True))
 
         return self._hidden_public_project
 
@@ -115,7 +111,7 @@ class Project(Course):
                     name='hidden_private_project',
                     course=self.course,
                     visible_to_students=False,
-                    allow_submissions_from_non_enrolled_students=False))
+                    guests_can_submit=False))
 
         return self._hidden_private_project
 
@@ -280,100 +276,6 @@ class Group(Course):
 # the project associated with the group they are given in order
 # to satisfy requirements for the type of object being requested.
 class Submission(Group):
-    def non_ultimate_submission(self, group):
-        group.project.validate_and_update(hide_ultimate_submission_fdbk=False)
-        submissions = [ag_models.Submission.objects.validate_and_create(
-            [], submission_group=group) for i in range(2)]
-        return submissions[0]
-
-    def most_recent_ultimate_submission(self, group):
-        group.project.validate_and_update(
-            ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.most_recent),
-            hide_ultimate_submission_fdbk=False,
-            closing_time=None
-        )
-        return self.most_recent_submission(group)
-
-    def most_recent_submission(self, group, num_submissions=3):
-        submissions, best, test = obj_build.build_submissions_with_results(
-            num_submissions=num_submissions, make_one_best=True,
-            submission_group=group)
-        return submissions[-1]
-
-    def best_ultimate_submission(self, group):
-        group.project.validate_and_update(
-            ultimate_submission_selection_method=(
-                ag_models.Project.UltimateSubmissionSelectionMethod.best_basic_score),
-            hide_ultimate_submission_fdbk=False,
-            closing_time=timezone.now() - timezone.timedelta(seconds=2))
-        return self.best_submission(group)
-
-    def best_submission(self, group, num_submissions=3):
-        submissions, best, test = obj_build.build_submissions_with_results(
-            num_submissions=num_submissions, make_one_best=True,
-            submission_group=group)
-        return best
-
-    def non_most_recent_submission(self, group, num_submissions=3):
-        submissions, test = obj_build.build_submissions_with_results(
-            num_submissions=num_submissions, submission_group=group)
-        return submissions[0]
-
-    def non_best_submission(self, group, num_submissions=3):
-        submissions, best, test = obj_build.build_submissions_with_results(
-            num_submissions=num_submissions, make_one_best=True,
-            submission_group=group)
-        # The above build function chooses a submission other than the
-        # most recent one to be the best.
-        return submissions[-1]
-
-    def past_limit_most_recent_submission(self, group):
-        group.project.validate_and_update(
-            submission_limit_per_day=1,
-            closing_time=timezone.now() + timezone.timedelta(minutes=5))
-        return self.most_recent_submission(group)
-
-    def past_limit_most_recent_ultimate_submission(self, group):
-        group.project.validate_and_update(
-            submission_limit_per_day=1,
-            closing_time=timezone.now() + timezone.timedelta(minutes=5))
-        return self.most_recent_ultimate_submission(group)
-
-    def past_limit_best_submission(self, group):
-        group.project.validate_and_update(
-            submission_limit_per_day=1,
-            closing_time=timezone.now() + timezone.timedelta(minutes=5))
-        ag_models.Submission.objects.validate_and_create(
-            [], submission_group=group)
-        return self.best_submission(group)
-
-    def past_limit_best_ultimate_submission(self, group):
-        group.project.validate_and_update(
-            submission_limit_per_day=1,
-            closing_time=timezone.now() + timezone.timedelta(minutes=5))
-        ag_models.Submission.objects.validate_and_create(
-            [], submission_group=group)
-        return self.best_ultimate_submission(group)
-
-    # def past_limit_non_most_recent_submission(self, group):
-    #     group.project.validate_and_update(submission_limit_per_day=1)
-    #     return self.non_most_recent_submission(group)
-
-    # def past_limit_non_best_submission(self, group):
-    #     group.project.validate_and_update(submission_limit_per_day=1)
-    #     return self.non_best_submission(group)
-
-    def past_limit_submission(self, group):
-        group.project.validate_and_update(
-            submission_limit_per_day=1,
-            closing_time=timezone.now() + timezone.timedelta(minutes=5))
-        for i in range(group.project.submission_limit_per_day + 1):
-            submission = ag_models.Submission.objects.validate_and_create(
-                [], submission_group=group)
-
-        return submission
-
     def admin_submission(self, project):
         return self.build_submission(self.admin_group(project))
 

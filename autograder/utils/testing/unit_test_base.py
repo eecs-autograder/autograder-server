@@ -13,7 +13,8 @@ class UnitTestBase(TransactionTestCase):
     Base class for test cases that use either the filesystem or the
     cache. Overrides the MEDIA_ROOT setting.
 
-    The setUp() method does the following:
+    The setUp() method does the followiPng:
+        - Clears the cache
         - Creates a temporary directory for the test to use.
         - Saves the current settings.MEDIA_ROOT,
           then modifies it to refer to the temporary directory.
@@ -31,7 +32,6 @@ class UnitTestBase(TransactionTestCase):
     def setUp(self):
         super().setUp()
 
-        # HACK
         cache.clear()
 
         if os.path.isdir(settings.MEDIA_ROOT):
@@ -51,6 +51,20 @@ class UnitTestBase(TransactionTestCase):
     def assertListContentsEqual(self, first, second):
         self.assertCountEqual(_ordered(first), _ordered(second))
 
+    def assert_queryset_count_unchange(self, queryset):
+        return UnitTestBase._AssertQuerySetCountUnchanged(queryset, self)
+
+    class _AssertQuerySetCountUnchanged:
+        def __init__(self, queryset, test_case_object):
+            self.original_count = None
+            self.queryset = queryset
+            self.test_case_object = test_case_object
+
+        def __enter__(self):
+            self.original_count = self.queryset.count()
+
+        def __exit__(self, *args):
+            self.test_case_object.assertEqual(self.original_count, self.queryset.count())
 
 # Adapted from: http://stackoverflow.com/questions/25851183/
 def _ordered(obj):

@@ -17,8 +17,7 @@ class RaceConditionTestCase(test_data.Client,
     def test_simultaneous_create_race_condition_prevented(self):
         group = self.admin_group(self.project)
         group_id = group.pk
-        path = ('autograder.rest_api.views.group_views.'
-                'group_submissions_view.user_can_view_group')
+        path = 'autograder.rest_api.views.submission_views.submissions_view.user_can_view_group'
 
         @test_ut.sleeper_subtest(path)
         def create_submission_first(group_id):

@@ -16,20 +16,23 @@ class ProjectSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.context:
+            self.show_closing_time = None
             return
 
         request = self.context['request']
         try:
-            show_closing_time = self.instance.course.is_administrator(
-                request.user)
+            self.show_closing_time = self.instance.course.is_administrator(request.user)
         except AttributeError:
-            show_closing_time = False
+            # self.instance is a QuerySet, don't show closing time
+            # for any of the results.
+            self.show_closing_time = False
 
-        if not show_closing_time:
-            if self.exclude_fields is None:
-                self.exclude_fields = []
+    def to_representation(self, obj):
+        result = super().to_representation(obj)
+        if self.show_closing_time is not None and not self.show_closing_time:
+            result.pop('closing_time', None)
 
-            self.exclude_fields.append('closing_time')
+        return result
 
     def get_ag_model_manager(self):
         return ag_models.Project.objects
@@ -45,10 +48,11 @@ class ExpectedStudentFilePatternSerializer(AGModelSerializer):
         return ag_models.ExpectedStudentFilePattern.objects
 
 
-class AGTestCaseSerializer(AGModelSerializer):
+class AutograderTestCaseSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         if 'data' not in kwargs:
-            return super().__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
+            return
 
         data = copy.copy(kwargs.pop('data'))
         for fdbk_field in ag_models.AutograderTestCaseBase.FDBK_FIELD_NAMES:
@@ -57,7 +61,7 @@ class AGTestCaseSerializer(AGModelSerializer):
                     ag_models.FeedbackConfig.objects.validate_and_create(
                         **data[fdbk_field]))
 
-        return super().__init__(*args, data=data, **kwargs)
+        super().__init__(*args, data=data, **kwargs)
 
     def validate_and_create(self, data):
         return ag_models.AutograderTestCaseFactory.validate_and_create(**data)
@@ -119,7 +123,7 @@ class AGTestCaseSerializer(AGModelSerializer):
             pk__in=pk_list)
 
 
-class AGTestResultSerializer(AGModelSerializer):
+class AutograderTestResultSerializer(AGModelSerializer):
     def __init__(self, *args, feedback_type=None, **kwargs):
         if feedback_type is None:
             raise ValueError(
@@ -127,7 +131,7 @@ class AGTestResultSerializer(AGModelSerializer):
 
         self._fdbk_type = feedback_type
 
-        return super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         raise NotImplementedError(
@@ -172,7 +176,8 @@ class SubmissionSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         data = kwargs.pop('data', None)
         if data is None:
-            return super().__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
+            return
 
         try:
             # If this fails, then we know we don't have a query dict.
@@ -181,10 +186,25 @@ class SubmissionSerializer(AGModelSerializer):
         except AttributeError:
             fixed_data = data
 
-        return super().__init__(*args, data=fixed_data, **kwargs)
+        super().__init__(*args, data=fixed_data, **kwargs)
 
     def get_ag_model_manager(self):
         return ag_models.Submission.objects
+
+
+class AGTestSuiteSerializer(AGModelSerializer):
+    def get_ag_model_manager(self):
+        return ag_models.AGTestSuite.objects
+
+
+class AGTestCaseSerializer(AGModelSerializer):
+    def get_ag_model_manager(self):
+        return ag_models.AGTestCase.objects
+
+
+class AGTestCommandSerializer(AGModelSerializer):
+    def get_ag_model_manager(self):
+        return ag_models.AGTestCommand.objects
 
 
 class NotificationSerializer(AGModelSerializer):

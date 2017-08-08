@@ -11,6 +11,14 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 
 
+# TODO: add this to permissions stuff
+class UserRole(core_ut.OrderedEnum):
+    guest = 'guest'
+    student = 'student'
+    staff = 'staff'
+    admin = 'admin'
+
+
 class Course(AutograderModel):
     """
     Represents a programming course for which students will be submitting
@@ -19,9 +27,6 @@ class Course(AutograderModel):
     Related object fields:
         projects -- The group of Projects that belong to this Course.
     """
-    SERIALIZABLE_FIELDS = ('name',)
-    EDITABLE_FIELDS = ('name',)
-
     name = ag_fields.ShortStringField(
         unique=True,
         validators=[validators.MinLengthValidator(1)],
@@ -54,6 +59,7 @@ class Course(AutograderModel):
         """
         return tuple(user.username for user in self.administrators.all())
 
+    # TODO: change to "get_role", which returns an ordered enum.
     def is_administrator(self, user: User) -> bool:
         """
         Convenience method for determining if the given user
@@ -92,8 +98,6 @@ class Course(AutograderModel):
         """
         return list(user.username for user in self.enrolled_students.all())
 
-    # -------------------------------------------------------------------------
-
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
@@ -106,3 +110,6 @@ class Course(AutograderModel):
             # thrown by os.makedirs will be handled at a higher level.
 
             os.makedirs(course_root_dir)
+
+    SERIALIZABLE_FIELDS = ('pk', 'name', 'last_modified',)
+    EDITABLE_FIELDS = ('name',)

@@ -3,24 +3,23 @@ import os
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+from autograder.core import constants
 from autograder.core.models.project.uploaded_file import UploadedFile
 
 from autograder import utils
 import autograder.core.utils as core_ut
-import autograder.utils.testing as test_ut
+from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
 _illegal_filenames = [
     '..',
-    '; echo "haxorz";#',
-    '.spam.txt',
     '',
-    '     '
+    '.'
 ]
 
 
-class _SetUp:
+class _SetUp(UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -30,7 +29,7 @@ class _SetUp:
             b'contents more contents.')
 
 
-class CreateUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
+class CreateUploadedFileTestCase(_SetUp):
     def test_valid_create(self):
         uploaded_file = UploadedFile.objects.validate_and_create(
             project=self.project,
@@ -48,7 +47,6 @@ class CreateUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
         with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(self.file_obj.name))
 
-    # Note: Enforcing file uniqueness is done at the rest api level
     def test_create_file_exception_file_already_exists(self):
         self.file_obj.seek(0)
         uploaded_file = UploadedFile.objects.validate_and_create(
@@ -91,8 +89,15 @@ class CreateUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
 
             self.assertIn('file_obj', cm.exception.message_dict)
 
+    def test_error_file_too_big(self):
+        too_big = SimpleUploadedFile('wee', b'a' * (constants.MAX_PROJECT_FILE_SIZE + 1))
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            UploadedFile.objects.validate_and_create(project=self.project, file_obj=too_big)
 
-class RenameUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
+        self.assertIn('content', cm.exception.message_dict)
+
+
+class RenameUploadedFileTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
@@ -101,11 +106,13 @@ class RenameUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
             file_obj=self.file_obj)
 
     def test_valid_rename(self):
+        original_last_modified = self.uploaded_file.last_modified
         new_name = 'new_filename'
         self.uploaded_file.rename(new_name)
 
         self.uploaded_file.refresh_from_db()
 
+        self.assertNotEqual(original_last_modified, self.uploaded_file.last_modified)
         self.assertEqual(new_name, self.uploaded_file.name)
         with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(new_name))
@@ -130,7 +137,7 @@ class RenameUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
             self.assertIn('name', cm.exception.message_dict)
 
 
-class DeleteUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
+class DeleteUploadedFileTestCase(_SetUp):
     def test_file_deleted_from_filesystem(self):
         uploaded_file = UploadedFile.objects.validate_and_create(
             project=self.project,
@@ -141,13 +148,14 @@ class DeleteUploadedFileTestCase(_SetUp, test_ut.UnitTestBase):
         self.assertFalse(os.path.exists(uploaded_file.abspath))
 
 
-class UploadedFileMiscTestCase(_SetUp, test_ut.UnitTestBase):
+class UploadedFileMiscTestCase(_SetUp):
     def test_serializable_fields(self):
         expected = [
             'pk',
             'name',
             'size',
-            'project'
+            'project',
+            'last_modified',
         ]
 
         self.assertCountEqual(expected,

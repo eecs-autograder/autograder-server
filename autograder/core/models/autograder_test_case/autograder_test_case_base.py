@@ -455,7 +455,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
     executable_name = ag_fields.ShortStringField(
         blank=True,
         default=get_random_executable_name,
-        validators=[core_ut.check_user_provided_filename],
+        validators=[core_ut.check_filename],
         help_text='''The name of the executable program that should be
             produced by the compiler. This is the program that will be
             tested.''')
@@ -481,7 +481,7 @@ class AutograderTestCaseBase(PolymorphicAutograderModel):
 
     entry_point_filename = ag_fields.ShortStringField(
         blank=True,
-        validators=[core_ut.check_user_provided_filename],
+        validators=[core_ut.check_filename],
         help_text='''The name of a file that should be given to the
             interpreter as the program to be run, i.e. the main source
             module. It is up to the user to make sure that this file is

@@ -1,15 +1,38 @@
+import enum
 import os
 import datetime
 
+import pytz
 from django.db import models
 from django.core import validators
 from django.core import exceptions
+from django.utils import timezone
+from timezone_field import TimeZoneField
 
 from ..ag_model_base import AutograderModel
 from ..course import Course
 
 import autograder.core.utils as core_ut
 import autograder.core.fields as ag_fields
+
+
+class UltimateSubmissionPolicy(enum.Enum):
+    """
+    This class contains options for choosing which submissions are
+    used for final grading. AG test cases also have a feedback
+    option that will only be used for ultimate submissions.
+    """
+    # The submission that was made most recently
+    most_recent = 'most_recent'
+
+    # The submission with the highest score, using "normal"
+    # feedback settings to compute scores.
+    best_with_normal_fdbk = 'best_basic_score'
+
+    # The submission with the highest score. The score used
+    # for comparison is computed using maximum feedback
+    # settings.
+    best = 'best'
 
 
 class Project(AutograderModel):
@@ -20,6 +43,7 @@ class Project(AutograderModel):
     Related object fields:
         autograder_test_cases -- The autograder test cases that belong
             to this Project.
+            DEPRECATED
 
         uploaded_files -- Resource files to be used in project test
             cases.
@@ -36,71 +60,12 @@ class Project(AutograderModel):
     class Meta:
         unique_together = ('name', 'course')
 
-    SERIALIZABLE_FIELDS = (
-        'name',
-        'course',
-        'visible_to_students',
-        'closing_time',
-        'soft_closing_time',
-        'disallow_student_submissions',
-        'disallow_group_registration',
-        'allow_submissions_from_non_enrolled_students',
-        'min_group_size',
-        'max_group_size',
-
-        'submission_limit_per_day',
-        'allow_submissions_past_limit',
-        'submission_limit_reset_time',
-
-        'ultimate_submission_selection_method',
-        'hide_ultimate_submission_fdbk',
-    )
-
-    EDITABLE_FIELDS = (
-        'name',
-        'visible_to_students',
-        'closing_time',
-        'soft_closing_time',
-        'disallow_student_submissions',
-        'disallow_group_registration',
-        'allow_submissions_from_non_enrolled_students',
-        'min_group_size',
-        'max_group_size',
-
-        'submission_limit_per_day',
-        'allow_submissions_past_limit',
-        'submission_limit_reset_time',
-
-        'ultimate_submission_selection_method',
-        'hide_ultimate_submission_fdbk',
-    )
-
     name = ag_fields.ShortStringField(
         help_text='''The name used to identify this project.
             Must be non-empty and non-null.
             Must be unique among Projects associated with
             a given course.
             This field is REQUIRED.''')
-
-    # -------------------------------------------------------------------------
-
-    class UltimateSubmissionSelectionMethod:
-        '''
-        This class contains options for choosing which submissions are
-        used for final grading. AG test cases also have a feedback
-        option that will only be used for ultimate submissions.
-        '''
-        # The submission that was made most recently
-        most_recent = 'most_recent'
-
-        # The submission for which the student sees the highest basic
-        # score. The basic score is the total score using the normal
-        # feedback config for each test case.
-        best_basic_score = 'best_basic_score'
-
-        values = [most_recent, best_basic_score]
-
-    # -------------------------------------------------------------------------
 
     course = models.ForeignKey(
         Course, related_name='projects',
@@ -140,17 +105,15 @@ class Project(AutograderModel):
             not be able to send, accept, or reject group
             invitations.''')
 
-    allow_submissions_from_non_enrolled_students = models.BooleanField(
+    guests_can_submit = models.BooleanField(
         default=False,
-        help_text='''By default, only admins, staff members, and enrolled
-            students for a given Course can submit to its Projects.
-            When this field is set to True, submissions will be accepted
-            from any authenticated Users, with the following caveats:
-                - In order to view the Project, non-enrolled students
-                must be given a direct link to a page where it can
-                be viewed.
-                - When group work is allowed, non-enrolled students can
-                only be in groups with other non-enrolled students.''')
+        help_text='''By default, only admins, staff, and students
+            for a given Course can view and submit to its Projects.
+            When True, submissions will be accepted from guests
+            with the following caveats:
+                - Guests must be given a direct link to the project.
+                - When group work is allowed, guests can
+                only be in groups with other guests.''')
 
     min_group_size = models.IntegerField(
         default=1, validators=[validators.MinValueValidator(1)],
@@ -182,13 +145,16 @@ class Project(AutograderModel):
         default=datetime.time,
         help_text='''The time that marks the beginning and end of the 24
             hour period during which submissions should be counted
-            towards the daily limit. This value assumes use of the UTC
-            timezone. Defaults to 0:0:0.''')
+            towards the daily limit. Defaults to 0:0:0.''')
 
-    ultimate_submission_selection_method = ag_fields.ShortStringField(
-        choices=zip(UltimateSubmissionSelectionMethod.values,
-                    UltimateSubmissionSelectionMethod.values),
-        default=UltimateSubmissionSelectionMethod.most_recent,
+    submission_limit_reset_timezone = TimeZoneField(
+        default='UTC',
+        help_text='''The timezone to use when computing how many
+            submissions a group has made in a 24 hour period.''')
+
+    ultimate_submission_policy = ag_fields.EnumField(
+        UltimateSubmissionPolicy,
+        default=UltimateSubmissionPolicy.most_recent,
         blank=True,
         help_text='''The "ultimate" submission for a group is the one
             that will be used for final grading. This field specifies
@@ -232,3 +198,60 @@ class Project(AutograderModel):
                 raise exceptions.ValidationError(
                     {'soft_closing_time': (
                         'Soft closing time must be before hard closing time')})
+
+    def to_dict(self):
+        result = super().to_dict()
+        result['submission_limit_reset_timezone'] = (
+            self.submission_limit_reset_timezone.tzname(None))
+        return result
+
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        'name',
+        'last_modified',
+        'course',
+        'visible_to_students',
+        'closing_time',
+        'soft_closing_time',
+        'disallow_student_submissions',
+        'disallow_group_registration',
+        'guests_can_submit',
+        'min_group_size',
+        'max_group_size',
+
+        'submission_limit_per_day',
+        'allow_submissions_past_limit',
+        'submission_limit_reset_time',
+        'submission_limit_reset_timezone',
+
+        'ultimate_submission_policy',
+        'hide_ultimate_submission_fdbk',
+
+        'uploaded_files',
+        'expected_student_file_patterns',
+    )
+
+    SERIALIZE_RELATED = (
+        'uploaded_files',
+        'expected_student_file_patterns',
+    )
+
+    EDITABLE_FIELDS = (
+        'name',
+        'visible_to_students',
+        'closing_time',
+        'soft_closing_time',
+        'disallow_student_submissions',
+        'disallow_group_registration',
+        'guests_can_submit',
+        'min_group_size',
+        'max_group_size',
+
+        'submission_limit_per_day',
+        'allow_submissions_past_limit',
+        'submission_limit_reset_time',
+        'submission_limit_reset_timezone',
+
+        'ultimate_submission_policy',
+        'hide_ultimate_submission_fdbk',
+    )

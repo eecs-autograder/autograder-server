@@ -18,19 +18,18 @@ def _get_project_file_upload_to_path(instance, filename):
         core_ut.get_project_files_relative_dir(instance.project), filename)
 
 
-# For migrations backwards compatibility
-def _get_project_file_upload_to_dir(instance, filename):
-    return _get_project_file_upload_to_path(instance, filename)
-
-
 def _validate_filename(file_obj):
-    core_ut.check_user_provided_filename(file_obj.name)
+    core_ut.check_filename(file_obj.name)
 
 
 class UploadedFileManager(AutograderModelManager):
     def validate_and_create(self, **kwargs):
         if 'file_obj' in kwargs and 'project' in kwargs:
             file_obj = kwargs['file_obj']
+            if file_obj.size > const.MAX_PROJECT_FILE_SIZE:
+                raise exceptions.ValidationError(
+                    {'content': 'Project files cannot be bigger than {} bytes'.format(
+                        const.MAX_PROJECT_FILE_SIZE)})
             project = kwargs['project']
 
             file_exists = utils.find_if(
@@ -51,8 +50,10 @@ class UploadedFile(AutograderModel):
     objects = UploadedFileManager()
 
     SERIALIZABLE_FIELDS = (
+        'pk',
         'project',
         'name',
+        'last_modified',
         'size',
     )
 
@@ -74,7 +75,7 @@ class UploadedFile(AutograderModel):
         """
         new_name = os.path.basename(new_name)
         try:
-            core_ut.check_user_provided_filename(new_name)
+            core_ut.check_filename(new_name)
         except exceptions.ValidationError as e:
             raise exceptions.ValidationError({'name': e.message})
 
@@ -104,3 +105,6 @@ class UploadedFile(AutograderModel):
             os.remove(file_path)
 
             return return_val
+
+    def open(self, mode='r'):
+        return open(self.abspath, mode)

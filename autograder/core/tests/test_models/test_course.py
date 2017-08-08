@@ -38,7 +38,8 @@ class CourseTestCase(UnitTestBase):
     def test_serializable_fields(self):
         expected_fields = [
             'pk',
-            'name'
+            'name',
+            'last_modified',
         ]
 
         self.assertCountEqual(expected_fields,

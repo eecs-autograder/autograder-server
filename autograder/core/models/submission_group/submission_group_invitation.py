@@ -43,6 +43,7 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
     SubmissionGroup together.
     """
     SERIALIZABLE_FIELDS = (
+        'pk',
         'invitation_creator',
         'project',
         'invited_usernames',

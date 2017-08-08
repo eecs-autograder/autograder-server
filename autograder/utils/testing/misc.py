@@ -6,6 +6,7 @@ class Timer:
         self.msg = msg
 
     def __enter__(self):
+        print('Starting', self.msg)
         self.start_time = timeit.default_timer()
 
     def __exit__(self, *args, **kwargs):
