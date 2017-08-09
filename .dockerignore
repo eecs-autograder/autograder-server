@@ -5,6 +5,10 @@ media_root
 media_root_dev
 old
 venv
+venv-remote
+venv*
 __pycache__
 **/__pycache__
 autograder/core/__pycache__
+*.zip
+*.log
