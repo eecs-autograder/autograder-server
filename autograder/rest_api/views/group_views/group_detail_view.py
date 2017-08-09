@@ -98,8 +98,10 @@ class GroupDetailViewSet(build_load_object_mixin(ag_models.SubmissionGroup),
         """
         group = self.get_object()
         [ultimate_submission] = get_ultimate_submissions(group.project, group.pk)
-        content = ag_serializers.SubmissionSerializer(ultimate_submission).data
-        return response.Response(content)
+        if ultimate_submission is None:
+            return response.Response(status=status.HTTP_404_NOT_FOUND)
+
+        return response.Response(ag_serializers.SubmissionSerializer(ultimate_submission).data)
 
     @decorators.detail_route(methods=['POST'])
     @transaction.atomic()
