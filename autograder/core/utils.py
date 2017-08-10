@@ -1,10 +1,9 @@
 import datetime
 import enum
 import os
-import tempfile
+import re
 import subprocess
-from io import FileIO
-from typing import List, Union
+from typing import List
 
 from django.conf import settings
 from django.core import exceptions
@@ -14,9 +13,12 @@ from . import constants as const
 
 
 class DiffResult:
-    def __init__(self, diff_pass: bool, diff_content: FileIO):
+    def __init__(self, diff_pass: bool, diff_content: List[str]):
         self.diff_pass = diff_pass
         self.diff_content = diff_content
+
+
+_DIFF_LINE_REGEX = re.compile(b'^(?:  |\+ |- ).*\n+', flags=re.MULTILINE)
 
 
 def get_diff(first_filename: str, second_filename: str,
@@ -31,10 +33,13 @@ def get_diff(first_filename: str, second_filename: str,
     with one of the two-letter opcodes used by
     https://docs.python.org/3.5/library/difflib.html#difflib.Differ
     """
+    # We're adding newlines at the beginning of each formatted line
+    # because GNU diff will otherwise handle missing trailing
+    # newlines in a way that the client can't reliably parse.
     diff_cmd = ['diff',
-                '--new-line-format', '+ %L',
-                '--old-line-format', '- %L',
-                '--unchanged-line-format', '  %L']
+                '--new-line-format', '+ %L\n',
+                '--old-line-format', '- %L\n',
+                '--unchanged-line-format', '  %L\n']
     if ignore_case:
         diff_cmd.append('--ignore-case')
     if ignore_whitespace:
@@ -46,10 +51,10 @@ def get_diff(first_filename: str, second_filename: str,
 
     diff_cmd += [first_filename, second_filename]
 
-    diff_stdout = tempfile.NamedTemporaryFile()
-    diff_result = subprocess.run(diff_cmd, stdout=diff_stdout, stderr=subprocess.STDOUT)
-    diff_stdout.seek(0)
-    return DiffResult(diff_result.returncode == 0, diff_stdout)
+    diff_result = subprocess.run(diff_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    diff_list = [match.group()[:-1].decode('utf-8', 'surrogateescape')
+                 for match in _DIFF_LINE_REGEX.finditer(diff_result.stdout)]
+    return DiffResult(diff_result.returncode == 0, diff_list)
 
 
 def get_24_hour_period(start_time, contains_datetime: datetime.datetime,

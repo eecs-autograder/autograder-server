@@ -1,6 +1,8 @@
+import json
+
 from django.core import exceptions
 from django.db import transaction
-from django.http.response import FileResponse, Http404
+from django.http.response import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from rest_framework import (
@@ -202,7 +204,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
         diff = cmd_result.get_fdbk(fdbk_category).stdout_diff
         if diff is None:
             return response.Response(None)
-        return FileResponse(diff.diff_content)
+        return JsonResponse(diff.diff_content, safe=False)
 
     def _get_cmd_result_stderr_diff(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                                     fdbk_category: ag_models.FeedbackCategory,
@@ -213,7 +215,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
         diff = cmd_result.get_fdbk(fdbk_category).stderr_diff
         if diff is None:
             return response.Response(None)
-        return FileResponse(diff.diff_content)
+        return JsonResponse(diff.diff_content, safe=False)
 
     def _find_cmd_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                          fdbk_category: ag_models.FeedbackCategory,

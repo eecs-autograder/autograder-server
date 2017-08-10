@@ -36,20 +36,82 @@ class DiffTestCase(TestCase):
         self._write_and_seek(self.file2, '\n'.join(('a', 'b', 'y', 'c', 'd', 'f', 'e\n')))
 
         expected = [
-            b'- q\n',
-            b'  a\n',
-            b'  b\n',
-            b'- x\n',
-            b'+ y\n',
-            b'  c\n',
-            b'  d\n',
-            b'+ f\n',
-            b'  e\n'
+            '- q\n',
+            '  a\n',
+            '  b\n',
+            '- x\n',
+            '+ y\n',
+            '  c\n',
+            '  d\n',
+            '+ f\n',
+            '  e\n'
         ]
 
         diff = core_ut.get_diff(self.file1.name, self.file2.name)
 
         self.assertEqual(expected, list(diff.diff_content))
+
+    def test_trailing_newline_missing(self):
+        self._write_and_seek(self.file1, '''egg
+sausage''')
+        self._write_and_seek(self.file2, '''spam
+egg
+sausage
+''')
+
+        expected = [
+            '+ spam\n',
+            '  egg\n',
+            '- sausage',
+            '+ sausage\n'
+        ]
+        diff = core_ut.get_diff(self.file1.name, self.file2.name)
+        self.assertEqual(expected, list(diff.diff_content))
+
+    def test_diff_delta_strs_in_files(self):
+        self._write_and_seek(self.file1, '''egg+ cheese
+spam- sausage
+''')
+        self._write_and_seek(self.file2, '''egg
+cheese
+sausage''')
+        expected = [
+            '- egg+ cheese\n',
+            '- spam- sausage\n',
+            '+ egg\n',
+            '+ cheese\n',
+            '+ sausage'
+        ]
+        diff = core_ut.get_diff(self.file1.name, self.file2.name)
+        self.assertEqual(expected, list(diff.diff_content))
+
+    def test_weird_line_endings(self):
+        self._write_and_seek(self.file1, '''egg
+\r
+cheese''')
+        self._write_and_seek(self.file2, '''egg
+cheese\r
+''')
+        expected = [
+            '  egg\n',
+            '- \r\n',
+            '- cheese',
+            '+ cheese\r\n'
+        ]
+        diff = core_ut.get_diff(self.file1.name, self.file2.name)
+        self.assertEqual(expected, list(diff.diff_content))
+
+    def test_non_utf_chars(self):
+        non_utf_bytes = b'\x80 and some other stuff just because\n'
+
+        self._write_and_seek(self.file1, b'some stuff')
+        self._write_and_seek(self.file2, non_utf_bytes)
+
+        expected_diff = [
+            '- some stuff',
+            '+ ' + non_utf_bytes.decode('utf-8', 'surrogateescape')]
+        diff = core_ut.get_diff(self.file1.name, self.file2.name)
+        self.assertEqual(expected_diff, diff.diff_content)
 
     def test_ignore_case(self):
         self._write_and_seek(self.file1, 'SPAM')
