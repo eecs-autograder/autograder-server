@@ -38,5 +38,7 @@ def on_project_created(sender, instance, created, **kwargs):
 
     from autograder.grading_tasks.tasks import register_project_queues
 
-    # register_project_queues.apply_async(kwargs={'project_pks': [instance.pk]}, queue='small_tasks')
-    register_project_queues(project_pks=[instance.pk])
+    from autograder.celery import app
+    register_project_queues.apply_async(
+        kwargs={'project_pks': [instance.pk]}, queue='small_tasks',
+        connection=app.connection())
