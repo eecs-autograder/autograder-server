@@ -30,6 +30,11 @@ class AGTestSuiteResult(AutograderModel):
         blank=True, help_text="The stdout content of this suite's setup command.")
     setup_stderr = models.TextField(
         blank=True, help_text="The stderr content of this suite's setup command.")
+    setup_stdout_truncated = models.BooleanField(
+        blank=True, default=False, help_text="Whether the setup command's stdout was truncated")
+    setup_stderr_truncated = models.BooleanField(
+        blank=True, default=False, help_text="Whether the setup command's stderr was truncated")
+
     teardown_return_code = models.IntegerField(
         blank=True, null=True, default=None,
         help_text="The return code of this suite's teardown command.")
@@ -40,6 +45,10 @@ class AGTestSuiteResult(AutograderModel):
         blank=True, help_text="The stdout content of this suite's teardown command.")
     teardown_stderr = models.TextField(
         blank=True, help_text="The stderr content of this suite's teardown command.")
+    teardown_stdout_truncated = models.BooleanField(
+        blank=True, default=False, help_text="Whether the teardown command's stdout was truncated")
+    teardown_stderr_truncated = models.BooleanField(
+        blank=True, default=False, help_text="Whether the teardown command's stderr was truncated")
 
     def open_setup_stdout(self, mode='rb'):
         return open(self.setup_stdout_filename, mode)

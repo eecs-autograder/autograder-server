@@ -42,6 +42,11 @@ class AGTestCommandResult(AutograderModel):
     stderr = models.TextField(
         blank=True, help_text='The stderr contents from running the command.')
 
+    stdout_truncated = models.BooleanField(
+        blank=True, default=False, help_text="Whether the command's stdout was truncated.")
+    stderr_truncated = models.BooleanField(
+        blank=True, default=False, help_text="Whether the command's stderr was truncated.")
+
     timed_out = models.BooleanField(
         blank=True, default=False, help_text='Whether the program exceeded the time limit.')
 
