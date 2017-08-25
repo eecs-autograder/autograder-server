@@ -1,23 +1,19 @@
 import fnmatch
 import os
-from typing import List, Iterable
+from typing import Iterable, List
 
-from django import dispatch
+import django.contrib.postgres.fields as pg_fields
 from django.core import exceptions
 from django.core.cache import cache
 from django.core.files import File
-import django.contrib.postgres.fields as pg_fields
 from django.db import models, transaction
 from django.utils import timezone
 
-import autograder.core.utils as core_ut
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
+import autograder.core.utils as core_ut
 from autograder.core.models.ag_model_base import ToDictMixin
-
 from . import ag_model_base
-from .autograder_test_case.autograder_test_case_result import (
-    AutograderTestCaseResult)
 from .ag_test.feedback_category import FeedbackCategory
 
 
@@ -34,9 +30,6 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
         creating a Submission.
         - Submitted files are filtered based on the patterns students
           are supposed to submit. Extra files are discarded.
-        - A set of AutograderTestCaseResults is created--one for each
-          autograder test case associated with this Submission's
-          Project.
         Positional args:
             submitted_files -- A list of files being submitted. The
                 following checks are performed on this argument:

@@ -1,20 +1,15 @@
-import json
-
 from django.core import exceptions
 from django.db import transaction
-from django.http.response import FileResponse, Http404, HttpResponse, JsonResponse
+from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-
-from rest_framework import (
-    viewsets, mixins, permissions, decorators, response, status)
+from rest_framework import decorators, mixins, permissions, response, status, viewsets
 
 import autograder.core.models as ag_models
+import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
-import autograder.rest_api.permissions as ag_permissions
-
-from ..permission_components import user_can_view_group
 from ..load_object_mixin import build_load_object_mixin
+from ..permission_components import user_can_view_group
 
 
 class _Permissions(permissions.BasePermission):

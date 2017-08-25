@@ -1,7 +1,6 @@
 import copy
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import timezone
 
 import autograder.core.models as ag_models
 from autograder.utils.testing import model_obj_builders as obj_build

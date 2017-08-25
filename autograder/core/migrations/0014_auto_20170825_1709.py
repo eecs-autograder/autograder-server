@@ -16,58 +16,58 @@ class Migration(migrations.Migration):
             name='autogradertestcasebase',
             unique_together=set([]),
         ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='feedback_configuration',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='past_submission_limit_fdbk_conf',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='polymorphic_ctype',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='project',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='project_files_to_compile_together',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='staff_viewer_fdbk_conf',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='student_files_to_compile_together',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='student_resource_files',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='test_resource_files',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcasebase',
-        #     name='ultimate_submission_fdbk_conf',
-        # ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='feedback_configuration',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='past_submission_limit_fdbk_conf',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='polymorphic_ctype',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='project',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='project_files_to_compile_together',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='staff_viewer_fdbk_conf',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='student_files_to_compile_together',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='student_resource_files',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='test_resource_files',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcasebase',
+            name='ultimate_submission_fdbk_conf',
+        ),
         migrations.AlterUniqueTogether(
             name='autogradertestcaseresult',
             unique_together=set([]),
         ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcaseresult',
-        #     name='submission',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='autogradertestcaseresult',
-        #     name='test_case',
-        # ),
+        migrations.RemoveField(
+            model_name='autogradertestcaseresult',
+            name='submission',
+        ),
+        migrations.RemoveField(
+            model_name='autogradertestcaseresult',
+            name='test_case',
+        ),
         migrations.DeleteModel(
             name='CompilationOnlyAutograderTestCase',
         ),

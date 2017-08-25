@@ -3,8 +3,6 @@ from .serializer_impls import (
     ProjectSerializer,
     UploadedFileSerializer,
     ExpectedStudentFilePatternSerializer,
-    AutograderTestCaseSerializer,
-    AutograderTestResultSerializer,
     SubmissionGroupSerializer,
     SubmissionGroupInvitationSerializer,
     SubmissionSerializer,

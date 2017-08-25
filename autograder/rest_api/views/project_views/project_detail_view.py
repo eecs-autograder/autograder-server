@@ -1,22 +1,19 @@
 import csv
+import io
 import os
 import zipfile
+from typing import Sequence
 
-import io
-from typing import Sequence, Iterable
-
-from django.http import FileResponse
-from django.http import StreamingHttpResponse
-from rest_framework import viewsets, mixins, permissions, decorators, response, exceptions
+from django.http import FileResponse, StreamingHttpResponse
+from rest_framework import decorators, exceptions, mixins, permissions, response, viewsets
 
 import autograder.core.models as ag_models
+import autograder.core.utils as core_ut
+import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 from autograder.rest_api import transaction_mixins
-import autograder.rest_api.permissions as ag_permissions
-import autograder.core.utils as core_ut
-from autograder import utils
-
 from .permissions import ProjectPermissions
 from ..load_object_mixin import build_load_object_mixin
 

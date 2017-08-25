@@ -55,13 +55,6 @@ invitations_router.register(
     r'group_invitations', views.GroupInvitationsViewSet,
     base_name='project-group-invitations')
 
-ag_tests_router = routers.NestedSimpleRouter(
-    project_router, r'projects', lookup='project')
-ag_tests_router.register(
-    r'autograder_test_cases', views.ProjectAGTestsViewset,
-    base_name='project-ag-tests')
-
-
 expected_pattern_router = routers.SimpleRouter()
 expected_pattern_router.register(r'expected_patterns',
                                  views.ExpectedStudentFilePatternDetailViewSet,
@@ -71,10 +64,6 @@ uploaded_file_router = routers.SimpleRouter()
 uploaded_file_router.register(r'uploaded_files',
                               views.UploadedFileDetailViewSet,
                               base_name='uploaded-file')
-
-ag_test_router = routers.SimpleRouter()
-ag_test_router.register(r'autograder_test_cases', views.AGTestCaseViewset,
-                        base_name='ag-test')
 
 group_invitation_router = routers.SimpleRouter()
 group_invitation_router.register(r'group_invitations',
@@ -125,11 +114,9 @@ urlpatterns = [
     url(r'', include(uploaded_files_router.urls)),
     url(r'', include(groups_router.urls)),
     url(r'', include(invitations_router.urls)),
-    url(r'', include(ag_tests_router.urls)),
 
     url(r'', include(expected_pattern_router.urls)),
     url(r'', include(uploaded_file_router.urls)),
-    url(r'', include(ag_test_router.urls)),
     url(r'', include(group_invitation_router.urls)),
 
     url(r'', include(group_router.urls)),
@@ -158,5 +145,4 @@ urlpatterns = [
     url(r'^ag_test_cases/(?P<ag_test_case_pk>[0-9]+)/ag_test_commands/order/$',
         views.AGTestCommandOrderView.as_view(), name='ag_test_command_order'),
     url(r'', include(ag_test_command_detail_router.urls)),
-
 ]

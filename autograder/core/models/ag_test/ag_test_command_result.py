@@ -5,7 +5,6 @@ from io import FileIO
 from django.db import models
 
 from autograder.core.models.ag_model_base import ToDictMixin
-import autograder.core.constants as constants
 import autograder.core.utils as core_ut
 
 from ..ag_model_base import AutograderModel

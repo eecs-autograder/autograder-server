@@ -1,14 +1,11 @@
 import random
 
-from rest_framework import request, serializers
-from rest_framework.test import APIRequestFactory
+from rest_framework import serializers
 
 from autograder.core.tests.test_models.models import (
     _DummyAutograderModel, _DummyForeignAutograderModel)
-
 from autograder.rest_api.serializers.ag_model_serializer import (
     AGModelSerializer)
-
 from .serializer_test_case import SerializerTestCase
 
 

@@ -5,11 +5,9 @@ from typing import Callable
 from unittest import mock
 
 import autograder.core.models as ag_models
-import autograder.core.constants as constants
 import autograder.core.utils as core_ut
-
-from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 
 
 class AGTestCommandResultTestCase(UnitTestBase):

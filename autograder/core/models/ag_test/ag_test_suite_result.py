@@ -4,7 +4,6 @@ from typing import List, Iterable
 
 from django.db import models
 
-from autograder.core import constants
 import autograder.core.utils as core_ut
 from ..ag_model_base import AutograderModel, ToDictMixin
 from .ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig

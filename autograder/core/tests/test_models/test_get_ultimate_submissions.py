@@ -2,10 +2,9 @@ import sys
 from typing import List
 
 import autograder.core.models as ag_models
-from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
-
-from autograder.utils.testing import UnitTestBase, Timer
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
+from autograder.utils.testing import UnitTestBase
 
 
 class GetUltimateSubmissionsTestCase(UnitTestBase):

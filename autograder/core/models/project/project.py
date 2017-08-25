@@ -1,19 +1,15 @@
+import datetime
 import enum
 import os
-import datetime
 
-import pytz
+from django.core import exceptions, validators
 from django.db import models
-from django.core import validators
-from django.core import exceptions
-from django.utils import timezone
 from timezone_field import TimeZoneField
 
+import autograder.core.fields as ag_fields
+import autograder.core.utils as core_ut
 from ..ag_model_base import AutograderModel
 from ..course import Course
-
-import autograder.core.utils as core_ut
-import autograder.core.fields as ag_fields
 
 
 class UltimateSubmissionPolicy(enum.Enum):

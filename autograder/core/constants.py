@@ -1,5 +1,3 @@
-import re
-
 MAX_CHAR_FIELD_LEN = 255
 
 MAX_OUTPUT_LENGTH = 8 * pow(10, 6)  # 8,000,000 characters
@@ -19,12 +17,6 @@ FILESYSTEM_RESULT_OUTPUT_DIRNAME = 'output'
 
 MAX_COMMAND_LENGTH = 1000
 
-DEFAULT_VALGRIND_FLAGS = ['--leak-check=full', '--error-exitcode=1']
-
-SUPPORTED_COMPILERS = ['g++', 'clang++', 'gcc', 'clang']
-
-SUPPORTED_INTERPRETERS = ['python', 'python3', 'bash']
-
 # Sandbox resource limit settings
 DEFAULT_SUBPROCESS_TIMEOUT = 10
 MAX_SUBPROCESS_TIMEOUT = 60
@@ -41,5 +33,3 @@ MAX_VIRTUAL_MEM_LIMIT = 1000000000  # 1 GB
 
 DEFAULT_PROCESS_LIMIT = 0
 MAX_PROCESS_LIMIT = 10
-
-DEFAULT_RANDOMLY_OBFUSCATED_TEST_NAME_PREFIX = 'test'

@@ -2,16 +2,12 @@ import itertools
 
 from django.core.urlresolvers import reverse
 
-from rest_framework.test import APIClient
-
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-
-from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
-
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 
 
 class RetrieveUserTestCase(test_data.Client,
