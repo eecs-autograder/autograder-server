@@ -1,5 +1,5 @@
 import warnings
-from typing import Sequence
+from typing import Iterator
 
 from django.db.models import Prefetch
 
@@ -8,7 +8,7 @@ from .ag_test.feedback_category import FeedbackCategory
 from .submission import Submission
 
 
-def get_ultimate_submissions(project: Project, *group_pks) -> Sequence[Submission]:
+def get_ultimate_submissions(project: Project, *group_pks) -> Iterator[Submission]:
     groups = project.submission_groups.prefetch_related(
         Prefetch(
             'submissions',

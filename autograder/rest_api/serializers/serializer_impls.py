@@ -44,6 +44,11 @@ class ExpectedStudentFilePatternSerializer(AGModelSerializer):
         return ag_models.ExpectedStudentFilePattern.objects
 
 
+class DownloadTaskSerializer(AGModelSerializer):
+    def get_ag_model_manager(self):
+        return ag_models.DownloadTask.objects
+
+
 class SubmissionGroupSerializer(AGModelSerializer):
     def get_ag_model_manager(self):
         return ag_models.SubmissionGroup.objects

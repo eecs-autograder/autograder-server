@@ -1,11 +1,13 @@
 import csv
 import os
+import tempfile
 import zipfile
 
-import io
-from typing import Sequence
+from typing import Iterator
 
 import itertools
+from unittest import mock
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from django.core.urlresolvers import reverse
@@ -168,6 +170,9 @@ class NumQueuedSubmissionsTestCase(test_data.Client, test_data.Project, UnitTest
         self.assertEqual(3, response.data)
 
 
+@mock.patch(
+    'autograder.rest_api.views.project_views.project_detail_view._PROGRESS_UPDATE_FREQUENCY',
+    new=1)
 class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -269,11 +274,15 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
             self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
     def do_download_submissions_test(self, url,
-                                     expected_submissions: Sequence[ag_models.Submission]):
+                                     expected_submissions: Iterator[ag_models.Submission]):
         self.client.force_authenticate(self.admin)
 
         response = self.client.get(url)
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
+
+        task = ag_models.DownloadTask.objects.get(pk=response.data['pk'])
+        self.assertFalse(task.has_error, msg=task.error_msg)
+        self.assertEqual(100, task.progress)
 
         expected_filenames = []
         for submission in expected_submissions:
@@ -284,16 +293,19 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
                         '_'.join(sorted(submission.submission_group.member_names)),
                         submission.timestamp.isoformat(), filename))
 
-        result = io.BytesIO(b''.join(response.streaming_content))
-        with zipfile.ZipFile(result) as z:
-            self.assertCountEqual(expected_filenames, [info.filename for info in z.infolist()])
-            for info in z.infolist():
-                with z.open(info.filename) as f:
-                    expected_file = self.files_by_name[os.path.basename(info.filename)]
-                    expected_file.open()
-                    self.assertEqual(expected_file.read(), f.read())
+        with open(task.result_filename, 'rb') as result:
+            with zipfile.ZipFile(result) as z:
+                self.assertCountEqual(expected_filenames, [info.filename for info in z.infolist()])
+                for info in z.infolist():
+                    with z.open(info.filename) as f:
+                        expected_file = self.files_by_name[os.path.basename(info.filename)]
+                        expected_file.open()
+                        self.assertEqual(expected_file.read(), f.read())
 
 
+@mock.patch(
+    'autograder.rest_api.views.project_views.project_detail_view._PROGRESS_UPDATE_FREQUENCY',
+    new=1)
 class DownloadGradesTestCase(test_data.Client, UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -421,11 +433,11 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
     def do_download_scores_test(self, url, project: ag_models.Project,
-                                expected_submissions: Sequence[ag_models.Submission]):
+                                expected_submissions: Iterator[ag_models.Submission]):
         self.client.force_authenticate(self.admin)
 
         response = self.client.get(url)
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
 
         expected_headers = ['Username {}'.format(i + 1) for i in range(project.max_group_size)]
         expected_headers.append('Timestamp')
@@ -457,6 +469,123 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             self.assertEqual(len(expected_headers), len(values))
             expected_result.append(dict(zip(expected_headers, values)))
 
-        file_ = io.StringIO(b''.join(response.streaming_content).decode())
-        actual_result = list(csv.DictReader(file_))
+        task = ag_models.DownloadTask.objects.get(pk=response.data['pk'])
+        self.assertEqual(100, task.progress)
+        self.assertEqual('', task.error_msg)
+        with open(task.result_filename) as f:
+            actual_result = list(csv.DictReader(f))
         self.assertCountEqual(expected_result, actual_result)
+
+
+class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.project = obj_build.build_project()
+
+    def test_list_project_download_tasks(self):
+        user1, user2 = obj_build.make_admin_users(self.project.course, 2)
+
+        task1 = ag_models.DownloadTask.objects.validate_and_create(
+            project=self.project,
+            creator=user1, download_type=ag_models.DownloadType.all_scores)
+        task2 = ag_models.DownloadTask.objects.validate_and_create(
+            project=self.project,
+            creator=user2, download_type=ag_models.DownloadType.final_graded_submission_files)
+
+        url = reverse('project-download-tasks', kwargs={'pk': self.project.pk})
+        self.client.force_authenticate(user1)
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual([task1.to_dict()], response.data)
+
+    def test_non_admin_list_project_download_tasks_permission_denied(self):
+        [user] = obj_build.make_staff_users(self.project.course, 1)
+
+        url = reverse('project-download-tasks', kwargs={'pk': self.project.pk})
+        self.client.force_authenticate(user)
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_get_download_task_detail(self):
+        [user] = obj_build.make_admin_users(self.project.course, 1)
+
+        task = ag_models.DownloadTask.objects.validate_and_create(
+            project=self.project,
+            creator=user, download_type=ag_models.DownloadType.all_scores)
+
+        url = reverse('download_tasks-detail', kwargs={'pk': task.pk})
+        self.client.force_authenticate(user)
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(task.to_dict(), response.data)
+
+    def test_non_creator_get_download_task_detail_permission_denied(self):
+        [user, other] = obj_build.make_admin_users(self.project.course, 2)
+
+        task = ag_models.DownloadTask.objects.validate_and_create(
+            project=self.project,
+            creator=user, download_type=ag_models.DownloadType.all_scores)
+
+        url = reverse('download_tasks-detail', kwargs={'pk': task.pk})
+        self.client.force_authenticate(other)
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_get_download_task_result(self):
+        content = b'spaaaam'
+        with tempfile.NamedTemporaryFile() as f:
+            f.write(content)
+            f.seek(0)
+
+            [user] = obj_build.make_admin_users(self.project.course, 1)
+
+            task = ag_models.DownloadTask.objects.validate_and_create(
+                project=self.project,
+                creator=user, download_type=ag_models.DownloadType.final_graded_submission_scores,
+                progress=100,
+                result_filename=f.name)
+
+            url = reverse('download_tasks-result', kwargs={'pk': task.pk})
+            self.client.force_authenticate(user)
+            response = self.client.get(url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(f.read(), b''.join((chunk for chunk in response.streaming_content)))
+
+    def test_get_download_task_result_in_progress_error(self):
+        [user] = obj_build.make_admin_users(self.project.course, 1)
+
+        in_progress_task = ag_models.DownloadTask.objects.validate_and_create(
+            project=self.project,
+            creator=user, download_type=ag_models.DownloadType.all_scores)
+
+        url = reverse('download_tasks-result', kwargs={'pk': in_progress_task.pk})
+        self.client.force_authenticate(user)
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(in_progress_task.progress, response.data['in_progress'])
+
+    def test_get_download_task_result_task_errored_error(self):
+        [user] = obj_build.make_admin_users(self.project.course, 1)
+        errored_task = ag_models.DownloadTask.objects.validate_and_create(
+            project=self.project,
+            creator=user, download_type=ag_models.DownloadType.all_scores,
+            progress=100, error_msg='badz')
+
+        url = reverse('download_tasks-result', kwargs={'pk': errored_task.pk})
+        self.client.force_authenticate(user)
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(errored_task.error_msg, response.data['task_error'])
+
+    def test_non_creator_get_download_task_result_permission_denied(self):
+        [user, other] = obj_build.make_admin_users(self.project.course, 2)
+
+        task = ag_models.DownloadTask.objects.validate_and_create(
+            project=self.project,
+            creator=user, download_type=ag_models.DownloadType.all_scores,
+            progress=100)
+
+        url = reverse('download_tasks-result', kwargs={'pk': task.pk})
+        self.client.force_authenticate(other)
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)

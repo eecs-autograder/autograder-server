@@ -16,6 +16,7 @@ from .project_views.projects_view import ListCreateProjectView
 from .project_views.uploaded_file_views.uploaded_file_detail_view import \
     UploadedFileDetailViewSet
 from .project_views.uploaded_file_views.uploaded_files_view import UploadedFilesViewSet
+from .project_views.project_detail_view import DownloadTaskDetailViewSet
 from .submission_views.submission_detail_view import SubmissionDetailViewSet
 from .submission_views.submissions_view import SubmissionsViewSet
 from .user_views import UserViewSet

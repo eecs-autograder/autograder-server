@@ -31,6 +31,10 @@ course_projects_router = routers.NestedSimpleRouter(course_router, r'courses',
 project_router = routers.SimpleRouter()
 project_router.register(r'projects', views.ProjectDetailViewSet, base_name='project')
 
+project_downloads_router = routers.SimpleRouter()
+project_downloads_router.register(r'download_tasks', views.DownloadTaskDetailViewSet,
+                                  base_name='download_tasks')
+
 expected_patterns_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 expected_patterns_router.register(
@@ -110,6 +114,7 @@ urlpatterns = [
     url(r'', include(course_projects_router.urls)),
 
     url(r'', include(project_router.urls)),
+    url(r'', include(project_downloads_router.urls)),
     url(r'', include(expected_patterns_router.urls)),
     url(r'', include(uploaded_files_router.urls)),
     url(r'', include(groups_router.urls)),
