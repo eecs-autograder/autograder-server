@@ -2,6 +2,7 @@ from django.db import models
 from autograder.core.fields import EnumField
 import autograder.core.models as ag_models
 from django.core import validators
+from django.core.exceptions import ValidationError
 from enum import Enum
 
 
@@ -16,8 +17,7 @@ class HandgradingRubric(ag_models.AutogarderModel):
     """
     points_style = EnumField(PointsStyle)
 
-    max_points = models.IntegerField(
-        validators=[validators.MinValueValidator(0)])
+    max_points = models.IntegerField(validators=[validators.MinValueValidator(0)])
 
     show_grades_and_rubric_to_students = models.BooleanField()
 
@@ -25,9 +25,7 @@ class HandgradingRubric(ag_models.AutogarderModel):
 
     handgraders_can_apply_arbitrary_points = models.BooleanField()
 
-    project = models.ForeignKey(
-        ag_models.Project,
-        on_delete=models.CASCADE)
+    project = models.ForeignKey(ag_models.Project)
 
 
 class Criterion(ag_models.AutograderModel):
@@ -37,9 +35,7 @@ class Criterion(ag_models.AutograderModel):
 
     points = models.FloatField()
 
-    handgrading_rubric = models.ForeignKey(
-        HandgradingRubric,
-        on_delete=models.CASCADE)
+    handgrading_rubric = models.ForeignKey(HandgradingRubric)
 
 
 class Annotation(ag_models.AutograderModel):
@@ -49,86 +45,66 @@ class Annotation(ag_models.AutograderModel):
 
     points = models.FloatField()
 
-    handgrading_rubric = models.ForeignKey(
-        HandgradingRubric,
-        on_delete=models.CASCADE)
+    handgrading_rubric = models.ForeignKey(HandgradingRubric)
 
 
 class HandgradingResult(ag_models.AutograderModel):
-    submission = models.OneToOneField(
-        ag_models.Submission,
-        on_delete=models.CASCADE)
+    submission = models.OneToOneField(ag_models.Submission)
 
 
 class CriterionResult(ag_models.AutograderModel):
     selected = models.BooleanField()
 
-    criterion = models.ForeignKey(
-        Criterion,
-        on_delete=models.CASCADE)
+    criterion = models.ForeignKey(Criterion)
 
-    handgrading_result = models.ForeignKey(
-        HandgradingResult,
-        on_delete=models.CASCADE)
+    handgrading_result = models.ForeignKey(HandgradingResult)
 
 
 class AppliedAnnotation(ag_models.AutograderModel):
-    comment = models.TextField(
-        null=True,
-        blank=True,
-        default=None)
+    comment = models.TextField(null=True,blank=True,default=None)
 
-    location = models.OneToOneField(
-        Location,
-        on_delete=models.CASCADE)
+    location = models.OneToOneField(Location, related_name= 'location')
 
-    annotation = models.ForeignKey(
-        Annotation,
-        on_delete=models.CASCADE)
+    annotation = models.ForeignKey(Annotation)
 
-    handgrading_result = models.ForeignKey(
-        HandgradingResult,
-        on_delete=models.CASCADE)
+    handgrading_result = models.ForeignKey(HandgradingResult)
+
+    def clean(self):
+        if self.location.file_name not in self.handgrading_result.submission.submitted_filenames:
+            raise ValidationError('Filename is not part of submitted files')
 
 
 class Comment(ag_models.AutograderModel):
-    location = models.OneToOneField(
-        Location,
-        on_delete=models.CASCADE)
+    location = models.OneToOneField(Location)
 
     text = models.TextField()
 
-    handgrading_result = models.ForeignKey(
-        HandgradingResult,
-        on_delete=models.CASCADE)
+    handgrading_result = models.ForeignKey(HandgradingResult)
 
 
 class ArbitraryPoints(ag_models.AutograderModel):
-    location = models.OneToOneField(
-        Location,
-        on_delete=models.CASCADE)
+    location = models.OneToOneField(Location, related_name='location')
 
-    text = models.TextField(
-        null=True,
-        blank=True,
-        default=None)
+    text = models.TextField(null=True,blank=True,default=None)
 
     points = models.FloatField()
 
-    handgrading_result = models.ForeignKey(
-        HandgradingResult,
-        on_delete=models.CASCADE)
+    handgrading_result = models.ForeignKey(HandgradingResult)
+
+    def clean(self):
+        if self.location.file_name not in self.handgrading_result.submission.submitted_filenames:
+            raise ValidationError('Filename is not part of submitted files')
 
 
 class Location(ag_models.AutograderModel):
-    """how to ensure the following things in the comments?"""
     first_line = models.IntegerField()
 
     last_line = models.IntegerField()
-    '''last line must be >= first line'''
 
-    file_name = models.TextField(
-        null=True,
-        blank=True,
-        default=None)
-    '''should be out of the files submitted'''
+    file_name = models.TextField(null=True,blank=True,default=None)
+
+    def clean(self):
+        errors = {}
+        if self.last_line < self.first_line:
+            raise  ValidationError('first line should be before last line')
+
