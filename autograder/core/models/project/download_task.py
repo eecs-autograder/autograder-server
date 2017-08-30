@@ -26,6 +26,7 @@ class DownloadTask(Task):
         'result_filename',
         'progress',
         'error_msg',
+        'created_at',
     )
 
     EDITABLE_FIELDS = (

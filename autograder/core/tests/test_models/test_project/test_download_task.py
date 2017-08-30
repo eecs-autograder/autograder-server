@@ -50,6 +50,7 @@ class DownloadTaskTestCase(UnitTestBase):
             'result_filename',
             'progress',
             'error_msg',
+            'created_at',
         ]
 
         task = ag_models.DownloadTask.objects.validate_and_create(

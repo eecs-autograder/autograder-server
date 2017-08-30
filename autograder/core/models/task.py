@@ -15,6 +15,7 @@ class Task(AutograderModel):
         help_text="A percentage indicating how close the task is to completion.")
     error_msg = models.TextField(blank=True)
     creator = models.ForeignKey(User)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     @property
     def has_error(self):
