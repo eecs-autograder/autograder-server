@@ -133,7 +133,10 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd_result = ag_models.AGTestCommandResult.objects.get(
             ag_test_command=cmd,
             ag_test_case_result__ag_test_suite_result__submission=self.submission)
-        self.assertEqual(0, cmd_result.return_code)
+        with cmd_result.open_stderr() as f:
+            output = f.read().decode()
+        print(output)
+        self.assertEqual(0, cmd_result.return_code, msg=output)
         self.assertEqual('hello', cmd_result.open_stdout().read().decode())
         self.assertEqual('whoops', cmd_result.open_stderr().read().decode())
         self.assertTrue(cmd_result.stdout_correct)
@@ -142,6 +145,31 @@ class GradeSubmissionTestCase(UnitTestBase):
         self.assertEqual(
             6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
         self.assertEqual(6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+                         self.submission.status)
+
+    def test_non_default_docker_image(self, *args):
+        suite = obj_build.make_ag_test_suite(
+            self.project, docker_image_to_use=constants.SupportedImages.eecs490)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(
+            case,
+            cmd='racket --version',
+            set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
+            points_for_correct_return_code=3,
+            expected_return_code=ag_models.ExpectedReturnCode.zero)
+        tasks.grade_submission(self.submission.pk)
+
+        cmd_result = ag_models.AGTestCommandResult.objects.get(
+            ag_test_command=cmd,
+            ag_test_case_result__ag_test_suite_result__submission=self.submission)
+        self.assertEqual(0, cmd_result.return_code)
+
+        self.assertEqual(
+            3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
+        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)

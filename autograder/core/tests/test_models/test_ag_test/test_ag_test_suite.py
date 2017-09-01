@@ -3,6 +3,7 @@ from django.core import exceptions
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core import constants
 from autograder.utils.testing import UnitTestBase
 
 
@@ -91,6 +92,7 @@ class AGTestSuiteTestCase(UnitTestBase):
             teardown_suite_cmd_name='stove',
             allow_network_access=allow_network_access,
             deferred=deferred,
+            docker_image_to_use=constants.SupportedImages.eecs490,
             normal_fdbk_config={
                 'visible': False,
                 'show_individual_tests': False,
@@ -109,6 +111,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertCountEqual(student_files_needed, suite.student_files_needed.all())
         self.assertEqual(allow_network_access, suite.allow_network_access)
         self.assertEqual(deferred, suite.deferred)
+        self.assertEqual(constants.SupportedImages.eecs490, suite.docker_image_to_use)
         self.assertFalse(suite.normal_fdbk_config.visible)
 
     def test_error_suite_name_not_unique(self):
@@ -225,7 +228,7 @@ class AGTestSuiteTestCase(UnitTestBase):
 
         update_dict = copy.deepcopy(suite_dict)
         for non_editable in ['pk', 'project', 'last_modified',
-                             'ag_test_cases', 'docker_image_to_use']:
+                             'ag_test_cases']:
             update_dict.pop(non_editable)
 
         suite.validate_and_update(**update_dict)
