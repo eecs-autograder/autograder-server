@@ -45,9 +45,10 @@ class SupportedImages(enum.Enum):
 DOCKER_IMAGE_IDS_TO_URLS = {
     SupportedImages.eecs280: 'jameslp/eecs280',
     SupportedImages.eecs490: 'jameslp/eecs490',
-    # Avoid using this image in development, since we can't host
-    # it publicly due to the MATLAB installation.
-    SupportedImages.engr101: '127.0.0.1:5000/engr101',
+    SupportedImages.engr101: 'jameslp/engr101',
+    # # Avoid using this image in development, since we can't host
+    # # it publicly due to the MATLAB installation.
+    # SupportedImages.engr101: '127.0.0.1:5000/engr101',
 
     SupportedImages.default: 'jameslp/autograder-sandbox:{}'.format(autograder_sandbox.VERSION)
 }
