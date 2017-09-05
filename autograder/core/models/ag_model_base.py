@@ -3,13 +3,12 @@ import enum
 from django.db import models, transaction
 from django.core import exceptions
 
-import polymorphic.models as poly_models
-from django.utils import timezone
 
-import autograder.core.fields as ag_fields
-
-
-class _AutograderModelManagerMixin:
+class AutograderModelManager(models.Manager):
+    """
+    The default manager for autograder model classes.
+    Its main purpose is to provide the validate_and_create method.
+    """
     def validate_and_create(self, **kwargs) -> 'AutograderModel':
         """
         This method is a shortcut for constructing a model object,
@@ -161,6 +160,7 @@ class ToDictMixin:
                 continue
 
             try:
+                # noinspection PyUnresolvedReferences
                 field = self._meta.get_field(field_name)
 
                 if field.many_to_one or field.one_to_one:
@@ -185,7 +185,21 @@ class ToDictMixin:
         return result
 
 
-class _AutograderModelMixin(ToDictMixin):
+class AutograderModel(ToDictMixin, models.Model):
+    """
+    The base class for non-polymorphic autograder model classes. This
+    class sets an AutograderModelManager as the default manager and
+    provides a last_modified field and a validate_and_update method.
+    """
+    class Meta:
+        abstract = True
+
+    objects = AutograderModelManager()
+
+    INVALID_FIELD_NAMES_KEY = 'invalid_field_names'
+
+    last_modified = models.DateTimeField(auto_now=True)
+
     @classmethod
     def get_editable_fields(cls):
         """
@@ -252,49 +266,3 @@ class _AutograderModelMixin(ToDictMixin):
 
     def __str__(self):
         return '<{}: {}>'.format(self.__class__.__name__, self.pk)
-
-
-class AutograderModelManager(_AutograderModelManagerMixin, models.Manager):
-    """
-    The default manager for autograder model classes. This manager
-    provides some convenience methods.
-    """
-    pass
-
-
-class AutograderModel(_AutograderModelMixin, models.Model):
-    """
-    The base class for non-polymorphic autograder model classes. This
-    class sets a default manager and provides some convenience methods.
-    """
-    class Meta:
-        abstract = True
-
-    objects = AutograderModelManager()
-
-    INVALID_FIELD_NAMES_KEY = 'invalid_field_names'
-
-    last_modified = models.DateTimeField(auto_now=True)
-
-
-class PolymorphicAutograderModelManager(_AutograderModelManagerMixin,
-                                        poly_models.PolymorphicManager):
-    """
-    Similar to AutograderModelManager, but is to be used for polymorphic
-    models instead.
-    """
-    pass
-
-
-class PolymorphicAutograderModel(_AutograderModelMixin,
-                                 poly_models.PolymorphicModel):
-    """
-    Similar to AutograderModel, but is to be used for polymorphic
-    models instead.
-    """
-    class Meta:
-        abstract = True
-
-    # NOTE: Currently, the polymorphic manager needs to be set in
-    # the first concrete class.
-    # objects = PolymorphicAutograderModelManager()

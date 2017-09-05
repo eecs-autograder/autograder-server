@@ -186,6 +186,13 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
         self.not_past_extension = timezone.now() + timezone.timedelta(minutes=5)
         self.past_extension = timezone.now() - timezone.timedelta(minutes=1)
 
+    def test_get_ultimate_submission_no_submissions_404(self):
+        group = self.admin_group(self.project)
+        self.assertEqual(0, group.submissions.count())
+        self.client.force_authenticate(group.members.first())
+        response = self.client.get(self.ultimate_submission_url(group))
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
     def test_admin_or_staff_get_ultimate_submission(self):
         for closing_time in None, self.past_closing_time:
             self.do_get_ultimate_submission_test(

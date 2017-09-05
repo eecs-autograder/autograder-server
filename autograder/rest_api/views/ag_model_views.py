@@ -1,8 +1,7 @@
-import enum
-
 from django.shortcuts import get_object_or_404
 
 from rest_framework import viewsets, permissions, mixins, generics
+
 from ..transaction_mixins import (
     TransactionCreateMixin, TransactionUpdateMixin, TransactionDestroyMixin)
 
@@ -73,8 +72,9 @@ class ListCreateNestedModelView(GetObjectLockOnUnsafeMixin,
     created related objects belong to the appropriate foreign object,
     as specified by a primary key loaded from the URL.
 
-    For example,
-    A GET request to /courses/2/projects/ would return a list of Projects
+    For example, setting foreign_key_field_name to 'course'
+    and reverse_foreign_key_field_name to 'projects' would allow the following:
+    A GET request to /courses/2/projects/ could return a list of Projects
     that belong to Course 2, but only if the user is staff for or enrolled
     in that Course.
     A POST request to /courses/2/projects/ would create a new Project that

@@ -1,7 +1,6 @@
-from typing import Any, Callable, Type, TypeVar
+from typing import Any, Callable, Type
 
 from django.utils import timezone
-
 from rest_framework import exceptions, permissions
 
 import autograder.core.models as ag_models

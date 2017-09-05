@@ -2,7 +2,6 @@ import fnmatch
 import os
 import shlex
 import shutil
-import subprocess
 import tempfile
 import time
 import traceback
@@ -11,11 +10,9 @@ from io import FileIO
 from typing import Tuple
 
 from django.conf import settings
-from django.db.models.signals import post_save
 from django.db import transaction
 
 import celery
-from django.dispatch import receiver
 
 import autograder.core.models as ag_models
 from autograder.core import constants
@@ -167,7 +164,10 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
         environment_variables={
             'usernames': ' '.join(sorted(submission.submission_group.member_names))
         },
-        allow_network_access=ag_test_suite.allow_network_access)
+        allow_network_access=ag_test_suite.allow_network_access,
+        docker_image=constants.DOCKER_IMAGE_IDS_TO_URLS[ag_test_suite.docker_image_to_use])
+    print(ag_test_suite.docker_image_to_use)
+    print(sandbox.docker_image)
     with sandbox:
         _add_files_to_sandbox(sandbox, ag_test_suite, submission)
 
@@ -214,9 +214,13 @@ def _run_suite_setup(sandbox: AutograderSandbox,
                                        max_num_processes=constants.MAX_PROCESS_LIMIT,
                                        max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
                                        max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                       timeout=constants.MAX_SUBPROCESS_TIMEOUT)
+                                       timeout=constants.MAX_SUBPROCESS_TIMEOUT,
+                                       truncate_stdout=constants.MAX_OUTPUT_LENGTH,
+                                       truncate_stderr=constants.MAX_OUTPUT_LENGTH)
     suite_result.setup_return_code = setup_result.return_code
     suite_result.setup_timed_out = setup_result.timed_out
+    suite_result.setup_stdout_truncated = setup_result.stdout_truncated
+    suite_result.setup_stderr_truncated = setup_result.stderr_truncated
     shutil.move(setup_result.stdout.name, suite_result.setup_stdout_filename)
     shutil.move(setup_result.stderr.name, suite_result.setup_stderr_filename)
 
@@ -235,9 +239,13 @@ def _run_suite_teardown(sandbox: AutograderSandbox,
                                           max_num_processes=constants.MAX_PROCESS_LIMIT,
                                           max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
                                           max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                          timeout=constants.MAX_SUBPROCESS_TIMEOUT)
+                                          timeout=constants.MAX_SUBPROCESS_TIMEOUT,
+                                          truncate_stdout=constants.MAX_OUTPUT_LENGTH,
+                                          truncate_stderr=constants.MAX_OUTPUT_LENGTH)
     suite_result.teardown_return_code = teardown_result.return_code
     suite_result.teardown_timed_out = teardown_result.timed_out
+    suite_result.teardown_stdout_truncated = teardown_result.stdout_truncated
+    suite_result.teardown_stderr_truncated = teardown_result.stderr_truncated
     shutil.move(teardown_result.stdout.name, suite_result.teardown_stdout_filename)
     shutil.move(teardown_result.stderr.name, suite_result.teardown_stderr_filename)
 
@@ -277,10 +285,14 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                                          max_num_processes=ag_test_cmd.process_spawn_limit,
                                          max_stack_size=ag_test_cmd.stack_size_limit,
                                          max_virtual_memory=ag_test_cmd.virtual_memory_limit,
-                                         timeout=ag_test_cmd.time_limit)
+                                         timeout=ag_test_cmd.time_limit,
+                                         truncate_stdout=constants.MAX_OUTPUT_LENGTH,
+                                         truncate_stderr=constants.MAX_OUTPUT_LENGTH)
 
         result_data['return_code'] = run_result.return_code
         result_data['timed_out'] = run_result.timed_out
+        result_data['stdout_truncated'] = run_result.stdout_truncated
+        result_data['stderr_truncated'] = run_result.stderr_truncated
 
         if ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.zero:
             result_data['return_code_correct'] = run_result.return_code == 0

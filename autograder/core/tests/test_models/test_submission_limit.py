@@ -1,13 +1,10 @@
-import datetime
 import random
 
 from django.utils import timezone
 
-from autograder.utils.testing import UnitTestBase
-
 import autograder.core.models as ag_models
-
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 
 
 class SubmissionLimitAndCountTestCase(UnitTestBase):

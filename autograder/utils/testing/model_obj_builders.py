@@ -1,5 +1,4 @@
 import copy
-import random
 import uuid
 import base64
 import typing
@@ -9,10 +8,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 import autograder.core.models as ag_models
-from autograder.core.models.autograder_test_case.feedback_config import (
-    FeedbackConfig, AGTestNameFdbkLevel, ReturnCodeFdbkLevel,
-    StdoutFdbkLevel, StderrFdbkLevel, CompilationFdbkLevel,
-    ValgrindFdbkLevel, PointsFdbkLevel)
 
 
 def get_unique_id() -> str:

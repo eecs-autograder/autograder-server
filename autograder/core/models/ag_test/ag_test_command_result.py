@@ -5,7 +5,6 @@ from io import FileIO
 from django.db import models
 
 from autograder.core.models.ag_model_base import ToDictMixin
-import autograder.core.constants as constants
 import autograder.core.utils as core_ut
 
 from ..ag_model_base import AutograderModel
@@ -41,6 +40,11 @@ class AGTestCommandResult(AutograderModel):
         blank=True, help_text='The stdout contents from running the command.')
     stderr = models.TextField(
         blank=True, help_text='The stderr contents from running the command.')
+
+    stdout_truncated = models.BooleanField(
+        blank=True, default=False, help_text="Whether the command's stdout was truncated.")
+    stderr_truncated = models.BooleanField(
+        blank=True, default=False, help_text="Whether the command's stderr was truncated.")
 
     timed_out = models.BooleanField(
         blank=True, default=False, help_text='Whether the program exceeded the time limit.')

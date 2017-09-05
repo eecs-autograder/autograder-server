@@ -1,5 +1,4 @@
-from django.utils import timezone
-from rest_framework import permissions, exceptions
+from rest_framework import permissions
 
 
 # TODO: replace usages of these functions with autograder.rest_api.permissions

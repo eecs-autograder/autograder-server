@@ -1,4 +1,5 @@
-import re
+import enum
+import autograder_sandbox
 
 MAX_CHAR_FIELD_LEN = 255
 
@@ -19,19 +20,9 @@ FILESYSTEM_RESULT_OUTPUT_DIRNAME = 'output'
 
 MAX_COMMAND_LENGTH = 1000
 
-DEFAULT_VALGRIND_FLAGS = ['--leak-check=full', '--error-exitcode=1']
-
-SUPPORTED_COMPILERS = ['g++', 'clang++', 'gcc', 'clang']
-
-SUPPORTED_INTERPRETERS = ['python', 'python3', 'bash']
-
 # Sandbox resource limit settings
 DEFAULT_SUBPROCESS_TIMEOUT = 10
 MAX_SUBPROCESS_TIMEOUT = 60
-
-# IMPORTANT: Make sure not to overwrite the default!!!
-SUPPORTED_DOCKER_IMAGES = ['jameslp/autograder-sandbox']
-DEFAULT_DOCKER_IMAGE = SUPPORTED_DOCKER_IMAGES[0]
 
 DEFAULT_STACK_SIZE_LIMIT = 10000000  # 10 MB
 MAX_STACK_SIZE_LIMIT = 100000000  # 100 MB
@@ -42,4 +33,22 @@ MAX_VIRTUAL_MEM_LIMIT = 1000000000  # 1 GB
 DEFAULT_PROCESS_LIMIT = 0
 MAX_PROCESS_LIMIT = 10
 
-DEFAULT_RANDOMLY_OBFUSCATED_TEST_NAME_PREFIX = 'test'
+
+class SupportedImages(enum.Enum):
+    default = 'default'
+
+    eecs280 = 'eecs280'
+    eecs490 = 'eecs490'
+    engr101 = 'engr101'
+
+
+DOCKER_IMAGE_IDS_TO_URLS = {
+    SupportedImages.eecs280: 'jameslp/eecs280',
+    SupportedImages.eecs490: 'jameslp/eecs490',
+    SupportedImages.engr101: 'jameslp/engr101',
+    # # Avoid using this image in development, since we can't host
+    # # it publicly due to the MATLAB installation.
+    # SupportedImages.engr101: '127.0.0.1:5000/engr101',
+
+    SupportedImages.default: 'jameslp/autograder-sandbox:{}'.format(autograder_sandbox.VERSION)
+}

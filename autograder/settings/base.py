@@ -74,7 +74,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
 
     'rest_framework',
-    'polymorphic',
 
     'django_extensions',
 
@@ -135,10 +134,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('AG_DB_NAME', 'postgres'),
-        'USER': os.environ.get('AG_DB_USER'),
-        'PASSWORD': os.environ.get('AG_DB_PASSWORD'),
-        'HOST': os.environ.get('AG_DB_HOST'),
-        'PORT': os.environ.get('AG_DB_PORT')
+        'USER': os.environ.get('AG_DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('AG_DB_PASSWORD', 'postgres'),
+        'HOST': os.environ.get('AG_DB_HOST', 'localhost'),
+        'PORT': os.environ.get('AG_DB_PORT', '5432')
     },
 }
 

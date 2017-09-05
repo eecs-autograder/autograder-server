@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
-            bases=(autograder.core.models.ag_model_base._AutograderModelMixin, models.Model),
+            bases=(autograder.core.models.ag_model_base.AutograderModel,),
         ),
         migrations.CreateModel(
             name='_DummyForeignAutograderModel',
@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
-            bases=(autograder.core.models.ag_model_base._AutograderModelMixin, models.Model),
+            bases=(autograder.core.models.ag_model_base.AutograderModel,),
         ),
         migrations.CreateModel(
             name='_DummyToManyModel',
@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
             options={
                 'ordering': ('name',),
             },
-            bases=(autograder.core.models.ag_model_base._AutograderModelMixin, models.Model),
+            bases=(autograder.core.models.ag_model_base.AutograderModel,),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',

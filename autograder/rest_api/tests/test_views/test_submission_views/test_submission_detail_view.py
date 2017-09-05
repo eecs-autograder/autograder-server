@@ -1,3 +1,4 @@
+import json
 import os
 import unittest
 
@@ -725,6 +726,36 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             self.client, self.student_group1_normal_submission,
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
+    def test_cmd_diff_with_non_utf_chars(self):
+        non_utf_bytes = b'\x80 and some other stuff just because\n'
+        output = 'some stuff'
+        self.ag_test_cmd.validate_and_update(
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            expected_stdout_text=output,
+            expected_stderr_source=ag_models.ExpectedOutputSource.text,
+            expected_stderr_text=output,
+        )
+        with self.staff_normal_res.open_stdout('wb') as f:
+            f.write(non_utf_bytes)
+        with self.staff_normal_res.open_stderr('wb') as f:
+            f.write(non_utf_bytes)
+        self.client.force_authenticate(self.staff)
+        url = (reverse('submission-feedback', kwargs={'pk': self.staff_normal_submission.pk}) +
+               '?stdout_diff_for_cmd_result={}&feedback_category=max'.format(
+                   self.staff_normal_res.pk))
+
+        expected_diff = ['- ' + output, '+ ' + non_utf_bytes.decode('utf-8', 'surrogateescape')]
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(expected_diff, json.loads(response.content.decode('utf-8')))
+
+        url = (reverse('submission-feedback', kwargs={'pk': self.staff_normal_submission.pk}) +
+               '?stderr_diff_for_cmd_result={}&feedback_category=max'.format(
+                   self.staff_normal_res.pk))
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(expected_diff, json.loads(response.content.decode('utf-8')))
+
     @unittest.skip('not super important, but fixme eventually')
     def test_cmd_result_output_or_diff_requested_cmd_doesnt_exist_404(self):
         self.fail()
@@ -855,14 +886,15 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             response = client.get(url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             expected = getattr(cmd_result.get_fdbk(fdbk_category), field_name)
-            if not isinstance(response, FileResponse):
-                self.assertIsNone(response.data)
-                return
             if isinstance(expected, core_ut.DiffResult):
-                expected = expected.diff_content.read()
+                self.assertEqual(expected.diff_content,
+                                 json.loads(response.content.decode('utf-8')))
             else:
-                expected = expected.read()
-            self.assertEqual(expected, b''.join((chunk for chunk in response.streaming_content)))
+                if not isinstance(response, FileResponse):
+                    self.assertIsNone(response.data)
+                else:
+                    self.assertEqual(
+                        expected.read(), b''.join((chunk for chunk in response.streaming_content)))
 
     def do_get_output_and_diff_on_hidden_ag_test_test(self, client,
                                                       submission: ag_models.Submission,

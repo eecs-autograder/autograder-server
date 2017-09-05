@@ -107,10 +107,10 @@ class AGTestSuite(AutograderModel):
     teardown_suite_cmd_name = ag_fields.ShortStringField(
         blank=True, help_text="""The name of this suite's teardown command.""")
 
-    docker_image_to_use = ag_fields.ShortStringField(
-        choices=zip(constants.SUPPORTED_DOCKER_IMAGES, constants.SUPPORTED_DOCKER_IMAGES),
-        default=constants.DEFAULT_DOCKER_IMAGE,
-        help_text='''The name of the Docker image that the sandbox should be created using.''')
+    docker_image_to_use = ag_fields.EnumField(
+        constants.SupportedImages,
+        default=constants.SupportedImages.default,
+        help_text="An identifier for the Docker image that the sandbox should be created from.")
 
     allow_network_access = models.BooleanField(
         default=False,
@@ -218,6 +218,7 @@ class AGTestSuite(AutograderModel):
 
         'allow_network_access',
         'deferred',
+        'docker_image_to_use',
 
         'normal_fdbk_config',
         'ultimate_submission_fdbk_config',

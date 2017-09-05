@@ -1,22 +1,16 @@
 import json
 import os
-
 from collections import namedtuple
 
-from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
-from autograder.core import constants
-from autograder.core.models.autograder_test_case import feedback_config
-
-from autograder import utils
-from autograder.utils.testing import UnitTestBase
-
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
-
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder import utils
+from autograder.core import constants
+from autograder.utils.testing import UnitTestBase
 
 
 class SubmissionTestCase(UnitTestBase):
@@ -67,10 +61,6 @@ class SubmissionTestCase(UnitTestBase):
             submitter=submitter)
 
         submission.refresh_from_db()
-
-        # Make sure initial set of results was created
-        for test in self.submission_group.project.autograder_test_cases.all():
-            submission.results.get(test_case=test)
 
         self.assertEqual(submitter, submission.submitter)
         self.assertEqual(

@@ -2,14 +2,12 @@ import datetime
 import os
 
 from django.core import exceptions
-from django.core.cache import cache
-from django.http import Http404
 from django.utils import timezone
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
-import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.utils.testing as test_ut
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class _SetUp:

@@ -1,10 +1,9 @@
 from .serializer_impls import (
     CourseSerializer,
     ProjectSerializer,
+    DownloadTaskSerializer,
     UploadedFileSerializer,
     ExpectedStudentFilePatternSerializer,
-    AutograderTestCaseSerializer,
-    AutograderTestResultSerializer,
     SubmissionGroupSerializer,
     SubmissionGroupInvitationSerializer,
     SubmissionSerializer,

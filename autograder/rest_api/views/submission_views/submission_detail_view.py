@@ -1,18 +1,15 @@
 from django.core import exceptions
 from django.db import transaction
-from django.http.response import FileResponse, Http404
+from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-
-from rest_framework import (
-    viewsets, mixins, permissions, decorators, response, status)
+from rest_framework import decorators, mixins, permissions, response, status, viewsets
 
 import autograder.core.models as ag_models
+import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
-import autograder.rest_api.permissions as ag_permissions
-
-from ..permission_components import user_can_view_group
 from ..load_object_mixin import build_load_object_mixin
+from ..permission_components import user_can_view_group
 
 
 class _Permissions(permissions.BasePermission):
@@ -202,7 +199,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
         diff = cmd_result.get_fdbk(fdbk_category).stdout_diff
         if diff is None:
             return response.Response(None)
-        return FileResponse(diff.diff_content)
+        return JsonResponse(diff.diff_content, safe=False)
 
     def _get_cmd_result_stderr_diff(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                                     fdbk_category: ag_models.FeedbackCategory,
@@ -213,7 +210,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
         diff = cmd_result.get_fdbk(fdbk_category).stderr_diff
         if diff is None:
             return response.Response(None)
-        return FileResponse(diff.diff_content)
+        return JsonResponse(diff.diff_content, safe=False)
 
     def _find_cmd_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                          fdbk_category: ag_models.FeedbackCategory,

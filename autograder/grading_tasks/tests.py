@@ -4,7 +4,8 @@ import shlex
 import tempfile
 from unittest import mock
 
-from autograder_sandbox import AutograderSandbox, CompletedCommand
+from autograder_sandbox import AutograderSandbox
+from autograder_sandbox.autograder_sandbox import CompletedCommand
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
@@ -132,7 +133,10 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd_result = ag_models.AGTestCommandResult.objects.get(
             ag_test_command=cmd,
             ag_test_case_result__ag_test_suite_result__submission=self.submission)
-        self.assertEqual(0, cmd_result.return_code)
+        with cmd_result.open_stderr() as f:
+            output = f.read().decode()
+        print(output)
+        self.assertEqual(0, cmd_result.return_code, msg=output)
         self.assertEqual('hello', cmd_result.open_stdout().read().decode())
         self.assertEqual('whoops', cmd_result.open_stderr().read().decode())
         self.assertTrue(cmd_result.stdout_correct)
@@ -141,6 +145,31 @@ class GradeSubmissionTestCase(UnitTestBase):
         self.assertEqual(
             6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
         self.assertEqual(6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+                         self.submission.status)
+
+    def test_non_default_docker_image(self, *args):
+        suite = obj_build.make_ag_test_suite(
+            self.project, docker_image_to_use=constants.SupportedImages.eecs490)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(
+            case,
+            cmd='racket --version',
+            set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False,
+            points_for_correct_return_code=3,
+            expected_return_code=ag_models.ExpectedReturnCode.zero)
+        tasks.grade_submission(self.submission.pk)
+
+        cmd_result = ag_models.AGTestCommandResult.objects.get(
+            ag_test_command=cmd,
+            ag_test_case_result__ag_test_suite_result__submission=self.submission)
+        self.assertEqual(0, cmd_result.return_code)
+
+        self.assertEqual(
+            3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
+        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
@@ -843,8 +872,10 @@ sys.stderr.flush()
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(0, res.return_code)
         self.assertFalse(res.timed_out)
-        self.assertEqual(self.too_much_output_size, os.path.getsize(res.stdout_filename))
-        self.assertEqual(self.too_much_output_size, os.path.getsize(res.stderr_filename))
+        self.assertTrue(res.stdout_truncated)
+        self.assertTrue(res.stderr_truncated)
+        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.stdout_filename))
+        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.stderr_filename))
 
     def test_program_prints_non_unicode_chars(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -884,10 +915,17 @@ sys.stderr.flush()
         tasks.grade_submission(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
 
-        self.assertEqual(self.too_much_output_size, os.path.getsize(res.setup_stdout_filename))
-        self.assertEqual(self.too_much_output_size, os.path.getsize(res.setup_stderr_filename))
-        self.assertEqual(self.too_much_output_size, os.path.getsize(res.teardown_stdout_filename))
-        self.assertEqual(self.too_much_output_size, os.path.getsize(res.teardown_stderr_filename))
+        self.assertTrue(res.setup_stdout_truncated)
+        self.assertTrue(res.setup_stderr_truncated)
+        self.assertTrue(res.teardown_stdout_truncated)
+        self.assertTrue(res.teardown_stderr_truncated)
+
+        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.setup_stdout_filename))
+        self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.setup_stderr_filename))
+        self.assertEqual(constants.MAX_OUTPUT_LENGTH,
+                         os.path.getsize(res.teardown_stdout_filename))
+        self.assertEqual(constants.MAX_OUTPUT_LENGTH,
+                         os.path.getsize(res.teardown_stderr_filename))
 
     def test_setup_and_teardown_print_non_unicode_chars(self, *args):
         self.ag_test_suite.validate_and_update(
@@ -925,7 +963,8 @@ sys.stderr.flush()
         def make_run_command_ret_val(*args, **kwargs):
             return CompletedCommand(
                 return_code=0, stdout=tempfile.NamedTemporaryFile(),
-                stderr=tempfile.NamedTemporaryFile(), timed_out=False)
+                stderr=tempfile.NamedTemporaryFile(), timed_out=False,
+                stdout_truncated=False, stderr_truncated=False)
 
         run_command_mock = mock.Mock(side_effect=make_run_command_ret_val)
         sandbox.run_command = run_command_mock
@@ -937,12 +976,16 @@ sys.stderr.flush()
             'max_num_processes': constants.MAX_PROCESS_LIMIT,
             'max_stack_size': constants.MAX_STACK_SIZE_LIMIT,
             'max_virtual_memory': constants.MAX_VIRTUAL_MEM_LIMIT,
+            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
         }
         expected_cmd_args = {
             'timeout': time_limit,
             'max_num_processes': process_spawn_limit,
             'max_stack_size': stack_size_limit,
             'max_virtual_memory': virtual_memory_limit,
+            'truncate_stdout': constants.MAX_OUTPUT_LENGTH,
+            'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
         }
         run_command_mock.assert_has_calls([
             mock.call(shlex.split(self.ag_test_suite.setup_suite_cmd),
