@@ -4,6 +4,7 @@ from django.core import exceptions
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, MaxLengthValidator)
 from django.db import models
+from django.shortcuts import get_object_or_404
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
@@ -316,6 +317,27 @@ class AGTestCommand(AutograderModel):
         if error_dict:
             raise exceptions.ValidationError(error_dict)
 
+    def validate_and_update(self, **kwargs):
+        stdin_project_file = kwargs.pop('stdin_project_file', None)
+        expected_stdout_project_file = kwargs.pop('expected_stdout_project_file', None)
+        expected_stderr_project_file = kwargs.pop('expected_stderr_project_file', None)
+
+        if isinstance(stdin_project_file, dict):
+            stdin_project_file = get_object_or_404(
+                UploadedFile, pk=stdin_project_file['pk'])
+        if isinstance(expected_stdout_project_file, dict):
+            expected_stdout_project_file = get_object_or_404(
+                UploadedFile, pk=expected_stdout_project_file['pk'])
+        if isinstance(expected_stderr_project_file, dict):
+            expected_stderr_project_file = get_object_or_404(
+                UploadedFile, pk=expected_stderr_project_file['pk'])
+
+        return super().validate_and_update(
+            stdin_project_file=stdin_project_file,
+            expected_stdout_project_file=expected_stdout_project_file,
+            expected_stderr_project_file=expected_stderr_project_file,
+            **kwargs)
+
     SERIALIZABLE_FIELDS = (
         'pk',
         'name',
@@ -402,6 +424,12 @@ class AGTestCommand(AutograderModel):
         'stack_size_limit',
         'virtual_memory_limit',
         'process_spawn_limit',
+    )
+
+    SERIALIZE_RELATED = (
+        'stdin_project_file',
+        'expected_stdout_project_file',
+        'expected_stderr_project_file',
     )
 
     TRANSPARENT_TO_ONE_FIELDS = (
