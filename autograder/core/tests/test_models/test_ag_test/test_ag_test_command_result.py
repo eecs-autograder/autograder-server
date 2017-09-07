@@ -90,6 +90,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertTrue(max_fdbk.show_actual_return_code)
         self.assertTrue(max_fdbk.show_actual_stdout)
         self.assertTrue(max_fdbk.show_actual_stderr)
+        self.assertTrue(max_fdbk.show_whether_timed_out)
 
     def test_points_everything_correct_max_fdbk(self):
         cmd_result = self.make_correct_result()

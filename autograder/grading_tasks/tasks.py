@@ -171,9 +171,11 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
     with sandbox:
         _add_files_to_sandbox(sandbox, ag_test_suite, submission)
 
+        print('Running setup for', ag_test_suite.name)
         _run_suite_setup(sandbox, ag_test_suite, suite_result)
 
         for ag_test_case in ag_test_suite.ag_test_cases.all():
+            print('Grading test case', ag_test_case.name)
             grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
 
         _run_suite_teardown(sandbox, ag_test_suite, suite_result)
@@ -267,6 +269,7 @@ def grade_ag_test_case_impl(sandbox: AutograderSandbox,
         grade_ag_test_command_impl(sandbox, ag_test_cmd, case_result)
 
     for ag_test_cmd in ag_test_case.ag_test_commands.all():
+        print('Running command', ag_test_cmd.name)
         _grade_ag_test_cmd_with_retry(ag_test_cmd, case_result)
 
 
@@ -322,6 +325,8 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                 ignore_whitespace_changes=ag_test_cmd.ignore_whitespace_changes,
                 ignore_blank_lines=ag_test_cmd.ignore_blank_lines)
             result_data['stderr_correct'] = diff.diff_pass
+
+        print(result_data)
 
         @retry_should_recover
         def save_ag_test_cmd_result():
