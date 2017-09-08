@@ -17,6 +17,9 @@ class _ProjectsSetUp(test_data.Client, test_data.Project, UnitTestBase):
 
 
 class CourseListProjectsTestCase(_ProjectsSetUp):
+    def setUp(self):
+        super().setUp()
+
     def test_admin_list_projects(self):
         self.do_valid_list_projects_test(self.admin, self.all_projects)
 
@@ -24,6 +27,8 @@ class CourseListProjectsTestCase(_ProjectsSetUp):
         self.do_valid_list_projects_test(self.staff, self.all_projects)
 
     def test_enrolled_student_list_projects_visible_only(self):
+        # Make sure more than just visible projects exist
+        all_projects = self.all_projects
         self.do_valid_list_projects_test(self.enrolled, self.visible_projects)
 
     def test_other_list_projects_permission_denied(self):
