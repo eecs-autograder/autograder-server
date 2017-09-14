@@ -1,4 +1,5 @@
 import enum
+import typing
 
 from django.db import models, transaction
 from django.core import exceptions
@@ -14,11 +15,25 @@ class AutograderModelManager(models.Manager):
         This method is a shortcut for constructing a model object,
         calling full_clean(), and then calling save().
         Prefer using this method over <Model class>.objects.create().
-        Note: Iterables passed in for many-to-many relationships will be
-        loaded from the database and set on the object. The related
-        objects can be represented either as the objects themselves,
-        their primary keys, or as the result of calling
-        <related_obj>.to_dict().
+
+        One-to-one relationships and foreign key relationships:
+        If you wish to specify a value for a one-to-one or foreign key
+        relationship, you may pass one of the following:
+            - The related object itself
+            - The related object's primary key
+            - A dictonary with the related object's primary key stored
+              under the 'pk' key.
+
+        Many-to-many relationships:
+        Similarly to -to-one relationships, you may pass a sequence of
+        objects as the value for a many-to-many relationship. The
+        objects of the sequence must be one of the following:
+            - The related objects themselves
+            - The related objects' primary keys
+            - Dictonaries with the related objects' primary keys stored
+              under the 'pk' key.
+        The sequence must be homogenous (you cannot mix and match the types
+        listed above.
         """
         instance = self.model()
         many_to_many_to_set = {}
@@ -39,6 +54,8 @@ class AutograderModelManager(models.Manager):
                     related_model = instance._meta.get_field(field_name).related_model
                     setattr(instance, field_name,
                             related_model.objects.validate_and_create(**value))
+                elif _field_is_to_one(instance, field_name):
+                    _set_to_one_relationship(instance, field_name, value)
                 else:
                     setattr(instance, field_name, value)
 
@@ -55,7 +72,12 @@ class AutograderModelManager(models.Manager):
             return instance
 
 
-def _load_related_to_many_objs(related_model, objs):
+def _field_is_to_one(instance: 'AutograderModel', field_name: str):
+    field = instance._meta.get_field(field_name)
+    return field.many_to_one or field.one_to_one
+
+
+def _load_related_to_many_objs(related_model, objs: typing.Sequence):
     if not objs:
         return []
 
@@ -221,15 +243,29 @@ class AutograderModel(ToDictMixin, models.Model):
         Updates the values of the fields specified as
         keyword arguments, runs model validation, and saves the
         model.
-        Note: Iterables passed in for many-to-many relationships will be
-        loaded from the database and set on the object. The related
-        objects can be represented either as the objects themselves,
-        their primary keys, or as the result of calling
-        <related_obj>.to_dict().
+
+        One-to-one relationships and foreign key relationships:
+        If you wish to specify a value for a one-to-one or foreign key
+        relationship, you may pass one of the following:
+            - The related object itself
+            - The related object's primary key
+            - A dictonary with the related object's primary key stored
+              under the 'pk' key.
+
+        Many-to-many relationships:
+        Similarly to -to-one relationships, you may pass a sequence of
+        objects as the value for a many-to-many relationship. The
+        objects of the sequence must be one of the following:
+            - The related objects themselves
+            - The related objects' primary keys
+            - Dictonaries with the related objects' primary keys stored
+              under the 'pk' key.
+        The sequence must be homogenous (you cannot mix and match the types
+        listed above.
 
         Prefer using this method over setting values manually
-        and calling full_clean() because this method can perform
-        extra validation that depends on the old and new values of
+        and calling full_clean() because this method can be overridden to
+        perform extra validation that depends on the old and new values of
         fields.
         Raises ValidationError if any specified field doesn't exist or
         is not editable.
@@ -258,6 +294,8 @@ class AutograderModel(ToDictMixin, models.Model):
                 update_vals = {key: value for key, value in val.items()
                                if key in field.related_model.get_editable_fields()}
                 getattr(self, field_name).validate_and_update(**update_vals)
+            elif _field_is_to_one(self, field_name):
+                _set_to_one_relationship(self, field_name, val)
             else:
                 setattr(self, field_name, val)
 
@@ -266,3 +304,21 @@ class AutograderModel(ToDictMixin, models.Model):
 
     def __str__(self):
         return '<{}: {}>'.format(self.__class__.__name__, self.pk)
+
+
+def _set_to_one_relationship(model_obj, field_name, value):
+    related_model = model_obj._meta.get_field(field_name).related_model
+
+    if value is None:
+        related_obj = None
+    elif isinstance(value, related_model):
+        related_obj = value
+    elif isinstance(value, int):
+        related_obj = related_model.objects.get(pk=value)
+    elif isinstance(value, dict):
+        related_obj = related_model.objects.get(pk=value['pk'])
+    else:
+        raise ValueError('-to-one related objects must be represented as int, '
+                         'dict, or the object itself')
+
+    setattr(model_obj, field_name, related_obj)

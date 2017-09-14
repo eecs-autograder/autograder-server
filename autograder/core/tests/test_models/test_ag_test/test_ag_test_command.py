@@ -383,7 +383,25 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertIsInstance(cmd_dict['expected_stderr_project_file'], dict)
         self.assertEqual(stderr.pk, cmd_dict['expected_stderr_project_file']['pk'])
 
-    def test_file_io_sources_deserialize(self):
+    def test_file_io_sources_deserialized_on_create(self):
+        stdin = obj_build.make_uploaded_file(self.project)
+        stdout = obj_build.make_uploaded_file(self.project)
+        stderr = obj_build.make_uploaded_file(self.project)
+
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            stdin_source=ag_models.StdinSource.project_file,
+            stdin_project_file=stdin.to_dict(),
+            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_project_file=stdout.to_dict(),
+            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_project_file=stderr.to_dict())
+
+        self.assertEqual(stdin, ag_cmd.stdin_project_file)
+        self.assertEqual(stdout, ag_cmd.expected_stdout_project_file)
+        self.assertEqual(stderr, ag_cmd.expected_stderr_project_file)
+
+    def test_file_io_sources_deserialized_on_update(self):
         stdin = obj_build.make_uploaded_file(self.project)
         stdout = obj_build.make_uploaded_file(self.project)
         stderr = obj_build.make_uploaded_file(self.project)
@@ -406,7 +424,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             stdin_project_file=None,
             expected_stdout_source=ag_models.ExpectedOutputSource.none,
             expected_stdout_project_file=None,
-            expected_stderr_source = ag_models.ExpectedOutputSource.none,
+            expected_stderr_source=ag_models.ExpectedOutputSource.none,
             expected_stderr_project_file=None,
         )
 

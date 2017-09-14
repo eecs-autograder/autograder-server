@@ -166,6 +166,37 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
         self.assertSequenceEqual(self.many_to_manys, ag_model.another_many_to_many.all())
         self.assertCountEqual(self.users, ag_model.users.all())
 
+    def test_create_with_int_passed_for_to_one_relationships(self):
+        one_to_one_obj = _DummyForeignAutograderModel.objects.create(name='qehkfdnm')
+        foreign_obj = _DummyForeignAutograderModel.objects.create(name='cmnbse')
+
+        created_with_ints = _DummyAutograderModel.objects.validate_and_create(
+            pos_num_val=15,
+            non_empty_str_val='spam',
+            read_only_field='blah',
+
+            one_to_one=one_to_one_obj.pk,
+            foreign_key=foreign_obj.pk)  # type: _DummyAutograderModel
+
+        created_with_ints.refresh_from_db()
+        self.assertEqual(one_to_one_obj, created_with_ints.one_to_one)
+        self.assertEqual(foreign_obj, created_with_ints.foreign_key)
+
+    def test_create_with_dict_passed_for_to_one_relationships(self):
+        one_to_one_obj = _DummyForeignAutograderModel.objects.create(name='qehkfdnm')
+        foreign_obj = _DummyForeignAutograderModel.objects.create(name='cmnbse')
+
+        created_with_dicts = _DummyAutograderModel.objects.validate_and_create(
+            pos_num_val=15,
+            non_empty_str_val='spam',
+            read_only_field='blah',
+
+            one_to_one=one_to_one_obj.to_dict(),
+            foreign_key=foreign_obj.to_dict())  # type: _DummyAutograderModel
+        created_with_dicts.refresh_from_db()
+        self.assertEqual(one_to_one_obj, created_with_dicts.one_to_one)
+        self.assertEqual(foreign_obj, created_with_dicts.foreign_key)
+
     def test_invalid_create_bad_values(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _DummyAutograderModel.objects.validate_and_create(
@@ -256,6 +287,56 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertEqual(second_new_num, self.ag_model.pos_num_val)
         self.assertIsNone(self.ag_model.nullable_foreign_key)
         self.assertSequenceEqual([], self.ag_model.many_to_many.all())
+
+    def test_update_with_int_passed_for_to_one_relationships(self):
+        one_to_one_obj = _DummyForeignAutograderModel.objects.create(name='qehkfdnm')
+        foreign_obj = _DummyForeignAutograderModel.objects.create(name='cmnbse')
+
+        obj = _DummyAutograderModel.objects.validate_and_create(
+            pos_num_val=15,
+            non_empty_str_val='spam',
+            read_only_field='blah',
+
+            one_to_one=one_to_one_obj,
+            foreign_key=foreign_obj)  # type: _DummyAutograderModel
+
+        obj.refresh_from_db()
+
+        new_one_to_one_obj = _DummyForeignAutograderModel.objects.create(name='oiuspoifdfgu')
+        new_foreign_obj = _DummyForeignAutograderModel.objects.create(name='sdfkgh')
+
+        # Update -to-one relationships with pks
+        obj.validate_and_update(one_to_one=new_one_to_one_obj.pk,
+                                foreign_key=new_foreign_obj.pk)
+        obj.refresh_from_db()
+
+        self.assertEqual(new_one_to_one_obj, obj.one_to_one)
+        self.assertEqual(new_foreign_obj, obj.foreign_key)
+
+    def test_update_with_dict_passed_for_to_one_relationships(self):
+        one_to_one_obj = _DummyForeignAutograderModel.objects.create(name='qehkfdnm')
+        foreign_obj = _DummyForeignAutograderModel.objects.create(name='cmnbse')
+
+        obj = _DummyAutograderModel.objects.validate_and_create(
+            pos_num_val=15,
+            non_empty_str_val='spam',
+            read_only_field='blah',
+
+            one_to_one=one_to_one_obj,
+            foreign_key=foreign_obj)  # type: _DummyAutograderModel
+
+        obj.refresh_from_db()
+
+        new_one_to_one_obj = _DummyForeignAutograderModel.objects.create(name='oiuspoifdfgu')
+        new_foreign_obj = _DummyForeignAutograderModel.objects.create(name='sdfkgh')
+
+        # Update -to-one relationships with dicts
+        obj.validate_and_update(one_to_one=new_one_to_one_obj.to_dict(),
+                                foreign_key=new_foreign_obj.to_dict())
+        obj.refresh_from_db()
+
+        self.assertEqual(new_one_to_one_obj, obj.one_to_one)
+        self.assertEqual(new_foreign_obj, obj.foreign_key)
 
     def test_invalid_update_bad_values(self):
         old_vals = self.ag_model.to_dict()
