@@ -45,6 +45,10 @@ class UnitTestBase(TransactionTestCase):
         except Exception:
             pass
 
+    def assert_dict_is_subset(self, subset_dict, superset_dict):
+        for key, value in subset_dict.items():
+            self.assertEqual(value, superset_dict[key])
+
     def assertDictContentsEqual(self, first, second):
         self.assertEqual(_ordered(first), _ordered(second))
 

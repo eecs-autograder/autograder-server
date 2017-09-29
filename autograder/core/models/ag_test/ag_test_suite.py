@@ -82,7 +82,7 @@ class AGTestSuite(AutograderModel):
 
     read_only_project_files = models.BooleanField(
         default=True,
-        help_text="""When True, project files needed for this suite will be read only when this
+        help_text="""When True, project files needed for this suite will be read-only when this
                      suite is run.""")
 
     student_files_needed = models.ManyToManyField(
@@ -90,15 +90,15 @@ class AGTestSuite(AutograderModel):
         help_text='''Student-submitted files matching these patterns will be copied into the
                      sandbox before the suite's tests are run.''')
 
-    setup_suite_cmd = ag_fields.ShortStringField(
-        blank=True,
+    setup_suite_cmd = models.CharField(
+        max_length=constants.MAX_COMMAND_LENGTH, blank=True,
         help_text="""A command to be run before this suite's tests are run.
                      This command is only run once at the beginning of the suite.
                      This command will be run after the student and project files
                      have been added to the sandbox.""")
 
-    teardown_suite_cmd = ag_fields.ShortStringField(
-        blank=True,
+    teardown_suite_cmd = models.CharField(
+        max_length=constants.MAX_COMMAND_LENGTH, blank=True,
         help_text="""A command to be run after this suite's tests are run.
                      This command is only run once at the end of the suite.""")
 
@@ -149,13 +149,14 @@ class AGTestSuite(AutograderModel):
         for proj_file in self.project_files_needed.all():
             if proj_file.project != self.project:
                 errors['project_files_needed'] = (
-                    'File {} does not belong to this project.'.format(proj_file.name))
+                    'File {} does not belong to the project "{}".'.format(
+                        proj_file.name, self.project.name))
 
         for pattern in self.student_files_needed.all():
             if pattern.project != self.project:
                 errors['student_files_needed'] = (
-                    'Student file pattern {} does not belong to this project.'.format(
-                        pattern.pattern))
+                    'Student file pattern {} does not belong to the project "{}".'.format(
+                        pattern.pattern, self.project.name))
 
         if errors:
             raise exceptions.ValidationError(errors)

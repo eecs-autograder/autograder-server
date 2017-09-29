@@ -14,10 +14,14 @@ from .project.download_task import DownloadTask, DownloadType
 from .submission_group import SubmissionGroup, SubmissionGroupInvitation
 from .submission import Submission
 
+from .ag_command import StdinSource, AGCommandBase, AGCommand
+from .student_test_suite import (
+    StudentTestSuite, StudentTestSuiteFeedbackConfig, BugsExposedFeedbackLevel)
+
 from .ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
 from .ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from .ag_test.ag_test_command import (
-    AGTestCommand, AGTestCommandFeedbackConfig, ValueFeedbackLevel, StdinSource,
+    AGTestCommand, AGTestCommandFeedbackConfig, ValueFeedbackLevel,
     ExpectedOutputSource, ExpectedOutputSource, ExpectedReturnCode)
 from .ag_test.ag_test_suite_result import AGTestSuiteResult
 from .ag_test.ag_test_case_result import AGTestCaseResult

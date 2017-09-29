@@ -4,11 +4,11 @@ from django.core import exceptions
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, MaxLengthValidator)
 from django.db import models
-from django.shortcuts import get_object_or_404
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
 import autograder.core.utils as core_ut
+from ..ag_command import AGCommandBase
 from .ag_test_case import AGTestCase
 from ..ag_model_base import AutograderModel
 from ..project import UploadedFile
@@ -97,14 +97,6 @@ def make_max_command_fdbk() -> int:
     ).pk
 
 
-class StdinSource(enum.Enum):
-    none = 'none'  # No input to redirect
-    text = 'text'
-    project_file = 'project_file'
-    setup_stdout = 'setup_stdout'
-    setup_stderr = 'setup_stderr'
-
-
 class ExpectedOutputSource(enum.Enum):
     none = 'none'  # Don't check output
     text = 'text'
@@ -117,7 +109,7 @@ class ExpectedReturnCode(enum.Enum):
     nonzero = 'nonzero'
 
 
-class AGTestCommand(AutograderModel):
+class AGTestCommand(AGCommandBase):
     """
     An AGTestCommand represents a single command to either evaluate student code or set up
     an AGTestSuite.
@@ -129,35 +121,14 @@ class AGTestCommand(AutograderModel):
 
     name = ag_fields.ShortStringField(
         help_text='''The name used to identify this command.
-                     Must be non-empty and non-null.
-                     Must be unique among commands that belong to the same autograder test.
-                     This field is REQUIRED.''')
+                         Must be non-empty and non-null.
+                         Must be unique among commands that belong to the same autograder test.
+                         This field is REQUIRED.''')
 
     ag_test_case = models.ForeignKey(
         AGTestCase,
         related_name='ag_test_commands',
-        help_text='''When non-null, indicates that this command belongs to the specified
-                     autograder test.
-                     Either this field or ag_test_suite must be non-null.''')
-
-    cmd = models.CharField(
-        max_length=constants.MAX_COMMAND_LENGTH,
-        help_text='''A string containing the command to be run.
-                     Note: This string will be split using shlex.split() before it is executed.''')
-
-    stdin_source = ag_fields.EnumField(
-        StdinSource, default=StdinSource.none,
-        help_text='''Specifies what kind of source stdin will be redirected from.''')
-    stdin_text = models.TextField(
-        blank=True,
-        help_text='''A string whose contents should be redirected to the stdin of this command.
-                     This value is used when stdin_source is StdinSource.text and is ignored
-                     otherwise.''')
-    stdin_project_file = models.ForeignKey(
-        UploadedFile, blank=True, null=True, default=None, related_name='+',
-        help_text='''An UploadedFile whose contents should be redirected to the stdin of this
-                     command. This value is used when stdin_source is StdinSource.project_file
-                     and is ignored otherwise.''')
+        help_text="""The AGTestCase that this command belongs to.""")
 
     expected_return_code = ag_fields.EnumField(
         ExpectedReturnCode, default=ExpectedReturnCode.none,
@@ -255,54 +226,13 @@ class AGTestCommand(AutograderModel):
         related_name='+',
         help_text='Feedback settings for a staff member viewing a Submission from another group.')
 
-    time_limit = models.IntegerField(
-        default=constants.DEFAULT_SUBPROCESS_TIMEOUT,
-        validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_SUBPROCESS_TIMEOUT)],
-        help_text='''The time limit in seconds to be placed on the
-            command. This limit currently applies to each
-            of: compilation, running the program, and running the
-            program with Valgrind (the timeout is applied separately to
-            each).
-            Must be > 0
-            Must be <= autograder.shared.global_constants
-                                 .MAX_SUBPROCESS_TIMEOUT''')
-
-    stack_size_limit = models.IntegerField(
-        default=constants.DEFAULT_STACK_SIZE_LIMIT,
-        validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_STACK_SIZE_LIMIT)],
-        help_text='''
-        stack_size_limit -- The maximum stack size in bytes.
-            Must be > 0
-            Must be <= autograder.shared.global_constants.MAX_STACK_SIZE_LIMIT
-            NOTE: Setting this value too low may cause the command to crash prematurely.''')
-
-    virtual_memory_limit = models.IntegerField(
-        default=constants.DEFAULT_VIRTUAL_MEM_LIMIT,
-        validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_VIRTUAL_MEM_LIMIT)],
-        help_text='''The maximum amount of virtual memory
-            (in bytes) the command can use.
-            Must be > 0
-            Must be <= autograder.shared.global_constants.MAX_VIRTUAL_MEM_LIMIT
-            NOTE: Setting this value too low may cause the command to crash prematurely.''')
-
-    process_spawn_limit = models.IntegerField(
-        default=constants.DEFAULT_PROCESS_LIMIT,
-        validators=[MinValueValidator(0), MaxValueValidator(constants.MAX_PROCESS_LIMIT)],
-        help_text='''The maximum number of processes that the command is allowed to spawn.
-            Must be >= 0
-            Must be <= autograder.shared.global_constants.MAX_PROCESS_LIMIT
-            NOTE: This limit applies cumulatively to the processes
-                    spawned by the main program being run. i.e. If a
-                    spawned process spawns it's own child process, both
-                    of those processes will count towards the main
-                    program's process limit.''')
-
     def clean(self):
         error_dict = {}
 
-        if self.stdin_source == StdinSource.project_file and self.stdin_project_file is None:
-            error_dict['stdin_project_file'] = (
-                'This field may not be None when stdin source is project file.')
+        try:
+            super().clean()
+        except exceptions.ValidationError as e:
+            error_dict = e.error_dict
 
         if (self.expected_stdout_source == ExpectedOutputSource.project_file and
                 self.expected_stdout_project_file is None):

@@ -96,7 +96,7 @@ def _load_related_to_many_objs(related_model, objs: typing.Sequence):
 
 class ToDictMixin:
     @classmethod
-    def get_serializable_fields(cls):
+    def get_serializable_fields(cls) -> typing.Sequence[str]:
         """
         Returns a collection of the names of member variables to include
         by default in the dictionary returned by to_dict()
@@ -124,7 +124,7 @@ class ToDictMixin:
     SERIALIZABLE_FIELDS = tuple()
 
     @classmethod
-    def get_serialize_related_fields(cls):
+    def get_serialize_related_fields(cls) -> typing.Sequence[str]:
         """
         Returns a collection of the names of database related fields
         (-to-one or -to-many) that should be serialized
@@ -145,7 +145,7 @@ class ToDictMixin:
     SERIALIZE_RELATED = tuple()
 
     @classmethod
-    def get_transparent_to_one_fields(cls):
+    def get_transparent_to_one_fields(cls) -> typing.Sequence[str]:
         """
         Returns a collection of the names of database -to-one fields
         that should be treated as "transparent" when serializing and
