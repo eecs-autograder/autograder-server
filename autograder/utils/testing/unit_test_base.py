@@ -55,7 +55,7 @@ class UnitTestBase(TransactionTestCase):
     def assertListContentsEqual(self, first, second):
         self.assertCountEqual(_ordered(first), _ordered(second))
 
-    def assert_queryset_count_unchange(self, queryset):
+    def assert_queryset_count_unchanged(self, queryset):
         return UnitTestBase._AssertQuerySetCountUnchanged(queryset, self)
 
     class _AssertQuerySetCountUnchanged:

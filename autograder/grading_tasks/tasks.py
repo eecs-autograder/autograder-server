@@ -330,13 +330,14 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
 
         @retry_should_recover
         def save_ag_test_cmd_result():
-            cmd_result = ag_models.AGTestCommandResult.objects.update_or_create(
-                defaults=result_data,
-                ag_test_command=ag_test_cmd,
-                ag_test_case_result=case_result)[0]  # type: ag_models.AGTestCommandResult
+            with transaction.atomic():
+                cmd_result = ag_models.AGTestCommandResult.objects.update_or_create(
+                    defaults=result_data,
+                    ag_test_command=ag_test_cmd,
+                    ag_test_case_result=case_result)[0]  # type: ag_models.AGTestCommandResult
 
-            shutil.move(run_result.stdout.name, cmd_result.stdout_filename)
-            shutil.move(run_result.stderr.name, cmd_result.stderr_filename)
+                shutil.move(run_result.stdout.name, cmd_result.stdout_filename)
+                shutil.move(run_result.stderr.name, cmd_result.stderr_filename)
 
         save_ag_test_cmd_result()
 

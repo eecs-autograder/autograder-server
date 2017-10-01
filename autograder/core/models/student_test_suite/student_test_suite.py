@@ -18,6 +18,8 @@ class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
 class StudentTestSuiteFeedbackConfig(AutograderModel):
     visible = models.BooleanField(default=True)
 
+    show_setup_return_code = models.BooleanField(
+        default=True, help_text="Whether to show the return code from the setup command.")
     show_setup_stdout = models.BooleanField(
         default=False, help_text="Whether to show stdout from the setup command.")
     show_setup_stderr = models.BooleanField(
@@ -30,16 +32,18 @@ class StudentTestSuiteFeedbackConfig(AutograderModel):
         default=False,
         help_text="Whether to show stderr from all runs of the setup command.")
 
-    show_grade_impl_stdout = models.BooleanField(
+    show_grade_buggy_impls_stdout = models.BooleanField(
         default=False,
         help_text="Whether to show stdout from grading all buggy impls.")
-    show_grade_impl_stderr = models.BooleanField(
+    show_grade_buggy_impls_stderr = models.BooleanField(
         default=False,
         help_text="Whether to show stderr from grading all buggy impls.")
 
     show_invalid_test_names = models.BooleanField(
         default=False,
-        help_text="Whether to show the names of student tests that failed the validity check.")
+        help_text="""Whether to show the names of student tests that failed the validity check.
+                     Setting this to true will also include information about whether
+                     invalid test cases exceeded the validity check command's time limit.""")
     show_points = models.BooleanField(
         default=False,
         help_text="Whether to show how many points were awarded.")
@@ -49,12 +53,13 @@ class StudentTestSuiteFeedbackConfig(AutograderModel):
 
     SERIALIZABLE_FIELDS = (
         'visible',
+        'show_setup_return_code',
         'show_setup_stdout',
         'show_setup_stderr',
         'show_validity_check_stdout',
         'show_validity_check_stderr',
-        'show_grade_impl_stdout',
-        'show_grade_impl_stderr',
+        'show_grade_buggy_impls_stdout',
+        'show_grade_buggy_impls_stderr',
         'show_invalid_test_names',
         'show_points',
         'bugs_exposed_fdbk_level',
@@ -62,12 +67,13 @@ class StudentTestSuiteFeedbackConfig(AutograderModel):
 
     EDITABLE_FIELDS = (
         'visible',
+        'show_setup_return_code',
         'show_setup_stdout',
         'show_setup_stderr',
         'show_validity_check_stdout',
         'show_validity_check_stderr',
-        'show_grade_impl_stdout',
-        'show_grade_impl_stderr',
+        'show_grade_buggy_impls_stdout',
+        'show_grade_buggy_impls_stderr',
         'show_invalid_test_names',
         'show_points',
         'bugs_exposed_fdbk_level',
@@ -88,12 +94,13 @@ def make_default_ultimate_submission_command_fdbk() -> int:
 
 def make_max_command_fdbk() -> int:
     return StudentTestSuiteFeedbackConfig.objects.validate_and_create(
+        visible=True,
         show_setup_stdout=True,
         show_setup_stderr=True,
         show_validity_check_stdout=True,
         show_validity_check_stderr=True,
-        show_grade_impl_stdout=True,
-        show_grade_impl_stderr=True,
+        show_grade_buggy_impls_stdout=True,
+        show_grade_buggy_impls_stderr=True,
         show_invalid_test_names=True,
         show_points=True,
         bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.get_max()
@@ -118,6 +125,12 @@ def make_default_grade_buggy_impl_command() -> int:
 
 
 class StudentTestSuite(AutograderModel):
+    """
+    A StudentTestSuite defines a way of grading student-submitted
+    test cases against a set of intentionally buggy implementations
+    of instructor code.
+    """
+
     STUDENT_TEST_NAME_PLACEHOLDER = r'${student_test_name}'
     BUGGY_IMPL_NAME_PLACEHOLDER = r'${buggy_impl_name}'
 
@@ -181,6 +194,7 @@ class StudentTestSuite(AutograderModel):
                      that is to be checked for validity.
                      NOTE: This AGCommand's 'cmd' field must not be blank.
                      """.format(STUDENT_TEST_NAME_PLACEHOLDER))
+
     grade_buggy_impl_command = models.OneToOneField(
         AGCommand,
         related_name='+',

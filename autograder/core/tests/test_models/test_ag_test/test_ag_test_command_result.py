@@ -69,7 +69,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
             'cmd_result_' + str(result.pk) + '_stderr')
         self.assertEqual(expected_stderr_name, result.stderr_filename)
 
-    def test_feedback_calculator_named_ctors(self):
+    def test_feedback_calculator_factory_method(self):
         # check against the actual objects (their pks)
         result = self.make_correct_result()
         self.assertEqual(self.ag_test_command.normal_fdbk_config,

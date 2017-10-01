@@ -221,7 +221,7 @@ def get_submission_dir_basename(submission):
 
 
 def get_result_output_dir(submission):
-    return os.path.join(get_submission_dir(submission),'output')
+    return os.path.join(get_submission_dir(submission), 'output')
 
 
 # -----------------------------------------------------------------------------

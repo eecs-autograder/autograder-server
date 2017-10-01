@@ -7,7 +7,7 @@ from django.db import models
 from autograder.core.models.ag_model_base import ToDictMixin
 import autograder.core.utils as core_ut
 
-from ..ag_model_base import AutograderModel
+from ..ag_command import AGCommandResultBase
 from .ag_test_command import (
     AGTestCommand, AGTestCommandFeedbackConfig, ExpectedReturnCode, ValueFeedbackLevel,
     ExpectedOutputSource)
@@ -15,7 +15,7 @@ from .ag_test_case_result import AGTestCaseResult
 from .feedback_category import FeedbackCategory
 
 
-class AGTestCommandResult(AutograderModel):
+class AGTestCommandResult(AGCommandResultBase):
     """
     This class stores the data from an AGTestCommand
     and provides an interface for serializing the data with different
@@ -33,41 +33,20 @@ class AGTestCommandResult(AutograderModel):
                      A value of None indicates that this AGTestCommandResult
                      is the result of an AGTestSuite's setup command.''')
 
-    return_code = models.IntegerField(blank=True, null=True, default=None,
-                                      help_text='The return code of the completed command.')
-
-    stdout = models.TextField(
-        blank=True, help_text='The stdout contents from running the command.')
-    stderr = models.TextField(
-        blank=True, help_text='The stderr contents from running the command.')
-
-    stdout_truncated = models.BooleanField(
-        blank=True, default=False, help_text="Whether the command's stdout was truncated.")
-    stderr_truncated = models.BooleanField(
-        blank=True, default=False, help_text="Whether the command's stderr was truncated.")
-
-    timed_out = models.BooleanField(
-        blank=True, default=False, help_text='Whether the program exceeded the time limit.')
-
     return_code_correct = models.NullBooleanField(null=True, default=None)
     stdout_correct = models.NullBooleanField(null=True, default=None)
     stderr_correct = models.NullBooleanField(null=True, default=None)
-
-    def open_stdout(self, mode='rb'):
-        return open(self.stdout_filename, mode)
 
     @property
     def stdout_filename(self):
         return _get_cmd_result_stdout_filename(self)
 
-    def open_stderr(self, mode='rb'):
-        return open(self.stderr_filename, mode)
-
     @property
     def stderr_filename(self):
         return _get_cmd_result_stderr_filename(self)
 
-    def get_fdbk(self, fdbk_category: FeedbackCategory):
+    def get_fdbk(self,
+                 fdbk_category: FeedbackCategory) -> 'AGTestCommandResult.FeedbackCalculator':
         return AGTestCommandResult.FeedbackCalculator(self, fdbk_category)
 
     class FeedbackCalculator(ToDictMixin):
@@ -102,14 +81,6 @@ class AGTestCommandResult(AutograderModel):
                 )
 
         @property
-        def fdbk_conf(self):
-            """
-            Returns the FeedbackConfig object that this object was
-            initialized with.
-            """
-            return self._fdbk
-
-        @property
         def pk(self):
             return self._ag_test_command_result.pk
 
@@ -120,6 +91,14 @@ class AGTestCommandResult(AutograderModel):
         @property
         def ag_test_command_pk(self):
             return self._cmd.pk
+
+        @property
+        def fdbk_conf(self) -> FeedbackCategory:
+            """
+            :return: The FeedbackConfig object that this object was
+            initialized with.
+            """
+            return self._fdbk
 
         @property
         def fdbk_settings(self) -> dict:
