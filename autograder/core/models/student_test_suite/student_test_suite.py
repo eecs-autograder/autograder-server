@@ -2,6 +2,7 @@ from django.core import exceptions
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from autograder.core import constants
 from ..ag_model_base import AutograderModel
 from ..project import Project, UploadedFile, ExpectedStudentFilePattern
 from ..ag_command import AGCommand, StdinSource
@@ -107,8 +108,9 @@ def make_max_command_fdbk() -> int:
     ).pk
 
 
-def make_default_ag_command() -> int:
-    return AGCommand.objects.validate_and_create(cmd='true').pk
+def make_default_get_student_test_names_cmd() -> int:
+    return AGCommand.objects.validate_and_create(
+        cmd='true', process_spawn_limit=constants.MAX_PROCESS_LIMIT).pk
 
 
 def make_default_validity_check_command() -> int:
@@ -130,6 +132,10 @@ class StudentTestSuite(AutograderModel):
     test cases against a set of intentionally buggy implementations
     of instructor code.
     """
+
+    class Meta:
+        unique_together = ('name', 'project')
+        order_with_respect_to = 'project'
 
     STUDENT_TEST_NAME_PLACEHOLDER = r'${student_test_name}'
     BUGGY_IMPL_NAME_PLACEHOLDER = r'${buggy_impl_name}'
@@ -175,7 +181,7 @@ class StudentTestSuite(AutograderModel):
         AGCommand,
         related_name='+',
         blank=True,
-        default=make_default_ag_command,
+        default=make_default_get_student_test_names_cmd,
         help_text="""This required command should print out a whitespace-separated
                      list of detected student names. The output of this command will
                      be parsed using Python's str.split().

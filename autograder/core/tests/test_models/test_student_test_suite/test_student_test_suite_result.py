@@ -15,11 +15,12 @@ class StudentTestSuiteResultTestCase(UnitTestBase):
 
     def test_default_init(self):
         result = ag_models.StudentTestSuiteResult.objects.validate_and_create(
-            student_test_suite=self.student_suite, submission=self.submission)
+            student_test_suite=self.student_suite, submission=self.submission
+        )  # type: ag_models.StudentTestSuiteResult
 
         self.assertEqual(self.student_suite, result.student_test_suite)
         self.assertEqual(self.submission, result.submission)
-        self.assertSequenceEqual([], result.valid_tests)
+        self.assertSequenceEqual([], result.student_tests)
         self.assertSequenceEqual([], result.invalid_tests)
         self.assertSequenceEqual([], result.timed_out_tests)
         self.assertSequenceEqual([], result.bugs_exposed)
@@ -82,7 +83,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
         self.student_tests = self.valid_tests + self.invalid_tests + self.timeout_tests
 
-        self.bugs_exposed = self.bug_names[:-1]
+        self.bugs_exposed = self.bug_names
         self.points_awarded = len(self.bugs_exposed) * self.points_per_exposed_bug
 
         self.result = ag_models.StudentTestSuiteResult.objects.validate_and_create(
@@ -132,6 +133,50 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.assertTrue(max_fdbk.show_points)
         self.assertEqual(ag_models.BugsExposedFeedbackLevel.get_max(),
                          max_fdbk.bugs_exposed_fdbk_level)
+
+    def test_points_values_catch_all_bugs(self):
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual(self.points_awarded, fdbk.total_points)
+        self.assertEqual(self.points_possible, fdbk.total_points_possible)
+
+    def test_points_values_catch_some_bugs(self):
+        num_bugs_exposed = len(self.bug_names) // 2
+        self.assertGreater(num_bugs_exposed, 0)
+        self.result.bugs_exposed = self.bug_names[:num_bugs_exposed]
+        self.result.save()
+
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual(num_bugs_exposed * self.points_per_exposed_bug, fdbk.total_points)
+        self.assertEqual(self.points_possible, fdbk.total_points_possible)
+
+    def test_points_values_catch_no_bugs(self):
+        self.result.bugs_exposed = []
+        self.result.save()
+
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual(0, fdbk.total_points)
+        self.assertEqual(self.points_possible, fdbk.total_points_possible)
+
+    def test_points_values_with_max_points_set_catch_all_bugs(self):
+        max_points = self.points_possible // 2
+        self.assertGreater(max_points, 0)
+        self.student_suite.validate_and_update(max_points=max_points)
+
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual(max_points, fdbk.total_points)
+        self.assertEqual(max_points, fdbk.total_points_possible)
+
+    def test_points_values_with_max_points_set_catch_no_bugs(self):
+        max_points = self.points_possible // 2
+        self.assertGreater(max_points, 0)
+        self.student_suite.validate_and_update(max_points=max_points)
+
+        self.result.bugs_exposed = []
+        self.result.save()
+
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.max)
+        self.assertEqual(0, fdbk.total_points)
+        self.assertEqual(max_points, fdbk.total_points_possible)
 
     def test_show_and_hide_setup_return_code(self):
         self.student_suite.normal_fdbk_config.validate_and_update(show_setup_return_code=True)
@@ -247,8 +292,8 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
 
             fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
 
-            self.assertIsNone(fdbk.total_points)
-            self.assertIsNone(fdbk.total_points_possible)
+            self.assertEqual(0, fdbk.total_points)
+            self.assertEqual(0, fdbk.total_points_possible)
 
     def test_no_bugs_exposed_fdbk(self):
         self.student_suite.normal_fdbk_config.validate_and_update(
@@ -258,8 +303,8 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.num_bugs_exposed)
         self.assertIsNone(fdbk.bugs_exposed)
-        self.assertIsNone(fdbk.total_points)
-        self.assertIsNone(fdbk.total_points_possible)
+        self.assertEqual(0, fdbk.total_points)
+        self.assertEqual(0, fdbk.total_points_possible)
 
     def test_show_num_bugs_exposed(self):
         self.student_suite.normal_fdbk_config.validate_and_update(
@@ -293,3 +338,22 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertEqual(max_points, fdbk.total_points)
         self.assertEqual(max_points, fdbk.total_points_possible)
+
+    def test_serialization(self):
+        expected_fields = [
+            'pk',
+            'student_test_suite_name',
+            'student_test_suite_pk',
+            'fdbk_settings',
+            'setup_return_code',
+            'student_tests',
+            'invalid_tests',
+            'timed_out_tests',
+            'num_bugs_exposed',
+            'bugs_exposed',
+            'total_points',
+            'total_points_possible',
+        ]
+
+        serialized = self.result.get_fdbk(ag_models.FeedbackCategory.max).to_dict()
+        self.assertCountEqual(expected_fields, serialized.keys())

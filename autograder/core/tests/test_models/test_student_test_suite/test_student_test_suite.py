@@ -117,6 +117,29 @@ class StudentTestSuiteTestCase(UnitTestBase):
             else:
                 self.assertEqual(value, getattr(student_suite, key))
 
+    def test_suite_ordering(self):
+        suite1 = ag_models.StudentTestSuite.objects.validate_and_create(
+            name='qweiruquerw', project=self.project)
+        suite2 = ag_models.StudentTestSuite.objects.validate_and_create(
+            name='xjvnjadoa', project=self.project)
+
+        self.assertCountEqual([suite1.pk, suite2.pk], self.project.get_studenttestsuite_order())
+
+        self.project.set_studenttestsuite_order([suite2.pk, suite1.pk])
+        self.assertSequenceEqual([suite2.pk, suite1.pk], self.project.get_studenttestsuite_order())
+
+        self.project.set_studenttestsuite_order([suite1.pk, suite2.pk])
+        self.assertSequenceEqual([suite1.pk, suite2.pk], self.project.get_studenttestsuite_order())
+
+    def test_error_name_not_unique(self):
+        name = 'spam'
+        suite1 = ag_models.StudentTestSuite.objects.validate_and_create(
+            name=name, project=self.project)
+
+        with self.assertRaises(exceptions.ValidationError):
+            ag_models.StudentTestSuite.objects.validate_and_create(
+                name=name, project=self.project)
+
     def test_validity_check_cmd_missing_placeholders(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.StudentTestSuite.objects.validate_and_create(

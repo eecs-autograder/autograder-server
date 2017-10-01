@@ -338,13 +338,27 @@ class Submission(ag_model_base.AutograderModel):
 
         @property
         def total_points(self):
-            return sum((ag_test_suite_result.get_fdbk(self._fdbk_category).total_points
-                       for ag_test_suite_result in self._visible_ag_test_suite_results))
+            ag_suite_points = sum(
+                (ag_test_suite_result.get_fdbk(self._fdbk_category).total_points
+                for ag_test_suite_result in self._visible_ag_test_suite_results))
+
+            student_suite_points = sum(
+                (student_test_suite_result.get_fdbk(self._fdbk_category).total_points
+                 for student_test_suite_result in self._visible_student_test_suite_results))
+
+            return ag_suite_points + student_suite_points
 
         @property
         def total_points_possible(self):
-            return sum((ag_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible
-                       for ag_test_suite_result in self._visible_ag_test_suite_results))
+            ag_suite_points = sum(
+                (ag_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible
+                for ag_test_suite_result in self._visible_ag_test_suite_results))
+
+            student_suite_points = sum(
+                (student_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible
+                 for student_test_suite_result in self._visible_student_test_suite_results))
+
+            return ag_suite_points + student_suite_points
 
         @property
         def ag_test_suite_results(self) -> List['AGTestSuiteResult']:
@@ -359,10 +373,26 @@ class Submission(ag_model_base.AutograderModel):
                 lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
                 self._submission.ag_test_suite_results.all())
 
+        @property
+        def student_test_suite_results(self) -> List['StudentTestSuiteResult']:
+            suite_order = list(self._project.get_studenttestsuite_order())
+            results = sorted(self._visible_student_test_suite_results,
+                             key=lambda result: suite_order.index(result.student_test_suite.pk))
+            return list(results)
+
+        @property
+        def _visible_student_test_suite_results(self) -> Iterable['StudentTestSuiteResult']:
+            return filter(
+                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
+                self._submission.student_test_suite_results.all())
+
         def to_dict(self):
             result = super().to_dict()
             result['ag_test_suite_results'] = [result.get_fdbk(self._fdbk_category).to_dict()
-                                               for result in self.ag_test_suite_results]
+                                               for result in result['ag_test_suite_results']]
+            result['student_test_suite_results'] = [
+                result.get_fdbk(self._fdbk_category).to_dict()
+                for result in result['student_test_suite_results']]
             return result
 
         SERIALIZABLE_FIELDS = (
@@ -370,4 +400,5 @@ class Submission(ag_model_base.AutograderModel):
             'total_points',
             'total_points_possible',
             'ag_test_suite_results',
+            'student_test_suite_results'
         )

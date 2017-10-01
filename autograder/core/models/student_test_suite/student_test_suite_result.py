@@ -17,14 +17,11 @@ import autograder.core.utils as core_ut
 
 class StudentTestSuiteResult(AutograderModel):
     student_test_suite = models.ForeignKey(StudentTestSuite)
-    submission = models.ForeignKey(Submission)
+    submission = models.ForeignKey(Submission, related_name='student_test_suite_results')
 
     student_tests = ag_fields.StringArrayField(
         blank=True, default=list,
         help_text="The names of discovered student test cases.")
-    valid_tests = ag_fields.StringArrayField(
-        blank=True, default=list,
-        help_text="The names of student test cases that passed the validity check.")
     invalid_tests = ag_fields.StringArrayField(
         blank=True, default=list,
         help_text="The names of student test cases that failed the validity check.")
@@ -226,22 +223,34 @@ class StudentTestSuiteResult(AutograderModel):
 
         @property
         def total_points(self) -> int:
-            if self.total_points_possible is None:
-                return None
+            if self.num_bugs_exposed is None:
+                return 0
 
             return min(self.total_points_possible,
                        self.num_bugs_exposed * self._student_test_suite.points_per_exposed_bug)
 
         @property
         def total_points_possible(self) -> int:
-            if not self._fdbk.show_points:
-                return None
-
-            if self.num_bugs_exposed is None:
-                return None
+            if not self._fdbk.show_points or self.num_bugs_exposed is None:
+                return 0
 
             if self._student_test_suite.max_points is not None:
                 return self._student_test_suite.max_points
 
             return (len(self._student_test_suite.buggy_impl_names) *
                     self._student_test_suite.points_per_exposed_bug)
+
+        SERIALIZABLE_FIELDS = (
+            'pk',
+            'student_test_suite_name',
+            'student_test_suite_pk',
+            'fdbk_settings',
+            'setup_return_code',
+            'student_tests',
+            'invalid_tests',
+            'timed_out_tests',
+            'num_bugs_exposed',
+            'bugs_exposed',
+            'total_points',
+            'total_points_possible',
+        )
