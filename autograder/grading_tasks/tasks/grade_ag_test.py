@@ -3,133 +3,22 @@ import os
 import shlex
 import shutil
 import tempfile
-import time
 import traceback
 import uuid
 from io import FileIO
+from typing import List
 from typing import Tuple
 
-from django.conf import settings
-from django.db import transaction
-
 import celery
+
+from autograder_sandbox import AutograderSandbox
+from autograder_sandbox import SANDBOX_USERNAME
+from django.db import transaction
 
 import autograder.core.models as ag_models
 from autograder.core import constants
 import autograder.core.utils as core_ut
-from autograder_sandbox import AutograderSandbox, SANDBOX_USERNAME
-
-
-class MaxRetriesExceeded(Exception):
-    pass
-
-
-def retry(max_num_retries,
-          retry_delay_start=0,
-          retry_delay_end=0,
-          retry_delay_step=None):
-    """
-    Returns a decorator that applies a synchronous retry loop to the
-    decorated function.
-
-    :param max_num_retries: The maximum number of times the decorated
-        function can be retried before raising an exception. This
-        parameter must be greater than zero.
-
-    :param retry_delay_start: The delay time, in seconds, before retrying
-        the function for the first time.
-
-    :param retry_delay_end: The delay time, in seconds, before retrying
-        the function for the last time.
-
-    :param retry_delay_step: The number of seconds to increase the retry
-        delay for each consecutive retry. If None, defaults to
-        (retry_delay_end - retry_delay_start) / max_num_retries
-    """
-    if retry_delay_step is None:
-        retry_delay_step = (retry_delay_end - retry_delay_start) / max_num_retries
-
-    def decorator(func):
-        def func_with_retry(*args, **kwargs):
-            num_retries_remaining = max_num_retries
-            retry_delay = retry_delay_start
-            latest_exception = None
-            while num_retries_remaining >= 0:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:  # TODO: handle certain database errors differently
-                    print('Error in', func.__name__)
-                    traceback.print_exc()
-                    print('Will try again in', retry_delay, 'seconds')
-                    num_retries_remaining -= 1
-                    time.sleep(retry_delay)
-                    retry_delay += retry_delay_step
-                    latest_exception = traceback.format_exc()
-
-            raise MaxRetriesExceeded(latest_exception)
-
-        return func_with_retry
-
-    return decorator
-
-
-# Specialization of the "retry" decorator to be used for synchronous
-# tasks that should always succeed unless there is a database issue.
-retry_should_recover = retry(max_num_retries=60,
-                             retry_delay_start=1, retry_delay_end=60)
-# Specialization of the "retry" to be used for grading non-deferred
-# autograder test cases.
-retry_ag_test_cmd = retry(max_num_retries=settings.AG_TEST_MAX_RETRIES,
-                          retry_delay_start=settings.AG_TEST_MIN_RETRY_DELAY,
-                          retry_delay_end=settings.AG_TEST_MAX_RETRY_DELAY)
-
-
-@celery.shared_task(acks_late=True)
-def grade_submission(submission_pk):
-    try:
-        submission = _mark_submission_as_being_graded(submission_pk)
-        if submission is None:
-            return
-
-        project = submission.submission_group.project
-
-        @retry_should_recover
-        def load_non_deferred_suites():
-            return list(project.ag_test_suites.filter(deferred=False))
-
-        for suite in load_non_deferred_suites():
-            grade_ag_test_suite_impl(suite, submission)
-
-        @retry_should_recover
-        def mark_as_waiting_for_deferred():
-            submission.status = (
-                ag_models.Submission.GradingStatus.waiting_for_deferred)
-            submission.save()
-
-        mark_as_waiting_for_deferred()
-
-        @retry_should_recover
-        def load_deferred_suites():
-            return list(project.ag_test_suites.filter(deferred=True))
-
-        signatures = [grade_deferred_ag_test_suite.s(ag_test_suite.pk, submission_pk)
-                      for ag_test_suite in load_deferred_suites()]
-        if not signatures:
-            _mark_submission_as_finished_impl(submission_pk)
-            return
-
-        if len(signatures) == 1:
-            signatures[0].apply_async(
-                link_error=on_chord_error.s(),
-                link=mark_submission_as_finished.s(submission_pk))
-        else:
-            callback = mark_submission_as_finished.s(submission_pk).on_error(on_chord_error.s())
-            celery.chord(signatures)(callback)
-    except Exception:
-        print('Error grading submission')
-        traceback.print_exc()
-        _mark_submission_as_error(submission_pk, traceback.format_exc())
-        raise
+from .utils import retry_should_recover, retry_ag_test_cmd, mark_submission_as_error
 
 
 @celery.shared_task(bind=True, queue='deferred', max_retries=1, acks_late=True)
@@ -145,7 +34,7 @@ def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
     except Exception:
         print('Error grading deferred test')
         traceback.print_exc()
-        _mark_submission_as_error(submission_pk, traceback.format_exc())
+        mark_submission_as_error(submission_pk, traceback.format_exc())
         raise
 
 
@@ -231,8 +120,8 @@ def _run_suite_setup(sandbox: AutograderSandbox,
 
 @retry_ag_test_cmd
 def _run_suite_teardown(sandbox: AutograderSandbox,
-                     ag_test_suite: ag_models.AGTestSuite,
-                     suite_result: ag_models.AGTestSuiteResult):
+                        ag_test_suite: ag_models.AGTestSuite,
+                        suite_result: ag_models.AGTestSuiteResult):
     if not ag_test_suite.teardown_suite_cmd:
         return
 
@@ -404,90 +293,3 @@ class FileCloser:
         if file_ is None:
             return
         self._files_to_close.append(file_)
-
-
-@retry_should_recover
-def _mark_submission_as_being_graded(submission_pk):
-    with transaction.atomic():
-        submission = ag_models.Submission.objects.select_for_update().select_related(
-            'submission_group__project').get(pk=submission_pk)
-        if (submission.status ==
-                ag_models.Submission.GradingStatus.removed_from_queue):
-            print('submission {} has been removed '
-                  'from the queue'.format(submission.pk))
-            return None
-
-        submission.status = ag_models.Submission.GradingStatus.being_graded
-        submission.save()
-        return submission
-
-
-@celery.shared_task(queue='small_tasks', acks_late=True)
-def mark_submission_as_finished(chord_results, submission_pk):
-    _mark_submission_as_finished_impl(submission_pk)
-
-
-@celery.shared_task(queue='small_tasks', acks_late=True)
-def on_chord_error(request, exc, traceback):
-    print('Error in deferred test case chord. '
-          'This most likely means that a deferred test '
-          'case exceeded the retry limit.')
-    print(traceback)
-    print(exc)
-
-
-@retry_should_recover
-def _mark_submission_as_finished_impl(submission_pk):
-    ag_models.Submission.objects.filter(
-        pk=submission_pk
-    ).update(status=ag_models.Submission.GradingStatus.finished_grading)
-
-
-@retry_should_recover
-def _mark_submission_as_error(submission_pk, error_msg):
-    with transaction.atomic():
-        submission = ag_models.Submission.objects.select_for_update().filter(
-            pk=submission_pk).update(status=ag_models.Submission.GradingStatus.error,
-                                     error_msg=error_msg)
-
-
-@celery.shared_task
-def queue_submissions():
-    with transaction.atomic():
-        to_queue = list(ag_models.Submission.objects.select_for_update().filter(
-            status=ag_models.Submission.GradingStatus.received).reverse())
-        print(to_queue)
-
-        for submission in to_queue:
-            print('adding submission{} to queue for grading'.format(submission.pk))
-            submission.status = ag_models.Submission.GradingStatus.queued
-            submission.save()
-            grade_submission.apply_async([submission.pk],
-                                         queue=_get_submission_queue_name(submission))
-
-        print('queued {} submissions'.format(to_queue))
-
-
-@celery.shared_task(acks_late=True, autoretry_for=(Exception,))
-def register_project_queues(worker_names=None, project_pks=None):
-    from autograder.celery import app
-
-    if not worker_names:
-        worker_names = [worker_name for worker_name in app.control.inspect().active()
-                        if worker_name.startswith(settings.SUBMISSION_WORKER_PREFIX)]
-
-    print('worker names', worker_names)
-    if not worker_names:
-        return
-
-    if not project_pks:
-        project_pks = [project.pk for project in ag_models.Project.objects.all()]
-
-    print('project pks:', project_pks)
-    for pk in project_pks:
-        res = app.control.add_consumer('project{}'.format(pk), destination=worker_names)
-        print(res)
-
-
-def _get_submission_queue_name(submission: ag_models.Submission):
-    return 'project{}'.format(submission.submission_group.project_id)
