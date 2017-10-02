@@ -1,24 +1,21 @@
-import fnmatch
-import os
-import shlex
 import shutil
 import tempfile
 import traceback
 import uuid
 from io import FileIO
-from typing import List
 from typing import Tuple
 
 import celery
 
 from autograder_sandbox import AutograderSandbox
-from autograder_sandbox import SANDBOX_USERNAME
 from django.db import transaction
 
 import autograder.core.models as ag_models
 from autograder.core import constants
 import autograder.core.utils as core_ut
-from .utils import retry_should_recover, retry_ag_test_cmd, mark_submission_as_error
+from .utils import (
+    retry_should_recover, retry_ag_test_cmd, mark_submission_as_error, add_files_to_sandbox,
+    run_command, FileCloser)
 
 
 @celery.shared_task(bind=True, queue='deferred', max_retries=1, acks_late=True)
@@ -58,7 +55,7 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
     print(ag_test_suite.docker_image_to_use)
     print(sandbox.docker_image)
     with sandbox:
-        _add_files_to_sandbox(sandbox, ag_test_suite, submission)
+        add_files_to_sandbox(sandbox, ag_test_suite, submission)
 
         print('Running setup for', ag_test_suite.name)
         _run_suite_setup(sandbox, ag_test_suite, suite_result)
@@ -70,29 +67,6 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
         _run_suite_teardown(sandbox, ag_test_suite, suite_result)
 
 
-def _add_files_to_sandbox(sandbox: AutograderSandbox,
-                          ag_test_suite: ag_models.AGTestSuite,
-                          submission: ag_models.Submission):
-    student_files_to_add = []
-    for student_file in ag_test_suite.student_files_needed.all():
-        matching_files = fnmatch.filter(submission.submitted_filenames,
-                                        student_file.pattern)
-        student_files_to_add += [
-            os.path.join(core_ut.get_submission_dir(submission), filename)
-            for filename in matching_files]
-
-    if student_files_to_add:
-        sandbox.add_files(*student_files_to_add)
-
-    project_files_to_add = [file_.abspath for file_ in ag_test_suite.project_files_needed.all()]
-    if project_files_to_add:
-        owner_and_read_only = {
-            'owner': 'root' if ag_test_suite.read_only_project_files else SANDBOX_USERNAME,
-            'read_only': ag_test_suite.read_only_project_files
-        }
-        sandbox.add_files(*project_files_to_add, **owner_and_read_only)
-
-
 @retry_ag_test_cmd
 def _run_suite_setup(sandbox: AutograderSandbox,
                      ag_test_suite: ag_models.AGTestSuite,
@@ -100,14 +74,15 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     if not ag_test_suite.setup_suite_cmd:
         return
 
-    setup_result = sandbox.run_command(shlex.split(ag_test_suite.setup_suite_cmd),
-                                       as_root=False,
-                                       max_num_processes=constants.MAX_PROCESS_LIMIT,
-                                       max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-                                       max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                       timeout=constants.MAX_SUBPROCESS_TIMEOUT,
-                                       truncate_stdout=constants.MAX_OUTPUT_LENGTH,
-                                       truncate_stderr=constants.MAX_OUTPUT_LENGTH)
+    # TODO: Once Fall 2017 semester ends, refactor AGTestSuite to have setup
+    # and teardown be transparent one-to-one with AGCommand
+    setup_cmd = ag_models.AGCommand(
+        cmd=ag_test_suite.setup_suite_cmd,
+        process_spawn_limit=constants.MAX_PROCESS_LIMIT,
+        stack_size_limit=constants.MAX_STACK_SIZE_LIMIT,
+        virtual_memory_limit=constants.MAX_VIRTUAL_MEM_LIMIT,
+        time_limit=constants.MAX_SUBPROCESS_TIMEOUT)
+    setup_result = run_command(sandbox, setup_cmd.to_dict())
     suite_result.setup_return_code = setup_result.return_code
     suite_result.setup_timed_out = setup_result.timed_out
     suite_result.setup_stdout_truncated = setup_result.stdout_truncated
@@ -125,14 +100,15 @@ def _run_suite_teardown(sandbox: AutograderSandbox,
     if not ag_test_suite.teardown_suite_cmd:
         return
 
-    teardown_result = sandbox.run_command(shlex.split(ag_test_suite.teardown_suite_cmd),
-                                          as_root=False,
-                                          max_num_processes=constants.MAX_PROCESS_LIMIT,
-                                          max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-                                          max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-                                          timeout=constants.MAX_SUBPROCESS_TIMEOUT,
-                                          truncate_stdout=constants.MAX_OUTPUT_LENGTH,
-                                          truncate_stderr=constants.MAX_OUTPUT_LENGTH)
+    # TODO: Once Fall 2017 semester ends, refactor AGTestSuite to have setup
+    # and teardown be transparent one-to-one with AGCommand
+    teardown_cmd = ag_models.AGCommand(
+        cmd=ag_test_suite.teardown_suite_cmd,
+        process_spawn_limit=constants.MAX_PROCESS_LIMIT,
+        stack_size_limit=constants.MAX_STACK_SIZE_LIMIT,
+        virtual_memory_limit=constants.MAX_VIRTUAL_MEM_LIMIT,
+        time_limit=constants.MAX_SUBPROCESS_TIMEOUT)
+    teardown_result = run_command(sandbox, teardown_cmd.to_dict())
     suite_result.teardown_return_code = teardown_result.return_code
     suite_result.teardown_timed_out = teardown_result.timed_out
     suite_result.teardown_stdout_truncated = teardown_result.stdout_truncated
@@ -166,25 +142,14 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                                ag_test_cmd: ag_models.AGTestCommand,
                                case_result: ag_models.AGTestCaseResult):
     with FileCloser() as file_closer:
-        stdin = _get_stdin_file(ag_test_cmd, case_result)
-        file_closer.register_file(stdin)
+        run_result = run_command(sandbox, ag_test_cmd.to_dict(), case_result.ag_test_suite_result)
 
-        result_data = {}
-
-        run_result = sandbox.run_command(shlex.split(ag_test_cmd.cmd),
-                                         stdin=stdin,
-                                         as_root=False,
-                                         max_num_processes=ag_test_cmd.process_spawn_limit,
-                                         max_stack_size=ag_test_cmd.stack_size_limit,
-                                         max_virtual_memory=ag_test_cmd.virtual_memory_limit,
-                                         timeout=ag_test_cmd.time_limit,
-                                         truncate_stdout=constants.MAX_OUTPUT_LENGTH,
-                                         truncate_stderr=constants.MAX_OUTPUT_LENGTH)
-
-        result_data['return_code'] = run_result.return_code
-        result_data['timed_out'] = run_result.timed_out
-        result_data['stdout_truncated'] = run_result.stdout_truncated
-        result_data['stderr_truncated'] = run_result.stderr_truncated
+        result_data = {
+            'return_code': run_result.return_code,
+            'timed_out': run_result.timed_out,
+            'stdout_truncated': run_result.stdout_truncated,
+            'stderr_truncated': run_result.stderr_truncated,
+        }
 
         if ag_test_cmd.expected_return_code == ag_models.ExpectedReturnCode.zero:
             result_data['return_code_correct'] = run_result.return_code == 0
@@ -231,23 +196,6 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
         save_ag_test_cmd_result()
 
 
-def _get_stdin_file(ag_test_cmd: ag_models.AGTestCommand, case_result: ag_models.AGTestCaseResult):
-    if ag_test_cmd.stdin_source == ag_models.StdinSource.text:
-        stdin = tempfile.NamedTemporaryFile()
-        stdin.write(ag_test_cmd.stdin_text.encode())
-        stdin.flush()
-        stdin.seek(0)
-        return stdin
-    elif ag_test_cmd.stdin_source == ag_models.StdinSource.project_file:
-        return ag_test_cmd.stdin_project_file.open('rb')
-    elif ag_test_cmd.stdin_source == ag_models.StdinSource.setup_stdout:
-        return case_result.ag_test_suite_result.open_setup_stdout('rb')
-    elif ag_test_cmd.stdin_source == ag_models.StdinSource.setup_stderr:
-        return case_result.ag_test_suite_result.open_setup_stderr('rb')
-    else:
-        return None
-
-
 def _get_expected_stdout_file_and_name(
         ag_test_cmd: ag_models.AGTestCommand) -> Tuple[FileIO, str]:
     expected_stdout = None
@@ -276,20 +224,3 @@ def _get_expected_stderr_file_and_name(
         expected_stderr_filename = ag_test_cmd.expected_stderr_project_file.abspath
 
     return expected_stderr, expected_stderr_filename
-
-
-class FileCloser:
-    def __init__(self):
-        self._files_to_close = []  # type: List[FileIO]
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        for file_ in self._files_to_close:
-            file_.close()
-
-    def register_file(self, file_: FileIO):
-        if file_ is None:
-            return
-        self._files_to_close.append(file_)

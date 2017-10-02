@@ -12,6 +12,9 @@ from ..submission import Submission
 
 
 class AGTestSuiteResult(AutograderModel):
+    class Meta:
+        unique_together = ('ag_test_suite', 'submission')
+
     ag_test_suite = models.ForeignKey(
         AGTestSuite, help_text='The AGTestSuite that this result belongs to.')
 

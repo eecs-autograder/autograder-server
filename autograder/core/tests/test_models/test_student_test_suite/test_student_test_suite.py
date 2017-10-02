@@ -1,5 +1,6 @@
 from django.core import exceptions
 
+from autograder.core import constants
 from autograder.utils.testing import UnitTestBase
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -32,6 +33,8 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertEqual(0, student_suite.points_per_exposed_bug)
         self.assertIsNone(student_suite.max_points)
         self.assertFalse(student_suite.deferred)
+        self.assertEqual(constants.SupportedImages.default, student_suite.docker_image_to_use)
+        self.assertFalse(student_suite.allow_network_access)
 
         self.assertIsInstance(student_suite.normal_fdbk_config,
                               ag_models.StudentTestSuiteFeedbackConfig)
@@ -77,6 +80,8 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'points_per_exposed_bug': 42,
             'max_points': 462,
             'deferred': True,
+            'docker_image_to_use': constants.SupportedImages.eecs280,
+            'allow_network_access': True,
             'normal_fdbk_config': {
                 'bugs_exposed_fdbk_level': (
                     ag_models.BugsExposedFeedbackLevel.num_bugs_exposed.value),
@@ -245,6 +250,8 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'points_per_exposed_bug',
             'max_points',
             'deferred',
+            'docker_image_to_use',
+            'allow_network_access',
             'normal_fdbk_config',
             'ultimate_submission_fdbk_config',
             'past_limit_submission_fdbk_config',

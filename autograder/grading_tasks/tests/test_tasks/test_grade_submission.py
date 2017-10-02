@@ -76,6 +76,12 @@ class GradeSubmissionTestCase(UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
+    def test_project_has_one_student_test_suite_only(self):
+        self.fail()
+
+    def test_project_has_ag_and_student_test_suite(self):
+        self.fail()
+
     def test_non_default_docker_image(self, *args):
         suite = obj_build.make_ag_test_suite(
             self.project, docker_image_to_use=constants.SupportedImages.eecs490)

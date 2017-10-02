@@ -233,6 +233,16 @@ class StudentTestSuite(AutograderModel):
                      Deferred suites that have yet to be graded do not prevent members
                      of a group from submitting again.''')
 
+    docker_image_to_use = ag_fields.EnumField(
+        constants.SupportedImages,
+        default=constants.SupportedImages.default,
+        help_text="An identifier for the Docker image that the sandbox should be created from.")
+
+    allow_network_access = models.BooleanField(
+        default=False,
+        help_text='''Specifies whether the sandbox should allow commands run inside of it to
+                     make network calls outside of the sandbox.''')
+
     normal_fdbk_config = models.OneToOneField(
         StudentTestSuiteFeedbackConfig, default=make_default_command_fdbk,
         related_name='+',
@@ -320,6 +330,8 @@ class StudentTestSuite(AutograderModel):
         'max_points',
 
         'deferred',
+        'docker_image_to_use',
+        'allow_network_access',
 
         'normal_fdbk_config',
         'ultimate_submission_fdbk_config',
@@ -346,6 +358,8 @@ class StudentTestSuite(AutograderModel):
         'max_points',
 
         'deferred',
+        'docker_image_to_use',
+        'allow_network_access',
 
         'normal_fdbk_config',
         'ultimate_submission_fdbk_config',

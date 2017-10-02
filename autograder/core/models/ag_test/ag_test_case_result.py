@@ -9,6 +9,9 @@ from .feedback_category import FeedbackCategory
 
 
 class AGTestCaseResult(AutograderModel):
+    class Meta:
+        unique_together = ('ag_test_case', 'ag_test_suite_result')
+
     ag_test_case = models.ForeignKey(
         AGTestCase, related_name='related_ag_test_case_results',
         help_text='The AGTestCase that this result belongs to.')

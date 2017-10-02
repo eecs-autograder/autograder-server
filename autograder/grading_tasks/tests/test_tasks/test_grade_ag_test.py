@@ -509,8 +509,10 @@ sys.stderr.flush()
         }
         run_command_mock.assert_has_calls([
             mock.call(shlex.split(self.ag_test_suite.setup_suite_cmd),
+                      stdin=None,
                       as_root=False, **expected_setup_and_teardown_resource_kwargs),
             mock.call(shlex.split(cmd.cmd), stdin=None, as_root=False, **expected_cmd_args),
             mock.call(shlex.split(self.ag_test_suite.teardown_suite_cmd),
+                      stdin=None,
                       as_root=False, **expected_setup_and_teardown_resource_kwargs)
         ])

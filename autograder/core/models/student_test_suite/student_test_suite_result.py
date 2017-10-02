@@ -16,6 +16,10 @@ import autograder.core.utils as core_ut
 
 
 class StudentTestSuiteResult(AutograderModel):
+
+    class Meta:
+        unique_together = ('student_test_suite', 'submission')
+
     student_test_suite = models.ForeignKey(StudentTestSuite)
     submission = models.ForeignKey(Submission, related_name='student_test_suite_results')
 

@@ -4,6 +4,8 @@ import celery
 from django.db import transaction
 
 import autograder.core.models as ag_models
+from .grade_student_test_suite import (
+    grade_student_test_suite_impl, grade_deferred_student_test_suite)
 from .grade_ag_test import grade_ag_test_suite_impl, grade_deferred_ag_test_suite
 from .utils import retry_should_recover, mark_submission_as_error
 
@@ -15,16 +17,21 @@ def grade_submission(submission_pk):
         if submission is None:
             return
 
-        project = submission.submission_group.project
+        project = submission.submission_group.project  # type: ag_models.Project
 
         @retry_should_recover
-        def load_non_deferred_suites():
+        def load_non_deferred_ag_suites():
             return list(project.ag_test_suites.filter(deferred=False))
 
-        for suite in load_non_deferred_suites():
+        for suite in load_non_deferred_ag_suites():
             grade_ag_test_suite_impl(suite, submission)
 
-        # FIXME: grade non-deferred student test suites
+        @retry_should_recover
+        def load_non_deferred_student_suites():
+            return list(project.student_test_suites.filter(deferred=False))
+
+        for suite in load_non_deferred_student_suites():
+            grade_student_test_suite_impl(suite, submission)
 
         @retry_should_recover
         def mark_as_waiting_for_deferred():
@@ -35,12 +42,20 @@ def grade_submission(submission_pk):
         mark_as_waiting_for_deferred()
 
         @retry_should_recover
-        def load_deferred_suites():
+        def load_deferred_ag_suites():
             return list(project.ag_test_suites.filter(deferred=True))
 
-        signatures = [grade_deferred_ag_test_suite.s(ag_test_suite.pk, submission_pk)
-                      for ag_test_suite in load_deferred_suites()]
-        # FIXME: add student test suites to deferred grading signatures
+        ag_suite_signatures = [grade_deferred_ag_test_suite.s(ag_test_suite.pk, submission_pk)
+                               for ag_test_suite in load_deferred_ag_suites()]
+
+        @retry_should_recover
+        def load_deferred_student_suites():
+            return list(project.student_test_suites.filter(deferred=True))
+
+        student_suite_signatures = [grade_deferred_student_test_suite.s(suite.pk, submission.pk)
+                                    for suite in load_deferred_student_suites()]
+
+        signatures = ag_suite_signatures + student_suite_signatures
         if not signatures:
             _mark_submission_as_finished_impl(submission_pk)
             return
