@@ -224,6 +224,10 @@ def get_result_output_dir(submission):
     return os.path.join(get_submission_dir(submission), 'output')
 
 
+def misc_cmd_output_dir():
+    return os.path.join(settings.MEDIA_ROOT, 'misc_cmd_output')
+
+
 # -----------------------------------------------------------------------------
 
 

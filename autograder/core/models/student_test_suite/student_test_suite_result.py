@@ -15,6 +15,10 @@ from ..submission import Submission
 import autograder.core.utils as core_ut
 
 
+def _make_get_test_names_result_default() -> int:
+    return AGCommandResult.objects.validate_and_create().pk
+
+
 class StudentTestSuiteResult(AutograderModel):
 
     class Meta:
@@ -38,7 +42,10 @@ class StudentTestSuiteResult(AutograderModel):
         help_text="""The names of instructor buggy implementations that were exposed
                      by the student's test cases.""")
 
-    setup_result = models.OneToOneField(AGCommandResult, blank=True, null=True, default=None)
+    setup_result = models.OneToOneField(
+        AGCommandResult, blank=True, null=True, default=None, related_name='+')
+    get_test_names_result = models.OneToOneField(
+        AGCommandResult, default=_make_get_test_names_result_default, related_name='+')
 
     def open_validity_check_stdout(self, mode='rb'):
         return open(self.validity_check_stdout_filename, mode)
@@ -62,7 +69,7 @@ class StudentTestSuiteResult(AutograderModel):
     @property
     def grade_buggy_impls_stdout_filename(self):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'student_suite_result_{}_buggy_impls_stdout'.format(self.pk))
+                            'student_suite_result_{}_grade_buggy_impls_stdout'.format(self.pk))
 
     def open_grade_buggy_impls_stderr(self, mode='rb'):
         return open(self.grade_buggy_impls_stderr_filename, mode)
@@ -70,7 +77,7 @@ class StudentTestSuiteResult(AutograderModel):
     @property
     def grade_buggy_impls_stderr_filename(self):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
-                            'student_suite_result_{}_buggy_impls_stderr'.format(self.pk))
+                            'student_suite_result_{}_grade_buggy_impls_stderr'.format(self.pk))
 
     def get_fdbk(self,
                  fdbk_category: FeedbackCategory) -> 'StudentTestSuiteResult.FeedbackCalculator':
@@ -153,7 +160,7 @@ class StudentTestSuiteResult(AutograderModel):
             if self._student_test_suite.setup_command is None:
                 return None
 
-            return self._student_test_suite_result.setup_result.open_stdout()
+            return open(self._student_test_suite_result.setup_result.stdout_filename, 'rb')
 
         @property
         def setup_stderr(self) -> FileIO:
@@ -163,7 +170,7 @@ class StudentTestSuiteResult(AutograderModel):
             if self._student_test_suite.setup_command is None:
                 return None
 
-            return self._student_test_suite_result.setup_result.open_stderr()
+            return open(self._student_test_suite_result.setup_result.stderr_filename, 'rb')
 
         @property
         def student_tests(self) -> Sequence[str]:

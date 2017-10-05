@@ -58,7 +58,7 @@ class EECS280StyleStudentTestGradingTestCase(UnitTestBase):
                 'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             grade_buggy_impl_command={
-                'cmd': 'make CPPFLAGS=-D${buggy_impl_name} ${student_test_name}.with_buggy_impl',
+                'cmd': 'make valid_student_tests="${valid_student_test_names}" ${buggy_impl_name}.buggy_impl',
                 'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             points_per_exposed_bug=1)  # type: ag_models.StudentTestSuite
@@ -88,24 +88,33 @@ class EECS280StyleStudentTestGradingTestCase(UnitTestBase):
         self.assertCountEqual(self.timeout_tests, result.timed_out_tests)
         self.assertCountEqual(self.bugs_exposed, result.bugs_exposed)
 
-        with result.setup_result.open_stdout() as f:
+        self.assertEqual(0, result.get_test_names_result.return_code)
+
+        with open(result.get_test_names_result.stdout_filename, 'r') as f:
+            print('get_test_names_result.stdout_filename')
+            print(f.read())
+        with open(result.get_test_names_result.stderr_filename, 'r') as f:
+            print('get_test_names_result.stderr_filename')
+            print(f.read())
+
+        with open(result.setup_result.stdout_filename, 'r') as f:
             print('setup_result.open_stdout')
-            print(f.read().decode())
-        with result.setup_result.open_stderr() as f:
+            print(f.read())
+        with open(result.setup_result.stderr_filename, 'r') as f:
             print('setup_result.open_stderr')
-            print(f.read().decode())
-        with result.open_validity_check_stdout() as f:
+            print(f.read())
+        with result.open_validity_check_stdout('r') as f:
             print('open_validity_check_stdout')
-            print(f.read().decode())
-        with result.open_validity_check_stderr() as f:
+            print(f.read())
+        with result.open_validity_check_stderr('r') as f:
             print('open_validity_check_stderr')
-            print(f.read().decode())
-        with result.open_grade_buggy_impls_stdout() as f:
+            print(f.read())
+        with result.open_grade_buggy_impls_stdout('r') as f:
             print('open_grade_buggy_impls_stdout')
-            print(f.read().decode())
-        with result.open_grade_buggy_impls_stderr() as f:
+            print(f.read())
+        with result.open_grade_buggy_impls_stderr('r') as f:
             print('open_grade_buggy_impls_stderr')
-            print(f.read().decode())
+            print(f.read())
 
     def test_grade_deferred(self, *args):
         self.student_suite.validate_and_update(deferred=True)
@@ -155,4 +164,10 @@ class EECS280StyleStudentTestGradingTestCase(UnitTestBase):
         self.fail()
 
     def test_no_setup_command(self, *args):
+        self.fail()
+
+    def test_get_test_names_stdout_and_stderr(self, *args):
+        self.fail()
+
+    def test_get_test_names_return_code_nonzero(self, *args):
         self.fail()

@@ -1,7 +1,9 @@
 import shutil
+import tempfile
 import traceback
 import uuid
-from typing import List, Tuple
+from io import FileIO
+from typing import List
 
 import celery
 from autograder_sandbox import AutograderSandbox
@@ -50,14 +52,18 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
             print('Running setup for', student_test_suite.name)
             setup_run_result = run_command(sandbox, student_test_suite.setup_command.to_dict())
             if setup_run_result.return_code != 0:
-                _save_results(student_test_suite, submission,
-                              setup_run_result, [], [], [], [], [], [])
+                _save_results(student_test_suite, submission, setup_run_result, [], [], [], [])
                 return
         else:
             setup_run_result = None
 
         get_test_names_result = run_command(
             sandbox, student_test_suite.get_student_test_names_command.to_dict())
+
+        if get_test_names_result.return_code != 0:
+            _save_results(student_test_suite, submission, setup_run_result,
+                          get_test_names_run_result=get_test_names_result)
+            return
         student_tests = (
             get_test_names_result.stdout.read().decode(errors='backslashreplace').split())
 
@@ -65,8 +71,8 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
         invalid_tests = []
         timed_out_tests = []
 
-        validity_check_run_results = []
-
+        validity_check_stdout = tempfile.TemporaryFile()
+        validity_check_stderr = tempfile.TemporaryFile()
         for test in student_tests:
             cmd_kwargs = student_test_suite.student_test_validity_check_command.to_dict()
             concrete_cmd = cmd_kwargs['cmd'].replace(
@@ -74,7 +80,11 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
             cmd_kwargs['cmd'] = concrete_cmd
 
             validity_run_result = run_command(sandbox, cmd_kwargs)
-            validity_check_run_results.append((test, validity_run_result))
+            line = '\n------ {} ------\n'.format(test).encode()
+            validity_check_stdout.write(line)
+            validity_check_stderr.write(line)
+            shutil.copyfileobj(validity_run_result.stdout, validity_check_stdout)
+            shutil.copyfileobj(validity_run_result.stderr, validity_check_stderr)
 
             if validity_run_result.return_code == 0:
                 valid_tests.append(test)
@@ -85,29 +95,35 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
                 timed_out_tests.append(test)
 
         exposed_bugs = []
-        buggy_impl_run_results = []
 
+        buggy_impls_stdout = tempfile.TemporaryFile()
+        buggy_impls_stderr = tempfile.TemporaryFile()
         for bug in student_test_suite.buggy_impl_names:
-            for test in valid_tests:
-                cmd_kwargs = student_test_suite.grade_buggy_impl_command.to_dict()
-                concrete_cmd = cmd_kwargs['cmd'].replace(
-                    ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, test
-                ).replace(ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
-                print(concrete_cmd)
-                cmd_kwargs['cmd'] = concrete_cmd
+            cmd_kwargs = student_test_suite.grade_buggy_impl_command.to_dict()
+            concrete_cmd = cmd_kwargs['cmd'].replace(
+                ag_models.StudentTestSuite.VALID_STUDENT_TEST_NAMES_PLACEHOLDER,
+                ' '.join(valid_tests)
+            ).replace(ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
+            cmd_kwargs['cmd'] = concrete_cmd
 
-                buggy_impl_run_result = run_command(sandbox, cmd_kwargs)
-                buggy_impl_run_results.append((test, bug, buggy_impl_run_result))
+            buggy_impl_run_result = run_command(sandbox, cmd_kwargs)
+            line = '\n------ Bug "{}" ------\n'.format(bug).encode()
+            buggy_impls_stdout.write(line)
+            buggy_impls_stderr.write(line)
+            shutil.copyfileobj(buggy_impl_run_result.stdout, buggy_impls_stdout)
+            shutil.copyfileobj(buggy_impl_run_result.stderr, buggy_impls_stderr)
 
-                if buggy_impl_run_result.return_code != 0:
-                    exposed_bugs.append(bug)
-                    break
+            if buggy_impl_run_result.return_code != 0:
+                exposed_bugs.append(bug)
 
         _save_results(student_test_suite, submission,
-                      setup_run_result, validity_check_run_results,
-                      buggy_impl_run_results,
-                      student_tests, invalid_tests, timed_out_tests,
-                      exposed_bugs)
+                      setup_run_result,
+                      student_tests, invalid_tests, timed_out_tests, exposed_bugs,
+                      get_test_names_run_result=get_test_names_result,
+                      validity_check_stdout=validity_check_stdout,
+                      validity_check_stderr=validity_check_stderr,
+                      buggy_impls_stdout=buggy_impls_stdout,
+                      buggy_impls_stderr=buggy_impls_stderr)
 
 
 @retry_should_recover
@@ -115,12 +131,15 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
 def _save_results(student_test_suite: ag_models.StudentTestSuite,
                   submission: ag_models.Submission,
                   setup_run_result: CompletedCommand,
-                  validity_check_run_results: List[Tuple[str, CompletedCommand]],
-                  grade_buggy_impl_run_results: List[Tuple[str, str, CompletedCommand]],
                   student_tests: List[str],
                   invalid_tests: List[str],
                   timed_out_tests: List[str],
-                  bugs_exposed: List[str]):
+                  bugs_exposed: List[str],
+                  get_test_names_run_result: CompletedCommand=None,
+                  validity_check_stdout: FileIO=None,
+                  validity_check_stderr: FileIO=None,
+                  buggy_impls_stdout: FileIO=None,
+                  buggy_impls_stderr: FileIO=None):
     result_kwargs = {
         'student_tests': student_tests,
         'invalid_tests': invalid_tests,
@@ -138,29 +157,39 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
             timed_out=setup_run_result.timed_out,
             stdout_truncated=setup_run_result.stdout_truncated,
             stderr_truncated=setup_run_result.stderr_truncated)  # type: ag_models.AGCommandResult
-        shutil.move(setup_run_result.stdout.name, setup_result.stdout_filename)
-        shutil.move(setup_run_result.stderr.name, setup_result.stderr_filename)
+
+        with open(setup_result.stdout_filename, 'wb') as f:
+            shutil.copyfileobj(setup_run_result.stdout, f)
+
+        with open(setup_result.stderr_filename, 'wb') as f:
+            shutil.copyfileobj(setup_run_result.stdout, f)
 
         result.setup_result = setup_result
         result.save()
 
-    with result.open_validity_check_stdout('wb') as stdout, \
-            result.open_validity_check_stderr('wb') as stderr:
-        for test, validity_result in validity_check_run_results:
-            line = '\n------ {} ------\n'.format(test).encode()
-            stdout.write(line)
-            stdout.write(validity_result.stdout.read())
+    if get_test_names_run_result is not None:
+        result.get_test_names_result.return_code = get_test_names_run_result.return_code
+        result.get_test_names_result.save()
+        with open(result.get_test_names_result.stdout_filename, 'wb') as f:
+            get_test_names_run_result.stdout.seek(0)
+            shutil.copyfileobj(get_test_names_run_result.stdout, f)
+        with open(result.get_test_names_result.stderr_filename, 'wb') as f:
+            get_test_names_run_result.stderr.seek(0)
+            shutil.copyfileobj(get_test_names_run_result.stderr, f)
 
-            stderr.write(line)
-            stderr.write(validity_result.stderr.read())
-
-    with result.open_grade_buggy_impls_stdout('wb') as stdout, \
-            result.open_grade_buggy_impls_stderr('wb') as stderr:
-        for test, bug, grade_impl_result in grade_buggy_impl_run_results:
-            line = '\n------ Bug "{}" with Test "{}" ------\n'.format(bug, test).encode()
-
-            stdout.write(line)
-            stdout.write(grade_impl_result.stdout.read())
-
-            stderr.write(line)
-            stderr.write(grade_impl_result.stderr.read())
+    if validity_check_stdout is not None:
+        validity_check_stdout.seek(0)
+        with result.open_validity_check_stdout('wb') as f:
+            shutil.copyfileobj(validity_check_stdout, f)
+    if validity_check_stderr is not None:
+        validity_check_stderr.seek(0)
+        with result.open_validity_check_stderr('wb') as f:
+            shutil.copyfileobj(validity_check_stderr, f)
+    if buggy_impls_stdout is not None:
+        buggy_impls_stdout.seek(0)
+        with result.open_grade_buggy_impls_stdout('wb') as f:
+            shutil.copyfileobj(buggy_impls_stdout, f)
+    if buggy_impls_stderr is not None:
+        buggy_impls_stderr.seek(0)
+        with result.open_grade_buggy_impls_stderr('wb') as f:
+            shutil.copyfileobj(buggy_impls_stderr, f)

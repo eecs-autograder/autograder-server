@@ -121,8 +121,8 @@ def make_default_validity_check_command() -> int:
 
 def make_default_grade_buggy_impl_command() -> int:
     return AGCommand.objects.validate_and_create(
-        cmd='echo {} {}'.format(StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER,
-                                StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER)
+        cmd='echo {} {}'.format(StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER,
+                                StudentTestSuite.VALID_STUDENT_TEST_NAMES_PLACEHOLDER)
     ).pk
 
 
@@ -139,6 +139,7 @@ class StudentTestSuite(AutograderModel):
 
     STUDENT_TEST_NAME_PLACEHOLDER = r'${student_test_name}'
     BUGGY_IMPL_NAME_PLACEHOLDER = r'${buggy_impl_name}'
+    VALID_STUDENT_TEST_NAMES_PLACEHOLDER = r'${valid_student_test_names}'
 
     name = ag_fields.ShortStringField(
         help_text="""The name used to identify this StudentTestSuite.
@@ -206,17 +207,16 @@ class StudentTestSuite(AutograderModel):
         related_name='+',
         blank=True,
         default=make_default_grade_buggy_impl_command,
-        help_text="""This command will be run once for every (student test, buggy impl) pair.
-                     A nonzero exit status indicates that the student test exposed the
+        help_text="""This command will be run once for every buggy implementation.
+                     A nonzero exit status indicates that the valid student tests exposed the
                      buggy impl, whereas an exit status of zero indicates that the student
-                     test did not expose the buggy impl.
-                     As soon as a student test exposes a buggy impl, no other student tests
-                     will be run against that buggy impl (the evalution short-circuits).
-                     This command must contain the placeholders {} and {} at least once.
-                     Those placeholders will be replaced with the name of the student
-                     test case and the buggy impl that it is being run against, respectively.
+                     tests did not expose the buggy impl.
+                     This command must contain the placeholders {0} and {1}. The placeholder
+                     {0} will be replaced with the names of valid student test cases, separated
+                     by a space. The placeholder {1} will be replaced with the name of
+                     the buggy impl that the student tests are being run against.
                      NOTE: This AGCommand's 'cmd' field must not be blank.
-                     """.format(STUDENT_TEST_NAME_PLACEHOLDER, BUGGY_IMPL_NAME_PLACEHOLDER))
+                     """.format(VALID_STUDENT_TEST_NAMES_PLACEHOLDER, BUGGY_IMPL_NAME_PLACEHOLDER))
 
     points_per_exposed_bug = models.IntegerField(
         default=0, validators=[MinValueValidator(0)],
@@ -298,10 +298,10 @@ class StudentTestSuite(AutograderModel):
                 'Validity check command missing placeholder "{}"'.format(
                     self.STUDENT_TEST_NAME_PLACEHOLDER))
 
-        if self.STUDENT_TEST_NAME_PLACEHOLDER not in self.grade_buggy_impl_command.cmd:
+        if self.VALID_STUDENT_TEST_NAMES_PLACEHOLDER not in self.grade_buggy_impl_command.cmd:
             errors['grade_buggy_impl_command'] = (
                 'Grade buggy impl command missing placeholder "{}"'.format(
-                    self.STUDENT_TEST_NAME_PLACEHOLDER))
+                    self.VALID_STUDENT_TEST_NAMES_PLACEHOLDER))
 
         if self.BUGGY_IMPL_NAME_PLACEHOLDER not in self.grade_buggy_impl_command.cmd:
             errors['grade_buggy_impl_command'] = (

@@ -1,6 +1,8 @@
 CXX = g++
 CXXFLAGS = -Wall -Werror -pedantic -O1 --std=c++11 -c
-CPPFLAGS =
+
+# Set this at the command line when running a *.buggy_impl target
+valid_student_tests =
 
 LD = g++
 LDFLAGS = -Wall
@@ -17,12 +19,10 @@ get_test_names:
 %.validity_check: student_tests.exe
 	./student_tests.exe $*
 
-# When running a *.with_buggy_impl target, be sure to pas
-# CPPFLAGS=-D<bug name> on the command line as well.
-%.with_buggy_impl:
+%.buggy_impl:
 	rm -f proj_module.o student_tests.exe
-	$(MAKE) student_tests.exe
-	./student_tests.exe $*
+	$(MAKE) CPPFLAGS=-D$* student_tests.exe
+	./student_tests.exe $(valid_student_tests)
 
 .PHONY: clean get_test_names
 clean:

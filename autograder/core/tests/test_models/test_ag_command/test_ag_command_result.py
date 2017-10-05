@@ -1,5 +1,8 @@
+import os
+
 import autograder.core.models as ag_models
 from autograder.utils.testing import UnitTestBase
+import autograder.core.utils as core_ut
 
 
 class AGCommandResultTestCase(UnitTestBase):
@@ -9,39 +12,39 @@ class AGCommandResultTestCase(UnitTestBase):
 
     def test_default_init(self):
         result = ag_models.AGCommandResult.objects.validate_and_create()
+        result.refresh_from_db()
+
         self.assertIsNone(result.return_code)
         self.assertFalse(result.timed_out)
         self.assertFalse(result.stdout_truncated)
         self.assertFalse(result.stderr_truncated)
 
-    def test_cmd_result_stdout_and_stderr_files(self):
-        result = ag_models.AGCommandResult.objects.validate_and_create()
-        result2 = ag_models.AGCommandResult.objects.validate_and_create()
+        expected_stdout_path = os.path.join(core_ut.misc_cmd_output_dir(),
+                                            'cmd_result_{}_stdout'.format(result.pk))
+        expected_stderr_path = os.path.join(core_ut.misc_cmd_output_dir(),
+                                            'cmd_result_{}_stderr'.format(result.pk))
+        self.assertEqual(expected_stdout_path, result.stdout_filename)
+        self.assertEqual(expected_stderr_path, result.stderr_filename)
 
-        self.assertNotEqual(result.stdout_filename, result.stderr_filename)
-        self.assertNotEqual(result.stdout_filename, result2.stdout_filename)
-        self.assertNotEqual(result.stderr_filename, result2.stderr_filename)
+        stdout = 'spaaaaam'
+        stderr = 'egggggggg'
 
-        with result.open_stdout('w') as f:
-            f.write('text1')
+        with open(result.stdout_filename, 'w') as f:
+            f.write(stdout)
 
-        with result2.open_stderr('w') as f:
-            f.write('text2')
+        with open(result.stderr_filename, 'w') as f:
+            f.write(stderr)
 
-        with result2.open_stdout('w') as f:
-            f.write('text3')
+        with open(result.stdout_filename) as f:
+            self.assertEqual(stdout, f.read())
 
-        with result.open_stderr('w') as f:
-            f.write('text4')
+        with open(result.stderr_filename) as f:
+            self.assertEqual(stderr, f.read())
 
-        with result.open_stdout('r') as f:
-            self.assertEqual('text1', f.read())
+    def test_error_cmd_result_not_saved_stdout_and_stderr_filename(self):
+        unsaved_result = ag_models.AGCommandResult()
+        with self.assertRaises(AttributeError):
+            print(unsaved_result.stdout_filename)
 
-        with result2.open_stderr('r') as f:
-            self.assertEqual('text2', f.read())
-
-        with result2.open_stdout('r') as f:
-            self.assertEqual('text3', f.read())
-
-        with result.open_stderr('r') as f:
-            self.assertEqual('text4', f.read())
+        with self.assertRaises(AttributeError):
+            print(unsaved_result.stderr_filename)

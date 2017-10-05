@@ -78,9 +78,12 @@ class StringArrayField(ValidatedArrayField):
     """
 
     def __init__(self, strip_strings=False, allow_empty_strings=False,
-                 string_validators=[],
+                 string_validators=None,
                  max_string_length=const.MAX_CHAR_FIELD_LEN,
                  **kwargs):
+        if string_validators is None:
+            string_validators = []
+
         self.base_string_field = models.CharField(
             max_length=max_string_length, blank=allow_empty_strings,
             validators=string_validators)

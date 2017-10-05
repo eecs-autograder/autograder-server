@@ -75,7 +75,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'student_test_validity_check_command': {
                 'cmd': 'python3 validity_check.py ${student_test_name}'},
             'grade_buggy_impl_command': {
-                'cmd': 'python3 grade.py ${student_test_name} ${buggy_impl_name}'
+                'cmd': 'python3 grade.py ${buggy_impl_name} ${valid_student_test_names}'
             },
             'points_per_exposed_bug': 42,
             'max_points': 462,

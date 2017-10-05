@@ -1,8 +1,9 @@
-import itertools
+import os
 
 import autograder.core.models as ag_models
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
+import autograder.core.utils as core_ut
 
 
 class StudentTestSuiteResultTestCase(UnitTestBase):
@@ -25,22 +26,28 @@ class StudentTestSuiteResultTestCase(UnitTestBase):
         self.assertSequenceEqual([], result.timed_out_tests)
         self.assertSequenceEqual([], result.bugs_exposed)
         self.assertIsNone(result.setup_result)
+        self.assertIsInstance(result.get_test_names_result, ag_models.AGCommandResult)
 
-    def test_output_filenames_distinct(self):
-        field_names = [
-            'validity_check_stdout_filename',
-            'validity_check_stderr_filename',
-            'grade_buggy_impls_stdout_filename',
-            'grade_buggy_impls_stderr_filename',
-        ]
-
+    def test_output_filenames(self):
         result = ag_models.StudentTestSuiteResult.objects.validate_and_create(
             student_test_suite=self.student_suite, submission=self.submission)
-        result2 = ag_models.StudentTestSuiteResult.objects.validate_and_create(
-            student_test_suite=self.student_suite, submission=self.submission)
 
-        for name in field_names:
-            self.assertNotEqual(getattr(result, name), getattr(result2, name))
+        self.assertEqual(
+            os.path.join(core_ut.get_result_output_dir(self.submission),
+                         'student_suite_result_{}_validity_check_stdout'.format(result.pk)),
+            result.validity_check_stdout_filename)
+        self.assertEqual(
+            os.path.join(core_ut.get_result_output_dir(self.submission),
+                         'student_suite_result_{}_validity_check_stderr'.format(result.pk)),
+            result.validity_check_stderr_filename)
+        self.assertEqual(
+            os.path.join(core_ut.get_result_output_dir(self.submission),
+                         'student_suite_result_{}_grade_buggy_impls_stdout'.format(result.pk)),
+            result.grade_buggy_impls_stdout_filename)
+        self.assertEqual(
+            os.path.join(core_ut.get_result_output_dir(self.submission),
+                         'student_suite_result_{}_grade_buggy_impls_stderr'.format(result.pk)),
+            result.grade_buggy_impls_stderr_filename)
 
 
 class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
@@ -72,9 +79,9 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.setup_result = ag_models.AGCommandResult.objects.validate_and_create(
             ag_command=self.student_suite.setup_command)  # type: ag_models.AGCommandResult
 
-        with self.setup_result.open_stdout('w') as f:
+        with open(self.setup_result.stdout_filename, 'w') as f:
             f.write(self.setup_stdout)
-        with self.setup_result.open_stderr('w') as f:
+        with open(self.setup_result.stderr_filename, 'w') as f:
             f.write(self.setup_stderr)
 
         self.valid_tests = ['test{}'.format(i) for i in range(3)]

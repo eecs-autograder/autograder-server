@@ -25,15 +25,9 @@ class AGCommandResultBase(AutograderModel):
     stderr_truncated = models.BooleanField(
         blank=True, default=False, help_text="Whether the command's stderr was truncated.")
 
-    def open_stdout(self, mode='rb'):
-        return open(self.stdout_filename, mode)
-
     @property
     def stdout_filename(self):
         raise NotImplementedError('Derived classes must implement this property')
-
-    def open_stderr(self, mode='rb'):
-        return open(self.stderr_filename, mode)
 
     @property
     def stderr_filename(self):
