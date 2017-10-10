@@ -215,6 +215,7 @@ def make_expected_student_pattern(project: ag_models.Project) -> ag_models.Expec
         project=project,
         pattern='pattern' + get_unique_id())
 
+
 def make_group(num_members: int=1,
                members_role: ag_models.UserRole=ag_models.UserRole.student,
                project: ag_models.Project=None,

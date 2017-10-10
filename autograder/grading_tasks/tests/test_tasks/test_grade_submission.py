@@ -76,11 +76,33 @@ class GradeSubmissionTestCase(UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-    def test_project_has_one_student_test_suite_only(self):
-        self.fail()
+    def test_one_ag_suite_one_non_deferred_student_suite_one_deferred_student_suite(self, *args):
+        ag_suite = obj_build.make_ag_test_suite(self.project)
+        ag_case = obj_build.make_ag_test_case(ag_suite)
+        print_to_stdout_and_stderr = "bash -c 'printf hello; printf whoops >&2'"
+        ag_cmd = obj_build.make_full_ag_test_command(ag_case, cmd=print_to_stdout_and_stderr)
 
-    def test_project_has_ag_and_student_test_suite(self):
-        self.fail()
+        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+            name='mnkfoae',
+            project=self.project)
+
+        deferred_student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+            name='deferryyyy',
+            project=self.project,
+            deferred=True)
+
+        tasks.grade_submission(self.submission.pk)
+        cmd_result = ag_models.AGTestCommandResult.objects.get(
+            ag_test_command=ag_cmd,
+            ag_test_case_result__ag_test_suite_result__submission=self.submission)
+
+        student_suite_result = ag_models.StudentTestSuiteResult.objects.get(
+            submission=self.submission,
+            student_test_suite=student_suite)
+
+        deferred_student_suite_result = ag_models.StudentTestSuiteResult.objects.get(
+            submission=self.submission,
+            student_test_suite=deferred_student_suite)
 
     def test_non_default_docker_image(self, *args):
         suite = obj_build.make_ag_test_suite(
@@ -284,7 +306,7 @@ void file2() {
         self.assertEqual(' '.join(self.submission.submission_group.member_names),
                          res.open_stdout().read().decode())
 
-    def test_one_suite_deferred(self, *args):
+    def test_one_ag_suite_deferred_one_student_suite_deferred(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, deferred=False)
         case1 = obj_build.make_ag_test_case(suite1)
         cmd1 = obj_build.make_full_ag_test_command(
@@ -301,12 +323,22 @@ void file2() {
             set_arbitrary_expected_vals=False,
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=2)
+
+        deferred_student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+            name='deferryyyy',
+            project=self.project,
+            deferred=True)
+
         tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
         self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
+
+        deferred_student_suite_result = ag_models.StudentTestSuiteResult.objects.get(
+            submission=self.submission,
+            student_test_suite=deferred_student_suite)
 
     def test_all_suites_deferred(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, deferred=True)

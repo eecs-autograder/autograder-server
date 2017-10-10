@@ -62,6 +62,10 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
 
         if get_test_names_result.return_code != 0:
             _save_results(student_test_suite, submission, setup_run_result,
+                          student_tests=[],
+                          invalid_tests=[],
+                          timed_out_tests=[],
+                          bugs_exposed=[],
                           get_test_names_run_result=get_test_names_result)
             return
         student_tests = (
@@ -179,17 +183,17 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
 
     if validity_check_stdout is not None:
         validity_check_stdout.seek(0)
-        with result.open_validity_check_stdout('wb') as f:
+        with open(result.validity_check_stdout_filename, 'wb') as f:
             shutil.copyfileobj(validity_check_stdout, f)
     if validity_check_stderr is not None:
         validity_check_stderr.seek(0)
-        with result.open_validity_check_stderr('wb') as f:
+        with open(result.validity_check_stderr_filename, 'wb') as f:
             shutil.copyfileobj(validity_check_stderr, f)
     if buggy_impls_stdout is not None:
         buggy_impls_stdout.seek(0)
-        with result.open_grade_buggy_impls_stdout('wb') as f:
+        with open(result.grade_buggy_impls_stdout_filename, 'wb') as f:
             shutil.copyfileobj(buggy_impls_stdout, f)
     if buggy_impls_stderr is not None:
         buggy_impls_stderr.seek(0)
-        with result.open_grade_buggy_impls_stderr('wb') as f:
+        with open(result.grade_buggy_impls_stderr_filename, 'wb') as f:
             shutil.copyfileobj(buggy_impls_stderr, f)

@@ -55,29 +55,31 @@ class StudentTestSuiteResult(AutograderModel):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'student_suite_result_{}_validity_check_stdout'.format(self.pk))
 
-    def open_validity_check_stderr(self, mode='rb'):
-        return open(self.validity_check_stderr_filename, mode)
-
     @property
     def validity_check_stderr_filename(self):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'student_suite_result_{}_validity_check_stderr'.format(self.pk))
-
-    def open_grade_buggy_impls_stdout(self, mode='rb'):
-        return open(self.grade_buggy_impls_stdout_filename, mode)
 
     @property
     def grade_buggy_impls_stdout_filename(self):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'student_suite_result_{}_grade_buggy_impls_stdout'.format(self.pk))
 
-    def open_grade_buggy_impls_stderr(self, mode='rb'):
-        return open(self.grade_buggy_impls_stderr_filename, mode)
-
     @property
     def grade_buggy_impls_stderr_filename(self):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'student_suite_result_{}_grade_buggy_impls_stderr'.format(self.pk))
+
+    def save(self, *args, **kwargs):
+        is_create = self.pk is None
+        super().save(*args, **kwargs)
+
+        if is_create:
+            # The result output dir is created by self.submission
+            open(self.validity_check_stdout_filename, 'w').close()
+            open(self.validity_check_stderr_filename, 'w').close()
+            open(self.grade_buggy_impls_stdout_filename, 'w').close()
+            open(self.grade_buggy_impls_stderr_filename, 'w').close()
 
     def get_fdbk(self,
                  fdbk_category: FeedbackCategory) -> 'StudentTestSuiteResult.FeedbackCalculator':
@@ -209,28 +211,28 @@ class StudentTestSuiteResult(AutograderModel):
             if not self._fdbk.show_validity_check_stdout:
                 return None
 
-            return self._student_test_suite_result.open_validity_check_stdout()
+            return open(self._student_test_suite_result.validity_check_stdout_filename, 'rb')
 
         @property
         def validity_check_stderr(self) -> FileIO:
             if not self._fdbk.show_validity_check_stderr:
                 return None
 
-            return self._student_test_suite_result.open_validity_check_stderr()
+            return open(self._student_test_suite_result.validity_check_stderr_filename, 'rb')
 
         @property
         def grade_buggy_impls_stdout(self) -> FileIO:
             if not self._fdbk.show_grade_buggy_impls_stdout:
                 return None
 
-            return self._student_test_suite_result.open_grade_buggy_impls_stdout()
+            return open(self._student_test_suite_result.grade_buggy_impls_stdout_filename, 'rb')
 
         @property
         def grade_buggy_impls_stderr(self) -> FileIO:
             if not self._fdbk.show_grade_buggy_impls_stderr:
                 return None
 
-            return self._student_test_suite_result.open_grade_buggy_impls_stderr()
+            return open(self._student_test_suite_result.grade_buggy_impls_stderr_filename, 'rb')
 
         @property
         def total_points(self) -> int:

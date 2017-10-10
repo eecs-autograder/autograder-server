@@ -102,13 +102,13 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             setup_result=self.setup_result
         )  # type: ag_models.StudentTestSuiteResult
 
-        with self.result.open_validity_check_stdout('w') as f:
+        with open(self.result.validity_check_stdout_filename, 'w') as f:
             f.write(self.validity_check_stdout)
-        with self.result.open_validity_check_stderr('w') as f:
+        with open(self.result.validity_check_stderr_filename, 'w') as f:
             f.write(self.validity_check_stderr)
-        with self.result.open_grade_buggy_impls_stdout('w') as f:
+        with open(self.result.grade_buggy_impls_stdout_filename, 'w') as f:
             f.write(self.grade_buggy_impls_stdout)
-        with self.result.open_grade_buggy_impls_stderr('w') as f:
+        with open(self.result.grade_buggy_impls_stderr_filename, 'w') as f:
             f.write(self.grade_buggy_impls_stderr)
 
     def test_feedback_calculator_factory_method(self):
