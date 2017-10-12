@@ -6,7 +6,8 @@ from django.db import models
 
 import autograder.core.fields as ag_fields
 from .student_test_suite import (
-    BugsExposedFeedbackLevel, StudentTestSuite, StudentTestSuiteFeedbackConfig)
+    BugsExposedFeedbackLevel, StudentTestSuite, StudentTestSuiteFeedbackConfig,
+    MAX_STUDENT_SUITE_FDBK_SETTINGS)
 from ..ag_command import AGCommandResult
 from ..ag_model_base import AutograderModel, ToDictMixin
 from ..ag_test.feedback_category import FeedbackCategory
@@ -43,12 +44,13 @@ class StudentTestSuiteResult(AutograderModel):
                      by the student's test cases.""")
 
     setup_result = models.OneToOneField(
-        AGCommandResult, blank=True, null=True, default=None, related_name='+')
+        AGCommandResult,
+        on_delete=models.PROTECT,
+        blank=True, null=True, default=None, related_name='+')
     get_test_names_result = models.OneToOneField(
-        AGCommandResult, default=_make_get_test_names_result_default, related_name='+')
-
-    def open_validity_check_stdout(self, mode='rb'):
-        return open(self.validity_check_stdout_filename, mode)
+        AGCommandResult,
+        on_delete=models.PROTECT,
+        default=_make_get_test_names_result_default, related_name='+')
 
     @property
     def validity_check_stdout_filename(self):
@@ -105,17 +107,7 @@ class StudentTestSuiteResult(AutograderModel):
             elif fdbk_category == FeedbackCategory.staff_viewer:
                 self._fdbk = self._student_test_suite.staff_viewer_fdbk_config
             elif fdbk_category == FeedbackCategory.max:
-                self._fdbk = StudentTestSuiteFeedbackConfig(
-                    visible=True,
-                    show_setup_stdout=True,
-                    show_setup_stderr=True,
-                    show_validity_check_stdout=True,
-                    show_validity_check_stderr=True,
-                    show_grade_buggy_impls_stdout=True,
-                    show_grade_buggy_impls_stderr=True,
-                    show_invalid_test_names=True,
-                    show_points=True,
-                    bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.get_max())
+                self._fdbk = StudentTestSuiteFeedbackConfig(**MAX_STUDENT_SUITE_FDBK_SETTINGS)
 
         @property
         def pk(self):
@@ -155,6 +147,13 @@ class StudentTestSuiteResult(AutograderModel):
             return self._student_test_suite_result.setup_result.return_code
 
         @property
+        def setup_timed_out(self):
+            if self.setup_return_code is None:
+                return None
+
+            return self._student_test_suite_result.setup_result.timed_out
+
+        @property
         def setup_stdout(self) -> FileIO:
             if not self._fdbk.show_setup_stdout:
                 return None
@@ -191,6 +190,36 @@ class StudentTestSuiteResult(AutograderModel):
                 return None
 
             return self._student_test_suite_result.timed_out_tests
+
+        @property
+        def get_student_test_names_return_code(self):
+            if not self._fdbk.show_get_test_names_return_code:
+                return None
+
+            return self._student_test_suite_result.get_test_names_result.return_code
+
+        @property
+        def get_student_test_names_timed_out(self):
+            if self.get_student_test_names_return_code is None:
+                return None
+
+            return self._student_test_suite_result.get_test_names_result.timed_out
+
+        @property
+        def get_student_test_names_stdout(self) -> FileIO:
+            if not self._fdbk.show_get_test_names_stdout:
+                return None
+
+            return open(
+                self._student_test_suite_result.get_test_names_result.stdout_filename, 'rb')
+
+        @property
+        def get_student_test_names_stderr(self) -> FileIO:
+            if not self._fdbk.show_get_test_names_stderr:
+                return None
+
+            return open(
+                self._student_test_suite_result.get_test_names_result.stderr_filename, 'rb')
 
         @property
         def num_bugs_exposed(self) -> int:
@@ -259,6 +288,9 @@ class StudentTestSuiteResult(AutograderModel):
             'student_test_suite_pk',
             'fdbk_settings',
             'setup_return_code',
+            'setup_timed_out',
+            'get_student_test_names_return_code',
+            'get_student_test_names_timed_out',
             'student_tests',
             'invalid_tests',
             'timed_out_tests',

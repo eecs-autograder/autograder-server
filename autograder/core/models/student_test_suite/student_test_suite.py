@@ -20,11 +20,22 @@ class StudentTestSuiteFeedbackConfig(AutograderModel):
     visible = models.BooleanField(default=True)
 
     show_setup_return_code = models.BooleanField(
-        default=True, help_text="Whether to show the return code from the setup command.")
+        default=True,
+        help_text=""""Whether to show the return code from the setup command
+                      and whether the command timed out.""")
     show_setup_stdout = models.BooleanField(
         default=False, help_text="Whether to show stdout from the setup command.")
     show_setup_stderr = models.BooleanField(
         default=False, help_text="Whether to show stderr from the setup command")
+
+    show_get_test_names_return_code = models.BooleanField(
+        default=True,
+        help_text=""""Whether to show the return code from the get_test_names command
+                      and whether the command timed out.""")
+    show_get_test_names_stdout = models.BooleanField(
+        default=False, help_text="Whether to show stdout from the get_test_names command.")
+    show_get_test_names_stderr = models.BooleanField(
+        default=False, help_text="Whether to show stderr from the get_test_names command")
 
     show_validity_check_stdout = models.BooleanField(
         default=False,
@@ -54,29 +65,47 @@ class StudentTestSuiteFeedbackConfig(AutograderModel):
 
     SERIALIZABLE_FIELDS = (
         'visible',
+
         'show_setup_return_code',
         'show_setup_stdout',
         'show_setup_stderr',
+
+        'show_get_test_names_return_code',
+        'show_get_test_names_stdout',
+        'show_get_test_names_stderr',
+
         'show_validity_check_stdout',
         'show_validity_check_stderr',
+
         'show_grade_buggy_impls_stdout',
         'show_grade_buggy_impls_stderr',
+
         'show_invalid_test_names',
         'show_points',
+
         'bugs_exposed_fdbk_level',
     )
 
     EDITABLE_FIELDS = (
         'visible',
+
         'show_setup_return_code',
         'show_setup_stdout',
         'show_setup_stderr',
+
+        'show_get_test_names_return_code',
+        'show_get_test_names_stdout',
+        'show_get_test_names_stderr',
+
         'show_validity_check_stdout',
         'show_validity_check_stderr',
+
         'show_grade_buggy_impls_stdout',
         'show_grade_buggy_impls_stderr',
+
         'show_invalid_test_names',
         'show_points',
+
         'bugs_exposed_fdbk_level',
     )
 
@@ -93,18 +122,27 @@ def make_default_ultimate_submission_command_fdbk() -> int:
     ).pk
 
 
-def make_max_command_fdbk() -> int:
+MAX_STUDENT_SUITE_FDBK_SETTINGS = {
+    'visible': True,
+    'show_setup_return_code': True,
+    'show_setup_stdout': True,
+    'show_setup_stderr': True,
+    'show_get_test_names_return_code': True,
+    'show_get_test_names_stdout': True,
+    'show_get_test_names_stderr': True,
+    'show_validity_check_stdout': True,
+    'show_validity_check_stderr': True,
+    'show_grade_buggy_impls_stdout': True,
+    'show_grade_buggy_impls_stderr': True,
+    'show_invalid_test_names': True,
+    'show_points': True,
+    'bugs_exposed_fdbk_level': BugsExposedFeedbackLevel.get_max()
+}
+
+
+def make_max_student_suite_fdbk() -> int:
     return StudentTestSuiteFeedbackConfig.objects.validate_and_create(
-        visible=True,
-        show_setup_stdout=True,
-        show_setup_stderr=True,
-        show_validity_check_stdout=True,
-        show_validity_check_stderr=True,
-        show_grade_buggy_impls_stdout=True,
-        show_grade_buggy_impls_stderr=True,
-        show_invalid_test_names=True,
-        show_points=True,
-        bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.get_max()
+        **MAX_STUDENT_SUITE_FDBK_SETTINGS
     ).pk
 
 
@@ -171,6 +209,7 @@ class StudentTestSuite(AutograderModel):
 
     setup_command = models.OneToOneField(
         AGCommand,
+        on_delete=models.SET_NULL,
         related_name='+',
         blank=True, null=True, default=None,
         help_text="""A command to be run after student and project files have
@@ -180,6 +219,7 @@ class StudentTestSuite(AutograderModel):
                      not be blank.""")
     get_student_test_names_command = models.OneToOneField(
         AGCommand,
+        on_delete=models.PROTECT,
         related_name='+',
         blank=True,
         default=make_default_get_student_test_names_cmd,
@@ -189,6 +229,7 @@ class StudentTestSuite(AutograderModel):
                      NOTE: This AGCommand's 'cmd' field must not be blank.""")
     student_test_validity_check_command = models.OneToOneField(
         AGCommand,
+        on_delete=models.PROTECT,
         related_name='+',
         blank=True,
         default=make_default_validity_check_command,
@@ -204,6 +245,7 @@ class StudentTestSuite(AutograderModel):
 
     grade_buggy_impl_command = models.OneToOneField(
         AGCommand,
+        on_delete=models.PROTECT,
         related_name='+',
         blank=True,
         default=make_default_grade_buggy_impl_command,
@@ -244,19 +286,27 @@ class StudentTestSuite(AutograderModel):
                      make network calls outside of the sandbox.''')
 
     normal_fdbk_config = models.OneToOneField(
-        StudentTestSuiteFeedbackConfig, default=make_default_command_fdbk,
+        StudentTestSuiteFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_command_fdbk,
         related_name='+',
         help_text='Feedback settings for a normal Submission.')
     ultimate_submission_fdbk_config = models.OneToOneField(
-        StudentTestSuiteFeedbackConfig, default=make_default_ultimate_submission_command_fdbk,
+        StudentTestSuiteFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_ultimate_submission_command_fdbk,
         related_name='+',
         help_text='Feedback settings for an ultimate Submission.')
     past_limit_submission_fdbk_config = models.OneToOneField(
-        StudentTestSuiteFeedbackConfig, default=make_default_command_fdbk,
+        StudentTestSuiteFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_command_fdbk,
         related_name='+',
         help_text='Feedback settings for a Submission that is past the daily limit.')
     staff_viewer_fdbk_config = models.OneToOneField(
-        StudentTestSuiteFeedbackConfig, default=make_max_command_fdbk,
+        StudentTestSuiteFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_max_student_suite_fdbk,
         related_name='+',
         help_text='Feedback settings for a staff member viewing a Submission from another group.')
 

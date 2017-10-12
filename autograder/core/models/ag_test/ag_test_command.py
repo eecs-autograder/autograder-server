@@ -84,16 +84,21 @@ def make_default_ultimate_submission_command_fdbk() -> int:
     ).pk
 
 
+MAX_AG_TEST_COMMAND_FDBK_SETTINGS = {
+    'return_code_fdbk_level': ValueFeedbackLevel.get_max(),
+    'stdout_fdbk_level': ValueFeedbackLevel.get_max(),
+    'stderr_fdbk_level': ValueFeedbackLevel.get_max(),
+    'show_points': True,
+    'show_actual_return_code': True,
+    'show_actual_stdout': True,
+    'show_actual_stderr': True,
+    'show_whether_timed_out': True
+}
+
+
 def make_max_command_fdbk() -> int:
     return AGTestCommandFeedbackConfig.objects.validate_and_create(
-        return_code_fdbk_level=ValueFeedbackLevel.get_max(),
-        stdout_fdbk_level=ValueFeedbackLevel.get_max(),
-        stderr_fdbk_level=ValueFeedbackLevel.get_max(),
-        show_points=True,
-        show_actual_return_code=True,
-        show_actual_stdout=True,
-        show_actual_stderr=True,
-        show_whether_timed_out=True
+        **MAX_AG_TEST_COMMAND_FDBK_SETTINGS
     ).pk
 
 
@@ -210,19 +215,27 @@ class AGTestCommand(AGCommandBase):
                      but the total points for an AGTestCase will be capped at zero.''')
 
     normal_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig, default=make_default_command_fdbk,
+        AGTestCommandFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_command_fdbk,
         related_name='+',
         help_text='Feedback settings for a normal Submission.')
     ultimate_submission_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig, default=make_default_ultimate_submission_command_fdbk,
+        AGTestCommandFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_ultimate_submission_command_fdbk,
         related_name='+',
         help_text='Feedback settings for an ultimate Submission.')
     past_limit_submission_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig, default=make_default_command_fdbk,
+        AGTestCommandFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_command_fdbk,
         related_name='+',
         help_text='Feedback settings for a Submission that is past the daily limit.')
     staff_viewer_fdbk_config = models.OneToOneField(
-        AGTestCommandFeedbackConfig, default=make_max_command_fdbk,
+        AGTestCommandFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_max_command_fdbk,
         related_name='+',
         help_text='Feedback settings for a staff member viewing a Submission from another group.')
 

@@ -94,6 +94,11 @@ class AGTestCommandSerializer(AGModelSerializer):
         return ag_models.AGTestCommand.objects
 
 
+class StudentTestSuiteSerializer(AGModelSerializer):
+    def get_ag_model_manager(self):
+        return ag_models.StudentTestSuite.objects
+
+
 class NotificationSerializer(AGModelSerializer):
     def get_ag_model_manager(self):
         return ag_models.Notification.objects

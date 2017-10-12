@@ -90,29 +90,38 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
 
         self.assertEqual(0, result.get_test_names_result.return_code)
 
-        with open(result.get_test_names_result.stdout_filename, 'r') as f:
+        with open(result.get_test_names_result.stdout_filename) as f:
             print('get_test_names_result.stdout_filename')
             print(f.read())
-        with open(result.get_test_names_result.stderr_filename, 'r') as f:
+        with open(result.get_test_names_result.stderr_filename) as f:
             print('get_test_names_result.stderr_filename')
             print(f.read())
 
-        with open(result.setup_result.stdout_filename, 'r') as f:
-            print('setup_result.open_stdout')
+        with open(result.setup_result.stdout_filename) as f:
+            print('setup_result stdout')
             print(f.read())
-        with open(result.setup_result.stderr_filename, 'r') as f:
-            print('setup_result.open_stderr')
+        with open(result.setup_result.stderr_filename) as f:
+            print('setup_result stderr')
             print(f.read())
-        with open(result.validity_check_stdout_filename, 'r') as f:
+
+        with open(result.get_test_names_result.stdout_filename) as f:
+            print('get_test_names_result stdout')
+            print(f.read())
+        with open(result.get_test_names_result.stderr_filename) as f:
+            print('get_test_names_result stderr')
+            print(f.read())
+
+        with open(result.validity_check_stdout_filename) as f:
             print('open_validity_check_stdout')
             print(f.read())
-        with open(result.validity_check_stderr_filename, 'r') as f:
+        with open(result.validity_check_stderr_filename) as f:
             print('open_validity_check_stderr')
             print(f.read())
-        with open(result.grade_buggy_impls_stdout_filename, 'r') as f:
+
+        with open(result.grade_buggy_impls_stdout_filename) as f:
             print('open_grade_buggy_impls_stdout')
             print(f.read())
-        with open(result.grade_buggy_impls_stderr_filename, 'r') as f:
+        with open(result.grade_buggy_impls_stderr_filename) as f:
             print('open_grade_buggy_impls_stderr')
             print(f.read())
 
@@ -146,6 +155,21 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         self.assertEqual([], result.invalid_tests)
         self.assertEqual([], result.timed_out_tests)
 
+        with open(result.get_test_names_result.stdout_filename) as f:
+            self.assertEqual('', f.read())
+        with open(result.get_test_names_result.stderr_filename) as f:
+            self.assertEqual('', f.read())
+
+        with open(result.validity_check_stdout_filename) as f:
+            self.assertEqual('', f.read())
+        with open(result.validity_check_stderr_filename) as f:
+            self.assertEqual('', f.read())
+
+        with open(result.grade_buggy_impls_stdout_filename) as f:
+            self.assertEqual('', f.read())
+        with open(result.grade_buggy_impls_stderr_filename) as f:
+            self.assertEqual('', f.read())
+
     def test_setup_command_times_out_no_tests_discovered(self, *args):
         self.student_suite.setup_command.validate_and_update(cmd='sleep 10')
         with mock.patch('autograder.core.constants.MAX_SUBPROCESS_TIMEOUT', new=1):
@@ -159,6 +183,21 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
             self.assertEqual([], result.student_tests)
             self.assertEqual([], result.invalid_tests)
             self.assertEqual([], result.timed_out_tests)
+
+            with open(result.get_test_names_result.stdout_filename) as f:
+                self.assertEqual('', f.read())
+            with open(result.get_test_names_result.stderr_filename) as f:
+                self.assertEqual('', f.read())
+
+            with open(result.validity_check_stdout_filename) as f:
+                self.assertEqual('', f.read())
+            with open(result.validity_check_stderr_filename) as f:
+                self.assertEqual('', f.read())
+
+            with open(result.grade_buggy_impls_stdout_filename) as f:
+                self.assertEqual('', f.read())
+            with open(result.grade_buggy_impls_stderr_filename) as f:
+                self.assertEqual('', f.read())
 
 
 @tag('slow', 'sandbox')

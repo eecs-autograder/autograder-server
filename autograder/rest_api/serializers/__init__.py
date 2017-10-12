@@ -10,6 +10,7 @@ from .serializer_impls import (
     AGTestSuiteSerializer,
     AGTestCaseSerializer,
     AGTestCommandSerializer,
+    StudentTestSuiteSerializer,
     NotificationSerializer,
 )
 

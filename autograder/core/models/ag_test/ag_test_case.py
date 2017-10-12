@@ -50,19 +50,27 @@ class AGTestCase(AutograderModel):
                      This field is REQUIRED.''')
 
     normal_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig, default=make_default_test_fdbk,
+        AGTestCaseFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_test_fdbk,
         related_name='+',
         help_text='Feedback settings for a normal Submission.')
     ultimate_submission_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig, default=make_default_test_fdbk,
+        AGTestCaseFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_test_fdbk,
         related_name='+',
         help_text='Feedback settings for an ultimate Submission.')
     past_limit_submission_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig, default=make_default_test_fdbk,
+        AGTestCaseFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_test_fdbk,
         related_name='+',
         help_text='Feedback settings for a Submission that is past the daily limit.')
     staff_viewer_fdbk_config = models.OneToOneField(
-        AGTestCaseFeedbackConfig, default=make_default_test_fdbk,
+        AGTestCaseFeedbackConfig,
+        on_delete=models.PROTECT,
+        default=make_default_test_fdbk,
         related_name='+',
         help_text='Feedback settings for a staff member viewing a Submission from another group.')
 

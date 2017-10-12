@@ -10,7 +10,7 @@ import autograder.core.utils as core_ut
 from ..ag_command import AGCommandResultBase
 from .ag_test_command import (
     AGTestCommand, AGTestCommandFeedbackConfig, ExpectedReturnCode, ValueFeedbackLevel,
-    ExpectedOutputSource)
+    ExpectedOutputSource, MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
 from .ag_test_case_result import AGTestCaseResult
 from .feedback_category import FeedbackCategory
 
@@ -69,16 +69,7 @@ class AGTestCommandResult(AGCommandResultBase):
             elif fdbk_category == FeedbackCategory.staff_viewer:
                 self._fdbk = self._cmd.staff_viewer_fdbk_config
             elif fdbk_category == FeedbackCategory.max:
-                self._fdbk = AGTestCommandFeedbackConfig(
-                    return_code_fdbk_level=ValueFeedbackLevel.get_max(),
-                    stdout_fdbk_level=ValueFeedbackLevel.get_max(),
-                    stderr_fdbk_level=ValueFeedbackLevel.get_max(),
-                    show_points=True,
-                    show_actual_return_code=True,
-                    show_actual_stdout=True,
-                    show_actual_stderr=True,
-                    show_whether_timed_out=True
-                )
+                self._fdbk = AGTestCommandFeedbackConfig(**MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
 
         @property
         def pk(self):
@@ -162,7 +153,7 @@ class AGTestCommandResult(AGCommandResultBase):
         def stdout(self) -> FileIO:
             if (self._fdbk.show_actual_stdout or
                     self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual):
-                return self._ag_test_command_result.open_stdout()
+                return open(self._ag_test_command_result.stdout_filename, 'rb')
 
             return None
 
@@ -224,7 +215,7 @@ class AGTestCommandResult(AGCommandResultBase):
         def stderr(self) -> FileIO:
             if (self._fdbk.show_actual_stderr or
                     self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual):
-                return self._ag_test_command_result.open_stderr()
+                return open(self._ag_test_command_result.stderr_filename, 'rb')
 
             return None
 

@@ -248,7 +248,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(text, res.open_stdout('r').read())
+        self.assertEqual(text, open(res.stdout_filename).read())
 
     def test_stdin_source_proj_file(self, *args):
         text = ',vnaejfal;skjdf;lakjsdfklajsl;dkjf;'
@@ -263,7 +263,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(text, res.open_stdout('r').read())
+        self.assertEqual(text, open(res.stdout_filename).read())
 
     def test_stdin_source_setup_stdout(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -273,7 +273,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(self.setup_stdout, res.open_stdout('r').read())
+        self.assertEqual(self.setup_stdout, open(res.stdout_filename).read())
 
     def test_stdin_source_setup_stderr(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -283,7 +283,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(self.setup_stderr, res.open_stdout('r').read())
+        self.assertEqual(self.setup_stderr, open(res.stdout_filename).read())
 
 
 @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
@@ -406,8 +406,8 @@ sys.stderr.flush()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(0, res.return_code)
-        self.assertEqual(self.non_utf_bytes, res.open_stdout().read())
-        self.assertEqual(self.non_utf_bytes, res.open_stderr().read())
+        self.assertEqual(self.non_utf_bytes, open(res.stdout_filename, 'rb'))
+        self.assertEqual(self.non_utf_bytes, open(res.stderr_filename, 'rb'))
 
     def test_suite_setup_and_teardown_return_code_set(self, *args):
         self.ag_test_suite.validate_and_update(setup_suite_cmd='bash -c "exit 2"',

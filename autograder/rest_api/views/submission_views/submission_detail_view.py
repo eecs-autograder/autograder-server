@@ -93,18 +93,21 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
         elif 'setup_stderr_for_suite' in request.query_params:
             suite_result_pk = int(request.query_params.get('setup_stderr_for_suite'))
             return self._get_setup_stderr(fdbk_calculator, fdbk_category, suite_result_pk)
+
         elif 'teardown_stdout_for_suite' in request.query_params:
             suite_result_pk = int(request.query_params.get('teardown_stdout_for_suite'))
             return self._get_teardown_stdout(fdbk_calculator, fdbk_category, suite_result_pk)
         elif 'teardown_stderr_for_suite' in request.query_params:
             suite_result_pk = int(request.query_params.get('teardown_stderr_for_suite'))
             return self._get_teardown_stderr(fdbk_calculator, fdbk_category, suite_result_pk)
+
         elif 'stdout_for_cmd_result' in request.query_params:
             cmd_result_pk = request.query_params.get('stdout_for_cmd_result')
             return self._get_cmd_result_stdout(fdbk_calculator, fdbk_category, cmd_result_pk)
         elif 'stderr_for_cmd_result' in request.query_params:
             cmd_result_pk = request.query_params.get('stderr_for_cmd_result')
             return self._get_cmd_result_stderr(fdbk_calculator, fdbk_category, cmd_result_pk)
+
         elif 'stdout_diff_for_cmd_result' in request.query_params:
             cmd_result_pk = request.query_params.get('stdout_diff_for_cmd_result')
             return self._get_cmd_result_stdout_diff(
@@ -113,13 +116,62 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
             cmd_result_pk = request.query_params.get('stderr_diff_for_cmd_result')
             return self._get_cmd_result_stderr_diff(
                 fdbk_calculator, fdbk_category, cmd_result_pk)
+
+        elif 'stdout_for_student_suite_setup' in request.query_params:
+            student_suite_result_pk = request.query_params.get(
+                'stdout_for_student_suite_setup')
+            return self._get_student_suite_result_output_field(
+                'setup_stdout', fdbk_calculator, fdbk_category, student_suite_result_pk)
+        elif 'stderr_for_student_suite_setup' in request.query_params:
+            student_suite_result_pk = request.query_params.get(
+                'stderr_for_student_suite_setup')
+            return self._get_student_suite_result_output_field(
+                'setup_stderr', fdbk_calculator, fdbk_category, student_suite_result_pk)
+
+        elif 'stdout_for_student_suite_get_test_names' in request.query_params:
+            student_suite_result_pk = request.query_params.get(
+                'stdout_for_student_suite_get_test_names')
+            return self._get_student_suite_result_output_field(
+                'get_student_test_names_stdout', fdbk_calculator,
+                fdbk_category, student_suite_result_pk)
+        elif 'stderr_for_student_suite_get_test_names' in request.query_params:
+            student_suite_result_pk = request.query_params.get(
+                'stderr_for_student_suite_get_test_names')
+            return self._get_student_suite_result_output_field(
+                'get_student_test_names_stderr', fdbk_calculator,
+                fdbk_category, student_suite_result_pk)
+
+        elif 'stdout_for_student_suite_validity_check' in request.query_params:
+            student_suite_result_pk = request.query_params.get(
+                'stdout_for_student_suite_validity_check')
+            return self._get_student_suite_result_output_field(
+                'validity_check_stdout', fdbk_calculator, fdbk_category, student_suite_result_pk)
+        elif 'stderr_for_student_suite_validity_check' in request.query_params:
+            student_suite_result_pk = request.query_params.get(
+                'stderr_for_student_suite_validity_check')
+            return self._get_student_suite_result_output_field(
+                'validity_check_stderr', fdbk_calculator, fdbk_category, student_suite_result_pk)
+
+        elif 'stdout_for_student_suite_grade_buggy_impls' in request.query_params:
+            student_suite_result_pk = request.query_params.get(
+                'stdout_for_student_suite_grade_buggy_impls')
+            return self._get_student_suite_result_output_field(
+                'grade_buggy_impls_stdout', fdbk_calculator,
+                fdbk_category, student_suite_result_pk)
+        elif 'stderr_for_student_suite_grade_buggy_impls' in request.query_params:
+            student_suite_result_pk = request.query_params.get(
+                'stderr_for_student_suite_grade_buggy_impls')
+            return self._get_student_suite_result_output_field(
+                'grade_buggy_impls_stderr', fdbk_calculator,
+                fdbk_category, student_suite_result_pk)
+
         else:
             return response.Response(fdbk_calculator.to_dict())
 
     def _get_setup_stdout(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                           fdbk_category: ag_models.FeedbackCategory,
                           suite_result_pk: int):
-        suite_result = self._find_suite_result(submission_fdbk, suite_result_pk)
+        suite_result = self._find_ag_suite_result(submission_fdbk, suite_result_pk)
         if suite_result is None:
             return response.Response(None)
         stream_data = suite_result.get_fdbk(fdbk_category).setup_stdout
@@ -130,7 +182,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
     def _get_setup_stderr(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                           fdbk_category: ag_models.FeedbackCategory,
                           suite_result_pk: int):
-        suite_result = self._find_suite_result(submission_fdbk, suite_result_pk)
+        suite_result = self._find_ag_suite_result(submission_fdbk, suite_result_pk)
         if suite_result is None:
             return response.Response(None)
         stream_data = suite_result.get_fdbk(fdbk_category).setup_stderr
@@ -141,7 +193,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
     def _get_teardown_stdout(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                              fdbk_category: ag_models.FeedbackCategory,
                              suite_result_pk: int):
-        suite_result = self._find_suite_result(submission_fdbk, suite_result_pk)
+        suite_result = self._find_ag_suite_result(submission_fdbk, suite_result_pk)
         if suite_result is None:
             return response.Response(None)
         stream_data = suite_result.get_fdbk(fdbk_category).teardown_stdout
@@ -152,7 +204,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
     def _get_teardown_stderr(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                              fdbk_category: ag_models.FeedbackCategory,
                              suite_result_pk: int):
-        suite_result = self._find_suite_result(submission_fdbk, suite_result_pk)
+        suite_result = self._find_ag_suite_result(submission_fdbk, suite_result_pk)
         if suite_result is None:
             return response.Response(None)
         stream_data = suite_result.get_fdbk(fdbk_category).teardown_stderr
@@ -160,8 +212,8 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
             return response.Response(None)
         return FileResponse(stream_data)
 
-    def _find_suite_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
-                           suite_result_pk: int) -> ag_models.AGTestSuiteResult:
+    def _find_ag_suite_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                              suite_result_pk: int) -> ag_models.AGTestSuiteResult:
         for suite_result in submission_fdbk.ag_test_suite_results:
             if suite_result.pk == suite_result_pk:
                 return suite_result
@@ -171,7 +223,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
     def _get_cmd_result_stdout(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                                fdbk_category: ag_models.FeedbackCategory,
                                cmd_result_pk: int):
-        cmd_result = self._find_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
+        cmd_result = self._find_ag_test_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
         if cmd_result is None:
             return response.Response(None)
         stream_data = cmd_result.get_fdbk(fdbk_category).stdout
@@ -182,7 +234,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
     def _get_cmd_result_stderr(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                                fdbk_category: ag_models.FeedbackCategory,
                                cmd_result_pk: int):
-        cmd_result = self._find_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
+        cmd_result = self._find_ag_test_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
         if cmd_result is None:
             return response.Response(None)
         stream_data = cmd_result.get_fdbk(fdbk_category).stderr
@@ -193,7 +245,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
     def _get_cmd_result_stdout_diff(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                                     fdbk_category: ag_models.FeedbackCategory,
                                     cmd_result_pk: int):
-        cmd_result = self._find_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
+        cmd_result = self._find_ag_test_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
         if cmd_result is None:
             return response.Response(None)
         diff = cmd_result.get_fdbk(fdbk_category).stdout_diff
@@ -204,7 +256,7 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
     def _get_cmd_result_stderr_diff(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                                     fdbk_category: ag_models.FeedbackCategory,
                                     cmd_result_pk: int):
-        cmd_result = self._find_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
+        cmd_result = self._find_ag_test_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
         if cmd_result is None:
             return response.Response(None)
         diff = cmd_result.get_fdbk(fdbk_category).stderr_diff
@@ -212,14 +264,14 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
             return response.Response(None)
         return JsonResponse(diff.diff_content, safe=False)
 
-    def _find_cmd_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
-                         fdbk_category: ag_models.FeedbackCategory,
-                         cmd_result_pk: int):
+    def _find_ag_test_cmd_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                                 fdbk_category: ag_models.FeedbackCategory,
+                                 cmd_result_pk: int):
         """
-        :raises Http404 exception if a command result with the
-            given primary key doesn't exist.
+        :raises: Http404 exception if a command result with the
+                 given primary key doesn't exist in the database.
         :return: The command result with the given primary key
-            if it can be found in submission_fdbk, None otherwise.
+                 if it can be found in submission_fdbk, None otherwise.
         """
         queryset = ag_models.AGTestCommandResult.objects.select_related(
             'ag_test_case_result__ag_test_suite_result')
@@ -238,3 +290,40 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
                         return cmd_res
 
         return None
+
+    def _get_student_suite_result_output_field(
+            self,
+            field_name,
+            submission_fdbk: ag_models.Submission.FeedbackCalculator,
+            fdbk_category: ag_models.FeedbackCategory,
+            student_suite_result_pk):
+        result = self._find_student_suite_result(submission_fdbk, student_suite_result_pk)
+        if result is None:
+            return response.Response(None)
+
+        output_stream = getattr(result.get_fdbk(fdbk_category), field_name)
+        if output_stream is None:
+            return response.Response(None)
+
+        return FileResponse(output_stream)
+
+    def _find_student_suite_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
+                                   student_suite_result_pk: int):
+        """
+        :raises: Http404 exception if a student suite result with the given primary
+                 key doesn't exist in the database.
+
+        :return: The student suite result with the given primary key
+                 if it can be found in submission_fdbk, None otherwise.
+        """
+        student_suite_result = get_object_or_404(
+            ag_models.StudentTestSuiteResult.objects.all(),
+            pk=student_suite_result_pk)
+
+        for result in submission_fdbk.student_test_suite_results:
+            if result.pk == student_suite_result.pk:
+                return result
+
+        return None
+
+    # TODO: output endpoints for student suite setup, get test names, validity check, and buggy impl grading

@@ -173,6 +173,7 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
 
     if get_test_names_run_result is not None:
         result.get_test_names_result.return_code = get_test_names_run_result.return_code
+        result.get_test_names_result.timed_out = get_test_names_run_result.timed_out
         result.get_test_names_result.save()
         with open(result.get_test_names_result.stdout_filename, 'wb') as f:
             get_test_names_run_result.stdout.seek(0)

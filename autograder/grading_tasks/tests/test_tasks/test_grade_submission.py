@@ -60,12 +60,12 @@ class GradeSubmissionTestCase(UnitTestBase):
         cmd_result = ag_models.AGTestCommandResult.objects.get(
             ag_test_command=cmd,
             ag_test_case_result__ag_test_suite_result__submission=self.submission)
-        with cmd_result.open_stderr() as f:
-            output = f.read().decode()
+        with open(cmd_result.stderr_filename) as f:
+            output = f.read()
         print(output)
         self.assertEqual(0, cmd_result.return_code, msg=output)
-        self.assertEqual('hello', cmd_result.open_stdout().read().decode())
-        self.assertEqual('whoops', cmd_result.open_stderr().read().decode())
+        self.assertEqual('hello', open(cmd_result.stdout_filename).read())
+        self.assertEqual('whoops', open(cmd_result.stderr_filename).read())
         self.assertTrue(cmd_result.stdout_correct)
         self.assertTrue(cmd_result.stderr_correct)
 
@@ -162,8 +162,8 @@ class GradeSubmissionTestCase(UnitTestBase):
 
         for res in cmd_results:
             self.assertEqual(0, res.return_code)
-            self.assertEqual('hello', res.open_stdout().read().decode())
-            self.assertEqual('whoops', res.open_stderr().read().decode())
+            self.assertEqual('hello', open(res.stdout_filename).read())
+            self.assertEqual('whoops', open(res.stderr_filename).read())
             self.assertTrue(res.stdout_correct)
             self.assertTrue(res.stderr_correct)
 
@@ -262,13 +262,13 @@ void file2() {
 
         tasks.grade_submission(self.submission.pk)
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual('hello', res.open_stdout().read().decode())
+        self.assertEqual('hello', open(res.stdout_filename).read())
 
         cmd.cmd = 'printf weee'
         cmd.save()
         tasks.grade_submission(self.submission.pk)
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual('weee', res.open_stdout().read().decode())
+        self.assertEqual('weee', open(res.stdout_filename).read())
 
     def test_shell_injection_doesnt_work(self, *args):
         suite = obj_build.make_ag_test_suite(self.project)
@@ -283,7 +283,7 @@ void file2() {
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(' '.join(shlex.split(bad_cmd)[1:]) + '\n',
-                         res.open_stdout().read().decode())
+                         open(res.stdout_filename).read())
 
     def test_network_access_allowed_in_suite(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, allow_network_access=True)
@@ -304,7 +304,7 @@ void file2() {
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(' '.join(self.submission.submission_group.member_names),
-                         res.open_stdout().read().decode())
+                         open(res.stdout_filename).read())
 
     def test_one_ag_suite_deferred_one_student_suite_deferred(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, deferred=False)

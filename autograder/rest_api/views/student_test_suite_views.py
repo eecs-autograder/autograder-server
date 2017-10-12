@@ -11,46 +11,39 @@ from autograder.rest_api.views.ag_model_views import (
     GetObjectLockOnUnsafeMixin)
 
 
-class AGTestSuiteListCreateView(ListCreateNestedModelView):
-    serializer_class = ag_serializers.AGTestSuiteSerializer
+class StudentTestSuiteListCreateView(ListCreateNestedModelView):
+    serializer_class = ag_serializers.StudentTestSuiteSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
     foreign_key_field_name = 'project'
-    reverse_foreign_key_field_name = 'ag_test_suites'
+    reverse_foreign_key_field_name = 'student_test_suites'
 
 
-class AGTestSuiteOrderView(GetObjectLockOnUnsafeMixin, generics.GenericAPIView):
+class StudentTestSuiteOrderView(GetObjectLockOnUnsafeMixin, generics.GenericAPIView):
     permission_classes = [
-        ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)
-    ]
+        ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
 
     def get(self, *args, **kwargs):
         project = self.get_object()
-        return response.Response(list(project.get_agtestsuite_order()))
+        return response.Response(list(project.get_studenttestsuite_order()))
 
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             project = self.get_object()
-            project.set_agtestsuite_order(request.data)
-            return response.Response(list(project.get_agtestsuite_order()))
+            project.set_studenttestsuite_order(request.data)
+            return response.Response(list(project.get_studenttestsuite_order()))
 
 
-class AGTestSuiteDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
-    serializer_class = ag_serializers.AGTestSuiteSerializer
+class StudentTestSuiteDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
+    serializer_class = ag_serializers.StudentTestSuiteSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
-            lambda ag_test_suite: ag_test_suite.project.course)
-    ]
-    model_manager = ag_models.AGTestSuite.objects.select_related(
-        'project__course',
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
-    )
+            lambda student_suite: student_suite.project.course)]
+
+    model_manager = ag_models.StudentTestSuite.objects

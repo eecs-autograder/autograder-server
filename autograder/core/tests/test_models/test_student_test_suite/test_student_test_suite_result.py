@@ -89,6 +89,17 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.timeout_tests = ['not_sanic{}'.format(i) for i in range(2)]
 
         self.student_tests = self.valid_tests + self.invalid_tests + self.timeout_tests
+        self.get_test_names_stdout = ''.join(self.student_tests)
+        self.get_test_names_stderr = 'did some things'
+
+        self.get_test_names_return_code = 47
+        self.get_test_names_result = ag_models.AGCommandResult.objects.validate_and_create(
+            return_code=self.get_test_names_return_code
+        )  # type: ag_models.AGCommandResult
+        with open(self.get_test_names_result.stdout_filename, 'w') as f:
+            f.write(self.get_test_names_stdout)
+        with open(self.get_test_names_result.stderr_filename, 'w') as f:
+            f.write(self.get_test_names_stderr)
 
         self.bugs_exposed = self.bug_names
         self.points_awarded = len(self.bugs_exposed) * self.points_per_exposed_bug
@@ -99,7 +110,8 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             invalid_tests=self.invalid_tests,
             timed_out_tests=self.timeout_tests,
             bugs_exposed=self.bugs_exposed,
-            setup_result=self.setup_result
+            setup_result=self.setup_result,
+            get_test_names_result=self.get_test_names_result
         )  # type: ag_models.StudentTestSuiteResult
 
         with open(self.result.validity_check_stdout_filename, 'w') as f:
@@ -188,21 +200,19 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
     def test_show_and_hide_setup_return_code(self):
         self.student_suite.normal_fdbk_config.validate_and_update(show_setup_return_code=True)
 
-        self.result.setup_result.return_code = None
-        self.result.setup_result.save()
-        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
-        self.assertIsNone(fdbk.setup_return_code)
-
         return_code = 31
         self.result.setup_result.return_code = return_code
         self.setup_result.save()
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(return_code, fdbk.setup_return_code)
+        self.assertIsNotNone(fdbk.setup_timed_out)
+        self.assertFalse(fdbk.setup_timed_out)
 
         self.student_suite.normal_fdbk_config.validate_and_update(show_setup_return_code=False)
 
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_return_code)
+        self.assertIsNone(fdbk.setup_timed_out)
 
     def test_show_setup_return_code_but_no_setup_cmd(self):
         self.student_suite.validate_and_update(setup_command=None)
@@ -235,6 +245,42 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_stdout)
         self.assertIsNone(fdbk.setup_stderr)
+
+    def test_show_and_hide_get_test_names_return_code(self):
+        self.student_suite.normal_fdbk_config.validate_and_update(
+            show_get_test_names_return_code=True)
+
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertEqual(self.get_test_names_return_code, fdbk.get_student_test_names_return_code)
+        self.assertIsNotNone(fdbk.get_student_test_names_timed_out)
+        self.assertFalse(fdbk.get_student_test_names_timed_out)
+
+        self.student_suite.normal_fdbk_config.validate_and_update(
+            show_get_test_names_return_code=False)
+
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.get_student_test_names_return_code)
+        self.assertIsNone(fdbk.get_student_test_names_timed_out)
+
+    def test_show_and_hide_get_test_names_stdout(self):
+        self.student_suite.normal_fdbk_config.validate_and_update(show_get_test_names_stdout=True)
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertEqual(self.get_test_names_stdout,
+                         fdbk.get_student_test_names_stdout.read().decode())
+
+        self.student_suite.normal_fdbk_config.validate_and_update(show_get_test_names_stdout=False)
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.get_student_test_names_stdout)
+
+    def test_show_and_hide_get_test_names_stderr(self):
+        self.student_suite.normal_fdbk_config.validate_and_update(show_get_test_names_stderr=True)
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertEqual(self.get_test_names_stderr,
+                         fdbk.get_student_test_names_stderr.read().decode())
+
+        self.student_suite.normal_fdbk_config.validate_and_update(show_get_test_names_stderr=False)
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.get_student_test_names_stderr)
 
     def test_show_and_hide_validity_check_stdout(self):
         self.student_suite.normal_fdbk_config.validate_and_update(show_validity_check_stdout=True)
@@ -353,6 +399,9 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             'student_test_suite_pk',
             'fdbk_settings',
             'setup_return_code',
+            'setup_timed_out',
+            'get_student_test_names_return_code',
+            'get_student_test_names_timed_out',
             'student_tests',
             'invalid_tests',
             'timed_out_tests',
