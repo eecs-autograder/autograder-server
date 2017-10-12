@@ -15,7 +15,7 @@ from autograder.core import constants
 import autograder.core.utils as core_ut
 from .utils import (
     retry_should_recover, retry_ag_test_cmd, mark_submission_as_error, add_files_to_sandbox,
-    run_command, FileCloser)
+    FileCloser, run_ag_command, run_command_from_args)
 
 
 @celery.shared_task(bind=True, queue='deferred', max_retries=1, acks_late=True)
@@ -76,19 +76,22 @@ def _run_suite_setup(sandbox: AutograderSandbox,
 
     # TODO: Once Fall 2017 semester ends, refactor AGTestSuite to have setup
     # and teardown be transparent one-to-one with AGCommand
-    setup_cmd = ag_models.AGCommand(
+    setup_result = run_command_from_args(
         cmd=ag_test_suite.setup_suite_cmd,
-        process_spawn_limit=constants.MAX_PROCESS_LIMIT,
-        stack_size_limit=constants.MAX_STACK_SIZE_LIMIT,
-        virtual_memory_limit=constants.MAX_VIRTUAL_MEM_LIMIT,
-        time_limit=constants.MAX_SUBPROCESS_TIMEOUT)
-    setup_result = run_command(sandbox, setup_cmd.to_dict())
+        sandbox=sandbox,
+        max_num_processes=constants.MAX_PROCESS_LIMIT,
+        max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
+        max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+        timeout=constants.MAX_SUBPROCESS_TIMEOUT)
     suite_result.setup_return_code = setup_result.return_code
     suite_result.setup_timed_out = setup_result.timed_out
     suite_result.setup_stdout_truncated = setup_result.stdout_truncated
     suite_result.setup_stderr_truncated = setup_result.stderr_truncated
-    shutil.move(setup_result.stdout.name, suite_result.setup_stdout_filename)
-    shutil.move(setup_result.stderr.name, suite_result.setup_stderr_filename)
+
+    with open(suite_result.setup_stdout_filename, 'wb') as f:
+        shutil.copyfileobj(setup_result.stdout, f)
+    with open(suite_result.setup_stderr_filename, 'wb') as f:
+        shutil.copyfileobj(setup_result.stderr, f)
 
     suite_result.save()
 
@@ -102,19 +105,22 @@ def _run_suite_teardown(sandbox: AutograderSandbox,
 
     # TODO: Once Fall 2017 semester ends, refactor AGTestSuite to have setup
     # and teardown be transparent one-to-one with AGCommand
-    teardown_cmd = ag_models.AGCommand(
+    teardown_result = run_command_from_args(
         cmd=ag_test_suite.teardown_suite_cmd,
-        process_spawn_limit=constants.MAX_PROCESS_LIMIT,
-        stack_size_limit=constants.MAX_STACK_SIZE_LIMIT,
-        virtual_memory_limit=constants.MAX_VIRTUAL_MEM_LIMIT,
-        time_limit=constants.MAX_SUBPROCESS_TIMEOUT)
-    teardown_result = run_command(sandbox, teardown_cmd.to_dict())
+        sandbox=sandbox,
+        max_num_processes=constants.MAX_PROCESS_LIMIT,
+        max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
+        max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
+        timeout=constants.MAX_SUBPROCESS_TIMEOUT)
     suite_result.teardown_return_code = teardown_result.return_code
     suite_result.teardown_timed_out = teardown_result.timed_out
     suite_result.teardown_stdout_truncated = teardown_result.stdout_truncated
     suite_result.teardown_stderr_truncated = teardown_result.stderr_truncated
-    shutil.move(teardown_result.stdout.name, suite_result.teardown_stdout_filename)
-    shutil.move(teardown_result.stderr.name, suite_result.teardown_stderr_filename)
+
+    with open(suite_result.teardown_stdout_filename, 'wb') as f:
+        shutil.copyfileobj(teardown_result.stdout, f)
+    with open(suite_result.teardown_stderr_filename, 'wb') as f:
+        shutil.copyfileobj(teardown_result.stderr, f)
 
     suite_result.save()
 
@@ -142,7 +148,7 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                                ag_test_cmd: ag_models.AGTestCommand,
                                case_result: ag_models.AGTestCaseResult):
     with FileCloser() as file_closer:
-        run_result = run_command(sandbox, ag_test_cmd.to_dict(), case_result.ag_test_suite_result)
+        run_result = run_ag_command(ag_test_cmd, sandbox, case_result.ag_test_suite_result)
 
         result_data = {
             'return_code': run_result.return_code,
@@ -190,8 +196,10 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                     ag_test_command=ag_test_cmd,
                     ag_test_case_result=case_result)[0]  # type: ag_models.AGTestCommandResult
 
-                shutil.move(run_result.stdout.name, cmd_result.stdout_filename)
-                shutil.move(run_result.stderr.name, cmd_result.stderr_filename)
+                with open(cmd_result.stdout_filename, 'wb') as f:
+                    shutil.copyfileobj(run_result.stdout, f)
+                with open(cmd_result.stderr_filename, 'wb') as f:
+                    shutil.copyfileobj(run_result.stderr, f)
 
         save_ag_test_cmd_result()
 

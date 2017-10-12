@@ -114,41 +114,59 @@ def add_files_to_sandbox(sandbox: AutograderSandbox,
         sandbox.add_files(*project_files_to_add, **owner_and_read_only)
 
 
-def run_command(sandbox: AutograderSandbox,
-                cmd_kwargs: dict,
-                ag_test_suite_result: ag_models.AGTestSuiteResult=None) -> CompletedCommand:
+def run_ag_command(cmd: ag_models.AGCommand,
+                   sandbox: AutograderSandbox,
+                   ag_test_suite_result: ag_models.AGTestSuiteResult=None,
+                   cmd_str_override: str=None) -> CompletedCommand:
     with FileCloser() as file_closer:
-        stdin = get_stdin_file(cmd_kwargs, ag_test_suite_result)
+        stdin = get_stdin_file(cmd, ag_test_suite_result)
         file_closer.register_file(stdin)
 
-        run_result = sandbox.run_command(shlex.split(cmd_kwargs['cmd']),
-                                         stdin=stdin,
-                                         as_root=False,
-                                         max_num_processes=cmd_kwargs['process_spawn_limit'],
-                                         max_stack_size=cmd_kwargs['stack_size_limit'],
-                                         max_virtual_memory=cmd_kwargs['virtual_memory_limit'],
-                                         timeout=cmd_kwargs['time_limit'],
-                                         truncate_stdout=constants.MAX_OUTPUT_LENGTH,
-                                         truncate_stderr=constants.MAX_OUTPUT_LENGTH)
-        return run_result
+        cmd_str = cmd_str_override if cmd_str_override is not None else cmd.cmd
+        return run_command_from_args(cmd=cmd_str,
+                                     sandbox=sandbox,
+                                     max_num_processes=cmd.process_spawn_limit,
+                                     max_stack_size=cmd.stack_size_limit,
+                                     max_virtual_memory=cmd.virtual_memory_limit,
+                                     timeout=cmd.time_limit,
+                                     stdin=stdin)
 
 
-def get_stdin_file(cmd_kwargs: dict,
+def run_command_from_args(cmd: str,
+                          sandbox: AutograderSandbox,
+                          max_num_processes: int,
+                          max_stack_size: int,
+                          max_virtual_memory: int,
+                          timeout: int,
+                          stdin=None) -> CompletedCommand:
+    run_result = sandbox.run_command(shlex.split(cmd),
+                                     stdin=stdin,
+                                     as_root=False,
+                                     max_num_processes=max_num_processes,
+                                     max_stack_size=max_stack_size,
+                                     max_virtual_memory=max_virtual_memory,
+                                     timeout=timeout,
+                                     truncate_stdout=constants.MAX_OUTPUT_LENGTH,
+                                     truncate_stderr=constants.MAX_OUTPUT_LENGTH)
+    return run_result
+
+
+def get_stdin_file(cmd: ag_models.AGCommand,
                    ag_test_suite_result: ag_models.AGTestSuiteResult=None) -> FileIO:
-    if cmd_kwargs['stdin_source'] == ag_models.StdinSource.text:
+    if cmd.stdin_source == ag_models.StdinSource.text:
         stdin = tempfile.NamedTemporaryFile()
-        stdin.write(cmd_kwargs['stdin_text'].encode())
+        stdin.write(cmd.stdin_text.encode())
         stdin.flush()
         stdin.seek(0)
         return stdin
-    elif cmd_kwargs['stdin_source'] == ag_models.StdinSource.project_file:
-        return cmd_kwargs['stdin_project_file'].open('rb')
-    elif cmd_kwargs['stdin_source'] == ag_models.StdinSource.setup_stdout:
+    elif cmd.stdin_source == ag_models.StdinSource.project_file:
+        return cmd.stdin_project_file.open('rb')
+    elif cmd.stdin_source == ag_models.StdinSource.setup_stdout:
         if ag_test_suite_result is None:
             raise Exception('Expected ag test suite result, but got None.')
 
         return ag_test_suite_result.open_setup_stdout('rb')
-    elif cmd_kwargs['stdin_source'] == ag_models.StdinSource.setup_stderr:
+    elif cmd.stdin_source == ag_models.StdinSource.setup_stderr:
         if ag_test_suite_result is None:
             raise Exception('Expected ag test suite result, but got None.')
 

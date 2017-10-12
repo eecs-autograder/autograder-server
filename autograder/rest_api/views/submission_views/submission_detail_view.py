@@ -248,9 +248,11 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
         cmd_result = self._find_ag_test_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
         if cmd_result is None:
             return response.Response(None)
+
         diff = cmd_result.get_fdbk(fdbk_category).stdout_diff
         if diff is None:
             return response.Response(None)
+
         return JsonResponse(diff.diff_content, safe=False)
 
     def _get_cmd_result_stderr_diff(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
@@ -259,9 +261,11 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
         cmd_result = self._find_ag_test_cmd_result(submission_fdbk, fdbk_category, cmd_result_pk)
         if cmd_result is None:
             return response.Response(None)
+
         diff = cmd_result.get_fdbk(fdbk_category).stderr_diff
         if diff is None:
             return response.Response(None)
+
         return JsonResponse(diff.diff_content, safe=False)
 
     def _find_ag_test_cmd_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,

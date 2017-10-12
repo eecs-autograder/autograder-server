@@ -13,7 +13,8 @@ from django.db import transaction
 import autograder.core.models as ag_models
 from autograder.core import constants
 from .utils import (
-    add_files_to_sandbox, run_command, retry_should_recover, mark_submission_as_error)
+    add_files_to_sandbox, retry_should_recover, mark_submission_as_error,
+    run_ag_command)
 
 
 @celery.shared_task(queue='deferred', max_retries=1, acks_late=True)
@@ -50,15 +51,15 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
 
         if student_test_suite.setup_command is not None:
             print('Running setup for', student_test_suite.name)
-            setup_run_result = run_command(sandbox, student_test_suite.setup_command.to_dict())
+            setup_run_result = run_ag_command(student_test_suite.setup_command, sandbox)
             if setup_run_result.return_code != 0:
                 _save_results(student_test_suite, submission, setup_run_result, [], [], [], [])
                 return
         else:
             setup_run_result = None
 
-        get_test_names_result = run_command(
-            sandbox, student_test_suite.get_student_test_names_command.to_dict())
+        get_test_names_result = run_ag_command(
+            student_test_suite.get_student_test_names_command, sandbox)
 
         if get_test_names_result.return_code != 0:
             _save_results(student_test_suite, submission, setup_run_result,
@@ -78,12 +79,12 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
         validity_check_stdout = tempfile.TemporaryFile()
         validity_check_stderr = tempfile.TemporaryFile()
         for test in student_tests:
-            cmd_kwargs = student_test_suite.student_test_validity_check_command.to_dict()
-            concrete_cmd = cmd_kwargs['cmd'].replace(
+            validity_cmd = student_test_suite.student_test_validity_check_command
+            concrete_cmd = validity_cmd.cmd.replace(
                 ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, test)
-            cmd_kwargs['cmd'] = concrete_cmd
 
-            validity_run_result = run_command(sandbox, cmd_kwargs)
+            validity_run_result = run_ag_command(validity_cmd, sandbox,
+                                                 cmd_str_override=concrete_cmd)
             line = '\n------ {} ------\n'.format(test).encode()
             validity_check_stdout.write(line)
             validity_check_stderr.write(line)
@@ -103,14 +104,14 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
         buggy_impls_stdout = tempfile.TemporaryFile()
         buggy_impls_stderr = tempfile.TemporaryFile()
         for bug in student_test_suite.buggy_impl_names:
-            cmd_kwargs = student_test_suite.grade_buggy_impl_command.to_dict()
-            concrete_cmd = cmd_kwargs['cmd'].replace(
+            grade_cmd = student_test_suite.grade_buggy_impl_command
+            concrete_cmd = grade_cmd.cmd.replace(
                 ag_models.StudentTestSuite.VALID_STUDENT_TEST_NAMES_PLACEHOLDER,
                 ' '.join(valid_tests)
             ).replace(ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
-            cmd_kwargs['cmd'] = concrete_cmd
 
-            buggy_impl_run_result = run_command(sandbox, cmd_kwargs)
+            buggy_impl_run_result = run_ag_command(grade_cmd, sandbox,
+                                                   cmd_str_override=concrete_cmd)
             line = '\n------ Bug "{}" ------\n'.format(bug).encode()
             buggy_impls_stdout.write(line)
             buggy_impls_stderr.write(line)

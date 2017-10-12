@@ -332,7 +332,7 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             submission_group=self.student_group1)
         obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
                                                       submission=self.group1_submission1_best)
-        obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
+        obj_build.make_correct_ag_test_command_result(self.suite2_cmd,
                                                       submission=self.group1_submission1_best)
         self.group1_submission2 = obj_build.build_finished_submission(
             submission_group=self.student_group1)

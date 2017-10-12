@@ -406,8 +406,8 @@ sys.stderr.flush()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(0, res.return_code)
-        self.assertEqual(self.non_utf_bytes, open(res.stdout_filename, 'rb'))
-        self.assertEqual(self.non_utf_bytes, open(res.stderr_filename, 'rb'))
+        self.assertEqual(self.non_utf_bytes, open(res.stdout_filename, 'rb').read())
+        self.assertEqual(self.non_utf_bytes, open(res.stderr_filename, 'rb').read())
 
     def test_suite_setup_and_teardown_return_code_set(self, *args):
         self.ag_test_suite.validate_and_update(setup_suite_cmd='bash -c "exit 2"',

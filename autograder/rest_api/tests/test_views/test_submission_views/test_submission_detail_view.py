@@ -735,9 +735,9 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             expected_stderr_source=ag_models.ExpectedOutputSource.text,
             expected_stderr_text=output,
         )
-        with self.staff_normal_res.open_stdout('wb') as f:
+        with open(self.staff_normal_res.stdout_filename, 'wb') as f:
             f.write(non_utf_bytes)
-        with self.staff_normal_res.open_stderr('wb') as f:
+        with open(self.staff_normal_res.stderr_filename, 'wb') as f:
             f.write(non_utf_bytes)
         self.client.force_authenticate(self.staff)
         url = (reverse('submission-feedback', kwargs={'pk': self.staff_normal_submission.pk}) +
