@@ -56,8 +56,11 @@ class StudentTestSuiteTestCase(UnitTestBase):
         low_fdbk = ag_models.StudentTestSuiteFeedbackConfig.objects.validate_and_create()
         self.assertEqual(low_fdbk.to_dict(),
                          student_suite.normal_fdbk_config.to_dict())
-        self.assertEqual(low_fdbk.to_dict(),
-                         student_suite.past_limit_submission_fdbk_config.to_dict())
+
+        past_limit_fdbk = student_suite.past_limit_submission_fdbk_config
+        self.assertFalse(past_limit_fdbk.show_invalid_test_names)
+        self.assertEqual(ag_models.BugsExposedFeedbackLevel.get_min(),
+                         past_limit_fdbk.bugs_exposed_fdbk_level)
 
     def test_valid_init_non_defaults(self):
         proj_file1 = obj_build.make_uploaded_file(self.project)

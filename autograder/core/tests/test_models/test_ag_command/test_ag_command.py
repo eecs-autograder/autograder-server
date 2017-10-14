@@ -16,7 +16,7 @@ class AGCommandTestCase(UnitTestBase):
             cmd=self.cmd
         )  # type: ag_models.AGCommand
 
-        self.assertEqual('', cmd.optional_name)
+        self.assertEqual('', cmd.name)
         self.assertEqual(self.cmd, cmd.cmd)
         self.assertEqual(ag_models.StdinSource.none, cmd.stdin_source)
         self.assertEqual('', cmd.stdin_text)
