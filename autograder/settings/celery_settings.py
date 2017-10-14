@@ -27,7 +27,7 @@ CELERY_RESULT_PERSISTENT = True
 
 CELERYBEAT_SCHEDULE = {
     'queue-submissions': {
-        'task': 'autograder.grading_tasks.tasks.queue_submissions',
+        'task': 'autograder.grading_tasks.tasks.queueing.queue_submissions',
         'schedule': datetime.timedelta(
             seconds=int(os.environ.get('AG_SUBMISSION_LISTENER_INTERVAL', '5'))),
         'options': {
