@@ -8,7 +8,7 @@ class AGCommand(AGCommandBase):
     # Since this class is most commonly used in transparent -to-one relationships,
     # we leave out pk from serialization.
     SERIALIZABLE_FIELDS = [
-        'optional_name',
+        'name',
         'cmd',
         'stdin_source',
         'stdin_text',
@@ -20,7 +20,7 @@ class AGCommand(AGCommandBase):
     ]
 
     EDITABLE_FIELDS = [
-        'optional_name',
+        'name',
         'cmd',
         'stdin_source',
         'stdin_text',

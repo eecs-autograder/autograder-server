@@ -52,7 +52,7 @@ class StudentTestSuiteFeedbackConfig(AutograderModel):
         help_text="Whether to show stderr from grading all buggy impls.")
 
     show_invalid_test_names = models.BooleanField(
-        default=False,
+        default=True,
         help_text="""Whether to show the names of student tests that failed the validity check.
                      Setting this to true will also include information about whether
                      invalid test cases exceeded the validity check command's time limit.""")
@@ -143,6 +143,25 @@ MAX_STUDENT_SUITE_FDBK_SETTINGS = {
 def make_max_student_suite_fdbk() -> int:
     return StudentTestSuiteFeedbackConfig.objects.validate_and_create(
         **MAX_STUDENT_SUITE_FDBK_SETTINGS
+    ).pk
+
+
+def make_default_past_limit_student_suite_fdbk() -> int:
+    return StudentTestSuiteFeedbackConfig.objects.validate_and_create(
+        visible=False,
+        show_setup_return_code=False,
+        show_setup_stdout=False,
+        show_setup_stderr=False,
+        show_get_test_names_return_code=False,
+        show_get_test_names_stdout=False,
+        show_get_test_names_stderr=False,
+        show_validity_check_stdout=False,
+        show_validity_check_stderr=False,
+        show_grade_buggy_impls_stdout=False,
+        show_grade_buggy_impls_stderr=False,
+        show_invalid_test_names=False,
+        show_points=False,
+        bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.get_min()
     ).pk
 
 
@@ -300,7 +319,7 @@ class StudentTestSuite(AutograderModel):
     past_limit_submission_fdbk_config = models.OneToOneField(
         StudentTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
-        default=make_default_command_fdbk,
+        default=make_default_past_limit_student_suite_fdbk,
         related_name='+',
         help_text='Feedback settings for a Submission that is past the daily limit.')
     staff_viewer_fdbk_config = models.OneToOneField(

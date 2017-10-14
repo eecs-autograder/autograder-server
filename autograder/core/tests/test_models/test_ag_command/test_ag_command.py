@@ -120,7 +120,7 @@ class AGCommandTestCase(UnitTestBase):
 
     def test_serialize(self):
         expected_fields = [
-            'optional_name',
+            'name',
             'cmd',
             'stdin_source',
             'stdin_text',

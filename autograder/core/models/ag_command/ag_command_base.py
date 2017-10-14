@@ -28,7 +28,7 @@ class AGCommandBase(AutograderModel):
     class Meta:
         abstract = True
 
-    optional_name = ag_fields.ShortStringField(
+    name = ag_fields.ShortStringField(
         blank=True, help_text="An optional name for this command.")
 
     cmd = models.CharField(
@@ -71,7 +71,7 @@ class AGCommandBase(AutograderModel):
             Must be <= autograder.shared.global_constants.MAX_STACK_SIZE_LIMIT
             NOTE: Setting this value too low may cause the command to crash prematurely.''')
 
-    virtual_memory_limit = models.IntegerField(
+    virtual_memory_limit = models.BigIntegerField(
         default=constants.DEFAULT_VIRTUAL_MEM_LIMIT,
         validators=[MinValueValidator(1), MaxValueValidator(constants.MAX_VIRTUAL_MEM_LIMIT)],
         help_text='''The maximum amount of virtual memory
