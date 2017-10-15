@@ -167,7 +167,7 @@ def make_default_past_limit_student_suite_fdbk() -> int:
 
 def make_default_get_student_test_names_cmd() -> int:
     return AGCommand.objects.validate_and_create(
-        cmd='true', process_spawn_limit=constants.MAX_PROCESS_LIMIT).pk
+        cmd='true', process_spawn_limit=constants.MEDIUM_PROCESS_LIMIT).pk
 
 
 def make_default_validity_check_command() -> int:
