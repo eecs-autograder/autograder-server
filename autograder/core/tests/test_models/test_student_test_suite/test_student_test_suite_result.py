@@ -77,7 +77,9 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.grade_buggy_impls_stderr = 'cvasdop;f'
 
         self.setup_result = ag_models.AGCommandResult.objects.validate_and_create(
-            ag_command=self.student_suite.setup_command)  # type: ag_models.AGCommandResult
+            ag_command=self.student_suite.setup_command,
+            return_code=0
+        )  # type: ag_models.AGCommandResult
 
         with open(self.setup_result.stdout_filename, 'w') as f:
             f.write(self.setup_stdout)
@@ -214,11 +216,13 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
 
-    def test_show_setup_return_code_but_no_setup_cmd(self):
+    def test_show_setup_return_code_with_setup_result_but_no_setup_cmd(self):
         self.student_suite.validate_and_update(setup_command=None)
         self.student_suite.normal_fdbk_config.validate_and_update(show_setup_return_code=True)
+
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
-        self.assertIsNone(fdbk.setup_return_code)
+        self.assertIsNotNone(self.result.setup_result.return_code)
+        self.assertEqual(self.result.setup_result.return_code, fdbk.setup_return_code)
 
     def test_show_setup_return_code_with_setup_cmd_but_no_setup_result(self):
         self.assertIsNotNone(self.student_suite.setup_command)
@@ -247,13 +251,13 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_stderr)
 
-    def test_show_setup_stdout_and_stderr_but_no_setup_cmd(self):
+    def test_show_setup_stdout_and_stderr_with_setup_result_but_no_setup_cmd(self):
         self.student_suite.validate_and_update(setup_command=None)
         self.student_suite.normal_fdbk_config.validate_and_update(
             show_setup_stdout=True, show_setup_stderr=True)
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
-        self.assertIsNone(fdbk.setup_stdout)
-        self.assertIsNone(fdbk.setup_stderr)
+        self.assertEqual(self.setup_stdout, fdbk.setup_stdout.read().decode())
+        self.assertEqual(self.setup_stderr, fdbk.setup_stderr.read().decode())
 
     def test_show_setup_stdout_and_stderr_with_setup_cmd_but_no_setup_result(self):
         self.assertIsNotNone(self.student_suite.setup_command)
