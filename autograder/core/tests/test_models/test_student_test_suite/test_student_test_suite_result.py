@@ -220,6 +220,15 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_return_code)
 
+    def test_show_setup_return_code_with_setup_cmd_but_no_setup_result(self):
+        self.assertIsNotNone(self.student_suite.setup_command)
+        self.student_suite.normal_fdbk_config.validate_and_update(show_setup_return_code=True)
+
+        self.result.setup_result = None
+        self.result.save()
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.setup_return_code)
+
     def test_show_and_hide_setup_stdout(self):
         self.student_suite.normal_fdbk_config.validate_and_update(show_setup_stdout=True)
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
@@ -242,6 +251,17 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.student_suite.validate_and_update(setup_command=None)
         self.student_suite.normal_fdbk_config.validate_and_update(
             show_setup_stdout=True, show_setup_stderr=True)
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.setup_stdout)
+        self.assertIsNone(fdbk.setup_stderr)
+
+    def test_show_setup_stdout_and_stderr_with_setup_cmd_but_no_setup_result(self):
+        self.assertIsNotNone(self.student_suite.setup_command)
+        self.student_suite.normal_fdbk_config.validate_and_update(
+            show_setup_stdout=True, show_setup_stderr=True)
+
+        self.result.setup_result = None
+        self.result.save()
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_stdout)
         self.assertIsNone(fdbk.setup_stderr)

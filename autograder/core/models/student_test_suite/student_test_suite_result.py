@@ -141,7 +141,7 @@ class StudentTestSuiteResult(AutograderModel):
             if not self._fdbk.show_setup_return_code:
                 return None
 
-            if self._student_test_suite.setup_command is None:
+            if self._student_test_suite_result.setup_result is None:
                 return None
 
             return self._student_test_suite_result.setup_result.return_code
@@ -158,7 +158,7 @@ class StudentTestSuiteResult(AutograderModel):
             if not self._fdbk.show_setup_stdout:
                 return None
 
-            if self._student_test_suite.setup_command is None:
+            if self._student_test_suite_result.setup_result is None:
                 return None
 
             return open(self._student_test_suite_result.setup_result.stdout_filename, 'rb')
@@ -168,7 +168,7 @@ class StudentTestSuiteResult(AutograderModel):
             if not self._fdbk.show_setup_stderr:
                 return None
 
-            if self._student_test_suite.setup_command is None:
+            if self._student_test_suite_result.setup_result is None:
                 return None
 
             return open(self._student_test_suite_result.setup_result.stderr_filename, 'rb')
