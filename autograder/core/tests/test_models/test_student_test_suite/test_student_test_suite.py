@@ -26,10 +26,14 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertIsNone(student_suite.setup_command)
         self.assertIsInstance(student_suite.get_student_test_names_command,
                               ag_models.AGCommand)
+        self.assertEqual(ag_models.StudentTestSuite.DEFAULT_STUDENT_TEST_MAX,
+                         student_suite.max_num_student_tests)
+
         self.assertIsInstance(student_suite.student_test_validity_check_command,
                               ag_models.AGCommand)
         self.assertIsInstance(student_suite.grade_buggy_impl_command,
                               ag_models.AGCommand)
+
         self.assertEqual(0, student_suite.points_per_exposed_bug)
         self.assertIsNone(student_suite.max_points)
         self.assertFalse(student_suite.deferred)
@@ -75,6 +79,8 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'buggy_impl_names': ['spam', 'egg', 'sausage', 'waaaaluigi'],
             'setup_command': {'cmd': 'g++ some_stuff.cpp'},
             'get_student_test_names_command': {'cmd': 'ls test_*.cpp'},
+            'max_num_student_tests': 30,
+
             'student_test_validity_check_command': {
                 'cmd': 'python3 validity_check.py ${student_test_name}'},
             'grade_buggy_impl_command': {
@@ -147,6 +153,21 @@ class StudentTestSuiteTestCase(UnitTestBase):
         with self.assertRaises(exceptions.ValidationError):
             ag_models.StudentTestSuite.objects.validate_and_create(
                 name=name, project=self.project)
+
+    def test_max_num_student_tests_out_of_range(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.StudentTestSuite.objects.validate_and_create(
+                name=self.name, project=self.project,
+                max_num_student_tests=ag_models.StudentTestSuite.MAX_STUDENT_TEST_MAX + 1)
+
+        self.assertIn('max_num_student_tests', cm.exception.message_dict)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.StudentTestSuite.objects.validate_and_create(
+                name=self.name, project=self.project,
+                max_num_student_tests=-1)
+
+        self.assertIn('max_num_student_tests', cm.exception.message_dict)
 
     def test_validity_check_cmd_missing_placeholders(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -246,8 +267,11 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'read_only_project_files',
             'student_files_needed',
             'buggy_impl_names',
+
             'setup_command',
             'get_student_test_names_command',
+            'max_num_student_tests',
+
             'student_test_validity_check_command',
             'grade_buggy_impl_command',
             'points_per_exposed_bug',

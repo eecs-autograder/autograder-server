@@ -1,5 +1,5 @@
 from django.core import exceptions
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from autograder.core import constants
@@ -179,7 +179,7 @@ def make_default_validity_check_command() -> int:
 def make_default_grade_buggy_impl_command() -> int:
     return AGCommand.objects.validate_and_create(
         cmd='echo {} {}'.format(StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER,
-                                StudentTestSuite.VALID_STUDENT_TEST_NAMES_PLACEHOLDER)
+                                StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER)
     ).pk
 
 
@@ -196,7 +196,6 @@ class StudentTestSuite(AutograderModel):
 
     STUDENT_TEST_NAME_PLACEHOLDER = r'${student_test_name}'
     BUGGY_IMPL_NAME_PLACEHOLDER = r'${buggy_impl_name}'
-    VALID_STUDENT_TEST_NAMES_PLACEHOLDER = r'${valid_student_test_names}'
 
     name = ag_fields.ShortStringField(
         help_text="""The name used to identify this StudentTestSuite.
@@ -246,6 +245,18 @@ class StudentTestSuite(AutograderModel):
                      list of detected student names. The output of this command will
                      be parsed using Python's str.split().
                      NOTE: This AGCommand's 'cmd' field must not be blank.""")
+
+    DEFAULT_STUDENT_TEST_MAX = 25
+    MAX_STUDENT_TEST_MAX = 50
+
+    max_num_student_tests = models.IntegerField(
+        default=DEFAULT_STUDENT_TEST_MAX,
+        validators=[MinValueValidator(0), MaxValueValidator(MAX_STUDENT_TEST_MAX)],
+        help_text="""The maximum number of test cases students are allowed to submit.
+                     If more than this many tests are discovered by the
+                     get_student_test_names_command, test names will be discarded
+                     from the end of that list.""")
+
     student_test_validity_check_command = models.OneToOneField(
         AGCommand,
         on_delete=models.PROTECT,
@@ -268,16 +279,17 @@ class StudentTestSuite(AutograderModel):
         related_name='+',
         blank=True,
         default=make_default_grade_buggy_impl_command,
-        help_text="""This command will be run once for every buggy implementation.
+        help_text="""This command will be run once for every (buggy implementation, valid test)
+                    pair.
                      A nonzero exit status indicates that the valid student tests exposed the
                      buggy impl, whereas an exit status of zero indicates that the student
                      tests did not expose the buggy impl.
                      This command must contain the placeholders {0} and {1}. The placeholder
-                     {0} will be replaced with the names of valid student test cases, separated
-                     by a space. The placeholder {1} will be replaced with the name of
-                     the buggy impl that the student tests are being run against.
+                     {0} will be replaced with the name of a valid student test case.
+                     The placeholder {1} will be replaced with the name of
+                     the buggy impl that the student test is being run against.
                      NOTE: This AGCommand's 'cmd' field must not be blank.
-                     """.format(VALID_STUDENT_TEST_NAMES_PLACEHOLDER, BUGGY_IMPL_NAME_PLACEHOLDER))
+                     """.format(STUDENT_TEST_NAME_PLACEHOLDER, BUGGY_IMPL_NAME_PLACEHOLDER))
 
     points_per_exposed_bug = models.IntegerField(
         default=0, validators=[MinValueValidator(0)],
@@ -367,10 +379,10 @@ class StudentTestSuite(AutograderModel):
                 'Validity check command missing placeholder "{}"'.format(
                     self.STUDENT_TEST_NAME_PLACEHOLDER))
 
-        if self.VALID_STUDENT_TEST_NAMES_PLACEHOLDER not in self.grade_buggy_impl_command.cmd:
+        if self.STUDENT_TEST_NAME_PLACEHOLDER not in self.grade_buggy_impl_command.cmd:
             errors['grade_buggy_impl_command'] = (
                 'Grade buggy impl command missing placeholder "{}"'.format(
-                    self.VALID_STUDENT_TEST_NAMES_PLACEHOLDER))
+                    self.STUDENT_TEST_NAME_PLACEHOLDER))
 
         if self.BUGGY_IMPL_NAME_PLACEHOLDER not in self.grade_buggy_impl_command.cmd:
             errors['grade_buggy_impl_command'] = (
@@ -392,6 +404,7 @@ class StudentTestSuite(AutograderModel):
 
         'setup_command',
         'get_student_test_names_command',
+        'max_num_student_tests',
         'student_test_validity_check_command',
         'grade_buggy_impl_command',
 
@@ -420,6 +433,7 @@ class StudentTestSuite(AutograderModel):
 
         'setup_command',
         'get_student_test_names_command',
+        'max_num_student_tests',
         'student_test_validity_check_command',
         'grade_buggy_impl_command',
 

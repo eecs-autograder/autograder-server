@@ -31,6 +31,10 @@ class StudentTestSuiteResult(AutograderModel):
     student_tests = ag_fields.StringArrayField(
         blank=True, default=list,
         help_text="The names of discovered student test cases.")
+    discarded_tests = ag_fields.StringArrayField(
+        blank=True, default=list,
+        help_text=""""The names of student tests that were discarded due
+                      to too many tests being discovered.""")
     invalid_tests = ag_fields.StringArrayField(
         blank=True, default=list,
         help_text="The names of student test cases that failed the validity check.")
@@ -178,6 +182,10 @@ class StudentTestSuiteResult(AutograderModel):
             return self._student_test_suite_result.student_tests
 
         @property
+        def discarded_tests(self):
+            return self._student_test_suite_result.discarded_tests
+
+        @property
         def invalid_tests(self) -> Sequence[str]:
             if not self._fdbk.show_invalid_test_names:
                 return None
@@ -292,6 +300,7 @@ class StudentTestSuiteResult(AutograderModel):
             'get_student_test_names_return_code',
             'get_student_test_names_timed_out',
             'student_tests',
+            'discarded_tests',
             'invalid_tests',
             'timed_out_tests',
             'num_bugs_exposed',

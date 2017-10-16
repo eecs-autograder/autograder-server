@@ -58,7 +58,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
                 'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             grade_buggy_impl_command={
-                'cmd': 'make valid_student_tests="${valid_student_test_names}" ${buggy_impl_name}.buggy_impl',
+                'cmd': 'make student_test=${student_test_name} bug_name=${buggy_impl_name} buggy_impl',
                 'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             points_per_exposed_bug=1)  # type: ag_models.StudentTestSuite
@@ -230,13 +230,32 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
-        result = ag_models.StudentTestSuiteResult.objects.get(
-            student_test_suite=student_suite)
+        result = ag_models.StudentTestSuiteResult.objects.get(student_test_suite=student_suite)
         self.assertIsNone(result.setup_result)
 
         self.assertEqual(0, result.get_test_names_result.return_code)
         self.assertSequenceEqual(escaped_names, result.student_tests)
         self.assertSequenceEqual([], result.invalid_tests)
+
+    def test_too_many_student_tests(self, *args):
+        tests = ['test1', 'test2', 'test3']
+        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+            name='too maaaany',
+            project=self.project,
+            get_student_test_names_command={
+                'cmd': 'echo {}'.format(' '.join(tests))
+            },
+            max_num_student_tests=1
+        )
+        tasks.grade_submission(self.submission.pk)
+
+        self.submission.refresh_from_db()
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
+                         self.submission.status)
+
+        result = ag_models.StudentTestSuiteResult.objects.get(student_test_suite=student_suite)
+        self.assertEqual(tests[:1], result.student_tests)
+        self.assertEqual(tests[1:], result.discarded_tests)
 
     def test_no_setup_command(self, *args):
         test_names = 'test1 test2 test3'

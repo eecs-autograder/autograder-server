@@ -53,7 +53,12 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
             print('Running setup for', student_test_suite.name)
             setup_run_result = run_ag_command(student_test_suite.setup_command, sandbox)
             if setup_run_result.return_code != 0:
-                _save_results(student_test_suite, submission, setup_run_result, [], [], [], [])
+                _save_results(student_test_suite, submission, setup_run_result,
+                              student_tests=[],
+                              discarded_tests=[],
+                              invalid_tests=[],
+                              timed_out_tests=[],
+                              bugs_exposed=[])
                 return
         else:
             setup_run_result = None
@@ -64,13 +69,19 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
         if get_test_names_result.return_code != 0:
             _save_results(student_test_suite, submission, setup_run_result,
                           student_tests=[],
+                          discarded_tests=[],
                           invalid_tests=[],
                           timed_out_tests=[],
                           bugs_exposed=[],
                           get_test_names_run_result=get_test_names_result)
             return
+
         student_tests = (
             get_test_names_result.stdout.read().decode(errors='backslashreplace').split())
+        discarded_tests = []
+        if len(student_tests) > student_test_suite.max_num_student_tests:
+            discarded_tests = student_tests[student_test_suite.max_num_student_tests:]
+            student_tests = student_tests[:student_test_suite.max_num_student_tests]
 
         valid_tests = []
         invalid_tests = []
@@ -104,26 +115,27 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
         buggy_impls_stdout = tempfile.TemporaryFile()
         buggy_impls_stderr = tempfile.TemporaryFile()
         for bug in student_test_suite.buggy_impl_names:
-            grade_cmd = student_test_suite.grade_buggy_impl_command
-            concrete_cmd = grade_cmd.cmd.replace(
-                ag_models.StudentTestSuite.VALID_STUDENT_TEST_NAMES_PLACEHOLDER,
-                ' '.join(valid_tests)
-            ).replace(ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
+            for valid_test in valid_tests:
+                grade_cmd = student_test_suite.grade_buggy_impl_command
+                concrete_cmd = grade_cmd.cmd.replace(
+                    ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER, valid_test
+                ).replace(ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER, bug)
 
-            buggy_impl_run_result = run_ag_command(grade_cmd, sandbox,
-                                                   cmd_str_override=concrete_cmd)
-            line = '\n------ Bug "{}" ------\n'.format(bug).encode()
-            buggy_impls_stdout.write(line)
-            buggy_impls_stderr.write(line)
-            shutil.copyfileobj(buggy_impl_run_result.stdout, buggy_impls_stdout)
-            shutil.copyfileobj(buggy_impl_run_result.stderr, buggy_impls_stderr)
+                buggy_impl_run_result = run_ag_command(grade_cmd, sandbox,
+                                                       cmd_str_override=concrete_cmd)
+                line = '\n----- Bug "{}" with Test "{}" -----\n'.format(bug, valid_test).encode()
+                buggy_impls_stdout.write(line)
+                buggy_impls_stderr.write(line)
+                shutil.copyfileobj(buggy_impl_run_result.stdout, buggy_impls_stdout)
+                shutil.copyfileobj(buggy_impl_run_result.stderr, buggy_impls_stderr)
 
-            if buggy_impl_run_result.return_code != 0:
-                exposed_bugs.append(bug)
+                if buggy_impl_run_result.return_code != 0:
+                    exposed_bugs.append(bug)
+                    break
 
         _save_results(student_test_suite, submission,
                       setup_run_result,
-                      student_tests, invalid_tests, timed_out_tests, exposed_bugs,
+                      student_tests, discarded_tests, invalid_tests, timed_out_tests, exposed_bugs,
                       get_test_names_run_result=get_test_names_result,
                       validity_check_stdout=validity_check_stdout,
                       validity_check_stderr=validity_check_stderr,
@@ -137,6 +149,7 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
                   submission: ag_models.Submission,
                   setup_run_result: CompletedCommand,
                   student_tests: List[str],
+                  discarded_tests: List[str],
                   invalid_tests: List[str],
                   timed_out_tests: List[str],
                   bugs_exposed: List[str],
@@ -147,6 +160,7 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
                   buggy_impls_stderr: FileIO=None):
     result_kwargs = {
         'student_tests': student_tests,
+        'discarded_tests': discarded_tests,
         'invalid_tests': invalid_tests,
         'timed_out_tests': timed_out_tests,
         'bugs_exposed': bugs_exposed

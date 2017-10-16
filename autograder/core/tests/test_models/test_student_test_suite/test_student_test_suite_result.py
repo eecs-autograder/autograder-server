@@ -22,6 +22,7 @@ class StudentTestSuiteResultTestCase(UnitTestBase):
         self.assertEqual(self.student_suite, result.student_test_suite)
         self.assertEqual(self.submission, result.submission)
         self.assertSequenceEqual([], result.student_tests)
+        self.assertSequenceEqual([], result.discarded_tests)
         self.assertSequenceEqual([], result.invalid_tests)
         self.assertSequenceEqual([], result.timed_out_tests)
         self.assertSequenceEqual([], result.bugs_exposed)
@@ -154,6 +155,12 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.assertTrue(max_fdbk.show_points)
         self.assertEqual(ag_models.BugsExposedFeedbackLevel.get_max(),
                          max_fdbk.bugs_exposed_fdbk_level)
+
+    def test_discarded_tests(self):
+        discarded_tests = ['spam', 'egg']
+        self.result.discarded_tests = discarded_tests
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertSequenceEqual(discarded_tests, fdbk.discarded_tests)
 
     def test_points_values_catch_all_bugs(self):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.max)
@@ -427,6 +434,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             'get_student_test_names_return_code',
             'get_student_test_names_timed_out',
             'student_tests',
+            'discarded_tests',
             'invalid_tests',
             'timed_out_tests',
             'num_bugs_exposed',
