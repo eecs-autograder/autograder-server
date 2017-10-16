@@ -45,6 +45,8 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
             project_files_needed=self.project.uploaded_files.all(),
             student_files_needed=self.project.expected_student_file_patterns.all(),
             buggy_impl_names=self.bugs_exposed + self.bugs_not_exposed,
+
+            use_setup_command=True,
             setup_command={
                 'cmd': 'make student_tests.exe',
                 'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
@@ -348,6 +350,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
             name='suito',
             project=self.project,
             docker_image_to_use=constants.SupportedImages.eecs490,
+            use_setup_command=True,
             setup_command={
                 'cmd': 'racket --version'
             }
@@ -363,6 +366,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
             name='suito',
             project=self.project,
             allow_network_access=True,
+            use_setup_command=True,
             setup_command={
                 'cmd': 'ping -c 2 www.google.com'
             }

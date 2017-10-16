@@ -49,7 +49,7 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
     with sandbox:
         add_files_to_sandbox(sandbox, student_test_suite, submission)
 
-        if student_test_suite.setup_command is not None:
+        if student_test_suite.use_setup_command:
             print('Running setup for', student_test_suite.name)
             setup_run_result = run_ag_command(student_test_suite.setup_command, sandbox)
             if setup_run_result.return_code != 0:

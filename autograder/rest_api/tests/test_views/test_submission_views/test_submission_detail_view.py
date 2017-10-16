@@ -1067,7 +1067,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             status.HTTP_200_OK, None, **self.setup_stderr_params)
 
     def test_get_setup_output_no_setup_cmd(self):
-        self.student_suite.validate_and_update(setup_command=None)
+        self.student_suite.validate_and_update(use_setup_command=False)
         self.student_suite_result.setup_result = None
         self.student_suite_result.save()
 

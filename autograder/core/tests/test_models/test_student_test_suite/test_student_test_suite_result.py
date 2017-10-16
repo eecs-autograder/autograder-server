@@ -64,6 +64,8 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name='adnfa;kdsfj', project=self.project,
             buggy_impl_names=self.bug_names,
+
+            use_setup_command=True,
             setup_command={
                 'cmd': 'echo waaaluigi',
             },
@@ -206,6 +208,17 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.total_points)
         self.assertEqual(max_points, fdbk.total_points_possible)
 
+    def test_setup_command_name(self):
+        name = 'wuuuuuuuluigio42'
+        self.student_suite.setup_command.validate_and_update(name=name)
+
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertEqual(name, fdbk.setup_command_name)
+
+    def test_has_setup_command(self):
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertTrue(fdbk.has_setup_command)
+
     def test_show_and_hide_setup_return_code(self):
         self.student_suite.normal_fdbk_config.validate_and_update(show_setup_return_code=True)
 
@@ -224,7 +237,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_timed_out)
 
     def test_show_setup_return_code_with_setup_result_but_no_setup_cmd(self):
-        self.student_suite.validate_and_update(setup_command=None)
+        self.student_suite.validate_and_update(use_setup_command=False)
         self.student_suite.normal_fdbk_config.validate_and_update(show_setup_return_code=True)
 
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
@@ -259,7 +272,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_stderr)
 
     def test_show_setup_stdout_and_stderr_with_setup_result_but_no_setup_cmd(self):
-        self.student_suite.validate_and_update(setup_command=None)
+        self.student_suite.validate_and_update(use_setup_command=False)
         self.student_suite.normal_fdbk_config.validate_and_update(
             show_setup_stdout=True, show_setup_stderr=True)
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
@@ -429,6 +442,8 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             'student_test_suite_name',
             'student_test_suite_pk',
             'fdbk_settings',
+            'has_setup_command',
+            'setup_command_name',
             'setup_return_code',
             'setup_timed_out',
             'get_student_test_names_return_code',

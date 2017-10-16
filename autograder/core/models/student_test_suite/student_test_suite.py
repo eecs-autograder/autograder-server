@@ -165,6 +165,11 @@ def make_default_past_limit_student_suite_fdbk() -> int:
     ).pk
 
 
+def make_default_setup_cmd() -> int:
+    return AGCommand.objects.validate_and_create(
+        cmd='true', process_spawn_limit=constants.MEDIUM_PROCESS_LIMIT).pk
+
+
 def make_default_get_student_test_names_cmd() -> int:
     return AGCommand.objects.validate_and_create(
         cmd='true', process_spawn_limit=constants.MEDIUM_PROCESS_LIMIT).pk
@@ -225,16 +230,16 @@ class StudentTestSuite(AutograderModel):
         default=list,
         help_text="The names of buggy implementations that student tests should be run against.")
 
+    use_setup_command = models.BooleanField(default=False)
     setup_command = models.OneToOneField(
         AGCommand,
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         related_name='+',
-        blank=True, null=True, default=None,
+        default=make_default_setup_cmd,
         help_text="""A command to be run after student and project files have
                      been added to the sandbox but before any other commands are run.
-                     A value of None indicates that there is no setup command.
-                     If this command is not None, then the AGCommand's 'cmd' field must
-                     not be blank.""")
+                     The AGCommand's 'cmd' field must not be blank. To indicate that no
+                     setup command should be run, set use_setup_command to False.""")
     get_student_test_names_command = models.OneToOneField(
         AGCommand,
         on_delete=models.PROTECT,
@@ -402,6 +407,7 @@ class StudentTestSuite(AutograderModel):
         'student_files_needed',
         'buggy_impl_names',
 
+        'use_setup_command',
         'setup_command',
         'get_student_test_names_command',
         'max_num_student_tests',
@@ -431,6 +437,7 @@ class StudentTestSuite(AutograderModel):
         'student_files_needed',
         'buggy_impl_names',
 
+        'use_setup_command',
         'setup_command',
         'get_student_test_names_command',
         'max_num_student_tests',

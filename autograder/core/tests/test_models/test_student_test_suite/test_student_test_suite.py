@@ -23,7 +23,9 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertSequenceEqual([], student_suite.student_files_needed.all())
         self.assertSequenceEqual([], student_suite.buggy_impl_names)
 
-        self.assertIsNone(student_suite.setup_command)
+        self.assertFalse(student_suite.use_setup_command)
+        self.assertIsInstance(student_suite.setup_command,
+                              ag_models.AGCommand)
         self.assertIsInstance(student_suite.get_student_test_names_command,
                               ag_models.AGCommand)
         self.assertEqual(ag_models.StudentTestSuite.DEFAULT_STUDENT_TEST_MAX,
@@ -268,6 +270,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'student_files_needed',
             'buggy_impl_names',
 
+            'use_setup_command',
             'setup_command',
             'get_student_test_names_command',
             'max_num_student_tests',

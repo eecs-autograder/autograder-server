@@ -141,6 +141,17 @@ class StudentTestSuiteResult(AutograderModel):
             return self.fdbk_conf.to_dict()
 
         @property
+        def has_setup_command(self) -> bool:
+            return self._student_test_suite.use_setup_command
+
+        @property
+        def setup_command_name(self) -> str:
+            if not self._student_test_suite.use_setup_command:
+                return None
+
+            return self._student_test_suite.setup_command.name
+
+        @property
         def setup_return_code(self) -> int:
             if not self._fdbk.show_setup_return_code:
                 return None
@@ -295,6 +306,8 @@ class StudentTestSuiteResult(AutograderModel):
             'student_test_suite_name',
             'student_test_suite_pk',
             'fdbk_settings',
+            'has_setup_command',
+            'setup_command_name',
             'setup_return_code',
             'setup_timed_out',
             'get_student_test_names_return_code',
