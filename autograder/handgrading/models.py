@@ -93,8 +93,13 @@ class AppliedAnnotation(AutograderModel):
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
 
-    SERIALIZABLE_FIELDS = ('pk', 'last_modified', 'comment', 'annotation',
-                           'handgrading_result', 'location')
+    SERIALIZABLE_FIELDS = ('pk',
+                           'last_modified',
+                           'comment',
+                           'location',
+                           'annotation',
+                           'handgrading_result',)
+
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
 
@@ -102,7 +107,7 @@ class Comment(AutograderModel):
     """
     Comment left by staff or grader regarding submission. Can be applied to specific line
     """
-    location = models.OneToOneField('Location')
+    location = models.OneToOneField('Location', related_name='+')
 
     text = models.TextField()
 
@@ -112,6 +117,13 @@ class Comment(AutograderModel):
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
 
+    SERIALIZABLE_FIELDS = ('pk',
+                           'last_modified',
+                           'location',
+                           'text',
+                           'handgrading_result',)
+
+    TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
 class ArbitraryPoints(AutograderModel):
     """
@@ -129,6 +141,14 @@ class ArbitraryPoints(AutograderModel):
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
 
+    SERIALIZABLE_FIELDS = ('pk',
+                           'last_modified',
+                           'location',
+                           'text',
+                           'points',
+                           'handgrading_result',)
+
+    TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
 class Location(AutograderModel):
     """
@@ -141,5 +161,5 @@ class Location(AutograderModel):
     filename = models.TextField()
 
     def clean(self):
-        if self.last_line < self.first_line:
+        if self.last_line is not None and (self.last_line < self.first_line):
             raise ValidationError('first line should be before last line')
