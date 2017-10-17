@@ -181,7 +181,7 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
             shutil.copyfileobj(setup_run_result.stdout, f)
 
         with open(setup_result.stderr_filename, 'wb') as f:
-            shutil.copyfileobj(setup_run_result.stdout, f)
+            shutil.copyfileobj(setup_run_result.stderr, f)
 
         result.setup_result = setup_result
         result.save()
