@@ -289,20 +289,30 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'last_modified',
         ]
 
+        proj_file = obj_build.make_uploaded_file(self.project)
+        student_file = obj_build.make_expected_student_pattern(self.project)
+
         student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name=self.name, project=self.project,
-            setup_command={'cmd': 'setuppy'})  # type: ag_models.StudentTestSuite
+            setup_command={'cmd': 'setuppy'},
+            project_files_needed=[proj_file],
+            student_files_needed=[student_file]
+        )  # type: ag_models.StudentTestSuite
 
-        self.assertCountEqual(expected_field_names, student_suite.to_dict().keys())
+        serialized = student_suite.to_dict()
+        self.assertCountEqual(expected_field_names, serialized.keys())
 
-        self.assertIsInstance(student_suite.to_dict()['setup_command'], dict)
-        self.assertIsInstance(student_suite.to_dict()['get_student_test_names_command'], dict)
-        self.assertIsInstance(student_suite.to_dict()['student_test_validity_check_command'], dict)
-        self.assertIsInstance(student_suite.to_dict()['grade_buggy_impl_command'], dict)
-        self.assertIsInstance(student_suite.to_dict()['normal_fdbk_config'], dict)
-        self.assertIsInstance(student_suite.to_dict()['ultimate_submission_fdbk_config'], dict)
-        self.assertIsInstance(student_suite.to_dict()['past_limit_submission_fdbk_config'], dict)
-        self.assertIsInstance(student_suite.to_dict()['staff_viewer_fdbk_config'], dict)
+        self.assertIsInstance(serialized['project_files_needed'][0], dict)
+        self.assertIsInstance(serialized['student_files_needed'][0], dict)
+
+        self.assertIsInstance(serialized['setup_command'], dict)
+        self.assertIsInstance(serialized['get_student_test_names_command'], dict)
+        self.assertIsInstance(serialized['student_test_validity_check_command'], dict)
+        self.assertIsInstance(serialized['grade_buggy_impl_command'], dict)
+        self.assertIsInstance(serialized['normal_fdbk_config'], dict)
+        self.assertIsInstance(serialized['ultimate_submission_fdbk_config'], dict)
+        self.assertIsInstance(serialized['past_limit_submission_fdbk_config'], dict)
+        self.assertIsInstance(serialized['staff_viewer_fdbk_config'], dict)
 
         update_dict = student_suite.to_dict()
         non_editable = ['pk', 'project', 'last_modified']

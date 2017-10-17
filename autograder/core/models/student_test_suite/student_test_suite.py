@@ -459,6 +459,11 @@ class StudentTestSuite(AutograderModel):
         'last_modified',
     )
 
+    SERIALIZE_RELATED = [
+        'project_files_needed',
+        'student_files_needed',
+    ]
+
     TRANSPARENT_TO_ONE_FIELDS = (
         'setup_command',
         'get_student_test_names_command',
