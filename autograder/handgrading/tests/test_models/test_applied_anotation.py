@@ -126,6 +126,12 @@ class AppliedAnnotationTestCase(UnitTestBase):
             'handgrading_result',
         ]
 
+        # fill EDiTABLE_FIELDS!
+
+        # Check instance of location
+        #         self.assertIsInstance(suite_dict['project_files_needed'][0], dict)
+        #
+        # look at validate and update
         self.assertCountEqual(
             expected_fields,
             handgrading_models.AppliedAnnotation.get_serializable_fields())
@@ -133,5 +139,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
         app_annotation_obj = handgrading_models.AppliedAnnotation.objects.validate_and_create(
             **self.default_applied_annotation_inputs
         )
+
+        # look at test_ag_test_suite.py
 
         self.assertTrue(app_annotation_obj.to_dict())

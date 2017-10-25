@@ -7,6 +7,7 @@ from enum import Enum
 from autograder.core.models import AutograderModel, Project, Submission
 
 
+# TODO: ADD SERIALIZE_RELATED FIELDS (LOOK AT FRONTEND)
 class PointsStyle(Enum):
     """
     Ways hangrading points can be managed
@@ -29,7 +30,27 @@ class HandgradingRubric(AutograderModel):
 
     handgraders_can_apply_arbitrary_points = models.BooleanField()
 
-    project = models.ForeignKey(Project)
+    project = models.OneToOneField(Project)
+
+    SERIALIZABLE_FIELDS = ('pk',
+                           'last_modified',
+
+                           'points_style',
+                           'max_points',
+                           'show_grades_and_rubric_to_students',
+                           'handgraders_can_leave_comments',
+                           'handgraders_can_apply_arbitrary_points',
+
+                           'project',)
+
+    EDITABLE_FIELDS = ('points_style',
+                       'max_points',
+                       'show_grades_and_rubric_to_students',
+                       'handgraders_can_leave_comments',
+                       'handgraders_can_apply_arbitrary_points',
+
+                       # TODO: SHOULD PROJECT BE EDITABLE? I THINK NOT....
+                       'project',)
 
 
 class Criterion(AutograderModel):
@@ -42,7 +63,26 @@ class Criterion(AutograderModel):
 
     points = models.FloatField()
 
+    # TODO:
     handgrading_rubric = models.ForeignKey(HandgradingRubric)
+
+    SERIALIZABLE_FIELDS = ('pk',
+                           'last_modified',
+
+                           'short_description',
+                           'long_description',
+                           'points',
+                           'handgrading_rubric',)
+
+    EDITABLE_FIELDS = ('pk',
+                       'last_modified',
+
+                       'short_description',
+                       'long_description',
+                       'points',
+
+                       # TODO: SHOULD handgrading_rubric BE EDITABLE? I THINK NOT....
+                       'handgrading_rubric',)
 
 
 class Annotation(AutograderModel):
@@ -57,12 +97,36 @@ class Annotation(AutograderModel):
 
     handgrading_rubric = models.ForeignKey(HandgradingRubric)
 
+    SERIALIZABLE_FIELDS = ('pk',
+                           'last_modified',
+
+                           'short_description',
+                           'long_description',
+                           'points',
+                           'handgrading_rubric',)
+
+    EDITABLE_FIELDS = ('pk',
+                       'last_modified',
+
+                       'short_description',
+                       'long_description',
+                       'points',
+
+                       # TODO: SHOULD handgrading_rubric BE EDITABLE? I THINK NOT....
+                       'handgrading_rubric',)
+
 
 class HandgradingResult(AutograderModel):
     """
     Tied to a specific submission
     """
     submission = models.OneToOneField(Submission)
+
+    SERIALIZABLE_FIELDS = ('pk',
+                           'last_modified',
+                           'submission',)
+
+    # TODO: SHOULD submission BE EDITABLE? I THINK NOT....
 
 
 class CriterionResult(AutograderModel):
@@ -75,6 +139,19 @@ class CriterionResult(AutograderModel):
 
     handgrading_result = models.ForeignKey(HandgradingResult)
 
+    SERIALIZABLE_FIELDS = ('pk',
+                           'last_modified',
+
+                           'selected',
+                           'criterion',
+
+                           # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
+                           'handgrading_result')
+
+    EDITABLE_FIELDS = ('selected',
+                       'criterion',
+                       'handgrading_result')
+
 
 class AppliedAnnotation(AutograderModel):
     """
@@ -85,6 +162,7 @@ class AppliedAnnotation(AutograderModel):
 
     location = models.OneToOneField('Location', related_name='+')
 
+    # TODO: CHECK IF THIS SHOULD BE OneToOne FIELD
     annotation = models.ForeignKey(Annotation)
 
     handgrading_result = models.ForeignKey(HandgradingResult)
@@ -101,6 +179,15 @@ class AppliedAnnotation(AutograderModel):
                            'handgrading_result',)
 
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
+
+    EDITABLE_FIELDS = ('comment',
+                       'location',
+
+                       # TODO: SHOULD annotation BE EDITABLE? I THINK NOT....
+                       'annotation',
+
+                       # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
+                       'handgrading_result',)
 
 
 class Comment(AutograderModel):
@@ -124,6 +211,13 @@ class Comment(AutograderModel):
                            'handgrading_result',)
 
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
+
+    EDITABLE_FIELDS = ('location',
+                       'text',
+
+                       # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
+                       'handgrading_result',)
+
 
 class ArbitraryPoints(AutograderModel):
     """
@@ -150,6 +244,14 @@ class ArbitraryPoints(AutograderModel):
 
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
+    EDITABLE_FIELDS = ('location',
+                       'text',
+                       'points',
+
+                       # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
+                       'handgrading_result',)
+
+
 class Location(AutograderModel):
     """
     Defined as a block of code with a starting and ending line
@@ -163,3 +265,16 @@ class Location(AutograderModel):
     def clean(self):
         if self.last_line is not None and (self.last_line < self.first_line):
             raise ValidationError('first line should be before last line')
+
+    SERIALIZABLE_FIELDS = ('pk',
+                           'last_modified',
+
+                           'first_line',
+                           'last_line',
+                           'filename',)
+
+    EDITABLE_FIELDS = ('first_line',
+                       'last_line',
+
+                       # TODO: SHOULD filename BE EDITABLE? I THINK NOT....
+                       'filename',)
