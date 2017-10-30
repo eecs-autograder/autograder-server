@@ -28,3 +28,5 @@ from .ag_test.ag_test_suite_result import AGTestSuiteResult
 from .ag_test.ag_test_case_result import AGTestCaseResult
 from .ag_test.ag_test_command_result import AGTestCommandResult
 from .ag_test.feedback_category import FeedbackCategory
+
+from .rerun_submissions_task import RerunSubmissionsTask

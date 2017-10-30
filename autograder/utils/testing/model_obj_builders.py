@@ -393,7 +393,7 @@ def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestComma
 
 
 def make_student_test_suite(project: ag_models.Project=None,
-                       **student_test_suite_kwargs) -> ag_models.StudentTestSuite:
+                            **student_test_suite_kwargs) -> ag_models.StudentTestSuite:
     if project is None:
         project = make_project()
 

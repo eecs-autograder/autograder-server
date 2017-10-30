@@ -35,9 +35,9 @@ def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
         raise
 
 
-# TODO: take in list of test cases to rerun
 def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
-                             submission: ag_models.Submission):
+                             submission: ag_models.Submission,
+                             *ag_test_cases_to_run: ag_models.AGTestCase):
     @retry_should_recover
     def get_or_create_suite_result():
         return ag_models.AGTestSuiteResult.objects.get_or_create(
@@ -60,7 +60,10 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
         print('Running setup for', ag_test_suite.name)
         _run_suite_setup(sandbox, ag_test_suite, suite_result)
 
-        for ag_test_case in ag_test_suite.ag_test_cases.all():
+        if not ag_test_cases_to_run:
+            ag_test_cases_to_run = ag_test_suite.ag_test_cases.all()
+
+        for ag_test_case in ag_test_cases_to_run:
             print('Grading test case', ag_test_case.name)
             grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
 
