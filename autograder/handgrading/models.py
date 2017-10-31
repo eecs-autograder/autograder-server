@@ -7,7 +7,6 @@ from enum import Enum
 from autograder.core.models import AutograderModel, Project, Submission
 
 
-# TODO: ADD SERIALIZE_RELATED FIELDS (LOOK AT FRONTEND)
 class PointsStyle(Enum):
     """
     Ways hangrading points can be managed
@@ -47,12 +46,10 @@ class HandgradingRubric(AutograderModel):
                        'max_points',
                        'show_grades_and_rubric_to_students',
                        'handgraders_can_leave_comments',
-                       'handgraders_can_apply_arbitrary_points',
+                       'handgraders_can_apply_arbitrary_points',)
 
-                       # TODO: SHOULD PROJECT BE EDITABLE? I THINK NOT....
-                       'project',)
-
-    SERIALIZE_RELATED = ('project',)
+    SERIALIZE_RELATED = ('criteria',
+                         'annotations',)
 
 
 class Criterion(AutograderModel):
@@ -65,7 +62,7 @@ class Criterion(AutograderModel):
 
     points = models.FloatField()
 
-    handgrading_rubric = models.ForeignKey(HandgradingRubric)
+    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='criteria')
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -77,12 +74,7 @@ class Criterion(AutograderModel):
 
     EDITABLE_FIELDS = ('short_description',
                        'long_description',
-                       'points',
-
-                       # TODO: SHOULD handgrading_rubric BE EDITABLE? I THINK NOT....
-                       'handgrading_rubric',)
-
-    SERIALIZE_RELATED = ('handgrading_rubric',)
+                       'points',)
 
 
 class Annotation(AutograderModel):
@@ -95,7 +87,7 @@ class Annotation(AutograderModel):
 
     points = models.FloatField()
 
-    handgrading_rubric = models.ForeignKey(HandgradingRubric)
+    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='annotations')
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -105,12 +97,9 @@ class Annotation(AutograderModel):
                            'points',
                            'handgrading_rubric',)
 
-    EDITABLE_FIELDS = ( #TODO: MAKE SURE YOU CANT EDIT pk
-                       'short_description',
+    EDITABLE_FIELDS = ('short_description',
                        'long_description',
                        'points',)
-
-    SERIALIZE_RELATED = ('handgrading_rubric',)
 
 
 class HandgradingResult(AutograderModel):
@@ -123,8 +112,10 @@ class HandgradingResult(AutograderModel):
                            'last_modified',
                            'submission',)
 
-    # TODO: SHOULD submission BE EDITABLE? I THINK NOT....
-    # SERIALIZE_RELATED = ('submission',)
+    SERIALIZE_RELATED = ('applied_annotations',
+                         'arbitrary_points',
+                         'comments',
+                         'criterion_results',)
 
 
 class CriterionResult(AutograderModel):
@@ -133,24 +124,19 @@ class CriterionResult(AutograderModel):
     """
     selected = models.BooleanField()
 
-    criterion = models.ForeignKey(Criterion)
+    # TODO: CHECK IF THIS SHOULD BE OneToOne FIELD or FOREIGN KEY
+    criterion = models.OneToOneField(Criterion, related_name='criterion_result')
 
-    handgrading_result = models.ForeignKey(HandgradingResult)
+    handgrading_result = models.ForeignKey(HandgradingResult, related_name='criterion_results')
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
 
                            'selected',
                            'criterion',
-
-                           # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
                            'handgrading_result')
 
-    EDITABLE_FIELDS = ('selected',
-                       'criterion',
-                       'handgrading_result')
-
-    SERIALIZE_RELATED = ('handgrading_result',)
+    EDITABLE_FIELDS = ('selected',)
 
 
 class AppliedAnnotation(AutograderModel):
@@ -162,10 +148,10 @@ class AppliedAnnotation(AutograderModel):
 
     location = models.OneToOneField('Location', related_name='+')
 
-    # TODO: CHECK IF THIS SHOULD BE OneToOne FIELD
-    annotation = models.ForeignKey(Annotation)
+    # TODO: CHECK IF THIS SHOULD BE OneToOne FIELD or FOREIGN KEY
+    annotation = models.OneToOneField(Annotation)
 
-    handgrading_result = models.ForeignKey(HandgradingResult)
+    handgrading_result = models.ForeignKey(HandgradingResult, related_name='applied_annotations')
 
     def clean(self):
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
@@ -173,6 +159,7 @@ class AppliedAnnotation(AutograderModel):
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
+
                            'comment',
                            'location',
                            'annotation',
@@ -180,19 +167,7 @@ class AppliedAnnotation(AutograderModel):
 
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
-    EDITABLE_FIELDS = ('comment',
-                       'location',
-
-                       # TODO: SHOULD annotation BE EDITABLE? I THINK NOT....
-                       'annotation',
-
-                       # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
-                       'handgrading_result',)
-
-    SERIALIZE_RELATED = ('comment',
-                         'annotation',
-                         'location',
-                         'handgrading_result',)
+    EDITABLE_FIELDS = ('comment',)
 
 
 class Comment(AutograderModel):
@@ -203,7 +178,7 @@ class Comment(AutograderModel):
 
     text = models.TextField()
 
-    handgrading_result = models.ForeignKey(HandgradingResult)
+    handgrading_result = models.ForeignKey(HandgradingResult, related_name='comments')
 
     def clean(self):
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
@@ -211,19 +186,14 @@ class Comment(AutograderModel):
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
+
                            'location',
                            'text',
                            'handgrading_result',)
 
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
-    EDITABLE_FIELDS = ('location',
-                       'text',
-
-                       # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
-                       'handgrading_result',)
-
-    SERIALIZE_RELATED = ('handgrading_result',)
+    EDITABLE_FIELDS = ('text',)
 
 
 class ArbitraryPoints(AutograderModel):
@@ -236,7 +206,7 @@ class ArbitraryPoints(AutograderModel):
 
     points = models.FloatField()
 
-    handgrading_result = models.ForeignKey(HandgradingResult)
+    handgrading_result = models.ForeignKey(HandgradingResult, related_name='arbitrary_points')
 
     def clean(self):
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
@@ -244,6 +214,7 @@ class ArbitraryPoints(AutograderModel):
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
+
                            'location',
                            'text',
                            'points',
@@ -251,15 +222,8 @@ class ArbitraryPoints(AutograderModel):
 
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
-    EDITABLE_FIELDS = ('location',
-                       'text',
-                       'points',
-
-                       # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
-                       'handgrading_result',)
-
-    SERIALIZE_RELATED = ('location',
-                         'handgrading_result',)
+    EDITABLE_FIELDS = ('text',
+                       'points',)
 
 
 class Location(AutograderModel):
@@ -284,7 +248,4 @@ class Location(AutograderModel):
                            'filename',)
 
     EDITABLE_FIELDS = ('first_line',
-                       'last_line',
-
-                       # TODO: SHOULD filename BE EDITABLE? I THINK NOT....
-                       'filename',)
+                       'last_line',)

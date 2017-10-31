@@ -5,7 +5,7 @@ import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
 from django.core.exceptions import ValidationError
 from copy import deepcopy
-import pprint
+# import pprint
 
 
 class AppliedAnnotationTestCase(UnitTestBase):
@@ -128,14 +128,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
             'handgrading_result',
         ]
 
-        # fill EDiTABLE_FIELDS!
-
-        # Check instance of location
-        #         self.assertIsInstance(suite_dict['project_files_needed'][0], dict)
-        #
-        # look at validate and update
-        # look at test_ag_test_suite.py
-        pp = pprint.PrettyPrinter(indent=4)
+        # pp = pprint.PrettyPrinter(indent=4)
 
         app_annotation_obj = handgrading_models.AppliedAnnotation.objects.validate_and_create(
             **self.default_applied_annotation_inputs
@@ -146,11 +139,13 @@ class AppliedAnnotationTestCase(UnitTestBase):
         self.assertCountEqual(expected_fields, app_annotation_dict.keys())
         self.assertIsInstance(app_annotation_dict['location'], dict)
 
-        update_dict = deepcopy(app_annotation_dict)
-        for non_editable in ['pk', 'last_modified']:
-            update_dict.pop(non_editable)
+        # update_dict = deepcopy(app_annotation_dict)
+        # pp.pprint((update_dict))
 
-        pp.pprint((update_dict))
-        print(app_annotation_obj)
+        for non_editable in ['pk', 'last_modified', 'location', 'annotation', 'handgrading_result']:
+            app_annotation_dict.pop(non_editable)
 
-        app_annotation_obj.validate_and_update(**update_dict)
+        # pp.pprint((update_dict))
+        # print(app_annotation_obj)
+
+        app_annotation_obj.validate_and_update(**app_annotation_dict)
