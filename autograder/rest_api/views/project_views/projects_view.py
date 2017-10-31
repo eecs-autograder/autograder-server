@@ -26,6 +26,17 @@ class ListCreateProjectView(ListCreateNestedModelView):
     foreign_key_field_name = 'course'
     reverse_foreign_key_field_name = 'projects'
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.method not in permissions.SAFE_METHODS:
+            return queryset
+
+        course = self.get_object()
+        if course.is_enrolled_student(self.request.user):
+            return queryset.filter(visible_to_students=True)
+
+        return queryset
+
 
 @receiver(post_save, sender=ag_models.Project)
 def on_project_created(sender, instance, created, **kwargs):

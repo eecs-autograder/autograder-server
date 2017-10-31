@@ -3,7 +3,8 @@ from typing import List
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions, \
+    get_ultimate_submission
 from autograder.utils.testing import UnitTestBase
 
 
@@ -65,6 +66,26 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             self.project.validate_and_update(ultimate_submission_policy=ultimate_submission_policy)
             self.assertSequenceEqual([ultimate_submission],
                                      list(get_ultimate_submissions(self.project)))
+
+    def test_get_ultimate_submission_no_submissions(self):
+        for policy in ag_models.UltimateSubmissionPolicy:
+            self.project.validate_and_update(ultimate_submission_policy=policy)
+            group = obj_build.make_group(project=self.project)
+
+            self.assertEqual(0, group.submissions.count())
+            ultimate_submission = get_ultimate_submission(self.project, group.pk)
+            self.assertIsNone(ultimate_submission)
+
+    def test_get_ultimate_submission_no_finished_submissions(self):
+        for policy in ag_models.UltimateSubmissionPolicy:
+            self.project.validate_and_update(ultimate_submission_policy=policy)
+            group = obj_build.make_group(project=self.project)
+            submission = obj_build.build_submission(submission_group=group)
+
+            self.assertEqual(1, group.submissions.count())
+            self.assertNotEqual(ag_models.Submission.GradingStatus.finished_grading, submission.status)
+            ultimate_submission = get_ultimate_submission(self.project, group.pk)
+            self.assertIsNone(ultimate_submission)
 
     class GroupAndSubmissionData:
         def __init__(self, group: ag_models.SubmissionGroup,

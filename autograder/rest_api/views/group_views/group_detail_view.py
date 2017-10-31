@@ -10,7 +10,7 @@ from django.db import transaction
 from rest_framework import viewsets, mixins, permissions, decorators, response, status
 
 import autograder.core.models as ag_models
-from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
 
@@ -97,7 +97,7 @@ class GroupDetailViewSet(build_load_object_mixin(ag_models.SubmissionGroup),
           overridden as being hidden.
         """
         group = self.get_object()
-        [ultimate_submission] = get_ultimate_submissions(group.project, group.pk)
+        ultimate_submission = get_ultimate_submission(group.project, group.pk)
         if ultimate_submission is None:
             return response.Response(status=status.HTTP_404_NOT_FOUND)
 

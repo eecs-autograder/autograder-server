@@ -363,3 +363,83 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             editable_dict.pop(non_editable)
 
         ag_cmd.validate_and_update(**editable_dict)
+
+    def test_file_io_sources_serialized(self):
+        stdin = obj_build.make_uploaded_file(self.project)
+        stdout = obj_build.make_uploaded_file(self.project)
+        stderr = obj_build.make_uploaded_file(self.project)
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            stdin_project_file=stdin,
+            expected_stdout_project_file=stdout,
+            expected_stderr_project_file=stderr)
+
+        cmd_dict = ag_cmd.to_dict()
+
+        self.assertIsInstance(cmd_dict['stdin_project_file'], dict)
+        self.assertEqual(stdin.pk, cmd_dict['stdin_project_file']['pk'])
+        self.assertIsInstance(cmd_dict['expected_stdout_project_file'], dict)
+        self.assertEqual(stdout.pk, cmd_dict['expected_stdout_project_file']['pk'])
+        self.assertIsInstance(cmd_dict['expected_stderr_project_file'], dict)
+        self.assertEqual(stderr.pk, cmd_dict['expected_stderr_project_file']['pk'])
+
+    def test_file_io_sources_deserialized_on_create(self):
+        stdin = obj_build.make_uploaded_file(self.project)
+        stdout = obj_build.make_uploaded_file(self.project)
+        stderr = obj_build.make_uploaded_file(self.project)
+
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            stdin_source=ag_models.StdinSource.project_file,
+            stdin_project_file=stdin.to_dict(),
+            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_project_file=stdout.to_dict(),
+            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_project_file=stderr.to_dict())
+
+        self.assertEqual(stdin, ag_cmd.stdin_project_file)
+        self.assertEqual(stdout, ag_cmd.expected_stdout_project_file)
+        self.assertEqual(stderr, ag_cmd.expected_stderr_project_file)
+
+    def test_file_io_sources_deserialized_on_update(self):
+        stdin = obj_build.make_uploaded_file(self.project)
+        stdout = obj_build.make_uploaded_file(self.project)
+        stderr = obj_build.make_uploaded_file(self.project)
+
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            stdin_source=ag_models.StdinSource.project_file,
+            stdin_project_file=stdin,
+            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_project_file=stdout,
+            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_project_file=stderr)
+
+        self.assertEqual(stdin, ag_cmd.stdin_project_file)
+        self.assertEqual(stdout, ag_cmd.expected_stdout_project_file)
+        self.assertEqual(stderr, ag_cmd.expected_stderr_project_file)
+
+        ag_cmd.validate_and_update(
+            stdin_source=ag_models.StdinSource.none,
+            stdin_project_file=None,
+            expected_stdout_source=ag_models.ExpectedOutputSource.none,
+            expected_stdout_project_file=None,
+            expected_stderr_source=ag_models.ExpectedOutputSource.none,
+            expected_stderr_project_file=None,
+        )
+
+        self.assertIsNone(ag_cmd.stdin_project_file)
+        self.assertIsNone(ag_cmd.expected_stdout_project_file)
+        self.assertIsNone(ag_cmd.expected_stderr_project_file)
+
+        ag_cmd.validate_and_update(
+            stdin_source=ag_models.StdinSource.project_file,
+            stdin_project_file=stdin.to_dict(),
+            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_project_file=stdout.to_dict(),
+            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_project_file=stderr.to_dict())
+
+        self.assertEqual(stdin, ag_cmd.stdin_project_file)
+        self.assertEqual(stdout, ag_cmd.expected_stdout_project_file)
+        self.assertEqual(stderr, ag_cmd.expected_stderr_project_file)

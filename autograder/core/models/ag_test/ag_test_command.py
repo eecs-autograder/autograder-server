@@ -4,6 +4,7 @@ from django.core import exceptions
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, MaxLengthValidator)
 from django.db import models
+from django.shortcuts import get_object_or_404
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
@@ -402,6 +403,12 @@ class AGTestCommand(AutograderModel):
         'stack_size_limit',
         'virtual_memory_limit',
         'process_spawn_limit',
+    )
+
+    SERIALIZE_RELATED = (
+        'stdin_project_file',
+        'expected_stdout_project_file',
+        'expected_stderr_project_file',
     )
 
     TRANSPARENT_TO_ONE_FIELDS = (

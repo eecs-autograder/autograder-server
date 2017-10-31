@@ -187,11 +187,25 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
         self.past_extension = timezone.now() - timezone.timedelta(minutes=1)
 
     def test_get_ultimate_submission_no_submissions_404(self):
-        group = self.admin_group(self.project)
-        self.assertEqual(0, group.submissions.count())
-        self.client.force_authenticate(group.members.first())
-        response = self.client.get(self.ultimate_submission_url(group))
-        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+        for policy in ag_models.UltimateSubmissionPolicy:
+            self.project.validate_and_update(ultimate_submission_policy=policy)
+            group = self.admin_group(self.project)
+            self.assertEqual(0, group.submissions.count())
+            self.client.force_authenticate(group.members.first())
+            response = self.client.get(self.ultimate_submission_url(group))
+            self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+    def test_get_ultimate_submission_no_finished_submissions_404(self):
+        for policy in ag_models.UltimateSubmissionPolicy:
+            self.project.validate_and_update(ultimate_submission_policy=policy)
+            group = self.admin_group(self.project)
+            submission = obj_build.build_submission(submission_group=group)
+            self.assertEqual(1, group.submissions.count())
+            self.assertNotEqual(ag_models.Submission.GradingStatus.finished_grading, submission.status)
+            self.client.force_authenticate(group.members.first())
+            response = self.client.get(self.ultimate_submission_url(group))
+            self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+            submission.delete()
 
     def test_admin_or_staff_get_ultimate_submission(self):
         for closing_time in None, self.past_closing_time:

@@ -28,16 +28,17 @@ DEFAULT_STACK_SIZE_LIMIT = 10000000  # 10 MB
 MAX_STACK_SIZE_LIMIT = 100000000  # 100 MB
 
 DEFAULT_VIRTUAL_MEM_LIMIT = 500000000  # 500 MB
-MAX_VIRTUAL_MEM_LIMIT = 1000000000  # 1 GB
+MAX_VIRTUAL_MEM_LIMIT = 2000000000  # 2 GB
 
 DEFAULT_PROCESS_LIMIT = 0
-MAX_PROCESS_LIMIT = 10
+MAX_PROCESS_LIMIT = 16
 
 
 class SupportedImages(enum.Enum):
     default = 'default'
 
     eecs280 = 'eecs280'
+    eecs485 = 'eecs485'
     eecs490 = 'eecs490'
     engr101 = 'engr101'
 
@@ -45,6 +46,7 @@ class SupportedImages(enum.Enum):
 DOCKER_IMAGE_IDS_TO_URLS = {
     SupportedImages.eecs280: 'jameslp/eecs280',
     SupportedImages.eecs490: 'jameslp/eecs490',
+    SupportedImages.eecs485: 'jameslp/eecs485',
     SupportedImages.engr101: 'jameslp/engr101',
     # # Avoid using this image in development, since we can't host
     # # it publicly due to the MATLAB installation.

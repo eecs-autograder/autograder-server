@@ -97,7 +97,8 @@ class AGTestCommandResult(AutograderModel):
                     show_points=True,
                     show_actual_return_code=True,
                     show_actual_stdout=True,
-                    show_actual_stderr=True
+                    show_actual_stderr=True,
+                    show_whether_timed_out=True
                 )
 
         @property
