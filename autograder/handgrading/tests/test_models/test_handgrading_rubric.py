@@ -4,13 +4,19 @@ import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
 from django.core.exceptions import ValidationError
-
+import pprint
+from copy import deepcopy
 
 class HandgradingRubricTestCase(UnitTestBase):
     """
     Test cases relating the Handgrading Rubric Model
     """
     def setUp(self):
+        # project = obj_build.build_project().to_dict()
+        #
+        # for non_editable in ['pk', 'last_modified']:
+        #     project.pop(non_editable)
+
         self.default_rubric_inputs = {
             "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
             "max_points": 0,
@@ -87,3 +93,37 @@ class HandgradingRubricTestCase(UnitTestBase):
             **rubric_inputs)
 
         self.assertEqual(rubric_obj.max_points, 0)
+
+    def test_serializable_fields(self):
+        expected_fields = [
+            'pk',
+            'last_modified',
+
+            'points_style',
+            'max_points',
+            'show_grades_and_rubric_to_students',
+            'handgraders_can_leave_comments',
+            'handgraders_can_apply_arbitrary_points',
+
+            'project',
+        ]
+
+        pp = pprint.PrettyPrinter(indent=4)
+
+        handgrading_obj = handgrading_models.HandgradingRubric.objects.validate_and_create(
+            **self.default_rubric_inputs
+        )
+
+        handgrading_dict = handgrading_obj.to_dict()
+
+        self.assertCountEqual(expected_fields, handgrading_dict.keys())
+
+        update_dict = deepcopy(handgrading_dict)
+        for non_editable in ['pk', 'last_modified']:
+            update_dict.pop(non_editable)
+
+        pp.pprint((update_dict))
+        print(handgrading_obj)
+
+        # TODO: HOW TO STOP THIS FROM CRASHING
+        handgrading_obj.validate_and_update(**update_dict)

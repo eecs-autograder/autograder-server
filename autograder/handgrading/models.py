@@ -52,6 +52,8 @@ class HandgradingRubric(AutograderModel):
                        # TODO: SHOULD PROJECT BE EDITABLE? I THINK NOT....
                        'project',)
 
+    SERIALIZE_RELATED = ('project',)
+
 
 class Criterion(AutograderModel):
     """
@@ -63,7 +65,6 @@ class Criterion(AutograderModel):
 
     points = models.FloatField()
 
-    # TODO:
     handgrading_rubric = models.ForeignKey(HandgradingRubric)
 
     SERIALIZABLE_FIELDS = ('pk',
@@ -74,15 +75,14 @@ class Criterion(AutograderModel):
                            'points',
                            'handgrading_rubric',)
 
-    EDITABLE_FIELDS = ('pk',
-                       'last_modified',
-
-                       'short_description',
+    EDITABLE_FIELDS = ('short_description',
                        'long_description',
                        'points',
 
                        # TODO: SHOULD handgrading_rubric BE EDITABLE? I THINK NOT....
                        'handgrading_rubric',)
+
+    SERIALIZE_RELATED = ('handgrading_rubric',)
 
 
 class Annotation(AutograderModel):
@@ -105,15 +105,12 @@ class Annotation(AutograderModel):
                            'points',
                            'handgrading_rubric',)
 
-    EDITABLE_FIELDS = ('pk',
-                       'last_modified',
-
+    EDITABLE_FIELDS = ( #TODO: MAKE SURE YOU CANT EDIT pk
                        'short_description',
                        'long_description',
-                       'points',
+                       'points',)
 
-                       # TODO: SHOULD handgrading_rubric BE EDITABLE? I THINK NOT....
-                       'handgrading_rubric',)
+    SERIALIZE_RELATED = ('handgrading_rubric',)
 
 
 class HandgradingResult(AutograderModel):
@@ -127,6 +124,7 @@ class HandgradingResult(AutograderModel):
                            'submission',)
 
     # TODO: SHOULD submission BE EDITABLE? I THINK NOT....
+    # SERIALIZE_RELATED = ('submission',)
 
 
 class CriterionResult(AutograderModel):
@@ -151,6 +149,8 @@ class CriterionResult(AutograderModel):
     EDITABLE_FIELDS = ('selected',
                        'criterion',
                        'handgrading_result')
+
+    SERIALIZE_RELATED = ('handgrading_result',)
 
 
 class AppliedAnnotation(AutograderModel):
@@ -189,6 +189,11 @@ class AppliedAnnotation(AutograderModel):
                        # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
                        'handgrading_result',)
 
+    SERIALIZE_RELATED = ('comment',
+                         'annotation',
+                         'location',
+                         'handgrading_result',)
+
 
 class Comment(AutograderModel):
     """
@@ -217,6 +222,8 @@ class Comment(AutograderModel):
 
                        # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
                        'handgrading_result',)
+
+    SERIALIZE_RELATED = ('handgrading_result',)
 
 
 class ArbitraryPoints(AutograderModel):
@@ -250,6 +257,9 @@ class ArbitraryPoints(AutograderModel):
 
                        # TODO: SHOULD handgrading_result BE EDITABLE? I THINK NOT....
                        'handgrading_result',)
+
+    SERIALIZE_RELATED = ('location',
+                         'handgrading_result',)
 
 
 class Location(AutograderModel):

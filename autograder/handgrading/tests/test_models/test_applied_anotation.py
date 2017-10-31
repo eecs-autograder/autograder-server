@@ -4,6 +4,8 @@ import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
 from django.core.exceptions import ValidationError
+from copy import deepcopy
+import pprint
 
 
 class AppliedAnnotationTestCase(UnitTestBase):
@@ -132,14 +134,23 @@ class AppliedAnnotationTestCase(UnitTestBase):
         #         self.assertIsInstance(suite_dict['project_files_needed'][0], dict)
         #
         # look at validate and update
-        self.assertCountEqual(
-            expected_fields,
-            handgrading_models.AppliedAnnotation.get_serializable_fields())
+        # look at test_ag_test_suite.py
+        pp = pprint.PrettyPrinter(indent=4)
 
         app_annotation_obj = handgrading_models.AppliedAnnotation.objects.validate_and_create(
             **self.default_applied_annotation_inputs
         )
 
-        # look at test_ag_test_suite.py
+        app_annotation_dict = app_annotation_obj.to_dict()
 
-        self.assertTrue(app_annotation_obj.to_dict())
+        self.assertCountEqual(expected_fields, app_annotation_dict.keys())
+        self.assertIsInstance(app_annotation_dict['location'], dict)
+
+        update_dict = deepcopy(app_annotation_dict)
+        for non_editable in ['pk', 'last_modified']:
+            update_dict.pop(non_editable)
+
+        pp.pprint((update_dict))
+        print(app_annotation_obj)
+
+        app_annotation_obj.validate_and_update(**update_dict)
