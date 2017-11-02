@@ -1,6 +1,11 @@
+import traceback
+
 import celery
 from django.db import transaction
-from rest_framework import generics
+from django.db.models import F
+from django.db.models import Value
+from django.db.models.functions import Concat
+
 from rest_framework import mixins
 from rest_framework import response
 from rest_framework import status
@@ -51,30 +56,31 @@ class RerunSubmissionsTaskListCreateView(ListCreateNestedModelView):
         signatures = []
         for submission in submissions:
             ag_suite_sigs = [
-                rerun_ag_test_suite.s(submission.pk, ag_suite.pk,
+                rerun_ag_test_suite.s(rerun_task.pk, submission.pk, ag_suite.pk,
                                       *ag_suites_data.get(str(ag_suite.pk), []))
                 for ag_suite in ag_test_suites]
 
             student_suite_sigs = [
-                rerun_student_test_suite.s(submission.pk, student_suite.pk)
+                rerun_student_test_suite.s(rerun_task.pk, submission.pk, student_suite.pk)
                 for student_suite in student_suites]
 
             signatures += ag_suite_sigs
             signatures += student_suite_sigs
 
-        if not signatures:
-            rerun_task.is_finished = True
-            rerun_task.save()
-            return response.Response(self.get_serializer(rerun_task).data,
-                                     status=status.HTTP_201_CREATED)
+        from autograder.celery import app
+        if signatures:
+            group_result = celery.group(signatures).apply_async(connection=app.connection())
 
-        callback = mark_rerun_submissions_as_finished.s(
-            rerun_task.pk
-        ).on_error(mark_rerun_submissions_as_error.s(rerun_task.pk))
+            # Save the group result in the Celery results backend,
+            # and save the group result ID in the database.
+            group_result.save(backend=app.backend)
 
-        task = celery.chord(signatures)(callback)
-        rerun_task.celery_result_id = task.id
-        rerun_task.save()
+            # In case any of the subtasks finish before we reach this line
+            # (definitely happens in testing), make sure we don't
+            # accidentally overwrite the task's progress or error messages.
+            ag_models.RerunSubmissionsTask.objects.filter(
+                pk=rerun_task.pk
+            ).update(celery_group_result_id=group_result.id)
 
         return response.Response(self.get_serializer(rerun_task).data,
                                  status=status.HTTP_201_CREATED)
@@ -89,7 +95,7 @@ class RerunSubmissionsTaskDetailVewSet(mixins.RetrieveModelMixin,
 
 
 @celery.shared_task(queue='rerun', max_retries=1, acks_late=True)
-def rerun_ag_test_suite(submission_pk, ag_test_suite_pk, *ag_test_case_pks):
+def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test_case_pks):
     @retry_should_recover
     def _rerun_ag_test_suite_impl():
         ag_test_suite = ag_models.AGTestSuite.objects.get(pk=ag_test_suite_pk)
@@ -98,31 +104,36 @@ def rerun_ag_test_suite(submission_pk, ag_test_suite_pk, *ag_test_case_pks):
 
         tasks.grade_ag_test_suite_impl(ag_test_suite, submission, *ag_test_cases)
 
-    _rerun_ag_test_suite_impl()
+        ag_models.RerunSubmissionsTask.objects.filter(
+            pk=rerun_task_pk
+        ).update(num_completed_subtasks=F('num_completed_subtasks') + 1)
+
+    try:
+        _rerun_ag_test_suite_impl()
+    except Exception as e:
+        error_msg = '\n' + str(e) + traceback.format_exc() + '\n'
+        ag_models.RerunSubmissionsTask.objects.filter(
+            pk=rerun_task_pk
+        ).update(error_msg=Concat('error_msg', Value(error_msg)))
 
 
 @celery.shared_task(queue='rerun', max_retries=1, acks_late=True)
-def rerun_student_test_suite(submission_pk, student_test_suite_pk):
+def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk):
     @retry_should_recover
     def _rerun_student_test_suite_impl():
         student_suite = ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk)
         submission = ag_models.Submission.objects.get(pk=submission_pk)
+
         tasks.grade_student_test_suite_impl(student_suite, submission)
 
-    _rerun_student_test_suite_impl()
+        ag_models.RerunSubmissionsTask.objects.filter(
+            pk=rerun_task_pk
+        ).update(num_completed_subtasks=F('num_completed_subtasks') + 1)
 
-
-@celery.shared_task(queue='small_tasks', acks_late=True)
-def mark_rerun_submissions_as_finished(chord_results, rerun_submissions_task_pk):
-    with transaction.atomic():
-        ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
-            pk=rerun_submissions_task_pk
-        ).update(is_finished=True)
-
-
-@celery.shared_task(queue='small_tasks', acks_late=True)
-def mark_rerun_submissions_as_error(rerun_submissions_task_pk, request, exc, traceback):
-    with transaction.atomic():
-        ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
-            pk=rerun_submissions_task_pk
-        ).update(is_finished=True, error_msg=str(exc) + '\n' + str(traceback))
+    try:
+        _rerun_student_test_suite_impl()
+    except Exception as e:
+        error_msg = '\n' + str(e) + traceback.format_exc() + '\n'
+        ag_models.RerunSubmissionsTask.objects.filter(
+            pk=rerun_task_pk
+        ).update(error_msg=Concat('error_msg', Value(error_msg)))

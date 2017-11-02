@@ -1,5 +1,4 @@
-from unittest import mock
-from collections import namedtuple
+import uuid
 
 from django.core import exceptions
 
@@ -28,31 +27,28 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
         )  # type: ag_models.RerunSubmissionsTask
 
         self.assertEqual(self.project, rerun_task.project)
-        self.assertEqual('', rerun_task.celery_result_id)
         self.assertTrue(rerun_task.rerun_all_submissions)
         self.assertEqual([], rerun_task.submission_pks)
         self.assertTrue(rerun_task.rerun_all_ag_test_suites)
         self.assertEqual({}, rerun_task.ag_test_suite_data)
         self.assertTrue(rerun_task.rerun_all_student_test_suites)
         self.assertEqual([], rerun_task.student_suite_pks)
-        self.assertFalse(rerun_task.is_finished)
+        self.assertEqual(0, rerun_task.num_completed_subtasks)
 
     def test_create_non_defaults(self):
-        celery_result_id = '1324-2345-3456'
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             creator=self.creator,
             project=self.project,
-            celery_result_id=celery_result_id,
             rerun_all_submissions=False,
             submission_pks=[self.submission.pk],
             rerun_all_ag_test_suites=False,
             ag_test_suite_data={str(self.ag_test_suite.pk): [self.ag_test_case.pk]},
             rerun_all_student_test_suites=False,
-            student_suite_pks=[self.student_test_suite.pk]
+            student_suite_pks=[self.student_test_suite.pk],
+            celery_group_result_id=uuid.uuid4().hex,
         )  # type: ag_models.RerunSubmissionsTask
 
         self.assertEqual(self.project, rerun_task.project)
-        self.assertEqual(celery_result_id, rerun_task.celery_result_id)
         self.assertFalse(rerun_task.rerun_all_submissions)
         self.assertEqual([self.submission.pk], rerun_task.submission_pks)
         self.assertFalse(rerun_task.rerun_all_ag_test_suites)
@@ -62,75 +58,44 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
         self.assertEqual([self.student_test_suite.pk], rerun_task.student_suite_pks)
 
     def test_progress_computation(self):
-        # Replace celery GroupResult with a callable that returns a fake GroupResult
-        # instance. The fake instance has a completed_count method that returns
-        # the value we want.
         completed_count = 1
-        mock_group_result = namedtuple(
-            'MockGroupResult', 'completed_count')(lambda: completed_count)
-        with mock.patch('autograder.core.models.rerun_submissions_task.GroupResult',
-                        new=lambda task_id: mock_group_result):
-            rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
-                creator=self.creator,
-                project=self.project,
-                celery_result_id='3456-7890-2345'
-            )  # type: ag_models.RerunSubmissionsTask
-
-            self.assertAlmostEqual((completed_count / 2) * 100, rerun_task.progress)
-
-    def test_progress_computation_with_specified_pks(self):
-        completed_count = 1
-        mock_group_result = namedtuple(
-            'MockGroupResult', 'completed_count')(lambda: completed_count)
-        with mock.patch('autograder.core.models.rerun_submissions_task.GroupResult',
-                        new=lambda task_id: mock_group_result):
-            rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
-                creator=self.creator,
-                project=self.project,
-                celery_result_id='3456-7890-2345',
-                rerun_all_submissions=False,
-                submission_pks=[self.submission.pk],
-                rerun_all_ag_test_suites=False,
-                ag_test_suite_data={str(self.ag_test_suite.pk): [self.ag_test_case.pk]},
-                rerun_all_student_test_suites=False,
-                student_suite_pks=[self.student_test_suite.pk]
-            )  # type: ag_models.RerunSubmissionsTask
-
-            self.assertAlmostEqual((completed_count / 2) * 100, rerun_task.progress)
-
-    def test_progress_computation_no_subtasks_div_by_zero_avoided(self):
-        completed_count = 1
-        mock_group_result = namedtuple(
-            'MockGroupResult', 'completed_count')(lambda: completed_count)
-        with mock.patch('autograder.core.models.rerun_submissions_task.GroupResult',
-                        new=lambda task_id: mock_group_result):
-            rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
-                creator=self.creator,
-                project=self.project,
-                celery_result_id='3456-7890-2345',
-                rerun_all_submissions=False,
-                rerun_all_ag_test_suites=False,
-                rerun_all_student_test_suites=False,
-            )  # type: ag_models.RerunSubmissionsTask
-
-            self.assertEqual(100, rerun_task.progress)
-
-    def test_progress_computation_task_is_finished(self):
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             creator=self.creator,
             project=self.project,
-            celery_result_id='3456-7890-2345',
-            is_finished=True)  # type: ag_models.RerunSubmissionsTask
+            num_completed_subtasks=completed_count,
+        )  # type: ag_models.RerunSubmissionsTask
 
-        self.assertTrue(rerun_task.is_finished)
-        self.assertEqual(100, rerun_task.progress)
+        num_subtasks = (self.project.ag_test_suites.count() +
+                        self.project.student_test_suites.count())
 
-    def test_task_not_found_progress_is_none(self):
+        self.assertAlmostEqual((completed_count / num_subtasks) * 100, rerun_task.progress)
+
+    def test_progress_computation_with_specified_pks(self):
+        completed_count = 1
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             creator=self.creator,
-            project=self.project)  # type: ag_models.RerunSubmissionsTask
+            project=self.project,
+            rerun_all_submissions=False,
+            submission_pks=[self.submission.pk],
+            rerun_all_ag_test_suites=False,
+            ag_test_suite_data={str(self.ag_test_suite.pk): [self.ag_test_case.pk]},
+            rerun_all_student_test_suites=False,
+            student_suite_pks=[self.student_test_suite.pk],
+            num_completed_subtasks=completed_count
+        )  # type: ag_models.RerunSubmissionsTask
 
-        self.assertIsNone(rerun_task.progress)
+        self.assertAlmostEqual((completed_count / 2) * 100, rerun_task.progress)
+
+    def test_progress_computation_no_subtasks_div_by_zero_avoided(self):
+        rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
+            creator=self.creator,
+            project=self.project,
+            rerun_all_submissions=False,
+            rerun_all_ag_test_suites=False,
+            rerun_all_student_test_suites=False,
+        )  # type: ag_models.RerunSubmissionsTask
+
+        self.assertEqual(100, rerun_task.progress)
 
     def test_error_some_submissions_not_in_project(self):
         other_submission = obj_build.build_submission(submission_group=obj_build.make_group())
@@ -190,7 +155,6 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             'has_error',
 
             'project',
-            'celery_result_id',
             'rerun_all_submissions',
             'submission_pks',
             'rerun_all_ag_test_suites',
@@ -201,8 +165,6 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
 
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             creator=self.creator,
-            project=self.project,
-            celery_result_id='6543-0783456-3456',
-            is_finished=True)
+            project=self.project)
 
         self.assertCountEqual(expected_fields, rerun_task.to_dict().keys())

@@ -23,13 +23,11 @@ class ListRerunSubmissionsTasksTestCase(UnitTestBase):
         self.task1 = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             creator=self.admin,
             project=self.project,
-            celery_result_id='65437890-2345-2345'
         )  # type: ag_models.RerunSubmissionsTask
 
         self.task2 = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             creator=self.admin,
             project=self.project,
-            celery_result_id='65437890-2345-2345'
         )  # type: ag_models.RerunSubmissionsTask
 
         self.client = APIClient()
@@ -245,13 +243,10 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
         with mock.patch(target, new=mock.Mock(side_effect=_MockException)):
             self.client.force_authenticate(self.admin)
 
-            # Since celery tasks are run synchronously in our test cases,
-            # the exception thrown below will cause the transaction
-            # in which the task object is created to be rolled back, which
-            # means that we can't really check that the error_msg field
-            # gets set.
-            with self.assertRaises(tasks.MaxRetriesExceeded):
-                self.client.post(self.url, {})
+            response = self.client.post(self.url, {})
+            rerun_task = ag_models.RerunSubmissionsTask.objects.get(pk=response.data['pk'])
+            print(rerun_task.error_msg)
+            self.assertNotEqual('', rerun_task.error_msg)
 
     def test_one_item_celery_chord(self, *args):
         request_body = {
@@ -274,10 +269,6 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
         self.do_rerun_submissions_test_case(
             request_body, (self.submission1, 0), (self.submission2, 0))
 
-        rerun_task = ag_models.RerunSubmissionsTask.objects.first()
-        self.assertEqual(100, rerun_task.progress)
-        self.assertTrue(rerun_task.is_finished)
-
     def do_rerun_submissions_test_case(
             self, request_body: dict,
             *expected_submission_points: Tuple[ag_models.Submission, int]):
@@ -286,8 +277,20 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
         response = self.client.post(self.url, request_body)
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
-        task = ag_models.RerunSubmissionsTask.objects.first()
+        task = ag_models.RerunSubmissionsTask.objects.get(
+            pk=response.data['pk']
+        )  # type: ag_models.RerunSubmissionsTask
+
+        self.assertEqual(100, task.progress)
         expected_response = task.to_dict()
+
+        if task.num_completed_subtasks != 0:
+            # Unless there were no subtasks, there
+            # should be a celery group result id, and
+            # the response should return progress of 0.
+            self.assertIsNotNone(task.celery_group_result_id)
+            expected_response['progress'] = 0
+
         self.assertEqual(expected_response, response.data)
 
         for submission, expected_total_points in expected_submission_points:
@@ -330,7 +333,6 @@ class GetRerunSubmissionsTaskTestCase(test_impls.GetObjectTest, UnitTestBase):
         create_url = reverse('rerun_submissions_tasks', kwargs={'project_pk': self.project.pk})
 
         create_response = create_client.post(create_url, {})
-        print(create_response.data)
         self.rerun_task = ag_models.RerunSubmissionsTask.objects.get(pk=create_response.data['pk'])
 
         self.client = APIClient()

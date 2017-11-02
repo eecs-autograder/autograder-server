@@ -15,11 +15,6 @@ class RerunSubmissionsTask(Task):
     project = models.ForeignKey(Project, related_name='rerun_submission_tasks',
                                 help_text="The Project this task belongs to.")
 
-    celery_result_id = models.TextField(
-        blank=True,
-        help_text="""This ID can be used to look up the results of the celery
-                     task created for this object.""")
-
     rerun_all_submissions = models.BooleanField(
         default=True,
         help_text="""When True, indicates that all submissions for the specified
@@ -62,14 +57,12 @@ class RerunSubmissionsTask(Task):
         help_text="""When rerun_all_student_test_suites is False, specifies which
                      student test suites should be rerun.""")
 
-    is_finished = models.BooleanField(blank=True, default=False)
+    num_completed_subtasks = models.IntegerField(default=0)
+
+    celery_group_result_id = models.UUIDField(blank=True, null=True, default=None)
 
     @property
     def progress(self):
-        if self.is_finished:
-            return 100
-
-        result = GroupResult(str(self.celery_result_id))
         if self.rerun_all_submissions:
             num_submissions = Submission.objects.filter(
                 submission_group__project=self.project).count()
@@ -91,10 +84,7 @@ class RerunSubmissionsTask(Task):
         if num_tasks == 0:
             return 100
 
-        try:
-            return min((result.completed_count() / num_tasks) * 100, 100)
-        except TypeError:
-            return None
+        return int(min((self.num_completed_subtasks / num_tasks) * 100, 100))
 
     def clean(self):
         super().clean()
@@ -158,8 +148,9 @@ class RerunSubmissionsTask(Task):
         'creator',
         'created_at',
         'has_error',
+
         'project',
-        'celery_result_id',
+
         'rerun_all_submissions',
         'submission_pks',
         'rerun_all_ag_test_suites',
