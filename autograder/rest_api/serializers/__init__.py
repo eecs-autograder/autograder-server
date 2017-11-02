@@ -11,6 +11,7 @@ from .serializer_impls import (
     AGTestCaseSerializer,
     AGTestCommandSerializer,
     StudentTestSuiteSerializer,
+    RerunSubmissionTaskSerializer,
     NotificationSerializer,
 )
 

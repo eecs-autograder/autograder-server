@@ -25,37 +25,38 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             creator=self.creator,
             project=self.project,
-            celery_result_id=75
         )  # type: ag_models.RerunSubmissionsTask
 
         self.assertEqual(self.project, rerun_task.project)
-        self.assertEqual(75, rerun_task.celery_result_id)
+        self.assertEqual('', rerun_task.celery_result_id)
         self.assertTrue(rerun_task.rerun_all_submissions)
         self.assertEqual([], rerun_task.submission_pks)
         self.assertTrue(rerun_task.rerun_all_ag_test_suites)
         self.assertEqual({}, rerun_task.ag_test_suite_data)
         self.assertTrue(rerun_task.rerun_all_student_test_suites)
         self.assertEqual([], rerun_task.student_suite_pks)
+        self.assertFalse(rerun_task.is_finished)
 
-    def test_valid_create(self):
+    def test_create_non_defaults(self):
+        celery_result_id = '1324-2345-3456'
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             creator=self.creator,
             project=self.project,
-            celery_result_id=42,
+            celery_result_id=celery_result_id,
             rerun_all_submissions=False,
             submission_pks=[self.submission.pk],
             rerun_all_ag_test_suites=False,
-            ag_test_suite_data={self.ag_test_suite.pk: [self.ag_test_case.pk]},
+            ag_test_suite_data={str(self.ag_test_suite.pk): [self.ag_test_case.pk]},
             rerun_all_student_test_suites=False,
             student_suite_pks=[self.student_test_suite.pk]
         )  # type: ag_models.RerunSubmissionsTask
 
         self.assertEqual(self.project, rerun_task.project)
-        self.assertEqual(42, rerun_task.celery_result_id)
+        self.assertEqual(celery_result_id, rerun_task.celery_result_id)
         self.assertFalse(rerun_task.rerun_all_submissions)
         self.assertEqual([self.submission.pk], rerun_task.submission_pks)
         self.assertFalse(rerun_task.rerun_all_ag_test_suites)
-        self.assertEqual({self.ag_test_suite.pk: [self.ag_test_case.pk]},
+        self.assertEqual({str(self.ag_test_suite.pk): [self.ag_test_case.pk]},
                          rerun_task.ag_test_suite_data)
         self.assertFalse(rerun_task.rerun_all_student_test_suites)
         self.assertEqual([self.student_test_suite.pk], rerun_task.student_suite_pks)
@@ -72,7 +73,7 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
                 creator=self.creator,
                 project=self.project,
-                celery_result_id=42
+                celery_result_id='3456-7890-2345'
             )  # type: ag_models.RerunSubmissionsTask
 
             self.assertAlmostEqual((completed_count / 2) * 100, rerun_task.progress)
@@ -86,11 +87,11 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
                 creator=self.creator,
                 project=self.project,
-                celery_result_id=42,
+                celery_result_id='3456-7890-2345',
                 rerun_all_submissions=False,
                 submission_pks=[self.submission.pk],
                 rerun_all_ag_test_suites=False,
-                ag_test_suite_data={self.ag_test_suite.pk: [self.ag_test_case.pk]},
+                ag_test_suite_data={str(self.ag_test_suite.pk): [self.ag_test_case.pk]},
                 rerun_all_student_test_suites=False,
                 student_suite_pks=[self.student_test_suite.pk]
             )  # type: ag_models.RerunSubmissionsTask
@@ -106,13 +107,30 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
                 creator=self.creator,
                 project=self.project,
-                celery_result_id=42,
+                celery_result_id='3456-7890-2345',
                 rerun_all_submissions=False,
                 rerun_all_ag_test_suites=False,
                 rerun_all_student_test_suites=False,
             )  # type: ag_models.RerunSubmissionsTask
 
             self.assertEqual(100, rerun_task.progress)
+
+    def test_progress_computation_task_is_finished(self):
+        rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
+            creator=self.creator,
+            project=self.project,
+            celery_result_id='3456-7890-2345',
+            is_finished=True)  # type: ag_models.RerunSubmissionsTask
+
+        self.assertTrue(rerun_task.is_finished)
+        self.assertEqual(100, rerun_task.progress)
+
+    def test_task_not_found_progress_is_none(self):
+        rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
+            creator=self.creator,
+            project=self.project)  # type: ag_models.RerunSubmissionsTask
+
+        self.assertIsNone(rerun_task.progress)
 
     def test_error_some_submissions_not_in_project(self):
         other_submission = obj_build.build_submission(submission_group=obj_build.make_group())
@@ -121,7 +139,6 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             ag_models.RerunSubmissionsTask.objects.validate_and_create(
                 creator=self.creator,
                 project=self.project,
-                celery_result_id=92,
                 rerun_all_submissions=False,
                 submission_pks=[other_submission.pk])
 
@@ -134,9 +151,8 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             ag_models.RerunSubmissionsTask.objects.validate_and_create(
                 creator=self.creator,
                 project=self.project,
-                celery_result_id=92,
                 rerun_all_ag_test_suites=False,
-                ag_test_suite_data={other_ag_test_suite.pk: []})
+                ag_test_suite_data={str(other_ag_test_suite.pk): []})
 
         self.assertIn('ag_test_suite_data', cm.exception.message_dict)
 
@@ -147,9 +163,8 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             ag_models.RerunSubmissionsTask.objects.validate_and_create(
                 creator=self.creator,
                 project=self.project,
-                celery_result_id=92,
                 rerun_all_ag_test_suites=False,
-                ag_test_suite_data={self.ag_test_suite.pk: [other_ag_test_case.pk]})
+                ag_test_suite_data={str(self.ag_test_suite.pk): [other_ag_test_case.pk]})
 
         self.assertIn('ag_test_suite_data', cm.exception.message_dict)
 
@@ -160,7 +175,6 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             ag_models.RerunSubmissionsTask.objects.validate_and_create(
                 creator=self.creator,
                 project=self.project,
-                celery_result_id=92,
                 rerun_all_student_test_suites=False,
                 student_suite_pks=[other_student_suite.pk])
 
@@ -168,6 +182,7 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
 
     def test_serialization(self):
         expected_fields = [
+            'pk',
             'progress',
             'error_msg',
             'creator',
@@ -187,6 +202,7 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
             creator=self.creator,
             project=self.project,
-            celery_result_id=92)
+            celery_result_id='6543-0783456-3456',
+            is_finished=True)
 
         self.assertCountEqual(expected_fields, rerun_task.to_dict().keys())

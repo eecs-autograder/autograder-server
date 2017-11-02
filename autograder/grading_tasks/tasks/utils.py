@@ -86,9 +86,9 @@ retry_ag_test_cmd = retry(max_num_retries=settings.AG_TEST_MAX_RETRIES,
 @retry_should_recover
 def mark_submission_as_error(submission_pk, error_msg):
     with transaction.atomic():
-        submission = ag_models.Submission.objects.select_for_update().filter(
-            pk=submission_pk).update(status=ag_models.Submission.GradingStatus.error,
-                                     error_msg=error_msg)
+        ag_models.Submission.objects.select_for_update().filter(
+            pk=submission_pk
+        ).update(status=ag_models.Submission.GradingStatus.error, error_msg=error_msg)
 
 
 def add_files_to_sandbox(sandbox: AutograderSandbox,

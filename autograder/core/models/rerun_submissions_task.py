@@ -12,9 +12,11 @@ from .student_test_suite import StudentTestSuite
 
 
 class RerunSubmissionsTask(Task):
-    project = models.ForeignKey(Project, help_text="The Project this task belongs to.")
+    project = models.ForeignKey(Project, related_name='rerun_submission_tasks',
+                                help_text="The Project this task belongs to.")
 
-    celery_result_id = models.IntegerField(
+    celery_result_id = models.TextField(
+        blank=True,
         help_text="""This ID can be used to look up the results of the celery
                      task created for this object.""")
 
@@ -41,7 +43,9 @@ class RerunSubmissionsTask(Task):
                      those suites should be rerun.
         Data format:
         {
-            <ag_test_suite_pk>: [<ag_test_case_pk>, ...],
+            // Note: JSON format requires that keys are strings. Postgres
+            // doesn't seem to care, but some JSON serializers might.
+            "<ag_test_suite_pk>": [<ag_test_case_pk>, ...],
             ...
         }
         If an ag_test_suite_pk is mapped to an empty list, then all ag test cases
@@ -58,8 +62,13 @@ class RerunSubmissionsTask(Task):
         help_text="""When rerun_all_student_test_suites is False, specifies which
                      student test suites should be rerun.""")
 
+    is_finished = models.BooleanField(blank=True, default=False)
+
     @property
     def progress(self):
+        if self.is_finished:
+            return 100
+
         result = GroupResult(str(self.celery_result_id))
         if self.rerun_all_submissions:
             num_submissions = Submission.objects.filter(
@@ -82,7 +91,10 @@ class RerunSubmissionsTask(Task):
         if num_tasks == 0:
             return 100
 
-        return min((result.completed_count() / num_tasks) * 100, 100)
+        try:
+            return min((result.completed_count() / num_tasks) * 100, 100)
+        except TypeError:
+            return None
 
     def clean(self):
         super().clean()
@@ -103,13 +115,13 @@ class RerunSubmissionsTask(Task):
         if not self.rerun_all_ag_test_suites:
             ag_suites = AGTestSuite.objects.filter(
                 pk__in=self.ag_test_suite_data.keys(), project=self.project)
-            found_pks = {suite.pk for suite in ag_suites}
-            not_found_pks = set(self.ag_test_suite_data.keys()) - found_pks
+            found_pks = {str(suite.pk) for suite in ag_suites}
+            not_found_pks = {str(pk) for pk in self.ag_test_suite_data.keys()} - found_pks
 
             if not_found_pks:
                 errors['ag_test_suite_data'] = (
                     'The following ag test suites do not belong to the project {}: {}'.format(
-                        self.project.name, ', '.join((str(pk) for pk in not_found_pks))))
+                        self.project.name, ', '.join(not_found_pks)))
 
             for suite_pk, ag_test_pks in self.ag_test_suite_data.items():
                 ag_cases = AGTestCase.objects.filter(pk__in=ag_test_pks, ag_test_suite=suite_pk)
@@ -140,6 +152,7 @@ class RerunSubmissionsTask(Task):
             raise exceptions.ValidationError(errors)
 
     SERIALIZABLE_FIELDS = [
+        'pk',
         'progress',
         'error_msg',
         'creator',

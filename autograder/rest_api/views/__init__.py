@@ -40,3 +40,6 @@ from .ag_test_views.ag_test_command_views import (
 
 from .student_test_suite_views import (
     StudentTestSuiteListCreateView, StudentTestSuiteOrderView, StudentTestSuiteDetailViewSet)
+
+from .rerun_submissions_task_views import (
+    RerunSubmissionsTaskListCreateView, RerunSubmissionsTaskDetailVewSet)
