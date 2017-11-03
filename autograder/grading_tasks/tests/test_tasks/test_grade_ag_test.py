@@ -516,3 +516,73 @@ sys.stderr.flush()
                       stdin=None,
                       as_root=False, **expected_setup_and_teardown_resource_kwargs)
         ])
+
+
+@tag('slow', 'sandbox')
+@mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+class AGTestSuiteRerunTestCase(UnitTestBase):
+    def setUp(self):
+        # 1. Create an AGTestSuite with 2 test cases (one command per test).
+        # 2. Each test case should be configured to fail when they are run.
+        # 3. Grade the AGTestSuite, letting both tests fail.
+        # 4. Update the test cases so that they will pass when they are rerun.
+
+        super().setUp()
+        self.submission = obj_build.build_submission()
+        self.project = self.submission.submission_group.project
+        self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
+
+        self.ag_test_case_1 = obj_build.make_ag_test_case(self.ag_test_suite)
+        self.ag_test_cmd_1 = ag_models.AGTestCommand.objects.validate_and_create(
+            ag_test_case=self.ag_test_case_1,
+            name='cmd1',
+            cmd='false',  # Always exits nonzero
+            expected_return_code=ag_models.ExpectedReturnCode.zero
+        )  # type: ag_models.AGTestCommand
+        self.ag_test_case_2 = obj_build.make_ag_test_case(self.ag_test_suite)
+        self.ag_test_cmd_2 = ag_models.AGTestCommand.objects.validate_and_create(
+            ag_test_case=self.ag_test_case_2,
+            name='cmd2',
+            cmd='false',
+            expected_return_code=ag_models.ExpectedReturnCode.zero
+        )  # type: ag_models.AGTestCommand
+
+        # Reverse the order the test cases are run in so that the test cases
+        # and test case results don't have the same pk's
+        self.ag_test_suite.set_agtestcase_order(self.ag_test_suite.get_agtestcase_order()[::-1])
+
+        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission)
+
+        results = ag_models.AGTestCommandResult.objects.all()
+        self.assertEqual(2, results.count())
+        for res in results:
+            self.assertFalse(res.return_code_correct)
+
+        self.ag_test_cmd_1.validate_and_update(cmd='true')  # Always exits zero
+        self.ag_test_cmd_2.validate_and_update(cmd='true')
+
+    def test_rerun_all_tests_in_suite_no_star_args_passed(self, *args):
+        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission)
+
+        results = ag_models.AGTestCommandResult.objects.all()
+        self.assertEqual(2, results.count())
+        for res in results:
+            self.assertTrue(res.return_code_correct)
+
+    def test_rerun_all_tests_in_suite_with_star_args_passed(self, *args):
+        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission,
+                                       self.ag_test_case_1, self.ag_test_case_2)
+
+        results = ag_models.AGTestCommandResult.objects.all()
+        self.assertEqual(2, results.count())
+        for res in results:
+            self.assertTrue(res.return_code_correct)
+
+    def test_rerun_some_tests_in_suite(self, *args):
+        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.ag_test_case_1)
+
+        rerun_result = self.ag_test_cmd_1.agtestcommandresult_set.first()
+        self.assertTrue(rerun_result.return_code_correct)
+
+        not_rerun_result = self.ag_test_cmd_2.agtestcommandresult_set.first()
+        self.assertFalse(not_rerun_result.return_code_correct)

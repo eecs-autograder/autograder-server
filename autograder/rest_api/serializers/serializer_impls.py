@@ -99,6 +99,11 @@ class StudentTestSuiteSerializer(AGModelSerializer):
         return ag_models.StudentTestSuite.objects
 
 
+class RerunSubmissionTaskSerializer(AGModelSerializer):
+    def get_ag_model_manager(self):
+        return ag_models.RerunSubmissionsTask.objects
+
+
 class NotificationSerializer(AGModelSerializer):
     def get_ag_model_manager(self):
         return ag_models.Notification.objects
