@@ -234,7 +234,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
             request_body, (self.submission1, self.student_suite1_points_possible),
             (self.submission2, self.student_suite1_points_possible))
 
-    def test_admin_rerun_fatal_error(self, *args):
+    def test_admin_rerun_fatal_error_in_ag_test_suite(self, *args):
         class _MockException(Exception):
             pass
 
@@ -247,6 +247,22 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
             rerun_task = ag_models.RerunSubmissionsTask.objects.get(pk=response.data['pk'])
             print(rerun_task.error_msg)
             self.assertNotEqual('', rerun_task.error_msg)
+            self.assertIn('Error rerunning ag test suite', rerun_task.error_msg)
+
+    def test_admin_rerun_fatal_error_in_student_test_suite(self, *args):
+        class _MockException(Exception):
+            pass
+
+        target = ('autograder.rest_api.views.rerun_submissions_task_views.'
+                  'tasks.grade_student_test_suite_impl')
+        with mock.patch(target, new=mock.Mock(side_effect=_MockException)):
+            self.client.force_authenticate(self.admin)
+
+            response = self.client.post(self.url, {})
+            rerun_task = ag_models.RerunSubmissionsTask.objects.get(pk=response.data['pk'])
+            print(rerun_task.error_msg)
+            self.assertNotEqual('', rerun_task.error_msg)
+            self.assertIn('Error rerunning student test suite', rerun_task.error_msg)
 
     def test_one_item_celery_chord(self, *args):
         request_body = {

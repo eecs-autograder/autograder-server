@@ -111,7 +111,11 @@ def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test
     try:
         _rerun_ag_test_suite_impl()
     except Exception as e:
-        error_msg = '\n' + str(e) + traceback.format_exc() + '\n'
+        error_msg = (
+            '\nError rerunning ag test suite {} for submission {}\n'.format(
+                ag_test_suite_pk, submission_pk
+            ) +
+            str(e) + traceback.format_exc() + '\n')
         ag_models.RerunSubmissionsTask.objects.filter(
             pk=rerun_task_pk
         ).update(error_msg=Concat('error_msg', Value(error_msg)))
@@ -133,7 +137,11 @@ def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk
     try:
         _rerun_student_test_suite_impl()
     except Exception as e:
-        error_msg = '\n' + str(e) + traceback.format_exc() + '\n'
+        error_msg = (
+            '\nError rerunning student test suite {} for submission {}\n'.format(
+                student_test_suite_pk, submission_pk
+            ) +
+            str(e) + traceback.format_exc() + '\n')
         ag_models.RerunSubmissionsTask.objects.filter(
             pk=rerun_task_pk
         ).update(error_msg=Concat('error_msg', Value(error_msg)))
