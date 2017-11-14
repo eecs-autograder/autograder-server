@@ -58,3 +58,26 @@ class CriterionTestCase(UnitTestBase):
         self.assertEqual(criterion_obj.long_description, criterion_inputs["long_description"])
         self.assertEqual(criterion_obj.points, criterion_inputs["points"])
         self.assertEqual(criterion_obj.handgrading_rubric, criterion_inputs["handgrading_rubric"])
+
+    def test_serializable_fields(self):
+        expected_fields = [
+            'pk',
+            'last_modified',
+
+            'short_description',
+            'long_description',
+            'points',
+            'handgrading_rubric',
+        ]
+
+        criterion_obj = handgrading_models.Criterion.objects.validate_and_create(
+            **self.default_criterion
+        )
+
+        criterion_dict = criterion_obj.to_dict()
+        self.assertCountEqual(expected_fields, criterion_dict.keys())
+
+        for non_editable in ['pk', 'last_modified', 'handgrading_rubric']:
+            criterion_dict.pop(non_editable)
+
+        criterion_obj.validate_and_update(**criterion_dict)

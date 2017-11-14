@@ -9,8 +9,8 @@ class CriterionResultTestCases(UnitTestBase):
     """
     Test cases relating the Criterion Result Model
     """
-    def test_create_average_case(self):
-        criterion_obj = handgrading_models.Criterion.objects.validate_and_create(
+    def setUp(self):
+        self.criterion_obj = handgrading_models.Criterion.objects.validate_and_create(
             points=0,
             handgrading_rubric=handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
@@ -22,20 +22,43 @@ class CriterionResultTestCases(UnitTestBase):
             )
         )
 
-        result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
+        self.result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=obj_build.build_submission()
         )
 
-        criterion_inputs = {
+        self.criterion_inputs = {
             "selected": True,
-            "criterion": criterion_obj,
-            "handgrading_result": result_obj
+            "criterion": self.criterion_obj,
+            "handgrading_result": self.result_obj
         }
 
+    def test_create_average_case(self):
         criterion_result_obj = handgrading_models.CriterionResult.objects.validate_and_create(
-            **criterion_inputs)
+            **self.criterion_inputs)
 
-        self.assertEqual(criterion_result_obj.selected, criterion_inputs["selected"])
-        self.assertEqual(criterion_result_obj.criterion, criterion_inputs["criterion"])
+        self.assertEqual(criterion_result_obj.selected, self.criterion_inputs["selected"])
+        self.assertEqual(criterion_result_obj.criterion, self.criterion_inputs["criterion"])
         self.assertEqual(criterion_result_obj.handgrading_result,
-                         criterion_inputs["handgrading_result"])
+                         self.criterion_inputs["handgrading_result"])
+
+    def test_serializable_fields(self):
+        expected_fields = [
+            'pk',
+            'last_modified',
+
+            'selected',
+            'criterion',
+            'handgrading_result',
+        ]
+
+        criterion_res_obj = handgrading_models.CriterionResult.objects.validate_and_create(
+            **self.criterion_inputs
+        )
+
+        criterion_res_dict = criterion_res_obj.to_dict()
+        self.assertCountEqual(expected_fields, criterion_res_dict.keys())
+
+        for non_editable in ['pk', 'last_modified', 'criterion', 'handgrading_result']:
+            criterion_res_dict.pop(non_editable)
+
+        criterion_res_obj.validate_and_update(**criterion_res_dict)

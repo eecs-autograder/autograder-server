@@ -57,3 +57,26 @@ class AnnotationTestCase(UnitTestBase):
         self.assertEqual(annotation_obj.short_description, annotation_inputs["short_description"])
         self.assertEqual(annotation_obj.long_description, annotation_inputs["long_description"])
         self.assertEqual(annotation_obj.points, annotation_inputs["points"])
+
+    def test_serializable_fields(self):
+        expected_fields = [
+            'pk',
+            'last_modified',
+
+            'short_description',
+            'long_description',
+            'points',
+            'handgrading_rubric',
+        ]
+
+        annotation_obj = handgrading_models.Annotation.objects.validate_and_create(
+            **self.default_annotation
+        )
+
+        annotation_dict = annotation_obj.to_dict()
+        self.assertCountEqual(expected_fields, annotation_dict.keys())
+
+        for non_editable in ['pk', 'last_modified', 'handgrading_rubric']:
+            annotation_dict.pop(non_editable)
+
+        annotation_obj.validate_and_update(**annotation_dict)

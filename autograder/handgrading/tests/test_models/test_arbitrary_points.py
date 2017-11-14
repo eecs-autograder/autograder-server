@@ -88,12 +88,16 @@ class ArbitraryPointsTestCase(UnitTestBase):
             'handgrading_result',
         ]
 
-        self.assertCountEqual(
-            expected_fields,
-            handgrading_models.ArbitraryPoints.get_serializable_fields())
-
         arb_points_obj = handgrading_models.ArbitraryPoints.objects.validate_and_create(
             **self.default_arb_points_inputs
         )
 
-        self.assertTrue(arb_points_obj.to_dict())
+        arb_points_dict = arb_points_obj.to_dict()
+
+        self.assertCountEqual(expected_fields, arb_points_dict.keys())
+        self.assertIsInstance(arb_points_dict['location'], dict)
+
+        for non_editable in ['pk', 'last_modified', 'location', 'handgrading_result']:
+            arb_points_dict.pop(non_editable)
+
+        arb_points_obj.validate_and_update(**arb_points_dict)

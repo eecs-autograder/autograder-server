@@ -25,3 +25,28 @@ class LocationTestCase(UnitTestBase):
 
         with self.assertRaises(ValidationError):
             handgrading_models.Location.objects.validate_and_create(**location_inputs)
+
+    def test_serialization(self):
+        expected_fields = [
+            'pk',
+            'last_modified',
+
+            'first_line',
+            'last_line',
+            'filename',
+        ]
+
+        location_obj = handgrading_models.Location.objects.validate_and_create(
+            first_line=0,
+            last_line=0,
+            filename="stats.cpp"
+        )
+
+        location_dict = location_obj.to_dict()
+
+        self.assertCountEqual(expected_fields, location_dict.keys())
+
+        for non_editable in ['pk', 'last_modified', 'filename']:
+            location_dict.pop(non_editable)
+
+        location_obj.validate_and_update(**location_dict)

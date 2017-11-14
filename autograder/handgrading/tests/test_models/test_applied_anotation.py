@@ -139,13 +139,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
         self.assertCountEqual(expected_fields, app_annotation_dict.keys())
         self.assertIsInstance(app_annotation_dict['location'], dict)
 
-        # update_dict = deepcopy(app_annotation_dict)
-        # pp.pprint((update_dict))
-
         for non_editable in ['pk', 'last_modified', 'location', 'annotation', 'handgrading_result']:
             app_annotation_dict.pop(non_editable)
-
-        # pp.pprint((update_dict))
-        # print(app_annotation_obj)
 
         app_annotation_obj.validate_and_update(**app_annotation_dict)

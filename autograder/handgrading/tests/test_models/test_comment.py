@@ -61,10 +61,6 @@ class CommentTestCase(UnitTestBase):
             'handgrading_result',
         ]
 
-        self.assertCountEqual(
-            expected_fields,
-            handgrading_models.Comment.get_serializable_fields())
-
         comment_obj = handgrading_models.Comment.objects.validate_and_create(
             location={
                 "first_line": 0,
@@ -77,4 +73,12 @@ class CommentTestCase(UnitTestBase):
             )
         )
 
-        self.assertTrue(comment_obj.to_dict())
+        comment_dict = comment_obj.to_dict()
+
+        self.assertCountEqual(expected_fields, comment_dict.keys())
+        self.assertIsInstance(comment_dict['location'], dict)
+
+        for non_editable in ['pk', 'last_modified', 'location', 'handgrading_result']:
+            comment_dict.pop(non_editable)
+
+        comment_obj.validate_and_update(**comment_dict)
