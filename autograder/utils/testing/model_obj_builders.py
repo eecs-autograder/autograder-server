@@ -215,6 +215,7 @@ def make_expected_student_pattern(project: ag_models.Project) -> ag_models.Expec
         project=project,
         pattern='pattern' + get_unique_id())
 
+
 def make_group(num_members: int=1,
                members_role: ag_models.UserRole=ag_models.UserRole.student,
                project: ag_models.Project=None,
@@ -353,10 +354,10 @@ def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand
     kwargs.update(result_kwargs)
 
     result = ag_models.AGTestCommandResult.objects.validate_and_create(**kwargs)
-    with result.open_stdout('w') as f:
+    with open(result.stdout_filename, 'w') as f:
         f.write(stdout)
 
-    with result.open_stderr('w') as f:
+    with open(result.stderr_filename, 'w') as f:
         f.write(stderr)
 
     return result
@@ -382,10 +383,22 @@ def make_incorrect_ag_test_command_result(ag_test_command: ag_models.AGTestComma
     result.stderr_correct = False
     result.save()
 
-    with result.open_stdout('a') as f:
+    with open(result.stdout_filename, 'a') as f:
         f.write('laksdjhnflkajhdflkas')
 
-    with result.open_stderr('a') as f:
+    with open(result.stderr_filename, 'a') as f:
         f.write('ncbsljksdkfjas')
 
     return result
+
+
+def make_student_test_suite(project: ag_models.Project=None,
+                            **student_test_suite_kwargs) -> ag_models.StudentTestSuite:
+    if project is None:
+        project = make_project()
+
+    if 'name' not in student_test_suite_kwargs:
+        student_test_suite_kwargs['name'] = 'student_test_suite{}'.format(get_unique_id())
+
+    return ag_models.StudentTestSuite.objects.validate_and_create(
+        project=project, **student_test_suite_kwargs)

@@ -53,6 +53,9 @@ class _DummyAutograderModel(AutograderModel):
     transparent_to_one = models.OneToOneField(
         _DummyForeignAutograderModel, related_name='+',
         default=_make_default_dummy_foreign_ag_model)
+    transparent_nullable_to_one = models.OneToOneField(
+        _DummyForeignAutograderModel, related_name='+',
+        default=None, blank=True, null=True)
 
     foreign_key = models.ForeignKey(_DummyForeignAutograderModel, related_name='rev_foreign_key')
     nullable_foreign_key = models.ForeignKey(
@@ -60,6 +63,9 @@ class _DummyAutograderModel(AutograderModel):
     transparent_foreign_key = models.OneToOneField(
         _DummyForeignAutograderModel, related_name='+',
         default=_make_default_dummy_foreign_ag_model)
+    transparent_nullable_foreign_key = models.ForeignKey(
+        _DummyForeignAutograderModel, related_name='+',
+        default=None, blank=True, null=True)
 
     many_to_many = models.ManyToManyField(_DummyToManyModel, related_name='many_to_manys')
     another_many_to_many = models.ManyToManyField(_DummyToManyModel)
@@ -86,10 +92,12 @@ class _DummyAutograderModel(AutograderModel):
         'one_to_one',
         'nullable_one_to_one',
         'transparent_to_one',
+        'transparent_nullable_to_one',
 
         'foreign_key',
         'nullable_foreign_key',
         'transparent_foreign_key',
+        'transparent_nullable_foreign_key',
 
         'many_to_many',
         'another_many_to_many',
@@ -106,10 +114,12 @@ class _DummyAutograderModel(AutograderModel):
         'one_to_one',
         'nullable_one_to_one',
         'transparent_to_one',
+        'transparent_nullable_to_one',
 
         'foreign_key',
         'nullable_foreign_key',
         'transparent_foreign_key',
+        'transparent_nullable_foreign_key',
 
         'many_to_many',
         'another_many_to_many',
@@ -119,5 +129,7 @@ class _DummyAutograderModel(AutograderModel):
 
     TRANSPARENT_TO_ONE_FIELDS = (
         'transparent_to_one',
-        'transparent_foreign_key'
+        'transparent_nullable_to_one',
+        'transparent_foreign_key',
+        'transparent_nullable_foreign_key',
     )

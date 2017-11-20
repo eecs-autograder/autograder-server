@@ -462,7 +462,7 @@ class MergeGroupsTestCase(test_data.Client,
 
     def test_non_admin_permission_denied(self):
         for user in self.staff, self.enrolled, self.nobody:
-            with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+            with self.assert_queryset_count_unchanged(ag_models.SubmissionGroup.objects):
                 self.client.force_authenticate(user)
                 response = self.client.post(self.get_merge_url(self.group1, self.group2))
 
@@ -488,7 +488,7 @@ class MergeGroupsTestCase(test_data.Client,
 
     def test_error_merge_staff_and_non_staff(self):
         staff_group = self.staff_group(self.group1.project)
-        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+        with self.assert_queryset_count_unchanged(ag_models.SubmissionGroup.objects):
             self.client.force_authenticate(self.admin)
             response = self.client.post(self.get_merge_url(self.group1, staff_group))
 
@@ -497,7 +497,7 @@ class MergeGroupsTestCase(test_data.Client,
 
     def test_error_merge_enrolled_and_non_enrolled(self):
         non_enrolled_group = self.non_enrolled_group(self.group1.project)
-        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+        with self.assert_queryset_count_unchanged(ag_models.SubmissionGroup.objects):
             self.client.force_authenticate(self.admin)
             response = self.client.post(self.get_merge_url(self.group1, non_enrolled_group))
 
@@ -505,7 +505,7 @@ class MergeGroupsTestCase(test_data.Client,
         self.assertIn('members', response.data)
 
     def test_missing_query_param(self):
-        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+        with self.assert_queryset_count_unchanged(ag_models.SubmissionGroup.objects):
             self.client.force_authenticate(self.admin)
             response = self.client.post(reverse('group-merge-with',
                                                 kwargs={'pk': self.group1.pk}))
@@ -514,7 +514,7 @@ class MergeGroupsTestCase(test_data.Client,
         self.assertIn('other_group_pk', response.data)
 
     def test_query_param_pk_not_found(self):
-        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+        with self.assert_queryset_count_unchanged(ag_models.SubmissionGroup.objects):
             self.client.force_authenticate(self.admin)
             response = self.client.post(reverse('group-merge-with',
                                                 kwargs={'pk': self.group1.pk}) +
@@ -526,7 +526,7 @@ class MergeGroupsTestCase(test_data.Client,
         group_diff_proj = obj_build.build_submission_group(
             group_kwargs={'project': self.visible_private_project})
         self.assertNotEqual(self.group1.project, group_diff_proj.project)
-        with self.assert_queryset_count_unchange(ag_models.SubmissionGroup.objects):
+        with self.assert_queryset_count_unchanged(ag_models.SubmissionGroup.objects):
             self.client.force_authenticate(self.admin)
             response = self.client.post(self.get_merge_url(self.group1, group_diff_proj))
 
