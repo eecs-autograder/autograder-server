@@ -30,7 +30,7 @@ class AGTestSuiteOrderView(GetObjectLockOnUnsafeMixin, generics.GenericAPIView):
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
 
-    def get(self, request, *args, **kwargs):
+    def get(self, *args, **kwargs):
         project = self.get_object()
         return response.Response(list(project.get_agtestsuite_order()))
 

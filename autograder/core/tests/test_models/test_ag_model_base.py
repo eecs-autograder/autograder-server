@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.contrib.auth.models import User
 from django.core import exceptions
 
@@ -44,10 +46,12 @@ class AGModelBaseToDictTest(UnitTestBase):
             'one_to_one': self.ag_model.one_to_one.pk,
             'nullable_one_to_one': None,
             'transparent_to_one': self.ag_model.transparent_to_one.to_dict(),
+            'transparent_nullable_to_one': None,
 
             'foreign_key': self.ag_model.foreign_key.pk,
             'nullable_foreign_key': None,
             'transparent_foreign_key': self.ag_model.transparent_foreign_key.to_dict(),
+            'transparent_nullable_foreign_key': None,
 
             'many_to_many': [obj.pk for obj in self.many_to_manys],
             'another_many_to_many': [],
@@ -56,7 +60,6 @@ class AGModelBaseToDictTest(UnitTestBase):
         }
         result = self.ag_model.to_dict()
         result['users'].sort()
-
         print(result)
         self.assertEqual(expected, result)
 
@@ -68,45 +71,49 @@ class AGModelBaseToDictTest(UnitTestBase):
         self.assertEqual(expected_one_to_many, self.ag_model.foreign_key.to_dict())
 
     def test_to_one_and_to_many_in_serialize_related(self):
-        _DummyAutograderModel.SERIALIZE_RELATED = (
-            'one_to_one', 'nullable_one_to_one', 'foreign_key', 'many_to_many')
-        expected = {
-            'pk': self.ag_model.pk,
-            'pos_num_val': self.ag_model.pos_num_val,
-            'non_empty_str_val': self.ag_model.non_empty_str_val,
-            'the_answer': 42,
-            'enum_property': 'egg',
+        serialize_related = ('one_to_one', 'nullable_one_to_one', 'foreign_key', 'many_to_many')
+        target = 'autograder.core.tests.test_models.models._DummyAutograderModel.SERIALIZE_RELATED'
+        with mock.patch(target, new=serialize_related):
+            expected = {
+                'pk': self.ag_model.pk,
+                'pos_num_val': self.ag_model.pos_num_val,
+                'non_empty_str_val': self.ag_model.non_empty_str_val,
+                'the_answer': 42,
+                'enum_property': 'egg',
 
-            'enum_field': 'spam',
+                'enum_field': 'spam',
 
-            'one_to_one': self.ag_model.one_to_one.to_dict(),
-            'nullable_one_to_one': None,
-            'transparent_to_one': self.ag_model.transparent_to_one.to_dict(),
+                'one_to_one': self.ag_model.one_to_one.to_dict(),
+                'nullable_one_to_one': None,
+                'transparent_to_one': self.ag_model.transparent_to_one.to_dict(),
+                'transparent_nullable_to_one': None,
 
-            'foreign_key': self.ag_model.foreign_key.to_dict(),
-            'nullable_foreign_key': None,
-            'transparent_foreign_key': self.ag_model.transparent_foreign_key.to_dict(),
+                'foreign_key': self.ag_model.foreign_key.to_dict(),
+                'nullable_foreign_key': None,
+                'transparent_foreign_key': self.ag_model.transparent_foreign_key.to_dict(),
+                'transparent_nullable_foreign_key': None,
 
-            'many_to_many': [obj.to_dict() for obj in self.many_to_manys],
-            'another_many_to_many': [],
+                'many_to_many': [obj.to_dict() for obj in self.many_to_manys],
+                'another_many_to_many': [],
 
-            'users': [user.pk for user in self.users]
-        }
+                'users': [user.pk for user in self.users]
+            }
 
-        result = self.ag_model.to_dict()
-        result['users'].sort()
+            result = self.ag_model.to_dict()
+            result['users'].sort()
 
-        print(result)
-        self.assertEqual(expected, result)
+            print(result)
+            self.assertEqual(expected, result)
 
-        _DummyAutograderModel.SERIALIZE_RELATED = tuple()
-        _DummyForeignAutograderModel.SERIALIZE_RELATED = ('rev_foreign_key',)
-        expected_one_to_many = {
-            'pk': self.ag_model.foreign_key.pk,
-            'name': self.ag_model.foreign_key.name,
-            'rev_foreign_key': [self.ag_model.to_dict()]
-        }
-        self.assertEqual(expected_one_to_many, self.ag_model.foreign_key.to_dict())
+        target = ('autograder.core.tests.test_models.models.'
+                  '_DummyForeignAutograderModel.SERIALIZE_RELATED')
+        with mock.patch(target, new=('rev_foreign_key',)):
+            expected_one_to_many = {
+                'pk': self.ag_model.foreign_key.pk,
+                'name': self.ag_model.foreign_key.name,
+                'rev_foreign_key': [self.ag_model.to_dict()]
+            }
+            self.assertEqual(expected_one_to_many, self.ag_model.foreign_key.to_dict())
 
     def test_empty_to_many_serialized_correctly(self):
         self.ag_model.many_to_many.clear()
@@ -157,10 +164,12 @@ class AGModelValidateAndCreateTestCase(UnitTestBase):
         self.assertEqual(one_to_one, ag_model.one_to_one)
         self.assertIsNone(ag_model.nullable_one_to_one)
         self.assertEqual(transparent_to_one_name, ag_model.transparent_to_one.name)
+        self.assertIsNone(ag_model.transparent_nullable_to_one)
 
         self.assertEqual(foreign_key, ag_model.foreign_key)
         self.assertIsNone(ag_model.nullable_foreign_key)
         self.assertEqual(transparent_foreign_key_name, ag_model.transparent_foreign_key.name)
+        self.assertIsNone(ag_model.transparent_nullable_foreign_key)
 
         self.assertSequenceEqual(self.many_to_manys, ag_model.many_to_many.all())
         self.assertSequenceEqual(self.many_to_manys, ag_model.another_many_to_many.all())
@@ -337,6 +346,57 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
 
         self.assertEqual(new_one_to_one_obj, obj.one_to_one)
         self.assertEqual(new_foreign_obj, obj.foreign_key)
+
+    def test_update_nullable_to_one_from_null_to_value(self):
+        one_to_one_obj = _DummyForeignAutograderModel.objects.create(name='qehkfdnm')
+        foreign_obj = _DummyForeignAutograderModel.objects.create(name='cmnbse')
+
+        obj = _DummyAutograderModel.objects.validate_and_create(
+            pos_num_val=15,
+            non_empty_str_val='spam',
+            read_only_field='blah',
+
+            one_to_one=one_to_one_obj,
+            foreign_key=foreign_obj)  # type: _DummyAutograderModel
+
+        self.assertIsNone(obj.transparent_nullable_to_one)
+        self.assertIsNone(obj.transparent_nullable_foreign_key)
+
+        name1 = 'qewrasdfoiadsuf'
+        name2 = 'avaejfa'
+        obj.validate_and_update(
+            transparent_nullable_to_one={'name': name1},
+            transparent_nullable_foreign_key={'name': name2})
+
+        self.assertEqual(name1, obj.transparent_nullable_to_one.name)
+        self.assertEqual(name2, obj.transparent_nullable_foreign_key.name)
+
+    def test_update_nullable_to_one_from_value_to_null_value_deleted(self):
+        one_to_one_obj = _DummyForeignAutograderModel.objects.create(name='qehkfdnm')
+        foreign_obj = _DummyForeignAutograderModel.objects.create(name='cmnbse')
+
+        obj = _DummyAutograderModel.objects.validate_and_create(
+            pos_num_val=15,
+            non_empty_str_val='spam',
+            read_only_field='blah',
+
+            one_to_one=one_to_one_obj,
+            foreign_key=foreign_obj,
+            transparent_nullable_to_one={'name': 'asdfnaoiwej'},
+            transparent_nullable_foreign_key={'name': 'skdfjs'})  # type: _DummyAutograderModel
+
+        num_foreign_objs = _DummyForeignAutograderModel.objects.count()
+
+        obj.validate_and_update(
+            transparent_nullable_to_one=None,
+            transparent_nullable_foreign_key=None)
+
+        obj.refresh_from_db()
+
+        self.assertIsNone(obj.transparent_nullable_to_one)
+        self.assertIsNone(obj.transparent_nullable_foreign_key)
+
+        self.assertEqual(num_foreign_objs - 2, _DummyForeignAutograderModel.objects.count())
 
     def test_invalid_update_bad_values(self):
         old_vals = self.ag_model.to_dict()

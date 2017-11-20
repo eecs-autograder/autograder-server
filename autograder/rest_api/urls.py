@@ -102,6 +102,17 @@ ag_test_command_detail_router = routers.SimpleRouter()
 ag_test_command_detail_router.register(r'ag_test_commands', views.AGTestCommandDetailViewSet,
                                        base_name='ag-test-command')
 
+student_test_suite_detail_router = routers.SimpleRouter()
+student_test_suite_detail_router.register(r'student_test_suites',
+                                          views.StudentTestSuiteDetailViewSet,
+                                          base_name='student-test-suite')
+
+rerun_submissions_task_detail_router = routers.SimpleRouter()
+rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
+                                              views.RerunSubmissionsTaskDetailVewSet,
+                                              base_name='rerun-submissions-task')
+
+
 urlpatterns = [
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
 
@@ -132,8 +143,7 @@ urlpatterns = [
     url(r'^courses/(?P<pk>[0-9]+)/projects/$',
         views.ListCreateProjectView.as_view(), name='project-list-create'),
 
-    url(r''
-        r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/$',
+    url(r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/$',
         views.AGTestSuiteListCreateView.as_view(), name='ag_test_suites'),
     url(r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/order/$',
         views.AGTestSuiteOrderView.as_view(), name='ag_test_suite_order'),
@@ -150,4 +160,15 @@ urlpatterns = [
     url(r'^ag_test_cases/(?P<ag_test_case_pk>[0-9]+)/ag_test_commands/order/$',
         views.AGTestCommandOrderView.as_view(), name='ag_test_command_order'),
     url(r'', include(ag_test_command_detail_router.urls)),
+
+    url(r'^projects/(?P<project_pk>[0-9]+)/student_test_suites/$',
+        views.StudentTestSuiteListCreateView.as_view(), name='student_test_suites'),
+    url(r'^projects/(?P<project_pk>[0-9]+)/student_test_suites/order/$',
+        views.StudentTestSuiteOrderView.as_view(), name='student_test_suite_order'),
+    url(r'', include(student_test_suite_detail_router.urls)),
+
+    url(r'^projects/(?P<project_pk>[0-9]+)/rerun_submissions_tasks/$',
+        views.RerunSubmissionsTaskListCreateView.as_view(), name='rerun_submissions_tasks'),
+
+    url(r'', include(rerun_submissions_task_detail_router.urls)),
 ]

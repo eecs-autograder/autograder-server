@@ -54,11 +54,16 @@ class CreateAGTestCommandsTestCase(test_impls.CreateObjectTest, UnitTestBase):
             ag_models.AGTestCommand.objects, self.client, admin, self.url, data)
 
     def test_non_admin_create_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         data = {
             'name': 'xcm,vnm,xczv',
             'cmd': 'echo "wow"',
         }
+
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        self.do_permission_denied_create_test(
+            ag_models.AGTestCommand.objects, self.client, staff, self.url, data)
+
+        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.do_permission_denied_create_test(
             ag_models.AGTestCommand.objects, self.client, enrolled, self.url, data)
 

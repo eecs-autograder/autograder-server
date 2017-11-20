@@ -42,21 +42,23 @@ class CreateAGTestSuiteTestCase(test_impls.CreateObjectTest, UnitTestBase):
         self.client = APIClient()
         self.url = reverse('ag_test_suites', kwargs={'project_pk': self.project.pk})
 
-    def test_admin_valid_create(self):
-        [admin] = obj_build.make_admin_users(self.project.course, 1)
-        data = {
+        self.create_data = {
             'name': 'adslkfjals;dkjfa;lsdkjf'
         }
+
+    def test_admin_valid_create(self):
+        [admin] = obj_build.make_admin_users(self.project.course, 1)
         self.do_create_object_test(
-            ag_models.AGTestSuite.objects, self.client, admin, self.url, data)
+            ag_models.AGTestSuite.objects, self.client, admin, self.url, self.create_data)
 
     def test_non_admin_create_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.project.course, 1)
-        data = {
-            'name': 'werjaisdlf;j'
-        }
+        [staff] = obj_build.make_staff_users(self.project.course, 1)
         self.do_permission_denied_create_test(
-            ag_models.AGTestSuite.objects, self.client, enrolled, self.url, data)
+            ag_models.AGTestSuite.objects, self.client, staff, self.url, self.create_data)
+
+        [enrolled] = obj_build.make_enrolled_users(self.project.course, 1)
+        self.do_permission_denied_create_test(
+            ag_models.AGTestSuite.objects, self.client, enrolled, self.url, self.create_data)
 
 
 class AGTestSuitesOrderTestCase(UnitTestBase):

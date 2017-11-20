@@ -7,6 +7,7 @@ import autograder.core.models.ag_model_base
 import autograder.core.models.ag_test.ag_test_case
 import autograder.core.models.ag_test.ag_test_command
 import autograder.core.models.ag_test.ag_test_suite
+import autograder.core.models.ag_command
 import autograder.core.models.project.project
 import autograder.core.models.project.uploaded_file
 import autograder.core.utils
@@ -262,7 +263,7 @@ class Migration(migrations.Migration):
                 ('last_modified', models.DateTimeField(auto_now=True)),
                 ('name', autograder.core.fields.ShortStringField(help_text='The name used to identify this command.\n                     Must be non-empty and non-null.\n                     Must be unique among commands that belong to the same autograder test.\n                     This field is REQUIRED.', max_length=255, strip=False)),
                 ('cmd', models.CharField(help_text='A string containing the command to be run.\n                     Note: This string will be split using shlex.split() before it is executed.', max_length=1000)),
-                ('stdin_source', autograder.core.fields.EnumField(default=autograder.core.models.ag_test.ag_test_command.StdinSource('none'), enum_type=autograder.core.models.ag_test.ag_test_command.StdinSource, help_text='Specifies what kind of source stdin will be redirected from.')),
+                ('stdin_source', autograder.core.fields.EnumField(default=autograder.core.models.ag_command.StdinSource('none'), enum_type=autograder.core.models.ag_command.StdinSource, help_text='Specifies what kind of source stdin will be redirected from.')),
                 ('stdin_text', models.TextField(blank=True, help_text='A string whose contents should be redirected to the stdin of this command.\n                     This value is used when stdin_source is StdinSource.text and is ignored\n                     otherwise.')),
                 ('expected_return_code', autograder.core.fields.EnumField(default=autograder.core.models.ag_test.ag_test_command.ExpectedReturnCode('none'), enum_type=autograder.core.models.ag_test.ag_test_command.ExpectedReturnCode, help_text="Specifies the command's expected return code.")),
                 ('expected_stdout_source', autograder.core.fields.EnumField(default=autograder.core.models.ag_test.ag_test_command.ExpectedOutputSource('none'), enum_type=autograder.core.models.ag_test.ag_test_command.ExpectedOutputSource, help_text="Specifies what kind of source this command's stdout should be compared to.")),
