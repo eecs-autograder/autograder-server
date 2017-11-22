@@ -108,9 +108,12 @@ class HandgradingResult(AutograderModel):
     """
     submission = models.OneToOneField(Submission)
 
+    handgrading_rubric = models.ForeignKey(HandgradingRubric)
+
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
-                           'submission',)
+                           'submission',
+                           'handgrading_rubric')
 
     SERIALIZE_RELATED = ('applied_annotations',
                          'arbitrary_points',
@@ -124,8 +127,7 @@ class CriterionResult(AutograderModel):
     """
     selected = models.BooleanField()
 
-    # TODO: CHECK IF THIS SHOULD BE OneToOne FIELD or FOREIGN KEY
-    criterion = models.OneToOneField(Criterion, related_name='criterion_result')
+    criterion = models.ForeignKey(Criterion, related_name='criterion_result')
 
     handgrading_result = models.ForeignKey(HandgradingResult, related_name='criterion_results')
 
@@ -148,8 +150,7 @@ class AppliedAnnotation(AutograderModel):
 
     location = models.OneToOneField('Location', related_name='+')
 
-    # TODO: CHECK IF THIS SHOULD BE OneToOne FIELD or FOREIGN KEY
-    annotation = models.OneToOneField(Annotation)
+    annotation = models.ForeignKey(Annotation)
 
     handgrading_result = models.ForeignKey(HandgradingResult, related_name='applied_annotations')
 

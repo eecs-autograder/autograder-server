@@ -11,7 +11,7 @@ import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
 class ListHandgradingRubricTestCase(UnitTestBase):
-    """/api/projects/project_pk/handgrading_rubric/"""
+    """/api/projects/<project_pk>/handgrading_rubric/"""
 
     def setUp(self):
         super().setUp()
@@ -49,7 +49,7 @@ class ListHandgradingRubricTestCase(UnitTestBase):
 
 
 class CreateHandgradingRubricTestCase(test_impls.CreateObjectTest, UnitTestBase):
-    """/api/projects/project_pk/handgrading_rubric/"""
+    """/api/projects/<project_pk>/handgrading_rubric/"""
 
     def setUp(self):
         super().setUp()
@@ -89,7 +89,7 @@ class GetUpdateDeleteHandgradingRubricTestCase(test_impls.GetObjectTest,
                                                test_impls.UpdateObjectTest,
                                                test_impls.DestroyObjectTest,
                                                UnitTestBase):
-    """/api/handgrading_rubrics/pk"""
+    """/api/handgrading_rubrics/<pk>"""
 
     def setUp(self):
         super().setUp()
@@ -107,7 +107,7 @@ class GetUpdateDeleteHandgradingRubricTestCase(test_impls.GetObjectTest,
         )
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
-        self.url = reverse('handgrading_rubric_detail', kwargs={'pk': self.handgrading_rubric.pk})
+        self.url = reverse('handgrading-rubric-detail', kwargs={'pk': self.handgrading_rubric.pk})
 
     def test_staff_valid_get(self):
         [staff] = obj_build.make_staff_users(self.course, 1)

@@ -7,24 +7,22 @@ from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
 )
 
-
-class HandgradingRubricListCreateView(ListCreateNestedModelView):
-    serializer_class = handgrading_serializers.HandgradingRubricSerializer
+# TODO: Finish view
+class CommentListCreateView(ListCreateNestedModelView):
+    serializer_class = handgrading_serializers.CommentSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
 
-    pk_key = 'project_pk'
+    pk_key = 'handgrading_result_pk'
     model_manager = ag_models.Project.objects.select_related('course')
-    foreign_key_field_name = 'project'
-    reverse_foreign_key_field_name = 'handgrading_rubric'
+    foreign_key_field_name = 'handgrading_result'
+    reverse_foreign_key_field_name = 'comments'
 
 
-class HandgradingRubricDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
-    serializer_class = handgrading_serializers.HandgradingRubricSerializer
+class CommentDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
+    serializer_class = handgrading_serializers.CommentSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
-            lambda handgrading_rubric: handgrading_rubric.project.course)
+            lambda comment: comment.handgrading_result.submission.submission_group.project.course)
     ]
-    model_manager = handgrading_models.HandgradingRubric.objects.select_related(
-        'project__course',
-    )
+    model_manager = handgrading_models.Comment.objects.select_related('location')

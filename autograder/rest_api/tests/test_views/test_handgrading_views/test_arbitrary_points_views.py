@@ -127,7 +127,7 @@ class GetUpdateDeleteArbitraryPointsTestCase(test_impls.GetObjectTest,
 
         self.course = self.handgrading_result.submission.submission_group.project.course
         self.client = APIClient()
-        self.url = reverse('arbitrary_points_detail',
+        self.url = reverse('arbitrary-points-detail',
                            kwargs={'pk': self.arbitrary_points.pk})
 
     def test_staff_valid_get(self):

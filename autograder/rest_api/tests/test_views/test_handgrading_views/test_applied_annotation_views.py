@@ -185,7 +185,7 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
 
         self.course = self.handgrading_result.submission.submission_group.project.course
         self.client = APIClient()
-        self.url = reverse('applied_annotation_detail',
+        self.url = reverse('applied-annotation-detail',
                            kwargs={'pk': self.applied_annotation.pk})
 
     def test_staff_valid_get(self):

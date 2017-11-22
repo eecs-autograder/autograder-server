@@ -123,7 +123,7 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
 
         self.course = self.handgrading_result.submission.submission_group.project.course
         self.client = APIClient()
-        self.url = reverse('comment_detail',
+        self.url = reverse('comment-detail',
                            kwargs={'pk': self.comment.pk})
 
     def test_staff_valid_get(self):

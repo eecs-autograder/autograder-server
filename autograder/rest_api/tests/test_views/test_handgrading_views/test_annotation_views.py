@@ -11,7 +11,7 @@ import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
 class ListAnnotationsTestCase(UnitTestBase):
-    """/api/handgrading_rubric/<pk>/annotations"""
+    """/api/handgrading_rubric/<handgrading_rubric_pk>/annotations"""
 
     def setUp(self):
         super().setUp()
@@ -60,7 +60,7 @@ class ListAnnotationsTestCase(UnitTestBase):
 
 
 class CreateAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase):
-    """/api/handgrading_rubric/<pk>/annotations"""
+    """/api/handgrading_rubric/<handgrading_rubric_pk>/annotations"""
 
     def setUp(self):
         super().setUp()
@@ -140,7 +140,7 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
             **annotation_data)
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
-        self.url = reverse('annotation_detail', kwargs={'pk': self.annotation.pk})
+        self.url = reverse('annotation-detail', kwargs={'pk': self.annotation.pk})
 
     def test_staff_valid_get(self):
         [staff] = obj_build.make_staff_users(self.course, 1)

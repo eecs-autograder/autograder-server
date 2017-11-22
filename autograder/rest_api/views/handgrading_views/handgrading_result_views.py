@@ -15,19 +15,20 @@ class HandgradingResultListCreateView(ListCreateNestedModelView):
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
-    # TODO: HOW TO FIND PROJECT
-    foreign_key_field_name = 'submission.submission_group.project'
+    foreign_key_field_name = 'project'
     reverse_foreign_key_field_name = 'handgrading_result'
 
 
 class HandgradingResultDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
     serializer_class = handgrading_serializers.HandgradingResultSerializer
-    # TODO: Check if this is right (accessing project through submission group
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
-            lambda handgrading_result: handgrading_result.submission.submission_group.project.course)
+            lambda handgrading_result: handgrading_result.handgrading_rubric.project.course)
     ]
+
     model_manager = handgrading_models.HandgradingResult.objects.select_related(
+        'project__course'
+    ).prefetch_related(
         'applied_annotations',
         'arbitrary_points',
         'comments',

@@ -11,7 +11,7 @@ import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
 class ListCriteriaTestCase(UnitTestBase):
-    """/api/handgrading_rubric/<pk>/criteria"""
+    """/api/handgrading_rubric/<handgrading_rubric_pk>/criteria"""
 
     def setUp(self):
         super().setUp()
@@ -61,7 +61,7 @@ class ListCriteriaTestCase(UnitTestBase):
 
 
 class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
-    """/api/handgrading_rubric/<pk>/criteria"""
+    """/api/handgrading_rubric/<handgrading_rubric_pk>/criteria"""
 
     def setUp(self):
         super().setUp()
@@ -140,7 +140,7 @@ class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
         self.criterion = handgrading_models.Criterion.objects.validate_and_create(**criterion_data)
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
-        self.url = reverse('criterion_detail', kwargs={'pk': self.criterion.pk})
+        self.url = reverse('criterion-detail', kwargs={'pk': self.criterion.pk})
 
     def test_staff_valid_get(self):
         [staff] = obj_build.make_staff_users(self.course, 1)

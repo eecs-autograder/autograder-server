@@ -43,3 +43,31 @@ from .student_test_suite_views import (
 
 from .rerun_submissions_task_views import (
     RerunSubmissionsTaskListCreateView, RerunSubmissionsTaskDetailVewSet)
+
+from .handgrading_views.annotation_views import (
+    AnnotationDetailViewSet, AnnotationListCreateView)
+
+from .handgrading_views.applied_annotation_views import (
+    AppliedAnnotationDetailViewSet, AppliedAnnotationListCreateView)
+
+from .handgrading_views.arbitrary_points_views import (
+    ArbitraryPointsDetailViewSet, ArbitraryPointsListCreateView)
+
+from .handgrading_views.comment_views import (
+    CommentDetailViewSet, CommentListCreateView)
+
+from .handgrading_views.criterion_result_views import (
+    CriterionResultDetailViewSet, CriterionResultListCreateView)
+
+from .handgrading_views.criterion_views import (
+    CriterionDetailViewSet, CriterionListCreateView)
+
+from .handgrading_views.handgrading_result_views import (
+    HandgradingResultDetailViewSet, HandgradingResultListCreateView)
+
+from .handgrading_views.handgrading_rubric_views import (
+    HandgradingRubricDetailViewSet, HandgradingRubricListCreateView)
+
+
+
+
