@@ -1,4 +1,4 @@
-# Create your views here.
+# Listing of all handgrading rubric URLs.
 
 """
 LIST OF REST API ENDPOINTS:

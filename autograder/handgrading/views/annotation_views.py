@@ -7,16 +7,17 @@ from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
 )
 
-# TODO: FINISH VIEWS
+
 class AnnotationListCreateView(ListCreateNestedModelView):
     serializer_class = handgrading_serializers.AnnotationSerializer
     permission_classes = [
-        ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
+        ag_permissions.is_admin_or_read_only_staff(
+            lambda handgrading_rubric: handgrading_rubric.project.course)]
 
     pk_key = 'handgrading_rubric_pk'
-    model_manager = handgrading_models.HandgradingRubric.objects.select_related('annotation')
+    model_manager = handgrading_models.HandgradingRubric.objects.select_related('project__course')
     foreign_key_field_name = 'handgrading_rubric'
-    reverse_foreign_key_field_name = 'annotation'
+    reverse_foreign_key_field_name = 'annotations'
 
 
 class AnnotationDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
@@ -25,6 +26,6 @@ class AnnotationDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGene
         ag_permissions.is_admin_or_read_only_staff(
             lambda annotation: annotation.handgrading_rubric.project.course)
     ]
-    model_manager = handgrading_models.Criterion.objects.select_related(
-        '??',
+    model_manager = handgrading_models.Annotation.objects.select_related(
+        'handgrading_rubric__project__course',
     )

@@ -11,7 +11,7 @@ class PointsStyle(Enum):
     """
     Ways hangrading points can be managed
     """
-    start_at_zero_and_add = "start_at_zero_and_add",
+    start_at_zero_and_add = "start_at_zero_and_add"
     start_at_max_and_subtract = "start_at_max_and_subtract"
 
 
@@ -29,7 +29,7 @@ class HandgradingRubric(AutograderModel):
 
     handgraders_can_apply_arbitrary_points = models.BooleanField()
 
-    project = models.OneToOneField(Project)
+    project = models.OneToOneField(Project, related_name='handgrading_rubric')
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -106,9 +106,9 @@ class HandgradingResult(AutograderModel):
     """
     Tied to a specific submission
     """
-    submission = models.OneToOneField(Submission)
+    submission = models.OneToOneField(Submission, related_name='handgrading_results')
 
-    handgrading_rubric = models.ForeignKey(HandgradingRubric)
+    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='handgrading_results')
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -140,6 +140,8 @@ class CriterionResult(AutograderModel):
 
     EDITABLE_FIELDS = ('selected',)
 
+    SERIALIZE_RELATED = ('criterion',)
+
 
 class AppliedAnnotation(AutograderModel):
     """
@@ -169,6 +171,8 @@ class AppliedAnnotation(AutograderModel):
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
     EDITABLE_FIELDS = ('comment',)
+
+    SERIALIZE_RELATED = ('annotation',)
 
 
 class Comment(AutograderModel):

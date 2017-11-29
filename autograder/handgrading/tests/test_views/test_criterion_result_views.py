@@ -15,20 +15,23 @@ class ListCriterionResultsTestCase(UnitTestBase):
 
     def setUp(self):
         super().setUp()
-        criterion = handgrading_models.Criterion.objects.validate_and_create(
-            points=0,
-            handgrading_rubric=handgrading_models.HandgradingRubric.objects.validate_and_create(
+        handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
                 max_points=0,
                 show_grades_and_rubric_to_students=False,
                 handgraders_can_leave_comments=True,
                 handgraders_can_apply_arbitrary_points=True,
                 project=obj_build.build_project()
-            )
+        )
+
+        criterion = handgrading_models.Criterion.objects.validate_and_create(
+            points=0,
+            handgrading_rubric=handgrading_rubric
         )
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission()
+            submission=obj_build.build_submission(),
+            handgrading_rubric=handgrading_rubric
         )
 
         criterion_result_data = {
@@ -40,7 +43,7 @@ class ListCriterionResultsTestCase(UnitTestBase):
         self.criterion_result = handgrading_models.CriterionResult.objects.validate_and_create(
             **criterion_result_data)
 
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('criterion_results',
                            kwargs={'handgrading_result_pk': self.handgrading_result.pk})
@@ -51,7 +54,7 @@ class ListCriterionResultsTestCase(UnitTestBase):
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual(self.criterion_result.to_dict(), response.data)
+        self.assertSequenceEqual(self.criterion_result.to_dict(), response.data[0])
 
     def test_non_staff_list_cases_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
@@ -66,46 +69,44 @@ class CreateCriterionResultTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
     def setUp(self):
         super().setUp()
-        self.criterion = handgrading_models.Criterion.objects.validate_and_create(
-            points=0,
-            handgrading_rubric=handgrading_models.HandgradingRubric.objects.validate_and_create(
+        handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
                 max_points=0,
                 show_grades_and_rubric_to_students=False,
                 handgraders_can_leave_comments=True,
                 handgraders_can_apply_arbitrary_points=True,
                 project=obj_build.build_project()
-            )
+        )
+
+        self.criterion = handgrading_models.Criterion.objects.validate_and_create(
+            points=0,
+            handgrading_rubric=handgrading_rubric
         )
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission()
+            submission=obj_build.build_submission(),
+            handgrading_rubric=handgrading_rubric
         )
 
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('criterion_results',
                            kwargs={'handgrading_result_pk': self.handgrading_result.pk})
 
+        self.data = {
+            "selected": True,
+            "criterion": self.criterion.pk,
+        }
+
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
-        data = {
-            "selected": True,
-            "criterion": self.criterion,
-            "handgrading_result": self.handgrading_result
-        }
         self.do_create_object_test(
-            handgrading_models.CriterionResult.objects, self.client, admin, self.url, data)
+            handgrading_models.CriterionResult.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
-        data = {
-            "selected": False,
-            "criterion": self.criterion,
-            "handgrading_result": self.handgrading_result
-        }
         self.do_permission_denied_create_test(
-            handgrading_models.CriterionResult.objects, self.client, enrolled, self.url, data)
+            handgrading_models.CriterionResult.objects, self.client, enrolled, self.url, self.data)
 
 
 class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
@@ -116,20 +117,23 @@ class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
 
     def setUp(self):
         super().setUp()
-        criterion = handgrading_models.Criterion.objects.validate_and_create(
-            points=0,
-            handgrading_rubric=handgrading_models.HandgradingRubric.objects.validate_and_create(
+        handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
                 max_points=0,
                 show_grades_and_rubric_to_students=False,
                 handgraders_can_leave_comments=True,
                 handgraders_can_apply_arbitrary_points=True,
                 project=obj_build.build_project()
-            )
+        )
+
+        criterion = handgrading_models.Criterion.objects.validate_and_create(
+            points=0,
+            handgrading_rubric=handgrading_rubric
         )
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission()
+            submission=obj_build.build_submission(),
+            handgrading_rubric=handgrading_rubric
         )
 
         criterion_result_data = {
@@ -141,7 +145,7 @@ class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
         self.criterion_result = handgrading_models.CriterionResult.objects.validate_and_create(
             **criterion_result_data)
 
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('criterion-result-detail', kwargs={'pk': self.criterion_result.pk})
 

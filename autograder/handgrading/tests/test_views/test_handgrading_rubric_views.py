@@ -16,11 +16,12 @@ class ListHandgradingRubricTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         data = {
-            'points_style': 'start_at_zero_and_add',
+            'points_style': handgrading_models.PointsStyle.start_at_zero_and_add.value,
             'max_points': 20,
             'show_grades_and_rubric_to_students': True,
             'handgraders_can_leave_comments': True,
-            'handgraders_can_apply_arbitrary_points': True
+            'handgraders_can_apply_arbitrary_points': True,
+            'project': obj_build.build_project()
         }
 
         self.handgrading_rubric = (
@@ -29,7 +30,7 @@ class ListHandgradingRubricTestCase(UnitTestBase):
 
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
-        self.url = reverse('handgrading_rubrics',
+        self.url = reverse('handgrading_rubric',
                            kwargs={'project_pk': self.handgrading_rubric.project.pk})
 
     def test_staff_valid_list_cases(self):
@@ -38,6 +39,7 @@ class ListHandgradingRubricTestCase(UnitTestBase):
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
+        print(response.data)
         self.assertSequenceEqual(self.handgrading_rubric.to_dict(), response.data)
 
     def test_non_staff_list_cases_permission_denied(self):
@@ -56,33 +58,26 @@ class CreateHandgradingRubricTestCase(test_impls.CreateObjectTest, UnitTestBase)
         self.project = obj_build.build_project()
         self.course = self.project.course
         self.client = APIClient()
-        self.url = reverse('handgrading_rubrics', kwargs={'project_pk': self.project.pk})
+        self.url = reverse('handgrading_rubric', kwargs={'project_pk': self.project.pk})
+
+        self.data = {
+            'points_style': handgrading_models.PointsStyle.start_at_zero_and_add, #.value,
+            'max_points': 20,
+            'show_grades_and_rubric_to_students': True,
+            'handgraders_can_leave_comments': True,
+            'handgraders_can_apply_arbitrary_points': True,
+        }
 
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
-        data = {
-            'points_style': 'start_at_zero_and_add',
-            'max_points': 20,
-            'show_grades_and_rubric_to_students': True,
-            'handgraders_can_leave_comments': True,
-            'handgraders_can_apply_arbitrary_points': True,
-            'project': self.project
-        }
         self.do_create_object_test(
-            handgrading_models.HandgradingRubric.objects, self.client, admin, self.url, data)
+            handgrading_models.HandgradingRubric.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
-        data = {
-            'points_style': 'start_at_zero_and_add',
-            'max_points': 20,
-            'show_grades_and_rubric_to_students': True,
-            'handgraders_can_leave_comments': True,
-            'handgraders_can_apply_arbitrary_points': True,
-            'project': self.project
-        }
         self.do_permission_denied_create_test(
-            handgrading_models.HandgradingRubric.objects, self.client, enrolled, self.url, data)
+            handgrading_models.HandgradingRubric.objects,
+            self.client, enrolled, self.url, self.data)
 
 
 class GetUpdateDeleteHandgradingRubricTestCase(test_impls.GetObjectTest,
@@ -95,11 +90,12 @@ class GetUpdateDeleteHandgradingRubricTestCase(test_impls.GetObjectTest,
         super().setUp()
 
         data = {
-            'points_style': 'start_at_zero_and_add',
+            'points_style': handgrading_models.PointsStyle.start_at_zero_and_add.value,
             'max_points': 20,
             'show_grades_and_rubric_to_students': True,
             'handgraders_can_leave_comments': True,
-            'handgraders_can_apply_arbitrary_points': True
+            'handgraders_can_apply_arbitrary_points': True,
+            'project': obj_build.build_project(),
         }
 
         self.handgrading_rubric = (

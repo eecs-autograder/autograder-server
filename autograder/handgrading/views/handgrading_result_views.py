@@ -8,15 +8,19 @@ from autograder.rest_api.views.ag_model_views import (
 )
 
 
+# TODO: FIX VIEW
 class HandgradingResultListCreateView(ListCreateNestedModelView):
     serializer_class = handgrading_serializers.HandgradingResultSerializer
     permission_classes = [
-        ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
+        ag_permissions.is_admin_or_read_only_staff(
+            lambda submission: submission.submission_group.project.course)]
 
-    pk_key = 'project_pk'
-    model_manager = ag_models.Project.objects.select_related('course')
-    foreign_key_field_name = 'project'
-    reverse_foreign_key_field_name = 'handgrading_result'
+    pk_key = 'submission_pk'
+    model_manager = ag_models.Submission.objects.select_related(
+        'submission_group__project__course'
+    )
+    foreign_key_field_name = 'submission'
+    reverse_foreign_key_field_name = 'handgrading_results'
 
 
 class HandgradingResultDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
@@ -27,7 +31,7 @@ class HandgradingResultDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGMo
     ]
 
     model_manager = handgrading_models.HandgradingResult.objects.select_related(
-        'project__course'
+        'handgrading_rubric__project__course'
     ).prefetch_related(
         'applied_annotations',
         'arbitrary_points',

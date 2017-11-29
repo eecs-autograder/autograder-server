@@ -11,29 +11,46 @@ import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
 class ListHandgradingResultsTestCase(UnitTestBase):
-    """/api/projects/<project_pk>/handgrading_result/"""
+    """/api/submissions/<submission_pk>/handgrading_results/"""
 
     def setUp(self):
         super().setUp()
-        data = {"submission": obj_build.build_submission()}
+        submission = obj_build.build_submission()
+
+        handgrading_rubric = (
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_apply_arbitrary_points=True,
+                project=submission.submission_group.project
+            )
+        )
+
+        data = {
+            "submission": submission,
+            "handgrading_rubric": handgrading_rubric
+        }
+
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(**data)
         )
         self.client = APIClient()
-        self.project = self.handgrading_result.submission.submission_group.project
+        self.course = handgrading_rubric.project.course
         self.url = reverse('handgrading_results',
-                           kwargs={'project_pk': self.project.pk})
+                           kwargs={'submission_pk': self.handgrading_result.submission.pk})
 
     def test_staff_has_access(self):
-        [staff] = obj_build.make_staff_users(self.project.course, 1)
+        [staff] = obj_build.make_staff_users(self.course, 1)
         self.client.force_authenticate(staff)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual(self.handgrading_result.to_dict(), response.data)
+        self.assertEqual(self.handgrading_result.to_dict(), response.data[0])
 
     def test_students_are_denied_acess(self):
-        [enrolled] = obj_build.make_enrolled_users(self.project.course, 1)
+        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)
@@ -41,30 +58,41 @@ class ListHandgradingResultsTestCase(UnitTestBase):
 
 
 class CreateHandgradingResultsTestCase(test_impls.CreateObjectTest, UnitTestBase):
-    """/api/projects/<project_pk>/handgrading_result/"""
+    """/api/submissions/<submission_pk>/handgrading_results/"""
 
     def setUp(self):
         super().setUp()
-        self.submission = obj_build.build_submission()
-        self.project = self.submission.submission_group.project
+        submission = obj_build.build_submission()
+
+        handgrading_rubric = (
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_apply_arbitrary_points=True,
+                project=submission.submission_group.project
+            )
+        )
+
+        self.data = {
+            "handgrading_rubric": handgrading_rubric.pk
+        }
+
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
-        self.url = reverse('handgrading_results', kwargs={'project_pk': self.project.pk})
+        self.url = reverse('handgrading_results', kwargs={'submission_pk': submission.pk})
 
     def test_admin_valid_create(self):
-        [admin] = obj_build.make_admin_users(self.project.course, 1)
-        data = {
-            "submission": self.submission
-        }
+        [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_create_object_test(
-            handgrading_models.HandgradingResult.objects, self.client, admin, self.url, data)
+            handgrading_models.HandgradingResult.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.project.course, 1)
-        data = {
-            "submission": self.submission
-        }
+        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.do_permission_denied_create_test(
-            handgrading_models.HandgradingResult.objects, self.client, enrolled, self.url, data)
+            handgrading_models.HandgradingResult.objects,
+            self.client, enrolled, self.url, self.data)
 
 
 class GetUpdateDeleteHandgradingResultTestCase(test_impls.GetObjectTest,
@@ -75,11 +103,28 @@ class GetUpdateDeleteHandgradingResultTestCase(test_impls.GetObjectTest,
 
     def setUp(self):
         super().setUp()
-        data = {"submission": obj_build.build_submission()}
+        project = obj_build.build_project()
+
+        handgrading_rubric = (
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_apply_arbitrary_points=True,
+                project=project
+            )
+        )
+
+        data = {
+            "submission": obj_build.build_submission(),
+            "handgrading_rubric": handgrading_rubric
+        }
+
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(**data)
         )
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('handgrading-result-detail', kwargs={'pk': self.handgrading_result.pk})
 

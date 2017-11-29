@@ -8,6 +8,17 @@ from django.core.exceptions import ValidationError
 
 class ArbitraryPointsTestCase(UnitTestBase):
     def setUp(self):
+        self.default_handgrading_rubric = (
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_apply_arbitrary_points=True,
+                project=obj_build.build_project()
+            )
+        )
+
         self.default_arb_points_inputs = {
             "location": {
                 "first_line": 0,
@@ -17,7 +28,8 @@ class ArbitraryPointsTestCase(UnitTestBase):
             "text": "",
             "points": 0,
             "handgrading_result": handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"])
+                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                handgrading_rubric=self.default_handgrading_rubric
             )
         }
 
@@ -38,7 +50,8 @@ class ArbitraryPointsTestCase(UnitTestBase):
             "text": "Testing text field. This can be longer.",
             "points": 24,
             "handgrading_result": handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"])
+                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                handgrading_rubric=self.default_handgrading_rubric
             )
         }
 
@@ -62,7 +75,8 @@ class ArbitraryPointsTestCase(UnitTestBase):
              but location's filename is set to "WRONG.cpp" """
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"])
+            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            handgrading_rubric=self.default_handgrading_rubric
         )
 
         with self.assertRaises(ValidationError):

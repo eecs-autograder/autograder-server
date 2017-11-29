@@ -10,9 +10,8 @@ class CriterionResultTestCases(UnitTestBase):
     Test cases relating the Criterion Result Model
     """
     def setUp(self):
-        self.criterion_obj = handgrading_models.Criterion.objects.validate_and_create(
-            points=0,
-            handgrading_rubric=handgrading_models.HandgradingRubric.objects.validate_and_create(
+        self.default_handgrading_rubric = (
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
                 max_points=0,
                 show_grades_and_rubric_to_students=False,
@@ -22,8 +21,14 @@ class CriterionResultTestCases(UnitTestBase):
             )
         )
 
+        self.criterion_obj = handgrading_models.Criterion.objects.validate_and_create(
+            points=0,
+            handgrading_rubric=self.default_handgrading_rubric
+        )
+
         self.result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission()
+            submission=obj_build.build_submission(),
+            handgrading_rubric=self.default_handgrading_rubric
         )
 
         self.criterion_inputs = {

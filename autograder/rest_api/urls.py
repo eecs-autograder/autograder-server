@@ -235,11 +235,11 @@ urlpatterns = [
         views.CriterionListCreateView.as_view(), name='criteria'),
     url(r'', include(criterion_detail_router.urls)),
 
-    url(r'^projects/(?P<project_pk>[0-9]+)/handgrading_rubrics/$',
-        views.HandgradingRubricListCreateView.as_view(), name='handgrading_rubrics'),
+    url(r'^projects/(?P<project_pk>[0-9]+)/handgrading_rubric/$',
+        views.HandgradingRubricRetrieveCreateView.as_view(), name='handgrading_rubric'),
     url(r'', include(handgrading_rubric_detail_router.urls)),
 
-    url(r'^projects/(?P<project_pk>[0-9]+)/handgrading_results/$',
+    url(r'^submissions/(?P<submission_pk>[0-9]+)/handgrading_results/$',
         views.HandgradingResultListCreateView.as_view(), name='handgrading_results'),
     url(r'', include(handgrading_result_detail_router.urls)),
 ]

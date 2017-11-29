@@ -15,8 +15,18 @@ class ListCommentsTestCase(UnitTestBase):
 
     def setUp(self):
         super().setUp()
-        self.handgrdaing_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"])
+        handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_apply_arbitrary_points=True,
+                project=obj_build.build_project()
+        )
+
+        self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            handgrading_rubric=handgrading_rubric
         )
 
         comment_data = {
@@ -32,7 +42,7 @@ class ListCommentsTestCase(UnitTestBase):
         self.comment = handgrading_models.Comment.objects.validate_and_create(
             **comment_data)
 
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('comments',
                            kwargs={'handgrading_result_pk': self.handgrading_result.pk})
@@ -43,7 +53,7 @@ class ListCommentsTestCase(UnitTestBase):
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual(self.comment.to_dict(), response.data)
+        self.assertSequenceEqual(self.comment.to_dict(), response.data[0])
 
     def test_non_staff_list_cases_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
@@ -53,47 +63,49 @@ class ListCommentsTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
+# TODO: FIX TEST
 class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
     """/api/handgrading_results/<handgrading_result_pk>/comments"""
 
     def setUp(self):
         super().setUp()
-        self.handgrdaing_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"])
+        handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_apply_arbitrary_points=True,
+                project=obj_build.build_project()
         )
 
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            handgrading_rubric=handgrading_rubric
+        )
+
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('comments',
                            kwargs={'handgrading_result_pk': self.handgrading_result.pk})
 
-    def test_admin_valid_create(self):
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        data = {
+        self.data = {
             "location": {
                 "first_line": 0,
                 "last_line": 1,
                 "filename": "test.cpp"
             },
             "text": "Sample comment text.",
-            "handgrading_result": self.handgrading_result
         }
+
+    def test_admin_valid_create(self):
+        [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_create_object_test(
-            handgrading_models.Comment.objects, self.client, admin, self.url, data)
+            handgrading_models.Comment.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
-        data = {
-            "location": {
-                "first_line": 0,
-                "last_line": 1,
-                "filename": "test.cpp"
-            },
-            "text": "Sample comment text.",
-            "handgrading_result": self.handgrading_result
-        }
         self.do_permission_denied_create_test(
-            handgrading_models.Comment.objects, self.client, enrolled, self.url, data)
+            handgrading_models.Comment.objects, self.client, enrolled, self.url, self.data)
 
 
 class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
@@ -104,8 +116,18 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
 
     def setUp(self):
         super().setUp()
-        self.handgrdaing_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"])
+        handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_apply_arbitrary_points=True,
+                project=obj_build.build_project()
+        )
+
+        self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            handgrading_rubric=handgrading_rubric
         )
 
         comment_data = {
@@ -121,7 +143,7 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
         self.comment = handgrading_models.Comment.objects.validate_and_create(
             **comment_data)
 
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('comment-detail',
                            kwargs={'pk': self.comment.pk})
@@ -144,7 +166,7 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
 
     def test_admin_update_bad_values(self):
         bad_data = {
-            "text": True,
+            "location": "Location isn't editable!",
         }
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_patch_object_invalid_args_test(

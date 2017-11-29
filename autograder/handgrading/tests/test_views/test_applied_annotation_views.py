@@ -42,6 +42,7 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
                 submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                handgrading_rubric=handgrading_rubric
             )
         )
 
@@ -55,7 +56,7 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
         self.applied_annotation = handgrading_models.AppliedAnnotation.objects.validate_and_create(
             **applied_annotation_data)
 
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('applied_annotations',
                            kwargs={'handgrading_result_pk': self.handgrading_result.pk})
@@ -66,7 +67,7 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual(self.applied_annotation.to_dict(), response.data)
+        self.assertSequenceEqual(self.applied_annotation.to_dict(), response.data[0])
 
     def test_non_staff_list_cases_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
@@ -76,22 +77,14 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
+# TODO: FIX TEST
 class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase):
     """/api/handgrading_results/<handgrading_result_pk>/applied_annotations"""
 
     def setUp(self):
         super().setUp()
-        self.location_data = {
-            "first_line": 0,
-            "last_line": 1,
-            "filename": "test.cpp"
-        }
-
-        self.annotation = handgrading_models.Annotation.objects.validate_and_create(
-            short_description="",
-            long_description="",
-            points=0,
-            handgrading_rubric=handgrading_models.HandgradingRubric.objects.validate_and_create(
+        handgrading_rubric = (
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
                 max_points=0,
                 show_grades_and_rubric_to_students=False,
@@ -101,38 +94,47 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
             )
         )
 
+        annotation = handgrading_models.Annotation.objects.validate_and_create(
+            short_description="Sample short description.",
+            long_description="Sample loooooong description.",
+            points=0,
+            handgrading_rubric=handgrading_rubric
+        )
+
+        location_data = {
+            "first_line": 0,
+            "last_line": 1,
+            "filename": "test.cpp"
+        }
+
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
                 submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                handgrading_rubric=handgrading_rubric
             )
         )
 
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('applied_annotations',
                            kwargs={'handgrading_result_pk': self.handgrading_result.pk})
 
+        self.data = {
+            "comment": "Sample comment.",
+            "location": location_data,
+            "annotation": annotation.pk,
+        }
+
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
-        data = {
-            "comment": "Sample comment.",
-            "location": self.location_data,
-            "annotation": self.annotation,
-            "handgrading_result": self.handgrading_result
-        }
         self.do_create_object_test(
-            handgrading_models.AppliedAnnotation.objects, self.client, admin, self.url, data)
+            handgrading_models.AppliedAnnotation.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
-        data = {
-            "comment": "Sample comment.",
-            "location": self.location_data,
-            "annotation": self.annotation,
-            "handgrading_result": self.handgrading_result
-        }
         self.do_permission_denied_create_test(
-            handgrading_models.AppliedAnnotation.objects, self.client, enrolled, self.url, data)
+            handgrading_models.AppliedAnnotation.objects,
+            self.client, enrolled, self.url, self.data)
 
 
 class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
@@ -170,6 +172,7 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
                 submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                handgrading_rubric=handgrading_rubric
             )
         )
 
@@ -183,7 +186,7 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
         self.applied_annotation = handgrading_models.AppliedAnnotation.objects.validate_and_create(
             **applied_annotation_data)
 
-        self.course = self.handgrading_result.submission.submission_group.project.course
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('applied-annotation-detail',
                            kwargs={'pk': self.applied_annotation.pk})
@@ -206,7 +209,7 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
 
     def test_admin_update_bad_values(self):
         bad_data = {
-            "comment": True,
+            "location": "Not an editable field!",
         }
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_patch_object_invalid_args_test(

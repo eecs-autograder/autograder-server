@@ -10,6 +10,18 @@ class CommentTestCase(UnitTestBase):
     """
     Test cases relating the Comment Model
     """
+    def setUp(self):
+        self.default_handgrading_rubric = (
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_apply_arbitrary_points=True,
+                project=obj_build.build_project()
+            )
+        )
+
     def test_default_initialization(self):
         comment_inputs = {
             "location": {
@@ -19,7 +31,8 @@ class CommentTestCase(UnitTestBase):
             },
             "text": "HI",
             "handgrading_result": handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"])
+                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                handgrading_rubric=self.default_handgrading_rubric
             )
         }
 
@@ -37,7 +50,8 @@ class CommentTestCase(UnitTestBase):
             but location's filename is set to "WRONG.cpp" """
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"])
+            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            handgrading_rubric=self.default_handgrading_rubric
         )
 
         with self.assertRaises(ValidationError):
@@ -69,7 +83,8 @@ class CommentTestCase(UnitTestBase):
             },
             text="hello",
             handgrading_result=handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"])
+                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                handgrading_rubric=self.default_handgrading_rubric
             )
         )
 

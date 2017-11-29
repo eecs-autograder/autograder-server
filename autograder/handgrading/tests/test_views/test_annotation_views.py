@@ -10,8 +10,8 @@ from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-class ListCriteriaTestCase(UnitTestBase):
-    """/api/handgrading_rubric/<handgrading_rubric_pk>/criteria"""
+class ListAnnotationsTestCase(UnitTestBase):
+    """/api/handgrading_rubric/<handgrading_rubric_pk>/annotations"""
 
     def setUp(self):
         super().setUp()
@@ -24,25 +24,24 @@ class ListCriteriaTestCase(UnitTestBase):
             "project": obj_build.build_project()
         }
 
-        self.handgrading_rubric = (
+        handgrading_rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 **handgrading_rubric_inputs)
         )
 
-        self.default_criterion = {
-            "short_description": "Sample short description.",
-            "long_description": "Sample loooooooong description.",
+        annotation_data = {
+            "short_description": "Short description text.",
+            "long_description": "Looooong description text.",
             "points": 20,
-            "handgrading_rubric": self.default_handgrading_rubric
+            "handgrading_rubric": handgrading_rubric
         }
 
-        self.criterion = handgrading_models.Criterion.objects.validate_and_create(
-            **self.default_criterion)
-
-        self.course = self.handgrading_rubric.project.course
+        self.annotation = handgrading_models.Annotation.objects.validate_and_create(
+            **annotation_data)
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
-        self.url = reverse('criteria',
-                           kwargs={'handgrading_rubric_pk': self.handgrading_rubric.pk})
+        self.url = reverse('annotations',
+                           kwargs={'handgrading_rubric_pk': handgrading_rubric.pk})
 
     def test_staff_valid_list_cases(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
@@ -50,7 +49,7 @@ class ListCriteriaTestCase(UnitTestBase):
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual(self.criterion.to_dict(), response.data)
+        self.assertSequenceEqual(self.annotation.to_dict(), response.data[0])
 
     def test_non_staff_list_cases_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
@@ -60,8 +59,8 @@ class ListCriteriaTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
-    """/api/handgrading_rubric/<handgrading_rubric_pk>/criteria"""
+class CreateAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase):
+    """/api/handgrading_rubric/<handgrading_rubric_pk>/annotations"""
 
     def setUp(self):
         super().setUp()
@@ -81,41 +80,34 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
-        self.url = reverse('criteria',
+        self.url = reverse('annotations',
                            kwargs={'handgrading_rubric_pk': self.handgrading_rubric.pk})
+
+        self.data = {
+            "short_description": "Sample short description.",
+            "long_description": "Sample loooooooong description.",
+            "points": 20,
+        }
 
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
-        data = {
-            "short_description": "Sample short description.",
-            "long_description": "Sample loooooooong description.",
-            "points": 20,
-            "handgrading_rubric": self.default_handgrading_rubric
-        }
         self.do_create_object_test(
-            handgrading_models.Criterion.objects, self.client, admin, self.url, data)
+            handgrading_models.Annotation.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
-        data = {
-            "short_description": "Sample short description.",
-            "long_description": "Sample loooooooong description.",
-            "points": 20,
-            "handgrading_rubric": self.default_handgrading_rubric
-        }
         self.do_permission_denied_create_test(
-            handgrading_models.Criterion.objects, self.client, enrolled, self.url, data)
+            handgrading_models.Annotation.objects, self.client, enrolled, self.url, self.data)
 
 
-class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
-                                       test_impls.UpdateObjectTest,
-                                       test_impls.DestroyObjectTest,
-                                       UnitTestBase):
-    """/api/criteria/<pk>/"""
+class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
+                                        test_impls.UpdateObjectTest,
+                                        test_impls.DestroyObjectTest,
+                                        UnitTestBase):
+    """/api/annotations/<pk>/"""
 
     def setUp(self):
         super().setUp()
-
         handgrading_rubric_inputs = {
             "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
             "max_points": 0,
@@ -125,26 +117,27 @@ class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
             "project": obj_build.build_project()
         }
 
-        self.handgrading_rubric = (
+        handgrading_rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 **handgrading_rubric_inputs)
         )
 
-        criterion_data = {
-            "short_description": "Sample short description.",
-            "long_description": "Sample loooooooong description.",
+        annotation_data = {
+            "short_description": "Short description text.",
+            "long_description": "Looooong description text.",
             "points": 20,
-            "handgrading_rubric": self.default_handgrading_rubric
+            "handgrading_rubric": handgrading_rubric
         }
 
-        self.criterion = handgrading_models.Criterion.objects.validate_and_create(**criterion_data)
-        self.course = self.handgrading_rubric.project.course
+        self.annotation = handgrading_models.Annotation.objects.validate_and_create(
+            **annotation_data)
+        self.course = handgrading_rubric.project.course
         self.client = APIClient()
-        self.url = reverse('criterion-detail', kwargs={'pk': self.criterion.pk})
+        self.url = reverse('annotation-detail', kwargs={'pk': self.annotation.pk})
 
     def test_staff_valid_get(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
-        self.do_get_object_test(self.client, staff, self.url, self.criterion.to_dict())
+        self.do_get_object_test(self.client, staff, self.url, self.annotation.to_dict())
 
     def test_non_staff_get_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
@@ -158,15 +151,15 @@ class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
         }
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_patch_object_test(
-            self.criterion, self.client, admin, self.url, patch_data)
+            self.annotation, self.client, admin, self.url, patch_data)
 
     def test_admin_update_bad_values(self):
         bad_data = {
-            'points': -10,
+            "points": "oops! text instead of number",
         }
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_patch_object_invalid_args_test(
-            self.criterion, self.client, admin, self.url, bad_data)
+            self.annotation, self.client, admin, self.url, bad_data)
 
     def test_non_admin_update_permission_denied(self):
         patch_data = {
@@ -176,13 +169,13 @@ class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
         }
         [staff] = obj_build.make_staff_users(self.course, 1)
         self.do_patch_object_permission_denied_test(
-            self.criterion, self.client, staff, self.url, patch_data)
+            self.annotation, self.client, staff, self.url, patch_data)
 
     def test_admin_valid_delete(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
-        self.do_delete_object_test(self.criterion, self.client, admin, self.url)
+        self.do_delete_object_test(self.annotation, self.client, admin, self.url)
 
     def test_non_admin_delete_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
         self.do_delete_object_permission_denied_test(
-            self.criterion, self.client, staff, self.url)
+            self.annotation, self.client, staff, self.url)
