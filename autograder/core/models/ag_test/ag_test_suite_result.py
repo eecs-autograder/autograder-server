@@ -8,7 +8,7 @@ import autograder.core.utils as core_ut
 from ..ag_model_base import AutograderModel, ToDictMixin
 from .ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
 from .feedback_category import FeedbackCategory
-from ..submission import Submission
+from .ag_test_case_result import AGTestCaseResult
 
 
 class AGTestSuiteResult(AutograderModel):
@@ -19,7 +19,7 @@ class AGTestSuiteResult(AutograderModel):
         AGTestSuite, help_text='The AGTestSuite that this result belongs to.')
 
     submission = models.ForeignKey(
-        Submission, related_name='ag_test_suite_results',
+        'Submission', related_name='ag_test_suite_results',
         help_text='The Submission that this result is for.')
 
     setup_return_code = models.IntegerField(
@@ -218,17 +218,18 @@ class AGTestSuiteResult(AutograderModel):
                         self._visible_ag_test_case_results))
 
         @property
-        def ag_test_case_results(self) -> List['AGTestCaseResult']:
+        def ag_test_case_results(self) -> List[AGTestCaseResult]:
             if not self._fdbk.show_individual_tests:
                 return []
 
-            test_order = list(self._ag_test_suite.get_agtestcase_order())
-            results = sorted(self._visible_ag_test_case_results,
-                             key=lambda result: test_order.index(result.ag_test_case.pk))
-            return list(results)
+            return list(self._visible_ag_test_case_results)
+            # test_order = list(self._ag_test_suite.get_agtestcase_order())
+            # results = sorted(self._visible_ag_test_case_results,
+            #                  key=lambda result: test_order.index(result.ag_test_case.pk))
+            # return list(results)
 
         @property
-        def _visible_ag_test_case_results(self) -> Iterable['AGTestCaseResult']:
+        def _visible_ag_test_case_results(self) -> Iterable[AGTestCaseResult]:
             res = list(filter(
                 lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
                 self._ag_test_suite_result.ag_test_case_results.all()))
@@ -236,9 +237,10 @@ class AGTestSuiteResult(AutograderModel):
 
         def to_dict(self):
             result = super().to_dict()
+            ag_test_case_results = self.ag_test_case_results
             result['ag_test_case_results'] = [
                 result.get_fdbk(self._fdbk_category).to_dict()
-                for result in self.ag_test_case_results
+                for result in ag_test_case_results
             ]
             return result
 

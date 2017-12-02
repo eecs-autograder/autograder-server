@@ -11,7 +11,6 @@ from ..ag_command import AGCommandResultBase
 from .ag_test_command import (
     AGTestCommand, AGTestCommandFeedbackConfig, ExpectedReturnCode, ValueFeedbackLevel,
     ExpectedOutputSource, MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
-from .ag_test_case_result import AGTestCaseResult
 from .feedback_category import FeedbackCategory
 
 
@@ -28,7 +27,7 @@ class AGTestCommandResult(AGCommandResultBase):
         AGTestCommand, help_text='The AGTestCommand this result belongs to.')
 
     ag_test_case_result = models.ForeignKey(
-        AGTestCaseResult, related_name='ag_test_command_results',
+        'AGTestCaseResult', related_name='ag_test_command_results',
         help_text='''The AGTestCaseResult that this result belongs to.
                      A value of None indicates that this AGTestCommandResult
                      is the result of an AGTestSuite's setup command.''')

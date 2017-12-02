@@ -13,7 +13,7 @@ Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
-from django.shortcuts import render
+from django.contrib.staticfiles import views
 from django.conf import settings
 from django.conf.urls import include, url
 
@@ -22,7 +22,11 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    def index(request):
-        return render(request, 'core/index.html')
+    urlpatterns += [
+        url(r'^static/(?P<path>.*)$', views.serve),
+    ]
 
-    urlpatterns += [url(r'^$', index)]
+    import debug_toolbar
+    urlpatterns = [
+        url(r'^__debug__/', include(debug_toolbar.urls)),
+    ] + urlpatterns

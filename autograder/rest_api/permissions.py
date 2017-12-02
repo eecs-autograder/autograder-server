@@ -7,9 +7,12 @@ import autograder.core.models as ag_models
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 
 
-def is_admin(
-    get_course_fn: Callable[[Any], ag_models.Course]=lambda course: course
-) -> Type[permissions.BasePermission]:
+GetCourseFnType = Callable[[Any], ag_models.Course]
+GetGroupFnType = Callable[[Any], ag_models.SubmissionGroup]
+PermissionClassType = Type[permissions.BasePermission]
+
+
+def is_admin(get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
     class IsAdmin(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -19,16 +22,25 @@ def is_admin(
 
 
 def is_admin_or_read_only_staff(
-    get_course_fn: Callable[[Any], ag_models.Course]=lambda course: course
-) -> Type[permissions.BasePermission]:
+        get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
     class IsAdminOrReadOnlyStaff(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
             is_read_only_staff = (request.method in permissions.SAFE_METHODS and
-                                   course.is_course_staff(request.user))
+                                  course.is_course_staff(request.user))
             return course.is_administrator(request.user) or is_read_only_staff
 
     return IsAdminOrReadOnlyStaff
+
+
+def is_admin_or_read_only_other(get_course_fn: GetCourseFnType) -> PermissionClassType:
+    class IsAdminOrReadOnlyOther(permissions.BasePermission):
+        def has_object_permission(self, request, view, obj):
+            course = get_course_fn(obj)
+            is_read_only = request.method in permissions.SAFE_METHODS
+            return course.is_administrator(request.user) or is_read_only
+
+    return IsAdminOrReadOnlyOther
 
 
 def can_view_project(
@@ -59,6 +71,15 @@ def is_staff_or_group_member(
                     group.members.filter(pk=request.user.pk).exists())
 
     return IsStaffOrGroupMember
+
+
+def is_group_member(get_group_fn: GetGroupFnType) -> PermissionClassType:
+    class IsGroupMember(permissions.BasePermission):
+        def has_object_permission(self, request, view, obj):
+            group = get_group_fn(obj)
+            return group.members.filter(pk=request.user.pk).exists()
+
+    return IsGroupMember
 
 
 def can_request_feedback_category(

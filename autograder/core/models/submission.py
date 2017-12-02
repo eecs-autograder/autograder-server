@@ -7,14 +7,21 @@ from django.core import exceptions
 from django.core.cache import cache
 from django.core.files import File
 from django.db import models, transaction
+from django.db.models import Prefetch
 from django.utils import timezone
+from django.utils.functional import cached_property
 
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core.models.ag_model_base import ToDictMixin
+
 from . import ag_model_base
 from .ag_test.feedback_category import FeedbackCategory
+from .ag_test.ag_test_suite_result import AGTestSuiteResult
+from .ag_test.ag_test_case_result import AGTestCaseResult
+from .ag_test.ag_test_command_result import AGTestCommandResult
+from .student_test_suite import StudentTestSuiteResult
 
 
 def _get_submission_file_upload_to_dir(submission, filename):
@@ -220,6 +227,10 @@ class Submission(ag_model_base.AutograderModel):
         help_text='''Indicates whether this submission should count
             towards the daily submission limit.''')
 
+    # TODO: optimize this (when loading a list of submissions, it's expensive to
+    # redo the num_submissions_before_self query for each submission.
+    # One possibility: address github issue to make this a DB field instead
+    # of computing it dynamically
     @property
     def is_past_daily_limit(self):
         """
@@ -362,10 +373,7 @@ class Submission(ag_model_base.AutograderModel):
 
         @property
         def ag_test_suite_results(self) -> List['AGTestSuiteResult']:
-            suite_order = list(self._project.get_agtestsuite_order())
-            results = sorted(self._visible_ag_test_suite_results,
-                             key=lambda result: suite_order.index(result.ag_test_suite.pk))
-            return list(results)
+            return list(self._visible_ag_test_suite_results)
 
         @property
         def _visible_ag_test_suite_results(self) -> Iterable['AGTestSuiteResult']:
@@ -375,10 +383,7 @@ class Submission(ag_model_base.AutograderModel):
 
         @property
         def student_test_suite_results(self) -> List['StudentTestSuiteResult']:
-            suite_order = list(self._project.get_studenttestsuite_order())
-            results = sorted(self._visible_student_test_suite_results,
-                             key=lambda result: suite_order.index(result.student_test_suite.pk))
-            return list(results)
+            return list(self._visible_ag_test_suite_results)
 
         @property
         def _visible_student_test_suite_results(self) -> Iterable['StudentTestSuiteResult']:
@@ -402,3 +407,55 @@ class Submission(ag_model_base.AutograderModel):
             'ag_test_suite_results',
             'student_test_suite_results'
         )
+
+
+# These functions return querysets that are optimized to return
+# the requested data in as few database hits as possible. The
+# results are also properly sorted. Note that the result objects
+# are ordered by the '_order' column added by Django to models
+# that use order_with_respect_to.
+
+
+def get_submissions_with_results_queryset(fdbk_category: FeedbackCategory,
+                                          base_manager=Submission.objects):
+    ag_suite_result_queryset = get_ag_test_suite_results_queryset(fdbk_category)
+    prefetch_ag_suite_results = Prefetch('ag_test_suite_results', ag_suite_result_queryset)
+
+    student_suite_result_queryset = get_student_test_suite_results_queryset(fdbk_category)
+    prefetch_student_suite_results = Prefetch('student_test_suite_results',
+                                              student_suite_result_queryset)
+
+    return base_manager.prefetch_related(prefetch_ag_suite_results, prefetch_student_suite_results)
+
+
+def get_ag_test_suite_results_queryset(fdbk_category: FeedbackCategory):
+    case_result_queryset = get_ag_test_case_results_queryset(fdbk_category)
+    prefetch_case_results = Prefetch('ag_test_case_results', case_result_queryset)
+    return AGTestSuiteResult.objects.select_related(
+        _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_suite')
+    ).prefetch_related(prefetch_case_results).order_by('ag_test_suite___order')
+
+
+def get_ag_test_case_results_queryset(fdbk_category: FeedbackCategory):
+    cmd_result_queryset = get_ag_test_cmd_results_queryset(fdbk_category)
+    prefetch_cmd_results = Prefetch('ag_test_command_results', cmd_result_queryset)
+    return AGTestCaseResult.objects.select_related(
+        _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_case')
+    ).prefetch_related(prefetch_cmd_results).order_by('ag_test_case___order')
+
+
+def get_ag_test_cmd_results_queryset(fdbk_category: FeedbackCategory):
+    return AGTestCommandResult.objects.select_related(
+        _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_command')
+    ).order_by('ag_test_command___order')
+
+
+def get_student_test_suite_results_queryset(fdbk_category: FeedbackCategory):
+    return StudentTestSuiteResult.objects.select_related(
+        _get_fdbk_category_join_field_tmpl(fdbk_category).format('student_test_suite')
+    ).order_by('student_test_suite___order')
+
+
+def _get_fdbk_category_join_field_tmpl(fdbk_category: FeedbackCategory):
+    return ('{}__' + str(fdbk_category.value) + '_fdbk_config' if
+            fdbk_category != FeedbackCategory.max else '{}')

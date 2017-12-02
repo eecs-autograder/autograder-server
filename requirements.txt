@@ -11,3 +11,4 @@ psycopg2==2.6.2
 redis==2.10.5
 uWSGI==2.0.15
 ipython==6.0.0
+django-debug-toolbar==1.9.1

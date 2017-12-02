@@ -11,7 +11,6 @@ from .student_test_suite import (
 from ..ag_command import AGCommandResult
 from ..ag_model_base import AutograderModel, ToDictMixin
 from ..ag_test.feedback_category import FeedbackCategory
-from ..submission import Submission
 
 import autograder.core.utils as core_ut
 
@@ -26,7 +25,7 @@ class StudentTestSuiteResult(AutograderModel):
         unique_together = ('student_test_suite', 'submission')
 
     student_test_suite = models.ForeignKey(StudentTestSuite)
-    submission = models.ForeignKey(Submission, related_name='student_test_suite_results')
+    submission = models.ForeignKey('Submission', related_name='student_test_suite_results')
 
     student_tests = ag_fields.StringArrayField(
         blank=True, default=list,

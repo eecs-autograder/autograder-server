@@ -163,7 +163,7 @@ class GroupDetailViewSet(build_load_object_mixin(ag_models.SubmissionGroup),
 
         merged_group_dir = core_ut.get_student_submission_group_dir(merged_group)
         shutil.rmtree(merged_group_dir)
-        os.rename(tempdir_path, merged_group_dir)
+        shutil.move(tempdir_path, merged_group_dir)
 
     def _get_merged_extended_due_date(self, group1, group2):
         if group1.extended_due_date is None:
