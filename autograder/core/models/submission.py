@@ -383,7 +383,7 @@ class Submission(ag_model_base.AutograderModel):
 
         @property
         def student_test_suite_results(self) -> List['StudentTestSuiteResult']:
-            return list(self._visible_ag_test_suite_results)
+            return list(self._visible_student_test_suite_results)
 
         @property
         def _visible_student_test_suite_results(self) -> Iterable['StudentTestSuiteResult']:

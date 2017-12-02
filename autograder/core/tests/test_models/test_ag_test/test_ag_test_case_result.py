@@ -1,4 +1,5 @@
 import autograder.core.models as ag_models
+from autograder.core.models.submission import get_ag_test_case_results_queryset
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
@@ -142,6 +143,8 @@ class AGTestCaseResultTestCase(UnitTestBase):
             self.ag_test_cmd2, self.ag_test_case_result)
 
         self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd2.pk, self.ag_test_cmd1.pk])
+        self.ag_test_case_result = get_ag_test_case_results_queryset(
+            ag_models.FeedbackCategory.max).get(pk=self.ag_test_case_result.pk)
         fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertEqual([result2, result1], fdbk.ag_test_command_results)
 
