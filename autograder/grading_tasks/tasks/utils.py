@@ -139,7 +139,7 @@ def run_command_from_args(cmd: str,
                           max_virtual_memory: int,
                           timeout: int,
                           stdin=None) -> CompletedCommand:
-    run_result = sandbox.run_command(shlex.split(cmd),
+    run_result = sandbox.run_command(['bash', '-c', cmd],
                                      stdin=stdin,
                                      as_root=False,
                                      max_num_processes=max_num_processes,

@@ -270,21 +270,6 @@ void file2() {
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual('weee', open(res.stdout_filename).read())
 
-    def test_shell_injection_doesnt_work(self, *args):
-        suite = obj_build.make_ag_test_suite(self.project)
-        case = obj_build.make_ag_test_case(suite)
-        bad_cmd = 'echo "haxorz"; sleep 20'
-        cmd = obj_build.make_full_ag_test_command(
-            case,
-            set_arbitrary_points=False,
-            set_arbitrary_expected_vals=False,
-            cmd=bad_cmd)
-        tasks.grade_submission(self.submission.pk)
-
-        res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(' '.join(shlex.split(bad_cmd)[1:]) + '\n',
-                         open(res.stdout_filename).read())
-
     def test_network_access_allowed_in_suite(self, *args):
         suite1 = obj_build.make_ag_test_suite(self.project, allow_network_access=True)
         case1 = obj_build.make_ag_test_case(suite1)
