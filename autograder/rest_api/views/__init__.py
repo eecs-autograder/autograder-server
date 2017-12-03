@@ -8,7 +8,7 @@ from .group_invitation_views.group_invitation_detail_view import GroupInvitation
 from .group_invitation_views.group_invitations_view import GroupInvitationsViewSet
 
 from .group_views.group_detail_view import GroupDetailViewSet
-from .group_views.groups_view import GroupsViewSet
+from .group_views.groups_view import GroupsViewSet, CreateSoloGroupView
 
 from .oauth2callback import oauth2_callback
 

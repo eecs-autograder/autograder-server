@@ -116,8 +116,7 @@ class CreateGroupTestCase(_GroupsSetUp,
 class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
                               UnitTestBase):
     def get_solo_group_url(self, project):
-        return reverse('project-groups-solo-group',
-                       kwargs={'project_pk': project.pk})
+        return reverse('solo_group', kwargs={'project_pk': project.pk})
 
     def test_create_solo_group_min_size_one(self):
         for user in self.admin, self.staff, self.enrolled, self.nobody:

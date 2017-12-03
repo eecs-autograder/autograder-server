@@ -1,43 +1,44 @@
 from django.contrib.auth.models import User
 from django.db import transaction
 
-from rest_framework import (
-    viewsets, mixins, permissions, decorators, response, status)
+from rest_framework import decorators, response, status
+
+from drf_composable_permissions.p import P
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api.views.permission_components import user_can_view_project
+from autograder.rest_api import permissions as ag_permissions
 
 from autograder import utils
 import autograder.utils.testing as test_ut
-
-from autograder.rest_api.views.project_views.permissions import IsAdminOrReadOnlyStaff
-from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
-
-
-class _CreateSoloGroupPermissions(permissions.BasePermission):
-    def has_object_permission(self, request, view, project):
-        if project.course.is_course_staff(request.user):
-            return True
-
-        return user_can_view_project(request.user, project)
+from autograder.rest_api.views.ag_model_views import (
+    ListCreateNestedModelView, AGModelGenericView)
 
 
-class GroupsViewSet(
-        build_load_object_mixin(ag_models.Project, lock_on_unsafe_method=False,
-                                pk_key='project_pk'),
-        mixins.ListModelMixin,
-        mixins.CreateModelMixin,
-        viewsets.GenericViewSet):
+is_admin = ag_permissions.is_admin(lambda project: project.course)
+is_staff = ag_permissions.is_staff(lambda project: project.course)
+
+
+class GroupsViewSet(ListCreateNestedModelView):
     serializer_class = ag_serializers.SubmissionGroupSerializer
-    permission_classes = (permissions.IsAuthenticated, IsAdminOrReadOnlyStaff)
+    permission_classes = (P(is_admin) | (P(is_staff) & ag_permissions.IsReadOnly),)
+
+    pk_key = 'project_pk'
+    model_manager = ag_models.Project.objects.select_related('course')
+    foreign_key_field_name = 'project'
+    reverse_foreign_key_field_name = 'submission_groups'
 
     def get_queryset(self):
-        project = self.get_object()
-        return project.submission_groups.all()
+        queryset = super().get_queryset()
+        print('woooo')
+        if self.request.method.lower() == 'get':
+            print('weeeeeee')
+            queryset = queryset.prefetch_related('members')
+
+        return queryset
 
     @transaction.atomic()
-    def create(self, request, project_pk, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         project = self.get_object()
         request.data['project'] = project
 
@@ -55,11 +56,16 @@ class GroupsViewSet(
 
         return super().create(request, *args, **kwargs)
 
+
+class CreateSoloGroupView(AGModelGenericView):
+    permission_classes = (P(is_staff) | P(ag_permissions.can_view_project()),)
+    serializer_class = ag_serializers.SubmissionGroupSerializer
+
+    pk_key = 'project_pk'
+    model_manager = ag_models.Project.objects.select_related('course')
+
     @transaction.atomic()
-    @decorators.list_route(methods=['post'],
-                           permission_classes=[permissions.IsAuthenticated,
-                                               _CreateSoloGroupPermissions])
-    def solo_group(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         project = self.get_object()
 
         utils.lock_users([request.user])

@@ -55,6 +55,16 @@ class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,
     pass
 
 
+class AGModelGenericView(GetObjectLockOnUnsafeMixin,
+                         AlwaysIsAuthenticatedMixin,
+                         generics.GenericAPIView):
+    """
+    A generic view that includes the mixins
+    GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
+    """
+    pass
+
+
 class ListCreateNestedModelView(GetObjectLockOnUnsafeMixin,
                                 AlwaysIsAuthenticatedMixin,
                                 mixins.ListModelMixin,

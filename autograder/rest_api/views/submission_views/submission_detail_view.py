@@ -1,9 +1,10 @@
 from django.core import exceptions
 from django.db import transaction
-from django.db.models import Prefetch
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import decorators, mixins, permissions, response, status, viewsets
+from rest_framework import decorators, mixins, response, status
+
+from drf_composable_permissions.p import P
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
@@ -13,8 +14,7 @@ from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
 
 
-is_admin_or_read_only_other = ag_permissions.is_admin_or_read_only_other(
-    lambda submission: submission.submission_group.project.course)
+is_admin = ag_permissions.is_admin(lambda submission: submission.submission_group.project.course)
 can_view_project = ag_permissions.can_view_project(
     lambda submission: submission.submission_group.project)
 is_staff_or_group_member = ag_permissions.is_staff_or_group_member(
@@ -29,7 +29,8 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
         'submission_group__project__course')
 
     serializer_class = ag_serializers.SubmissionSerializer
-    permission_classes = (is_admin_or_read_only_other, can_view_project, is_staff_or_group_member)
+    permission_classes = (
+        P(is_admin) | P(ag_permissions.IsReadOnly), can_view_project, is_staff_or_group_member)
 
     @decorators.detail_route()
     def file(self, request, *args, **kwargs):

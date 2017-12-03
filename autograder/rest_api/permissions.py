@@ -12,6 +12,11 @@ GetGroupFnType = Callable[[Any], ag_models.SubmissionGroup]
 PermissionClassType = Type[permissions.BasePermission]
 
 
+class IsReadOnly(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.method in permissions.SAFE_METHODS
+
+
 def is_admin(get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
     class IsAdmin(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
@@ -19,6 +24,15 @@ def is_admin(get_course_fn: GetCourseFnType=lambda course: course) -> Permission
             return course.is_administrator(request.user)
 
     return IsAdmin
+
+
+def is_staff(get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
+    class IsStaff(permissions.BasePermission):
+        def has_object_permission(self, request, view, obj):
+            course = get_course_fn(obj)
+            return course.is_course_staff(request.user)
+
+    return IsStaff
 
 
 def is_admin_or_read_only_staff(
@@ -31,16 +45,6 @@ def is_admin_or_read_only_staff(
             return course.is_administrator(request.user) or is_read_only_staff
 
     return IsAdminOrReadOnlyStaff
-
-
-def is_admin_or_read_only_other(get_course_fn: GetCourseFnType) -> PermissionClassType:
-    class IsAdminOrReadOnlyOther(permissions.BasePermission):
-        def has_object_permission(self, request, view, obj):
-            course = get_course_fn(obj)
-            is_read_only = request.method in permissions.SAFE_METHODS
-            return course.is_administrator(request.user) or is_read_only
-
-    return IsAdminOrReadOnlyOther
 
 
 def can_view_project(
