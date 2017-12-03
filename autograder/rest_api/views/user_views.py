@@ -2,9 +2,9 @@ from django.contrib.auth.models import User
 
 from rest_framework import viewsets, mixins, permissions, decorators, response
 
+import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-
-from .load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
 
 
 class _Permissions(permissions.BasePermission):
@@ -15,12 +15,12 @@ class _Permissions(permissions.BasePermission):
         return view.kwargs['pk'] == str(request.user.pk)
 
 
-class UserViewSet(build_load_object_mixin(User),
-                  mixins.RetrieveModelMixin,
-                  viewsets.GenericViewSet):
-    queryset = User.objects.all()
+class UserViewSet(mixins.RetrieveModelMixin,
+                  AGModelGenericViewSet):
     serializer_class = ag_serializers.UserSerializer
-    permission_classes = (permissions.IsAuthenticated, _Permissions)
+    permission_classes = (_Permissions,)
+
+    model_manager = User.objects.all()
 
     @decorators.list_route()
     def current(self, request, *args, **kwargs):
@@ -51,9 +51,10 @@ class UserViewSet(build_load_object_mixin(User),
     @decorators.detail_route()
     def groups_is_member_of(self, request, *args, **kwargs):
         user = self.get_object()
+        queryset = user.groups_is_member_of.select_related(
+            'project').prefetch_related('members').all()
         return response.Response(
-            ag_serializers.SubmissionGroupSerializer(
-                user.groups_is_member_of.all(), many=True).data)
+            ag_serializers.SubmissionGroupSerializer(queryset, many=True).data)
 
     @decorators.detail_route()
     def group_invitations_received(self, request, *args, **kwargs):

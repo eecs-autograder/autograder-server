@@ -7,7 +7,9 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db import transaction
 
-from rest_framework import viewsets, mixins, permissions, decorators, response, status
+from rest_framework import mixins, permissions, decorators, response, status
+
+from drf_composable_permissions.p import P
 
 import autograder.core.models as ag_models
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
@@ -17,24 +19,20 @@ from autograder.rest_api import transaction_mixins
 from autograder import utils
 import autograder.utils.testing as test_ut
 import autograder.core.utils as core_ut
+from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
 
-from ..permission_components import user_can_view_group
-from ..load_object_mixin import build_load_object_mixin
+import autograder.rest_api.permissions as ag_permissions
 
 
-class _Permissions(permissions.BasePermission):
+is_admin = ag_permissions.is_admin(lambda group: group.project.course)
+is_staff_or_member = ag_permissions.is_staff_or_group_member()
+can_view_project = ag_permissions.can_view_project(lambda group: group.project)
+group_permissions = (P(is_admin) |
+                     (P(ag_permissions.IsReadOnly) & can_view_project & is_staff_or_member))
+
+
+class _UltimateSubmissionPermissions(permissions.BasePermission):
     def has_object_permission(self, request, view, group):
-        if request.method not in permissions.SAFE_METHODS:
-            return group.project.course.is_administrator(request.user)
-
-        return user_can_view_group(request.user, group)
-
-
-class _UltimateSubmissionPermissions(_Permissions):
-    def has_object_permission(self, request, view, group):
-        if not super().has_object_permission(request, view, group):
-            return False
-
         project = group.project
         course = group.project.course
         is_staff = course.is_course_staff(request.user)
@@ -56,13 +54,14 @@ class _UltimateSubmissionPermissions(_Permissions):
         return not project.hide_ultimate_submission_fdbk
 
 
-class GroupDetailViewSet(build_load_object_mixin(ag_models.SubmissionGroup),
-                         mixins.RetrieveModelMixin,
+class GroupDetailViewSet(mixins.RetrieveModelMixin,
                          transaction_mixins.TransactionUpdateMixin,
-                         viewsets.GenericViewSet):
-    queryset = ag_models.SubmissionGroup.objects.all()
+                         AGModelGenericViewSet):
     serializer_class = ag_serializers.SubmissionGroupSerializer
-    permission_classes = (permissions.IsAuthenticated, _Permissions)
+    permission_classes = (group_permissions,)
+
+    model_manager = ag_models.SubmissionGroup.objects.select_related(
+        'project__course').prefetch_related('members')
 
     def update(self, request, *args, **kwargs):
         if 'member_names' in request.data:
@@ -79,8 +78,8 @@ class GroupDetailViewSet(build_load_object_mixin(ag_models.SubmissionGroup),
             request.data['check_group_size_limits'] = False
         return super().update(request, *args, **kwargs)
 
-    @decorators.detail_route(permission_classes=(
-        permissions.IsAuthenticated, _UltimateSubmissionPermissions))
+    @decorators.detail_route(
+        permission_classes=(group_permissions, _UltimateSubmissionPermissions,))
     def ultimate_submission(self, request, *args, **kwargs):
         """
         Permissions details:
@@ -114,7 +113,7 @@ class GroupDetailViewSet(build_load_object_mixin(ag_models.SubmissionGroup),
                 status=status.HTTP_400_BAD_REQUEST)
 
         group1 = self.get_object()
-        group2 = self.load_object(pk=other_group_pk)
+        group2 = self.get_object(pk_override=other_group_pk)
 
         if group1.project != group2.project:
             return response.Response(

@@ -23,7 +23,15 @@ class GetObjectLockOnUnsafeMixin:
     pk_key = 'pk'
     model_manager = None
 
-    def get_object(self):
+    def get_object(self, pk_override=None):
+        """
+        :param pk_override: When specified, looks up the object
+        with this specified primary key rather than getting the
+        pk from the url.
+        :return: Loads an object from the database using model_manager
+        to perform the query. Http404 or PermissionDenied may be raised
+        as in the Django REST Framework version of this method.
+        """
         if self.model_manager is None:
             raise ValueError('"model_manager" must not be None.')
 
@@ -31,7 +39,9 @@ class GetObjectLockOnUnsafeMixin:
         if self.request.method not in permissions.SAFE_METHODS:
             queryset = queryset.select_for_update()
 
-        obj = get_object_or_404(queryset, pk=self.kwargs[self.pk_key])
+        pk = pk_override if pk_override is not None else self.kwargs[self.pk_key]
+
+        obj = get_object_or_404(queryset, pk=pk)
         self.check_object_permissions(self.request, obj)
         return obj
 
