@@ -9,7 +9,6 @@ from django.core.files import File
 from django.db import models, transaction
 from django.db.models import Prefetch
 from django.utils import timezone
-from django.utils.functional import cached_property
 
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
@@ -51,6 +50,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
             submission = self.model(submission_group=submission_group,
                                     timestamp=timestamp,
                                     submitter=submitter)
+            submission.cache_is_past_daily_limit = _new_submission_is_past_limit(submission)
             # The submission needs to be saved so that a directory is
             # created for it.
             submission.save()
@@ -103,6 +103,26 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
             return False
 
         return True
+
+
+def _new_submission_is_past_limit(submission: 'Submission'):
+    project = submission.submission_group.project
+    if project.submission_limit_per_day is None:
+        return False
+
+    start_datetime, end_datetime = core_ut.get_24_hour_period(
+        project.submission_limit_reset_time,
+        submission.timestamp.astimezone(project.submission_limit_reset_timezone))
+
+    num_submissions_before_self = submission.submission_group.submissions.filter(
+        timestamp__gte=start_datetime,
+        timestamp__lt=end_datetime,
+        count_towards_daily_limit=True,
+        status__in=Submission.GradingStatus.count_towards_limit_statuses,
+        submission_group=submission.submission_group
+    ).count()
+
+    return num_submissions_before_self >= project.submission_limit_per_day
 
 
 class Submission(ag_model_base.AutograderModel):
@@ -227,6 +247,11 @@ class Submission(ag_model_base.AutograderModel):
         help_text='''Indicates whether this submission should count
             towards the daily submission limit.''')
 
+    cache_is_past_daily_limit = models.NullBooleanField(
+        default=None, null=True, blank=True,
+        help_text="""Whether this submission is past the daily submission limit.
+                     This field is currently nullable for easier integration.""")
+
     # TODO: optimize this (when loading a list of submissions, it's expensive to
     # redo the num_submissions_before_self query for each submission.
     # One possibility: address github issue to make this a DB field instead
@@ -240,6 +265,9 @@ class Submission(ag_model_base.AutograderModel):
         if other submissions in the same 24 hour period are marked
         or unmarked as counting towards the daily limit.
         """
+        if self.cache_is_past_daily_limit is not None:
+            return self.cache_is_past_daily_limit
+
         project = self.submission_group.project
         if project.submission_limit_per_day is None:
             return False
@@ -327,6 +355,9 @@ class Submission(ag_model_base.AutograderModel):
         return self.submitted_filenames
 
     def save(self, *args, **kwargs):
+        if self.cache_is_past_daily_limit is None:
+            self.cache_is_past_daily_limit = self.is_past_daily_limit
+
         super().save(*args, **kwargs)
 
         # result_output_dir is a subdir of the submission dir

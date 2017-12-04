@@ -120,6 +120,13 @@ class RunCommandTestCase(UnitTestBase):
             print(result.stdout.read())
             print(result.stderr.read())
 
+            extra_bash_dash_c = ag_models.AGCommand.objects.validate_and_create(
+                cmd='bash -c "echo hello"', process_spawn_limit=0)
+            result = tasks.run_ag_command(extra_bash_dash_c, sandbox)
+            self.assertEqual(0, result.return_code)
+            print(result.stdout.read())
+            print(result.stderr.read())
+
     def test_shell_output_redirection(self):
         with AutograderSandbox() as sandbox:
             ag_command = ag_models.AGCommand.objects.validate_and_create(
