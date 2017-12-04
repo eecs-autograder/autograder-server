@@ -34,7 +34,8 @@ class AGCommandBase(AutograderModel):
     cmd = models.CharField(
         max_length=constants.MAX_COMMAND_LENGTH,
         help_text='''A string containing the command to be run.
-                     Note: This string will be split using shlex.split() before it is executed.
+                     Note: This string will be inserted into ['bash', '-c', <cmd>]
+                        in order to be executed.
                      Note: This string defaults to the "true" command
                      (which does nothing and returns 0) so that AGCommands are
                      default-creatable.''')

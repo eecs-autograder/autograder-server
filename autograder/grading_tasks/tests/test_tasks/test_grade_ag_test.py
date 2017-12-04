@@ -1,6 +1,5 @@
 import os
 import random
-import shlex
 import tempfile
 from unittest import mock
 
@@ -508,11 +507,11 @@ sys.stderr.flush()
             'truncate_stderr': constants.MAX_OUTPUT_LENGTH,
         }
         run_command_mock.assert_has_calls([
-            mock.call(shlex.split(self.ag_test_suite.setup_suite_cmd),
+            mock.call(['bash', '-c', self.ag_test_suite.setup_suite_cmd],
                       stdin=None,
                       as_root=False, **expected_setup_and_teardown_resource_kwargs),
-            mock.call(shlex.split(cmd.cmd), stdin=None, as_root=False, **expected_cmd_args),
-            mock.call(shlex.split(self.ag_test_suite.teardown_suite_cmd),
+            mock.call(['bash', '-c', cmd.cmd], stdin=None, as_root=False, **expected_cmd_args),
+            mock.call(['bash', '-c', self.ag_test_suite.teardown_suite_cmd],
                       stdin=None,
                       as_root=False, **expected_setup_and_teardown_resource_kwargs)
         ])

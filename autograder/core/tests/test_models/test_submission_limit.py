@@ -151,35 +151,6 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
             [], submission_group=self.submission_group)
         self.assertTrue(sub.is_past_daily_limit)
 
-    def test_is_past_limit_change_with_count_towards_limit(self):
-        timestamp = timezone.now() + timezone.timedelta(days=-3)
-        self.project.validate_and_update(submission_limit_per_day=1)
-
-        old_sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group, timestamp=timestamp)
-        old_sub.count_towards_daily_limit = False
-        old_sub.save()
-        self.assertEqual(0, self.submission_group.num_submits_towards_limit)
-        self.assertFalse(old_sub.is_past_daily_limit)
-        self.assertFalse(old_sub.count_towards_daily_limit)
-
-        new_sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group, timestamp=timestamp)
-        self.assertFalse(new_sub.is_past_daily_limit)
-        self.assertTrue(new_sub.count_towards_daily_limit)
-
-        # Marking the older submission as counting towards limit should
-        # push the newer submission past the limit.
-        old_sub.validate_and_update(count_towards_daily_limit=True)
-        self.assertFalse(old_sub.is_past_daily_limit)
-        self.assertTrue(new_sub.is_past_daily_limit)
-
-        # Re-mark the older submission as not counting, which should
-        # push the newer submission back below the limit.
-        old_sub.validate_and_update(count_towards_daily_limit=False)
-        self.assertFalse(old_sub.is_past_daily_limit)
-        self.assertFalse(new_sub.is_past_daily_limit)
-
     def test_non_default_limit_reset_time_and_timezone(self):
         reset_timezone = 'America/Detroit'
         reset_datetime = timezone.now().astimezone(

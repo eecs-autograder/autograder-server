@@ -5,7 +5,6 @@ from django.db import models, transaction
 
 import autograder.core.fields as ag_fields
 from .ag_test_suite import AGTestSuite
-from .ag_test_suite_result import AGTestSuiteResult
 from ..ag_model_base import AutograderModel
 
 
@@ -99,6 +98,8 @@ class AGTestCase(AutograderModel):
         # Update all the AGTestCaseResult objects that belong to this
         # AGTestCase so that they belong to AGTestSuiteResults that
         # belong to the destination AGTestSuite.
+
+        from .ag_test_suite_result import AGTestSuiteResult
 
         for ag_test_case_result in self.related_ag_test_case_results.select_related(
                 'ag_test_suite_result__submission').all():

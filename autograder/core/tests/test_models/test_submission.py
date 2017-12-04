@@ -10,6 +10,7 @@ import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder import utils
 from autograder.core import constants
+from autograder.core.models.submission import get_submissions_with_results_queryset
 from autograder.utils.testing import UnitTestBase
 
 
@@ -538,6 +539,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.project.set_agtestsuite_order([self.ag_test_suite2.pk, self.ag_test_suite1.pk])
         self.project.set_studenttestsuite_order([self.student_suite2.pk, self.student_suite1.pk])
 
+        self.submission = get_submissions_with_results_queryset(
+            ag_models.FeedbackCategory.max).get(pk=self.submission.pk)
         fdbk = self.submission.get_fdbk(ag_models.FeedbackCategory.max)
 
         self.assertSequenceEqual([self.ag_suite_result2, self.ag_suite_result1],

@@ -31,9 +31,11 @@ def all_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwar
     def _get_all_finished_grading_submissions(project: ag_models.Project,
                                               groups: Sequence[ag_models.SubmissionGroup]):
         submissions = list(
-            ag_models.Submission.objects.filter(
-                submission_group__in=groups,
-                status=ag_models.Submission.GradingStatus.finished_grading))
+            ag_models.get_submissions_with_results_queryset(
+                ag_models.FeedbackCategory.max,
+                base_manager=ag_models.Submission.objects.filter(
+                    submission_group__in=groups,
+                    status=ag_models.Submission.GradingStatus.finished_grading)))
         return submissions, len(submissions)
 
     _make_download_file_task_impl(project_pk, task_pk, include_staff,

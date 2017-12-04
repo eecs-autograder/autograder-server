@@ -4,8 +4,8 @@ from django.db import models
 
 from ..ag_model_base import AutograderModel, ToDictMixin
 from .ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
-from .ag_test_suite_result import AGTestSuiteResult
 from .feedback_category import FeedbackCategory
+from .ag_test_command_result import AGTestCommandResult
 
 
 class AGTestCaseResult(AutograderModel):
@@ -17,7 +17,7 @@ class AGTestCaseResult(AutograderModel):
         help_text='The AGTestCase that this result belongs to.')
 
     ag_test_suite_result = models.ForeignKey(
-        AGTestSuiteResult, related_name='ag_test_case_results',
+        'AGTestSuiteResult', related_name='ag_test_case_results',
         help_text='The AGTestSuiteResult that this result belongs to.')
 
     def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestCaseResult.FeedbackCalculator':
@@ -73,17 +73,18 @@ class AGTestCaseResult(AutograderModel):
                         self._visible_cmd_results))
 
         @property
-        def ag_test_command_results(self) -> List['AGTestCommandResult']:
+        def ag_test_command_results(self) -> List[AGTestCommandResult]:
             if not self._fdbk.show_individual_commands:
                 return []
 
-            cmd_order = list(self._ag_test_case.get_agtestcommand_order())
-            results = sorted(self._visible_cmd_results,
-                             key=lambda result: cmd_order.index(result.ag_test_command.pk))
-            return list(results)
+            return list(self._visible_cmd_results)
+            # cmd_order = list(self._ag_test_case.get_agtestcommand_order())
+            # results = sorted(self._visible_cmd_results,
+            #                  key=lambda result: cmd_order.index(result.ag_test_command.pk))
+            # return list(results)
 
         @property
-        def _visible_cmd_results(self) -> Iterable['AGTestCommandResult']:
+        def _visible_cmd_results(self) -> Iterable[AGTestCommandResult]:
             return filter(
                 lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
                 self._ag_test_case_result.ag_test_command_results.all())

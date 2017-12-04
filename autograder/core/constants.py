@@ -4,7 +4,7 @@ import autograder_sandbox
 MAX_CHAR_FIELD_LEN = 255
 
 MAX_OUTPUT_LENGTH = 8 * pow(10, 6)  # 8,000,000 characters
-MAX_PROJECT_FILE_SIZE = MAX_OUTPUT_LENGTH
+MAX_PROJECT_FILE_SIZE = 15 * (10 ** 6)  # 15,000,000 bytes
 
 # For a given project, the name of the directory that
 # user-uploaded project files should be placed in.

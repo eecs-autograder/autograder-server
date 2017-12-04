@@ -2,41 +2,35 @@ from django.core import exceptions
 from django.db import transaction
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import decorators, mixins, permissions, response, status, viewsets
+from rest_framework import decorators, mixins, response, status
+
+from drf_composable_permissions.p import P
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core.models.submission import get_submissions_with_results_queryset
 from autograder.rest_api import transaction_mixins
-from ..load_object_mixin import build_load_object_mixin
-from ..permission_components import user_can_view_group
+from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
 
 
-class _Permissions(permissions.BasePermission):
-    def has_object_permission(self, request, view, submission):
-        if request.method not in permissions.SAFE_METHODS:
-            return submission.submission_group.project.course.is_administrator(
-                request.user)
-
-        return user_can_view_group(request.user, submission.submission_group)
-
-
-class _RemoveFromQueuePermissions(permissions.BasePermission):
-    def has_object_permission(self, request, view, submission):
-        group = submission.submission_group
-        if not user_can_view_group(request.user, group):
-            return False
-
-        return group.members.filter(pk=request.user.pk).exists()
+is_admin = ag_permissions.is_admin(lambda submission: submission.submission_group.project.course)
+can_view_project = ag_permissions.can_view_project(
+    lambda submission: submission.submission_group.project)
+is_staff_or_group_member = ag_permissions.is_staff_or_group_member(
+    lambda submission: submission.submission_group)
+is_group_member = ag_permissions.is_group_member(lambda submission: submission.submission_group)
 
 
-class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
-                              mixins.RetrieveModelMixin,
+class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                               transaction_mixins.TransactionUpdateMixin,
-                              viewsets.GenericViewSet):
-    queryset = ag_models.Submission.objects.all()
+                              AGModelGenericViewSet):
+    model_manager = ag_models.Submission.objects.select_related(
+        'submission_group__project__course')
+
     serializer_class = ag_serializers.SubmissionSerializer
-    permission_classes = (permissions.IsAuthenticated, _Permissions)
+    permission_classes = (
+        P(is_admin) | P(ag_permissions.IsReadOnly), can_view_project, is_staff_or_group_member)
 
     @decorators.detail_route()
     def file(self, request, *args, **kwargs):
@@ -54,9 +48,10 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
                                      status=status.HTTP_404_NOT_FOUND)
 
     @transaction.atomic()
-    @decorators.detail_route(methods=['post'],
-                             permission_classes=(permissions.IsAuthenticated,
-                                                 _RemoveFromQueuePermissions))
+    @decorators.detail_route(
+        methods=['post'],
+        # NOTE: Only group members can remove their own submissions from the queue.
+        permission_classes=(can_view_project, is_group_member))
     def remove_from_queue(self, request, *args, **kwargs):
         submission = self.get_object()
         removeable_statuses = [ag_models.Submission.GradingStatus.received,
@@ -71,20 +66,35 @@ class SubmissionDetailViewSet(build_load_object_mixin(ag_models.Submission),
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
+    _FDBK_CATEGORY_PARAM = 'feedback_category'
+
     @decorators.detail_route(
         permission_classes=(
-            permissions.IsAuthenticated,
-            ag_permissions.can_view_project(
-                lambda submission: submission.submission_group.project),
-            ag_permissions.is_staff_or_group_member(
-                lambda submission: submission.submission_group),
+            can_view_project,
+            is_staff_or_group_member,
             ag_permissions.can_request_feedback_category())
     )
     def feedback(self, request, *args, **kwargs):
-        self.queryset = self.queryset.prefetch_related(
-            'ag_test_suites__ag_test_cases__ag_test_commands')
-        submission = self.get_object()  # type: ag_models.Submission
-        fdbk_category = ag_models.FeedbackCategory(request.query_params.get('feedback_category'))
+        fdbk_category_arg = request.query_params.get(self._FDBK_CATEGORY_PARAM)
+        if fdbk_category_arg is None:
+            return response.Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data={self._FDBK_CATEGORY_PARAM:
+                      'Missing required query param: {}'.format(self._FDBK_CATEGORY_PARAM)})
+        try:
+            fdbk_category = ag_models.FeedbackCategory(fdbk_category_arg)
+        except ValueError:
+            return response.Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data={self._FDBK_CATEGORY_PARAM: 'Invalid value: {}'.format(fdbk_category_arg)})
+
+
+        # TODO: Add same prefetching + selecting to download grades task
+        # TODO: add same prefetching + selecting to get_ultimate_submissions
+
+        self.model_manager = get_submissions_with_results_queryset(
+            fdbk_category, base_manager=self.model_manager)
+        submission = self.get_object()
         fdbk_calculator = submission.get_fdbk(fdbk_category)
 
         if 'setup_stdout_for_suite' in request.query_params:

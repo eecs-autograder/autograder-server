@@ -1,7 +1,11 @@
 from unittest import mock
 
-from autograder.utils.testing import UnitTestBase
+from django.test import tag
 
+from autograder_sandbox import AutograderSandbox
+
+import autograder.core.models as ag_models
+from autograder.utils.testing import UnitTestBase
 from autograder.grading_tasks import tasks
 
 
@@ -68,3 +72,66 @@ class RetryDecoratorTestCase(UnitTestBase):
 
         mocked_sleep.assert_has_calls([mock.call(0) for i in range(max_num_retries)])
 
+
+@tag('slow', 'sandbox')
+class RunCommandTestCase(UnitTestBase):
+    def test_shell_parse_error(self):
+        with AutograderSandbox() as sandbox:
+            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='echo hello"')
+            result = tasks.run_ag_command(ag_command, sandbox)
+            self.assertNotEqual(0, result.return_code)
+            print(result.stdout.read())
+            print(result.stderr.read())
+
+    def test_command_not_found(self):
+        with AutograderSandbox() as sandbox:
+            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='not_a_command')
+            result = tasks.run_ag_command(ag_command, sandbox)
+            self.assertNotEqual(0, result.return_code)
+            print(result.stdout.read())
+            print(result.stderr.read())
+
+    def test_file_not_found(self):
+        with AutograderSandbox() as sandbox:
+            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='./not_a_file')
+            result = tasks.run_ag_command(ag_command, sandbox)
+            self.assertNotEqual(0, result.return_code)
+            print(result.stdout.read())
+            print(result.stderr.read())
+
+    def test_permission_denied(self):
+        with AutograderSandbox() as sandbox:
+            sandbox.run_command(['touch', 'not_executable'], check=True)
+            sandbox.run_command(['chmod', '666', 'not_executable'], check=True)
+            ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='./not_executable')
+            result = tasks.run_ag_command(ag_command, sandbox)
+            self.assertNotEqual(0, result.return_code)
+            print(result.stdout.read())
+            print(result.stderr.read())
+
+    def test_process_spawn_limit(self):
+        # Make sure that wrapping commands in bash -c doesn't affect
+        # the needed process spawn limit.
+        with AutograderSandbox() as sandbox:
+            ag_command = ag_models.AGCommand.objects.validate_and_create(
+                cmd='echo hello', process_spawn_limit=0)
+            result = tasks.run_ag_command(ag_command, sandbox)
+            self.assertEqual(0, result.return_code)
+            print(result.stdout.read())
+            print(result.stderr.read())
+
+            extra_bash_dash_c = ag_models.AGCommand.objects.validate_and_create(
+                cmd='bash -c "echo hello"', process_spawn_limit=0)
+            result = tasks.run_ag_command(extra_bash_dash_c, sandbox)
+            self.assertEqual(0, result.return_code)
+            print(result.stdout.read())
+            print(result.stderr.read())
+
+    def test_shell_output_redirection(self):
+        with AutograderSandbox() as sandbox:
+            ag_command = ag_models.AGCommand.objects.validate_and_create(
+                cmd='printf "spam" > file', process_spawn_limit=0)
+            tasks.run_ag_command(ag_command, sandbox)
+            result = sandbox.run_command(['cat', 'file'], check=True)
+            self.assertEqual(0, result.return_code)
+            self.assertEqual('spam', result.stdout.read().decode())

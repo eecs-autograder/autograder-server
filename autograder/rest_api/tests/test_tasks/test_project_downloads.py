@@ -210,6 +210,8 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
 
         [self.admin] = obj_build.make_admin_users(self.project.course, 1)
 
+        self.maxDiff = None
+
     def test_download_all_scores(self):
         url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
         self.do_download_scores_test(

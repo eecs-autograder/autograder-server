@@ -12,7 +12,14 @@ from .project.uploaded_file import UploadedFile
 from .project.download_task import DownloadTask, DownloadType
 
 from .submission_group import SubmissionGroup, SubmissionGroupInvitation
-from .submission import Submission
+from .submission import (
+    Submission,
+    get_submissions_with_results_queryset,
+    get_ag_test_suite_results_queryset,
+    get_ag_test_case_results_queryset,
+    get_ag_test_cmd_results_queryset,
+    get_student_test_suite_results_queryset,
+)
 
 from .ag_command import StdinSource, AGCommandBase, AGCommand, AGCommandResultBase, AGCommandResult
 from .student_test_suite import (

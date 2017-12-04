@@ -47,12 +47,6 @@ uploaded_files_router.register(
     r'uploaded_files', views.UploadedFilesViewSet,
     base_name='project-uploaded-files')
 
-groups_router = routers.NestedSimpleRouter(
-    project_router, r'projects', lookup='project')
-groups_router.register(
-    r'submission_groups', views.GroupsViewSet,
-    base_name='project-groups')
-
 invitations_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 invitations_router.register(
@@ -167,7 +161,6 @@ urlpatterns = [
     url(r'', include(project_downloads_router.urls)),
     url(r'', include(expected_patterns_router.urls)),
     url(r'', include(uploaded_files_router.urls)),
-    url(r'', include(groups_router.urls)),
     url(r'', include(invitations_router.urls)),
 
     url(r'', include(expected_pattern_router.urls)),
@@ -242,4 +235,9 @@ urlpatterns = [
     url(r'^submissions/(?P<submission_pk>[0-9]+)/handgrading_results/$',
         views.HandgradingResultRetrieveCreateView.as_view(), name='handgrading_results'),
     url(r'', include(handgrading_result_detail_router.urls)),
+
+    url(r'^projects/(?P<project_pk>[0-9]+)/submission_groups/$',
+        views.GroupsViewSet.as_view(), name='submission_groups'),
+    url(r'^projects/(?P<project_pk>[0-9]+)/submission_groups/solo_group/$',
+        views.CreateSoloGroupView.as_view(), name='solo_group'),
 ]
