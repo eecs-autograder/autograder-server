@@ -10,7 +10,7 @@ from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-class ListHandgradingResultsTestCase(UnitTestBase):
+class RetrieveHandgradingResultsTestCase(UnitTestBase):
     """/api/submissions/<submission_pk>/handgrading_results/"""
 
     def setUp(self):
@@ -47,7 +47,7 @@ class ListHandgradingResultsTestCase(UnitTestBase):
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual(self.handgrading_result.to_dict(), response.data[0])
+        self.assertEqual(self.handgrading_result.to_dict(), response.data)
 
     def test_students_are_denied_acess(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
@@ -76,6 +76,7 @@ class CreateHandgradingResultsTestCase(test_impls.CreateObjectTest, UnitTestBase
         )
 
         self.data = {
+            "submission": submission.pk,
             "handgrading_rubric": handgrading_rubric.pk
         }
 

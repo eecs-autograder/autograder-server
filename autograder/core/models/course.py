@@ -15,6 +15,7 @@ import autograder.core.utils as core_ut
 class UserRole(core_ut.OrderedEnum):
     guest = 'guest'
     student = 'student'
+    handgrader = 'handgrader'
     staff = 'staff'
     admin = 'admin'
 
@@ -44,6 +45,12 @@ class Course(AutograderModel):
         help_text='''Users that are staff members for this Course.
             Staff members receive full feedback on autograder test
             cases and can view student submissions.''')
+
+    handgraders = models.ManyToManyField(
+        User, related_name='courses_is_handgrader_for',
+        help_text='''Users that are handgraders for this Course.
+            Handgraders can view best submissions from students
+            and edit the Handgrading Result''')
 
     enrolled_students = models.ManyToManyField(
         User, related_name='courses_is_enrolled_in',
@@ -82,6 +89,20 @@ class Course(AutograderModel):
         A list of usernames that are staff members for this Course.
         """
         return list(user.username for user in self.staff.all())
+
+    def is_handgrader(self, user: User) -> bool:
+        """
+        Returns True if the given user is a handgrader for this Course.
+        Returns False otherwise.
+        """
+        return self.handgraders.filter(pk=user.pk).exists()
+
+    @property
+    def handgrader_names(self) -> list:
+        """
+        A list of usernames that are handgraders for this Course.
+        """
+        return list(user.username for user in self.handgraders.all())
 
     def is_enrolled_student(self, user):
         """

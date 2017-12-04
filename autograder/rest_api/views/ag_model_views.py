@@ -1,9 +1,10 @@
 from django.shortcuts import get_object_or_404
 
-from rest_framework import viewsets, permissions, mixins, generics
+from rest_framework import viewsets, permissions, mixins, generics, response
 
 from ..transaction_mixins import (
-    TransactionCreateMixin, TransactionUpdateMixin, TransactionDestroyMixin)
+    TransactionCreateMixin, TransactionUpdateMixin,
+    TransactionDestroyMixin, TransactionRetrieveMixin)
 
 
 class GetObjectLockOnUnsafeMixin:
@@ -104,6 +105,67 @@ class ListCreateNestedModelView(GetObjectLockOnUnsafeMixin,
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class RetrieveCreateNestedModelView(GetObjectLockOnUnsafeMixin,
+                                    AlwaysIsAuthenticatedMixin,
+                                    TransactionCreateMixin,
+                                    TransactionRetrieveMixin,
+                                    generics.GenericAPIView):
+    # TODO: CONFIRM DOCUMENTATION IS APPROPRIATE
+    """
+    Provides 'retrieve' and 'create' functionality for models
+    that conceptually cannot exist without some one-to-one
+    relationship. This works similarly to the ListCreateNestedModelView,
+    except it returns a single object with 'retrieve' instead of a list
+    of objects with 'list'.
+    For 'retrieve' and 'create' functionality, this allows Django REST
+    Framework's object-level permission checking to examine the -to-one
+    (foreign) related object when querying for the -to-many (related)
+    objects or creating a new related object.
+    For 'create' functionality, this lets us make sure that newly
+    created related objects belong to the appropriate foreign object,
+    as specified by a primary key loaded from the URL.
+
+    For example, setting one_to_one_field_name to 'project'
+    and reverse_one_to_one_field_name to 'handgrading_rubric' would
+    allow the following:
+    A GET request to /project/2/handgrading_rubric/ returns the
+    designated Project 2's handgrading rubric, but only if the user
+    is staff for or enrolled in Project 2's Course.
+    A POST request to /project/2/handgrading_rubric/ would create a new
+    Handgrading Rubric that now has a one-to-one relationship with Project 2
+    (overriding any 'course' field included in the request body),
+    but only if the user is admin for Project 2's Course.
+    """
+
+    one_to_one_field_name = None
+    reverse_one_to_one_field_name = None
+
+    def retrieve(self, *args, **kwargs):
+        if self.reverse_one_to_one_field_name is None:
+            raise ValueError('"reverse_one_to_one_field_name" must not be None.')
+
+        instance = getattr(self.get_object(), self.reverse_one_to_one_field_name)
+        serializer = self.get_serializer(instance)
+        return response.Response(serializer.data)
+
+    def perform_create(self, serializer):
+        if self.one_to_one_field_name is None:
+            raise ValueError(
+                'You must either set "one_to_one_field_name" or override this method.')
+
+        # This makes sure that the object specified in the url
+        # is the one that the newly created object belongs to,
+        # even if something different is specified in the
+        # request body.
+        serializer.save(**{self.one_to_one_field_name: self.get_object()})
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)

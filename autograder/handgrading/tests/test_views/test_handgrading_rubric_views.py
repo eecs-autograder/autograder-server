@@ -10,7 +10,7 @@ from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-class ListHandgradingRubricTestCase(UnitTestBase):
+class RetrieveHandgradingRubricTestCase(UnitTestBase):
     """/api/projects/<project_pk>/handgrading_rubric/"""
 
     def setUp(self):
@@ -33,16 +33,15 @@ class ListHandgradingRubricTestCase(UnitTestBase):
         self.url = reverse('handgrading_rubric',
                            kwargs={'project_pk': self.handgrading_rubric.project.pk})
 
-    def test_staff_valid_list_cases(self):
+    def test_staff_valid_retrieve(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
         self.client.force_authenticate(staff)
 
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        print(response.data)
         self.assertSequenceEqual(self.handgrading_rubric.to_dict(), response.data)
 
-    def test_non_staff_list_cases_permission_denied(self):
+    def test_non_staff_retrieve_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 

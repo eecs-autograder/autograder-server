@@ -63,7 +63,7 @@ from autograder.handgrading.views.criterion_views import (
     CriterionDetailViewSet, CriterionListCreateView)
 
 from autograder.handgrading.views.handgrading_result_views import (
-    HandgradingResultDetailViewSet, HandgradingResultListCreateView)
+    HandgradingResultDetailViewSet, HandgradingResultRetrieveCreateView)
 
 from autograder.handgrading.views.handgrading_rubric_views import (
     HandgradingRubricDetailViewSet, HandgradingRubricRetrieveCreateView)

@@ -4,12 +4,12 @@ import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, RetrieveCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
 )
 
 
 # TODO: FIX VIEW
-class HandgradingResultListCreateView(ListCreateNestedModelView):
+class HandgradingResultRetrieveCreateView(RetrieveCreateNestedModelView):
     serializer_class = handgrading_serializers.HandgradingResultSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
@@ -19,8 +19,8 @@ class HandgradingResultListCreateView(ListCreateNestedModelView):
     model_manager = ag_models.Submission.objects.select_related(
         'submission_group__project__course'
     )
-    foreign_key_field_name = 'submission'
-    reverse_foreign_key_field_name = 'handgrading_results'
+    one_to_one_field_name = 'submission'
+    reverse_one_to_one_field_name = 'handgrading_results'
 
 
 class HandgradingResultDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):

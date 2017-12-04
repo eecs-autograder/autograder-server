@@ -240,6 +240,6 @@ urlpatterns = [
     url(r'', include(handgrading_rubric_detail_router.urls)),
 
     url(r'^submissions/(?P<submission_pk>[0-9]+)/handgrading_results/$',
-        views.HandgradingResultListCreateView.as_view(), name='handgrading_results'),
+        views.HandgradingResultRetrieveCreateView.as_view(), name='handgrading_results'),
     url(r'', include(handgrading_result_detail_router.urls)),
 ]
