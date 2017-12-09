@@ -40,7 +40,9 @@ class HandgradingRubric(AutograderModel):
                            'handgraders_can_leave_comments',
                            'handgraders_can_apply_arbitrary_points',
 
-                           'project',)
+                           'project',
+                           'criteria',
+                           'annotations',)
 
     EDITABLE_FIELDS = ('points_style',
                        'max_points',
@@ -112,8 +114,14 @@ class HandgradingResult(AutograderModel):
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
+
                            'submission',
-                           'handgrading_rubric')
+                           'handgrading_rubric',
+
+                           'applied_annotations',
+                           'arbitrary_points',
+                           'comments',
+                           'criterion_results',)
 
     SERIALIZE_RELATED = ('applied_annotations',
                          'arbitrary_points',
@@ -136,7 +144,7 @@ class CriterionResult(AutograderModel):
 
                            'selected',
                            'criterion',
-                           'handgrading_result')
+                           'handgrading_result',)
 
     EDITABLE_FIELDS = ('selected',)
 

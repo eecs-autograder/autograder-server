@@ -67,3 +67,24 @@ class CriterionResultTestCases(UnitTestBase):
             criterion_res_dict.pop(non_editable)
 
         criterion_res_obj.validate_and_update(**criterion_res_dict)
+
+    def test_serialize_related(self):
+        expected_fields = [
+            'pk',
+            'last_modified',
+
+            'selected',
+            'criterion',
+            'handgrading_result',
+        ]
+
+        criterion_res_obj = handgrading_models.CriterionResult.objects.validate_and_create(
+            **self.criterion_inputs
+        )
+
+        criterion_res_dict = criterion_res_obj.to_dict()
+        self.assertCountEqual(expected_fields, criterion_res_dict.keys())
+
+        self.assertIsInstance(criterion_res_dict["criterion"], object)
+        self.assertCountEqual(criterion_res_dict["criterion"].keys(),
+                              self.criterion_obj.to_dict().keys())

@@ -129,8 +129,6 @@ class AppliedAnnotationTestCase(UnitTestBase):
             'handgrading_result',
         ]
 
-        # pp = pprint.PrettyPrinter(indent=4)
-
         app_annotation_obj = handgrading_models.AppliedAnnotation.objects.validate_and_create(
             **self.default_applied_annotation_inputs
         )
@@ -144,3 +142,25 @@ class AppliedAnnotationTestCase(UnitTestBase):
             app_annotation_dict.pop(non_editable)
 
         app_annotation_obj.validate_and_update(**app_annotation_dict)
+
+    def test_serialize_related(self):
+        expected_fields = [
+            'pk',
+            'last_modified',
+
+            'comment',
+            'location',
+            'annotation',
+            'handgrading_result',
+        ]
+
+        app_annotation_obj = handgrading_models.AppliedAnnotation.objects.validate_and_create(
+            **self.default_applied_annotation_inputs
+        )
+
+        app_annotation_dict = app_annotation_obj.to_dict()
+        self.assertCountEqual(expected_fields, app_annotation_dict.keys())
+
+        self.assertIsInstance(app_annotation_dict["annotation"], object)
+        self.assertCountEqual(app_annotation_dict["annotation"].keys(),
+                              self.default_annotation_obj.to_dict().keys())

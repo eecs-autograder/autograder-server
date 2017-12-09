@@ -100,6 +100,8 @@ class HandgradingRubricTestCase(UnitTestBase):
             'handgraders_can_apply_arbitrary_points',
 
             'project',
+            'criteria',
+            'annotations',
         ]
 
         handgrading_obj = handgrading_models.HandgradingRubric.objects.validate_and_create(
@@ -109,7 +111,56 @@ class HandgradingRubricTestCase(UnitTestBase):
         handgrading_dict = handgrading_obj.to_dict()
         self.assertCountEqual(expected_fields, handgrading_dict.keys())
 
-        for non_editable in ['pk', 'last_modified', 'project']:
+        for non_editable in ['pk', 'last_modified', 'project', 'criteria', 'annotations']:
             handgrading_dict.pop(non_editable)
 
         handgrading_obj.validate_and_update(**handgrading_dict)
+
+    def test_serialize_related(self):
+        expected_fields = [
+            'pk',
+            'last_modified',
+
+            'points_style',
+            'max_points',
+            'show_grades_and_rubric_to_students',
+            'handgraders_can_leave_comments',
+            'handgraders_can_apply_arbitrary_points',
+
+            'project',
+            'criteria',
+            'annotations',
+        ]
+
+        handgrading_obj = handgrading_models.HandgradingRubric.objects.validate_and_create(
+            **self.default_rubric_inputs
+        )
+
+        criterion = handgrading_models.Criterion.objects.validate_and_create(
+            short_description="sample short description",
+            long_description="sample loooooong description",
+            points=0,
+            handgrading_rubric=handgrading_obj
+        )
+
+        annotation = handgrading_models.Annotation.objects.validate_and_create(
+            short_description="second short description",
+            long_description="second loooooong description",
+            points=0,
+            handgrading_rubric=handgrading_obj
+        )
+
+        annotation_dict = annotation.to_dict()
+        criterion_dict = criterion.to_dict()
+        handgrading_dict = handgrading_obj.to_dict()
+
+        self.assertCountEqual(expected_fields, handgrading_dict.keys())
+
+        self.assertIsInstance(handgrading_dict["criteria"], list)
+        self.assertIsInstance(handgrading_dict["annotations"], list)
+
+        self.assertEqual(len(handgrading_dict["criteria"]), 1)
+        self.assertEqual(len(handgrading_dict["annotations"]), 1)
+
+        self.assertCountEqual(handgrading_dict["criteria"][0].keys(), criterion_dict.keys())
+        self.assertCountEqual(handgrading_dict["annotations"][0].keys(), annotation_dict.keys())

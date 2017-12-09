@@ -37,8 +37,14 @@ class HandgradingResultTestCases(UnitTestBase):
         expected_fields = [
             'pk',
             'last_modified',
+
             'submission',
-            'handgrading_rubric'
+            'handgrading_rubric',
+
+            'applied_annotations',
+            'arbitrary_points',
+            'comments',
+            'criterion_results',
         ]
 
         result_inputs = {
@@ -55,3 +61,91 @@ class HandgradingResultTestCases(UnitTestBase):
 
         with self.assertRaises(ValidationError):
             result_obj.validate_and_update(**result_dict)
+
+    def test_serialize_related(self):
+        expected_fields = [
+            'pk',
+            'last_modified',
+
+            'submission',
+            'handgrading_rubric',
+
+            'applied_annotations',
+            'arbitrary_points',
+            'comments',
+            'criterion_results',
+        ]
+
+        result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            handgrading_rubric=self.default_handgrading_rubric
+        )
+
+        applied_annotation = handgrading_models.AppliedAnnotation.objects.validate_and_create(
+            comment="",
+            location={
+                "first_line": 0,
+                "last_line": 1,
+                "filename": "test.cpp"
+            },
+            annotation=handgrading_models.Annotation.objects.validate_and_create(
+                short_description="",
+                long_description="",
+                points=0,
+                handgrading_rubric=self.default_handgrading_rubric
+            ),
+            handgrading_result=result_obj
+        )
+
+        arbitrary_points = handgrading_models.ArbitraryPoints.objects.validate_and_create(
+            location={
+                "first_line": 0,
+                "last_line": 1,
+                "filename": "test.cpp"
+            },
+            text="",
+            points=0,
+            handgrading_result=result_obj
+        )
+
+        comment = handgrading_models.Comment.objects.validate_and_create(
+            location={
+                "first_line": 0,
+                "last_line": 1,
+                "filename": "test.cpp"
+            },
+            text="HI",
+            handgrading_result=result_obj
+        )
+
+        criterion_result = handgrading_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=handgrading_models.Criterion.objects.validate_and_create(
+                points=0,
+                handgrading_rubric=self.default_handgrading_rubric
+            ),
+            handgrading_result=result_obj
+        )
+
+        app_annotation_dict = applied_annotation.to_dict()
+        arbitrary_points_dict = arbitrary_points.to_dict()
+        comment_dict = comment.to_dict()
+        criterion_result_dict = criterion_result.to_dict()
+        result_dict = result_obj.to_dict()
+
+        self.assertCountEqual(expected_fields, result_dict.keys())
+
+        self.assertIsInstance(result_dict["applied_annotations"], list)
+        self.assertIsInstance(result_dict["arbitrary_points"], list)
+        self.assertIsInstance(result_dict["comments"], list)
+        self.assertIsInstance(result_dict["criterion_results"], list)
+
+        self.assertEqual(len(result_dict["applied_annotations"]), 1)
+        self.assertEqual(len(result_dict["arbitrary_points"]), 1)
+        self.assertEqual(len(result_dict["comments"]), 1)
+        self.assertEqual(len(result_dict["criterion_results"]), 1)
+
+        self.assertCountEqual(result_dict["applied_annotations"][0].keys(), app_annotation_dict.keys())
+        self.assertCountEqual(result_dict["arbitrary_points"][0].keys(), arbitrary_points_dict.keys())
+        self.assertCountEqual(result_dict["comments"][0].keys(), comment_dict.keys())
+        self.assertCountEqual(result_dict["criterion_results"][0].keys(), criterion_result_dict.keys())
