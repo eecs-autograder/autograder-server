@@ -23,6 +23,8 @@ class CommentTestCase(UnitTestBase):
         )
 
     def test_default_initialization(self):
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         comment_inputs = {
             "location": {
                 "first_line": 0,
@@ -31,7 +33,8 @@ class CommentTestCase(UnitTestBase):
             },
             "text": "HI",
             "handgrading_result": handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                submission=submission,
+                submission_group=submission.submission_group,
                 handgrading_rubric=self.default_handgrading_rubric
             )
         }
@@ -48,9 +51,11 @@ class CommentTestCase(UnitTestBase):
     def test_filename_in_location_must_be_in_submitted_files(self):
         """ Submission in handgrading_result contains filename "test.cpp" (see defaults),
             but location's filename is set to "WRONG.cpp" """
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            submission=submission,
+            submission_group=submission.submission_group,
             handgrading_rubric=self.default_handgrading_rubric
         )
 
@@ -65,6 +70,20 @@ class CommentTestCase(UnitTestBase):
                 handgrading_result=handgrading_result
             )
 
+    def test_comment_doesnt_require_location(self):
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
+        handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            submission_group=submission.submission_group,
+            handgrading_rubric=self.default_handgrading_rubric
+        )
+
+        handgrading_models.Comment.objects.validate_and_create(
+            text="hello",
+            handgrading_result=handgrading_result
+        )
+
     def test_serializable_fields(self):
         expected_fields = [
             'pk',
@@ -75,6 +94,8 @@ class CommentTestCase(UnitTestBase):
             'handgrading_result',
         ]
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         comment_obj = handgrading_models.Comment.objects.validate_and_create(
             location={
                 "first_line": 0,
@@ -83,7 +104,8 @@ class CommentTestCase(UnitTestBase):
             },
             text="hello",
             handgrading_result=handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                submission=submission,
+                submission_group=submission.submission_group,
                 handgrading_rubric=self.default_handgrading_rubric
             )
         )

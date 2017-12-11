@@ -39,9 +39,12 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
             handgrading_rubric=handgrading_rubric
         )
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                submission=submission,
+                submission_group=submission.submission_group,
                 handgrading_rubric=handgrading_rubric
             )
         )
@@ -107,9 +110,12 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
             "filename": "test.cpp"
         }
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                submission=submission,
+                submission_group=submission.submission_group,
                 handgrading_rubric=handgrading_rubric
             )
         )
@@ -169,9 +175,12 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
             handgrading_rubric=handgrading_rubric
         )
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                submission=submission,
+                submission_group=submission.submission_group,
                 handgrading_rubric=handgrading_rubric
             )
         )

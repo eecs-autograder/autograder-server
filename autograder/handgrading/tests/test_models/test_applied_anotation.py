@@ -37,9 +37,12 @@ class AppliedAnnotationTestCase(UnitTestBase):
             handgrading_rubric=default_handgrading_rubric
         )
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         self.default_handgrading_result_obj = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                submission=submission,
+                submission_group=submission.submission_group,
                 handgrading_rubric=default_handgrading_rubric
             )
         )

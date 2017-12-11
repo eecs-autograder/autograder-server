@@ -232,8 +232,8 @@ urlpatterns = [
         views.HandgradingRubricRetrieveCreateView.as_view(), name='handgrading_rubric'),
     url(r'', include(handgrading_rubric_detail_router.urls)),
 
-    url(r'^submissions/(?P<submission_pk>[0-9]+)/handgrading_results/$',
-        views.HandgradingResultRetrieveCreateView.as_view(), name='handgrading_results'),
+    url(r'^submission_groups/(?P<group_pk>[0-9]+)/handgrading_result/$',
+        views.HandgradingResultRetrieveCreateView.as_view(), name='handgrading_result'),
     url(r'', include(handgrading_result_detail_router.urls)),
 
     url(r'^projects/(?P<project_pk>[0-9]+)/submission_groups/$',

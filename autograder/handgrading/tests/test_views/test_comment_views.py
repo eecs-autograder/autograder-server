@@ -24,8 +24,11 @@ class ListCommentsTestCase(UnitTestBase):
                 project=obj_build.build_project()
         )
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            submission=submission,
+            submission_group=submission,
             handgrading_rubric=handgrading_rubric
         )
 
@@ -78,8 +81,11 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
                 project=obj_build.build_project()
         )
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            submission=submission,
+            submission_group=submission.submission_group,
             handgrading_rubric=handgrading_rubric
         )
 
@@ -125,8 +131,11 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
                 project=obj_build.build_project()
         )
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            submission=submission,
+            submission_group=submission.submission_group,
             handgrading_rubric=handgrading_rubric
         )
 

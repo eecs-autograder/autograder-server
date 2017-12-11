@@ -4,7 +4,7 @@ from django.core import validators
 from django.core.exceptions import ValidationError
 from enum import Enum
 
-from autograder.core.models import AutograderModel, Project, Submission
+from autograder.core.models import AutograderModel, Project, Submission, SubmissionGroup
 
 
 class PointsStyle(Enum):
@@ -108,15 +108,18 @@ class HandgradingResult(AutograderModel):
     """
     Tied to a specific submission
     """
-    submission = models.OneToOneField(Submission, related_name='handgrading_results')
+    submission = models.OneToOneField(Submission, related_name='handgrading_result')
 
     handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='handgrading_results')
+
+    submission_group = models.OneToOneField(SubmissionGroup, related_name='handgrading_result')
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
 
                            'submission',
                            'handgrading_rubric',
+                           'submission_group',
 
                            'applied_annotations',
                            'arbitrary_points',
@@ -126,7 +129,9 @@ class HandgradingResult(AutograderModel):
     SERIALIZE_RELATED = ('applied_annotations',
                          'arbitrary_points',
                          'comments',
-                         'criterion_results',)
+                         'criterion_results',
+
+                         'handgrading_rubric',)
 
 
 class CriterionResult(AutograderModel):
@@ -135,7 +140,7 @@ class CriterionResult(AutograderModel):
     """
     selected = models.BooleanField()
 
-    criterion = models.ForeignKey(Criterion, related_name='criterion_result')
+    criterion = models.ForeignKey(Criterion, related_name='criterion_results')
 
     handgrading_result = models.ForeignKey(HandgradingResult, related_name='criterion_results')
 
@@ -187,6 +192,7 @@ class Comment(AutograderModel):
     """
     Comment left by staff or grader regarding submission. Can be applied to specific line
     """
+    # TODO: LOCATION CAN BE NULL
     location = models.OneToOneField('Location', related_name='+')
 
     text = models.TextField()
@@ -194,7 +200,9 @@ class Comment(AutograderModel):
     handgrading_result = models.ForeignKey(HandgradingResult, related_name='comments')
 
     def clean(self):
-        if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
+        submitted_filenames = self.handgrading_result.submission.submitted_filenames
+
+        if self.location and self.location.filename not in submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
 
     SERIALIZABLE_FIELDS = ('pk',

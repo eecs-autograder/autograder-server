@@ -22,9 +22,12 @@ class HandgradingResultTestCases(UnitTestBase):
             )
         )
 
+        self.submission = obj_build.build_submission()
+
     def test_default_initialization(self):
         result_inputs = {
-            "submission": obj_build.build_submission(),
+            "submission": self.submission,
+            "submission_group": self.submission.submission_group,
             "handgrading_rubric": self.default_handgrading_rubric
         }
 
@@ -32,6 +35,7 @@ class HandgradingResultTestCases(UnitTestBase):
             **result_inputs)
         self.assertEqual(result_obj.submission, result_inputs["submission"])
         self.assertEqual(result_obj.handgrading_rubric, result_inputs["handgrading_rubric"])
+        self.assertEqual(result_obj.submission_group, result_inputs["submission_group"])
 
     def test_serializable_fields(self):
         expected_fields = [
@@ -39,6 +43,7 @@ class HandgradingResultTestCases(UnitTestBase):
             'last_modified',
 
             'submission',
+            'submission_group',
             'handgrading_rubric',
 
             'applied_annotations',
@@ -48,7 +53,8 @@ class HandgradingResultTestCases(UnitTestBase):
         ]
 
         result_inputs = {
-            "submission": obj_build.build_submission(),
+            "submission": self.submission,
+            "submission_group": self.submission.submission_group,
             "handgrading_rubric": self.default_handgrading_rubric
         }
 
@@ -69,6 +75,7 @@ class HandgradingResultTestCases(UnitTestBase):
 
             'submission',
             'handgrading_rubric',
+            'submission_group',
 
             'applied_annotations',
             'arbitrary_points',
@@ -76,8 +83,11 @@ class HandgradingResultTestCases(UnitTestBase):
             'criterion_results',
         ]
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            submission=submission,
+            submission_group=submission.submission_group,
             handgrading_rubric=self.default_handgrading_rubric
         )
 
@@ -139,13 +149,21 @@ class HandgradingResultTestCases(UnitTestBase):
         self.assertIsInstance(result_dict["arbitrary_points"], list)
         self.assertIsInstance(result_dict["comments"], list)
         self.assertIsInstance(result_dict["criterion_results"], list)
+        self.assertIsInstance(result_dict["handgrading_rubric"], object)
+        self.assertIsInstance(result_dict["submission_group"], int)
 
         self.assertEqual(len(result_dict["applied_annotations"]), 1)
         self.assertEqual(len(result_dict["arbitrary_points"]), 1)
         self.assertEqual(len(result_dict["comments"]), 1)
         self.assertEqual(len(result_dict["criterion_results"]), 1)
 
-        self.assertCountEqual(result_dict["applied_annotations"][0].keys(), app_annotation_dict.keys())
-        self.assertCountEqual(result_dict["arbitrary_points"][0].keys(), arbitrary_points_dict.keys())
-        self.assertCountEqual(result_dict["comments"][0].keys(), comment_dict.keys())
-        self.assertCountEqual(result_dict["criterion_results"][0].keys(), criterion_result_dict.keys())
+        self.assertCountEqual(result_dict["applied_annotations"][0].keys(),
+                              app_annotation_dict.keys())
+        self.assertCountEqual(result_dict["arbitrary_points"][0].keys(),
+                              arbitrary_points_dict.keys())
+        self.assertCountEqual(result_dict["comments"][0].keys(),
+                              comment_dict.keys())
+        self.assertCountEqual(result_dict["criterion_results"][0].keys(),
+                              criterion_result_dict.keys())
+        self.assertCountEqual(result_dict["handgrading_rubric"].keys(),
+                              self.default_handgrading_rubric.to_dict().keys())

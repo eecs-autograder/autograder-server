@@ -19,6 +19,8 @@ class ArbitraryPointsTestCase(UnitTestBase):
             )
         )
 
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         self.default_arb_points_inputs = {
             "location": {
                 "first_line": 0,
@@ -28,7 +30,8 @@ class ArbitraryPointsTestCase(UnitTestBase):
             "text": "",
             "points": 0,
             "handgrading_result": handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                submission=submission,
+                submission_group=submission.submission_group,
                 handgrading_rubric=self.default_handgrading_rubric
             )
         }
@@ -41,6 +44,8 @@ class ArbitraryPointsTestCase(UnitTestBase):
         self.assertEqual(arb_points_obj.points, 0)
 
     def test_create_average_case(self):
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+
         arb_points_inputs = {
             "location": {
                 "first_line": 0,
@@ -50,7 +55,8 @@ class ArbitraryPointsTestCase(UnitTestBase):
             "text": "Testing text field. This can be longer.",
             "points": 24,
             "handgrading_result": handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+                submission=submission,
+                submission_group=submission.submission_group,
                 handgrading_rubric=self.default_handgrading_rubric
             )
         }
@@ -73,9 +79,11 @@ class ArbitraryPointsTestCase(UnitTestBase):
     def test_filename_in_location_must_be_in_submitted_files(self):
         """Submission in handgrading_result contains filename "test.cpp" (see defaults),
              but location's filename is set to "WRONG.cpp" """
+        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=obj_build.build_submission(submitted_filenames=["test.cpp"]),
+            submission=submission,
+            submission_group=submission.submission_group,
             handgrading_rubric=self.default_handgrading_rubric
         )
 
