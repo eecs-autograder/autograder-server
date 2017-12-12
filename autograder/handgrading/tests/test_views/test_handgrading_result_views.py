@@ -165,27 +165,6 @@ class GetUpdateDeleteHandgradingResultTestCase(test_impls.GetObjectTest,
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
-    # TODO: Can Handgrading Result be updated?
-    # def test_admin_valid_update(self):
-    #     patch_data = {
-    #         'submission': '?'
-    #     }
-    #     [admin] = obj_build.make_admin_users(self.course, 1)
-    #     self.do_patch_object_test(self.ag_test_suite, self.client, admin, self.url, patch_data)
-    #
-    # def test_admin_update_bad_values(self):
-    #     patch_data = {
-    #         'submission': '?'
-    #     }
-    #     [admin] = obj_build.make_admin_users(self.course, 1)
-    #     self.do_patch_object_invalid_args_test(
-    #         self.ag_test_suite, self.client, admin, self.url, patch_data)
-    #
-    # def test_non_admin_update_permission_denied(self):
-    #     [staff] = obj_build.make_staff_users(self.course, 1)
-    #     self.do_patch_object_permission_denied_test(
-    #         self.ag_test_suite, self.client, staff, self.url, {'name': 'hello'})
-
     def test_admin_valid_delete(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_delete_object_test(self.handgrading_result, self.client, admin, self.url)

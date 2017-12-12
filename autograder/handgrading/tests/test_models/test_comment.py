@@ -71,7 +71,7 @@ class CommentTestCase(UnitTestBase):
             )
 
     def test_comment_doesnt_require_location(self):
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.build_submission()
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,

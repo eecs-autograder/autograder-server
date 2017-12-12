@@ -5,6 +5,7 @@ import autograder.rest_api.permissions as ag_permissions
 from rest_framework import response
 from django.http import Http404
 from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 
 from autograder.rest_api.views.ag_model_views import (
@@ -29,19 +30,27 @@ class HandgradingResultRetrieveCreateView(RetrieveCreateNestedModelView):
     def retrieve(self, *args, **kwargs):
         group = self.get_object()
         try:
-            handgrading_result = getattr(group, self.reverse_one_to_one_field_name)
-        except:
-            # print(group.to_dict())
-            ultimate_submission = get_ultimate_submission(group.project, group.pk)
-            # print(ultimate_submission)
-            if not ultimate_submission:
-                raise Http404('Group {} has no submissions'.format(group.pk))
+            handgrading_rubric = group.project.handgrading_rubric
+        except ObjectDoesNotExist:
+            raise Http404('Project {} has not enabled handgrading (no handgrading rubric found)'
+                          .format(group.project.pk))
 
-            handgrading_rubric = getattr(group.project, 'handgrading_rubric')
-            handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
-                submission=ultimate_submission,
-                handgrading_rubric=handgrading_rubric,
-                submission_group=group,
+        ultimate_submission = get_ultimate_submission(group.project, group.pk)
+
+        if not ultimate_submission:
+            raise Http404('Group {} has no submissions'.format(group.pk))
+
+        handgrading_result, created = handgrading_models.HandgradingResult.objects.get_or_create(
+            defaults={'submission': ultimate_submission},
+            handgrading_rubric=handgrading_rubric,
+            submission_group=group,
+        )
+
+        for criterion in handgrading_rubric.criteria.all():
+            handgrading_models.CriterionResult.objects.get_or_create(
+                defaults={'selected': False},
+                criterion=criterion,
+                handgrading_result=handgrading_result,
             )
 
         serializer = self.get_serializer(handgrading_result)

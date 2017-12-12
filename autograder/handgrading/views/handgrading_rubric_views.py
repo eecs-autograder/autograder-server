@@ -1,3 +1,7 @@
+from rest_framework import response
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
+
 import autograder.core.models as ag_models
 import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
@@ -16,6 +20,17 @@ class HandgradingRubricRetrieveCreateView(RetrieveCreateNestedModelView):
     model_manager = ag_models.Project.objects.select_related('course')
     one_to_one_field_name = 'project'
     reverse_one_to_one_field_name = 'handgrading_rubric'
+
+    def retrieve(self, *args, **kwargs):
+        project = self.get_object()
+        try:
+            handgrading_rubric = project.handgrading_rubric
+        except ObjectDoesNotExist:
+            raise Http404('Project {} has no HandgradingRubric (handgrading not enabled)'
+                          .format(project.pk))
+
+        serializer = self.get_serializer(handgrading_rubric)
+        return response.Response(serializer.data)
 
 
 class HandgradingRubricDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):

@@ -193,7 +193,7 @@ class Comment(AutograderModel):
     Comment left by staff or grader regarding submission. Can be applied to specific line
     """
     # TODO: LOCATION CAN BE NULL
-    location = models.OneToOneField('Location', related_name='+')
+    location = models.OneToOneField('Location', related_name='+', null=True, blank=True)
 
     text = models.TextField()
 
