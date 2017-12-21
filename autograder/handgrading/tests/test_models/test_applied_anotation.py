@@ -13,10 +13,10 @@ class AppliedAnnotationTestCase(UnitTestBase):
     Test cases relating the Applied Annotation Model
     """
     def setUp(self):
-        default_handgrading_rubric = (
+        rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
+                max_points=10,
                 show_grades_and_rubric_to_students=False,
                 handgraders_can_leave_comments=True,
                 handgraders_can_apply_arbitrary_points=True,
@@ -30,12 +30,8 @@ class AppliedAnnotationTestCase(UnitTestBase):
             "filename": "test.cpp"
         }
 
-        self.default_annotation_obj = handgrading_models.Annotation.objects.validate_and_create(
-            short_description="",
-            long_description="",
-            points=0,
-            handgrading_rubric=default_handgrading_rubric
-        )
+        self.annotation = handgrading_models.Annotation.objects.validate_and_create(
+            handgrading_rubric=rubric)
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
 
@@ -43,14 +39,14 @@ class AppliedAnnotationTestCase(UnitTestBase):
             handgrading_models.HandgradingResult.objects.validate_and_create(
                 submission=submission,
                 submission_group=submission.submission_group,
-                handgrading_rubric=default_handgrading_rubric
+                handgrading_rubric=rubric
             )
         )
 
         self.default_applied_annotation_inputs = {
             "comment": "",
             "location": self.default_location_dict,
-            "annotation": self.default_annotation_obj,
+            "annotation": self.annotation,
             "handgrading_result": self.default_handgrading_result_obj
         }
 
@@ -77,7 +73,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
         inputs = {
             "comment": "Testing comment. This can be longer.",
             "location": self.default_location_dict,
-            "annotation": self.default_annotation_obj,
+            "annotation": self.annotation,
             "handgrading_result": self.default_handgrading_result_obj
         }
 
@@ -96,7 +92,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
     def test_allow_applied_annotation_to_not_have_comments(self):
         annotation_obj = handgrading_models.AppliedAnnotation.objects.validate_and_create(
             location=self.default_location_dict,
-            annotation=self.default_annotation_obj,
+            annotation=self.annotation,
             handgrading_result=self.default_handgrading_result_obj
         )
 
@@ -117,7 +113,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
                     "last_line": 1,
                     "filename": "WRONG.cpp"
                 },
-                annotation=self.default_annotation_obj,
+                annotation=self.annotation,
                 handgrading_result=self.default_handgrading_result_obj
             )
 
@@ -166,4 +162,4 @@ class AppliedAnnotationTestCase(UnitTestBase):
 
         self.assertIsInstance(app_annotation_dict["annotation"], object)
         self.assertCountEqual(app_annotation_dict["annotation"].keys(),
-                              self.default_annotation_obj.to_dict().keys())
+                              self.annotation.to_dict().keys())
