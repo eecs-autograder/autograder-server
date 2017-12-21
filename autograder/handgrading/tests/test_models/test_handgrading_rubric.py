@@ -16,7 +16,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             "max_points": 0,
             "show_grades_and_rubric_to_students": False,
             "handgraders_can_leave_comments": True,
-            "handgraders_can_apply_arbitrary_points": True,
+            "handgraders_can_adjust_points": True,
             "project": obj_build.build_project()
         }
 
@@ -30,8 +30,8 @@ class HandgradingRubricTestCase(UnitTestBase):
                          self.default_rubric_inputs["show_grades_and_rubric_to_students"])
         self.assertEqual(rubric_obj.handgraders_can_leave_comments,
                          self.default_rubric_inputs["handgraders_can_leave_comments"])
-        self.assertEqual(rubric_obj.handgraders_can_apply_arbitrary_points,
-                         self.default_rubric_inputs["handgraders_can_apply_arbitrary_points"])
+        self.assertEqual(rubric_obj.handgraders_can_adjust_points,
+                         self.default_rubric_inputs["handgraders_can_adjust_points"])
         self.assertEqual(rubric_obj.project,
                          self.default_rubric_inputs["project"])
 
@@ -41,7 +41,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             "max_points": 25,
             "show_grades_and_rubric_to_students": True,
             "handgraders_can_leave_comments": False,
-            "handgraders_can_apply_arbitrary_points": False,
+            "handgraders_can_adjust_points": False,
             "project": obj_build.build_project()
         }
 
@@ -53,7 +53,7 @@ class HandgradingRubricTestCase(UnitTestBase):
         self.assertEqual(rubric_obj.max_points, 25)
         self.assertEqual(rubric_obj.show_grades_and_rubric_to_students, True)
         self.assertEqual(rubric_obj.handgraders_can_leave_comments, False)
-        self.assertEqual(rubric_obj.handgraders_can_apply_arbitrary_points, False)
+        self.assertEqual(rubric_obj.handgraders_can_adjust_points, False)
 
     def test_reject_invalid_point_style_handgrading_rubric(self):
         """
@@ -97,7 +97,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             'max_points',
             'show_grades_and_rubric_to_students',
             'handgraders_can_leave_comments',
-            'handgraders_can_apply_arbitrary_points',
+            'handgraders_can_adjust_points',
 
             'project',
             'criteria',
@@ -125,7 +125,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             'max_points',
             'show_grades_and_rubric_to_students',
             'handgraders_can_leave_comments',
-            'handgraders_can_apply_arbitrary_points',
+            'handgraders_can_adjust_points',
 
             'project',
             'criteria',

@@ -17,13 +17,6 @@ GET, PATCH, DELETE
 
 
 
-/api/handgrading_results/<pk>/arbitrary_points/
-GET, POST
-/api/arbitrary_points/<pk>/
-GET, PATCH, DELETE
-
-
-
 /api/handgrading_results/<pk>/comments/
 GET, POST
 /api/comments/<pk>/

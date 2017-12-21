@@ -68,7 +68,6 @@ class HandgradingResultDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGMo
         'handgrading_rubric__project__course'
     ).prefetch_related(
         'applied_annotations',
-        'arbitrary_points',
         'comments',
         'criterion_results',
     )
