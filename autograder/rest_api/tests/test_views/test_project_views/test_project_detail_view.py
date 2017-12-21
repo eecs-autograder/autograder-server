@@ -175,11 +175,17 @@ class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
             project=self.project,
             creator=user2, download_type=ag_models.DownloadType.final_graded_submission_files)
 
+        other_project = obj_build.build_project()
+        ag_models.DownloadTask.objects.validate_and_create(
+            project=other_project,
+            creator=obj_build.make_admin_users(self.project.course, 1)[0],
+            download_type=ag_models.DownloadType.all_scores)
+
         url = reverse('project-download-tasks', kwargs={'pk': self.project.pk})
         self.client.force_authenticate(user1)
         response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual([task1.to_dict()], response.data)
+        self.assertCountEqual([task1.to_dict(), task2.to_dict()], response.data)
 
     def test_non_admin_list_project_download_tasks_permission_denied(self):
         [user] = obj_build.make_staff_users(self.project.course, 1)
@@ -201,18 +207,6 @@ class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
         response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(task.to_dict(), response.data)
-
-    def test_non_creator_get_download_task_detail_permission_denied(self):
-        [user, other] = obj_build.make_admin_users(self.project.course, 2)
-
-        task = ag_models.DownloadTask.objects.validate_and_create(
-            project=self.project,
-            creator=user, download_type=ag_models.DownloadType.all_scores)
-
-        url = reverse('download_tasks-detail', kwargs={'pk': task.pk})
-        self.client.force_authenticate(other)
-        response = self.client.get(url)
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_get_download_task_result(self):
         content = b'spaaaam'
@@ -260,15 +254,16 @@ class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(errored_task.error_msg, response.data['task_error'])
 
-    def test_non_creator_get_download_task_result_permission_denied(self):
-        [user, other] = obj_build.make_admin_users(self.project.course, 2)
+    def test_non_admin_get_download_task_result_permission_denied(self):
+        [admin] = obj_build.make_admin_users(self.project.course, 1)
+        [staff] = obj_build.make_staff_users(self.project.course, 1)
 
         task = ag_models.DownloadTask.objects.validate_and_create(
             project=self.project,
-            creator=user, download_type=ag_models.DownloadType.all_scores,
+            creator=admin, download_type=ag_models.DownloadType.all_scores,
             progress=100)
 
         url = reverse('download_tasks-result', kwargs={'pk': task.pk})
-        self.client.force_authenticate(other)
+        self.client.force_authenticate(staff)
         response = self.client.get(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
