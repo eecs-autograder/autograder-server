@@ -35,11 +35,7 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
         }
 
         annotation = handgrading_models.Annotation.objects.validate_and_create(
-            short_description="",
-            long_description="",
-            points=0,
-            handgrading_rubric=handgrading_rubric
-        )
+            handgrading_rubric=handgrading_rubric)
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
 
@@ -100,11 +96,7 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
         )
 
         annotation = handgrading_models.Annotation.objects.validate_and_create(
-            short_description="Sample short description.",
-            long_description="Sample loooooong description.",
-            points=0,
-            handgrading_rubric=handgrading_rubric
-        )
+            handgrading_rubric=handgrading_rubric)
 
         location_data = {
             "first_line": 0,
@@ -172,11 +164,7 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
         }
 
         annotation = handgrading_models.Annotation.objects.validate_and_create(
-            short_description="",
-            long_description="",
-            points=0,
-            handgrading_rubric=handgrading_rubric
-        )
+            handgrading_rubric=handgrading_rubric)
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
 

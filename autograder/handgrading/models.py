@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator
 from django.db import models
 from autograder.core.fields import EnumField
 from django.core import validators
@@ -83,25 +84,34 @@ class Annotation(AutograderModel):
     """
     Additional field that can be applied to a submission. Can be line specific
     """
-    short_description = models.TextField(blank=True)
-
-    long_description = models.TextField(blank=True)
-
-    points = models.FloatField()
-
     handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='annotations')
 
-    SERIALIZABLE_FIELDS = ('pk',
-                           'last_modified',
+    short_description = models.TextField(blank=True)
+    long_description = models.TextField(blank=True)
 
-                           'short_description',
-                           'long_description',
-                           'points',
-                           'handgrading_rubric',)
+    deduction = models.FloatField(default=0, blank=True, validators=[MaxValueValidator(0)])
+    max_deduction = models.FloatField(default=None, blank=True, null=True,
+                                      validators=[MaxValueValidator(0)])
 
-    EDITABLE_FIELDS = ('short_description',
-                       'long_description',
-                       'points',)
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        'handgrading_rubric',
+
+        'short_description',
+        'long_description',
+
+        'deduction',
+        'max_deduction',
+
+        'last_modified',
+    )
+
+    EDITABLE_FIELDS = (
+        'short_description',
+        'long_description',
+        'deduction',
+        'max_deduction',
+    )
 
 
 class HandgradingResult(AutograderModel):
