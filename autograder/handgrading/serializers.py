@@ -37,11 +37,6 @@ class CommentSerializer(AGModelSerializer):
         return handgrading_models.Comment.objects
 
 
-class ArbitraryPointsSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return handgrading_models.ArbitraryPoints.objects
-
-
 class LocationSerializer(AGModelSerializer):
     def get_ag_model_manager(self):
         return handgrading_models.Location.objects

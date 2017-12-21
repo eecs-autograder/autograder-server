@@ -13,7 +13,7 @@ class AnnotationTestCase(UnitTestBase):
                 max_points=42,
                 show_grades_and_rubric_to_students=False,
                 handgraders_can_leave_comments=True,
-                handgraders_can_apply_arbitrary_points=True,
+                handgraders_can_adjust_points=True,
                 project=obj_build.build_project())
         )
 

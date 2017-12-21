@@ -20,7 +20,7 @@ class ListAnnotationsTestCase(UnitTestBase):
             "max_points": 0,
             "show_grades_and_rubric_to_students": False,
             "handgraders_can_leave_comments": True,
-            "handgraders_can_apply_arbitrary_points": True,
+            "handgraders_can_adjust_points": True,
             "project": obj_build.build_project()
         }
 
@@ -32,7 +32,7 @@ class ListAnnotationsTestCase(UnitTestBase):
         annotation_data = {
             "short_description": "Short description text.",
             "long_description": "Looooong description text.",
-            "points": 20,
+            "deduction": -3,
             "handgrading_rubric": handgrading_rubric
         }
 
@@ -69,7 +69,7 @@ class CreateAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase):
             "max_points": 0,
             "show_grades_and_rubric_to_students": False,
             "handgraders_can_leave_comments": True,
-            "handgraders_can_apply_arbitrary_points": True,
+            "handgraders_can_adjust_points": True,
             "project": obj_build.build_project()
         }
 
@@ -86,7 +86,7 @@ class CreateAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase):
         self.data = {
             "short_description": "Sample short description.",
             "long_description": "Sample loooooooong description.",
-            "points": 20,
+            "deduction": -3,
         }
 
     def test_admin_valid_create(self):
@@ -113,7 +113,7 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
             "max_points": 0,
             "show_grades_and_rubric_to_students": False,
             "handgraders_can_leave_comments": True,
-            "handgraders_can_apply_arbitrary_points": True,
+            "handgraders_can_adjust_points": True,
             "project": obj_build.build_project()
         }
 
@@ -125,7 +125,7 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
         annotation_data = {
             "short_description": "Short description text.",
             "long_description": "Looooong description text.",
-            "points": 20,
+            "deduction": -3,
             "handgrading_rubric": handgrading_rubric
         }
 
@@ -147,7 +147,7 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
         patch_data = {
             "short_description": "Changing short description.",
             "long_description": "Changing loooooooong description.",
-            "points": 40,
+            "deduction": -5,
         }
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_patch_object_test(
@@ -155,7 +155,7 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
 
     def test_admin_update_bad_values(self):
         bad_data = {
-            "points": "oops! text instead of number",
+            "deduction": 42,
         }
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_patch_object_invalid_args_test(
@@ -165,7 +165,7 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
         patch_data = {
             "short_description": "Changing short description.",
             "long_description": "Changing loooooooong description.",
-            "points": 40,
+            "deduction": -5,
         }
         [staff] = obj_build.make_staff_users(self.course, 1)
         self.do_patch_object_permission_denied_test(

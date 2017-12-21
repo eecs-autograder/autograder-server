@@ -116,11 +116,6 @@ applied_annotation_detail_router.register(r'applied_annotations',
                                           views.AppliedAnnotationDetailViewSet,
                                           base_name='applied-annotation')
 
-arbitrary_points_detail_router = routers.SimpleRouter()
-arbitrary_points_detail_router.register(r'arbitrary_points',
-                                        views.ArbitraryPointsDetailViewSet,
-                                        base_name='arbitrary-points')
-
 comment_detail_router = routers.SimpleRouter()
 comment_detail_router.register(r'comments',
                                views.CommentDetailViewSet,
@@ -211,10 +206,6 @@ urlpatterns = [
     url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/applied_annotations/$',
         views.AppliedAnnotationListCreateView.as_view(), name='applied_annotations'),
     url(r'', include(applied_annotation_detail_router.urls)),
-
-    url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/arbitrary_points/$',
-        views.ArbitraryPointsListCreateView.as_view(), name='arbitrary_points'),
-    url(r'', include(arbitrary_points_detail_router.urls)),
 
     url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/comments/$',
         views.CommentListCreateView.as_view(), name='comments'),
