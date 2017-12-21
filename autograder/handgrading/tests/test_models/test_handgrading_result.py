@@ -17,7 +17,7 @@ class HandgradingResultTestCases(UnitTestBase):
                 max_points=0,
                 show_grades_and_rubric_to_students=False,
                 handgraders_can_leave_comments=True,
-                handgraders_can_apply_arbitrary_points=True,
+                handgraders_can_adjust_points=True,
                 project=obj_build.build_project()
             )
         )
@@ -62,7 +62,6 @@ class HandgradingResultTestCases(UnitTestBase):
             'handgrading_rubric',
 
             'applied_annotations',
-            'arbitrary_points',
             'comments',
             'criterion_results',
 
@@ -95,7 +94,6 @@ class HandgradingResultTestCases(UnitTestBase):
             'submission_group',
 
             'applied_annotations',
-            'arbitrary_points',
             'comments',
             'criterion_results',
 
@@ -126,17 +124,6 @@ class HandgradingResultTestCases(UnitTestBase):
             handgrading_result=result_obj
         )
 
-        arbitrary_points = handgrading_models.ArbitraryPoints.objects.validate_and_create(
-            location={
-                "first_line": 0,
-                "last_line": 1,
-                "filename": "test.cpp"
-            },
-            text="",
-            points=0,
-            handgrading_result=result_obj
-        )
-
         comment = handgrading_models.Comment.objects.validate_and_create(
             location={
                 "first_line": 0,
@@ -157,7 +144,6 @@ class HandgradingResultTestCases(UnitTestBase):
         )
 
         app_annotation_dict = applied_annotation.to_dict()
-        arbitrary_points_dict = arbitrary_points.to_dict()
         comment_dict = comment.to_dict()
         criterion_result_dict = criterion_result.to_dict()
         result_dict = result_obj.to_dict()
@@ -165,21 +151,17 @@ class HandgradingResultTestCases(UnitTestBase):
         self.assertCountEqual(expected_fields, result_dict.keys())
 
         self.assertIsInstance(result_dict["applied_annotations"], list)
-        self.assertIsInstance(result_dict["arbitrary_points"], list)
         self.assertIsInstance(result_dict["comments"], list)
         self.assertIsInstance(result_dict["criterion_results"], list)
         self.assertIsInstance(result_dict["handgrading_rubric"], object)
         self.assertIsInstance(result_dict["submission_group"], int)
 
         self.assertEqual(len(result_dict["applied_annotations"]), 1)
-        self.assertEqual(len(result_dict["arbitrary_points"]), 1)
         self.assertEqual(len(result_dict["comments"]), 1)
         self.assertEqual(len(result_dict["criterion_results"]), 1)
 
         self.assertCountEqual(result_dict["applied_annotations"][0].keys(),
                               app_annotation_dict.keys())
-        self.assertCountEqual(result_dict["arbitrary_points"][0].keys(),
-                              arbitrary_points_dict.keys())
         self.assertCountEqual(result_dict["comments"][0].keys(),
                               comment_dict.keys())
         self.assertCountEqual(result_dict["criterion_results"][0].keys(),

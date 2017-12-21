@@ -50,9 +50,6 @@ from autograder.handgrading.views.annotation_views import (
 from autograder.handgrading.views.applied_annotation_views import (
     AppliedAnnotationDetailViewSet, AppliedAnnotationListCreateView)
 
-from autograder.handgrading.views.arbitrary_points_views import (
-    ArbitraryPointsDetailViewSet, ArbitraryPointsListCreateView)
-
 from autograder.handgrading.views.comment_views import (
     CommentDetailViewSet, CommentListCreateView)
 
