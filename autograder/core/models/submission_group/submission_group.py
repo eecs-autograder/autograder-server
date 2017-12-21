@@ -6,6 +6,7 @@ from django.http import Http404
 from django.utils import timezone
 
 import autograder.core.utils as core_ut
+from autograder import utils
 
 from .. import ag_model_base
 from ..project import Project, UltimateSubmissionPolicy
@@ -90,24 +91,28 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         The number of submissions this group has made in the current 24
         hour period that are counted towards the daily submission limit.
         """
+        # We put the filtering logic here so that we can prefetch the right
+        # submissions in the list groups view.
         start_datetime, end_datetime = core_ut.get_24_hour_period(
             self.project.submission_limit_reset_time,
             timezone.now().astimezone(self.project.submission_limit_reset_timezone))
-        return self.submissions.filter(
-            timestamp__gte=start_datetime,
-            timestamp__lt=end_datetime,
-            count_towards_daily_limit=True,
-            status__in=Submission.GradingStatus.count_towards_limit_statuses
-        ).count()
+
+        def _is_towards_limit(submission):
+            return (submission.timestamp >= start_datetime and
+                    submission.timestamp < end_datetime and
+                    submission.count_towards_daily_limit and
+                    submission.status in Submission.GradingStatus.count_towards_limit_statuses)
+
+        return utils.count_if(self.submissions.all(), _is_towards_limit)
 
     @property
     def submission_with_best_basic_score(self):
-        '''
+        """
         The Submission belonging to this group that has the highest
         score, as calculated using the normal feedback configuration
         for each test case.
         In the event of a tie, returns the more recent submission.
-        '''
+        """
         # Submissions are ordered by pk, descending, so the max function
         # will automatically return the more recent one in the event of
         # a tie.
@@ -115,13 +120,13 @@ class SubmissionGroup(ag_model_base.AutograderModel):
 
     @property
     def ultimate_submission(self):
-        '''
+        """
         Returns the submission that should be used for final grading.
         The method used to choose which submission is the ultimate
         submission is specified in
         self.project.ultimate_submission_policy
         Raises Http404 if this group has no submissions.
-        '''
+        """
         if not self.submissions.count():
             raise Http404('Group {} has no submissions'.format(self.pk))
 
@@ -180,3 +185,22 @@ class SubmissionGroup(ag_model_base.AutograderModel):
 
             self.members.set(members, clear=True)
             self.full_clean()
+
+
+def get_submissions_for_daily_limit_queryset(project: Project):
+    """
+    :param project: The project that should be used to compute the 24-hour period
+    start and end.
+    :return: Returns a queryset that can be used to prefetch submissions
+    that count towards the daily limit within the current 24-hour submission
+    limit period.
+    """
+    start_datetime, end_datetime = core_ut.get_24_hour_period(
+        project.submission_limit_reset_time,
+        timezone.now().astimezone(project.submission_limit_reset_timezone))
+
+    return Submission.objects.filter(
+        timestamp__gte=start_datetime,
+        timestamp__lt=end_datetime,
+        count_towards_daily_limit=True,
+        status__in=Submission.GradingStatus.count_towards_limit_statuses)

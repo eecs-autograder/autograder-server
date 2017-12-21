@@ -14,6 +14,9 @@ from . import verification
 class SubmissionGroupInvitationManager(ag_model_base.AutograderModelManager):
     def validate_and_create(self, invitation_creator, invited_users, **kwargs):
         with transaction.atomic():
+            if invitation_creator in invited_users:
+                raise exceptions.ValidationError(
+                    {'invited_users': 'You cannot send an invitation to yourself'})
             verification.verify_users_can_be_in_group(
                 tuple(itertools.chain(invited_users, (invitation_creator,))),
                 kwargs['project'], 'invited_users')

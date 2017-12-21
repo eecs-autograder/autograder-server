@@ -115,7 +115,8 @@ def _make_download_result_filename(project: ag_models.project,
 _PROGRESS_UPDATE_FREQUENCY = 50
 
 
-def _make_submission_archive(task, submissions, num_submissions, dest_filename):
+def _make_submission_archive(
+        task, submissions: Iterator[ag_models.Submission], num_submissions, dest_filename):
     with open(dest_filename, 'wb') as archive:
         with zipfile.ZipFile(archive, 'w') as z:
             for index, s in enumerate(submissions):
@@ -134,39 +135,81 @@ def _make_submission_archive(task, submissions, num_submissions, dest_filename):
                     print('Updated task {} progress: {}'.format(task.pk, task.progress))
 
 
-def _make_scores_csv(task, submissions, num_submissions, dest_filename):
+def _make_scores_csv(
+        task, submissions: Iterator[ag_models.Submission], num_submissions, dest_filename):
     with open(dest_filename, 'w', newline='') as csv_file:
-        writer = csv.writer(csv_file)
+        project = task.project  # type: ag_models.Project
 
-        project = task.project
-        username_headers = ['Username {}'.format(i + 1) for i in range(project.max_group_size)]
-        row_headers = username_headers + ['Timestamp', 'Total', 'Total Possible']
+        user_tmpl = 'Username {}'
+        timestamp_header = 'Timestamp'
+        total_header = 'Total'
+        total_possible_header = 'Total Possible'
+
+        username_headers = [user_tmpl.format(i + 1) for i in range(project.max_group_size)]
+        row_headers = username_headers + [timestamp_header, total_header, total_possible_header]
+
+        ag_suite_total_tmpl = '{} Total'
+        ag_suite_total_possible_tmpl = '{} Total Possible'
+        ag_test_header_tmpl = '{} - {}'
+        student_suite_total_tmpl = '{} Total'
+        student_suite_total_possible_tmpl = '{} Total Possible'
+
         for suite in project.ag_test_suites.all():
-            row_headers += ['{} Total'.format(suite.name),
-                            '{} Total Possible'.format(suite.name)]
-            row_headers += ['{} - {}'.format(suite.name, case.name)
+            row_headers += [ag_suite_total_tmpl.format(suite.name),
+                            ag_suite_total_possible_tmpl.format(suite.name)]
+            row_headers += [ag_test_header_tmpl.format(suite.name, case.name)
                             for case in suite.ag_test_cases.all()]
 
-        writer.writerow(row_headers)
+        for suite in project.student_test_suites.all():
+            row_headers += [student_suite_total_tmpl.format(suite.name),
+                            student_suite_total_possible_tmpl.format(suite.name)]
 
-        sorted_submissions = sorted(submissions,
-                                    key=lambda s: min(s.submission_group.member_names))
-        for index, submission in enumerate(sorted_submissions):
-            row = sorted(submission.submission_group.member_names)
-            if len(row) < project.max_group_size:
-                row += ['' for i in range(project.max_group_size - len(row))]
-            row.append(submission.timestamp.isoformat())
+        writer = csv.DictWriter(csv_file, row_headers)
+        writer.writeheader()
+
+        sorted_submissions = sorted(
+            submissions, key=lambda s: min(s.submission_group.member_names)
+        )  # type: Iterator[ag_models.Submission]
+        for progress_index, submission in enumerate(sorted_submissions):
+            row = {timestamp_header: submission.timestamp.isoformat()}
+
+            for index, username in enumerate(sorted(submission.submission_group.member_names)):
+                row[user_tmpl.format(index + 1)] = username
+
             fdbk = submission.get_fdbk(ag_models.FeedbackCategory.max)
-            row += [fdbk.total_points, fdbk.total_points_possible]
+            row[total_header] = fdbk.total_points
+            row[total_possible_header] = fdbk.total_points_possible
+
             for suite_result in fdbk.ag_test_suite_results:
                 suite_fdbk = suite_result.get_fdbk(ag_models.FeedbackCategory.max)
-                row += [suite_fdbk.total_points, suite_fdbk.total_points_possible]
+
+                ag_suite_total_header = ag_suite_total_tmpl.format(suite_fdbk.ag_test_suite_name)
+                row[ag_suite_total_header] = suite_fdbk.total_points
+                ag_suite_total_possible_header = ag_suite_total_possible_tmpl.format(
+                    suite_fdbk.ag_test_suite_name)
+                row[ag_suite_total_possible_header] = suite_fdbk.total_points_possible
+
                 for case_result in suite_fdbk.ag_test_case_results:
-                    row.append(case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+                    case_fdbk = case_result.get_fdbk(ag_models.FeedbackCategory.max)
+
+                    ag_test_total_header = ag_test_header_tmpl.format(
+                        suite_fdbk.ag_test_suite_name, case_fdbk.ag_test_case_name)
+                    row[ag_test_total_header] = case_fdbk.total_points
+
+            for student_suite_result in fdbk.student_test_suite_results:
+                suite_fdbk = student_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+
+                student_suite_total_header = student_suite_total_tmpl.format(
+                    suite_fdbk.student_test_suite_name)
+                row[student_suite_total_header] = suite_fdbk.total_points
+
+                student_suite_total_possible_header = student_suite_total_possible_tmpl.format(
+                    suite_fdbk.student_test_suite_name)
+                row[student_suite_total_possible_header] = suite_fdbk.total_points_possible
 
             writer.writerow(row)
 
-            if index % _PROGRESS_UPDATE_FREQUENCY == 0:
-                task.progress = (index / num_submissions) * 100
+            if progress_index % _PROGRESS_UPDATE_FREQUENCY == 0:
+                task.progress = (progress_index / num_submissions) * 100
                 task.save()
                 print('Updated task {} progress: {}'.format(task.pk, task.progress))

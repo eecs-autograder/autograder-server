@@ -104,21 +104,28 @@ def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test
 
         tasks.grade_ag_test_suite_impl(ag_test_suite, submission, *ag_test_cases)
 
-        ag_models.RerunSubmissionsTask.objects.filter(
-            pk=rerun_task_pk
-        ).update(num_completed_subtasks=F('num_completed_subtasks') + 1)
+        with transaction.atomic():
+            ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
+                pk=rerun_task_pk
+            ).update(num_completed_subtasks=F('num_completed_subtasks') + 1)
 
-    try:
-        _rerun_ag_test_suite_impl()
-    except Exception as e:
+    @retry_should_recover
+    def _handle_rerun_error():
         error_msg = (
             '\nError rerunning ag test suite {} for submission {}\n'.format(
                 ag_test_suite_pk, submission_pk
             ) +
             str(e) + traceback.format_exc() + '\n')
-        ag_models.RerunSubmissionsTask.objects.filter(
-            pk=rerun_task_pk
-        ).update(error_msg=Concat('error_msg', Value(error_msg)))
+
+        with transaction.atomic():
+            ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
+                pk=rerun_task_pk
+            ).update(error_msg=Concat('error_msg', Value(error_msg)))
+
+    try:
+        _rerun_ag_test_suite_impl()
+    except Exception as e:
+        _handle_rerun_error()
 
 
 @celery.shared_task(queue='rerun', max_retries=1, acks_late=True)
@@ -130,18 +137,25 @@ def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk
 
         tasks.grade_student_test_suite_impl(student_suite, submission)
 
-        ag_models.RerunSubmissionsTask.objects.filter(
-            pk=rerun_task_pk
-        ).update(num_completed_subtasks=F('num_completed_subtasks') + 1)
+        with transaction.atomic():
+            ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
+                pk=rerun_task_pk
+            ).update(num_completed_subtasks=F('num_completed_subtasks') + 1)
 
-    try:
-        _rerun_student_test_suite_impl()
-    except Exception as e:
+    @retry_should_recover
+    def _handle_rerun_error():
         error_msg = (
             '\nError rerunning student test suite {} for submission {}\n'.format(
                 student_test_suite_pk, submission_pk
             ) +
             str(e) + traceback.format_exc() + '\n')
-        ag_models.RerunSubmissionsTask.objects.filter(
-            pk=rerun_task_pk
-        ).update(error_msg=Concat('error_msg', Value(error_msg)))
+
+        with transaction.atomic():
+            ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
+                pk=rerun_task_pk
+            ).update(error_msg=Concat('error_msg', Value(error_msg)))
+
+    try:
+        _rerun_student_test_suite_impl()
+    except Exception as e:
+        _handle_rerun_error()
