@@ -2,12 +2,11 @@ import os
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
-from django.db.models import Prefetch
-from django.db.models import prefetch_related_objects
 from django.http import Http404
 from django.utils import timezone
 
 import autograder.core.utils as core_ut
+from autograder import utils
 
 from .. import ag_model_base
 from ..project import Project, UltimateSubmissionPolicy
@@ -92,10 +91,19 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         The number of submissions this group has made in the current 24
         hour period that are counted towards the daily submission limit.
         """
-        prefetch_related_objects(
-            [self],
-            Prefetch('submissions', get_submissions_for_daily_limit_queryset(self.project)))
-        return len(self.submissions.all())
+        # We put the filtering logic here so that we can prefetch the right
+        # submissions in the list groups view.
+        start_datetime, end_datetime = core_ut.get_24_hour_period(
+            self.project.submission_limit_reset_time,
+            timezone.now().astimezone(self.project.submission_limit_reset_timezone))
+
+        def _is_towards_limit(submission):
+            return (submission.timestamp >= start_datetime and
+                    submission.timestamp < end_datetime and
+                    submission.count_towards_daily_limit and
+                    submission.status in Submission.GradingStatus.count_towards_limit_statuses)
+
+        return utils.count_if(self.submissions.all(), _is_towards_limit)
 
     @property
     def submission_with_best_basic_score(self):
