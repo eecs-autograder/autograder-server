@@ -31,11 +31,26 @@ class HandgradingResultTestCases(UnitTestBase):
             "handgrading_rubric": self.default_handgrading_rubric
         }
 
-        result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
-            **result_inputs)
-        self.assertEqual(result_obj.submission, result_inputs["submission"])
-        self.assertEqual(result_obj.handgrading_rubric, result_inputs["handgrading_rubric"])
-        self.assertEqual(result_obj.submission_group, result_inputs["submission_group"])
+        handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            **result_inputs)  # type: handgrading_models.HandgradingResult
+        self.assertEqual(handgrading_result.submission, result_inputs["submission"])
+        self.assertEqual(handgrading_result.handgrading_rubric, result_inputs["handgrading_rubric"])
+        self.assertEqual(handgrading_result.submission_group, result_inputs["submission_group"])
+        self.assertEqual(0, handgrading_result.points_adjustment)
+
+    def test_create_non_defaults(self):
+        points_to_try = [-2, 5]
+        for points in points_to_try:
+            result = handgrading_models.HandgradingResult.objects.validate_and_create(
+                submission=self.submission,
+                submission_group=self.submission.submission_group,
+                handgrading_rubric=self.default_handgrading_rubric,
+                points_adjustment=points)
+
+            result.refresh_from_db()
+
+            self.assertEqual(points, result.points_adjustment)
+            result.delete()
 
     def test_serializable_fields(self):
         expected_fields = [
@@ -50,6 +65,8 @@ class HandgradingResultTestCases(UnitTestBase):
             'arbitrary_points',
             'comments',
             'criterion_results',
+
+            'points_adjustment',
         ]
 
         result_inputs = {
@@ -81,6 +98,8 @@ class HandgradingResultTestCases(UnitTestBase):
             'arbitrary_points',
             'comments',
             'criterion_results',
+
+            'points_adjustment',
         ]
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
@@ -167,3 +186,13 @@ class HandgradingResultTestCases(UnitTestBase):
                               criterion_result_dict.keys())
         self.assertCountEqual(result_dict["handgrading_rubric"].keys(),
                               self.default_handgrading_rubric.to_dict().keys())
+
+    def test_editable_fields(self):
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.default_handgrading_rubric)
+
+        result.validate_and_update(points_adjustment=3)
+        result.refresh_from_db()
+        self.assertEqual(3, result.points_adjustment)

@@ -114,6 +114,8 @@ class HandgradingResult(AutograderModel):
 
     submission_group = models.OneToOneField(SubmissionGroup, related_name='handgrading_result')
 
+    points_adjustment = models.IntegerField(default=0, blank=True)
+
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
 
@@ -124,14 +126,20 @@ class HandgradingResult(AutograderModel):
                            'applied_annotations',
                            'arbitrary_points',
                            'comments',
-                           'criterion_results',)
+                           'criterion_results',
+
+                           'points_adjustment',)
 
     SERIALIZE_RELATED = ('applied_annotations',
                          'arbitrary_points',
                          'comments',
                          'criterion_results',
 
-                         'handgrading_rubric',)
+                         'handgrading_rubric',
+
+                         'points_adjustment',)
+
+    EDITABLE_FIELDS = ('points_adjustment',)
 
 
 class CriterionResult(AutograderModel):
