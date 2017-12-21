@@ -1,12 +1,9 @@
-"""Handgrading Result tests"""
-
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
-from django.core.exceptions import ValidationError
 
 
-class HandgradingResultTestCases(UnitTestBase):
+class HandgradingResultTestCase(UnitTestBase):
     """
     Test cases relating the Handgrading Result Model
     """
@@ -25,50 +22,28 @@ class HandgradingResultTestCases(UnitTestBase):
         self.submission = obj_build.build_submission()
 
     def test_default_initialization(self):
-        result_inputs = {
-            "submission": self.submission,
-            "submission_group": self.submission.submission_group,
-            "handgrading_rubric": self.default_handgrading_rubric
-        }
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.default_handgrading_rubric)
 
-        result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
-            **result_inputs)
-        self.assertEqual(result_obj.submission, result_inputs["submission"])
-        self.assertEqual(result_obj.handgrading_rubric, result_inputs["handgrading_rubric"])
-        self.assertEqual(result_obj.submission_group, result_inputs["submission_group"])
+        self.assertEqual(result.submission, self.submission)
+        self.assertEqual(result.handgrading_rubric, self.default_handgrading_rubric)
+        self.assertEqual(result.submission_group, self.submission.submission_group)
+        self.assertFalse(result.finished_grading)
 
-    def test_serializable_fields(self):
-        expected_fields = [
-            'pk',
-            'last_modified',
+    def test_edit_finished_grading(self):
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.default_handgrading_rubric)
+        self.assertFalse(result.finished_grading)
 
-            'submission',
-            'submission_group',
-            'handgrading_rubric',
+        result.validate_and_update(finished_grading=True)
+        result.refresh_from_db()
+        self.assertTrue(result.finished_grading)
 
-            'applied_annotations',
-            'arbitrary_points',
-            'comments',
-            'criterion_results',
-        ]
-
-        result_inputs = {
-            "submission": self.submission,
-            "submission_group": self.submission.submission_group,
-            "handgrading_rubric": self.default_handgrading_rubric
-        }
-
-        result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
-            **result_inputs
-        )
-
-        result_dict = result_obj.to_dict()
-        self.assertCountEqual(expected_fields, result_dict.keys())
-
-        with self.assertRaises(ValidationError):
-            result_obj.validate_and_update(**result_dict)
-
-    def test_serialize_related(self):
+    def test_serialization(self):
         expected_fields = [
             'pk',
             'last_modified',
@@ -81,15 +56,20 @@ class HandgradingResultTestCases(UnitTestBase):
             'arbitrary_points',
             'comments',
             'criterion_results',
+
+            'finished_grading',
         ]
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
 
-        result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
             submission_group=submission.submission_group,
             handgrading_rubric=self.default_handgrading_rubric
         )
+
+        result_dict = result.to_dict()
+        self.assertCountEqual(expected_fields, result_dict.keys())
 
         applied_annotation = handgrading_models.AppliedAnnotation.objects.validate_and_create(
             comment="",
@@ -104,7 +84,7 @@ class HandgradingResultTestCases(UnitTestBase):
                 points=0,
                 handgrading_rubric=self.default_handgrading_rubric
             ),
-            handgrading_result=result_obj
+            handgrading_result=result
         )
 
         arbitrary_points = handgrading_models.ArbitraryPoints.objects.validate_and_create(
@@ -115,7 +95,7 @@ class HandgradingResultTestCases(UnitTestBase):
             },
             text="",
             points=0,
-            handgrading_result=result_obj
+            handgrading_result=result
         )
 
         comment = handgrading_models.Comment.objects.validate_and_create(
@@ -125,7 +105,7 @@ class HandgradingResultTestCases(UnitTestBase):
                 "filename": "test.cpp"
             },
             text="HI",
-            handgrading_result=result_obj
+            handgrading_result=result
         )
 
         criterion_result = handgrading_models.CriterionResult.objects.validate_and_create(
@@ -134,14 +114,14 @@ class HandgradingResultTestCases(UnitTestBase):
                 points=0,
                 handgrading_rubric=self.default_handgrading_rubric
             ),
-            handgrading_result=result_obj
+            handgrading_result=result
         )
 
         app_annotation_dict = applied_annotation.to_dict()
         arbitrary_points_dict = arbitrary_points.to_dict()
         comment_dict = comment.to_dict()
         criterion_result_dict = criterion_result.to_dict()
-        result_dict = result_obj.to_dict()
+        result_dict = result.to_dict()
 
         self.assertCountEqual(expected_fields, result_dict.keys())
 

@@ -114,6 +114,8 @@ class HandgradingResult(AutograderModel):
 
     submission_group = models.OneToOneField(SubmissionGroup, related_name='handgrading_result')
 
+    finished_grading = models.BooleanField(default=False, blank=True)
+
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
 
@@ -124,7 +126,9 @@ class HandgradingResult(AutograderModel):
                            'applied_annotations',
                            'arbitrary_points',
                            'comments',
-                           'criterion_results',)
+                           'criterion_results',
+
+                           'finished_grading',)
 
     SERIALIZE_RELATED = ('applied_annotations',
                          'arbitrary_points',
@@ -132,6 +136,8 @@ class HandgradingResult(AutograderModel):
                          'criterion_results',
 
                          'handgrading_rubric',)
+
+    EDITABLE_FIELDS = ('finished_grading',)
 
 
 class CriterionResult(AutograderModel):
