@@ -30,6 +30,7 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertEqual(result.submission, self.submission)
         self.assertEqual(result.handgrading_rubric, self.rubric)
         self.assertEqual(result.submission_group, self.submission.submission_group)
+        self.assertEqual(0, result.points_adjustment)
         self.assertFalse(result.finished_grading)
 
     def test_create_non_defaults(self):
