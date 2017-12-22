@@ -23,6 +23,7 @@ class StudentTestSuiteResult(AutograderModel):
 
     class Meta:
         unique_together = ('student_test_suite', 'submission')
+        ordering = ('student_test_suite___order',)
 
     student_test_suite = models.ForeignKey(StudentTestSuite)
     submission = models.ForeignKey('Submission', related_name='student_test_suite_results')

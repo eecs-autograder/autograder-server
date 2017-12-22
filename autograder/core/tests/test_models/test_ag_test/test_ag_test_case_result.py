@@ -24,6 +24,21 @@ class AGTestCaseResultTestCase(UnitTestBase):
         self.ag_test_cmd2 = obj_build.make_full_ag_test_command(
             self.ag_test_case, set_arbitrary_points=False)
 
+    def test_ag_test_cmd_result_ordering(self):
+        cmd_result1 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd1, ag_test_case_result=self.ag_test_case_result)
+        cmd_result2 = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd2, ag_test_case_result=self.ag_test_case_result)
+
+        for i in range(2):
+            self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd2.pk, self.ag_test_cmd1.pk])
+            fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
+            self.assertSequenceEqual([cmd_result2, cmd_result1], fdbk.ag_test_command_results)
+
+            self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd1.pk, self.ag_test_cmd2.pk])
+            fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
+            self.assertSequenceEqual([cmd_result1, cmd_result2], fdbk.ag_test_command_results)
+
     def test_feedback_calculator_ctor(self):
         self.assertEqual(
             self.ag_test_case.normal_fdbk_config,
