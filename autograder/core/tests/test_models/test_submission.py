@@ -426,6 +426,32 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertSequenceEqual([self.student_suite_result1, self.student_suite_result2],
                                  fdbk.student_test_suite_results)
 
+    def test_ag_suite_result_ordering(self):
+        for i in range(2):
+            self.project.set_agtestsuite_order([self.ag_test_suite2.pk, self.ag_test_suite1.pk])
+            fdbk = self.submission.get_fdbk(ag_models.FeedbackCategory.max)
+            self.assertSequenceEqual([self.ag_suite_result2, self.ag_suite_result1],
+                                     fdbk.ag_test_suite_results)
+
+            self.project.set_agtestsuite_order([self.ag_test_suite1.pk, self.ag_test_suite2.pk])
+            fdbk = self.submission.get_fdbk(ag_models.FeedbackCategory.max)
+            self.assertSequenceEqual([self.ag_suite_result1, self.ag_suite_result2],
+                                     fdbk.ag_test_suite_results)
+
+    def test_student_suite_result_ordering(self):
+        for i in range(2):
+            self.project.set_studenttestsuite_order(
+                [self.student_suite2.pk, self.student_suite1.pk])
+            fdbk = self.submission.get_fdbk(ag_models.FeedbackCategory.max)
+            self.assertSequenceEqual([self.student_suite_result2, self.student_suite_result1],
+                                     fdbk.student_test_suite_results)
+
+            self.project.set_studenttestsuite_order(
+                [self.student_suite1.pk, self.student_suite2.pk])
+            fdbk = self.submission.get_fdbk(ag_models.FeedbackCategory.max)
+            self.assertSequenceEqual([self.student_suite_result1, self.student_suite_result2],
+                                     fdbk.student_test_suite_results)
+
     def test_max_fdbk_some_incorrect(self):
         # Make something incorrect, re-check total points and total points
         # possible.

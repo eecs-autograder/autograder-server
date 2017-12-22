@@ -22,6 +22,7 @@ class AGTestCommandResult(AGCommandResultBase):
     """
     class Meta:
         unique_together = ('ag_test_command', 'ag_test_case_result')
+        ordering = ('ag_test_command___order',)
 
     ag_test_command = models.ForeignKey(
         AGTestCommand, help_text='The AGTestCommand this result belongs to.')

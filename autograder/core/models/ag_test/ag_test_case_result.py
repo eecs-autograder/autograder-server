@@ -11,6 +11,7 @@ from .ag_test_command_result import AGTestCommandResult
 class AGTestCaseResult(AutograderModel):
     class Meta:
         unique_together = ('ag_test_case', 'ag_test_suite_result')
+        ordering = ('ag_test_case___order',)
 
     ag_test_case = models.ForeignKey(
         AGTestCase, related_name='related_ag_test_case_results',
