@@ -66,7 +66,7 @@ class AddCourseHandgradersTestCase(_HandgradersSetUp, UnitTestBase):
         new_students = list(
             User.objects.filter(username__in=new_handgrader_names))
 
-        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertCountEqual(new_students + self.current_handgraders,
                               self.course.handgraders.all())
 
@@ -94,18 +94,14 @@ class RemoveCourseHandgraderTestCase(_HandgradersSetUp, UnitTestBase):
         self.course.handgraders.add(*self.all_handgraders)
 
         self.request_body = {
-            'remove_handgraders':
+            "remove_handgraders":
                 ag_serializers.UserSerializer(self.handgraders_to_remove, many=True).data
         }
-        # self.assertIsInstance(self.request_body["remove_handgraders"], list)
-        # print(ag_serializers.UserSerializer(self.handgraders_to_remove, many=True).data)
 
     def test_admin_remove_handgraders(self):
         self.client.force_authenticate(self.admin)
-        self.assertIsInstance(self.request_body["remove_handgraders"], list)
-        print(ag_serializers.UserSerializer(self.handgraders_to_remove, many=True).data)
         response = self.client.patch(self.url, self.request_body)
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
         self.assertCountEqual(self.remaining_handgraders,
                               self.course.handgraders.all())
@@ -116,3 +112,4 @@ class RemoveCourseHandgraderTestCase(_HandgradersSetUp, UnitTestBase):
 
             response = self.client.patch(self.url, self.request_body)
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+            #TODO: Check that none are removed
