@@ -35,6 +35,15 @@ def is_staff(get_course_fn: GetCourseFnType=lambda course: course) -> Permission
     return IsStaff
 
 
+def is_handgrader(get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
+    class IsHandgrader(permissions.BasePermission):
+        def has_object_permission(self, request, view, obj):
+            course = get_course_fn(obj)
+            return course.is_handgrader(request.user)
+
+    return IsHandgrader
+
+
 def is_admin_or_read_only_staff(
         get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
     class IsAdminOrReadOnlyStaff(permissions.BasePermission):

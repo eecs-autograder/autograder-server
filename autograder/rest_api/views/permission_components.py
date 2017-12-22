@@ -19,7 +19,7 @@ def user_can_view_project(user, project):
     if not project.visible_to_students:
         return False
 
-    if project.course.is_enrolled_student(user):
+    if project.course.is_enrolled_student(user) or project.course.is_handgrader(user):
         return True
 
     return project.guests_can_submit
