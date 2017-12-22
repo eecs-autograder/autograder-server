@@ -1,5 +1,7 @@
-from rest_framework import viewsets, mixins, permissions, decorators, response, exceptions
+from rest_framework import viewsets, mixins, permissions, decorators, response, exceptions, status
 from django.contrib.auth.models import User
+from django.db import transaction
+from collections import OrderedDict
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -45,31 +47,41 @@ class CourseViewSet(build_load_object_mixin(ag_models.Course),
             'is_handgrader': course.is_handgrader(request.user)
         })
 
+    @transaction.atomic()
     @decorators.detail_route(permission_classes=[permissions.IsAuthenticated,
                                                  ag_permissions.is_admin(lambda course: course)],
-                             methods=["get", "post", "delete"])
+                             methods=["get", "patch"])
     def handgraders(self, request, *args, **kwargs):
         course = self.get_object()
+        print(request.data["remove_handgraders"])
 
-        if request.method == "get":
-            return course.handgraders.all()
-        elif request.method == "post":
-            self.add_handgraders(course, request.data['new_handgraders'])
-        elif request.method == "delete":
-            self.remove_handgraders(course, request.data['remove_handgraders'])
+        if request.method == "GET":
+            handgraders = ag_serializers.UserSerializer(course.handgraders.all(), many=True).data
+            return response.Response(handgraders, status=status.HTTP_200_OK)
+        elif request.method == "PATCH":
+            if "new_handgraders" in request.data:
+                handgraders = self.add_handgraders(course, request.data['new_handgraders'])
+                return response.Response(handgraders, status=status.HTTP_200_OK)
+            elif "remove_handgraders" in request.data:
+                self.remove_handgraders(course, request.data['remove_handgraders'])
+                return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     def add_handgraders(self, course, usernames):
         users_to_add = [
             User.objects.get_or_create(username=username)[0]
             for username in usernames]
         course.handgraders.add(*users_to_add)
+        return ag_serializers.UserSerializer(users_to_add, many=True).data
 
-    def remove_handgraders(self, course, usernames):
+    def remove_handgraders(self, course, usernames: list):
+        if usernames is list:
+            print(usernames)
+
+        for user in usernames:
+            print(user)
+
+        pks = [user['pk'] for user in usernames]
+        print(pks)
         users_to_remove = User.objects.filter(pk__in=[user['pk'] for user in usernames])
-
-        if self.request.user in users_to_remove:
-            raise exceptions.ValidationError(
-                {'remove_handgraders':
-                    ["You cannot remove your own handgrader privileges."]})
 
         course.handgraders.remove(*users_to_remove)
