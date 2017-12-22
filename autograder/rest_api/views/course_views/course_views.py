@@ -74,6 +74,6 @@ class CourseViewSet(build_load_object_mixin(ag_models.Course),
         course.handgraders.add(*users_to_add)
         return ag_serializers.UserSerializer(users_to_add, many=True).data
 
-    def remove_handgraders(self, course, usernames: list):
+    def remove_handgraders(self, course, usernames):
         users_to_remove = User.objects.filter(pk__in=[user['pk'] for user in usernames])
         course.handgraders.remove(*users_to_remove)
