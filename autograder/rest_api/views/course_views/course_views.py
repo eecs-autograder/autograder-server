@@ -1,7 +1,6 @@
-from rest_framework import viewsets, mixins, permissions, decorators, response, exceptions, status
+from rest_framework import viewsets, mixins, permissions, decorators, response, status
 from django.contrib.auth.models import User
 from django.db import transaction
-from collections import OrderedDict
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -57,10 +56,12 @@ class CourseViewSet(build_load_object_mixin(ag_models.Course),
         if request.method == "GET":
             handgraders = ag_serializers.UserSerializer(course.handgraders.all(), many=True).data
             return response.Response(handgraders, status=status.HTTP_200_OK)
+
         elif request.method == "PATCH":
             if "new_handgraders" in request.data:
                 handgraders = self.add_handgraders(course, request.data['new_handgraders'])
                 return response.Response(handgraders, status=status.HTTP_200_OK)
+
             elif "remove_handgraders" in request.data:
                 self.remove_handgraders(course, request.data['remove_handgraders'])
                 return response.Response(status=status.HTTP_204_NO_CONTENT)
@@ -75,8 +76,4 @@ class CourseViewSet(build_load_object_mixin(ag_models.Course),
 
     def remove_handgraders(self, course, usernames: list):
         users_to_remove = User.objects.filter(pk__in=[user['pk'] for user in usernames])
-        # users_to_remove = [
-        #     User.objects.get_or_create(username=username)[0]
-        #     for username in usernames]
-
         course.handgraders.remove(*users_to_remove)

@@ -133,7 +133,8 @@ class UserRolesForCourseTestCase(test_data.Client, test_data.Course,
         return {
             "is_admin": False,
             "is_staff": False,
-            "is_enrolled": False
+            "is_enrolled": False,
+            "is_handgrader": False
         }
 
     def test_admin_user_roles(self):
@@ -159,6 +160,14 @@ class UserRolesForCourseTestCase(test_data.Client, test_data.Course,
 
         self.do_get_object_test(
             self.client, self.enrolled, self.course_roles_url(self.course),
+            expected)
+
+    def test_handgrader_user_roles(self):
+        expected = self.expected_response_base()
+        expected['is_handgrader'] = True
+
+        self.do_get_object_test(
+            self.client, self.handgrader, self.course_roles_url(self.course),
             expected)
 
     def test_other_user_roles(self):

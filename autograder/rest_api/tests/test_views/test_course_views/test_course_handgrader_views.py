@@ -1,8 +1,5 @@
-import itertools
-
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
-from collections import OrderedDict
 
 from rest_framework import status
 
@@ -14,7 +11,7 @@ import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-class _HandgradersSetUp(test_data.Client, test_data.Superuser, test_data.Course):
+class _HandgradersSetUp(test_data.Client, test_data.Course):
     def setUp(self):
         super().setUp()
         self.url = reverse('course-handgraders',
@@ -112,4 +109,6 @@ class RemoveCourseHandgraderTestCase(_HandgradersSetUp, UnitTestBase):
 
             response = self.client.patch(self.url, self.request_body)
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-            #TODO: Check that none are removed
+
+            self.assertCountEqual(self.all_handgraders,
+                                  self.course.handgraders.all())
