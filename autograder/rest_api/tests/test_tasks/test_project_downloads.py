@@ -11,6 +11,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from django.core.urlresolvers import reverse
 
+from autograder.core.models import get_submissions_with_results_queryset
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -174,6 +175,14 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
         self.suite2_case = obj_build.make_ag_test_case(self.suite2)
         self.suite2_cmd = obj_build.make_full_ag_test_command(self.suite2_case)
 
+        self.student_suite1_bugs = ['suite1_bug{}'.format(i) for i in range(3)]
+        self.student_suite1 = obj_build.make_student_test_suite(
+            project=self.project, buggy_impl_names=self.student_suite1_bugs)
+
+        self.student_suite2_bugs = ['suite2_bug{}'.format(i) for i in range(5)]
+        self.student_suite2 = obj_build.make_student_test_suite(
+            project=self.project, buggy_impl_names=self.student_suite2_bugs)
+
         self.student_group1 = obj_build.make_group(project=self.project)
         self.group1_submission1_best = obj_build.build_finished_submission(
             submission_group=self.student_group1)
@@ -181,12 +190,28 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
                                                       submission=self.group1_submission1_best)
         obj_build.make_correct_ag_test_command_result(self.suite2_cmd,
                                                       submission=self.group1_submission1_best)
+        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+            student_test_suite=self.student_suite1,
+            submission=self.group1_submission1_best,
+            bugs_exposed=self.student_suite1_bugs)
+        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+            student_test_suite=self.student_suite2,
+            submission=self.group1_submission1_best,
+            bugs_exposed=self.student_suite2_bugs)
         self.group1_submission2 = obj_build.build_finished_submission(
             submission_group=self.student_group1)
         obj_build.make_correct_ag_test_command_result(self.suite1_cmd,
                                                       submission=self.group1_submission2)
         obj_build.make_incorrect_ag_test_command_result(self.suite2_cmd,
                                                         submission=self.group1_submission2)
+        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+            student_test_suite=self.student_suite1,
+            submission=self.group1_submission2,
+            bugs_exposed=[])
+        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+            student_test_suite=self.student_suite2,
+            submission=self.group1_submission2,
+            bugs_exposed=[])
 
         self.student_group2 = obj_build.make_group(num_members=max_group_size,
                                                    project=self.project)
@@ -196,6 +221,14 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
                                                         submission=self.group2_only_submission)
         obj_build.make_incorrect_ag_test_command_result(self.suite2_cmd,
                                                         submission=self.group2_only_submission)
+        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+            student_test_suite=self.student_suite1,
+            submission=self.group2_only_submission,
+            bugs_exposed=self.student_suite1_bugs[:-1])
+        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+            student_test_suite=self.student_suite2,
+            submission=self.group2_only_submission,
+            bugs_exposed=self.student_suite2_bugs[:-1])
 
         self.staff_group = obj_build.make_group(project=self.project,
                                                 members_role=ag_models.UserRole.staff)
@@ -205,6 +238,14 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
                                                       submission=self.staff_submission1)
         obj_build.make_correct_ag_test_command_result(self.suite2_cmd,
                                                       submission=self.staff_submission1)
+        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+            student_test_suite=self.student_suite1,
+            submission=self.staff_submission1,
+            bugs_exposed=self.student_suite1_bugs[:-1])
+        ag_models.StudentTestSuiteResult.objects.validate_and_create(
+            student_test_suite=self.student_suite2,
+            submission=self.staff_submission1,
+            bugs_exposed=self.student_suite2_bugs)
 
         self.no_submissions_group = obj_build.make_group(project=self.project)
 
@@ -297,8 +338,17 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             for case in suite.ag_test_cases.all():
                 expected_headers.append('{} - {}'.format(suite.name, case.name))
 
+        for suite in project.student_test_suites.all():
+            expected_headers += ['{} Total'.format(suite.name),
+                                 '{} Total Possible'.format(suite.name)]
+
         expected_result = []
         for submission in expected_submissions:
+            submission = get_submissions_with_results_queryset(
+                fdbk_category=ag_models.FeedbackCategory.max,
+                base_manager=ag_models.Submission.objects.filter(pk=submission.pk)
+            ).get()  # type: ag_models.Submission
+
             values = []
             user_padding_len = project.max_group_size - submission.submission_group.members.count()
             usernames = itertools.chain(sorted(submission.submission_group.member_names),
@@ -314,6 +364,10 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
                 for case_result in suite_fdbk.ag_test_case_results:
                     values.append(
                         str(case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points))
+
+            for suite_result in fdbk.student_test_suite_results:
+                suite_fdbk = suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+                values += [str(suite_fdbk.total_points), str(suite_fdbk.total_points_possible)]
 
             self.assertEqual(len(expected_headers), len(values))
             expected_result.append(dict(zip(expected_headers, values)))

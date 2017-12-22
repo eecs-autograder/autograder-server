@@ -108,7 +108,7 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
         permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def download_tasks(self, *args, **kwargs):
         project = self.get_object()
-        queryset = project.download_tasks.filter(creator=self.request.user)
+        queryset = project.download_tasks.all()
         serializer = ag_serializers.DownloadTaskSerializer(queryset, many=True)
         return response.Response(data=serializer.data)
 

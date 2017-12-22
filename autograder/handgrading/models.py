@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator
 from django.db import models
 from autograder.core.fields import EnumField
 from django.core import validators
@@ -27,7 +28,7 @@ class HandgradingRubric(AutograderModel):
 
     handgraders_can_leave_comments = models.BooleanField()
 
-    handgraders_can_apply_arbitrary_points = models.BooleanField()
+    handgraders_can_adjust_points = models.BooleanField()
 
     project = models.OneToOneField(Project, related_name='handgrading_rubric')
 
@@ -38,7 +39,7 @@ class HandgradingRubric(AutograderModel):
                            'max_points',
                            'show_grades_and_rubric_to_students',
                            'handgraders_can_leave_comments',
-                           'handgraders_can_apply_arbitrary_points',
+                           'handgraders_can_adjust_points',
 
                            'project',
                            'criteria',
@@ -48,7 +49,7 @@ class HandgradingRubric(AutograderModel):
                        'max_points',
                        'show_grades_and_rubric_to_students',
                        'handgraders_can_leave_comments',
-                       'handgraders_can_apply_arbitrary_points',)
+                       'handgraders_can_adjust_points',)
 
     SERIALIZE_RELATED = ('criteria',
                          'annotations',)
@@ -83,25 +84,34 @@ class Annotation(AutograderModel):
     """
     Additional field that can be applied to a submission. Can be line specific
     """
-    short_description = models.TextField(blank=True)
-
-    long_description = models.TextField(blank=True)
-
-    points = models.FloatField()
-
     handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='annotations')
 
-    SERIALIZABLE_FIELDS = ('pk',
-                           'last_modified',
+    short_description = models.TextField(blank=True)
+    long_description = models.TextField(blank=True)
 
-                           'short_description',
-                           'long_description',
-                           'points',
-                           'handgrading_rubric',)
+    deduction = models.FloatField(default=0, blank=True, validators=[MaxValueValidator(0)])
+    max_deduction = models.FloatField(default=None, blank=True, null=True,
+                                      validators=[MaxValueValidator(0)])
 
-    EDITABLE_FIELDS = ('short_description',
-                       'long_description',
-                       'points',)
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        'handgrading_rubric',
+
+        'short_description',
+        'long_description',
+
+        'deduction',
+        'max_deduction',
+
+        'last_modified',
+    )
+
+    EDITABLE_FIELDS = (
+        'short_description',
+        'long_description',
+        'deduction',
+        'max_deduction',
+    )
 
 
 class HandgradingResult(AutograderModel):
@@ -114,24 +124,37 @@ class HandgradingResult(AutograderModel):
 
     submission_group = models.OneToOneField(SubmissionGroup, related_name='handgrading_result')
 
-    SERIALIZABLE_FIELDS = ('pk',
-                           'last_modified',
+    finished_grading = models.BooleanField(default=False, blank=True)
+    points_adjustment = models.IntegerField(default=0, blank=True)
 
-                           'submission',
-                           'handgrading_rubric',
-                           'submission_group',
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        'last_modified',
 
-                           'applied_annotations',
-                           'arbitrary_points',
-                           'comments',
-                           'criterion_results',)
+        'submission',
+        'handgrading_rubric',
+        'submission_group',
 
-    SERIALIZE_RELATED = ('applied_annotations',
-                         'arbitrary_points',
-                         'comments',
-                         'criterion_results',
+        'applied_annotations',
+        'comments',
+        'criterion_results',
 
-                         'handgrading_rubric',)
+        'finished_grading',
+        'points_adjustment',
+    )
+
+    SERIALIZE_RELATED = (
+        'applied_annotations',
+        'comments',
+        'criterion_results',
+
+        'handgrading_rubric',
+    )
+
+    EDITABLE_FIELDS = (
+        'points_adjustment',
+        'finished_grading',
+    )
 
 
 class CriterionResult(AutograderModel):
@@ -215,36 +238,6 @@ class Comment(AutograderModel):
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
     EDITABLE_FIELDS = ('text',)
-
-
-class ArbitraryPoints(AutograderModel):
-    """
-    Any arbitrary points specified by staff or grader for submission
-    """
-    location = models.OneToOneField('Location', related_name='+')
-
-    text = models.TextField(blank=True)
-
-    points = models.FloatField()
-
-    handgrading_result = models.ForeignKey(HandgradingResult, related_name='arbitrary_points')
-
-    def clean(self):
-        if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
-            raise ValidationError('Filename is not part of submitted files')
-
-    SERIALIZABLE_FIELDS = ('pk',
-                           'last_modified',
-
-                           'location',
-                           'text',
-                           'points',
-                           'handgrading_result',)
-
-    TRANSPARENT_TO_ONE_FIELDS = ('location',)
-
-    EDITABLE_FIELDS = ('text',
-                       'points',)
 
 
 class Location(AutograderModel):

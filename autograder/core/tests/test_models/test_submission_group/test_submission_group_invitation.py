@@ -304,8 +304,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.project.guests_can_submit = True
         self.project.save()
 
-        self.invitation_creator.courses_is_enrolled_in.remove(
-            self.project.course)
+        self.invitation_creator.courses_is_enrolled_in.remove(self.project.course)
 
         for user in self.to_invite:
             user.courses_is_enrolled_in.remove(self.project.course)
@@ -315,6 +314,15 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             ag_models.SubmissionGroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
+                project=self.project)
+
+        self.assertTrue('invited_users' in cm.exception.message_dict)
+
+    def test_exception_invitees_includes_invitor(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+                invitation_creator=self.invitation_creator,
+                invited_users=[self.invitation_creator],
                 project=self.project)
 
         self.assertTrue('invited_users' in cm.exception.message_dict)

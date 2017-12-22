@@ -11,29 +11,29 @@ class HandgradingRubricTestCase(UnitTestBase):
     Test cases relating the Handgrading Rubric Model
     """
     def setUp(self):
-        self.default_rubric_inputs = {
+        self.rubric_kwargs = {
             "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
             "max_points": 0,
             "show_grades_and_rubric_to_students": False,
             "handgraders_can_leave_comments": True,
-            "handgraders_can_apply_arbitrary_points": True,
+            "handgraders_can_adjust_points": True,
             "project": obj_build.build_project()
         }
 
     def test_default_initialization(self):
         rubric_obj = handgrading_models.HandgradingRubric.objects.validate_and_create(
-            **self.default_rubric_inputs)
+            **self.rubric_kwargs)
 
-        self.assertEqual(rubric_obj.points_style, self.default_rubric_inputs["points_style"])
-        self.assertEqual(rubric_obj.max_points, self.default_rubric_inputs["max_points"])
+        self.assertEqual(rubric_obj.points_style, self.rubric_kwargs["points_style"])
+        self.assertEqual(rubric_obj.max_points, self.rubric_kwargs["max_points"])
         self.assertEqual(rubric_obj.show_grades_and_rubric_to_students,
-                         self.default_rubric_inputs["show_grades_and_rubric_to_students"])
+                         self.rubric_kwargs["show_grades_and_rubric_to_students"])
         self.assertEqual(rubric_obj.handgraders_can_leave_comments,
-                         self.default_rubric_inputs["handgraders_can_leave_comments"])
-        self.assertEqual(rubric_obj.handgraders_can_apply_arbitrary_points,
-                         self.default_rubric_inputs["handgraders_can_apply_arbitrary_points"])
+                         self.rubric_kwargs["handgraders_can_leave_comments"])
+        self.assertEqual(rubric_obj.handgraders_can_adjust_points,
+                         self.rubric_kwargs["handgraders_can_adjust_points"])
         self.assertEqual(rubric_obj.project,
-                         self.default_rubric_inputs["project"])
+                         self.rubric_kwargs["project"])
 
     def test_create_average_case(self):
         rubric_inputs = {
@@ -41,7 +41,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             "max_points": 25,
             "show_grades_and_rubric_to_students": True,
             "handgraders_can_leave_comments": False,
-            "handgraders_can_apply_arbitrary_points": False,
+            "handgraders_can_adjust_points": False,
             "project": obj_build.build_project()
         }
 
@@ -53,13 +53,13 @@ class HandgradingRubricTestCase(UnitTestBase):
         self.assertEqual(rubric_obj.max_points, 25)
         self.assertEqual(rubric_obj.show_grades_and_rubric_to_students, True)
         self.assertEqual(rubric_obj.handgraders_can_leave_comments, False)
-        self.assertEqual(rubric_obj.handgraders_can_apply_arbitrary_points, False)
+        self.assertEqual(rubric_obj.handgraders_can_adjust_points, False)
 
     def test_reject_invalid_point_style_handgrading_rubric(self):
         """
         Assert that a handgrading object cannot be created with random string as point style
         """
-        rubric_inputs = self.default_rubric_inputs
+        rubric_inputs = self.rubric_kwargs
         rubric_inputs["points_style"] = "INVALID_POINTS_STYLE"
 
         with self.assertRaises(ValidationError):
@@ -70,7 +70,7 @@ class HandgradingRubricTestCase(UnitTestBase):
         Assert that a handgrading object cannot be created with invalid max points input
         (ex. negative numbers, floats, strings)
         """
-        inputs_negative = self.default_rubric_inputs
+        inputs_negative = self.rubric_kwargs
         inputs_negative["max_points"] = -1
 
         with self.assertRaises(ValidationError):
@@ -80,7 +80,7 @@ class HandgradingRubricTestCase(UnitTestBase):
         """
         Assert that a handgrading object can be created with 0 as max points
         """
-        rubric_inputs = self.default_rubric_inputs
+        rubric_inputs = self.rubric_kwargs
         rubric_inputs["max_points"] = 0
 
         rubric_obj = handgrading_models.HandgradingRubric.objects.validate_and_create(
@@ -97,7 +97,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             'max_points',
             'show_grades_and_rubric_to_students',
             'handgraders_can_leave_comments',
-            'handgraders_can_apply_arbitrary_points',
+            'handgraders_can_adjust_points',
 
             'project',
             'criteria',
@@ -105,8 +105,7 @@ class HandgradingRubricTestCase(UnitTestBase):
         ]
 
         handgrading_obj = handgrading_models.HandgradingRubric.objects.validate_and_create(
-            **self.default_rubric_inputs
-        )
+            **self.rubric_kwargs)
 
         handgrading_dict = handgrading_obj.to_dict()
         self.assertCountEqual(expected_fields, handgrading_dict.keys())
@@ -125,34 +124,29 @@ class HandgradingRubricTestCase(UnitTestBase):
             'max_points',
             'show_grades_and_rubric_to_students',
             'handgraders_can_leave_comments',
-            'handgraders_can_apply_arbitrary_points',
+            'handgraders_can_adjust_points',
 
             'project',
             'criteria',
             'annotations',
         ]
 
-        handgrading_obj = handgrading_models.HandgradingRubric.objects.validate_and_create(
-            **self.default_rubric_inputs
-        )
+        rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+            **self.rubric_kwargs)
 
         criterion = handgrading_models.Criterion.objects.validate_and_create(
             short_description="sample short description",
             long_description="sample loooooong description",
             points=0,
-            handgrading_rubric=handgrading_obj
+            handgrading_rubric=rubric
         )
 
         annotation = handgrading_models.Annotation.objects.validate_and_create(
-            short_description="second short description",
-            long_description="second loooooong description",
-            points=0,
-            handgrading_rubric=handgrading_obj
-        )
+            handgrading_rubric=rubric)
 
         annotation_dict = annotation.to_dict()
         criterion_dict = criterion.to_dict()
-        handgrading_dict = handgrading_obj.to_dict()
+        handgrading_dict = rubric.to_dict()
 
         self.assertCountEqual(expected_fields, handgrading_dict.keys())
 
