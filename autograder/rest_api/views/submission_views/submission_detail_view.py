@@ -33,8 +33,7 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
     serializer_class = ag_serializers.SubmissionSerializer
     permission_classes = ((P(is_admin) | P(ag_permissions.IsReadOnly)), can_view_project, is_staff_or_group_member_or_handgrader)
 
-    @decorators.detail_route(
-        permission_classes=(is_admin, is_staff_or_group_member_or_handgrader))
+    @decorators.detail_route()
     def file(self, request, *args, **kwargs):
         submission = self.get_object()
 
