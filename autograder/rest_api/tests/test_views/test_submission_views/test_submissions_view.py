@@ -52,6 +52,15 @@ class ListGroupSubmissionsTestCase(test_data.Client,
                 self.client, self.enrolled, self.submissions_url(group),
                 expected_data)
 
+    def test_handgrader_list_submissions(self):
+        for project in self.visible_projects:
+            group = self.enrolled_group(project)
+            expected_data = ag_serializers.SubmissionSerializer(
+                self.build_submissions(group), many=True).data
+            self.do_list_objects_test(
+                self.client, self.handgrader, self.submissions_url(group),
+                expected_data)
+
     def test_non_enrolled_list_submissions(self):
         group = self.non_enrolled_group(self.visible_public_project)
         expected_data = ag_serializers.SubmissionSerializer(
@@ -74,6 +83,13 @@ class ListGroupSubmissionsTestCase(test_data.Client,
             self.build_submissions(group)
             self.do_permission_denied_get_test(
                 self.client, self.enrolled, self.submissions_url(group))
+
+    def test_handgrader_list_submissions_project_hidden_permission_denied(self):
+        for project in self.hidden_projects:
+            group = self.enrolled_group(project)
+            self.build_submissions(group)
+            self.do_permission_denied_get_test(
+                self.client, self.handgrader, self.submissions_url(group))
 
     def test_non_enrolled_list_submissions_project_hidden_permission_denied(self):
         group = self.non_enrolled_group(self.hidden_public_project)
@@ -156,8 +172,13 @@ class CreateSubmissionTestCase(test_data.Client,
     def test_non_group_member_submit_permission_denied(self):
         group = self.enrolled_group(self.visible_public_project)
         other_user = self.clone_user(self.enrolled)
-        for user in self.admin, self.staff, other_user, self.nobody:
+        for user in self.admin, self.staff, other_user, self.nobody, self.handgrader:
             self.do_permission_denied_submit_test(group, user)
+
+    def test_handgrader_submit_hidden_project_permission_denied(self):
+        for project in self.hidden_projects:
+            group = self.enrolled_group(project)
+            self.do_permission_denied_submit_test(group, self.handgrader)
 
     def test_enrolled_submit_hidden_project_permission_denied(self):
         for project in self.hidden_projects:

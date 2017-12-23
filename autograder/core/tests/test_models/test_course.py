@@ -70,7 +70,7 @@ class CourseFilesystemTestCase(UnitTestBase):
         self.assertTrue(os.path.isdir(expected_course_root_dir))
 
 
-class CourseAdminStaffAndEnrolledStudentTestCase(UnitTestBase):
+class CourseAdminStaffEnrolledStudentAndHandgraderTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -103,3 +103,9 @@ class CourseAdminStaffAndEnrolledStudentTestCase(UnitTestBase):
 
         self.course.enrolled_students.add(self.user)
         self.assertTrue(self.course.is_enrolled_student(self.user))
+
+    def test_is_handgrader(self):
+        self.assertFalse(self.course.is_handgrader(self.user))
+
+        self.course.handgraders.add(self.user)
+        self.assertTrue(self.course.is_handgrader(self.user))
