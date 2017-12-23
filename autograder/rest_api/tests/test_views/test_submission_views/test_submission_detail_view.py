@@ -51,6 +51,14 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
                     submission.to_dict())
                 self.do_get_files_test_case(submission, user)
 
+    def test_handgrader_view_submission(self):
+        for project in self.visible_projects:
+            submission = self.enrolled_submission(project)
+            self.do_get_object_test(
+                self.client, self.handgrader, submission_url(submission),
+                submission.to_dict())
+            self.do_get_files_test_case(submission, self.handgrader)
+
     def test_non_enrolled_view_submission(self):
         submission = self.enrolled_submission(self.visible_public_project)
         for user in submission.submission_group.members.all():
@@ -167,6 +175,18 @@ class UpdateSubmissionTestCase(test_data.Client,
                 submission_url(submission),
                 {'count_towards_daily_limit': False})
 
+    def test_handgrader_edit_submission_permission_denied(self):
+        submissions = (
+            self.staff_submission(self.visible_public_project),
+            self.enrolled_submission(self.visible_public_project),
+            self.non_enrolled_submission(self.visible_public_project))
+        for submission in submissions:
+            self.do_patch_object_permission_denied_test(
+                submission, self.client,
+                self.handgrader,
+                submission_url(submission),
+                {'count_towards_daily_limit': False})
+
 
 class RemoveFromQueueTestCase(test_data.Client,
                               test_data.Project,
@@ -196,6 +216,13 @@ class RemoveFromQueueTestCase(test_data.Client,
         submission = self.non_enrolled_submission(self.hidden_public_project)
         self.do_permission_denied_remove_from_queue_test(
             submission, submission.submission_group.members.first())
+
+    def test_handgrader_remove_from_queue_project_hidden_permission_denied(self):
+        non_enrolled_submission = self.non_enrolled_submission(self.hidden_public_project)
+        enrolled_submission = self.enrolled_submission(self.visible_projects[0])
+
+        for submission in non_enrolled_submission, enrolled_submission:
+            self.do_permission_denied_remove_from_queue_test(submission, self.handgrader)
 
     def test_non_enrolled_remove_from_queue_project_private_permission_denied(self):
         submission = self.non_enrolled_submission(self.visible_public_project)
@@ -396,6 +423,18 @@ class SubmissionFeedbackTestCase(UnitTestBase):
     def test_student_get_normal_fdbk_on_non_owned_submission_permission_denied(self):
         self.client.force_authenticate(self.student2)
         self.do_get_fdbk_permission_denied_test(self.client, self.student_group1_normal_submission,
+                                                ag_models.FeedbackCategory.normal)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group1_normal_submission,
+            self.student1_normal_res, ag_models.FeedbackCategory.normal)
+
+    def test_handgrader_get_normal_fdbk_permission_denied(self):
+        handgrader = obj_build.create_dummy_user()
+        self.course.handgraders.add(handgrader)
+        self.client.force_authenticate(handgrader)
+        self.do_get_fdbk_permission_denied_test(self.client,
+                                                self.student_group1_normal_submission,
                                                 ag_models.FeedbackCategory.normal)
 
         self.do_get_output_and_diff_permission_denied_test(
