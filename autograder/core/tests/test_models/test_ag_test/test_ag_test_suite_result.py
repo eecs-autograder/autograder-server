@@ -50,6 +50,18 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         self.cmd_result2 = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd2, self.ag_test_case_result2)
 
+    def test_ag_test_case_result_ordering(self):
+        for i in range(2):
+            self.ag_test_suite.set_agtestcase_order([self.ag_test_case2.pk, self.ag_test_case1.pk])
+            fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+            self.assertSequenceEqual([self.ag_test_case_result2, self.ag_test_case_result1],
+                                     fdbk.ag_test_case_results)
+
+            self.ag_test_suite.set_agtestcase_order([self.ag_test_case1.pk, self.ag_test_case2.pk])
+            fdbk = self.ag_test_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+            self.assertSequenceEqual([self.ag_test_case_result1, self.ag_test_case_result2],
+                                     fdbk.ag_test_case_results)
+
     def test_output_filenames(self):
         expected_setup_stdout_filename = os.path.join(
             core_ut.get_result_output_dir(self.ag_test_suite_result.submission),

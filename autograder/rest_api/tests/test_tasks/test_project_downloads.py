@@ -11,7 +11,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from django.core.urlresolvers import reverse
 
-from autograder.core.models import get_submissions_with_results_queryset
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -324,6 +323,11 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
 
     def do_download_scores_test(self, url, project: ag_models.Project,
                                 expected_submissions: Iterator[ag_models.Submission]):
+        # Intentionally reversing the ag and student test suite ordering as an
+        # extra check that we get the ag and student test suite results in the right order.
+        project.set_agtestsuite_order(project.get_agtestsuite_order()[::-1])
+        project.set_studenttestsuite_order(project.get_studenttestsuite_order()[::-1])
+
         self.client.force_authenticate(self.admin)
 
         response = self.client.get(url)
@@ -344,11 +348,6 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
 
         expected_result = []
         for submission in expected_submissions:
-            submission = get_submissions_with_results_queryset(
-                fdbk_category=ag_models.FeedbackCategory.max,
-                base_manager=ag_models.Submission.objects.filter(pk=submission.pk)
-            ).get()  # type: ag_models.Submission
-
             values = []
             user_padding_len = project.max_group_size - submission.submission_group.members.count()
             usernames = itertools.chain(sorted(submission.submission_group.member_names),

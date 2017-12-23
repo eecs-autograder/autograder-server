@@ -427,7 +427,7 @@ def get_ag_test_suite_results_queryset(fdbk_category: FeedbackCategory):
     prefetch_case_results = Prefetch('ag_test_case_results', case_result_queryset)
     return AGTestSuiteResult.objects.select_related(
         _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_suite')
-    ).prefetch_related(prefetch_case_results).order_by('ag_test_suite___order')
+    ).prefetch_related(prefetch_case_results)
 
 
 def get_ag_test_case_results_queryset(fdbk_category: FeedbackCategory):
@@ -435,19 +435,19 @@ def get_ag_test_case_results_queryset(fdbk_category: FeedbackCategory):
     prefetch_cmd_results = Prefetch('ag_test_command_results', cmd_result_queryset)
     return AGTestCaseResult.objects.select_related(
         _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_case')
-    ).prefetch_related(prefetch_cmd_results).order_by('ag_test_case___order')
+    ).prefetch_related(prefetch_cmd_results)
 
 
 def get_ag_test_cmd_results_queryset(fdbk_category: FeedbackCategory):
     return AGTestCommandResult.objects.select_related(
         _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_command')
-    ).order_by('ag_test_command___order')
+    )
 
 
 def get_student_test_suite_results_queryset(fdbk_category: FeedbackCategory):
     return StudentTestSuiteResult.objects.select_related(
         _get_fdbk_category_join_field_tmpl(fdbk_category).format('student_test_suite')
-    ).order_by('student_test_suite___order')
+    )
 
 
 def _get_fdbk_category_join_field_tmpl(fdbk_category: FeedbackCategory):

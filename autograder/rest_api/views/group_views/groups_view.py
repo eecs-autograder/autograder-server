@@ -20,11 +20,12 @@ from autograder.rest_api.views.ag_model_views import (
 
 is_admin = ag_permissions.is_admin(lambda project: project.course)
 is_staff = ag_permissions.is_staff(lambda project: project.course)
+is_handgrader = ag_permissions.is_handgrader(lambda project: project.course)
 
 
 class GroupsViewSet(ListCreateNestedModelView):
     serializer_class = ag_serializers.SubmissionGroupSerializer
-    permission_classes = (P(is_admin) | (P(is_staff) & ag_permissions.IsReadOnly),)
+    permission_classes = (P(is_admin) | ((P(is_staff) | P(is_handgrader)) & ag_permissions.IsReadOnly),)
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
