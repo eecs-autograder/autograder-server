@@ -43,6 +43,7 @@ class CourseViewSet(build_load_object_mixin(ag_models.Course),
             'is_admin': course.is_administrator(request.user),
             'is_staff': course.is_course_staff(request.user),
             'is_enrolled': course.is_enrolled_student(request.user),
+            'is_handgrader': course.is_handgrader(request.user)
         })
 
     @transaction.atomic()

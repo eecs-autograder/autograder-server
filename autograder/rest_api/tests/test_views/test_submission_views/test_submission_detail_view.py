@@ -217,12 +217,9 @@ class RemoveFromQueueTestCase(test_data.Client,
         self.do_permission_denied_remove_from_queue_test(
             submission, submission.submission_group.members.first())
 
-    def test_handgrader_remove_from_queue_project_hidden_permission_denied(self):
-        non_enrolled_submission = self.non_enrolled_submission(self.hidden_public_project)
-        enrolled_submission = self.enrolled_submission(self.visible_projects[0])
-
-        for submission in non_enrolled_submission, enrolled_submission:
-            self.do_permission_denied_remove_from_queue_test(submission, self.handgrader)
+    def test_handgrader_remove_from_queue_permission_denied(self):
+        self.do_permission_denied_remove_from_queue_test(
+            self.enrolled_submission(self.visible_projects[0]), self.handgrader)
 
     def test_non_enrolled_remove_from_queue_project_private_permission_denied(self):
         submission = self.non_enrolled_submission(self.visible_public_project)
