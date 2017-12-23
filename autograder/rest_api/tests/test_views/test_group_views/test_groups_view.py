@@ -1,4 +1,7 @@
+from typing import List
+
 from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -11,6 +14,37 @@ import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 class _GroupsSetUp(test_data.Client, test_data.Project):
     pass
+
+
+class SortedListGroupsTestCase(test_data.Client, UnitTestBase):
+    def test_groups_sorted_by_least_alphabetical_username(self):
+        self.maxDiff = None
+
+        project = obj_build.make_project(max_group_size=3, guests_can_submit=True)
+        [admin] = obj_build.make_admin_users(project.course, 1)
+
+        group1_user1 = User.objects.create(username='fred')
+        group1 = ag_models.SubmissionGroup.objects.validate_and_create(
+            members=[group1_user1], project=project)
+
+        group2_user1 = User.objects.create(username='steve')
+        group2_user2 = User.objects.create(username='anna')
+        group2 = ag_models.SubmissionGroup.objects.validate_and_create(
+            members=[group2_user1, group2_user2], project=project)
+
+        group3_user1 = User.objects.create(username='georgina')
+        group3_user2 = User.objects.create(username='joe')
+        group3_user3 = User.objects.create(username='belinda')
+        group3 = ag_models.SubmissionGroup.objects.validate_and_create(
+            members=[group3_user1, group3_user2, group3_user3], project=project)
+
+        expected = [group2.to_dict(), group3.to_dict(), group1.to_dict()]  # type: List[dict]
+        for group_dict in expected:
+            group_dict['member_names'] = list(sorted(group_dict['member_names']))
+
+        self.client.force_authenticate(admin)
+        response = self.client.get(reverse('submission_groups', kwargs={'project_pk': project.pk}))
+        self.assertEqual(expected, response.data)
 
 
 class ListGroupsTestCase(_GroupsSetUp,
