@@ -52,14 +52,13 @@ class ListGroupSubmissionsTestCase(test_data.Client,
                 self.client, self.enrolled, self.submissions_url(group),
                 expected_data)
 
-    def test_handgrader_list_submissions(self):
+    def test_handgrader_list_submissions_permission_denied(self):
         for project in self.visible_projects:
             group = self.enrolled_group(project)
             expected_data = ag_serializers.SubmissionSerializer(
                 self.build_submissions(group), many=True).data
-            self.do_list_objects_test(
-                self.client, self.handgrader, self.submissions_url(group),
-                expected_data)
+            self.do_permission_denied_get_test(
+                self.client, self.handgrader, self.submissions_url(group), expected_data)
 
     def test_non_enrolled_list_submissions(self):
         group = self.non_enrolled_group(self.visible_public_project)

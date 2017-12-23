@@ -48,7 +48,7 @@ class AddCourseHandgradersTestCase(_HandgradersSetUp, UnitTestBase):
     def test_admin_add_handgraders(self):
         self.client.force_authenticate(self.admin)
         new_handgrader_names = (
-            ['name1', 'name2'] +[user.username for user in obj_build.create_dummy_users(3)])
+            ['name1', 'name2'] + [user.username for user in obj_build.create_dummy_users(3)])
 
         self.assertEqual(len(self.current_handgraders), self.course.handgraders.count())
 
