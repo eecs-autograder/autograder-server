@@ -13,7 +13,7 @@ from autograder.rest_api.views.ag_model_views import (
 )
 
 
-class HandgradingResultRetrieveCreateView(RetrieveCreateNestedModelView):
+class HandgradingResultView(RetrieveCreateNestedModelView):
     serializer_class = handgrading_serializers.HandgradingResultSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
@@ -26,8 +26,21 @@ class HandgradingResultRetrieveCreateView(RetrieveCreateNestedModelView):
     one_to_one_field_name = 'submission_group'
     reverse_one_to_one_field_name = 'handgrading_result'
 
+    #
+    #     try:
+    #         filename = request.query_params['filename']
+    #         return FileResponse(submission.get_file(filename))
+    #     except KeyError:
+    #         return response.Response(
+    #             'Missing required query parameter "filename"',
+    #             status=status.HTTP_400_BAD_REQUEST)
+    #     except exceptions.ObjectDoesNotExist:
+    #         return response.Response('File "{}" not found'.format(filename),
+    #                                  status=status.HTTP_404_NOT_FOUND)
+
+
     @transaction.atomic()
-    def retrieve(self, *args, **kwargs):
+    def create(self, *args, **kwargs):
         group = self.get_object()
         try:
             handgrading_rubric = group.project.handgrading_rubric
@@ -55,19 +68,3 @@ class HandgradingResultRetrieveCreateView(RetrieveCreateNestedModelView):
 
         serializer = self.get_serializer(handgrading_result)
         return response.Response(serializer.data)
-
-
-class HandgradingResultDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
-    serializer_class = handgrading_serializers.HandgradingResultSerializer
-    permission_classes = [
-        ag_permissions.is_admin_or_read_only_staff(
-            lambda handgrading_result: handgrading_result.handgrading_rubric.project.course)
-    ]
-
-    model_manager = handgrading_models.HandgradingResult.objects.select_related(
-        'handgrading_rubric__project__course'
-    ).prefetch_related(
-        'applied_annotations',
-        'comments',
-        'criterion_results',
-    )
