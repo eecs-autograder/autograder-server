@@ -83,13 +83,6 @@ class ListGroupSubmissionsTestCase(test_data.Client,
             self.do_permission_denied_get_test(
                 self.client, self.enrolled, self.submissions_url(group))
 
-    def test_handgrader_list_submissions_project_hidden_permission_denied(self):
-        for project in self.hidden_projects:
-            group = self.enrolled_group(project)
-            self.build_submissions(group)
-            self.do_permission_denied_get_test(
-                self.client, self.handgrader, self.submissions_url(group))
-
     def test_non_enrolled_list_submissions_project_hidden_permission_denied(self):
         group = self.non_enrolled_group(self.hidden_public_project)
         self.build_submissions(group)
@@ -174,10 +167,16 @@ class CreateSubmissionTestCase(test_data.Client,
         for user in self.admin, self.staff, other_user, self.nobody, self.handgrader:
             self.do_permission_denied_submit_test(group, user)
 
-    def test_handgrader_submit_hidden_project_permission_denied(self):
-        for project in self.hidden_projects:
+    def test_handgrader_submit_permission_denied(self):
+        for project in self.all_projects:
             group = self.enrolled_group(project)
             self.do_permission_denied_submit_test(group, self.handgrader)
+
+    def test_handgraders_that_are_also_students_submit(self):
+        for project in self.visible_projects:
+            group = self.enrolled_group(project)
+            project.course.handgraders.add(group.members.last())
+            self.do_normal_submit_test(group, group.members.last())
 
     def test_enrolled_submit_hidden_project_permission_denied(self):
         for project in self.hidden_projects:
