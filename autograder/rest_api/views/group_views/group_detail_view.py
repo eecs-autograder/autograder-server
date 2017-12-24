@@ -25,7 +25,6 @@ import autograder.rest_api.permissions as ag_permissions
 
 
 is_admin = ag_permissions.is_admin(lambda group: group.project.course)
-is_handgrader = ag_permissions.is_handgrader(lambda group: group.project.course)
 is_staff_or_member = ag_permissions.is_staff_or_group_member()
 can_view_project = ag_permissions.can_view_project(lambda group: group.project)
 group_permissions = (P(is_admin) |
@@ -37,7 +36,6 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
         project = group.project
         course = group.project.course
         is_staff = course.is_course_staff(request.user)
-        is_handgrader = course.is_handgrader(request.user)
 
         # Staff and higher can always view their own ultimate submission
         if is_staff and group.members.filter(pk=request.user.pk).exists():
@@ -51,7 +49,7 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
             return False
 
         # If closing time has passed, staff can view anyone's ultimate
-        if is_staff or is_handgrader:
+        if is_staff:
             return True
 
         return not project.hide_ultimate_submission_fdbk
@@ -82,7 +80,7 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
         return super().update(request, *args, **kwargs)
 
     @decorators.detail_route(
-        permission_classes=(P(is_handgrader) | group_permissions, _UltimateSubmissionPermissions,))
+        permission_classes=(group_permissions, _UltimateSubmissionPermissions,))
     def ultimate_submission(self, request, *args, **kwargs):
         """
         Permissions details:

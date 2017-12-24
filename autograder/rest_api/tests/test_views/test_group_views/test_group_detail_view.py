@@ -222,12 +222,12 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             self.do_get_ultimate_submission_test(
                 self.all_projects,
                 [self.admin_group, self.staff_group, self.enrolled_group],
-                [self.admin, self.staff, self.handgrader],
+                [self.admin, self.staff],
                 closing_time=closing_time)
 
             self.do_get_ultimate_submission_test(
                 [self.visible_public_project, self.hidden_public_project],
-                [self.non_enrolled_group], [self.admin, self.staff, self.handgrader],
+                [self.non_enrolled_group], [self.admin, self.staff],
                 closing_time=closing_time)
 
     def test_admin_or_staff_get_own_ultimate_where_student_cant(self):
@@ -252,6 +252,12 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             self.do_get_ultimate_submission_test(
                 [self.visible_public_project], [self.non_enrolled_group],
                 [self.nobody], closing_time=closing_time)
+
+    def test_handgrader_get_ultimate_permission_denied(self):
+        group = self.enrolled_group(self.project)
+        obj_build.build_finished_submission(submission_group=group)
+        self.do_permission_denied_get_test(
+            self.client, self.handgrader, self.ultimate_submission_url(group))
 
     def test_non_member_get_ultimate_permission_denied(self):
         self.visible_public_project.validate_and_update(
