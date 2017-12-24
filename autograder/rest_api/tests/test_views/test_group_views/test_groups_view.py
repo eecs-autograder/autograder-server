@@ -37,9 +37,8 @@ class ListGroupsTestCase(_GroupsSetUp,
 
     def test_handgrader_list_groups(self):
         for project in self.all_projects:
-            self.do_list_objects_test(
-                self.client, self.handgrader, self.get_groups_url(project),
-                self.build_groups(project))
+            self.do_list_objects_test(self.client, self.handgrader, self.get_groups_url(project),
+                                      self.build_groups(project))
 
     def test_other_list_groups(self):
         for project in self.all_projects:
@@ -93,6 +92,12 @@ class CreateGroupTestCase(_GroupsSetUp,
         self.do_invalid_create_object_test(
             self.project.submission_groups, self.client, self.admin, self.url,
             args)
+
+    def test_handgrader_create_group_permission_denied(self):
+        for project in self.all_projects:
+            self.do_permission_denied_create_test(project.submission_groups, self.client,
+                                                  self.handgrading,
+                                                  self.get_groups_url(project), {})
 
     def test_other_create_group_permission_denied(self):
         args = {'member_names': self.get_legal_member_names()}
@@ -171,15 +176,21 @@ class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
         self.assertCountEqual([self.staff.username],
                               response.data['member_names'])
 
+    def test_handgrader_create_solo_group_permission_denied(self):
+        for project in self.all_projects:
+            self.do_permission_denied_create_test(project.submission_groups, self.client,
+                                                  self.handgrading,
+                                                  self.get_solo_group_url(project), {})
+
     def test_student_create_solo_group_project_hidden_permission_denied(self):
-        for user in self.enrolled, self.nobody, self.handgrader:
+        for user in self.enrolled, self.nobody:
             self.do_permission_denied_create_test(
                 self.hidden_public_project.submission_groups,
                 self.client, user,
                 self.get_solo_group_url(self.hidden_public_project), {})
 
     def test_non_enrolled_create_solo_group_project_private_permission_denied(self):
-        for user in self.nobody, self.handgrader:
+        for user in self.nobody:
             self.do_permission_denied_create_test(
                 self.visible_private_project.submission_groups,
                 self.client, user,
