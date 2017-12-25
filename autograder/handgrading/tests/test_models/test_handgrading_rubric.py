@@ -34,7 +34,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             "project": self.project
         }
 
-        rubric_= handgrading_models.HandgradingRubric.objects.validate_and_create(
+        rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
             **rubric_kwargs)
 
         for field, value in rubric_kwargs.items():
@@ -44,11 +44,12 @@ class HandgradingRubricTestCase(UnitTestBase):
         """
         Assert that a handgrading object cannot be created with random string as point style
         """
-        rubric_inputs = self.rubric_kwargs
-        rubric_inputs["points_style"] = "INVALID_POINTS_STYLE"
+        with self.assertRaises(ValidationError) as cm:
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
+                project=self.project,
+                points_style='not_a_points_style')
 
-        with self.assertRaises(ValidationError):
-            handgrading_models.HandgradingRubric.objects.validate_and_create(project=self.project)
+        self.assertIn('points_style', cm.exception.message_dict)
 
     def test_reject_invalid_max_points_handgrading_rubric(self):
         """

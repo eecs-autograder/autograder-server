@@ -58,13 +58,12 @@ class Criterion(AutograderModel):
     """
     Rubric item with fixed points that is not line specific
     """
-    short_description = models.TextField(blank=True)
+    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='criteria')
 
+    short_description = models.TextField(blank=True)
     long_description = models.TextField(blank=True)
 
-    points = models.FloatField()
-
-    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='criteria')
+    points = models.FloatField(default=0, blank=True)
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',

@@ -73,10 +73,31 @@ class RetrieveHandgradingResultTestCase(_SetUp):
             self.client.force_authenticate(user)
 
             for file_ in self.submitted_files:
-                response = self.client.get(self.get_file_url(file_))
+                response = self.client.get(self.get_file_url(file_.name))
                 self.assertEqual(status.HTTP_200_OK, response.status_code)
                 self.assertEqual(file_.read(),
                                  b''.join((chunk for chunk in response.streaming_content)))
+
+    def test_get_file_not_found(self):
+        self.client.force_authenticate(self.staff)
+        response = self.client.get(self.get_file_url('not_a_file'))
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+    def test_handgrading_result_does_not_exist(self):
+        self.handgrading_result.delete()
+
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+    def test_handgrading_rubric_does_not_exist(self):
+        self.handgrading_rubric.delete()
+
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
     def test_student_get_handgrading_result_scores_released(self):
         self.handgrading_rubric.validate_and_update(show_grades_and_rubric_to_students=True)
@@ -101,12 +122,31 @@ class RetrieveHandgradingResultTestCase(_SetUp):
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
-    def get_file_url(self, file_):
-        return self.url + '?filename={}'.format(file_.name)
+    def test_student_not_in_group_get_handgrading_result_permission_denied(self):
+        self.handgrading_rubric.validate_and_update(show_grades_and_rubric_to_students=True)
+        self.project.validate_and_update(visible_to_students=True)
+
+        [other_student] = obj_build.make_enrolled_users(self.course, 1)
+        self.client.force_authenticate(other_student)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def get_file_url(self, filename):
+        return self.url + '?filename={}'.format(filename)
 
 
 class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
     """/api/submission_groups/<group_pk>/handgrading_result/"""
+
+    def setUp(self):
+        super().setUp()
+
+        self.criteria = [
+            handgrading_models.Criterion.objects.validate_and_create(
+                handgrading_rubric=self.handgrading_rubric)
+            for i in range(3)
+        ]
 
     def test_admin_or_grader_post_creates_if_does_not_exist_and_gets_if_does_exist(self):
         for user in self.admin, self.handgrader:
@@ -118,20 +158,42 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
 
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
-            self.group.refresh_from_db()
+            self.group = ag_models.SubmissionGroup.objects.get(pk=self.group.pk)
             handgrading_result = self.group.handgrading_result
             self.assertEqual(handgrading_result.to_dict(), response.data)
 
-            response = self.client.post(self.url())
+            response = self.client.post(self.url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertEqual(handgrading_result.to_dict(), response.data)
 
+            handgrading_result.refresh_from_db()
+            self.assertEqual(len(self.criteria), handgrading_result.criterion_results.count())
+            for criterion_result in handgrading_result.criterion_results.all():
+                self.assertIn(criterion_result.criterion, self.criteria)
+
             handgrading_result.delete()
+            self.group = ag_models.SubmissionGroup.objects.get(pk=self.group.pk)
+
+    def test_no_handgrading_rubric(self):
+        self.handgrading_rubric.delete()
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.url, {})
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+        self.assertEqual(0, handgrading_models.HandgradingResult.objects.count())
+
+    def test_group_has_no_submissions(self):
+        self.submission.delete()
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.url, {})
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+        self.assertEqual(0, handgrading_models.HandgradingResult.objects.count())
 
     def test_non_admin_create_permission_denied(self):
         self.do_permission_denied_create_test(
             handgrading_models.HandgradingResult.objects,
-            self.client, self.enrolled, self.url, {})
+            self.client, self.student, self.url, {})
 
 
 class UpdateHandgradingResultPointsAdjustmentTestCase(test_impls.UpdateObjectTest, _SetUp):
@@ -144,33 +206,33 @@ class UpdateHandgradingResultPointsAdjustmentTestCase(test_impls.UpdateObjectTes
             handgrading_rubric=self.handgrading_rubric
         )  # type: handgrading_models.HandgradingResult
 
-        self.assertFalse(self.handgrading_result.is_finished)
+        self.assertFalse(self.handgrading_result.finished_grading)
         self.assertEqual(0, self.handgrading_result.points_adjustment)
 
     def test_admin_always_can_update(self):
-        request_data = {'is_finished': True, 'points_adjustment': -3}
+        request_data = {'finished_grading': True, 'points_adjustment': -3}
         self.do_patch_object_test(
             self.handgrading_result, self.client, self.admin, self.url, request_data)
 
-    def test_handgrader_always_update_is_finished(self):
-        request_data = {'is_finished': True}
+    def test_handgrader_always_update_finished_grading(self):
+        request_data = {'finished_grading': True}
         self.do_patch_object_test(
             self.handgrading_result, self.client, self.handgrader, self.url, request_data)
 
     def test_handgrader_update_points_adjustment_allowed(self):
-        self.handgrading_rubric.validate_and_update(graders_can_adjust_points=True)
+        self.handgrading_rubric.validate_and_update(handgraders_can_adjust_points=True)
         request_data = {'points_adjustment': -3}
         self.do_patch_object_test(
             self.handgrading_result, self.client, self.handgrader, self.url, request_data)
 
     def test_handgrader_update_points_adjustment_not_allowed_permission_denied(self):
-        self.handgrading_rubric.validate_and_update(graders_can_adjust_points=False)
+        self.handgrading_rubric.validate_and_update(handgraders_can_adjust_points=False)
         request_data = {'points_adjustment': -3}
         self.do_patch_object_permission_denied_test(
             self.handgrading_result, self.client, self.handgrader, self.url, request_data)
 
     def test_other_update_points_adjustment_permission_denied(self):
-        self.handgrading_rubric.validate_and_update(graders_can_adjust_points=True)
+        self.handgrading_rubric.validate_and_update(handgraders_can_adjust_points=True)
         request_data = {'points_adjustment': -3}
         self.do_patch_object_permission_denied_test(
             self.handgrading_result, self.client, self.student, self.url, request_data)

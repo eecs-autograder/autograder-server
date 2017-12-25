@@ -75,7 +75,7 @@ def can_view_project(
 
 
 def is_staff_or_group_member(
-    get_group_fn: Callable[[Any], ag_models.SubmissionGroup]=lambda group: group
+    get_group_fn: GetGroupFnType=lambda group: group
 ) -> Type[permissions.BasePermission]:
     class IsStaffOrGroupMember(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
@@ -86,7 +86,7 @@ def is_staff_or_group_member(
     return IsStaffOrGroupMember
 
 
-def is_group_member(get_group_fn: GetGroupFnType) -> PermissionClassType:
+def is_group_member(get_group_fn: GetGroupFnType=lambda group: group) -> PermissionClassType:
     class IsGroupMember(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             group = get_group_fn(obj)
