@@ -21,6 +21,8 @@ class _SetUp(UnitTestBase):
         self.group = obj_build.make_group()
         self.student = self.group.members.first()
         self.project = self.group.project
+        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            pattern='*', max_num_matches=10, project=self.project)
 
         self.submitted_files = [SimpleUploadedFile('file{}'.format(i),
                                                    'waaaluigi{}'.format(i).encode())
@@ -58,7 +60,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
         )  # type: handgrading_models.HandgradingResult
 
     def test_staff_or_handgrader_can_always_retrieve(self):
-        self.assertFalse(self.project.visible_to_students)
+        self.project.validate_and_update(visible_to_students=False)
         self.assertFalse(self.handgrading_rubric.show_grades_and_rubric_to_students)
 
         for user in self.handgrader, self.staff:
@@ -75,6 +77,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
             for file_ in self.submitted_files:
                 response = self.client.get(self.get_file_url(file_.name))
                 self.assertEqual(status.HTTP_200_OK, response.status_code)
+                file_.seek(0)
                 self.assertEqual(file_.read(),
                                  b''.join((chunk for chunk in response.streaming_content)))
 
@@ -100,6 +103,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
     def test_student_get_handgrading_result_scores_released(self):
+        self.project.validate_and_update(visible_to_students=True)
         self.handgrading_rubric.validate_and_update(show_grades_and_rubric_to_students=True)
         self.client.force_authenticate(self.student)
 
@@ -108,6 +112,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
         self.assertEqual(self.handgrading_result.to_dict(), response.data)
 
     def test_student_get_handgrading_result_scores_not_released_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=True)
         self.handgrading_rubric.validate_and_update(show_grades_and_rubric_to_students=False)
         self.client.force_authenticate(self.student)
 

@@ -16,7 +16,8 @@ import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import AGModelGenericView
 
-is_admin_or_read_only_staff = ag_permissions.is_admin(lambda group: group.project.course)
+is_admin_or_read_only_staff = ag_permissions.is_admin_or_read_only_staff(
+    lambda group: group.project.course)
 is_handgrader = ag_permissions.is_handgrader(lambda group: group.project.course)
 can_view_project = ag_permissions.can_view_project(lambda group: group.project)
 
@@ -63,7 +64,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
             group = self.get_object()  # type: ag_models.SubmissionGroup
 
             if 'filename' not in request.query_params:
-                return response.Response(self.get_serializer().data)
+                return response.Response(self.get_serializer(group.handgrading_result).data)
 
             submission = group.handgrading_result.submission
 

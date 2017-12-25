@@ -62,7 +62,8 @@ def can_view_project(
     class CanViewProject(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             project = get_project_fn(obj)
-            if project.course.is_course_staff(request.user):
+            if (project.course.is_course_staff(request.user) or
+                    project.course.is_handgrader(request.user)):
                 return True
 
             if not project.visible_to_students:
