@@ -1,5 +1,5 @@
 import os
-from typing import Iterable
+from typing import Iterable, List
 
 from django.db import models
 from django.core import validators
@@ -98,7 +98,7 @@ class Course(AutograderModel):
         return self.handgraders.filter(pk=user.pk).exists()
 
     @property
-    def handgrader_names(self) -> list:
+    def handgrader_names(self) -> List[str]:
         """
         A list of usernames that are handgraders for this Course.
         """

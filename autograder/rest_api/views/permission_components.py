@@ -12,14 +12,14 @@ def is_admin_or_read_only_staff(request, course):
 
 
 def user_can_view_project(user, project):
-    if (project.course.is_administrator(user) or
-            project.course.is_course_staff(user)):
+    if (project.course.is_administrator(user) or project.course.is_course_staff(user) or
+            project.course.is_handgrader(user)):
         return True
 
     if not project.visible_to_students:
         return False
 
-    if project.course.is_enrolled_student(user) or project.course.is_handgrader(user):
+    if project.course.is_enrolled_student(user):
         return True
 
     return project.guests_can_submit

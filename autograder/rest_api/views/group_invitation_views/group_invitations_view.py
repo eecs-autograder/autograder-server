@@ -15,11 +15,16 @@ from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
 class GroupInvitationsPermissions(IsAdminOrReadOnlyStaff):
-    def has_object_permission(self, request, view, project):
+    def has_object_permission(self, request, view, project: ag_models.Project):
         if request.method.lower() == 'get':
             return super().has_object_permission(request, view, project)
 
         if (project.disallow_group_registration and
+                not project.course.is_course_staff(request.user)):
+            return False
+
+        if (project.course.is_handgrader(request.user) and
+                not project.course.is_enrolled_student(request.user) and
                 not project.course.is_course_staff(request.user)):
             return False
 

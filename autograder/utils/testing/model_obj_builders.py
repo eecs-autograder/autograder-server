@@ -96,6 +96,12 @@ def make_enrolled_users(course: ag_models.Course, num_users: int) -> typing.Sequ
     return users
 
 
+def make_handgrader_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+    users = create_dummy_users(num_users=num_users)
+    course.handgraders.add(*users)
+    return users
+
+
 def make_users(num_users: int) -> typing.Sequence[User]:
     return create_dummy_users(num_users=num_users)
 
