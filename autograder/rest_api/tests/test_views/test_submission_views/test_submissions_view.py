@@ -178,6 +178,12 @@ class CreateSubmissionTestCase(test_data.Client,
             project.course.handgraders.add(group.members.last())
             self.do_normal_submit_test(group, group.members.last())
 
+    def test_group_with_enrolled_and_handgrader_submit(self):
+        for project in self.visible_projects:
+            group = self.enrolled_group(project)
+            group.members.add(self.handgrader)
+            self.do_normal_submit_test(group, group.members.first())
+
     def test_enrolled_submit_hidden_project_permission_denied(self):
         for project in self.hidden_projects:
             group = self.enrolled_group(project)

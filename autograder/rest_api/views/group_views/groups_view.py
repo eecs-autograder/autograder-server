@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Prefetch
+from typing import Any, Callable, Type
 
-from rest_framework import decorators, response, status
+from rest_framework import decorators, response, status, permissions
 
 from drf_composable_permissions.p import P
 
@@ -23,9 +24,23 @@ is_staff = ag_permissions.is_staff(lambda project: project.course)
 is_handgrader = ag_permissions.is_handgrader(lambda project: project.course)
 
 
+class _CanCreateSoloGroup(permissions.BasePermission):
+    def has_object_permission(self, request, view, project):
+        if project.course.is_course_staff(request.user):
+            return True
+
+        if not project.visible_to_students:
+            return False
+
+        return (project.course.is_enrolled_student(request.user) or
+                project.guests_can_submit)
+
+read_only = ag_permissions.IsReadOnly
+
 class GroupsViewSet(ListCreateNestedModelView):
     serializer_class = ag_serializers.SubmissionGroupSerializer
-    permission_classes = (P(is_admin) | ((P(is_staff) | P(is_handgrader)) & ag_permissions.IsReadOnly),)
+    permission_classes = (P(is_admin) | ((P(is_staff) | P(is_handgrader)) & (
+                            ag_permissions.IsReadOnly)),)
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
@@ -62,7 +77,7 @@ class GroupsViewSet(ListCreateNestedModelView):
 
 
 class CreateSoloGroupView(AGModelGenericView):
-    permission_classes = (P(is_staff) | P(ag_permissions.can_view_project()),)
+    permission_classes = (P(_CanCreateSoloGroup),)
     serializer_class = ag_serializers.SubmissionGroupSerializer
 
     pk_key = 'project_pk'
