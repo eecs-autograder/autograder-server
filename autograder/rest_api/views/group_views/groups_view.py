@@ -52,7 +52,10 @@ class GroupsViewSet(ListCreateNestedModelView):
         if self.request.method.lower() == 'get':
             submissions_prefetch = Prefetch(
                 'submissions', get_submissions_for_daily_limit_queryset(self.get_object()))
-            queryset = queryset.prefetch_related('members', submissions_prefetch)
+            queryset = queryset.prefetch_related(
+                Prefetch('members', User.objects.order_by('username')), submissions_prefetch)
+            queryset = list(
+                sorted(queryset.all(), key=lambda group: group.members.first().username))
 
         return queryset
 

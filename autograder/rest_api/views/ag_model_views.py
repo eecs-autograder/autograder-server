@@ -1,3 +1,7 @@
+from contextlib import ContextDecorator
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from rest_framework import viewsets, permissions, mixins, generics, response
@@ -195,3 +199,13 @@ class TransactionRetrieveUpdateDestroyMixin(mixins.RetrieveModelMixin,
                                             TransactionUpdateMixin,
                                             TransactionDestroyMixin):
     pass
+
+
+def handle_object_does_not_exist_404(func):
+    def decorated_func(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ObjectDoesNotExist:
+            raise Http404
+
+    return decorated_func

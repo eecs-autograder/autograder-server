@@ -20,17 +20,16 @@ class HandgradingRubric(AutograderModel):
     """
     The rubric which is linked to the project and adds or subtracts points from or to the total.
     """
-    points_style = EnumField(PointsStyle)
-
-    max_points = models.IntegerField(validators=[validators.MinValueValidator(0)])
-
-    show_grades_and_rubric_to_students = models.BooleanField()
-
-    handgraders_can_leave_comments = models.BooleanField()
-
-    handgraders_can_adjust_points = models.BooleanField()
-
     project = models.OneToOneField(Project, related_name='handgrading_rubric')
+
+    points_style = EnumField(PointsStyle, default=PointsStyle.start_at_zero_and_add, blank=True)
+
+    max_points = models.IntegerField(blank=True, default=0,
+                                     validators=[validators.MinValueValidator(0)])
+
+    show_grades_and_rubric_to_students = models.BooleanField(default=False, blank=True)
+    handgraders_can_leave_comments = models.BooleanField(default=False, blank=True)
+    handgraders_can_adjust_points = models.BooleanField(default=False, blank=True)
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -59,13 +58,12 @@ class Criterion(AutograderModel):
     """
     Rubric item with fixed points that is not line specific
     """
-    short_description = models.TextField(blank=True)
+    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='criteria')
 
+    short_description = models.TextField(blank=True)
     long_description = models.TextField(blank=True)
 
-    points = models.FloatField()
-
-    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='criteria')
+    points = models.FloatField(default=0, blank=True)
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -127,6 +125,10 @@ class HandgradingResult(AutograderModel):
     finished_grading = models.BooleanField(default=False, blank=True)
     points_adjustment = models.IntegerField(default=0, blank=True)
 
+    @property
+    def submitted_filenames(self):
+        return self.submission.submitted_filenames
+
     SERIALIZABLE_FIELDS = (
         'pk',
         'last_modified',
@@ -141,6 +143,8 @@ class HandgradingResult(AutograderModel):
 
         'finished_grading',
         'points_adjustment',
+
+        'submitted_filenames',
     )
 
     SERIALIZE_RELATED = (

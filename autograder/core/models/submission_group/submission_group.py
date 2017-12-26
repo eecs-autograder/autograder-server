@@ -48,17 +48,6 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         submissions -- The Submissions that this group has made for the
             associated Project.
     """
-    SERIALIZABLE_FIELDS = (
-        'pk',
-        'project',
-        'extended_due_date',
-        'member_names',
-
-        'num_submits_towards_limit',
-    )
-
-    EDITABLE_FIELDS = ('extended_due_date',)
-
     objects = SubmissionGroupManager()
 
     members = models.ManyToManyField(
@@ -185,6 +174,17 @@ class SubmissionGroup(ag_model_base.AutograderModel):
 
             self.members.set(members, clear=True)
             self.full_clean()
+
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        'project',
+        'extended_due_date',
+        'member_names',
+
+        'num_submits_towards_limit',
+    )
+
+    EDITABLE_FIELDS = ('extended_due_date',)
 
 
 def get_submissions_for_daily_limit_queryset(project: Project):

@@ -39,6 +39,7 @@ class SupportedImages(enum.Enum):
     default = 'default'
 
     eecs280 = 'eecs280'
+    eecs481 = 'eecs481'
     eecs485 = 'eecs485'
     eecs490 = 'eecs490'
     engr101 = 'engr101'
@@ -46,8 +47,9 @@ class SupportedImages(enum.Enum):
 
 DOCKER_IMAGE_IDS_TO_URLS = {
     SupportedImages.eecs280: 'jameslp/eecs280',
-    SupportedImages.eecs490: 'jameslp/eecs490',
+    SupportedImages.eecs481: 'jameslp/eecs481',
     SupportedImages.eecs485: 'jameslp/eecs485',
+    SupportedImages.eecs490: 'jameslp/eecs490',
     SupportedImages.engr101: 'jameslp/engr101',
     # # Avoid using this image in development, since we can't host
     # # it publicly due to the MATLAB installation.
