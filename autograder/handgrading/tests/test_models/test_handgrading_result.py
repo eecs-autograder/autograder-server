@@ -1,3 +1,6 @@
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
@@ -12,26 +15,33 @@ class HandgradingResultTestCase(UnitTestBase):
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
                 max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
                 project=obj_build.build_project()
             )
         )
 
-        self.submission = obj_build.build_submission()
+        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            project=self.rubric.project,
+            pattern='*', max_num_matches=10)
+        self.submitted_files = [
+            SimpleUploadedFile('file{}'.format(i), b'waaaluigi') for i in range(4)]
+        self.submission = obj_build.build_submission(
+            submission_group=obj_build.make_group(project=self.rubric.project),
+            submitted_files=self.submitted_files)
 
     def test_default_initialization(self):
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
             submission_group=self.submission.submission_group,
-            handgrading_rubric=self.rubric)
+            handgrading_rubric=self.rubric)  # type: handgrading_models.HandgradingResult
 
         self.assertEqual(result.submission, self.submission)
         self.assertEqual(result.handgrading_rubric, self.rubric)
         self.assertEqual(result.submission_group, self.submission.submission_group)
         self.assertEqual(0, result.points_adjustment)
         self.assertFalse(result.finished_grading)
+
+        self.assertCountEqual([file_.name for file_ in self.submitted_files],
+                              result.submitted_filenames)
 
     def test_create_non_defaults(self):
         points_to_try = [-2, 5]
@@ -62,6 +72,8 @@ class HandgradingResultTestCase(UnitTestBase):
 
             'finished_grading',
             'points_adjustment',
+
+            'submitted_filenames',
         ]
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
