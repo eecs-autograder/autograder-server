@@ -1,7 +1,7 @@
 from django.http import FileResponse
 from django.http import Http404
 from django.db import transaction
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from drf_composable_permissions.p import P
 from rest_framework import status
 from rest_framework.permissions import BasePermission
@@ -14,7 +14,8 @@ import autograder.core.models as ag_models
 import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
-from autograder.rest_api.views.ag_model_views import AGModelGenericView
+from autograder.rest_api.views.ag_model_views import AGModelGenericView, \
+    handle_object_does_not_exist_404
 
 is_admin_or_read_only_staff = ag_permissions.is_admin_or_read_only_staff(
     lambda group: group.project.course)
@@ -59,6 +60,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
 
+    @handle_object_does_not_exist_404
     def retrieve(self, request, *args, **kwargs):
         try:
             group = self.get_object()  # type: ag_models.SubmissionGroup
@@ -83,7 +85,6 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
                           .format(group.project.pk))
 
         ultimate_submission = get_ultimate_submission(group.project, group.pk)
-
         if not ultimate_submission:
             raise Http404('Group {} has no submissions'.format(group.pk))
 
@@ -103,5 +104,19 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
         return response.Response(
             serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
+    @transaction.atomic()
+    @handle_object_does_not_exist_404
     def partial_update(self, request, *args, **kwargs):
-        pass
+        group = self.get_object()  # type: ag_models.SubmissionGroup
+        is_admin = group.project.course.is_administrator(request.user)
+        can_adjust_points = (
+            is_admin or
+            group.project.course.is_handgrader(request.user) and
+            group.project.handgrading_rubric.handgraders_can_adjust_points)
+
+        if 'points_adjustment' in self.request.data and not can_adjust_points:
+            raise PermissionDenied
+
+        handgrading_result = group.handgrading_result
+        handgrading_result.validate_and_update(**request.data)
+        return response.Response(self.get_serializer(handgrading_result).data)

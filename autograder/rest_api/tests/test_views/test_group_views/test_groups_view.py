@@ -206,15 +206,14 @@ class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
                               response.data['member_names'])
 
     def test_student_create_solo_group_project_hidden_permission_denied(self):
-        for user in self.enrolled, self.nobody, self.handgrader:
+        for user in self.enrolled, self.nobody:
             self.do_permission_denied_create_test(
                 self.hidden_public_project.submission_groups,
                 self.client, user,
                 self.get_solo_group_url(self.hidden_public_project), {})
 
     def test_non_enrolled_create_solo_group_project_private_permission_denied(self):
-        for user in self.nobody, self.handgrader:
-            self.do_permission_denied_create_test(
-                self.visible_private_project.submission_groups,
-                self.client, user,
-                self.get_solo_group_url(self.visible_private_project), {})
+        self.do_permission_denied_create_test(
+            self.visible_private_project.submission_groups,
+            self.client, self.nobody,
+            self.get_solo_group_url(self.visible_private_project), {})
