@@ -51,14 +51,6 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
                     submission.to_dict())
                 self.do_get_files_test_case(submission, user)
 
-    def test_handgrader_view_submission(self):
-        for project in self.visible_projects:
-            submission = self.enrolled_submission(project)
-            self.do_get_object_test(
-                self.client, self.handgrader, submission_url(submission),
-                submission.to_dict())
-            self.do_get_files_test_case(submission, self.handgrader)
-
     def test_non_enrolled_view_submission(self):
         submission = self.enrolled_submission(self.visible_public_project)
         for user in submission.submission_group.members.all():
@@ -70,7 +62,7 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
     def test_non_member_view_submission_forbidden(self):
         submission = self.enrolled_submission(self.visible_public_project)
         other_user = self.clone_user(self.enrolled)
-        for user in other_user, self.nobody:
+        for user in other_user, self.nobody, self.handgrader:
             self.do_permission_denied_get_test(
                 self.client, user, submission_url(submission))
             self.do_get_files_permission_denied_test_case(submission, user)
@@ -217,7 +209,7 @@ class RemoveFromQueueTestCase(test_data.Client,
         self.do_permission_denied_remove_from_queue_test(
             submission, submission.submission_group.members.first())
 
-    def test_handgrader_remove_from_queue_permission_denied(self):
+    def test_handgrader_remove_student_submission_from_queue_permission_denied(self):
         self.do_permission_denied_remove_from_queue_test(
             self.enrolled_submission(self.visible_projects[0]), self.handgrader)
 
@@ -426,7 +418,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             self.client, self.student_group1_normal_submission,
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
-    def test_handgrader_get_normal_fdbk_permission_denied(self):
+    def test_handgrader_get_normal_fdbk_on_student_submission_permission_denied(self):
         handgrader = obj_build.create_dummy_user()
         self.course.handgraders.add(handgrader)
         self.client.force_authenticate(handgrader)

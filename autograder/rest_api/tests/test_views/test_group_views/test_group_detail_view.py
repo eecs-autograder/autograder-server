@@ -253,7 +253,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
                 [self.visible_public_project], [self.non_enrolled_group],
                 [self.nobody], closing_time=closing_time)
 
-    def test_handgrader_get_ultimate_permission_denied(self):
+    def test_handgrader_get_students_ultimate_permission_denied(self):
         group = self.enrolled_group(self.project)
         obj_build.build_finished_submission(submission_group=group)
         self.do_permission_denied_get_test(

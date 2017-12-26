@@ -69,7 +69,7 @@ class GetGroupInvitationTestCase(test_data.Client,
         self.do_permission_denied_get_test(
             self.client, self.nobody, self.invitation_url(invitation))
 
-    def test_handgrader_view_invitation_permission_denied(self):
+    def test_handgrader_view_student_invitation_permission_denied(self):
         for project in self.all_projects:
             invite = self.enrolled_group_invitation(project)
             self.do_permission_denied_get_test(

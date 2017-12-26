@@ -69,9 +69,7 @@ def can_view_project(
             if not project.visible_to_students:
                 return False
 
-            return (project.course.is_enrolled_student(request.user) or
-                    project.course.is_handgrader(request.user) or
-                    project.guests_can_submit)
+            return project.course.is_enrolled_student(request.user) or project.guests_can_submit
 
     return CanViewProject
 
@@ -86,19 +84,6 @@ def is_staff_or_group_member(
                     group.members.filter(pk=request.user.pk).exists())
 
     return IsStaffOrGroupMember
-
-
-def is_staff_or_group_member_or_handgrader(
-    get_group_fn: Callable[[Any], ag_models.SubmissionGroup]=lambda group: group
-) -> Type[permissions.BasePermission]:
-    class IsStaffOrGroupMemberOrHandgrader(permissions.BasePermission):
-        def has_object_permission(self, request, view, obj):
-            group = get_group_fn(obj)
-            return (group.project.course.is_course_staff(request.user) or
-                    group.project.course.is_handgrader(request.user) or
-                    group.members.filter(pk=request.user.pk).exists())
-
-    return IsStaffOrGroupMemberOrHandgrader
 
 
 def is_group_member(get_group_fn: GetGroupFnType=lambda group: group) -> PermissionClassType:

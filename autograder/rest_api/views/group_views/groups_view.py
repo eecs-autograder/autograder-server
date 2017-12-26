@@ -35,12 +35,11 @@ class _CanCreateSoloGroup(permissions.BasePermission):
         return (project.course.is_enrolled_student(request.user) or
                 project.guests_can_submit)
 
-read_only = ag_permissions.IsReadOnly
 
 class GroupsViewSet(ListCreateNestedModelView):
     serializer_class = ag_serializers.SubmissionGroupSerializer
-    permission_classes = (P(is_admin) | ((P(is_staff) | P(is_handgrader)) & (
-                            ag_permissions.IsReadOnly)),)
+    permission_classes = (P(is_admin) |
+                          ((P(is_staff) | P(is_handgrader)) & ag_permissions.IsReadOnly),)
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
@@ -80,7 +79,7 @@ class GroupsViewSet(ListCreateNestedModelView):
 
 
 class CreateSoloGroupView(AGModelGenericView):
-    permission_classes = (P(_CanCreateSoloGroup),)
+    permission_classes = (_CanCreateSoloGroup,)
     serializer_class = ag_serializers.SubmissionGroupSerializer
 
     pk_key = 'project_pk'

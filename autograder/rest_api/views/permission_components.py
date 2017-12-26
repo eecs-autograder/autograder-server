@@ -30,8 +30,7 @@ def user_can_view_group(user, group):
         return False
 
     if (group.project.course.is_administrator(user) or
-            group.project.course.is_course_staff(user) or
-            group.project.course.is_handgrader(user)):
+            group.project.course.is_course_staff(user)):
         return True
 
     return group.members.filter(pk=user.pk).exists()

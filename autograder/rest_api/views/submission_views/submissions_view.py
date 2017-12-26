@@ -17,8 +17,7 @@ class _Permissions(permissions.BasePermission):
         timestamp = timezone.now()
 
         if request.method.lower() == 'get':
-            return user_can_view_group(request.user, group) and not (
-                group.project.course.is_handgrader(request.user))
+            return user_can_view_group(request.user, group)
 
         if request.method.lower() == 'post':
             return self._has_submit_permission(request, view, group, timestamp)

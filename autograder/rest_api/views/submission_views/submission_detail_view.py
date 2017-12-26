@@ -20,8 +20,6 @@ can_view_project = ag_permissions.can_view_project(
 is_staff_or_group_member = ag_permissions.is_staff_or_group_member(
     lambda submission: submission.submission_group)
 is_group_member = ag_permissions.is_group_member(lambda submission: submission.submission_group)
-is_staff_or_group_member_or_handgrader = ag_permissions.is_staff_or_group_member_or_handgrader(
-    lambda submission: submission.submission_group)
 
 
 class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
@@ -32,7 +30,7 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
 
     serializer_class = ag_serializers.SubmissionSerializer
     permission_classes = ((P(is_admin) | P(ag_permissions.IsReadOnly)),
-                          can_view_project, is_staff_or_group_member_or_handgrader)
+                          can_view_project, is_staff_or_group_member)
 
     @decorators.detail_route()
     def file(self, request, *args, **kwargs):
