@@ -62,20 +62,31 @@ class CreateHandgradingRubricTestCase(test_impls.CreateObjectTest, UnitTestBase)
         self.url = reverse('handgrading_rubric', kwargs={'project_pk': self.project.pk})
 
         self.data = {
-            'points_style': handgrading_models.PointsStyle.start_at_zero_and_add, #.value,
+            'points_style': handgrading_models.PointsStyle.start_at_zero_and_add.value,
             'max_points': 20,
             'show_grades_and_rubric_to_students': True,
             'handgraders_can_leave_comments': True,
             'handgraders_can_adjust_points': True,
         }
 
-    @unittest.skip('broken')
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
-        self.do_create_object_test(
-            handgrading_models.HandgradingRubric.objects, self.client, admin, self.url, self.data)
+        response = self.do_create_object_test(handgrading_models.HandgradingRubric.objects,
+                                              self.client, admin, self.url, self.data,
+                                              check_data=False)
 
-    @unittest.skip('broken')
+        loaded = handgrading_models.HandgradingRubric.objects.get(pk=response.data['pk'])
+        self.assertDictContentsEqual(loaded.to_dict(), response.data)
+
+        self.assertEqual(self.data["points_style"], loaded.points_style.value)
+        self.assertEqual(self.data["max_points"], loaded.max_points)
+        self.assertEqual(self.data["show_grades_and_rubric_to_students"],
+                         loaded.show_grades_and_rubric_to_students)
+        self.assertEqual(self.data["handgraders_can_leave_comments"],
+                         loaded.handgraders_can_leave_comments)
+        self.assertEqual(self.data["handgraders_can_adjust_points"],
+                         loaded.handgraders_can_adjust_points)
+
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.do_permission_denied_create_test(

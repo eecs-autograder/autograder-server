@@ -4,7 +4,7 @@ common test case patterns.
 """
 
 from django.core import exceptions
-
+from enum import Enum
 from rest_framework import status
 
 from autograder import utils
