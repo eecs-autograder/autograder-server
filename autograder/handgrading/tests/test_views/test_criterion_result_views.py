@@ -106,11 +106,19 @@ class CreateCriterionResultTestCase(test_impls.CreateObjectTest, UnitTestBase):
             "criterion": self.criterion.pk,
         }
 
-    @unittest.skip('broken')
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
-        self.do_create_object_test(
-            handgrading_models.CriterionResult.objects, self.client, admin, self.url, self.data)
+        response = self.do_create_object_test(handgrading_models.CriterionResult.objects,
+                                              self.client, admin, self.url, self.data,
+                                              check_data=False)
+
+        loaded = handgrading_models.CriterionResult.objects.get(pk=response.data['pk'])
+        self.assertDictContentsEqual(loaded.to_dict(), response.data)
+
+        criterion = handgrading_models.Criterion.objects.get(pk=self.data['criterion'])
+
+        self.assertEqual(self.data["selected"], loaded.selected)
+        self.assertEqual(criterion.to_dict(), loaded.criterion.to_dict())
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)

@@ -125,11 +125,26 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
             "annotation": annotation.pk,
         }
 
-    @unittest.skip('broken')
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
-        self.do_create_object_test(
-            handgrading_models.AppliedAnnotation.objects, self.client, admin, self.url, self.data)
+        response = self.do_create_object_test(handgrading_models.AppliedAnnotation.objects,
+                                              self.client, admin, self.url, self.data,
+                                              check_data=False)
+
+        loaded = handgrading_models.AppliedAnnotation.objects.get(pk=response.data['pk'])
+        self.assertDictContentsEqual(loaded.to_dict(), response.data)
+
+        self.assertEqual(self.data["comment"], loaded.comment)
+
+        annotation = handgrading_models.Annotation.objects.get(pk=self.data['annotation'])
+        self.assertEqual(annotation.to_dict(), loaded.annotation.to_dict())
+
+        response_location_dict = loaded.location.to_dict()
+
+        for non_modifiable in ["pk", "last_modified"]:
+            response_location_dict.pop(non_modifiable)
+
+        self.assertEqual(self.data["location"], response_location_dict)
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)

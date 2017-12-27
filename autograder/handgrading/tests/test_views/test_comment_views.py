@@ -30,7 +30,7 @@ class ListCommentsTestCase(UnitTestBase):
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission,
+            submission_group=submission.submission_group,
             handgrading_rubric=handgrading_rubric
         )
 
@@ -44,15 +44,12 @@ class ListCommentsTestCase(UnitTestBase):
             "handgrading_result": self.handgrading_result
         }
 
-        self.comment = handgrading_models.Comment.objects.validate_and_create(
-            **comment_data)
-
+        self.comment = handgrading_models.Comment.objects.validate_and_create(**comment_data)
         self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('comments',
                            kwargs={'handgrading_result_pk': self.handgrading_result.pk})
 
-    @unittest.skip('broken')
     def test_staff_valid_list_cases(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
         self.client.force_authenticate(staff)
@@ -61,7 +58,6 @@ class ListCommentsTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertSequenceEqual(self.comment.to_dict(), response.data[0])
 
-    @unittest.skip('broken')
     def test_non_staff_list_cases_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.client.force_authenticate(enrolled)
@@ -107,11 +103,27 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
             "text": "Sample comment text.",
         }
 
-    @unittest.skip('broken')
-    def test_admin_valid_create(self):
+    def test_admin_valid_create_with_location(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
+        response = self.do_create_object_test(handgrading_models.Comment.objects, self.client,
+                                              admin, self.url, self.data, check_data=False)
+
+        loaded = handgrading_models.Comment.objects.get(pk=response.data['pk'])
+        self.assertDictContentsEqual(loaded.to_dict(), response.data)
+
+        self.assertEqual(self.data["text"], loaded.text)
+        response_location_dict = loaded.location.to_dict()
+
+        for non_modifiable in ["pk", "last_modified"]:
+            response_location_dict.pop(non_modifiable)
+
+        self.assertEqual(self.data["location"], response_location_dict)
+
+    def test_admin_valid_create_without_location(self):
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        data = {"text": "Sample comment text."}
         self.do_create_object_test(
-            handgrading_models.Comment.objects, self.client, admin, self.url, self.data)
+            handgrading_models.Comment.objects, self.client, admin, self.url, data)
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
@@ -154,13 +166,10 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
             "handgrading_result": self.handgrading_result
         }
 
-        self.comment = handgrading_models.Comment.objects.validate_and_create(
-            **comment_data)
-
+        self.comment = handgrading_models.Comment.objects.validate_and_create(**comment_data)
         self.course = handgrading_rubric.project.course
         self.client = APIClient()
-        self.url = reverse('comment-detail',
-                           kwargs={'pk': self.comment.pk})
+        self.url = reverse('comment-detail', kwargs={'pk': self.comment.pk})
 
     def test_staff_valid_get(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
@@ -175,24 +184,23 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
             "text": "Changing comment text.",
         }
         [admin] = obj_build.make_admin_users(self.course, 1)
-        self.do_patch_object_test(
-            self.comment, self.client, admin, self.url, patch_data)
+        self.do_patch_object_test(self.comment, self.client, admin, self.url, patch_data)
 
     def test_admin_update_bad_values(self):
         bad_data = {
             "location": "Location isn't editable!",
         }
         [admin] = obj_build.make_admin_users(self.course, 1)
-        self.do_patch_object_invalid_args_test(
-            self.comment, self.client, admin, self.url, bad_data)
+        self.do_patch_object_invalid_args_test(self.comment, self.client, admin, self.url,
+                                               bad_data)
 
     def test_non_admin_update_permission_denied(self):
         patch_data = {
             "text": "Changing comment text.",
         }
         [staff] = obj_build.make_staff_users(self.course, 1)
-        self.do_patch_object_permission_denied_test(
-            self.comment, self.client, staff, self.url, patch_data)
+        self.do_patch_object_permission_denied_test(self.comment, self.client, staff, self.url,
+                                                    patch_data)
 
     def test_admin_valid_delete(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
@@ -200,5 +208,4 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
 
     def test_non_admin_delete_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
-        self.do_delete_object_permission_denied_test(
-            self.comment, self.client, staff, self.url)
+        self.do_delete_object_permission_denied_test(self.comment, self.client, staff, self.url)
