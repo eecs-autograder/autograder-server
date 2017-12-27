@@ -1,9 +1,14 @@
 from django.conf.urls import url, include
+from rest_framework import generics
+from rest_framework import response
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view
 
 from rest_framework_nested import routers
 
 from autograder.rest_api import views
-
+from autograder.rest_api.views.ag_model_views import AlwaysIsAuthenticatedMixin
 
 user_router = routers.SimpleRouter()
 user_router.register(r'users', views.UserViewSet, base_name='user')
@@ -107,8 +112,15 @@ rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
                                               base_name='rerun-submissions-task')
 
 
+class LogoutView(AlwaysIsAuthenticatedMixin, generics.GenericAPIView):
+    def post(self, request, *args, **kwargs):
+        Token.objects.get(user=request.user).delete()
+        return response.Response(status=status.HTTP_200_OK)
+
+
 urlpatterns = [
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
+    url(r'^logout/$', LogoutView.as_view()),
 
     url(r'', include(user_router.urls)),
 

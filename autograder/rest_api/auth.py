@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.middleware import csrf
 
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.authentication import BaseAuthentication, TokenAuthentication
 
 from oauth2client import client
 
@@ -18,25 +18,25 @@ GOOGLE_API_SCOPES = [
 ]
 
 
-class GoogleOAuth2(SessionAuthentication):
-    def authenticate(self, request):
-        # THESE TWO CALLS MUST STAY IN THIS ORDER!!!
-        # enforce_csrf will raise a permission denied error if the
-        # request method is unsafe and the csrf token header is not set.
-        # Then, if that check passes we can use get_token to set the
-        # csrftoken cookie if it isn't already set.
-        #
-        # Note: For some reason, calling super() doesn't properly set
-        # the csrf cookie.
-        self.enforce_csrf(request)
-        csrf.get_token(request)
-
-        if SESSION_KEY not in request.session:
-            return None
-
-        request.user = User.objects.get(pk=request.session[SESSION_KEY])
-
-        return super().authenticate(request)
+class GoogleOAuth2(TokenAuthentication):
+    # def authenticate(self, request):
+    #     # THESE TWO CALLS MUST STAY IN THIS ORDER!!!
+    #     # enforce_csrf will raise a permission denied error if the
+    #     # request method is unsafe and the csrf token header is not set.
+    #     # Then, if that check passes we can use get_token to set the
+    #     # csrftoken cookie if it isn't already set.
+    #     #
+    #     # Note: For some reason, calling super() doesn't properly set
+    #     # the csrf cookie.
+    #     self.enforce_csrf(request)
+    #     csrf.get_token(request)
+    #
+    #     if SESSION_KEY not in request.session:
+    #         return None
+    #
+    #     request.user = User.objects.get(pk=request.session[SESSION_KEY])
+    #
+    #     return super().authenticate(request)
 
     def authenticate_header(self, request):
         redirect_uri = request.build_absolute_uri(reverse('oauth2callback'))
@@ -56,8 +56,8 @@ class GoogleOAuth2(SessionAuthentication):
 
 
 # DO NOT USE IN PRODUCTION
-class DevAuth(SessionAuthentication):
+class DevAuth(BaseAuthentication):
     def authenticate(self, request):
         username = request.COOKIES.get('username', 'jameslp@umich.edu')
         user = User.objects.get_or_create(username=username)[0]
-        return (user, None)
+        return user, None
