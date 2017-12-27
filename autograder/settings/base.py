@@ -25,6 +25,7 @@ SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split()
 
+SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'autograder.io').strip()
 
 OAUTH2_SECRETS_FILENAME = os.environ.get('OAUTH2_SECRETS_FILENAME', 'dev_oauth2_secrets.json')
 OAUTH2_SECRETS_PATH = os.path.join(SETTINGS_DIR, OAUTH2_SECRETS_FILENAME)
@@ -71,9 +72,10 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
+    # 'django.contrib.sessions',
 
     'rest_framework',
+    'rest_framework.authtoken',
 
     'django_extensions',
 
