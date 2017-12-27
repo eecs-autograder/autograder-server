@@ -1,14 +1,15 @@
 import json
 
 from django.conf import settings
-from django.contrib.auth import login
 from django.contrib.auth.models import User
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 
 from oauth2client import client
 from apiclient import discovery
 
 import httplib2
+from rest_framework.authtoken.models import Token
 
 from autograder.rest_api.auth import GOOGLE_API_SCOPES
 
@@ -47,9 +48,13 @@ def oauth2_callback(request):
         user.last_name = last_name
         user.save()
 
-    # Minor hack: Set the backend attribute of user manually to satisfy
-    # login(), which expects there to be one.
-    user.backend = 'OAuth2'
-    login(request, user)
+    # # Minor hack: Set the backend attribute of user manually to satisfy
+    # # login(), which expects there to be one.
+    # user.backend = 'OAuth2'
+    # login(request, user)
 
-    return redirect(state['http_referer'])
+    token, created = Token.objects.get_or_create(user=user)
+
+    response = HttpResponseRedirect(state['http_referer'])
+    response.set_cookie('token', token.key, domain=settings.SITE_DOMAIN)
+    return response
