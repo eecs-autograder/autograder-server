@@ -112,7 +112,6 @@ rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
                                               base_name='rerun-submissions-task')
 
 
-
 class LogoutView(AlwaysIsAuthenticatedMixin, generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         Token.objects.get(user=request.user).delete()
