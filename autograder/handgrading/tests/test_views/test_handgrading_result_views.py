@@ -182,7 +182,8 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
 
         self.client.force_authenticate(self.admin)
         response = self.client.post(self.url, {})
-        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('handgrading_rubric', response.data)
         self.assertEqual(0, handgrading_models.HandgradingResult.objects.count())
 
     def test_group_has_no_submissions(self):
@@ -190,7 +191,8 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
 
         self.client.force_authenticate(self.admin)
         response = self.client.post(self.url, {})
-        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('num_submissions', response.data)
         self.assertEqual(0, handgrading_models.HandgradingResult.objects.count())
 
     def test_non_admin_create_permission_denied(self):

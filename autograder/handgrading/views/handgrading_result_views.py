@@ -8,7 +8,7 @@ from rest_framework.permissions import BasePermission
 
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 
-from rest_framework import response, mixins
+from rest_framework import response, mixins, exceptions
 
 import autograder.core.models as ag_models
 import autograder.handgrading.models as handgrading_models
@@ -81,12 +81,14 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
         try:
             handgrading_rubric = group.project.handgrading_rubric
         except ObjectDoesNotExist:
-            raise Http404('Project {} has not enabled handgrading (no handgrading rubric found)'
-                          .format(group.project.pk))
+            raise exceptions.ValidationError(
+                {'handgrading_rubric':
+                    'Project {} has not enabled handgrading'.format(group.project.pk)})
 
         ultimate_submission = get_ultimate_submission(group.project, group.pk)
         if not ultimate_submission:
-            raise Http404('Group {} has no submissions'.format(group.pk))
+            raise exceptions.ValidationError(
+                {'num_submissions': 'Group {} has no submissions'.format(group.pk)})
 
         handgrading_result, created = handgrading_models.HandgradingResult.objects.get_or_create(
             defaults={'submission': ultimate_submission},

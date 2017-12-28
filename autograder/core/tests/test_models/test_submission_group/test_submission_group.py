@@ -36,6 +36,7 @@ class MiscSubmissionGroupTestCase(_SetUp, test_ut.UnitTestBase):
             'extended_due_date',
 
             'num_submits_towards_limit',
+            'num_submissions',
         ]
 
         self.assertCountEqual(
@@ -48,6 +49,18 @@ class MiscSubmissionGroupTestCase(_SetUp, test_ut.UnitTestBase):
     def test_editable_fields(self):
         self.assertCountEqual(['extended_due_date'],
                               ag_models.SubmissionGroup.get_editable_fields())
+
+    def test_num_submits_towards_limit(self):
+        group = ag_models.SubmissionGroup.objects.validate_and_create(
+            members=self.enrolled_group,
+            project=self.project)
+
+        num_submissions = 4
+        for i in range(num_submissions):
+            ag_models.Submission.objects.validate_and_create(submitted_files=[],
+                                                             submission_group=group)
+        group.refresh_from_db()
+        self.assertEqual(num_submissions, group.num_submissions)
 
     def test_valid_initialization_with_defaults(self):
         group = ag_models.SubmissionGroup.objects.validate_and_create(

@@ -75,6 +75,10 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         return list(user.username for user in self.members.all())
 
     @property
+    def num_submissions(self) -> int:
+        return self.submissions.count()
+
+    @property
     def num_submits_towards_limit(self):
         """
         The number of submissions this group has made in the current 24
@@ -181,6 +185,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         'extended_due_date',
         'member_names',
 
+        'num_submissions',
         'num_submits_towards_limit',
     )
 
