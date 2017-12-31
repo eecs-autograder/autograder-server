@@ -74,6 +74,8 @@ class HandgradingResultTestCase(UnitTestBase):
             'points_adjustment',
 
             'submitted_filenames',
+            'total_points',
+            'total_possible_points',
         ]
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
@@ -129,6 +131,8 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertIsInstance(result_dict["criterion_results"], list)
         self.assertIsInstance(result_dict["handgrading_rubric"], object)
         self.assertIsInstance(result_dict["submission_group"], int)
+        self.assertIsInstance(result_dict["total_points"], float)
+        self.assertIsInstance(result_dict["total_possible_points"], float)
 
         self.assertEqual(len(result_dict["applied_annotations"]), 1)
         self.assertEqual(len(result_dict["comments"]), 1)
