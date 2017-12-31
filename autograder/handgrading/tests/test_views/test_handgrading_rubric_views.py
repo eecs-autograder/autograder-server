@@ -37,11 +37,15 @@ class RetrieveHandgradingRubricTestCase(UnitTestBase):
 
     def test_staff_valid_retrieve(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
-        self.client.force_authenticate(staff)
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        [handgrader] = obj_build.make_users(1)
+        self.handgrading_rubric.project.course.handgraders.add(handgrader)
 
-        response = self.client.get(self.url)
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertSequenceEqual(self.handgrading_rubric.to_dict(), response.data)
+        for user in [admin, staff, handgrader]:
+            self.client.force_authenticate(user)
+            response = self.client.get(self.url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertSequenceEqual(self.handgrading_rubric.to_dict(), response.data)
 
     def test_non_staff_retrieve_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
@@ -89,9 +93,13 @@ class CreateHandgradingRubricTestCase(test_impls.CreateObjectTest, UnitTestBase)
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
-        self.do_permission_denied_create_test(
-            handgrading_models.HandgradingRubric.objects,
-            self.client, enrolled, self.url, self.data)
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        [handgrader] = obj_build.make_users(1)
+        self.project.course.handgraders.add(handgrader)
+
+        for user in [enrolled, staff, handgrader]:
+            self.do_permission_denied_create_test(handgrading_models.HandgradingRubric.objects,
+                                                  self.client, user, self.url, self.data)
 
 
 class GetUpdateDeleteHandgradingRubricTestCase(test_impls.GetObjectTest,
