@@ -136,14 +136,26 @@ class HandgradingResult(AutograderModel):
         applied_annotations = AppliedAnnotation.objects.filter(handgrading_result=self.pk)
         criterion_results = CriterionResult.objects.filter(handgrading_result=self.pk)
 
-        for applied_annotation in applied_annotations:
-            total += applied_annotation.annotation.deduction
+        for annotation in Annotation.objects.filter(handgrading_rubric=self.handgrading_rubric):
+            total_for_annotation = 0
+
+            for applied_annotation in applied_annotations.filter(annotation=annotation):
+                total_for_annotation += applied_annotation.annotation.deduction
+
+            if annotation.max_deduction and total_for_annotation < annotation.max_deduction:
+                total += annotation.max_deduction
+            else:
+                total += total_for_annotation
 
         for criterion_result in criterion_results:
             if (criterion_result.selected):
                 total += criterion_result.criterion.points
 
         total += self.points_adjustment
+
+        if total < 0:
+            return 0
+
         return total
 
     @property

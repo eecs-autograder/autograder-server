@@ -163,30 +163,90 @@ class HandgradingResultTestCase(UnitTestBase):
         total_annotation_deduction = 0
         points_adjustment = 3
 
-        for num in range(8):
-            handgrading_models.Criterion.objects.validate_and_create(
-                points=num,
-                handgrading_rubric=self.rubric
-            )
-            total_criterion_points += num
-
-        for num in range(-4, -1):
-            handgrading_models.Annotation.objects.validate_and_create(
-                deduction=num,
-                handgrading_rubric=self.rubric
-            )
-            total_annotation_deduction += num
-
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
             submission_group=self.submission.submission_group,
             handgrading_rubric=self.rubric,
             points_adjustment=points_adjustment)
 
-        total_points = total_criterion_points + total_annotation_deduction + points_adjustment
+        for num in range(8):
+            handgrading_models.CriterionResult.objects.validate_and_create(
+                selected=True,
+                criterion=handgrading_models.Criterion.objects.validate_and_create(
+                    points=num,
+                    handgrading_rubric=self.rubric
+                ),
+                handgrading_result=result
+            )
+
+            total_criterion_points += num
+
+        # Since selected=False, it should not be counted in total_points
+        handgrading_models.CriterionResult.objects.validate_and_create(
+            selected=False,
+            criterion=handgrading_models.Criterion.objects.validate_and_create(
+                points=10,
+                handgrading_rubric=self.rubric
+            ),
+            handgrading_result=result
+        )
+
+        total_criterion_points += 10
+
+        for num in range(-4, -1):
+            handgrading_models.AppliedAnnotation.objects.validate_and_create(
+                comment="",
+                location={
+                    "first_line": 0,
+                    "last_line": 1,
+                    "filename": "file1"
+                },
+                annotation=handgrading_models.Annotation.objects.validate_and_create(
+                    deduction=num,
+                    handgrading_rubric=self.rubric
+                ),
+                handgrading_result=result
+            )
+
+            total_annotation_deduction += num
+
+        total_points = (total_criterion_points - 10 + total_annotation_deduction +
+                        points_adjustment)
 
         self.assertEqual(total_criterion_points, result.total_possible_points)
         self.assertEqual(total_points, result.total_points)
 
-    def test_negative_total_points(self):
-        self.fail()
+    def test_no_negative_total_points(self):
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric,
+            points_adjustment=-3)
+
+        self.assertEqual(0, result.total_points)
+
+    def test_total_points_respects_max_deduction_on_annotations(self):
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric,
+            points_adjustment=20)
+
+        annotation = handgrading_models.Annotation.objects.validate_and_create(
+            deduction=-2,
+            max_deduction=-8,
+            handgrading_rubric=self.rubric)
+
+        for i in range(8):
+            handgrading_models.AppliedAnnotation.objects.validate_and_create(
+                comment="",
+                location={
+                    "first_line": 0,
+                    "last_line": 1,
+                    "filename": "file1"
+                },
+                annotation=annotation,
+                handgrading_result=result
+            )
+
+        self.assertEqual(20 - 8, result.total_points)
