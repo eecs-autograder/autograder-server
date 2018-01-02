@@ -11,13 +11,8 @@ class HandgradingResultTestCase(UnitTestBase):
     Test cases relating the Handgrading Result Model
     """
     def setUp(self):
-        self.rubric = (
-            handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                project=obj_build.build_project()
-            )
-        )
+        self.rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+            project=obj_build.build_project())
 
         ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
             project=self.rubric.project,
@@ -57,6 +52,190 @@ class HandgradingResultTestCase(UnitTestBase):
             self.assertEqual(points, result.points_adjustment)
             result.delete()
 
+    def test_total_points_all_points_sources(self):
+        self.rubric.validate_and_update(
+            points_style=handgrading_models.PointsStyle.start_at_zero_and_add,
+            max_points=None)
+
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric)
+
+        selected_positive_crit = handgrading_models.Criterion.objects.validate_and_create(
+            points=16,
+            handgrading_rubric=self.rubric)
+        handgrading_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=selected_positive_crit,
+            handgrading_result=result)
+
+        unselected_positive_crit = handgrading_models.Criterion.objects.validate_and_create(
+            points=8,
+            handgrading_rubric=self.rubric)
+        handgrading_models.CriterionResult.objects.validate_and_create(
+            selected=False,
+            criterion=unselected_positive_crit,
+            handgrading_result=result)
+
+        selected_negative_crit = handgrading_models.Criterion.objects.validate_and_create(
+            points=-4,
+            handgrading_rubric=self.rubric)
+        handgrading_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=selected_negative_crit,
+            handgrading_result=result)
+
+        used_twice_annotation = handgrading_models.Annotation.objects.validate_and_create(
+            deduction=-1.5,
+            handgrading_rubric=self.rubric)
+        for i in range(2):
+            handgrading_models.AppliedAnnotation.objects.validate_and_create(
+                location={
+                    "first_line": 0,
+                    "last_line": 1,
+                    "filename": "file1"
+                },
+                annotation=used_twice_annotation,
+                handgrading_result=result)
+
+        unused_annotation = handgrading_models.Annotation.objects.validate_and_create(
+            deduction=-1,
+            handgrading_rubric=self.rubric)
+
+        expected_points = (selected_positive_crit.points +
+                           selected_negative_crit.points +
+                           used_twice_annotation.deduction * 2)
+
+        expected_points_possible = selected_positive_crit.points + unselected_positive_crit.points
+
+        self.assertEqual(expected_points, result.total_points)
+        self.assertEqual(expected_points_possible, result.total_points_possible)
+
+        for adjustment in -3, 5:
+            result.validate_and_update(points_adjustment=adjustment)
+            self.assertEqual(expected_points + adjustment, result.total_points)
+            self.assertEqual(expected_points_possible, result.total_points_possible)
+
+    def test_max_points_null_total_points_possible_computed_from_positive_criteria_points(self):
+        self.rubric.validate_and_update(
+            points_style=handgrading_models.PointsStyle.start_at_zero_and_add,
+            max_points=None)
+
+        criterion1 = handgrading_models.Criterion.objects.validate_and_create(
+            points=2,
+            handgrading_rubric=self.rubric)
+        criterion2 = handgrading_models.Criterion.objects.validate_and_create(
+            points=5,
+            handgrading_rubric=self.rubric)
+        negative_criterion = handgrading_models.Criterion.objects.validate_and_create(
+            points=-3,
+            handgrading_rubric=self.rubric)
+
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric)
+
+        self.assertEqual(criterion1.points + criterion2.points, result.total_points_possible)
+
+    def test_max_points_not_null_total_points_greater_than_possible(self):
+        self.rubric.validate_and_update(
+            points_style=handgrading_models.PointsStyle.start_at_zero_and_add,
+            max_points=6)
+
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric)
+
+        criterion1 = handgrading_models.Criterion.objects.validate_and_create(
+            points=2, handgrading_rubric=self.rubric)
+        handgrading_models.CriterionResult.objects.validate_and_create(
+            criterion=criterion1, handgrading_result=result, selected=True)
+
+        criterion2 = handgrading_models.Criterion.objects.validate_and_create(
+            points=5, handgrading_rubric=self.rubric)
+        handgrading_models.CriterionResult.objects.validate_and_create(
+            criterion=criterion2, handgrading_result=result, selected=True)
+
+        self.assertEqual(criterion1.points + criterion2.points, result.total_points)
+        self.assertEqual(self.rubric.max_points, result.total_points_possible)
+        self.assertGreater(result.total_points, result.total_points_possible)
+
+    def test_no_negative_total_points(self):
+        self.rubric.validate_and_update(
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=8)
+
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric,
+            points_adjustment=-3)
+
+        negative_crit = handgrading_models.Criterion.objects.validate_and_create(
+            points=-4,
+            handgrading_rubric=self.rubric)
+        handgrading_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=negative_crit,
+            handgrading_result=result)
+
+        annotation = handgrading_models.Annotation.objects.validate_and_create(
+            deduction=-2,
+            handgrading_rubric=self.rubric)
+        handgrading_models.AppliedAnnotation.objects.validate_and_create(
+            location={
+                "first_line": 0,
+                "last_line": 1,
+                "filename": "file1"
+            },
+            annotation=annotation,
+            handgrading_result=result)
+
+        self.assertEqual(0, result.total_points)
+        self.assertEqual(self.rubric.max_points, result.total_points_possible)
+
+    def test_total_points_respects_max_deduction_on_annotations(self):
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric,
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=20)
+
+        annotation = handgrading_models.Annotation.objects.validate_and_create(
+            deduction=-2,
+            max_deduction=-8,
+            handgrading_rubric=self.rubric)
+
+        for i in range(8):
+            handgrading_models.AppliedAnnotation.objects.validate_and_create(
+                comment="",
+                location={
+                    "first_line": 0,
+                    "last_line": 1,
+                    "filename": "file1"
+                },
+                annotation=annotation,
+                handgrading_result=result
+            )
+
+        self.assertEqual(result.max_points - annotation.max_deduction, result.total_points)
+        self.assertEqual(result.max_points, result.total_points_possible)
+
+    def test_total_points_with_no_criteria_or_annotations(self):
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric)
+
+        self.assertEqual(0, result.criterion_results.count())
+        self.assertEqual(0, self.rubric.criteria.count())
+        self.assertEqual(0, result.total_points_possible)
+        self.assertEqual(0, result.total_points)
+
     def test_serialization(self):
         expected_fields = [
             'pk',
@@ -75,7 +254,7 @@ class HandgradingResultTestCase(UnitTestBase):
 
             'submitted_filenames',
             'total_points',
-            'total_possible_points',
+            'total_points_possible',
         ]
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
@@ -131,8 +310,6 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertIsInstance(result_dict["criterion_results"], list)
         self.assertIsInstance(result_dict["handgrading_rubric"], object)
         self.assertIsInstance(result_dict["submission_group"], int)
-        self.assertIsInstance(result_dict["total_points"], float)
-        self.assertIsInstance(result_dict["total_possible_points"], float)
 
         self.assertEqual(len(result_dict["applied_annotations"]), 1)
         self.assertEqual(len(result_dict["comments"]), 1)
@@ -157,110 +334,3 @@ class HandgradingResultTestCase(UnitTestBase):
         result.refresh_from_db()
         self.assertEqual(3, result.points_adjustment)
         self.assertTrue(result.finished_grading)
-
-    def test_total_points_properties(self):
-        total_criterion_points = 0
-        total_annotation_deduction = 0
-        points_adjustment = 3
-
-        result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=self.submission,
-            submission_group=self.submission.submission_group,
-            handgrading_rubric=self.rubric,
-            points_adjustment=points_adjustment)
-
-        for num in range(8):
-            handgrading_models.CriterionResult.objects.validate_and_create(
-                selected=True,
-                criterion=handgrading_models.Criterion.objects.validate_and_create(
-                    points=num,
-                    handgrading_rubric=self.rubric
-                ),
-                handgrading_result=result
-            )
-
-            total_criterion_points += num
-
-        # Since selected=False, it should not be counted in total_points
-        handgrading_models.CriterionResult.objects.validate_and_create(
-            selected=False,
-            criterion=handgrading_models.Criterion.objects.validate_and_create(
-                points=10,
-                handgrading_rubric=self.rubric
-            ),
-            handgrading_result=result
-        )
-
-        total_criterion_points += 10
-
-        for num in range(-4, -1):
-            handgrading_models.AppliedAnnotation.objects.validate_and_create(
-                comment="",
-                location={
-                    "first_line": 0,
-                    "last_line": 1,
-                    "filename": "file1"
-                },
-                annotation=handgrading_models.Annotation.objects.validate_and_create(
-                    deduction=num,
-                    handgrading_rubric=self.rubric
-                ),
-                handgrading_result=result
-            )
-
-            total_annotation_deduction += num
-
-        total_points = (total_criterion_points - 10 + total_annotation_deduction +
-                        points_adjustment)
-
-        self.assertEqual(total_criterion_points, result.total_possible_points)
-        self.assertEqual(total_points, result.total_points)
-
-    def test_no_negative_total_points(self):
-        result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=self.submission,
-            submission_group=self.submission.submission_group,
-            handgrading_rubric=self.rubric,
-            points_adjustment=-3)
-
-        self.assertEqual(0, result.total_points)
-
-    def test_total_points_respects_max_deduction_on_annotations(self):
-        result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=self.submission,
-            submission_group=self.submission.submission_group,
-            handgrading_rubric=self.rubric,
-            points_adjustment=20)
-
-        annotation = handgrading_models.Annotation.objects.validate_and_create(
-            deduction=-2,
-            max_deduction=-8,
-            handgrading_rubric=self.rubric)
-
-        for i in range(8):
-            handgrading_models.AppliedAnnotation.objects.validate_and_create(
-                comment="",
-                location={
-                    "first_line": 0,
-                    "last_line": 1,
-                    "filename": "file1"
-                },
-                annotation=annotation,
-                handgrading_result=result
-            )
-
-        self.assertEqual(20 - 8, result.total_points)
-
-    def test_total_points_with_no_criteria_or_annotations(self):
-        result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=self.submission,
-            submission_group=self.submission.submission_group,
-            handgrading_rubric=self.rubric)
-
-        rubric_dict = self.rubric.to_dict()
-        result_dict = result.to_dict()
-
-        self.assertEqual(0, len(result_dict["criterion_results"]))
-        self.assertEqual(0, len(rubric_dict["criteria"]))
-        self.assertEqual(0, result.total_possible_points)
-        self.assertEqual(0, result.total_points)

@@ -19,7 +19,7 @@ class HandgradingRubricTestCase(UnitTestBase):
 
         self.assertEqual(self.project, rubric.project)
         self.assertEqual(handgrading_models.PointsStyle.start_at_zero_and_add, rubric.points_style)
-        self.assertEqual(0, rubric.max_points)
+        self.assertIsNone(rubric.max_points)
         self.assertFalse(rubric.show_grades_and_rubric_to_students)
         self.assertFalse(rubric.handgraders_can_leave_comments)
         self.assertFalse(rubric.handgraders_can_adjust_points)
@@ -40,7 +40,7 @@ class HandgradingRubricTestCase(UnitTestBase):
         for field, value in rubric_kwargs.items():
             self.assertEqual(value, getattr(rubric, field))
 
-    def test_reject_invalid_point_style_handgrading_rubric(self):
+    def test_invalid_points_style(self):
         """
         Assert that a handgrading object cannot be created with random string as point style
         """
@@ -51,7 +51,7 @@ class HandgradingRubricTestCase(UnitTestBase):
 
         self.assertIn('points_style', cm.exception.message_dict)
 
-    def test_reject_invalid_max_points_handgrading_rubric(self):
+    def test_invalid_negative_max_points(self):
         """
         Assert that a handgrading object cannot be created with invalid max points input
         (ex. negative numbers, floats, strings)
@@ -60,6 +60,14 @@ class HandgradingRubricTestCase(UnitTestBase):
         with self.assertRaises(ValidationError) as cm:
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 project=self.project, max_points=-1)
+
+        self.assertIn('max_points', cm.exception.message_dict)
+
+    def test_invalid_max_points_null_with_start_at_max_points_style(self):
+        with self.assertRaises(ValidationError) as cm:
+            handgrading_models.HandgradingRubric.objects.validate_and_create(
+                project=self.project,
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract)
 
         self.assertIn('max_points', cm.exception.message_dict)
 
