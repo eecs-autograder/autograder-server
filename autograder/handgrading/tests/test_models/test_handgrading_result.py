@@ -189,31 +189,4 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertEqual(total_points, result.total_points)
 
     def test_negative_total_points(self):
-        total_criterion_points = 0
-        total_annotation_deduction = 0
-        points_adjustment = 3
-
-        for num in range(8):
-            handgrading_models.Criterion.objects.validate_and_create(
-                points=num,
-                handgrading_rubric=self.rubric
-            )
-            total_criterion_points += num
-
-        for num in range(-4, -1):
-            handgrading_models.Annotation.objects.validate_and_create(
-                deduction=num,
-                handgrading_rubric=self.rubric
-            )
-            total_annotation_deduction += num
-
-        result = handgrading_models.HandgradingResult.objects.validate_and_create(
-            submission=self.submission,
-            submission_group=self.submission.submission_group,
-            handgrading_rubric=self.rubric,
-            points_adjustment=points_adjustment)
-
-        total_points = total_criterion_points + total_annotation_deduction + points_adjustment
-
-        self.assertEqual(total_criterion_points, result.total_possible_points)
-        self.assertEqual(total_points, result.total_points)
+        self.fail()
