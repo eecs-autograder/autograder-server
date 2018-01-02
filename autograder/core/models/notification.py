@@ -7,7 +7,7 @@ from .ag_model_base import AutograderModel
 class Notification(AutograderModel):
     timestamp = models.DateTimeField(auto_now_add=True)
     message = models.CharField(max_length=500)
-    recipient = models.ForeignKey(User, related_name='notifications')
+    recipient = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
 
     SERIALIZABLE_FIELDS = (
         'pk',

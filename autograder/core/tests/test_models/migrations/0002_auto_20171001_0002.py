@@ -16,11 +16,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='transparent_nullable_foreign_key',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='test_models._DummyForeignAutograderModel'),
+            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='...models.DummyForeignAutograderModel'),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='transparent_nullable_to_one',
-            field=models.OneToOneField(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='test_models._DummyForeignAutograderModel'),
+            field=models.OneToOneField(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='...models.DummyForeignAutograderModel'),
         ),
     ]

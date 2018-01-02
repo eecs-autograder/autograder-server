@@ -41,8 +41,8 @@ DEBUG_TOOLBAR_CONFIG = {
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-# MIDDLEWARE_CLASSES += ('autograder.sql_middleware.SqlPrintingMiddleware',)
-MIDDLEWARE_CLASSES += (
+# MIDDLEWARE += ('autograder.sql_middleware.SqlPrintingMiddleware',)
+MIDDLEWARE += (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'autograder.non_html_debug_toolbar_middleware.NonHtmlDebugToolbarMiddleware',
 )

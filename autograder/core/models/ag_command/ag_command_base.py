@@ -50,6 +50,7 @@ class AGCommandBase(AutograderModel):
                      otherwise.''')
     stdin_project_file = models.ForeignKey(
         UploadedFile, blank=True, null=True, default=None, related_name='+',
+        on_delete=models.CASCADE,
         help_text='''An UploadedFile whose contents should be redirected to the stdin of this
                      command. This value is used when stdin_source is StdinSource.project_file
                      and is ignored otherwise.''')
