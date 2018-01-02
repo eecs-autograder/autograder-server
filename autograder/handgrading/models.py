@@ -20,7 +20,8 @@ class HandgradingRubric(AutograderModel):
     """
     The rubric which is linked to the project and adds or subtracts points from or to the total.
     """
-    project = models.OneToOneField(Project, related_name='handgrading_rubric')
+    project = models.OneToOneField(Project, related_name='handgrading_rubric',
+                                   on_delete=models.CASCADE)
 
     points_style = EnumField(PointsStyle, default=PointsStyle.start_at_zero_and_add, blank=True)
 
@@ -58,7 +59,8 @@ class Criterion(AutograderModel):
     """
     Rubric item with fixed points that is not line specific
     """
-    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='criteria')
+    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='criteria',
+                                           on_delete=models.CASCADE)
 
     short_description = models.TextField(blank=True)
     long_description = models.TextField(blank=True)
@@ -82,7 +84,8 @@ class Annotation(AutograderModel):
     """
     Additional field that can be applied to a submission. Can be line specific
     """
-    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='annotations')
+    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='annotations',
+                                           on_delete=models.CASCADE)
 
     short_description = models.TextField(blank=True)
     long_description = models.TextField(blank=True)
@@ -116,11 +119,14 @@ class HandgradingResult(AutograderModel):
     """
     Tied to a specific submission
     """
-    submission = models.OneToOneField(Submission, related_name='handgrading_result')
+    submission = models.OneToOneField(Submission, related_name='handgrading_result',
+                                      on_delete=models.CASCADE)
 
-    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='handgrading_results')
+    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='handgrading_results',
+                                           on_delete=models.CASCADE)
 
-    submission_group = models.OneToOneField(SubmissionGroup, related_name='handgrading_result')
+    submission_group = models.OneToOneField(SubmissionGroup, related_name='handgrading_result',
+                                            on_delete=models.CASCADE)
 
     finished_grading = models.BooleanField(default=False, blank=True)
     points_adjustment = models.IntegerField(default=0, blank=True)
@@ -207,9 +213,11 @@ class CriterionResult(AutograderModel):
     """
     selected = models.BooleanField()
 
-    criterion = models.ForeignKey(Criterion, related_name='criterion_results')
+    criterion = models.ForeignKey(Criterion, related_name='criterion_results',
+                                  on_delete=models.CASCADE)
 
-    handgrading_result = models.ForeignKey(HandgradingResult, related_name='criterion_results')
+    handgrading_result = models.ForeignKey(HandgradingResult, related_name='criterion_results',
+                                           on_delete=models.CASCADE)
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -230,11 +238,13 @@ class AppliedAnnotation(AutograderModel):
     """
     comment = models.TextField(blank=True)
 
-    location = models.OneToOneField('Location', related_name='+')
+    location = models.OneToOneField('Location', related_name='+',
+                                    on_delete=models.PROTECT)
 
-    annotation = models.ForeignKey(Annotation)
+    annotation = models.ForeignKey(Annotation, on_delete=models.CASCADE)
 
-    handgrading_result = models.ForeignKey(HandgradingResult, related_name='applied_annotations')
+    handgrading_result = models.ForeignKey(HandgradingResult, related_name='applied_annotations',
+                                           on_delete=models.CASCADE)
 
     def clean(self):
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
@@ -260,11 +270,13 @@ class Comment(AutograderModel):
     Comment left by staff or grader regarding submission. Can be applied to specific line
     """
     # TODO: LOCATION CAN BE NULL
-    location = models.OneToOneField('Location', related_name='+', null=True, blank=True)
+    location = models.OneToOneField('Location', related_name='+', null=True, blank=True,
+                                    on_delete=models.PROTECT)
 
     text = models.TextField()
 
-    handgrading_result = models.ForeignKey(HandgradingResult, related_name='comments')
+    handgrading_result = models.ForeignKey(HandgradingResult, related_name='comments',
+                                           on_delete=models.CASCADE)
 
     def clean(self):
         submitted_filenames = self.handgrading_result.submission.submitted_filenames
