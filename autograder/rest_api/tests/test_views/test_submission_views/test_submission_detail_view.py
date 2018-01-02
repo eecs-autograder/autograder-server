@@ -2,7 +2,7 @@ import json
 import os
 import unittest
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import FileResponse
 from django.http import QueryDict
 from django.utils import timezone

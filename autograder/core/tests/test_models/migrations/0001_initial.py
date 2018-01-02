@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='_DummyAutograderModel',
+            name='DummyAutograderModel',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('last_modified', models.DateTimeField(auto_now=True)),
@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
             bases=(autograder.core.models.ag_model_base.AutograderModel,),
         ),
         migrations.CreateModel(
-            name='_DummyForeignAutograderModel',
+            name='DummyForeignAutograderModel',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('last_modified', models.DateTimeField(auto_now=True)),
@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
             bases=(autograder.core.models.ag_model_base.AutograderModel,),
         ),
         migrations.CreateModel(
-            name='_DummyToManyModel',
+            name='DummyToManyModel',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('last_modified', models.DateTimeField(auto_now=True)),
@@ -62,42 +62,43 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='another_many_to_many',
-            field=models.ManyToManyField(to='test_models._DummyToManyModel'),
+            field=models.ManyToManyField(to='...models.DummyToManyModel'),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='foreign_key',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rev_foreign_key', to='test_models._DummyForeignAutograderModel'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rev_foreign_key', to='...models.DummyForeignAutograderModel'),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='many_to_many',
-            field=models.ManyToManyField(related_name='many_to_manys', to='test_models._DummyToManyModel'),
+            field=models.ManyToManyField(related_name='many_to_manys', to='...models'
+                                                                          '.DummyToManyModel'),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='nullable_foreign_key',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='test_models._DummyForeignAutograderModel'),
+            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='...models.DummyForeignAutograderModel'),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='nullable_one_to_one',
-            field=models.OneToOneField(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='test_models._DummyForeignAutograderModel'),
+            field=models.OneToOneField(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='...models.DummyForeignAutograderModel'),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='one_to_one',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='rev_one_to_one', to='test_models._DummyForeignAutograderModel'),
+            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='rev_one_to_one', to='...models.DummyForeignAutograderModel'),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='transparent_foreign_key',
-            field=models.OneToOneField(default=autograder.core.tests.test_models.models._make_default_dummy_foreign_ag_model, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='test_models._DummyForeignAutograderModel'),
+            field=models.OneToOneField(default=autograder.core.tests.test_models.models._make_default_dummy_foreign_ag_model, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='...models.DummyForeignAutograderModel'),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',
             name='transparent_to_one',
-            field=models.OneToOneField(default=autograder.core.tests.test_models.models._make_default_dummy_foreign_ag_model, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='test_models._DummyForeignAutograderModel'),
+            field=models.OneToOneField(default=autograder.core.tests.test_models.models._make_default_dummy_foreign_ag_model, on_delete=django.db.models.deletion.CASCADE, related_name='+', to='...models.DummyForeignAutograderModel'),
         ),
         migrations.AddField(
             model_name='_dummyautogradermodel',

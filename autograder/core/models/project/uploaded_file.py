@@ -57,7 +57,7 @@ class UploadedFile(AutograderModel):
         'size',
     )
 
-    project = models.ForeignKey(Project, related_name='uploaded_files')
+    project = models.ForeignKey(Project, related_name='uploaded_files', on_delete=models.CASCADE)
     file_obj = models.FileField(
         upload_to=_get_project_file_upload_to_path,
         validators=[_validate_filename],

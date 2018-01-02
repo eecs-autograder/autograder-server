@@ -5,7 +5,7 @@ database objects are not created until the first time they are accessed
 per test case.
 '''
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from rest_framework.test import APIClient
 

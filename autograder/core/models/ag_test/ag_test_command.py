@@ -133,6 +133,7 @@ class AGTestCommand(AGCommandBase):
     ag_test_case = models.ForeignKey(
         AGTestCase,
         related_name='ag_test_commands',
+        on_delete=models.CASCADE,
         help_text="""The AGTestCase that this command belongs to.""")
 
     expected_return_code = ag_fields.EnumField(
@@ -150,6 +151,7 @@ class AGTestCommand(AGCommandBase):
                      and is ignored otherwise.''')
     expected_stdout_project_file = models.ForeignKey(
         UploadedFile, blank=True, null=True, default=None, related_name='+',
+        on_delete=models.CASCADE,
         help_text='''An UploadedFile whose contents should be compared against this command's
                      stdout. This value is used (and may not be null) when expected_stdout_source
                      is ExpectedOutputSource.project_file and is ignored otherwise.''')
@@ -165,6 +167,7 @@ class AGTestCommand(AGCommandBase):
                      and is ignored otherwise.''')
     expected_stderr_project_file = models.ForeignKey(
         UploadedFile, blank=True, null=True, default=None, related_name='+',
+        on_delete=models.CASCADE,
         help_text='''An UploadedFile whose contents should be compared against this command's
                      stderr. This value is used (and may not be null) when expected_stderr_source
                      is ExpectedOutputSource.project_file and is ignored otherwise.''')

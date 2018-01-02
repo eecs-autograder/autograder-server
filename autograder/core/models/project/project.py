@@ -65,6 +65,7 @@ class Project(AutograderModel):
 
     course = models.ForeignKey(
         Course, related_name='projects',
+        on_delete=models.CASCADE,
         help_text='''The Course this project belongs to.
             This field is REQUIRED.''')
 

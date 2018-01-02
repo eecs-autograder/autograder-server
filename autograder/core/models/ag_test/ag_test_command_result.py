@@ -25,10 +25,12 @@ class AGTestCommandResult(AGCommandResultBase):
         ordering = ('ag_test_command___order',)
 
     ag_test_command = models.ForeignKey(
-        AGTestCommand, help_text='The AGTestCommand this result belongs to.')
+        AGTestCommand, on_delete=models.CASCADE,
+        help_text='The AGTestCommand this result belongs to.')
 
     ag_test_case_result = models.ForeignKey(
         'AGTestCaseResult', related_name='ag_test_command_results',
+        on_delete=models.CASCADE,
         help_text='''The AGTestCaseResult that this result belongs to.
                      A value of None indicates that this AGTestCommandResult
                      is the result of an AGTestSuite's setup command.''')
