@@ -13,13 +13,12 @@ from autograder.rest_api.views.ag_model_views import (
 
 is_admin_or_read_only = ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)
 is_handgrader = ag_permissions.is_handgrader(lambda project: project.course)
-read_only = ag_permissions.IsReadOnly
 
 
 class HandgradingRubricRetrieveCreateView(RetrieveCreateNestedModelView):
     serializer_class = handgrading_serializers.HandgradingRubricSerializer
     permission_classes = [
-        (P(is_admin_or_read_only) | (P(is_handgrader) & P(read_only)))]
+        (P(is_admin_or_read_only) | (P(is_handgrader) & P(ag_permissions.IsReadOnly)))]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
