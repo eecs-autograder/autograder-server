@@ -133,25 +133,21 @@ class HandgradingResult(AutograderModel):
     def total_points(self):
         total = 0
 
-        applied_annotations = AppliedAnnotation.objects.filter(handgrading_result=self.pk)
-        criterion_results = CriterionResult.objects.filter(handgrading_result=self.pk)
+        for annotation in Annotation.objects.filter(handgrading_rubric=self.handgrading_rubric):
+            total += annotation.deduction
 
-        for applied_annotation in applied_annotations:
-            total += applied_annotation.annotation.deduction
-
-        for criterion_result in criterion_results:
-            total += criterion_result.criterion.points
+        for criterion in Criterion.objects.filter(handgrading_rubric=self.handgrading_rubric):
+            total += criterion.points
 
         total += self.points_adjustment
-
         return total
 
     @property
     def total_possible_points(self):
         total = 0
 
-        for criterion_result in CriterionResult.objects.filter(handgrading_result=self.pk):
-            total += criterion_result.criterion.points
+        for criterion in Criterion.objects.filter(handgrading_rubric=self.handgrading_rubric):
+            total += criterion.points
 
         return total
 
