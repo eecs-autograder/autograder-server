@@ -9,7 +9,7 @@ from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data

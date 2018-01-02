@@ -17,10 +17,12 @@ class AGTestSuiteResult(AutograderModel):
         ordering = ('ag_test_suite___order',)
 
     ag_test_suite = models.ForeignKey(
-        AGTestSuite, help_text='The AGTestSuite that this result belongs to.')
+        AGTestSuite, on_delete=models.CASCADE,
+        help_text='The AGTestSuite that this result belongs to.')
 
     submission = models.ForeignKey(
         'Submission', related_name='ag_test_suite_results',
+        on_delete=models.CASCADE,
         help_text='The Submission that this result is for.')
 
     setup_return_code = models.IntegerField(

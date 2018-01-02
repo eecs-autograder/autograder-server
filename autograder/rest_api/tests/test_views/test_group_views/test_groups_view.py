@@ -1,6 +1,6 @@
 from typing import List
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.models import User
 
 import autograder.core.models as ag_models

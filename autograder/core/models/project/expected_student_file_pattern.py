@@ -30,7 +30,7 @@ class ExpectedStudentFilePattern(AutograderModel):
         'max_num_matches',
     )
 
-    project = models.ForeignKey(Project,
+    project = models.ForeignKey(Project, on_delete=models.CASCADE,
                                 related_name='expected_student_file_patterns')
 
     pattern = ag_fields.ShortStringField(

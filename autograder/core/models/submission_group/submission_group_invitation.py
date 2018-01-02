@@ -62,13 +62,14 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
 
     invitation_creator = models.ForeignKey(
         User, related_name='group_invitations_sent',
+        on_delete=models.CASCADE,
         help_text="""The User who created this invitation.
             This field is REQUIRED.""")
 
     _invitees_who_accepted = ag_fields.StringArrayField(
         default=list, blank=True)
 
-    project = models.ForeignKey(Project,
+    project = models.ForeignKey(Project, on_delete=models.CASCADE,
                                 related_name='submission_group_invitations')
 
     objects = SubmissionGroupInvitationManager()

@@ -13,6 +13,7 @@ from .student_test_suite import StudentTestSuite
 
 class RerunSubmissionsTask(Task):
     project = models.ForeignKey(Project, related_name='rerun_submission_tasks',
+                                on_delete=models.CASCADE,
                                 help_text="The Project this task belongs to.")
 
     rerun_all_submissions = models.BooleanField(
