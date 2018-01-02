@@ -72,6 +72,7 @@ class AGTestSuite(AutograderModel):
                      This field is REQUIRED.''')
 
     project = models.ForeignKey(Project, related_name='ag_test_suites',
+                                on_delete=models.CASCADE,
                                 help_text='''The project this suite belongs to.
                                              This field is REQUIRED.''')
 

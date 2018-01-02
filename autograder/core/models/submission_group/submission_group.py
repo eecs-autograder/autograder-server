@@ -69,7 +69,8 @@ class SubmissionGroup(ag_model_base.AutograderModel):
             of one submission group per project.
             This field is REQUIRED.""")
 
-    project = models.ForeignKey(Project, related_name="submission_groups")
+    project = models.ForeignKey(Project, related_name="submission_groups",
+                                on_delete=models.CASCADE)
 
     extended_due_date = models.DateTimeField(
         null=True, default=None, blank=True,

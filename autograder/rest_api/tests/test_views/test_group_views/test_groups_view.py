@@ -1,4 +1,4 @@
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers

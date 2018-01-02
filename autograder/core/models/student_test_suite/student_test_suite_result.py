@@ -25,8 +25,9 @@ class StudentTestSuiteResult(AutograderModel):
         unique_together = ('student_test_suite', 'submission')
         ordering = ('student_test_suite___order',)
 
-    student_test_suite = models.ForeignKey(StudentTestSuite)
-    submission = models.ForeignKey('Submission', related_name='student_test_suite_results')
+    student_test_suite = models.ForeignKey(StudentTestSuite, on_delete=models.CASCADE)
+    submission = models.ForeignKey('Submission', related_name='student_test_suite_results',
+                                   on_delete=models.CASCADE)
 
     student_tests = ag_fields.StringArrayField(
         blank=True, default=list,

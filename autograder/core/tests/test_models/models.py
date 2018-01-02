@@ -12,7 +12,7 @@ import autograder.core.fields as ag_fields
 # -----------------------------------------------------------------------------
 
 
-class _DummyToManyModel(AutograderModel):
+class DummyToManyModel(AutograderModel):
     class Meta:
         ordering = ('name',)
 
@@ -22,7 +22,7 @@ class _DummyToManyModel(AutograderModel):
     EDITABLE_FIELDS = ('name',)
 
 
-class _DummyForeignAutograderModel(AutograderModel):
+class DummyForeignAutograderModel(AutograderModel):
     name = models.CharField(max_length=255)
 
     SERIALIZABLE_FIELDS = ('pk', 'name', 'rev_foreign_key')
@@ -30,7 +30,7 @@ class _DummyForeignAutograderModel(AutograderModel):
 
 
 def _make_default_dummy_foreign_ag_model():
-    return _DummyForeignAutograderModel.objects.create().pk
+    return DummyForeignAutograderModel.objects.create().pk
 
 
 class AnEnum(enum.Enum):
@@ -38,7 +38,7 @@ class AnEnum(enum.Enum):
     egg = 'egg'
 
 
-class _DummyAutograderModel(AutograderModel):
+class DummyAutograderModel(AutograderModel):
     pos_num_val = models.IntegerField(
         validators=[validators.MinValueValidator(0)])
     non_empty_str_val = models.TextField(
@@ -47,28 +47,37 @@ class _DummyAutograderModel(AutograderModel):
 
     enum_field = ag_fields.EnumField(AnEnum, blank=True, default=AnEnum.spam)
 
-    one_to_one = models.OneToOneField(_DummyForeignAutograderModel, related_name='rev_one_to_one')
+    one_to_one = models.OneToOneField(DummyForeignAutograderModel, related_name='rev_one_to_one',
+                                      on_delete=models.CASCADE)
     nullable_one_to_one = models.OneToOneField(
-        _DummyForeignAutograderModel, related_name='+', blank=True, null=True, default=None)
+        DummyForeignAutograderModel, related_name='+', blank=True, null=True, default=None,
+        on_delete=models.SET_NULL)
     transparent_to_one = models.OneToOneField(
-        _DummyForeignAutograderModel, related_name='+',
-        default=_make_default_dummy_foreign_ag_model)
+        DummyForeignAutograderModel, related_name='+',
+        default=_make_default_dummy_foreign_ag_model,
+        null=True,
+        on_delete=models.SET_NULL)
     transparent_nullable_to_one = models.OneToOneField(
-        _DummyForeignAutograderModel, related_name='+',
-        default=None, blank=True, null=True)
+        DummyForeignAutograderModel, related_name='+',
+        default=None, blank=True, null=True,
+        on_delete=models.SET_NULL)
 
-    foreign_key = models.ForeignKey(_DummyForeignAutograderModel, related_name='rev_foreign_key')
+    foreign_key = models.ForeignKey(DummyForeignAutograderModel, related_name='rev_foreign_key',
+                                    on_delete=models.CASCADE)
     nullable_foreign_key = models.ForeignKey(
-        _DummyForeignAutograderModel, related_name='+', blank=True, null=True, default=None)
-    transparent_foreign_key = models.OneToOneField(
-        _DummyForeignAutograderModel, related_name='+',
-        default=_make_default_dummy_foreign_ag_model)
+        DummyForeignAutograderModel, related_name='+', blank=True, null=True, default=None,
+        on_delete=models.CASCADE)
+    transparent_foreign_key = models.ForeignKey(
+        DummyForeignAutograderModel, related_name='+',
+        default=_make_default_dummy_foreign_ag_model,
+        on_delete=models.CASCADE)
     transparent_nullable_foreign_key = models.ForeignKey(
-        _DummyForeignAutograderModel, related_name='+',
+        DummyForeignAutograderModel, related_name='+',
+        on_delete=models.CASCADE,
         default=None, blank=True, null=True)
 
-    many_to_many = models.ManyToManyField(_DummyToManyModel, related_name='many_to_manys')
-    another_many_to_many = models.ManyToManyField(_DummyToManyModel)
+    many_to_many = models.ManyToManyField(DummyToManyModel, related_name='many_to_manys')
+    another_many_to_many = models.ManyToManyField(DummyToManyModel)
 
     users = models.ManyToManyField(User)
 

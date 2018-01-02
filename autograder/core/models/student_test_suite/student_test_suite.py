@@ -206,7 +206,8 @@ class StudentTestSuite(AutograderModel):
         help_text="""The name used to identify this StudentTestSuite.
                      Must be non-empty and non-null.""")
     project = models.ForeignKey(
-        Project, related_name='student_test_suites',
+        Project, on_delete=models.CASCADE,
+        related_name='student_test_suites',
         help_text="The Project that this student test suite belongs to.")
 
     project_files_needed = models.ManyToManyField(

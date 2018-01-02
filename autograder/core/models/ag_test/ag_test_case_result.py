@@ -15,10 +15,12 @@ class AGTestCaseResult(AutograderModel):
 
     ag_test_case = models.ForeignKey(
         AGTestCase, related_name='related_ag_test_case_results',
+        on_delete=models.CASCADE,
         help_text='The AGTestCase that this result belongs to.')
 
     ag_test_suite_result = models.ForeignKey(
         'AGTestSuiteResult', related_name='ag_test_case_results',
+        on_delete=models.CASCADE,
         help_text='The AGTestSuiteResult that this result belongs to.')
 
     def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestCaseResult.FeedbackCalculator':

@@ -45,6 +45,7 @@ class AGTestCase(AutograderModel):
     ag_test_suite = models.ForeignKey(
         AGTestSuite,
         related_name='ag_test_cases',
+        on_delete=models.CASCADE,
         help_text='''The suite this autograder test belongs to.
                      This field is REQUIRED.''')
 
