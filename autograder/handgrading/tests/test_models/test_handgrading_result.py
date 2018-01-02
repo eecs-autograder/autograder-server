@@ -250,3 +250,17 @@ class HandgradingResultTestCase(UnitTestBase):
             )
 
         self.assertEqual(20 - 8, result.total_points)
+
+    def test_total_points_with_no_criteria_or_annotations(self):
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric)
+
+        rubric_dict = self.rubric.to_dict()
+        result_dict = result.to_dict()
+
+        self.assertEqual(0, len(result_dict["criterion_results"]))
+        self.assertEqual(0, len(rubric_dict["criteria"]))
+        self.assertEqual(0, result.total_possible_points)
+        self.assertEqual(0, result.total_points)
