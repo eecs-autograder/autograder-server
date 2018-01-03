@@ -29,8 +29,8 @@ class HandgradingRubric(AutograderModel):
 
     points_style = EnumField(PointsStyle, default=PointsStyle.start_at_zero_and_add, blank=True)
 
-    max_points = models.IntegerField(blank=True, null=True, default=None,
-                                     validators=[validators.MinValueValidator(0)])
+    max_points = models.FloatField(blank=True, null=True, default=None,
+                                   validators=[validators.MinValueValidator(0)])
 
     show_grades_and_rubric_to_students = models.BooleanField(default=False, blank=True)
     handgraders_can_leave_comments = models.BooleanField(default=False, blank=True)
@@ -142,7 +142,7 @@ class HandgradingResult(AutograderModel):
                                             on_delete=models.CASCADE)
 
     finished_grading = models.BooleanField(default=False, blank=True)
-    points_adjustment = models.IntegerField(default=0, blank=True)
+    points_adjustment = models.FloatField(default=0, blank=True)
 
     @property
     def submitted_filenames(self):
@@ -150,31 +150,37 @@ class HandgradingResult(AutograderModel):
 
     @property
     def total_points(self):
-        with_total_points = annotate_with_handgrading_points(
-            HandgradingResult.objects.filter(pk=self.pk))
-        return with_total_points.first().handgrading_points
-        # criteria_points = self.criterion_results.filter(
-        #     selected=True
-        # ).aggregate(
-        #     criteria_points=)['criteria_points']
+        total = 0
+        if self.handgrading_rubric.points_style == PointsStyle.start_at_max_and_subtract:
+            total = self.handgrading_rubric.max_points
 
-        # cap_deductions_expr = Greatest(Sum('annotation__deduction'), 'annotation__max_deduction')
-        # annotation_points = self.applied_annotations.aggregate(
-        #     annotation_points=Coalesce(cap_deductions_expr, Value(0)))['annotation_points']
-        # return max(0, criteria_points + annotation_points + self.points_adjustment)
+        for annotation in Annotation.objects.filter(handgrading_rubric=self.handgrading_rubric):
+            total_for_annotation = 0
+            # Using Python filter() instead of Django queryset filter()
+            # to allow prefetching.
+            applied_annotations = filter(lambda appl_annot: appl_annot.annotation == annotation,
+                                         self.applied_annotations.all())
+            for applied_annotation in applied_annotations:
+                total_for_annotation += applied_annotation.annotation.deduction
+
+            if annotation.max_deduction and total_for_annotation < annotation.max_deduction:
+                total += annotation.max_deduction
+            else:
+                total += total_for_annotation
+
+        total += sum(criterion_result.criterion.points for
+                     criterion_result in self.criterion_results.all() if criterion_result.selected)
+
+        total += self.points_adjustment
+        return max(0, total)
 
     @property
     def total_points_possible(self):
         if self.handgrading_rubric.max_points is not None:
             return self.handgrading_rubric.max_points
 
-        with_points_possible = annotate_with_points_handgrading_points_possible(
-            HandgradingResult.objects.filter(pk=self.pk))
-        return with_points_possible.first().handgrading_points_possible
-
-        # return self.handgrading_rubric.criteria.filter(
-        #     points__gte=0
-        # ).aggregate(criteria_points=Coalesce(Sum('points'), Value(0)))['criteria_points']
+        return sum(criterion.points for criterion in
+                   self.handgrading_rubric.criteria.all() if criterion.points >= 0)
 
     SERIALIZABLE_FIELDS = (
         'pk',
@@ -208,31 +214,6 @@ class HandgradingResult(AutograderModel):
         'points_adjustment',
         'finished_grading',
     )
-
-
-def annotate_with_handgrading_points(queryset):
-    criteria_sum_expr = Sum('criterion_results__criterion__points',
-                            filter=Q(selected=True))
-    queryset = queryset.annotate(criteria_points=Coalesce(criteria_sum_expr, Value(0)))
-
-    cap_deductions_expr = Greatest(
-        Sum('applied_annotations__annotation__deduction'),
-        'applied_annotations__annotation__max_deduction')
-    queryset = queryset.annotate(annotation_points=Coalesce(cap_deductions_expr, Value(0)))
-
-    points_sum_expr = ExpressionWrapper(
-        F('criteria_points') + F('annotation_points') + F('points_adjustment'),
-        output_field=models.FloatField())
-    queryset = queryset.annotate(points_sum=points_sum_expr)
-
-    queryset = queryset.annotate(handgrading_points=Greatest(Value(0.0), F('points_sum')))
-    return queryset
-
-
-def annotate_with_points_handgrading_points_possible(queryset):
-    positive_criteria_expr = Sum('handgrading_rubric__criteria__points', filter=Q(points__gte=0))
-    return queryset.annotate(
-        handgrading_points_possible=Coalesce(positive_criteria_expr, Value(0)))
 
 
 class CriterionResult(AutograderModel):

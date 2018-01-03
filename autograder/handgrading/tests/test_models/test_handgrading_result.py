@@ -197,13 +197,40 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertEqual(0, result.total_points)
         self.assertEqual(self.rubric.max_points, result.total_points_possible)
 
-    def test_total_points_respects_max_deduction_on_annotations(self):
+    def test_total_points_start_at_max_and_subtract(self):
+        self.rubric.validate_and_update(
+            max_points=10, points_style=handgrading_models.PointsStyle.start_at_max_and_subtract)
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
             submission_group=self.submission.submission_group,
-            handgrading_rubric=self.rubric,
-            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-            max_points=20)
+            handgrading_rubric=self.rubric)
+
+        annotation = handgrading_models.Annotation.objects.validate_and_create(
+            deduction=-2,
+            handgrading_rubric=self.rubric)
+
+        for i in range(3):
+            handgrading_models.AppliedAnnotation.objects.validate_and_create(
+                comment="",
+                location={
+                    "first_line": 0,
+                    "last_line": 1,
+                    "filename": "file1"
+                },
+                annotation=annotation,
+                handgrading_result=result
+            )
+
+        self.assertEqual(4, result.total_points)
+        self.assertEqual(self.rubric.max_points, result.total_points_possible)
+
+    def test_total_points_respects_max_deduction_on_annotations(self):
+        self.rubric.validate_and_update(
+            max_points=20, points_style=handgrading_models.PointsStyle.start_at_max_and_subtract)
+        result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            submission_group=self.submission.submission_group,
+            handgrading_rubric=self.rubric)
 
         annotation = handgrading_models.Annotation.objects.validate_and_create(
             deduction=-2,
@@ -222,8 +249,8 @@ class HandgradingResultTestCase(UnitTestBase):
                 handgrading_result=result
             )
 
-        self.assertEqual(result.max_points - annotation.max_deduction, result.total_points)
-        self.assertEqual(result.max_points, result.total_points_possible)
+        self.assertEqual(self.rubric.max_points + annotation.max_deduction, result.total_points)
+        self.assertEqual(self.rubric.max_points, result.total_points_possible)
 
     def test_total_points_with_no_criteria_or_annotations(self):
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
