@@ -1,6 +1,6 @@
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from rest_framework import status
 from rest_framework.test import APIClient
