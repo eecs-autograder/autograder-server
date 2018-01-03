@@ -30,6 +30,13 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
         pattern.project = new_project
         pattern.save()
 
+    _copy_ag_tests(project, new_project)
+    _copy_student_suites(project, new_project)
+
+    return new_project
+
+
+def _copy_ag_tests(project, new_project):
     for suite in project.ag_test_suites.all():
         project_files_needed = [
             file_ for file_ in new_project.uploaded_files.all()
@@ -86,7 +93,26 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
                                          ag_models.AGTestCommand.get_serialize_related_fields())
                 )
 
-    return new_project
+
+def _copy_student_suites(project, new_project):
+    for student_suite in project.student_test_suites.all():
+        project_files_needed = [
+            file_ for file_ in new_project.uploaded_files.all()
+            if utils.find_if(student_suite.project_files_needed.all(),
+                             lambda proj_file: proj_file.name == file_.name)
+        ]
+        student_files_needed = list(
+            new_project.expected_student_file_patterns.filter(
+                pattern__in=[
+                    pattern.pattern for pattern in student_suite.student_files_needed.all()]))
+        ag_models.StudentTestSuite.objects.validate_and_create(
+            project=new_project,
+            project_files_needed=project_files_needed,
+            student_files_needed=student_files_needed,
+            **utils.exclude_dict(
+                student_suite.to_dict(),
+                ('pk', 'project') + ag_models.StudentTestSuite.get_serialize_related_fields())
+        )
 
 
 @transaction.atomic()

@@ -70,6 +70,7 @@ class UnitTestBase(TransactionTestCase):
         def __exit__(self, *args):
             self.test_case_object.assertEqual(self.original_count, self.queryset.count())
 
+
 # Adapted from: http://stackoverflow.com/questions/25851183/
 def _ordered(obj):
     if isinstance(obj, dict):

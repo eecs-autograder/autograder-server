@@ -31,7 +31,7 @@ class CopyProjectTestCase(UnitTestBase):
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
             expected_stdout_project_file=proj_file1)
 
-        suite2 = obj_build.make_ag_test_suite(project, project_files_needed=[proj_file2],
+        suite2 = obj_build.make_ag_test_suite(project, project_files_needed=[proj_file1, proj_file2],
                                               student_files_needed=[student_file2])
         case2 = obj_build.make_ag_test_case(suite2)
         cmd3 = obj_build.make_full_ag_test_command(
@@ -41,6 +41,22 @@ class CopyProjectTestCase(UnitTestBase):
         case3 = obj_build.make_ag_test_case(suite2)
 
         suite3 = obj_build.make_ag_test_suite(project)
+
+        student_suite1 = obj_build.make_student_test_suite(
+            project,
+            project_files_needed=[proj_file1, proj_file2],
+            student_files_needed=[student_file1],
+            setup_command={
+                'name':'stave',
+                'cmd': 'yorp'
+            })
+
+        student_suite2 = obj_build.make_student_test_suite(
+            project,
+            project_files_needed=[proj_file1],
+            student_files_needed=[student_file1, student_file2])
+
+        student_suite3 = obj_build.make_student_test_suite(project)
 
         other_course = obj_build.make_course()
         new_project = copy_project(project, other_course)
@@ -53,9 +69,9 @@ class CopyProjectTestCase(UnitTestBase):
 
         ignore_fields = ['pk', 'course', 'last_modified',
                          'uploaded_files', 'expected_student_file_patterns']
-        expected = _pop_many(project.to_dict(), ignore_fields)
-        expected.update({'visible_to_students': False, 'hide_ultimate_submission_fdbk': True})
-        self.assertEqual(expected, _pop_many(new_project.to_dict(), ignore_fields))
+        expected_ag_tests = _pop_many(project.to_dict(), ignore_fields)
+        expected_ag_tests.update({'visible_to_students': False, 'hide_ultimate_submission_fdbk': True})
+        self.assertEqual(expected_ag_tests, _pop_many(new_project.to_dict(), ignore_fields))
 
         self.assertEqual(project.uploaded_files.count(), new_project.uploaded_files.count())
         for old_file, new_file in itertools.zip_longest(
@@ -96,15 +112,35 @@ class CopyProjectTestCase(UnitTestBase):
                 ag_test_case__ag_test_suite__project=new_project)}
         self.assertTrue(old_cmd_pks.isdisjoint(new_cmd_pks))
 
+        old_student_suite_pks = {suite.pk for suite in project.student_test_suites.all()}
+        new_student_suite_pks = {suite.pk for suite in new_project.student_test_suites.all()}
+        self.assertTrue(old_student_suite_pks.isdisjoint(new_student_suite_pks))
+
         ignore_fields = ['pk', 'project', 'last_modified',
                          'ag_test_suite', 'ag_test_case', 'ag_test_command']
-        expected = _recursive_pop(
+        expected_ag_tests = _recursive_pop(
             [suite.to_dict() for suite in project.ag_test_suites.all()], ignore_fields)
-        actual = _recursive_pop(
+        for dict_ in expected_ag_tests:
+            dict_['project_files_needed'].sort(key=lambda obj: obj['name'])
+            dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
+        actual_ag_tests = _recursive_pop(
             [suite.to_dict() for suite in new_project.ag_test_suites.all()], ignore_fields)
-        # print(expected)
-        # print(actual)
-        self.assertEqual(expected, actual)
+        for dict_ in actual_ag_tests:
+            dict_['project_files_needed'].sort(key=lambda obj: obj['name'])
+            dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
+        self.assertEqual(expected_ag_tests, actual_ag_tests)
+
+        expected_student_suites = _recursive_pop(
+            [suite.to_dict() for suite in project.student_test_suites.all()], ignore_fields)
+        for dict_ in expected_student_suites:
+            dict_['project_files_needed'].sort(key=lambda obj: obj['name'])
+            dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
+        actual_student_suites = _recursive_pop(
+            [suite.to_dict() for suite in new_project.student_test_suites.all()], ignore_fields)
+        for dict_ in actual_student_suites:
+            dict_['project_files_needed'].sort(key=lambda obj: obj['name'])
+            dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
+        self.assertEqual(expected_student_suites, actual_student_suites)
 
     def test_copy_project_new_name_same_course(self):
         project = obj_build.make_project()
