@@ -35,7 +35,7 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
             file_ for file_ in new_project.uploaded_files.all()
             if utils.find_if(suite.project_files_needed.all(),
                              lambda proj_file: proj_file.name == file_.name)
-            ]
+        ]
         student_files_needed = list(
             new_project.expected_student_file_patterns.filter(
                 pattern__in=[pattern.pattern for pattern in suite.student_files_needed.all()]))
@@ -58,11 +58,32 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
             )
 
             for cmd in case.ag_test_commands.all():
+                stdin_project_file = None
+                if cmd.stdin_project_file is not None:
+                    stdin_project_file = utils.find_if(
+                        new_project.uploaded_files.all(),
+                        lambda proj_file: proj_file.name == cmd.stdin_project_file.name)
+
+                expected_stdout_project_file = None
+                if cmd.expected_stdout_project_file is not None:
+                    expected_stdout_project_file = utils.find_if(
+                        new_project.uploaded_files.all(),
+                        lambda proj_file: proj_file.name == cmd.expected_stdout_project_file.name)
+
+                expected_stderr_project_file = None
+                if cmd.expected_stderr_project_file is not None:
+                    expected_stderr_project_file = utils.find_if(
+                        new_project.uploaded_files.all(),
+                        lambda proj_file: proj_file.name == cmd.expected_stderr_project_file.name)
+
                 ag_models.AGTestCommand.objects.validate_and_create(
                     ag_test_case=new_case,
+                    stdin_project_file=stdin_project_file,
+                    expected_stdout_project_file=expected_stdout_project_file,
+                    expected_stderr_project_file=expected_stderr_project_file,
                     **utils.exclude_dict(cmd.to_dict(),
                                          ('pk', 'ag_test_case') +
-                                            ag_models.AGTestCommand.get_serialize_related_fields())
+                                         ag_models.AGTestCommand.get_serialize_related_fields())
                 )
 
     return new_project

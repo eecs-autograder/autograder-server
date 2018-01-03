@@ -22,13 +22,22 @@ class CopyProjectTestCase(UnitTestBase):
         suite1 = obj_build.make_ag_test_suite(project, project_files_needed=[proj_file1],
                                               student_files_needed=[student_file1])
         case1 = obj_build.make_ag_test_case(suite1)
-        cmd1 = obj_build.make_full_ag_test_command(case1)
-        cmd2 = obj_build.make_full_ag_test_command(case1, set_arbitrary_points=False)
+        cmd1 = obj_build.make_full_ag_test_command(
+            case1,
+            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_project_file=proj_file2)
+        cmd2 = obj_build.make_full_ag_test_command(
+            case1, set_arbitrary_points=False,
+            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_project_file=proj_file1)
 
         suite2 = obj_build.make_ag_test_suite(project, project_files_needed=[proj_file2],
                                               student_files_needed=[student_file2])
         case2 = obj_build.make_ag_test_case(suite2)
-        cmd3 = obj_build.make_full_ag_test_command(case2, set_arbitrary_expected_vals=False)
+        cmd3 = obj_build.make_full_ag_test_command(
+            case2, set_arbitrary_expected_vals=False,
+            stdin_source=ag_models.StdinSource.project_file,
+            stdin_project_file=proj_file2)
         case3 = obj_build.make_ag_test_case(suite2)
 
         suite3 = obj_build.make_ag_test_suite(project)
