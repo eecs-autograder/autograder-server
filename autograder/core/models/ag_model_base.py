@@ -96,9 +96,9 @@ def _load_related_to_many_objs(related_model, objs: typing.Sequence):
 
 class ToDictMixin:
     @classmethod
-    def get_serializable_fields(cls) -> typing.Sequence[str]:
+    def get_serializable_fields(cls) -> typing.Tuple[str]:
         """
-        Returns a collection of the names of member variables to include
+        Returns a tuple of the names of member variables to include
         by default in the dictionary returned by to_dict()
 
         This collection can include model fields, properties, member
@@ -124,9 +124,9 @@ class ToDictMixin:
     SERIALIZABLE_FIELDS = tuple()
 
     @classmethod
-    def get_serialize_related_fields(cls) -> typing.Sequence[str]:
+    def get_serialize_related_fields(cls) -> typing.Tuple[str]:
         """
-        Returns a collection of the names of database related fields
+        Returns a tuple of the names of database related fields
         (-to-one or -to-many) that should be serialized
         (by calling <related_obj>.to_dict()) when
         an instance of this class is serialized with <obj>.to_dict().
@@ -145,9 +145,9 @@ class ToDictMixin:
     SERIALIZE_RELATED = tuple()
 
     @classmethod
-    def get_transparent_to_one_fields(cls) -> typing.Sequence[str]:
+    def get_transparent_to_one_fields(cls) -> typing.Tuple[str]:
         """
-        Returns a collection of the names of database -to-one fields
+        Returns a tuple of the names of database -to-one fields
         that should be treated as "transparent" when serializing and
         updating instances of this class.
         This introduces the following default behaviors for affected fields:

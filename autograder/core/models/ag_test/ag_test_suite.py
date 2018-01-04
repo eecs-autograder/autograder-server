@@ -200,7 +200,6 @@ class AGTestSuite(AutograderModel):
 
     SERIALIZE_RELATED = (
         'project_files_needed',
-        'read_only_project_files',
         'student_files_needed',
 
         'ag_test_cases',
