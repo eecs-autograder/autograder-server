@@ -60,7 +60,7 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
         self.url = reverse('applied_annotations',
                            kwargs={'handgrading_result_pk': self.handgrading_result.pk})
 
-    def test_admin_or_staff_or_handgrader_valid_list_cases(self):
+    def test_admin_or_staff_or_handgrader_valid_list_applied_annotations(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
         [staff] = obj_build.make_staff_users(self.course, 1)
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
@@ -72,7 +72,7 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertSequenceEqual(self.applied_annotation.to_dict(), response.data[0])
 
-    def test_student_list_cases_permission_denied(self):
+    def test_student_list_applied_annotations_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
