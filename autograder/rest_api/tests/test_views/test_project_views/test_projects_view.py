@@ -31,8 +31,8 @@ class CourseListProjectsTestCase(_ProjectsSetUp):
         all_projects = self.all_projects
         self.do_valid_list_projects_test(self.enrolled, self.visible_projects)
 
-    def test_handgrader_list_projects_visible_only(self):
-        self.do_valid_list_projects_test(self.handgrader, self.visible_projects)
+    def test_handgrader_list_all_projects(self):
+        self.do_valid_list_projects_test(self.handgrader, self.all_projects)
 
     def test_other_list_projects_permission_denied(self):
         self.client.force_authenticate(self.nobody)
