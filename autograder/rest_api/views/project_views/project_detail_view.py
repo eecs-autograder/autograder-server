@@ -1,4 +1,6 @@
+from django.db import transaction
 from django.http import FileResponse
+
 from rest_framework import decorators, exceptions, mixins, permissions, response, viewsets
 from rest_framework import status
 
@@ -28,15 +30,18 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
 
         return response.Response(data=num_queued_submissions)
 
-    @decorators.detail_route(permission_classes=[
-        permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
+    @decorators.detail_route(
+        methods=['POST'],
+        permission_classes=[
+            permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def all_submission_files(self, *args, **kwargs):
-        project = self.get_object()  # type: ag_models.Project
-        self._check_no_pending_submissions(project)
-        include_staff = self.request.query_params.get('include_staff', None) == 'true'
-        task = ag_models.DownloadTask.objects.validate_and_create(
-            project=project, creator=self.request.user,
-            download_type=ag_models.DownloadType.all_submission_files)
+        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
+        with transaction.atomic():
+            project = self.get_object()  # type: ag_models.Project
+            include_staff = self.request.query_params.get('include_staff', None) == 'true'
+            task = ag_models.DownloadTask.objects.validate_and_create(
+                project=project, creator=self.request.user,
+                download_type=ag_models.DownloadType.all_submission_files)
 
         from autograder.celery import app
         api_tasks.all_submission_files_task.apply_async(
@@ -44,15 +49,18 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    @decorators.detail_route(permission_classes=[
-        permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
+    @decorators.detail_route(
+        methods=['POST'],
+        permission_classes=[
+            permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def ultimate_submission_files(self, *args, **kwargs):
-        project = self.get_object()
-        self._check_no_pending_submissions(project)
-        include_staff = self.request.query_params.get('include_staff', None) == 'true'
-        task = ag_models.DownloadTask.objects.validate_and_create(
-            project=project, creator=self.request.user,
-            download_type=ag_models.DownloadType.final_graded_submission_files)
+        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
+        with transaction.atomic():
+            project = self.get_object()
+            include_staff = self.request.query_params.get('include_staff', None) == 'true'
+            task = ag_models.DownloadTask.objects.validate_and_create(
+                project=project, creator=self.request.user,
+                download_type=ag_models.DownloadType.final_graded_submission_files)
 
         from autograder.celery import app
         api_tasks.ultimate_submission_files_task.apply_async(
@@ -60,15 +68,18 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    @decorators.detail_route(permission_classes=[
-        permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
+    @decorators.detail_route(
+        methods=['POST'],
+        permission_classes=[
+            permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def all_submission_scores(self, *args, **kwargs):
-        project = self.get_object()  # type: ag_models.Project
-        self._check_no_pending_submissions(project)
-        include_staff = self.request.query_params.get('include_staff', None) == 'true'
-        task = ag_models.DownloadTask.objects.validate_and_create(
-            project=project, creator=self.request.user,
-            download_type=ag_models.DownloadType.all_scores)
+        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
+        with transaction.atomic():
+            project = self.get_object()  # type: ag_models.Project
+            include_staff = self.request.query_params.get('include_staff', None) == 'true'
+            task = ag_models.DownloadTask.objects.validate_and_create(
+                project=project, creator=self.request.user,
+                download_type=ag_models.DownloadType.all_scores)
 
         from autograder.celery import app
         api_tasks.all_submission_scores_task.apply_async(
@@ -76,33 +87,24 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    @decorators.detail_route(permission_classes=[
-        permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
+    @decorators.detail_route(
+        methods=['POST'],
+        permission_classes=[
+            permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def ultimate_submission_scores(self, *args, **kwargs):
-        project = self.get_object()  # type: ag_models.Project
-        self._check_no_pending_submissions(project)
-        include_staff = self.request.query_params.get('include_staff', None) == 'true'
-        task = ag_models.DownloadTask.objects.validate_and_create(
-            project=project, creator=self.request.user,
-            download_type=ag_models.DownloadType.final_graded_submission_scores)
+        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
+        with transaction.atomic():
+            project = self.get_object()  # type: ag_models.Project
+            include_staff = self.request.query_params.get('include_staff', None) == 'true'
+            task = ag_models.DownloadTask.objects.validate_and_create(
+                project=project, creator=self.request.user,
+                download_type=ag_models.DownloadType.final_graded_submission_scores)
 
         from autograder.celery import app
         api_tasks.ultimate_submission_scores_task.apply_async(
             (project.pk, task.pk, include_staff), connection=app.connection())
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
-
-    def _check_no_pending_submissions(self, project):
-        num_pending_submissions = ag_models.Submission.objects.filter(
-            submission_group__project=project
-        ).exclude(
-            status=ag_models.Submission.GradingStatus.finished_grading
-        ).exclude(
-            status=ag_models.Submission.GradingStatus.removed_from_queue
-        ).exclude(status=ag_models.Submission.GradingStatus.error).count()
-        if num_pending_submissions:
-            raise exceptions.ValidationError(
-                'You should wait for all submissions to finish before downloading results.')
 
     @decorators.detail_route(permission_classes=[
         permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
