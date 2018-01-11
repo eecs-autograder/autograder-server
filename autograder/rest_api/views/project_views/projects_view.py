@@ -33,7 +33,7 @@ class ListCreateProjectView(ListCreateNestedModelView):
             return queryset
 
         course = self.get_object()
-        if course.is_enrolled_student(self.request.user) or course.is_handgrader(self.request.user):
+        if course.is_enrolled_student(self.request.user):
             return queryset.filter(visible_to_students=True)
 
         return queryset
