@@ -166,6 +166,8 @@ class NumQueuedSubmissionsTestCase(test_data.Client, test_data.Project, UnitTest
         self.assertEqual(3, response.data)
 
 
+# Note: Creating and running a download task is tested in
+# autograder/rest_api/tests/test_views/test_tasks/test_project_downloads.py
 class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -236,7 +238,7 @@ class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertEqual(f.read(), b''.join((chunk for chunk in response.streaming_content)))
 
-    def test_get_download_task_result_in_progress_error(self):
+    def test_invalid_get_in_progress_download_task_result(self):
         [user] = obj_build.make_admin_users(self.project.course, 1)
 
         in_progress_task = ag_models.DownloadTask.objects.validate_and_create(
@@ -249,7 +251,7 @@ class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(in_progress_task.progress, response.data['in_progress'])
 
-    def test_get_download_task_result_task_errored_error(self):
+    def test_error_get_download_task_result_task_errored(self):
         [user] = obj_build.make_admin_users(self.project.course, 1)
         errored_task = ag_models.DownloadTask.objects.validate_and_create(
             project=self.project,

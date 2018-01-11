@@ -97,34 +97,55 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
     def test_non_admin_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.project.course, 1)
         self.client.force_authenticate(staff)
-        response = self.client.get(
+        response = self.client.post(
             reverse('project-all-submission-files', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
-        response = self.client.get(
+        response = self.client.post(
             reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_error_submissions_not_finished_grading_removed_or_error(self):
+    def test_unfinished_and_error_submissions_ignored(self):
         self.client.force_authenticate(self.admin)
-        not_finished = obj_build.build_submission(submission_group=self.student_group2)
-        for grading_status in ag_models.Submission.GradingStatus.active_statuses:
-            not_finished.status = grading_status
-            not_finished.save()
 
-            response = self.client.get(
-                reverse('project-all-submission-files', kwargs={'pk': self.project.pk}))
-            self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        student_group3 = obj_build.make_group(num_members=1, project=self.project)
 
-            response = self.client.get(
-                reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk}))
-            self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        received = obj_build.build_submission(submission_group=self.student_group1)
+        received.status = ag_models.Submission.GradingStatus.received
+        received.save()
+
+        queued = obj_build.build_submission(submission_group=self.student_group2)
+        queued.status = ag_models.Submission.GradingStatus.queued
+        queued.save()
+
+        being_graded = obj_build.build_submission(submission_group=student_group3)
+        being_graded.status = ag_models.Submission.GradingStatus.being_graded
+        being_graded.save()
+
+        waiting_for_deferred = obj_build.build_submission(submission_group=self.student_group2)
+        waiting_for_deferred.status = ag_models.Submission.GradingStatus.waiting_for_deferred
+        waiting_for_deferred.save()
+
+        error = obj_build.build_submission(submission_group=self.student_group2)
+        error.status = ag_models.Submission.GradingStatus.error
+        error.save()
+
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+
+        self.do_download_submissions_test(
+            reverse('project-all-submission-files', kwargs={'pk': self.project.pk}),
+            [self.group1_submission1, self.group1_submission2, self.group2_submission1])
+
+        self.do_download_submissions_test(
+            reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk}),
+            [self.group1_submission2, self.group2_submission1])
 
     def do_download_submissions_test(self, url,
                                      expected_submissions: Iterator[ag_models.Submission]):
         self.client.force_authenticate(self.admin)
 
-        response = self.client.get(url)
+        response = self.client.post(url)
         self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
 
         task = ag_models.DownloadTask.objects.get(pk=response.data['pk'])
@@ -298,28 +319,52 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
     def test_non_admin_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.project.course, 1)
         self.client.force_authenticate(staff)
-        response = self.client.get(
+        response = self.client.post(
             reverse('project-all-submission-scores', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
-        response = self.client.get(
+        response = self.client.post(
             reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_error_submissions_not_finished_grading_removed_or_error(self):
+    def test_unfinished_and_error_submissions_ignored(self):
         self.client.force_authenticate(self.admin)
-        not_finished = obj_build.build_submission(submission_group=self.student_group2)
-        for grading_status in ag_models.Submission.GradingStatus.active_statuses:
-            not_finished.status = grading_status
-            not_finished.save()
 
-            response = self.client.get(
-                reverse('project-all-submission-scores', kwargs={'pk': self.project.pk}))
-            self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        student_group3 = obj_build.make_group(num_members=1, project=self.project)
 
-            response = self.client.get(
-                reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk}))
-            self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        received = obj_build.build_submission(submission_group=self.student_group1)
+        received.status = ag_models.Submission.GradingStatus.received
+        received.save()
+
+        queued = obj_build.build_submission(submission_group=self.student_group2)
+        queued.status = ag_models.Submission.GradingStatus.queued
+        queued.save()
+
+        being_graded = obj_build.build_submission(submission_group=student_group3)
+        being_graded.status = ag_models.Submission.GradingStatus.being_graded
+        being_graded.save()
+
+        waiting_for_deferred = obj_build.build_submission(submission_group=self.student_group2)
+        waiting_for_deferred.status = ag_models.Submission.GradingStatus.waiting_for_deferred
+        waiting_for_deferred.save()
+
+        error = obj_build.build_submission(submission_group=self.student_group2)
+        error.status = ag_models.Submission.GradingStatus.error
+        error.save()
+
+        self.project.validate_and_update(
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.most_recent)
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+        self.do_download_scores_test(
+            reverse('project-all-submission-scores', kwargs={'pk': self.project.pk}),
+            self.project,
+            [self.group1_submission1_best, self.group1_submission2, self.group2_only_submission])
+
+        self.do_download_scores_test(
+            reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk}),
+            self.project,
+            [self.group1_submission2, self.group2_only_submission])
 
     def do_download_scores_test(self, url, project: ag_models.Project,
                                 expected_submissions: Iterator[ag_models.Submission]):
@@ -330,7 +375,7 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
 
         self.client.force_authenticate(self.admin)
 
-        response = self.client.get(url)
+        response = self.client.post(url)
         self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
 
         expected_headers = ['Username {}'.format(i + 1) for i in range(project.max_group_size)]
