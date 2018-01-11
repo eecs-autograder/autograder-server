@@ -10,7 +10,7 @@ from autograder.rest_api.views.ag_model_views import (
 class CriterionResultListCreateView(ListCreateNestedModelView):
     serializer_class = handgrading_serializers.CriterionResultSerializer
     permission_classes = [
-        ag_permissions.is_admin_or_read_only_staff(
+        ag_permissions.is_admin_or_handgrader_or_read_only_staff(
             lambda handgrading_result: handgrading_result.handgrading_rubric.project.course)]
 
     pk_key = 'handgrading_result_pk'
@@ -23,7 +23,7 @@ class CriterionResultListCreateView(ListCreateNestedModelView):
 class CriterionResultDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
     serializer_class = handgrading_serializers.CriterionResultSerializer
     permission_classes = [
-        ag_permissions.is_admin_or_read_only_staff(
+        ag_permissions.is_admin_or_handgrader_or_read_only_staff(
             lambda criterion_result: (
                 criterion_result.handgrading_result.handgrading_rubric.project.course)
         )
