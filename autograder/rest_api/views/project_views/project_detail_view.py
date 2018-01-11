@@ -34,13 +34,14 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
         methods=['POST'],
         permission_classes=[
             permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
-    @transaction.atomic()
     def all_submission_files(self, *args, **kwargs):
-        project = self.get_object()  # type: ag_models.Project
-        include_staff = self.request.query_params.get('include_staff', None) == 'true'
-        task = ag_models.DownloadTask.objects.validate_and_create(
-            project=project, creator=self.request.user,
-            download_type=ag_models.DownloadType.all_submission_files)
+        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
+        with transaction.atomic():
+            project = self.get_object()  # type: ag_models.Project
+            include_staff = self.request.query_params.get('include_staff', None) == 'true'
+            task = ag_models.DownloadTask.objects.validate_and_create(
+                project=project, creator=self.request.user,
+                download_type=ag_models.DownloadType.all_submission_files)
 
         from autograder.celery import app
         api_tasks.all_submission_files_task.apply_async(
@@ -52,13 +53,14 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
         methods=['POST'],
         permission_classes=[
             permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
-    @transaction.atomic()
     def ultimate_submission_files(self, *args, **kwargs):
-        project = self.get_object()
-        include_staff = self.request.query_params.get('include_staff', None) == 'true'
-        task = ag_models.DownloadTask.objects.validate_and_create(
-            project=project, creator=self.request.user,
-            download_type=ag_models.DownloadType.final_graded_submission_files)
+        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
+        with transaction.atomic():
+            project = self.get_object()
+            include_staff = self.request.query_params.get('include_staff', None) == 'true'
+            task = ag_models.DownloadTask.objects.validate_and_create(
+                project=project, creator=self.request.user,
+                download_type=ag_models.DownloadType.final_graded_submission_files)
 
         from autograder.celery import app
         api_tasks.ultimate_submission_files_task.apply_async(
@@ -70,13 +72,14 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
         methods=['POST'],
         permission_classes=[
             permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
-    @transaction.atomic()
     def all_submission_scores(self, *args, **kwargs):
-        project = self.get_object()  # type: ag_models.Project
-        include_staff = self.request.query_params.get('include_staff', None) == 'true'
-        task = ag_models.DownloadTask.objects.validate_and_create(
-            project=project, creator=self.request.user,
-            download_type=ag_models.DownloadType.all_scores)
+        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
+        with transaction.atomic():
+            project = self.get_object()  # type: ag_models.Project
+            include_staff = self.request.query_params.get('include_staff', None) == 'true'
+            task = ag_models.DownloadTask.objects.validate_and_create(
+                project=project, creator=self.request.user,
+                download_type=ag_models.DownloadType.all_scores)
 
         from autograder.celery import app
         api_tasks.all_submission_scores_task.apply_async(
@@ -88,13 +91,14 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
         methods=['POST'],
         permission_classes=[
             permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
-    @transaction.atomic()
     def ultimate_submission_scores(self, *args, **kwargs):
-        project = self.get_object()  # type: ag_models.Project
-        include_staff = self.request.query_params.get('include_staff', None) == 'true'
-        task = ag_models.DownloadTask.objects.validate_and_create(
-            project=project, creator=self.request.user,
-            download_type=ag_models.DownloadType.final_graded_submission_scores)
+        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
+        with transaction.atomic():
+            project = self.get_object()  # type: ag_models.Project
+            include_staff = self.request.query_params.get('include_staff', None) == 'true'
+            task = ag_models.DownloadTask.objects.validate_and_create(
+                project=project, creator=self.request.user,
+                download_type=ag_models.DownloadType.final_graded_submission_scores)
 
         from autograder.celery import app
         api_tasks.ultimate_submission_scores_task.apply_async(
