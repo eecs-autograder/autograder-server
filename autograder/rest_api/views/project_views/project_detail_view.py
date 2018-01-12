@@ -137,4 +137,15 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
             return response.Response(data={'task_error': task.error_msg},
                                      status=status.HTTP_400_BAD_REQUEST)
 
-        return FileResponse(open(task.result_filename, 'rb'))
+        content_type = self._get_content_type(task.download_type)
+        return FileResponse(open(task.result_filename, 'rb'), content_type=content_type)
+
+    def _get_content_type(self, download_type: ag_models.DownloadType):
+        if (download_type == ag_models.DownloadType.all_scores or
+                download_type == ag_models.DownloadType.final_graded_submission_scores):
+            return 'text/csv'
+
+        if (download_type == ag_models.DownloadType.all_submission_files or
+                download_type == ag_models.DownloadType.final_graded_submission_files):
+            return 'application/zip'
+

@@ -152,6 +152,32 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
         self.assertFalse(task.has_error, msg=task.error_msg)
         self.assertEqual(100, task.progress)
 
+        expected_filenames = self._get_expected_filenames(expected_submissions)
+
+        # Check the content directly from the filesystem
+        with open(task.result_filename, 'rb') as result:
+            self._check_zip_content(result, expected_filenames)
+
+        # Check the content returned by the result endpoint
+        result_content_url = reverse('download_tasks-result', kwargs={'pk': task.pk})
+
+        response = self.client.get(result_content_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual('application/zip', response['Content-Type'])
+        with open(task.result_filename, 'rb') as result:
+            self._check_zip_content(result, expected_filenames)
+
+        # Make sure that other admin users can request results for downloads
+        # they didn't start
+        [other_admin] = obj_build.make_admin_users(self.project.course, 1)
+        self.client.force_authenticate(other_admin)
+        response = self.client.get(result_content_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual('application/zip', response['Content-Type'])
+        with open(task.result_filename, 'rb') as result:
+            self._check_zip_content(result, expected_filenames)
+
+    def _get_expected_filenames(self, expected_submissions):
         expected_filenames = []
         for submission in expected_submissions:
             for filename in submission.submitted_filenames:
@@ -161,14 +187,16 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
                         '_'.join(sorted(submission.submission_group.member_names)),
                         submission.timestamp.isoformat(), filename))
 
-        with open(task.result_filename, 'rb') as result:
-            with zipfile.ZipFile(result) as z:
-                self.assertCountEqual(expected_filenames, [info.filename for info in z.infolist()])
-                for info in z.infolist():
-                    with z.open(info.filename) as f:
-                        expected_file = self.files_by_name[os.path.basename(info.filename)]
-                        expected_file.open()
-                        self.assertEqual(expected_file.read(), f.read())
+        return expected_filenames
+
+    def _check_zip_content(self, result, expected_filenames):
+        with zipfile.ZipFile(result) as z:
+            self.assertCountEqual(expected_filenames, [info.filename for info in z.infolist()])
+            for info in z.infolist():
+                with z.open(info.filename) as f:
+                    expected_file = self.files_by_name[os.path.basename(info.filename)]
+                    expected_file.open()
+                    self.assertEqual(expected_file.read(), f.read())
 
 
 @mock.patch(
@@ -377,6 +405,7 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
 
         response = self.client.post(url)
         self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
+        self.assertEqual('text/csv', response.content_type)
 
         expected_headers = ['Username {}'.format(i + 1) for i in range(project.max_group_size)]
         expected_headers.append('Timestamp')

@@ -168,6 +168,7 @@ class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
         self.project = obj_build.build_project()
 
     def test_list_project_download_tasks(self):
+        # All admins should be able to see all download tasks.
         user1, user2 = obj_build.make_admin_users(self.project.course, 2)
 
         task1 = ag_models.DownloadTask.objects.validate_and_create(
