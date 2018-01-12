@@ -115,14 +115,8 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
         return response.Response(data=serializer.data)
 
 
-class UserCreatedTask(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj: ag_models.DownloadTask):
-        return request.user == obj.creator
-
-
 class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet):
-    permission_classes = (ag_permissions.is_admin(lambda task: task.project.course),
-                          UserCreatedTask)
+    permission_classes = (ag_permissions.is_admin(lambda task: task.project.course),)
     serializer_class = ag_serializers.DownloadTaskSerializer
 
     model_manager = ag_models.DownloadTask.objects

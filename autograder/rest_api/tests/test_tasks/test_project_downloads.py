@@ -1,8 +1,9 @@
 import csv
 import os
+import tempfile
 import zipfile
 
-from typing import Iterator
+from typing import Iterator, IO, BinaryIO
 
 import itertools
 from unittest import mock
@@ -17,9 +18,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.core.models as ag_models
 
 
-@mock.patch(
-    'autograder.rest_api.tasks.project_downloads._PROGRESS_UPDATE_FREQUENCY',
-    new=1)
+@mock.patch('autograder.rest_api.tasks.project_downloads._PROGRESS_UPDATE_FREQUENCY', new=1)
 class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -160,11 +159,13 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
 
         # Check the content returned by the result endpoint
         result_content_url = reverse('download_tasks-result', kwargs={'pk': task.pk})
-
         response = self.client.get(result_content_url)
+
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual('application/zip', response['Content-Type'])
-        with open(task.result_filename, 'rb') as result:
+
+        with tempfile.TemporaryFile() as result:
+            result.write(b''.join((chunk for chunk in response.streaming_content)))
             self._check_zip_content(result, expected_filenames)
 
         # Make sure that other admin users can request results for downloads
@@ -172,9 +173,12 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
         [other_admin] = obj_build.make_admin_users(self.project.course, 1)
         self.client.force_authenticate(other_admin)
         response = self.client.get(result_content_url)
+
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual('application/zip', response['Content-Type'])
-        with open(task.result_filename, 'rb') as result:
+
+        with tempfile.TemporaryFile() as result:
+            result.write(b''.join((chunk for chunk in response.streaming_content)))
             self._check_zip_content(result, expected_filenames)
 
     def _get_expected_filenames(self, expected_submissions):
@@ -189,7 +193,8 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
 
         return expected_filenames
 
-    def _check_zip_content(self, result, expected_filenames):
+    def _check_zip_content(self, result: BinaryIO, expected_filenames):
+        result.seek(0)
         with zipfile.ZipFile(result) as z:
             self.assertCountEqual(expected_filenames, [info.filename for info in z.infolist()])
             for info in z.infolist():
@@ -199,9 +204,7 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
                     self.assertEqual(expected_file.read(), f.read())
 
 
-@mock.patch(
-    'autograder.rest_api.tasks.project_downloads._PROGRESS_UPDATE_FREQUENCY',
-    new=1)
+@mock.patch('autograder.rest_api.tasks.project_downloads._PROGRESS_UPDATE_FREQUENCY', new=1)
 class DownloadGradesTestCase(test_data.Client, UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -405,8 +408,31 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
 
         response = self.client.post(url)
         self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
-        self.assertEqual('text/csv', response.content_type)
 
+        # Check the content directly from the filesystem
+        task = ag_models.DownloadTask.objects.get(pk=response.data['pk'])
+
+        self.assertEqual(100, task.progress)
+        self.assertEqual('', task.error_msg)
+
+        with open(task.result_filename) as f:
+            actual_result = list(csv.DictReader(f))
+        expected_result = self._get_expected_csv(expected_submissions, project)
+        self.assertCountEqual(expected_result, actual_result)
+
+        # Check the content returned by the result endpoint
+        result_content_url = reverse('download_tasks-result', kwargs={'pk': task.pk})
+        response = self.client.get(result_content_url)
+        self._check_csv_response(response, expected_result)
+
+        # Make sure that other admin users can request results for downloads
+        # they didn't start.
+        [other_admin] = obj_build.make_admin_users(project.course, 1)
+        self.client.force_authenticate(other_admin)
+        response = self.client.get(result_content_url)
+        self._check_csv_response(response, expected_result)
+
+    def _get_expected_csv(self, expected_submissions, project):
         expected_headers = ['Username {}'.format(i + 1) for i in range(project.max_group_size)]
         expected_headers.append('Timestamp')
         expected_headers += ['Total', 'Total Possible']
@@ -445,9 +471,13 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             self.assertEqual(len(expected_headers), len(values))
             expected_result.append(dict(zip(expected_headers, values)))
 
-        task = ag_models.DownloadTask.objects.get(pk=response.data['pk'])
-        self.assertEqual(100, task.progress)
-        self.assertEqual('', task.error_msg)
-        with open(task.result_filename) as f:
-            actual_result = list(csv.DictReader(f))
-        self.assertCountEqual(expected_result, actual_result)
+        return expected_result
+
+    def _check_csv_response(self, response, expected_result):
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual('text/csv', response['Content-Type'])
+
+        with tempfile.TemporaryFile('w+') as result:
+            result.write(''.join((chunk.decode() for chunk in response.streaming_content)))
+            result.seek(0)
+            self.assertCountEqual(expected_result, list(csv.DictReader(result)))
