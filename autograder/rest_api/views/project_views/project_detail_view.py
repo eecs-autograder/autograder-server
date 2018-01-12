@@ -115,14 +115,8 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
         return response.Response(data=serializer.data)
 
 
-class UserCreatedTask(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj: ag_models.DownloadTask):
-        return request.user == obj.creator
-
-
 class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet):
-    permission_classes = (ag_permissions.is_admin(lambda task: task.project.course),
-                          UserCreatedTask)
+    permission_classes = (ag_permissions.is_admin(lambda task: task.project.course),)
     serializer_class = ag_serializers.DownloadTaskSerializer
 
     model_manager = ag_models.DownloadTask.objects
@@ -137,4 +131,15 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
             return response.Response(data={'task_error': task.error_msg},
                                      status=status.HTTP_400_BAD_REQUEST)
 
-        return FileResponse(open(task.result_filename, 'rb'))
+        content_type = self._get_content_type(task.download_type)
+        return FileResponse(open(task.result_filename, 'rb'), content_type=content_type)
+
+    def _get_content_type(self, download_type: ag_models.DownloadType):
+        if (download_type == ag_models.DownloadType.all_scores or
+                download_type == ag_models.DownloadType.final_graded_submission_scores):
+            return 'text/csv'
+
+        if (download_type == ag_models.DownloadType.all_submission_files or
+                download_type == ag_models.DownloadType.final_graded_submission_files):
+            return 'application/zip'
+
