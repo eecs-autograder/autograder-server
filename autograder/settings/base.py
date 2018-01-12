@@ -16,7 +16,7 @@ import json
 
 from django.utils.crypto import get_random_string
 
-VERSION = '2.0.0'
+VERSION = '2.0.1'
 
 # This is the autograder-server directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
