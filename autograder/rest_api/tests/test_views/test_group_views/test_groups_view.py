@@ -1,7 +1,10 @@
 from typing import List
 
+import datetime
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.utils import timezone
+from rest_framework import status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -79,6 +82,43 @@ class ListGroupsTestCase(_GroupsSetUp,
             self.build_groups(project)
             self.do_permission_denied_get_test(
                 self.client, self.enrolled, self.get_groups_url(project))
+
+    def test_prefetching_doesnt_skew_num_submissions_and_num_submissions_towards_limit(self):
+        self.maxDiff = None
+        group1 = obj_build.make_group(project=self.visible_public_project)
+        group1_yesterday_submission = obj_build.build_submission(
+            submission_group=group1,
+            timestamp=timezone.now() - datetime.timedelta(days=1))
+        group1_not_towards_limit_submission = obj_build.build_submission(
+            submission_group=group1,
+            count_towards_daily_limit=False)
+        group1_towards_limit_submission = obj_build.build_submission(submission_group=group1)
+
+        group1.refresh_from_db()
+        self.assertEqual(3, group1.num_submissions)
+        self.assertEqual(1, group1.num_submits_towards_limit)
+
+        group2 = obj_build.make_group(project=self.visible_public_project)
+        group2_yesterday_submission = obj_build.build_submission(
+            submission_group=group2,
+            timestamp=timezone.now() - datetime.timedelta(days=1))
+        group2_yesterday_submission2 = obj_build.build_submission(
+            submission_group=group2,
+            timestamp=timezone.now() - datetime.timedelta(days=1))
+        group2_not_towards_limit_submission = obj_build.build_submission(
+            submission_group=group2,
+            count_towards_daily_limit=False)
+        group2_towards_limit_submission = obj_build.build_submission(submission_group=group2)
+
+        group2.refresh_from_db()
+        self.assertEqual(4, group2.num_submissions)
+        self.assertEqual(1, group2.num_submits_towards_limit)
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(self.get_groups_url(self.visible_public_project))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self.assertCountEqual([group1.to_dict(), group2.to_dict()], response.data)
 
     def build_groups(self, project):
         project.validate_and_update(

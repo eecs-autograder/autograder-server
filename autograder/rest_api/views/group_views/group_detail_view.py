@@ -62,7 +62,7 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
     permission_classes = (group_permissions,)
 
     model_manager = ag_models.SubmissionGroup.objects.select_related(
-        'project__course').prefetch_related('members')
+        'project__course').prefetch_related('members', 'submissions')
 
     def update(self, request, *args, **kwargs):
         if 'member_names' in request.data:

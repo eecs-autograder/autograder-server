@@ -1,3 +1,4 @@
+import datetime
 from django.urls import reverse
 from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -78,6 +79,26 @@ class RetrieveGroupTestCase(test_data.Client,
         for project in self.public_projects:
             group = self.non_enrolled_group(project)
             self.do_permission_denied_get_test(self.client, self.handgrader, self.group_url(group))
+
+    def test_prefetching_doesnt_skew_num_submissions_and_num_submissions_towards_limit(self):
+        group = obj_build.make_group(project=self.visible_public_project)
+        yesterday_submission = obj_build.build_submission(
+            submission_group=group,
+            timestamp=timezone.now() - datetime.timedelta(days=1))
+        not_towards_limit_submission = obj_build.build_submission(
+            submission_group=group,
+            count_towards_daily_limit=False)
+        towards_limit_submission = obj_build.build_submission(submission_group=group)
+
+        group.refresh_from_db()
+        self.assertEqual(3, group.num_submissions)
+        self.assertEqual(1, group.num_submits_towards_limit)
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(self.group_url(group))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(3, response.data['num_submissions'])
+        self.assertEqual(1, response.data['num_submits_towards_limit'])
 
 
 class UpdateGroupTestCase(test_data.Client,

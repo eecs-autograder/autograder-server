@@ -1,16 +1,13 @@
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Prefetch
-from typing import Any, Callable, Type
 
-from rest_framework import decorators, response, status, permissions
+from rest_framework import response, status, permissions
 
 from drf_composable_permissions.p import P
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-from autograder.core.models.submission_group.submission_group import (
-    get_submissions_for_daily_limit_queryset)
 from autograder.rest_api import permissions as ag_permissions
 
 from autograder import utils
@@ -49,10 +46,8 @@ class GroupsViewSet(ListCreateNestedModelView):
     def get_queryset(self):
         queryset = super().get_queryset()
         if self.request.method.lower() == 'get':
-            submissions_prefetch = Prefetch(
-                'submissions', get_submissions_for_daily_limit_queryset(self.get_object()))
             queryset = queryset.prefetch_related(
-                Prefetch('members', User.objects.order_by('username')), submissions_prefetch)
+                Prefetch('members', User.objects.order_by('username')), 'submissions')
             queryset = list(
                 sorted(queryset.all(), key=lambda group: group.members.first().username))
 

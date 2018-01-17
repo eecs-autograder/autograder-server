@@ -85,7 +85,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         The number of submissions this group has made in the current 24
         hour period that are counted towards the daily submission limit.
         """
-        # We put the filtering logic here so that we can prefetch the right
+        # We put the filtering logic here so that we can prefetch all
         # submissions in the list groups view.
         start_datetime, end_datetime = core_ut.get_24_hour_period(
             self.project.submission_limit_reset_time,
@@ -191,22 +191,3 @@ class SubmissionGroup(ag_model_base.AutograderModel):
     )
 
     EDITABLE_FIELDS = ('extended_due_date',)
-
-
-def get_submissions_for_daily_limit_queryset(project: Project):
-    """
-    :param project: The project that should be used to compute the 24-hour period
-    start and end.
-    :return: Returns a queryset that can be used to prefetch submissions
-    that count towards the daily limit within the current 24-hour submission
-    limit period.
-    """
-    start_datetime, end_datetime = core_ut.get_24_hour_period(
-        project.submission_limit_reset_time,
-        timezone.now().astimezone(project.submission_limit_reset_timezone))
-
-    return Submission.objects.filter(
-        timestamp__gte=start_datetime,
-        timestamp__lt=end_datetime,
-        count_towards_daily_limit=True,
-        status__in=Submission.GradingStatus.count_towards_limit_statuses)
