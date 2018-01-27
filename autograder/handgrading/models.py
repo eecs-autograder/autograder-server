@@ -349,7 +349,6 @@ class AppliedAnnotation(AutograderModel):
     Tied to an annotation object, specifies where the annotation is applied and if a comment
     was left with it.
     """
-    # TODO: Needed?
     comment = models.TextField(blank=True)
 
     location = models.OneToOneField('Location', related_name='+',
