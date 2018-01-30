@@ -3,7 +3,7 @@ from django.core import exceptions
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
-
+import datetime
 
 class AnnotationTestCase(UnitTestBase):
     def setUp(self):
@@ -57,6 +57,21 @@ class AnnotationTestCase(UnitTestBase):
                 max_deduction=1)
 
         self.assertIn('max_deduction', cm.exception.message_dict)
+
+    def test_annotation_ordering(self):
+        for i in range(10):
+            handgrading_models.Annotation.objects.validate_and_create(
+                handgrading_rubric=self.rubric)
+
+        all_annotations = handgrading_models.Annotation.objects.all()
+
+        self.assertTrue(all_annotations.ordered)
+        last_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=10)
+
+        # Check that queryset is ordered chronologically by 'created' field
+        for annotation in all_annotations:
+            self.assertLess(last_date, annotation.created)
+            last_date = annotation.created
 
     def test_serializable_fields(self):
         expected_fields = [

@@ -4,6 +4,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
 from django.core.exceptions import ValidationError
+import datetime
 
 
 class CommentTestCase(UnitTestBase):
@@ -83,6 +84,28 @@ class CommentTestCase(UnitTestBase):
             text="hello",
             handgrading_result=handgrading_result
         )
+
+    def test_comment_ordering(self):
+        submission = obj_build.build_submission()
+
+        handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            submission_group=submission.submission_group,
+            handgrading_rubric=self.default_handgrading_rubric)
+
+        for i in range(10):
+            handgrading_models.Comment.objects.validate_and_create(
+                text="hello",
+                handgrading_result=handgrading_result)
+
+        all_comments = handgrading_models.Comment.objects.all()
+
+        self.assertTrue(all_comments.ordered)
+        last_date = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=10)
+
+        for comment in all_comments:
+            self.assertLess(comment.last_modified, last_date)
+            last_date = comment.last_modified
 
     def test_serializable_fields(self):
         expected_fields = [

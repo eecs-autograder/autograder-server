@@ -3,7 +3,7 @@
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
-
+import datetime
 
 class CriterionTestCase(UnitTestBase):
     """
@@ -58,6 +58,27 @@ class CriterionTestCase(UnitTestBase):
         self.assertEqual(criterion_obj.long_description, criterion_inputs["long_description"])
         self.assertEqual(criterion_obj.points, criterion_inputs["points"])
         self.assertEqual(criterion_obj.handgrading_rubric, criterion_inputs["handgrading_rubric"])
+
+    def test_criteria_ordering(self):
+        criterion_inputs = {
+            "short_description": "This is a short description used for testing.",
+            "long_description": "This is a short description used for testing.",
+            "points": 20,
+            "handgrading_rubric": self.default_handgrading_rubric
+        }
+
+        for i in range(10):
+            handgrading_models.Criterion.objects.validate_and_create(**criterion_inputs)
+
+        all_criteria = handgrading_models.Criterion.objects.all()
+
+        self.assertTrue(all_criteria.ordered)
+        last_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=10)
+
+        # Check that queryset is ordered chronologically by 'created' field
+        for criterion in all_criteria:
+            self.assertLess(last_date, criterion.created)
+            last_date = criterion.created
 
     def test_serializable_fields(self):
         expected_fields = [
