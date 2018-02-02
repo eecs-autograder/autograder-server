@@ -12,6 +12,7 @@ from autograder_sandbox import AutograderSandbox
 from autograder_sandbox import SANDBOX_USERNAME
 from autograder_sandbox.autograder_sandbox import CompletedCommand
 from django.conf import settings
+from django import db
 from django.db import transaction
 
 import autograder.core.models as ag_models
@@ -56,9 +57,24 @@ def retry(max_num_retries,
             while num_retries_remaining >= 0:
                 try:
                     return func(*args, **kwargs)
-                except Exception as e:  # TODO: handle certain database errors differently
+                except Exception as e:
                     print('Error in', func.__name__)
                     traceback.print_exc()
+
+                    # In case the database connection was closed unexpectedly
+                    # (this could happen if the database server restarts), we
+                    # want to tell Django to discard the connection so that it
+                    # will create a new one next time we try to access the database.
+                    # Otherwise, we could get stuck in an error loop due to a
+                    # "connection already closed" or similar error.
+                    if isinstance(e, db.Error):
+                        try:
+                            for conn in db.connections.all():
+                                conn.close_if_unusable_or_obsolete()
+                        except Exception:
+                            print('Error closing db connections')
+                            traceback.print_exc()
+
                     print('Will try again in', retry_delay, 'seconds')
                     num_retries_remaining -= 1
                     time.sleep(retry_delay)
