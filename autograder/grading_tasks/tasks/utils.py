@@ -66,6 +66,16 @@ def retry(max_num_retries,
                     # will create a new one next time we try to access the database.
                     # Otherwise, we could get stuck in an error loop due to a
                     # "connection already closed" or similar error.
+                    #
+                    # To test this behavior:
+                    #   - Add a call to time.sleep in the middle of some retry-able
+                    #     task.
+                    #   - While the task is sleeping *restart* the postgres server.
+                    #     Note: With docker, use docker restart --time 0 <container>
+                    #   - When the task wakes up, it should raise an InterfaceError
+                    #     ("connection already closed") or OperationalError ("server
+                    #     closed the connection unexpectedly"),
+                    #     otherwise try putting the time.sleep somewhere else.
                     if isinstance(e, db.Error):
                         try:
                             for conn in db.connections.all():
