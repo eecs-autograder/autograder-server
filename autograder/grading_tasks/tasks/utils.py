@@ -1,6 +1,5 @@
 import fnmatch
 import os
-import shlex
 import tempfile
 import traceback
 

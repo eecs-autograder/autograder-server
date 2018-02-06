@@ -88,10 +88,6 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                 status=status.HTTP_400_BAD_REQUEST,
                 data={self._FDBK_CATEGORY_PARAM: 'Invalid value: {}'.format(fdbk_category_arg)})
 
-
-        # TODO: Add same prefetching + selecting to download grades task
-        # TODO: add same prefetching + selecting to get_ultimate_submissions
-
         self.model_manager = get_submissions_with_results_queryset(
             fdbk_category, base_manager=self.model_manager)
         submission = self.get_object()
