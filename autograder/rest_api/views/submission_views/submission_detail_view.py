@@ -1,7 +1,11 @@
+from typing import Optional
+
 from django.core import exceptions
 from django.db import transaction
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.core.cache import cache
+
 from rest_framework import decorators, mixins, response, status
 
 from drf_composable_permissions.p import P
@@ -88,59 +92,66 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                 status=status.HTTP_400_BAD_REQUEST,
                 data={self._FDBK_CATEGORY_PARAM: 'Invalid value: {}'.format(fdbk_category_arg)})
 
-        self.model_manager = get_submissions_with_results_queryset(
-            fdbk_category, base_manager=self.model_manager)
-        submission = self.get_object()
-        fdbk_calculator = submission.get_fdbk(fdbk_category)
-
         if 'setup_stdout_for_suite' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             suite_result_pk = int(request.query_params.get('setup_stdout_for_suite'))
             return self._get_setup_stdout(fdbk_calculator, fdbk_category, suite_result_pk)
         elif 'setup_stderr_for_suite' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             suite_result_pk = int(request.query_params.get('setup_stderr_for_suite'))
             return self._get_setup_stderr(fdbk_calculator, fdbk_category, suite_result_pk)
 
         elif 'teardown_stdout_for_suite' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             suite_result_pk = int(request.query_params.get('teardown_stdout_for_suite'))
             return self._get_teardown_stdout(fdbk_calculator, fdbk_category, suite_result_pk)
         elif 'teardown_stderr_for_suite' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             suite_result_pk = int(request.query_params.get('teardown_stderr_for_suite'))
             return self._get_teardown_stderr(fdbk_calculator, fdbk_category, suite_result_pk)
 
         elif 'stdout_for_cmd_result' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             cmd_result_pk = request.query_params.get('stdout_for_cmd_result')
             return self._get_cmd_result_stdout(fdbk_calculator, fdbk_category, cmd_result_pk)
         elif 'stderr_for_cmd_result' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             cmd_result_pk = request.query_params.get('stderr_for_cmd_result')
             return self._get_cmd_result_stderr(fdbk_calculator, fdbk_category, cmd_result_pk)
 
         elif 'stdout_diff_for_cmd_result' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             cmd_result_pk = request.query_params.get('stdout_diff_for_cmd_result')
             return self._get_cmd_result_stdout_diff(
                 fdbk_calculator, fdbk_category, cmd_result_pk)
         elif 'stderr_diff_for_cmd_result' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             cmd_result_pk = request.query_params.get('stderr_diff_for_cmd_result')
             return self._get_cmd_result_stderr_diff(
                 fdbk_calculator, fdbk_category, cmd_result_pk)
 
         elif 'stdout_for_student_suite_setup' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             student_suite_result_pk = request.query_params.get(
                 'stdout_for_student_suite_setup')
             return self._get_student_suite_result_output_field(
                 'setup_stdout', fdbk_calculator, fdbk_category, student_suite_result_pk)
         elif 'stderr_for_student_suite_setup' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             student_suite_result_pk = request.query_params.get(
                 'stderr_for_student_suite_setup')
             return self._get_student_suite_result_output_field(
                 'setup_stderr', fdbk_calculator, fdbk_category, student_suite_result_pk)
 
         elif 'stdout_for_student_suite_get_test_names' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             student_suite_result_pk = request.query_params.get(
                 'stdout_for_student_suite_get_test_names')
             return self._get_student_suite_result_output_field(
                 'get_student_test_names_stdout', fdbk_calculator,
                 fdbk_category, student_suite_result_pk)
         elif 'stderr_for_student_suite_get_test_names' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             student_suite_result_pk = request.query_params.get(
                 'stderr_for_student_suite_get_test_names')
             return self._get_student_suite_result_output_field(
@@ -148,23 +159,27 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                 fdbk_category, student_suite_result_pk)
 
         elif 'stdout_for_student_suite_validity_check' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             student_suite_result_pk = request.query_params.get(
                 'stdout_for_student_suite_validity_check')
             return self._get_student_suite_result_output_field(
                 'validity_check_stdout', fdbk_calculator, fdbk_category, student_suite_result_pk)
         elif 'stderr_for_student_suite_validity_check' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             student_suite_result_pk = request.query_params.get(
                 'stderr_for_student_suite_validity_check')
             return self._get_student_suite_result_output_field(
                 'validity_check_stderr', fdbk_calculator, fdbk_category, student_suite_result_pk)
 
         elif 'stdout_for_student_suite_grade_buggy_impls' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             student_suite_result_pk = request.query_params.get(
                 'stdout_for_student_suite_grade_buggy_impls')
             return self._get_student_suite_result_output_field(
                 'grade_buggy_impls_stdout', fdbk_calculator,
                 fdbk_category, student_suite_result_pk)
         elif 'stderr_for_student_suite_grade_buggy_impls' in request.query_params:
+            fdbk_calculator = self._get_fdbk_calculator(fdbk_category)
             student_suite_result_pk = request.query_params.get(
                 'stderr_for_student_suite_grade_buggy_impls')
             return self._get_student_suite_result_output_field(
@@ -172,7 +187,36 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                 fdbk_category, student_suite_result_pk)
 
         else:
-            return response.Response(fdbk_calculator.to_dict())
+            if (fdbk_category != ag_models.FeedbackCategory.normal or
+                    self.request.query_params.get('use_cache', 'true') != 'true'):
+                return response.Response(self._get_fdbk_calculator(fdbk_category).to_dict())
+
+            submission = self.get_object()
+
+            cache_key = 'project_{}_submission_normal_results_{}'.format(
+                submission.submission_group.project.pk,
+                submission.pk)
+
+            result = cache.get(cache_key)
+            if result is None:
+                # Re-load the submission, with result data prefetched.
+                result = self._get_fdbk_calculator(fdbk_category).to_dict()
+                cache.set(cache_key, result, timeout=None)
+
+            return response.Response(result)
+
+    def _get_fdbk_calculator(
+        self, fdbk_category: ag_models.FeedbackCategory
+    ) -> ag_models.Submission.FeedbackCalculator:
+        """
+        Loads the requested submission, prefetching result data, and
+        returns a Submission.FeedbackCalculator initialized with
+        fdbk_category.
+        """
+        model_manager = get_submissions_with_results_queryset(
+            fdbk_category, base_manager=self.model_manager)
+        submission = self.get_object(model_manager_override=model_manager)
+        return submission.get_fdbk(fdbk_category)
 
     def _get_setup_stdout(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
                           fdbk_category: ag_models.FeedbackCategory,
@@ -219,7 +263,7 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
         return FileResponse(stream_data)
 
     def _find_ag_suite_result(self, submission_fdbk: ag_models.Submission.FeedbackCalculator,
-                              suite_result_pk: int) -> ag_models.AGTestSuiteResult:
+                              suite_result_pk: int) -> Optional[ag_models.AGTestSuiteResult]:
         for suite_result in submission_fdbk.ag_test_suite_results:
             if suite_result.pk == suite_result_pk:
                 return suite_result
@@ -335,5 +379,3 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                 return result
 
         return None
-
-    # TODO: output endpoints for student suite setup, get test names, validity check, and buggy impl grading

@@ -13,6 +13,7 @@ from rest_framework.test import APIClient
 import autograder.core.models as ag_models
 from autograder.core.models import Submission
 import autograder.core.utils as core_ut
+from autograder.core.models.ag_test.ag_test_command import MAX_AG_TEST_COMMAND_FDBK_SETTINGS
 
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -1178,6 +1179,234 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         else:
             self.assertEqual(expected_output,
                              ''.join((chunk.decode() for chunk in response.streaming_content)))
+
+
+class SubmissionResultsCachingTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+    def test_submission_normal_fdbk_results_cached_by_default(self):
+        self.maxDiff = None
+        cmd = obj_build.make_full_ag_test_command(
+            normal_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
+        project = cmd.ag_test_case.ag_test_suite.project
+        project.validate_and_update(visible_to_students=True)
+
+        admin_group = obj_build.make_group(project=project, members_role=ag_models.UserRole.admin)
+        submission1 = obj_build.build_submission(submission_group=admin_group)
+        submission2 = obj_build.build_submission(submission_group=admin_group)
+
+        submission1_cmd_result = obj_build.make_correct_ag_test_command_result(
+            cmd, submission=submission1)
+        submission2_cmd_result = obj_build.make_incorrect_ag_test_command_result(
+            cmd, submission=submission2)
+
+        # Request the results for submission1 so that they are cached.
+        self.client.force_authenticate(admin_group.members.first())
+        response = self.client.get(self._make_url(submission1))
+        old_submission1_results = submission1.get_fdbk(ag_models.FeedbackCategory.normal).to_dict()
+        self.assertIsNotNone(old_submission1_results['total_points'])
+        self.assertNotEqual(0, old_submission1_results['total_points_possible'])
+        self.assertEqual(old_submission1_results, response.data)
+
+        # Change something in the test that affects the results.
+        cmd.validate_and_update(
+            points_for_correct_return_code=cmd.points_for_correct_return_code + 5)
+
+        # Request submission1 results again, we should get the old (cached) results.
+        response = self.client.get(self._make_url(submission1))
+        self.assertEqual(old_submission1_results, response.data)
+
+        # Request submission2 results, they should reflect the change we made.
+        response = self.client.get(self._make_url(submission2))
+        self.assertEqual(submission2.get_fdbk(ag_models.FeedbackCategory.normal).to_dict(),
+                         response.data)
+
+    def test_non_normal_feedback_results_not_cached(self):
+        cmd = obj_build.make_full_ag_test_command(
+            normal_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS,
+            ultimate_submission_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS,
+            past_limit_submission_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
+        project = cmd.ag_test_case.ag_test_suite.project
+        project.validate_and_update(visible_to_students=True)
+
+        admin_group = obj_build.make_group(project=project, members_role=ag_models.UserRole.admin)
+        submission = obj_build.build_submission(submission_group=admin_group)
+
+        cmd_result = obj_build.make_correct_ag_test_command_result(cmd, submission=submission)
+
+        self.client.force_authenticate(admin_group.members.first())
+
+        for fdbk_category in ag_models.FeedbackCategory:
+            if fdbk_category == ag_models.FeedbackCategory.normal:
+                continue
+
+            url = self._make_url(submission, fdbk_category=fdbk_category)
+            old_response = self.client.get(url)
+            self.assertEqual(submission.get_fdbk(fdbk_category).to_dict(), old_response.data)
+
+            cmd.validate_and_update(
+                points_for_correct_return_code=cmd.points_for_correct_return_code + 1)
+
+            new_response = self.client.get(url)
+            self.assertNotEqual(old_response.data, new_response.data)
+
+            self.assertEqual(submission.get_fdbk(fdbk_category).to_dict(), new_response.data)
+
+    def test_submission_normal_fdbk_results_use_cache_false(self):
+        self.maxDiff = None
+        cmd = obj_build.make_full_ag_test_command(
+            normal_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
+        project = cmd.ag_test_case.ag_test_suite.project
+        project.validate_and_update(visible_to_students=True)
+
+        student_group = obj_build.make_group(project=project,
+                                             members_role=ag_models.UserRole.admin)
+        submission = obj_build.build_submission(submission_group=student_group)
+
+        submission_cmd_result = obj_build.make_correct_ag_test_command_result(
+            cmd, submission=submission)
+
+        self.client.force_authenticate(student_group.members.first())
+
+        # Request the results for submission with use_cache=false
+        response = self.client.get(self._make_url(submission, use_cache=False))
+        old_submission_results = submission.get_fdbk(
+            ag_models.FeedbackCategory.normal).to_dict()
+
+        self.assertIsNotNone(old_submission_results['total_points'])
+        self.assertNotEqual(0, old_submission_results['total_points_possible'])
+        self.assertEqual(old_submission_results, response.data)
+
+        # Change something in the test that affects the results.
+        cmd.validate_and_update(
+            points_for_correct_return_code=cmd.points_for_correct_return_code + 1)
+
+        # Request the results for submission with use_cache=true, we should get
+        # the updated results, and the updated results should be cached.
+        response = self.client.get(self._make_url(submission))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        old_submission_results = submission.get_fdbk(ag_models.FeedbackCategory.normal).to_dict()
+        self.assertEqual(old_submission_results, response.data)
+
+        # Update the test again
+        cmd.validate_and_update(
+            points_for_correct_return_code=cmd.points_for_correct_return_code + 1)
+
+        # Requesting with cache should give us stale results
+        response = self.client.get(self._make_url(submission))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(old_submission_results, response.data)
+
+        # Requesting without cache should give us up-to-date results.
+        response = self.client.get(self._make_url(submission, use_cache=False))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(submission.get_fdbk(ag_models.FeedbackCategory.normal).to_dict(),
+                         response.data)
+
+    def test_admin_can_clear_results_cache_for_project(self):
+        self.maxDiff = None
+        course = obj_build.make_course()
+        project1 = obj_build.make_project(course)
+        project1_cmd = obj_build.make_full_ag_test_command(
+            normal_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS,
+            ag_test_case=obj_build.make_ag_test_case(
+                ag_test_suite=obj_build.make_ag_test_suite(project=project1)))
+
+        project2 = obj_build.make_project(course)
+        project2_cmd = obj_build.make_full_ag_test_command(
+            normal_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS,
+            ag_test_case=obj_build.make_ag_test_case(
+                ag_test_suite=obj_build.make_ag_test_suite(project=project2)))
+
+        project1_group = obj_build.make_group(project=project1,
+                                              members_role=ag_models.UserRole.admin)
+        project1_submission1 = obj_build.build_submission(submission_group=project1_group)
+        project1_submission1_cmd_result = obj_build.make_incorrect_ag_test_command_result(
+            project1_cmd, submission=project1_submission1)
+
+        project1_submission2 = obj_build.build_submission(submission_group=project1_group)
+        project1_submission2_cmd_result = obj_build.make_correct_ag_test_command_result(
+            project1_cmd, submission=project1_submission2)
+
+        project2_group = obj_build.make_group(project=project2,
+                                              members_role=ag_models.UserRole.admin)
+        project2_submission = obj_build.build_submission(submission_group=project2_group)
+        project2_cmd_result = obj_build.make_correct_ag_test_command_result(
+            project2_cmd, submission=project2_submission)
+
+        # Request the results so they get cached
+        self.client.force_authenticate(project1_group.members.first())
+        response = self.client.get(self._make_url(project1_submission1))
+        project1_submission1_old_results = project1_submission1.get_fdbk(
+            ag_models.FeedbackCategory.normal).to_dict()
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(project1_submission1_old_results, response.data)
+
+        response = self.client.get(self._make_url(project1_submission2))
+        project1_submission2_old_results = project1_submission2.get_fdbk(
+            ag_models.FeedbackCategory.normal).to_dict()
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(project1_submission2_old_results, response.data)
+
+        self.client.force_authenticate(project2_group.members.first())
+        response = self.client.get(self._make_url(project2_submission))
+        project2_submission_old_results = project2_submission.get_fdbk(
+            ag_models.FeedbackCategory.normal).to_dict()
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(project2_submission_old_results, response.data)
+
+        for result in (project1_submission1_old_results,
+                       project1_submission2_old_results,
+                       project2_submission_old_results):
+            self.assertIsNotNone(result['total_points'])
+            self.assertNotEqual(0, result['total_points_possible'])
+
+        # Change something in both tests that affects the results
+        project1_cmd.validate_and_update(
+            points_for_correct_return_code=project1_cmd.points_for_correct_return_code + 2)
+        project2_cmd.validate_and_update(
+            points_for_correct_stdout=project2_cmd.points_for_correct_stdout + 3)
+
+        # Clear project1's results cache
+        response = self.client.delete(reverse('project-results-cache', kwargs={'pk': project1.pk}))
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        # Make sure that only project1's results cache was cleared, not project2's
+        self.client.force_authenticate(project1_group.members.first())
+        response = self.client.get(self._make_url(project1_submission1))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(
+            project1_submission1.get_fdbk(ag_models.FeedbackCategory.normal).to_dict(),
+            response.data)
+        response = self.client.get(self._make_url(project1_submission2))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(
+            project1_submission2.get_fdbk(ag_models.FeedbackCategory.normal).to_dict(),
+            response.data)
+
+        self.client.force_authenticate(project2_group.members.first())
+        response = self.client.get(self._make_url(project2_submission))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(project2_submission_old_results, response.data)
+
+    def test_non_admin_clear_results_cache_permission_denied(self):
+        project = obj_build.make_project()
+        [staff] = obj_build.make_staff_users(project.course, 1)
+        self.client.force_authenticate(staff)
+        response = self.client.delete(reverse('project-results-cache', kwargs={'pk': project.pk}))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def _make_url(self, submission: ag_models.Submission,
+                  fdbk_category: ag_models.FeedbackCategory=ag_models.FeedbackCategory.normal,
+                  use_cache=True):
+        url = reverse('submission-feedback', kwargs={'pk': submission.pk})
+        url += '?feedback_category={}'.format(fdbk_category.value)
+        if not use_cache:
+            url += '&use_cache=false'
+
+        return url
 
 
 def submission_url(submission):

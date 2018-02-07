@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 import os
 import json
-# import importlib
 
 from django.utils.crypto import get_random_string
 
@@ -148,11 +147,17 @@ DATABASES = {
 
 CACHES = {
     'default': {
-        'BACKEND': 'redis_cache.RedisCache',
-        'LOCATION': '{host}:{port}'.format(
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://{host}:{port}'.format(
             host=os.environ.get('AG_REDIS_HOST', 'localhost'),
             port=os.environ.get('AG_REDIS_PORT', '6379')),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        }
     },
 }
+
+print(CACHES)
 
 from autograder.settings.celery_settings import *  # noqa
