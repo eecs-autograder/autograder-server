@@ -158,6 +158,4 @@ CACHES = {
     },
 }
 
-print(CACHES)
-
 from autograder.settings.celery_settings import *  # noqa

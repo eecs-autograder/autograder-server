@@ -1,6 +1,8 @@
 import traceback
 
 import celery
+
+from django.core.cache import cache
 from django.db import transaction
 
 import autograder.core.models as ag_models
@@ -109,3 +111,10 @@ def _mark_submission_as_finished_impl(submission_pk):
     ag_models.Submission.objects.filter(
         pk=submission_pk
     ).update(status=ag_models.Submission.GradingStatus.finished_grading)
+
+    submission = ag_models.Submission.objects.select_related(
+        'submission_group__project').get(pk=submission_pk)
+    cache_key = 'project_{}_submission_normal_results_{}'.format(
+        submission.submission_group.project.pk, submission.pk)
+    cache.delete(cache_key)
+

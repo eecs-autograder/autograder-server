@@ -192,6 +192,11 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                 return response.Response(self._get_fdbk_calculator(fdbk_category).to_dict())
 
             submission = self.get_object()
+            not_done_enough_to_cache = (
+                submission.status != ag_models.Submission.GradingStatus.waiting_for_deferred and
+                submission.status != ag_models.Submission.GradingStatus.finished_grading)
+            if not_done_enough_to_cache:
+                return response.Response(self._get_fdbk_calculator(fdbk_category).to_dict())
 
             cache_key = 'project_{}_submission_normal_results_{}'.format(
                 submission.submission_group.project.pk,

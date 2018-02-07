@@ -14,6 +14,7 @@ import autograder.core.models as ag_models
 from autograder.core.models import Submission
 import autograder.core.utils as core_ut
 from autograder.core.models.ag_test.ag_test_command import MAX_AG_TEST_COMMAND_FDBK_SETTINGS
+from autograder.grading_tasks.tasks import mark_submission_as_finished
 
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -1194,8 +1195,8 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         project.validate_and_update(visible_to_students=True)
 
         admin_group = obj_build.make_group(project=project, members_role=ag_models.UserRole.admin)
-        submission1 = obj_build.build_submission(submission_group=admin_group)
-        submission2 = obj_build.build_submission(submission_group=admin_group)
+        submission1 = obj_build.build_finished_submission(submission_group=admin_group)
+        submission2 = obj_build.build_finished_submission(submission_group=admin_group)
 
         submission1_cmd_result = obj_build.make_correct_ag_test_command_result(
             cmd, submission=submission1)
@@ -1232,7 +1233,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         project.validate_and_update(visible_to_students=True)
 
         admin_group = obj_build.make_group(project=project, members_role=ag_models.UserRole.admin)
-        submission = obj_build.build_submission(submission_group=admin_group)
+        submission = obj_build.build_finished_submission(submission_group=admin_group)
 
         cmd_result = obj_build.make_correct_ag_test_command_result(cmd, submission=submission)
 
@@ -1254,6 +1255,96 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
             self.assertEqual(submission.get_fdbk(fdbk_category).to_dict(), new_response.data)
 
+    # In autograder.grading_tasks.tasks.grade_submission.mark_submission_as_finished,
+    # the cached submission results will be cleared. This allows us to cache results
+    # for a submission that is waiting for deferred tests to finish.
+    def test_result_caching_per_grading_status(self):
+        """
+        Tests that results for received, queued, and being_graded submissions are
+        never cached. Then, makes sure that when a submission goes from waiting_for_deferred
+        to finished_grading, the cached results for that submission are cleared.
+        """
+        self.maxDiff = None
+        cmd = obj_build.make_full_ag_test_command(
+            normal_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS,
+            ultimate_submission_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS,
+            past_limit_submission_fdbk_config=MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
+        project = cmd.ag_test_case.ag_test_suite.project
+        project.validate_and_update(visible_to_students=True)
+
+        student_group = obj_build.make_group(project=project)
+        self.client.force_authenticate(student_group.members.first())
+
+        # Make sure that the cache invalidation on waiting_for_deferred -> finished_grading
+        # isn't overly aggressive.
+        finished_submission = obj_build.build_finished_submission(submission_group=student_group)
+        finished_result = obj_build.make_correct_ag_test_command_result(
+            cmd, submission=finished_submission)
+        response = self.client.get(self._make_url(finished_submission))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        old_finished_data = response.data
+
+        submission = obj_build.build_submission(
+            submission_group=student_group, status=ag_models.Submission.GradingStatus.received)
+
+        url = self._make_url(submission)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        submission.status = ag_models.Submission.GradingStatus.queued
+        submission.save()
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        submission.status = ag_models.Submission.GradingStatus.being_graded
+        submission.save()
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        cmd_result = obj_build.make_correct_ag_test_command_result(cmd, submission=submission)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(submission.get_fdbk(ag_models.FeedbackCategory.normal).to_dict(),
+                         response.data)
+        # Make a change to the command to make sure extra sure that being_graded
+        # submission results aren't cached.
+        cmd.validate_and_update(points_for_correct_stdout=cmd.points_for_correct_stdout + 1)
+        # We should get fresh results here
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(submission.get_fdbk(ag_models.FeedbackCategory.normal).to_dict(),
+                         response.data)
+
+        submission.status = ag_models.Submission.GradingStatus.waiting_for_deferred
+        submission.save()
+
+        # Waiting for deferred should be cached by this request...
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        old_data = submission.get_fdbk(ag_models.FeedbackCategory.normal).to_dict()
+
+        # ...so we should get stale results here.
+        cmd.validate_and_update(points_for_correct_stdout=cmd.points_for_correct_stdout + 1)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(old_data, response.data)
+
+        # This should mark the submission as finished and clear the results cache...
+        mark_submission_as_finished(None, submission.pk)
+        # ...so we should get fresh results here.
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(submission.get_fdbk(ag_models.FeedbackCategory.normal).to_dict(),
+                         response.data)
+
+        # Make sure that the results for are other submission are still stale.
+        response = self.client.get(self._make_url(finished_submission))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(old_finished_data, response.data)
+
     def test_submission_normal_fdbk_results_use_cache_false(self):
         self.maxDiff = None
         cmd = obj_build.make_full_ag_test_command(
@@ -1263,7 +1354,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
         student_group = obj_build.make_group(project=project,
                                              members_role=ag_models.UserRole.admin)
-        submission = obj_build.build_submission(submission_group=student_group)
+        submission = obj_build.build_finished_submission(submission_group=student_group)
 
         submission_cmd_result = obj_build.make_correct_ag_test_command_result(
             cmd, submission=submission)
@@ -1322,17 +1413,17 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
         project1_group = obj_build.make_group(project=project1,
                                               members_role=ag_models.UserRole.admin)
-        project1_submission1 = obj_build.build_submission(submission_group=project1_group)
+        project1_submission1 = obj_build.build_finished_submission(submission_group=project1_group)
         project1_submission1_cmd_result = obj_build.make_incorrect_ag_test_command_result(
             project1_cmd, submission=project1_submission1)
 
-        project1_submission2 = obj_build.build_submission(submission_group=project1_group)
+        project1_submission2 = obj_build.build_finished_submission(submission_group=project1_group)
         project1_submission2_cmd_result = obj_build.make_correct_ag_test_command_result(
             project1_cmd, submission=project1_submission2)
 
         project2_group = obj_build.make_group(project=project2,
                                               members_role=ag_models.UserRole.admin)
-        project2_submission = obj_build.build_submission(submission_group=project2_group)
+        project2_submission = obj_build.build_finished_submission(submission_group=project2_group)
         project2_cmd_result = obj_build.make_correct_ag_test_command_result(
             project2_cmd, submission=project2_submission)
 
