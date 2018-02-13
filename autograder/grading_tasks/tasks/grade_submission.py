@@ -117,4 +117,3 @@ def _mark_submission_as_finished_impl(submission_pk):
     cache_key = 'project_{}_submission_normal_results_{}'.format(
         submission.submission_group.project.pk, submission.pk)
     cache.delete(cache_key)
-
