@@ -93,19 +93,28 @@ class CommentTestCase(UnitTestBase):
             submission_group=submission.submission_group,
             handgrading_rubric=self.default_handgrading_rubric)
 
-        for i in range(10):
-            handgrading_models.Comment.objects.validate_and_create(
-                text="hello",
-                handgrading_result=handgrading_result)
+        # Using create instead of validate_and_create in order to define the pk
+        handgrading_models.Comment.objects.create(
+            text="hello",
+            handgrading_result=handgrading_result,
+            pk=10)
+
+        handgrading_models.Comment.objects.create(
+            text="hello",
+            handgrading_result=handgrading_result,
+            pk=24)
+
+        handgrading_models.Comment.objects.create(
+            text="hello",
+            handgrading_result=handgrading_result,
+            pk=1)
 
         all_comments = handgrading_models.Comment.objects.all()
 
         self.assertTrue(all_comments.ordered)
-        last_date = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=10)
-
-        for comment in all_comments:
-            self.assertLess(comment.last_modified, last_date)
-            last_date = comment.last_modified
+        self.assertEqual(all_comments[0].pk, 1)
+        self.assertEqual(all_comments[1].pk, 10)
+        self.assertEqual(all_comments[2].pk, 24)
 
     def test_serializable_fields(self):
         expected_fields = [

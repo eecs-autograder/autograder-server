@@ -72,6 +72,9 @@ class Criterion(AutograderModel):
     """
     Rubric item with fixed points that is not line specific
     """
+    class Meta:
+        order_with_respect_to = 'handgrading_rubric'
+
     handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='criteria',
                                            on_delete=models.CASCADE)
 
@@ -97,6 +100,9 @@ class Annotation(AutograderModel):
     """
     Additional field that can be applied to a submission. Can be line specific
     """
+    class Meta:
+        order_with_respect_to = 'handgrading_rubric'
+
     handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='annotations',
                                            on_delete=models.CASCADE)
 
@@ -220,6 +226,9 @@ class CriterionResult(AutograderModel):
     """
     Tied to a criterion object, specifies such criterion is selected
     """
+    class Meta:
+        ordering = ('criterion___order',)
+
     selected = models.BooleanField()
 
     criterion = models.ForeignKey(Criterion, related_name='criterion_results',
@@ -278,6 +287,9 @@ class Comment(AutograderModel):
     """
     Comment left by staff or grader regarding submission. Can be applied to specific line
     """
+    class Meta:
+        ordering = ('pk',)
+
     location = models.OneToOneField('Location', related_name='+', null=True, blank=True,
                                     on_delete=models.PROTECT)
 

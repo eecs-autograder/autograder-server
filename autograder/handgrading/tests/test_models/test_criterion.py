@@ -60,25 +60,19 @@ class CriterionTestCase(UnitTestBase):
         self.assertEqual(criterion_obj.handgrading_rubric, criterion_inputs["handgrading_rubric"])
 
     def test_criteria_ordering(self):
-        criterion_inputs = {
-            "short_description": "This is a short description used for testing.",
-            "long_description": "This is a short description used for testing.",
-            "points": 20,
-            "handgrading_rubric": self.default_handgrading_rubric
-        }
+        c1 = handgrading_models.Criterion.objects.validate_and_create(**self.default_criterion)
+        c2 = handgrading_models.Criterion.objects.validate_and_create(**self.default_criterion)
 
-        for i in range(10):
-            handgrading_models.Criterion.objects.validate_and_create(**criterion_inputs)
+        self.assertCountEqual([c1.pk, c2.pk],
+                              self.default_handgrading_rubric.get_criterion_order())
 
-        all_criteria = handgrading_models.Criterion.objects.all()
+        self.default_handgrading_rubric.set_criterion_order([c1.pk, c2.pk])
+        self.assertSequenceEqual([c1.pk, c2.pk],
+                                 self.default_handgrading_rubric.get_criterion_order())
 
-        self.assertTrue(all_criteria.ordered)
-        last_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=10)
-
-        # Check that queryset is ordered chronologically by 'created' field
-        for criterion in all_criteria:
-            self.assertLess(last_date, criterion.created)
-            last_date = criterion.created
+        self.default_handgrading_rubric.set_criterion_order([c2.pk, c1.pk])
+        self.assertSequenceEqual([c2.pk, c1.pk],
+                                 self.default_handgrading_rubric.get_criterion_order())
 
     def test_serializable_fields(self):
         expected_fields = [

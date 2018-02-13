@@ -50,25 +50,6 @@ class CriterionResultTestCases(UnitTestBase):
         self.assertEqual(criterion_result_obj.handgrading_result,
                          self.criterion_inputs["handgrading_result"])
 
-    def test_criterion_results_ordering(self):
-        for i in range(10):
-            self.criterion_inputs["criterion"] = (
-                handgrading_models.Criterion.objects.validate_and_create(
-                    points=0,
-                    handgrading_rubric=self.default_handgrading_rubric))
-            handgrading_models.CriterionResult.objects.validate_and_create(**self.criterion_inputs)
-
-        all_criterion_results = handgrading_models.Criterion.objects.all()
-
-        self.assertTrue(all_criterion_results.ordered)
-        last_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=10)
-
-        # Check that queryset is ordered chronologically by 'created' field of corresponding
-        # criterion item
-        for criterion_result in all_criterion_results:
-            self.assertLess(last_date, criterion_result.criterion.created)
-            last_date = criterion_result.criterion.created
-
     def test_serializable_fields(self):
         expected_fields = [
             'pk',
@@ -111,3 +92,31 @@ class CriterionResultTestCases(UnitTestBase):
         self.assertIsInstance(criterion_res_dict["criterion"], object)
         self.assertCountEqual(criterion_res_dict["criterion"].keys(),
                               self.criterion_obj.to_dict().keys())
+
+    def test_criterion_result_ordering(self):
+        cr1 = handgrading_models.CriterionResult.objects.validate_and_create(
+                **self.criterion_inputs)
+
+        # Create a new criterion item for second criterion result, since two criterion results
+        #   in one handgrading result should not share the same criterion
+        cr2 = handgrading_models.CriterionResult.objects.validate_and_create(
+                selected=True,
+                criterion=handgrading_models.Criterion.objects.validate_and_create(
+                    points=0,
+                    handgrading_rubric=self.default_handgrading_rubric),
+                handgrading_result=self.result_obj)
+
+        self.assertCountEqual([cr1.criterion.pk, cr2.criterion.pk],
+                              self.default_handgrading_rubric.get_criterion_order())
+
+        self.default_handgrading_rubric.set_criterion_order([cr1.criterion.pk, cr2.criterion.pk])
+        self.assertSequenceEqual([cr1.criterion.pk, cr2.criterion.pk],
+                                 self.default_handgrading_rubric.get_criterion_order())
+        self.assertSequenceEqual([cr1, cr2],
+                                 handgrading_models.CriterionResult.objects.all())
+
+        self.default_handgrading_rubric.set_criterion_order([cr2.criterion.pk, cr1.criterion.pk])
+        self.assertSequenceEqual([cr2.criterion.pk, cr1.criterion.pk],
+                                 self.default_handgrading_rubric.get_criterion_order())
+        self.assertSequenceEqual([cr2, cr1],
+                                 handgrading_models.CriterionResult.objects.all())

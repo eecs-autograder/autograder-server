@@ -58,21 +58,6 @@ class AnnotationTestCase(UnitTestBase):
 
         self.assertIn('max_deduction', cm.exception.message_dict)
 
-    def test_annotation_ordering(self):
-        for i in range(10):
-            handgrading_models.Annotation.objects.validate_and_create(
-                handgrading_rubric=self.rubric)
-
-        all_annotations = handgrading_models.Annotation.objects.all()
-
-        self.assertTrue(all_annotations.ordered)
-        last_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=10)
-
-        # Check that queryset is ordered chronologically by 'created' field
-        for annotation in all_annotations:
-            self.assertLess(last_date, annotation.created)
-            last_date = annotation.created
-
     def test_serializable_fields(self):
         expected_fields = [
             'pk',
@@ -98,3 +83,20 @@ class AnnotationTestCase(UnitTestBase):
             annotation_dict.pop(non_editable)
 
         annotation.validate_and_update(**annotation_dict)
+
+    def test_annotation_ordering(self):
+        annotation1 = handgrading_models.Annotation.objects.validate_and_create(
+            handgrading_rubric=self.rubric)
+        annotation2 = handgrading_models.Annotation.objects.validate_and_create(
+            handgrading_rubric=self.rubric)
+
+        self.assertCountEqual([annotation1.pk, annotation2.pk],
+                              self.rubric.get_annotation_order())
+
+        self.rubric.set_annotation_order([annotation1.pk, annotation2.pk])
+        self.assertSequenceEqual([annotation1.pk, annotation2.pk],
+                                 self.rubric.get_annotation_order())
+
+        self.rubric.set_annotation_order([annotation2.pk, annotation1.pk])
+        self.assertSequenceEqual([annotation2.pk, annotation1.pk],
+                                 self.rubric.get_annotation_order())
