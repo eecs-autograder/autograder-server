@@ -12,11 +12,10 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 import os
 import json
-# import importlib
 
 from django.utils.crypto import get_random_string
 
-VERSION = '2.0.1'
+VERSION = '2.0.3'
 
 # This is the autograder-server directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -149,10 +148,14 @@ DATABASES = {
 
 CACHES = {
     'default': {
-        'BACKEND': 'redis_cache.RedisCache',
-        'LOCATION': '{host}:{port}'.format(
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://{host}:{port}'.format(
             host=os.environ.get('AG_REDIS_HOST', 'localhost'),
             port=os.environ.get('AG_REDIS_PORT', '6379')),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        }
     },
 }
 

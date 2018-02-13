@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.db import transaction
 from django.http import FileResponse
 
@@ -113,6 +114,19 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
         queryset = project.download_tasks.all()
         serializer = ag_serializers.DownloadTaskSerializer(queryset, many=True)
         return response.Response(data=serializer.data)
+
+    @decorators.detail_route(
+        methods=['DELETE'],
+        permission_classes=[
+            permissions.IsAuthenticated,
+            ag_permissions.is_admin(lambda project: project.course)]
+    )
+    def results_cache(self, *args, **kwargs):
+        with transaction.atomic():
+            project = self.get_object()
+
+        cache.delete_pattern('project_{}_submission_normal_results_*'.format(project.pk))
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet):
