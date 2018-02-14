@@ -44,7 +44,7 @@ class HandgradingRubric(AutograderModel):
         blank=True, null=True, default=None,
         validators=[validators.MinValueValidator(0)],
         help_text='''The denominator of a handgrading score.
-                     When points_style is "start_at_zero_and_add", this value 
+                     When points_style is "start_at_zero_and_add", this value
                      overrides the sum of positive Criteria point values as the
                      total points possible.
                      When points_style is "start_at_max_and_subtract", this field
@@ -52,7 +52,7 @@ class HandgradingRubric(AutograderModel):
 
     show_grades_and_rubric_to_students = models.BooleanField(
         default=False, blank=True,
-        help_text='''Whether students can see their handgrading scores, 
+        help_text='''Whether students can see their handgrading scores,
                      including information from the rubric.''')
 
     handgraders_can_leave_comments = models.BooleanField(
@@ -114,12 +114,12 @@ class Criterion(AutograderModel):
     long_description = models.TextField(
         blank=True,
         help_text='''A long description of this Criterion. Note that there is no
-                     enforced length difference between short_ and long_description. 
+                     enforced length difference between short_ and long_description.
                      The separation is purely to be used by clients.''')
 
     points = models.FloatField(
         default=0, blank=True,
-        help_text='''The amount of points to add or subtract from a handgrading score 
+        help_text='''The amount of points to add or subtract from a handgrading score
                      when selected.''')
 
     SERIALIZABLE_FIELDS = ('pk',
@@ -151,7 +151,7 @@ class Annotation(AutograderModel):
     long_description = models.TextField(
         blank=True,
         help_text='''A long description of this Criterion. Note that there is no
-                     enforced length difference between short_ and long_description. 
+                     enforced length difference between short_ and long_description.
                      The separation is purely to be used by clients.''')
 
     deduction = models.FloatField(
@@ -341,6 +341,8 @@ class AppliedAnnotation(AutograderModel):
     location = models.OneToOneField(
         'Location', related_name='+', on_delete=models.PROTECT,
         help_text='''The source code location where the Annotation was applied.''')
+
+    comment = models.TextField(blank=True, help_text="REMOVE ME")
 
     def clean(self):
         """
