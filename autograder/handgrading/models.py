@@ -31,8 +31,7 @@ class HandgradingRubric(AutograderModel):
     Contains general settings for handgrading.
     """
     project = models.OneToOneField(
-        Project, related_name='handgrading_rubric',
-        on_delete=models.CASCADE,
+        Project, related_name='handgrading_rubric', on_delete=models.CASCADE,
         help_text="The Project this HandgradingRubric belongs to.")
 
     points_style = EnumField(
@@ -41,8 +40,7 @@ class HandgradingRubric(AutograderModel):
                      for HandgradingResults.''')
 
     max_points = models.FloatField(
-        blank=True, null=True, default=None,
-        validators=[validators.MinValueValidator(0)],
+        blank=True, null=True, default=None, validators=[validators.MinValueValidator(0)],
         help_text='''The denominator of a handgrading score.
                      When points_style is "start_at_zero_and_add", this value
                      overrides the sum of positive Criteria point values as the
@@ -141,8 +139,7 @@ class Annotation(AutograderModel):
     an optional deduction attached.
     """
     handgrading_rubric = models.ForeignKey(
-        HandgradingRubric, related_name='annotations',
-        on_delete=models.CASCADE,
+        HandgradingRubric, related_name='annotations', on_delete=models.CASCADE,
         help_text='''The HandgradingRubric this Annotation belongs to.''')
 
     short_description = models.TextField(blank=True,
@@ -200,8 +197,7 @@ class HandgradingResult(AutograderModel):
         help_text='''The specific submission that is being handgraded.''')
 
     handgrading_rubric = models.ForeignKey(
-        HandgradingRubric, related_name='handgrading_results',
-        on_delete=models.CASCADE,
+        HandgradingRubric, related_name='handgrading_results', on_delete=models.CASCADE,
         help_text='''The HandgradingRubric that this HandgradingResult is based on.''')
 
     finished_grading = models.BooleanField(
@@ -380,8 +376,7 @@ class Comment(AutograderModel):
     text = models.TextField(help_text='''Text to be shown to students.''')
 
     handgrading_result = models.ForeignKey(
-        HandgradingResult, related_name='comments',
-        on_delete=models.CASCADE,
+        HandgradingResult, related_name='comments', on_delete=models.CASCADE,
         help_text='''The HandgradingResult that this Comment belongs to.''')
 
     def clean(self):
