@@ -11,7 +11,7 @@ from .criterion_result_views import (
     CriterionResultDetailViewSet, CriterionResultListCreateView)
 
 from .criterion_views import (
-    CriterionDetailViewSet, CriterionListCreateView)
+    CriterionDetailViewSet, CriterionListCreateView, CriterionOrderView)
 
 from .handgrading_result_views import HandgradingResultView
 

@@ -9,6 +9,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
+import json
 
 class ListCriteriaTestCase(UnitTestBase):
     """/api/handgrading_rubric/<handgrading_rubric_pk>/criteria"""
@@ -221,10 +222,12 @@ class CriterionOrderTestCase(UnitTestBase):
 
     def test_staff_get_order(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [admin] = obj_build.make_staff_users(self.course, 1)
+        [admin] = obj_build.make_admin_users(self.course, 1)
         for user in staff, admin:
             self.client.force_authenticate(user)
 
+            new_order = [self.criterion1.pk, self.criterion2.pk]
+            self.handgrading_rubric.set_criterion_order(new_order)
             response = self.client.get(self.url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertSequenceEqual([self.criterion1.pk, self.criterion2.pk], response.data)
@@ -250,14 +253,17 @@ class CriterionOrderTestCase(UnitTestBase):
         self.client.force_authenticate(admin)
 
         reverse_order = self.handgrading_rubric.get_criterion_order()[::-1]
+        put_data = {"criterion_order": reverse_order}
+        # print(put_data)
         response = self.client.put(self.url, reverse_order)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertSequenceEqual(reverse_order, self.handgrading_rubric.get_criterion_order())
+        self.assertSequenceEqual(reverse_order, response.body)
 
     def test_non_admin_set_order_permission_denied(self):
-        [staff] = obj_build.make_staff_users(self.project.course, 1)
-        [enrolled] = obj_build.make_staff_users(self.project.course, 1)
-        [handgrader] = obj_build.make_staff_users(self.project.course, 1)
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
         for user in staff, enrolled, handgrader:
             self.client.force_authenticate(user)

@@ -2,11 +2,13 @@ import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from rest_framework import response
+from django.db import transaction
 
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
     AGModelGenericView)
 
+import json
 
 class CriterionListCreateView(ListCreateNestedModelView):
     serializer_class = handgrading_serializers.CriterionSerializer
@@ -36,15 +38,19 @@ class CriterionOrderView(AGModelGenericView):
             lambda handgrading_rubric: handgrading_rubric.project.course)]
 
     pk_key = 'handgrading_rubric_pk'
-    model_manager = handgrading_models.Criterion.objects.select_related(
-        'handgrading_rubric__project__course',)
+    model_manager = handgrading_models.HandgradingRubric.objects.select_related('project__course')
+    # serializer_class = handgrading_serializers.CriterionSerializer
 
     def get(self, request, *args, **kwargs):
-        ag_test_suite = self.get_object()
-        return response.Response(list(ag_test_suite.get_agtestcase_order()))
+        handgrading_rubric = self.get_object()
+        return response.Response(list(handgrading_rubric.get_criterion_order()))
 
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
-            ag_test_suite = self.get_object()
-            ag_test_suite.set_agtestcase_order(request.data)
-            return response.Response(list(ag_test_suite.get_agtestcase_order()))
+            handgrading_rubric = self.get_object()
+            print(args)
+            print(request.data)
+            print(request.data["criterion_order"])
+            print(kwargs)
+            handgrading_rubric.set_criterion_order(args)
+            return response.Response(list(handgrading_rubric.get_criterion_order()))

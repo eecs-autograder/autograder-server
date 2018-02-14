@@ -46,6 +46,8 @@ urlpatterns = [
 
     url(r'^handgrading_rubrics/(?P<handgrading_rubric_pk>[0-9]+)/criteria/$',
         views.CriterionListCreateView.as_view(), name='criteria'),
+    url(r'^handgrading_rubrics/(?P<handgrading_rubric_pk>[0-9]+)/criteria/order/$',
+        views.CriterionOrderView.as_view(), name='criterion_order'),
     url(r'', include(criterion_detail_router.urls)),
 
     url(r'^submission_groups/(?P<group_pk>[0-9]+)/handgrading_result/$',
