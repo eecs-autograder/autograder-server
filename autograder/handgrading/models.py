@@ -11,16 +11,16 @@ from autograder.core.models import AutograderModel, Project, Submission, Submiss
 
 class PointsStyle(Enum):
     """
-    Ways handgrading points can be managed.
+    Specifies how handgrading scores should be initialized.
 
-    Possible options:
-        - start_at_zero_and_add: Each submission starts with a handgrading score of 0, and
-            the sum of the point values for the Criterion items can increase the score until it
-            reaches the total_possible_points.
+    Values:
+        - start_at_zero_and_add: The handgrading score for a group starts at 0 and
+            points are added to the total. Total points possible is the sum of
+            the point values for non-negative Criteria.
 
-        - start_at_max_and_subtract: Each submission starts off with the admin-defined max_points,
-            and Criterion/Annotation items can be set/selected to reduce the total_points a student
-            receives.
+        - start_at_max_and_subtract: The handgrading score for a group starts at
+            HandgradingRubric.max_points. Total points possible is fixed at this
+            value.
     """
     start_at_zero_and_add = "start_at_zero_and_add"
     start_at_max_and_subtract = "start_at_max_and_subtract"
@@ -28,55 +28,45 @@ class PointsStyle(Enum):
 
 class HandgradingRubric(AutograderModel):
     """
-    Represents the rubric (which is linked to a project) used to configure handgrading settings.
+    Contains general settings for handgrading.
     """
-    project = models.OneToOneField(Project, related_name='handgrading_rubric',
-                                   on_delete=models.CASCADE,
-                                   help_text='''The Project this HandgradingRubric is 
-                                   tied to. HandgradingRubrics are defined for each Project 
-                                   individually.''')
+    project = models.OneToOneField(
+        Project, related_name='handgrading_rubric',
+        on_delete=models.CASCADE,
+        help_text="The Project this HandgradingRubric belongs to.")
 
-    points_style = EnumField(PointsStyle, default=PointsStyle.start_at_zero_and_add, blank=True,
-                             help_text='''The selected PointStyle for handgrading. Determines how 
-                             total_points and total_possible_points are calculated. Can either
-                             increase from zero to max_points or decrease from a set max_points to
-                             zero.''')
+    points_style = EnumField(
+        PointsStyle, default=PointsStyle.start_at_zero_and_add, blank=True,
+        help_text='''Determines how total_points and total_possible_points are calculated
+                     for HandgradingResults.''')
 
-    max_points = models.FloatField(blank=True, null=True, default=None,
-                                   validators=[validators.MinValueValidator(0)],
-                                   help_text='''The maximum value a handgrading score can reach
-                                   (not accounting for extra points added later in 
-                                   HandgradingResult via points_adjustment). This is set in one of
-                                   two cases:
-                                        - points_style is set to start_at_max_and_subtract, meaning 
-                                          an admin user has to define the max_points to start at.
-                                        - points_style is set to start_at_zero_and_add, and 
-                                          admin wants to override the default max points, which is
-                                          the sum of all the points of the defined criteria.''')
+    max_points = models.FloatField(
+        blank=True, null=True, default=None,
+        validators=[validators.MinValueValidator(0)],
+        help_text='''The denominator of a handgrading score.
+                     When points_style is "start_at_zero_and_add", this value 
+                     overrides the sum of positive Criteria point values as the
+                     total points possible.
+                     When points_style is "start_at_max_and_subtract", this field
+                     is REQUIRED.''')
 
-    show_grades_and_rubric_to_students = models.BooleanField(default=False, blank=True,
-                                                             help_text='''Whether grades and rubric
-                                                             is released to the students.''')
+    show_grades_and_rubric_to_students = models.BooleanField(
+        default=False, blank=True,
+        help_text='''Whether students can see their handgrading scores, 
+                     including information from the rubric.''')
 
-    handgraders_can_leave_comments = models.BooleanField(default=False, blank=True,
-                                                         help_text='''Whether handgraders (defined
-                                                         in Course) can leave comments on
-                                                         submissions.''')
+    handgraders_can_leave_comments = models.BooleanField(
+        default=False, blank=True,
+        help_text='''Whether handgraders can add comments to a HandgradingResult.''')
 
-    handgraders_can_adjust_points = models.BooleanField(default=False, blank=True,
-                                                        help_text='''Whether handgraders (defined 
-                                                        in Course) can add or remove points 
-                                                        arbitrarily in a submission. Can override
-                                                        max_points upper limit.''')
+    handgraders_can_adjust_points = models.BooleanField(
+        default=False, blank=True,
+        help_text='''Whether handgraders can edit HandgradingResult.point_adjustment.''')
 
     def clean(self):
         """
-        Checks that max_points is not None when points_style is set to start_at_max_and_subtract.
-        Throws ValidationError exception if this is the case.
-
-        As defined by Django docs, "This method returns the clean data, which is then inserted
-        into the cleaned_data dictionary of the form."
-            source: https://docs.djangoproject.com/en/2.0/ref/forms/validation/
+        Checks that max_points is not None when points_style
+        is set to start_at_max_and_subtract.
         """
         super().clean()
 
@@ -111,27 +101,26 @@ class HandgradingRubric(AutograderModel):
 
 class Criterion(AutograderModel):
     """
-    Rubric item with fixed points that is not line specific.
+    A "checkbox" rubric item.
     """
-    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='criteria',
-                                           on_delete=models.CASCADE,
-                                           help_text='''All criteria are tied to a specific 
-                                           HandgradingRubric object, which itself are tied to a
-                                           project.''')
+    handgrading_rubric = models.ForeignKey(
+        HandgradingRubric, related_name='criteria', on_delete=models.CASCADE,
+        help_text='''The rubric this Criterion belongs to.''')
 
-    short_description = models.TextField(blank=True,
-                                         help_text='''Provides a short description of
-                                         the criterion item.''')
+    short_description = models.TextField(
+        blank=True,
+        help_text='''A short description of this Criterion.''')
 
-    long_description = models.TextField(blank=True,
-                                        help_text='''Provides a long description of the criterion
-                                        item. Used to explain the criterion item in more depth than 
-                                        the short_description.''')
+    long_description = models.TextField(
+        blank=True,
+        help_text='''A long description of this Criterion. Note that there is no
+                     enforced length difference between short_ and long_description. 
+                     The separation is purely to be used by clients.''')
 
-    points = models.FloatField(default=0, blank=True,
-                               help_text='''The amount of points to add or subtract from a 
-                               submission if its respective CriterionResult is selected or 
-                               unselected respectively.''')
+    points = models.FloatField(
+        default=0, blank=True,
+        help_text='''The amount of points to add or subtract from a handgrading score 
+                     when selected.''')
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -148,32 +137,33 @@ class Criterion(AutograderModel):
 
 class Annotation(AutograderModel):
     """
-    Additional field that can be applied to a submission. Can be line specific.
+    A pre-defined comment that can be applied to specific lines of code, with
+    an optional deduction attached.
     """
-    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='annotations',
-                                           on_delete=models.CASCADE,
-                                           help_text='''All annotations are tied to a specific
-                                           HandgradingRubric object, which itself are tied to a 
-                                           project.''')
+    handgrading_rubric = models.ForeignKey(
+        HandgradingRubric, related_name='annotations',
+        on_delete=models.CASCADE,
+        help_text='''The HandgradingRubric this Annotation belongs to.''')
 
     short_description = models.TextField(blank=True,
-                                         help_text='''Provides a short description of the
-                                         annotation item.''')
+                                         help_text='''A short description of this Annotation.''')
 
-    long_description = models.TextField(blank=True,
-                                        help_text='''Provides a long description of the annotation
-                                        item.''')
+    long_description = models.TextField(
+        blank=True,
+        help_text='''A long description of this Criterion. Note that there is no
+                     enforced length difference between short_ and long_description. 
+                     The separation is purely to be used by clients.''')
 
-    deduction = models.FloatField(default=0, blank=True, validators=[MaxValueValidator(0)],
-                                  help_text='''The amount of points to deduct from a submission if
-                                  its respective AppliedAnnotation is applied. This must be a
-                                  number less than or equal to zero.''')
+    deduction = models.FloatField(
+        default=0, blank=True, validators=[MaxValueValidator(0)],
+        help_text='''The amount of points to deduct from a handgrading score when
+                     applied. Must be non-positive.''')
 
-    max_deduction = models.FloatField(default=None, blank=True, null=True,
-                                      validators=[MaxValueValidator(0)],
-                                      help_text='''The maximum amount of points that can be
-                                      deducted from a submission by applying this annotation. The 
-                                      default value is None, and maximum value is zero.''')
+    max_deduction = models.FloatField(
+        default=None, blank=True, null=True, validators=[MaxValueValidator(0)],
+        help_text='''The maximum amount of points that can be cumulatively
+                     deducted from a handgrading score by applications of
+                     this annotation. Must be None or non-positive.''')
 
     SERIALIZABLE_FIELDS = (
         'pk',
@@ -198,49 +188,45 @@ class Annotation(AutograderModel):
 
 class HandgradingResult(AutograderModel):
     """
+    Contains general information about a group's handgrading result
     Represents the handgrading result of a group's best submission.
     """
-    submission = models.OneToOneField(Submission, related_name='handgrading_result',
-                                      on_delete=models.CASCADE,
-                                      help_text='''The submission that the HandgradingResult is
-                                      tied to.''')
+    submission_group = models.OneToOneField(
+        SubmissionGroup, related_name='handgrading_result', on_delete=models.CASCADE,
+        help_text='''The SubmissionGroup that this HandgradingResult is for.''')
 
-    handgrading_rubric = models.ForeignKey(HandgradingRubric, related_name='handgrading_results',
-                                           on_delete=models.CASCADE,
-                                           help_text='''The HandgradingRubric tied to the
-                                           HandgradingResult. This is where the HandgradingResult 
-                                           gets the handgrading configuration details.''')
+    submission = models.OneToOneField(
+        Submission, related_name='handgrading_result', on_delete=models.CASCADE,
+        help_text='''The specific submission that is being handgraded.''')
 
-    submission_group = models.OneToOneField(SubmissionGroup, related_name='handgrading_result',
-                                            on_delete=models.CASCADE,
-                                            help_text='''The SubmissionGroup that submitted the
-                                            submission that the HandgradingResult is tied to.''')
+    handgrading_rubric = models.ForeignKey(
+        HandgradingRubric, related_name='handgrading_results',
+        on_delete=models.CASCADE,
+        help_text='''The HandgradingRubric that this HandgradingResult is based on.''')
 
-    finished_grading = models.BooleanField(default=False, blank=True,
-                                           help_text='''Represents whether the HandgradingResult
-                                           has been fully graded or if it still needs to be 
-                                           completed. All HandgradingResult objects have this 
-                                           boolean initially set to false.''')
+    finished_grading = models.BooleanField(
+        default=False, blank=True,
+        help_text='''Handgraders should set this field to True when they are finished
+                     grading this group's submission.''')
 
-    points_adjustment = models.FloatField(default=0, blank=True,
-                                          help_text='''Represents any points added or removed from 
-                                          a submission that are not tied to any Annotations or 
-                                          Criteria.''')
+    points_adjustment = models.FloatField(
+        default=0, blank=True,
+        help_text='''An arbitrary adjustment to this result's total points.
+                     Note that this does not affect total points possible.''')
 
     @property
     def submitted_filenames(self):
         """
-        Returns a list of strings containing the filenames of the Submission the
-        HandgradingRubric is tied to.
+        Returns a list of strings containing the filenames of the Submission this result
+        belongs to.
         """
         return self.submission.submitted_filenames
 
     @property
     def total_points(self):
         """
-        Calculates and returns the total points a submission group earns for their submission
-        as a result of their HandgradingResult (along with relevant CriterionResults and
-        AppliedAnnotations).
+        Returns the total number of points awarded. Note that it is possible
+        for this value to be greater than total_points.
         """
         total = 0
         if self.handgrading_rubric.points_style == PointsStyle.start_at_max_and_subtract:
@@ -269,9 +255,8 @@ class HandgradingResult(AutograderModel):
     @property
     def total_points_possible(self):
         """
-        Calculates the total points a group can possibly earn for their submission as
-        a result of their HandgradingResult (along with relevant CriterionResults and
-        AppliedAnnotations).
+        Returns the denominator of the handgrading score based on the
+        handgrading rubric's points style and max points.
         """
         if self.handgrading_rubric.max_points is not None:
             return self.handgrading_rubric.max_points
@@ -315,22 +300,19 @@ class HandgradingResult(AutograderModel):
 
 class CriterionResult(AutograderModel):
     """
-    Tied to a Criterion object, specifies if such criterion is selected.
+    Specifies whether a handgrading criterion was selected (i.e. the checkbox was checked).
     """
     selected = models.BooleanField(
-        help_text='''Specifies if the Criterion is selected or not. Used
-           to determine whether the SubmissionGroup should be given
-           the points specified by the Criterion or not.''')
+        help_text='''When True, indicates that the criterion's point allotment should be
+                     added to (or subtracted from if negative) the total handgrading points.''')
 
-    criterion = models.ForeignKey(Criterion, related_name='criterion_results',
-                                  on_delete=models.CASCADE,
-                                  help_text='''The Criterion that the CriterionResult is tied 
-                                  to.''')
+    criterion = models.ForeignKey(
+        Criterion, related_name='criterion_results', on_delete=models.CASCADE,
+        help_text='''The Criterion that the CriterionResult is tied to.''')
 
-    handgrading_result = models.ForeignKey(HandgradingResult, related_name='criterion_results',
-                                           on_delete=models.CASCADE,
-                                           help_text='''The HandgradingResult the CriterionResult
-                                           is tied to.''')
+    handgrading_result = models.ForeignKey(
+        HandgradingResult, related_name='criterion_results', on_delete=models.CASCADE,
+        help_text='''The HandgradingResult this CriterionResult belongs to.''')
 
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
@@ -346,34 +328,24 @@ class CriterionResult(AutograderModel):
 
 class AppliedAnnotation(AutograderModel):
     """
-    Tied to an annotation object, specifies where the annotation is applied and if a comment
-    was left with it.
+    Represents a single instance of adding an annotation to student source code.
     """
-    comment = models.TextField(blank=True)
+    annotation = models.ForeignKey(
+        Annotation, on_delete=models.CASCADE,
+        help_text='''The Annotation that was applied to the source code.''')
 
-    location = models.OneToOneField('Location', related_name='+',
-                                    on_delete=models.PROTECT,
-                                    help_text='''Defines the location where the Annotation
-                                    was applied. Includes a filename, starting line number and
-                                    ending line number, since annotations are applied on specific 
-                                    lines in a specific file of a submission.''')
+    handgrading_result = models.ForeignKey(
+        HandgradingResult, related_name='applied_annotations', on_delete=models.CASCADE,
+        help_text='''The HandgradingResult the applied annotation belongs to.''')
 
-    annotation = models.ForeignKey(Annotation, on_delete=models.CASCADE,
-                                   help_text='''The Annotation tied to the AppliedAnnotation.''')
-
-    handgrading_result = models.ForeignKey(HandgradingResult, related_name='applied_annotations',
-                                           on_delete=models.CASCADE,
-                                           help_text='''The HandgradingResult tied to the 
-                                           AppliedAnnotation.''')
+    location = models.OneToOneField(
+        'Location', related_name='+', on_delete=models.PROTECT,
+        help_text='''The source code location where the Annotation was applied.''')
 
     def clean(self):
         """
-        Checks that the filename defined in the location is part of the submitted filename of the
-        submission. Throws ValidationError exception if this is the case.
-
-        As defined by Django docs, "This method returns the clean data, which is then inserted
-        into the cleaned_data dictionary of the form."
-            source: https://docs.djangoproject.com/en/2.0/ref/forms/validation/
+        Checks that the filename specified in the location is actually one of
+        the files in the submission.
         """
         if self.location.filename not in self.handgrading_result.submission.submitted_filenames:
             raise ValidationError('Filename is not part of submitted files')
@@ -395,20 +367,20 @@ class AppliedAnnotation(AutograderModel):
 
 class Comment(AutograderModel):
     """
-    Comment left by staff or grader regarding submission. Can be applied to specific line.
+    A custom comment that can either apply to the whole submission or a specific
+    location in the source code.
     """
-    location = models.OneToOneField('Location', related_name='+', null=True, blank=True,
-                                    on_delete=models.PROTECT,
-                                    help_text='''Specifies the Location of the comment, which 
-                                    contains the first line, last line, and filename of where the 
-                                    comment was applied. Specifying a location is optional.''')
+    location = models.OneToOneField(
+        'Location', related_name='+', null=True, blank=True, on_delete=models.PROTECT,
+        help_text='''When not None, specifies the source code location this comment
+                     applies to.''')
 
-    text = models.TextField(help_text='''Text that describes the comment.''')
+    text = models.TextField(help_text='''Text to be shown to students.''')
 
-    handgrading_result = models.ForeignKey(HandgradingResult, related_name='comments',
-                                           on_delete=models.CASCADE,
-                                           help_text='''The HandgradingResult that the Comment is
-                                           tied to.''')
+    handgrading_result = models.ForeignKey(
+        HandgradingResult, related_name='comments',
+        on_delete=models.CASCADE,
+        help_text='''The HandgradingResult that this Comment belongs to.''')
 
     def clean(self):
         """
@@ -439,30 +411,21 @@ class Comment(AutograderModel):
 
 class Location(AutograderModel):
     """
-    Defined as a block of code within a specific file with a starting and ending line.
+    A region of source code in a specific file with a starting and ending line.
     """
-    first_line = models.IntegerField(validators=[validators.MinValueValidator(0)],
-                                     help_text='''The line number of the first line specified by
-                                     the Location. Cannot take a value less than 0, since the
-                                     first line of code in a file has a line number of 0.''')
+    filename = models.TextField(help_text='''The file that contains the source code region.''')
 
-    last_line = models.IntegerField(validators=[validators.MinValueValidator(0)],
-                                    help_text='''The line number of the last line specified by
-                                     the Location. Cannot take a value less than 0, since the
-                                     first line of code in a file has a line number of 0. Can hold
-                                     the same value as first_line if Location encompasses a single 
-                                     line of code.''')
+    first_line = models.IntegerField(
+        validators=[validators.MinValueValidator(0)],
+        help_text='''The first line in the source code region. Must be non-negative.''')
 
-    filename = models.TextField(help_text='''Specifies the filename of the Location.''')
+    last_line = models.IntegerField(
+        validators=[validators.MinValueValidator(0)],
+        help_text='''The last line in the source code region (inclusive). Must be non-negative.''')
 
     def clean(self):
         """
-        Checks that the first_line comes before (or is the same as) the last_line.
-        Throws ValidationError exception if this is the case.
-
-        As defined by Django docs, "This method returns the clean data, which is then inserted
-        into the cleaned_data dictionary of the form."
-            source: https://docs.djangoproject.com/en/2.0/ref/forms/validation/
+        Checks that first_line <= last_line.
         """
         if self.last_line is not None and (self.last_line < self.first_line):
             raise ValidationError('first line should be before last line')
