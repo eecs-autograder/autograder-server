@@ -4,7 +4,6 @@ import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
 from django.core.exceptions import ValidationError
-import datetime
 
 
 class CommentTestCase(UnitTestBase):

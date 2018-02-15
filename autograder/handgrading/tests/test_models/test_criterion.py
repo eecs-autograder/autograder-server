@@ -3,7 +3,7 @@
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
 from autograder.utils.testing import UnitTestBase
-import datetime
+
 
 class CriterionTestCase(UnitTestBase):
     """
