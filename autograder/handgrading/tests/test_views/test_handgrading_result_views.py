@@ -1,3 +1,7 @@
+import random
+from urllib.parse import urlencode
+
+from django.contrib.auth.models import User
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -6,9 +10,10 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.handgrading.models as handgrading_models
+import autograder.handgrading.models as hg_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.models import Submission
+from autograder.handgrading.views.handgrading_result_views import HandgradingResultPaginator
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
@@ -30,9 +35,9 @@ class _SetUp(UnitTestBase):
             submitted_files=self.submitted_files,
             status=Submission.GradingStatus.finished_grading)
 
-        self.handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+        self.handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
             project=self.project
-        )  # type: handgrading_models.HandgradingRubric
+        )  # type: hg_models.HandgradingRubric
 
         [self.admin] = obj_build.make_admin_users(self.project.course, 1)
         [self.staff] = obj_build.make_staff_users(self.project.course, 1)
@@ -51,11 +56,11 @@ class RetrieveHandgradingResultTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
-        self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+        self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
             submission_group=self.submission.submission_group,
             handgrading_rubric=self.handgrading_rubric
-        )  # type: handgrading_models.HandgradingResult
+        )  # type: hg_models.HandgradingResult
 
     def test_staff_or_handgrader_can_always_retrieve(self):
         self.project.validate_and_update(visible_to_students=False)
@@ -146,7 +151,7 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
         super().setUp()
 
         self.criteria = [
-            handgrading_models.Criterion.objects.validate_and_create(
+            hg_models.Criterion.objects.validate_and_create(
                 handgrading_rubric=self.handgrading_rubric)
             for i in range(3)
         ]
@@ -184,7 +189,7 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
         response = self.client.post(self.url, {})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertIn('handgrading_rubric', response.data)
-        self.assertEqual(0, handgrading_models.HandgradingResult.objects.count())
+        self.assertEqual(0, hg_models.HandgradingResult.objects.count())
 
     def test_group_has_no_submissions(self):
         self.submission.delete()
@@ -193,11 +198,11 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
         response = self.client.post(self.url, {})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertIn('num_submissions', response.data)
-        self.assertEqual(0, handgrading_models.HandgradingResult.objects.count())
+        self.assertEqual(0, hg_models.HandgradingResult.objects.count())
 
     def test_non_admin_create_permission_denied(self):
         self.do_permission_denied_create_test(
-            handgrading_models.HandgradingResult.objects,
+            hg_models.HandgradingResult.objects,
             self.client, self.student, self.url, {})
 
 
@@ -205,11 +210,11 @@ class UpdateHandgradingResultPointsAdjustmentTestCase(test_impls.UpdateObjectTes
     def setUp(self):
         super().setUp()
 
-        self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+        self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
             submission_group=self.submission.submission_group,
             handgrading_rubric=self.handgrading_rubric
-        )  # type: handgrading_models.HandgradingResult
+        )  # type: hg_models.HandgradingResult
 
         self.assertFalse(self.handgrading_result.finished_grading)
         self.assertEqual(0, self.handgrading_result.points_adjustment)
@@ -241,3 +246,100 @@ class UpdateHandgradingResultPointsAdjustmentTestCase(test_impls.UpdateObjectTes
         request_data = {'points_adjustment': -3}
         self.do_patch_object_permission_denied_test(
             self.handgrading_result, self.client, self.student, self.url, request_data)
+
+
+class ListHandgradingResultsViewTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.maxDiff = None
+
+        self.client = APIClient()
+        self.course = obj_build.make_course()
+        self.project = obj_build.make_project(course=self.course)
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+
+        self.rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project,
+            points_style=hg_models.PointsStyle.start_at_max_and_subtract,
+            max_points=43)
+
+        [self.staff] = obj_build.make_staff_users(self.course, 1)
+        [self.handgrader] = obj_build.make_handgrader_users(self.course, 1)
+
+    def test_staff_get_handgrading_results_no_results(self):
+        self.do_handgrading_results_test(self.staff, num_results=0)
+
+    def test_handgrader_get_handgrading_results_no_results(self):
+        self.do_handgrading_results_test(self.handgrader, num_results=0)
+
+    def test_staff_get_handgrading_results_default_page_size(self):
+        self.do_handgrading_results_test(self.staff, num_results=2)
+
+    def test_handgrader_get_handgrading_results_default_page_size(self):
+        self.do_handgrading_results_test(self.handgrader, num_results=2)
+
+    def test_staff_get_paginated_handgrading_results_custom_page_size(self):
+        self.do_handgrading_results_test(self.staff, num_results=3, page_size=1)
+
+    def test_handgrader_get_paginated_handgrading_results_custom_page_size(self):
+        self.do_handgrading_results_test(self.handgrader, num_results=3, page_size=1)
+
+    def test_staff_get_paginated_handgrading_results_specific_page(self):
+        self.do_handgrading_results_test(self.staff, num_results=4, page_size=3, page_num=2)
+
+    def test_handgrader_get_paginated_handgrading_results_specific_page(self):
+        self.do_handgrading_results_test(self.handgrader, num_results=4, page_size=3, page_num=2)
+
+    def test_non_staff_non_handgrader_get_handgrading_results_permission_denied(self):
+        [student] = obj_build.make_enrolled_users(self.course, 1)
+        self.client.force_authenticate(student)
+        response = self.client.get(reverse('handgrading_results', kwargs={'pk': self.project.pk}))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def do_handgrading_results_test(self, user: User, *,
+                                    num_results: int, page_size: int=None, page_num: int=None):
+        groups = [obj_build.make_group(3, project=self.project) for _ in range(num_results)]
+        hg_results = []
+        for group in groups:
+            s = obj_build.build_finished_submission(submission_group=group)
+            score = random.randint(0, self.rubric.max_points + 3)
+            hg_result = hg_models.HandgradingResult.objects.validate_and_create(
+                submission=s, submission_group=group, handgrading_rubric=self.rubric,
+                points_adjustment=score,
+                finished_grading=bool(random.getrandbits(1)))
+            hg_results.append(hg_result)
+
+        expected_data = []
+        for result in hg_results:
+            data = {
+                'submission_group': result.submission_group.to_dict(),
+                'total_points': result.total_points,
+                'total_points_possible': result.total_points_possible,
+                'finished_grading': result.finished_grading
+            }
+            data['submission_group']['member_names'].sort()
+            expected_data.append(data)
+
+        expected_data.sort(key=lambda res: res['submission_group']['member_names'][0])
+
+        self.client.force_authenticate(user)
+        url = reverse('handgrading_results', kwargs={'pk': self.project.pk})
+        query_params = {}
+        if page_num is not None:
+            query_params['page'] = page_num
+        else:
+            page_num = 1
+
+        if page_size is not None:
+            query_params['page_size'] = page_size
+        else:
+            page_size = HandgradingResultPaginator.page_size
+
+        expected_data = expected_data[page_num - 1 * page_size:page_num * page_size]
+
+        if query_params:
+            url += '?' + urlencode(query_params)
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual(expected_data, response.data['results'])

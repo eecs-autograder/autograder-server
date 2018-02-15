@@ -1,23 +1,23 @@
+from django.core.cache import cache
 from django.db import transaction
 from django.http import FileResponse
 
-from rest_framework import decorators, exceptions, mixins, permissions, response, viewsets
+from rest_framework import decorators, mixins, permissions, response
 from rest_framework import status
 
 import autograder.core.models as ag_models
+
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
+from autograder.rest_api.views.ag_model_views import (
+    AGModelGenericViewSet, TransactionRetrieveUpdateDestroyMixin)
 from autograder.rest_api import tasks as api_tasks
 from .permissions import ProjectPermissions
-from ..load_object_mixin import build_load_object_mixin
 
 
-class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
-                           mixins.RetrieveModelMixin,
-                           transaction_mixins.TransactionUpdateMixin,
-                           viewsets.GenericViewSet):
+class ProjectDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
+    model_manager = ag_models.Project.objects.select_related('course')
+
     serializer_class = ag_serializers.ProjectSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermissions)
 
@@ -114,6 +114,19 @@ class ProjectDetailViewSet(build_load_object_mixin(ag_models.Project),
         serializer = ag_serializers.DownloadTaskSerializer(queryset, many=True)
         return response.Response(data=serializer.data)
 
+    @decorators.detail_route(
+        methods=['DELETE'],
+        permission_classes=[
+            permissions.IsAuthenticated,
+            ag_permissions.is_admin(lambda project: project.course)]
+    )
+    def results_cache(self, *args, **kwargs):
+        with transaction.atomic():
+            project = self.get_object()
+
+        cache.delete_pattern('project_{}_submission_normal_results_*'.format(project.pk))
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet):
     permission_classes = (ag_permissions.is_admin(lambda task: task.project.course),)
@@ -142,4 +155,3 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
         if (download_type == ag_models.DownloadType.all_submission_files or
                 download_type == ag_models.DownloadType.final_graded_submission_files):
             return 'application/zip'
-

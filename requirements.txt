@@ -2,7 +2,7 @@ autograder-sandbox==3.1.0
 celery==4.0.0
 Django==2.0.1
 django-extensions==1.9.8
-django-redis-cache==1.7.1
+django-redis==4.8.0
 django-timezone-field==2.0
 djangorestframework==3.7.7
 drf-nested-routers==0.90.0

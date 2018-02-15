@@ -5,6 +5,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from rest_framework import viewsets, permissions, mixins, generics, response
+from rest_framework.views import APIView
 
 from ..transaction_mixins import (
     TransactionCreateMixin, TransactionUpdateMixin,
@@ -28,7 +29,7 @@ class GetObjectLockOnUnsafeMixin:
     pk_key = 'pk'
     model_manager = None
 
-    def get_object(self, pk_override=None):
+    def get_object(self, *, pk_override=None, model_manager_override=None):
         """
         :param pk_override: When specified, looks up the object
         with this specified primary key rather than getting the
@@ -37,10 +38,11 @@ class GetObjectLockOnUnsafeMixin:
         to perform the query. Http404 or PermissionDenied may be raised
         as in the Django REST Framework version of this method.
         """
-        if self.model_manager is None:
+        if self.model_manager is None and model_manager_override is None:
             raise ValueError('"model_manager" must not be None.')
 
-        queryset = self.model_manager
+        queryset = (model_manager_override if model_manager_override is not None
+                    else self.model_manager)
         if self.request.method not in permissions.SAFE_METHODS:
             queryset = queryset.select_for_update()
 
@@ -60,11 +62,19 @@ class AlwaysIsAuthenticatedMixin:
         return [permissions.IsAuthenticated()] + super().get_permissions()
 
 
+class AGModelAPIView(GetObjectLockOnUnsafeMixin, AlwaysIsAuthenticatedMixin, APIView):
+    """
+    A derived class of APIView that inherits from the mixins
+    GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
+    """
+    pass
+
+
 class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,
                             AlwaysIsAuthenticatedMixin,
                             viewsets.GenericViewSet):
     """
-    A generic viewset that includes the mixins
+    A derived class of GenericViewSet that inherits from the mixins
     GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
     """
     pass
@@ -74,7 +84,7 @@ class AGModelGenericView(GetObjectLockOnUnsafeMixin,
                          AlwaysIsAuthenticatedMixin,
                          generics.GenericAPIView):
     """
-    A generic view that includes the mixins
+    A derived class of GenericAPIView that inherits from the mixins
     GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
     """
     pass
