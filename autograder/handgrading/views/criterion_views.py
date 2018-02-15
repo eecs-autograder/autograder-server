@@ -39,7 +39,6 @@ class CriterionOrderView(AGModelGenericView):
 
     pk_key = 'handgrading_rubric_pk'
     model_manager = handgrading_models.HandgradingRubric.objects.select_related('project__course')
-    # serializer_class = handgrading_serializers.CriterionSerializer
 
     def get(self, request, *args, **kwargs):
         handgrading_rubric = self.get_object()
@@ -48,9 +47,5 @@ class CriterionOrderView(AGModelGenericView):
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             handgrading_rubric = self.get_object()
-            print(args)
-            print(request.data)
-            print(request.data["criterion_order"])
-            print(kwargs)
-            handgrading_rubric.set_criterion_order(args)
+            handgrading_rubric.set_criterion_order(request.data)
             return response.Response(list(handgrading_rubric.get_criterion_order()))

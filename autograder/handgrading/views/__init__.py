@@ -1,5 +1,5 @@
 from .annotation_views import (
-    AnnotationDetailViewSet, AnnotationListCreateView)
+    AnnotationDetailViewSet, AnnotationListCreateView, AnnotationOrderView)
 
 from .applied_annotation_views import (
     AppliedAnnotationDetailViewSet, AppliedAnnotationListCreateView)

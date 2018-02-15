@@ -253,12 +253,9 @@ class CriterionOrderTestCase(UnitTestBase):
         self.client.force_authenticate(admin)
 
         reverse_order = self.handgrading_rubric.get_criterion_order()[::-1]
-        put_data = {"criterion_order": reverse_order}
-        # print(put_data)
         response = self.client.put(self.url, reverse_order)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertSequenceEqual(reverse_order, self.handgrading_rubric.get_criterion_order())
-        self.assertSequenceEqual(reverse_order, response.body)
 
     def test_non_admin_set_order_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
