@@ -336,7 +336,7 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertIsInstance(result_dict["comments"], list)
         self.assertIsInstance(result_dict["criterion_results"], list)
         self.assertIsInstance(result_dict["handgrading_rubric"], object)
-        self.assertIsInstance(result_dict["submission_group"], int)
+        self.assertIsInstance(result_dict["submission_group"], dict)
 
         self.assertEqual(len(result_dict["applied_annotations"]), 1)
         self.assertEqual(len(result_dict["comments"]), 1)

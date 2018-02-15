@@ -1,21 +1,24 @@
+from django.contrib.auth.models import User
+from django.db.models import Prefetch
 from django.http import FileResponse
-from django.http import Http404
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from drf_composable_permissions.p import P
-from rest_framework import status
+
+from rest_framework import status, permissions
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import BasePermission
-
-from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
-
 from rest_framework import response, mixins, exceptions
+from drf_composable_permissions.p import P
 
 import autograder.core.models as ag_models
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
-from autograder.rest_api.views.ag_model_views import AGModelGenericView, \
-    handle_object_does_not_exist_404
+from autograder.rest_api.views.ag_model_views import (
+    AGModelGenericView, handle_object_does_not_exist_404, AGModelAPIView)
+from autograder import utils
+
 
 is_admin_or_read_only_staff = ag_permissions.is_admin_or_read_only_staff(
     lambda group: group.project.course)
@@ -122,3 +125,48 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
         handgrading_result = group.handgrading_result
         handgrading_result.validate_and_update(**request.data)
         return response.Response(self.get_serializer(handgrading_result).data)
+
+
+is_handgrader_or_staff = (P(ag_permissions.is_staff(lambda project: project.course)) |
+                          P(ag_permissions.is_handgrader(lambda project: project.course)))
+
+
+class ListHandgradingResultsView(AGModelAPIView):
+    permission_classes = [is_handgrader_or_staff]
+
+    model_manager = ag_models.Project.objects
+
+    @handle_object_does_not_exist_404
+    def get(self, *args, **kwargs):
+        project = self.get_object()
+
+        queryset = handgrading_models.HandgradingResult.objects.select_related(
+            'submission', 'submission_group__project',
+            'handgrading_rubric__project'
+        ).prefetch_related(
+            'submission_group__submissions',
+            Prefetch('submission_group__members', User.objects.order_by('username')),
+            'handgrading_rubric__annotations',
+            'handgrading_rubric__criteria',
+            'criterion_results__criterion__handgrading_rubric',
+            'applied_annotations__annotation__handgrading_rubric',
+            'applied_annotations__location',
+            'comments__location'
+        ).filter(
+            handgrading_rubric__project=project
+        )
+
+        sorted_results = list(
+            sorted(queryset, key=lambda result: result.submission_group.members.first().username))
+        paginator = HandgradingResultPaginator()
+        page = paginator.paginate_queryset(
+            queryset=sorted_results, request=self.request, view=self)
+        results = handgrading_serializers.HandgradingResultSerializer(page, many=True).data
+        fields = ['finished_grading', 'total_points', 'total_points_possible', 'submission_group']
+        filtered_results = [utils.filter_dict(result, fields) for result in results]
+        return paginator.get_paginated_response(filtered_results)
+
+
+class HandgradingResultPaginator(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'

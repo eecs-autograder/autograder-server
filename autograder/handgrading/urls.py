@@ -1,4 +1,5 @@
 from django.conf.urls import include, url
+from django.urls.conf import path
 from rest_framework import routers
 
 from . import views
@@ -62,4 +63,7 @@ urlpatterns = [
     url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/criterion_results/$',
         views.CriterionResultListCreateView.as_view(), name='criterion_results'),
     url(r'', include(criterion_result_detail_router.urls)),
+
+    path('projects/<int:pk>/handgrading_results/', views.ListHandgradingResultsView.as_view(),
+         name='handgrading_results')
 ]

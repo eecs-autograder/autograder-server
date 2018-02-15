@@ -75,6 +75,7 @@ class HandgradingRubric(AutograderModel):
                     'This field must not be None when "start at max" points style is chosen.'})
 
     SERIALIZABLE_FIELDS = ('pk',
+                           'project',
                            'last_modified',
 
                            'points_style',
@@ -83,7 +84,6 @@ class HandgradingRubric(AutograderModel):
                            'handgraders_can_leave_comments',
                            'handgraders_can_adjust_points',
 
-                           'project',
                            'criteria',
                            'annotations',)
 
@@ -121,12 +121,12 @@ class Criterion(AutograderModel):
                      when selected.''')
 
     SERIALIZABLE_FIELDS = ('pk',
+                           'handgrading_rubric',
                            'last_modified',
 
                            'short_description',
                            'long_description',
-                           'points',
-                           'handgrading_rubric',)
+                           'points',)
 
     EDITABLE_FIELDS = ('short_description',
                        'long_description',
@@ -228,7 +228,7 @@ class HandgradingResult(AutograderModel):
         if self.handgrading_rubric.points_style == PointsStyle.start_at_max_and_subtract:
             total = self.handgrading_rubric.max_points
 
-        for annotation in Annotation.objects.filter(handgrading_rubric=self.handgrading_rubric):
+        for annotation in self.handgrading_rubric.annotations.all():
             total_for_annotation = 0
             # Using Python filter() instead of Django queryset filter()
             # to allow prefetching.
@@ -286,6 +286,8 @@ class HandgradingResult(AutograderModel):
         'criterion_results',
 
         'handgrading_rubric',
+
+        'submission_group',
     )
 
     EDITABLE_FIELDS = (
