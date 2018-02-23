@@ -292,8 +292,6 @@ class HandgradingResult(AutograderModel):
         'criterion_results',
 
         'handgrading_rubric',
-
-        'submission_group',
     )
 
     EDITABLE_FIELDS = (

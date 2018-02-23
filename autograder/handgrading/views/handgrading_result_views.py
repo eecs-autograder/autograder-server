@@ -138,33 +138,45 @@ class ListHandgradingResultsView(AGModelAPIView):
 
     @handle_object_does_not_exist_404
     def get(self, *args, **kwargs):
-        project = self.get_object()
+        project = self.get_object()  # type: ag_models.Project
 
-        queryset = handgrading_models.HandgradingResult.objects.select_related(
-            'submission', 'submission_group__project',
-            'handgrading_rubric__project'
+        hg_result_queryset = handgrading_models.HandgradingResult.objects.select_related(
+            'handgrading_rubric__project',
+            'submission_group',
+            'submission'
         ).prefetch_related(
-            'submission_group__submissions',
-            Prefetch('submission_group__members', User.objects.order_by('username')),
             'handgrading_rubric__annotations',
             'handgrading_rubric__criteria',
             'criterion_results__criterion__handgrading_rubric',
             'applied_annotations__annotation__handgrading_rubric',
             'applied_annotations__location',
             'comments__location'
-        ).filter(
-            handgrading_rubric__project=project
         )
 
-        sorted_results = list(
-            sorted(queryset, key=lambda result: result.submission_group.members.first().username))
+        groups = project.submission_groups.prefetch_related(
+            'submissions',
+            Prefetch('handgrading_result', hg_result_queryset),
+            Prefetch('members', User.objects.order_by('username')),
+        ).all()
+
+        sorted_results = list(sorted(groups, key=lambda group: group.members.first().username))
         paginator = HandgradingResultPaginator()
         page = paginator.paginate_queryset(
             queryset=sorted_results, request=self.request, view=self)
-        results = handgrading_serializers.HandgradingResultSerializer(page, many=True).data
-        fields = ['finished_grading', 'total_points', 'total_points_possible', 'submission_group']
-        filtered_results = [utils.filter_dict(result, fields) for result in results]
-        return paginator.get_paginated_response(filtered_results)
+
+        results = []
+        for group in page:
+            data = group.to_dict()
+            if not hasattr(group, 'handgrading_result'):
+                data['handgrading_result'] = None
+            else:
+                data['handgrading_result'] = utils.filter_dict(
+                    group.handgrading_result.to_dict(),
+                    ['finished_grading', 'total_points', 'total_points_possible'])
+
+            results.append(data)
+
+        return paginator.get_paginated_response(results)
 
 
 class HandgradingResultPaginator(PageNumberPagination):

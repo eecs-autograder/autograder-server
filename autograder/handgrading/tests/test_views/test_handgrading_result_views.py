@@ -291,6 +291,9 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
     def test_handgrader_get_paginated_handgrading_results_specific_page(self):
         self.do_handgrading_results_test(self.handgrader, num_results=4, page_size=3, page_num=2)
 
+    def test_get_paginated_results_some_groups_have_no_result(self):
+        self.do_handgrading_results_test(self.handgrader, num_results=2, num_groups=4)
+
     def test_non_staff_non_handgrader_get_handgrading_results_permission_denied(self):
         [student] = obj_build.make_enrolled_users(self.course, 1)
         self.client.force_authenticate(student)
@@ -298,30 +301,42 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def do_handgrading_results_test(self, user: User, *,
-                                    num_results: int, page_size: int=None, page_num: int=None):
-        groups = [obj_build.make_group(3, project=self.project) for _ in range(num_results)]
-        hg_results = []
-        for group in groups:
+                                    num_results: int, num_groups: int=None,
+                                    page_size: int=None, page_num: int=None):
+        if num_groups is None:
+            num_groups = num_results
+        else:
+            assert num_groups >= num_results
+
+        groups = [obj_build.make_group(3, project=self.project) for _ in range(num_groups)]
+        expected_data = []
+        for i in range(num_results):
+            group = groups[i]
             s = obj_build.build_finished_submission(submission_group=group)
             score = random.randint(0, self.rubric.max_points + 3)
             hg_result = hg_models.HandgradingResult.objects.validate_and_create(
                 submission=s, submission_group=group, handgrading_rubric=self.rubric,
                 points_adjustment=score,
                 finished_grading=bool(random.getrandbits(1)))
-            hg_results.append(hg_result)
 
-        expected_data = []
-        for result in hg_results:
-            data = {
-                'submission_group': result.submission_group.to_dict(),
-                'total_points': result.total_points,
-                'total_points_possible': result.total_points_possible,
-                'finished_grading': result.finished_grading
+            # Groups that have a handgrading result
+            data = hg_result.submission_group.to_dict()
+            data['handgrading_result'] = {
+                'total_points': hg_result.total_points,
+                'total_points_possible': hg_result.total_points_possible,
+                'finished_grading': hg_result.finished_grading
             }
-            data['submission_group']['member_names'].sort()
+            data['member_names'].sort()
             expected_data.append(data)
 
-        expected_data.sort(key=lambda res: res['submission_group']['member_names'][0])
+        # Groups that don't have a handgrading result
+        for i in range(num_results, num_groups):
+            data = groups[i].to_dict()
+            data['member_names'].sort()
+            data['handgrading_result'] = None
+            expected_data.append(data)
+
+        expected_data.sort(key=lambda group: group['member_names'][0])
 
         self.client.force_authenticate(user)
         url = reverse('handgrading_results', kwargs={'pk': self.project.pk})
