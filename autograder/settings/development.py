@@ -1,5 +1,4 @@
 import os
-
 import sys
 
 from .base import *
@@ -42,7 +41,6 @@ DEBUG_TOOLBAR_CONFIG = {
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-# MIDDLEWARE += ('autograder.sql_middleware.SqlPrintingMiddleware',)
 MIDDLEWARE += (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'autograder.non_html_debug_toolbar_middleware.NonHtmlDebugToolbarMiddleware',
