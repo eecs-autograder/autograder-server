@@ -16,7 +16,8 @@ from autograder.rest_api.auth import GOOGLE_API_SCOPES
 from autograder import utils
 
 
-_DJANGO_NAME_MAX_LEN = 30
+_DJANGO_FIRST_NAME_MAX_LEN = 30
+_DJANGO_LAST_NAME_MAX_LEN = 150
 
 
 def oauth2_callback(request):
@@ -39,19 +40,14 @@ def oauth2_callback(request):
 
     email = email['value']
 
-    first_name = user_info['name']['givenName'][:_DJANGO_NAME_MAX_LEN]
-    last_name = user_info['name']['familyName'][:_DJANGO_NAME_MAX_LEN]
+    first_name = user_info['name']['givenName'][:_DJANGO_FIRST_NAME_MAX_LEN]
+    last_name = user_info['name']['familyName'][:_DJANGO_LAST_NAME_MAX_LEN]
     user = User.objects.get_or_create(
         username=email, defaults={'first_name': first_name,'last_name': last_name})[0]
-    if not user.first_name:
+    if user.first_name != first_name or user.last_name != last_name:
         user.first_name = first_name
         user.last_name = last_name
         user.save()
-
-    # # Minor hack: Set the backend attribute of user manually to satisfy
-    # # login(), which expects there to be one.
-    # user.backend = 'OAuth2'
-    # login(request, user)
 
     token, created = Token.objects.get_or_create(user=user)
 

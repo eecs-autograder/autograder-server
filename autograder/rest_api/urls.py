@@ -114,7 +114,7 @@ rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
 
 class LogoutView(AlwaysIsAuthenticatedMixin, generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
-        Token.objects.get(user=request.user).delete()
+        Token.objects.filter(user=request.user).delete()
         return response.Response(status=status.HTTP_200_OK)
 
 

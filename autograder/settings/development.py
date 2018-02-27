@@ -1,5 +1,4 @@
 import os
-
 import sys
 
 from .base import *
@@ -34,6 +33,7 @@ INSTALLED_APPS += [
 def show_toolbar_callback(request):
     return DEBUG
 
+
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': show_toolbar_callback
 }
@@ -41,7 +41,6 @@ DEBUG_TOOLBAR_CONFIG = {
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-# MIDDLEWARE += ('autograder.sql_middleware.SqlPrintingMiddleware',)
 MIDDLEWARE += (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'autograder.non_html_debug_toolbar_middleware.NonHtmlDebugToolbarMiddleware',
