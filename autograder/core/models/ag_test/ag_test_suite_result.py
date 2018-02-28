@@ -256,6 +256,8 @@ class AGTestSuiteResult(AutograderModel):
             'total_points_possible',
             'setup_name',
             'setup_return_code',
+            'setup_timed_out',
             'teardown_name',
             'teardown_return_code',
+            'teardown_timed_out',
         )
