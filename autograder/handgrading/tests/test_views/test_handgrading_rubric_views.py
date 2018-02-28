@@ -30,6 +30,23 @@ class RetrieveHandgradingRubricTestCase(UnitTestBase):
             handgrading_models.HandgradingRubric.objects.validate_and_create(**data)
         )
 
+        for _ in range(3):
+            handgrading_models.Criterion.objects.validate_and_create(
+                short_description="sample short description",
+                long_description="sample loooooong description",
+                points=0,
+                handgrading_rubric=self.handgrading_rubric)
+
+        criterion_order = self.handgrading_rubric.get_criterion_order()[::-1]
+        self.handgrading_rubric.set_criterion_order(criterion_order)
+
+        for _ in range(3):
+            handgrading_models.Annotation.objects.validate_and_create(
+                handgrading_rubric=self.handgrading_rubric)
+
+        annotation_order = self.handgrading_rubric.get_annotation_order()[::-1]
+        self.handgrading_rubric.set_annotation_order(annotation_order)
+
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('handgrading_rubric',
@@ -46,6 +63,21 @@ class RetrieveHandgradingRubricTestCase(UnitTestBase):
             response = self.client.get(self.url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertSequenceEqual(self.handgrading_rubric.to_dict(), response.data)
+
+    def test_annotation_and_criterion_ordering(self):
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.client.force_authenticate(admin)
+        response = self.client.get(self.url)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(self.handgrading_rubric.to_dict(), response.data)
+
+        res_criteria_order = [c["pk"] for c in response.data["criteria"]]
+        res_annotation_order = [a["pk"] for a in response.data["annotations"]]
+
+        self.assertSequenceEqual(res_criteria_order, self.handgrading_rubric.get_criterion_order())
+        self.assertSequenceEqual(res_annotation_order,
+                                 self.handgrading_rubric.get_annotation_order())
 
     def test_non_staff_retrieve_permission_denied(self):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)

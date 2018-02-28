@@ -62,6 +62,22 @@ class RetrieveHandgradingResultTestCase(_SetUp):
             handgrading_rubric=self.handgrading_rubric
         )  # type: hg_models.HandgradingResult
 
+        for _ in range(3):
+            hg_models.Comment.objects.validate_and_create(
+                text="HI",
+                handgrading_result=self.handgrading_result)
+
+        for _ in range(3):
+            hg_models.CriterionResult.objects.validate_and_create(
+                selected=True,
+                criterion=hg_models.Criterion.objects.validate_and_create(
+                    points=0,
+                    handgrading_rubric=self.handgrading_rubric),
+                handgrading_result=self.handgrading_result)
+
+        criterion_order = self.handgrading_rubric.get_criterion_order()[::-1]
+        self.handgrading_rubric.set_criterion_order(criterion_order)
+
     def test_staff_or_handgrader_can_always_retrieve(self):
         self.project.validate_and_update(visible_to_students=False)
         self.assertFalse(self.handgrading_rubric.show_grades_and_rubric_to_students)
@@ -72,6 +88,21 @@ class RetrieveHandgradingResultTestCase(_SetUp):
             response = self.client.get(self.url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertEqual(self.handgrading_result.to_dict(), response.data)
+
+    def test_ordering(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(self.url)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(self.handgrading_result.to_dict(), response.data)
+
+        result_criterion_order = [c["criterion"]["pk"] for c in response.data["criterion_results"]]
+        result_comment_order = [comment["pk"] for comment in response.data["comments"]]
+        correct_comment_order = sorted(result_comment_order)
+
+        self.assertSequenceEqual(result_criterion_order,
+                                 self.handgrading_result.handgrading_rubric.get_criterion_order())
+        self.assertSequenceEqual(result_comment_order, correct_comment_order)
 
     def test_staff_or_handgrader_get_files(self):
         for user in self.handgrader, self.staff:

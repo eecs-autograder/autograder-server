@@ -313,17 +313,33 @@ class HandgradingResultTestCase(UnitTestBase):
                 "filename": "test.cpp"
             },
             text="HI",
-            handgrading_result=result
-        )
+            handgrading_result=result)
+
+        comment2 = handgrading_models.Comment.objects.validate_and_create(
+            location={
+                "first_line": 0,
+                "last_line": 1,
+                "filename": "test.cpp"
+            },
+            text="HI",
+            handgrading_result=result)
 
         criterion_result = handgrading_models.CriterionResult.objects.validate_and_create(
             selected=True,
             criterion=handgrading_models.Criterion.objects.validate_and_create(
                 points=0,
-                handgrading_rubric=self.rubric
-            ),
-            handgrading_result=result
-        )
+                handgrading_rubric=self.rubric),
+            handgrading_result=result)
+
+        handgrading_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=handgrading_models.Criterion.objects.validate_and_create(
+                points=0,
+                handgrading_rubric=self.rubric),
+            handgrading_result=result)
+
+        reverse_criterion_order = result.handgrading_rubric.get_criterion_order()[::-1]
+        result.handgrading_rubric.set_criterion_order(reverse_criterion_order)
 
         app_annotation_dict = applied_annotation.to_dict()
         comment_dict = comment.to_dict()
@@ -339,8 +355,8 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertIsInstance(result_dict["submission_group"], int)
 
         self.assertEqual(len(result_dict["applied_annotations"]), 1)
-        self.assertEqual(len(result_dict["comments"]), 1)
-        self.assertEqual(len(result_dict["criterion_results"]), 1)
+        self.assertEqual(len(result_dict["comments"]), 2)
+        self.assertEqual(len(result_dict["criterion_results"]), 2)
 
         self.assertCountEqual(result_dict["applied_annotations"][0].keys(),
                               app_annotation_dict.keys())
@@ -350,6 +366,16 @@ class HandgradingResultTestCase(UnitTestBase):
                               criterion_result_dict.keys())
         self.assertCountEqual(result_dict["handgrading_rubric"].keys(),
                               self.rubric.to_dict().keys())
+
+        result_criterion_order = [c["criterion"]["pk"] for c in result_dict["criterion_results"]]
+        self.assertSequenceEqual(result_criterion_order, reverse_criterion_order)
+
+        # Make list of comments ordered by pk
+        c1_dict = comment.to_dict()
+        c2_dict = comment2.to_dict()
+        comments = [c1_dict, c2_dict] if comment.pk < comment2.pk else [c2_dict, c1_dict]
+        self.assertSequenceEqual(result_dict["comments"],
+                                 comments)
 
     def test_editable_fields(self):
         result = handgrading_models.HandgradingResult.objects.validate_and_create(

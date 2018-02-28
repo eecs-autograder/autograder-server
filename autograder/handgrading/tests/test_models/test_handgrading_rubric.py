@@ -121,11 +121,24 @@ class HandgradingRubricTestCase(UnitTestBase):
             short_description="sample short description",
             long_description="sample loooooong description",
             points=0,
-            handgrading_rubric=rubric
-        )
+            handgrading_rubric=rubric)
+
+        handgrading_models.Criterion.objects.validate_and_create(
+            short_description="sample short description",
+            long_description="sample loooooong description",
+            points=0,
+            handgrading_rubric=rubric)
 
         annotation = handgrading_models.Annotation.objects.validate_and_create(
             handgrading_rubric=rubric)
+
+        handgrading_models.Annotation.objects.validate_and_create(
+            handgrading_rubric=rubric)
+
+        reverse_criterion_order = rubric.get_criterion_order()[::-1]
+        rubric.set_criterion_order(reverse_criterion_order)
+        reverse_annotation_order = rubric.get_annotation_order()[::-1]
+        rubric.set_annotation_order(reverse_annotation_order)
 
         annotation_dict = annotation.to_dict()
         criterion_dict = criterion.to_dict()
@@ -136,8 +149,14 @@ class HandgradingRubricTestCase(UnitTestBase):
         self.assertIsInstance(handgrading_dict["criteria"], list)
         self.assertIsInstance(handgrading_dict["annotations"], list)
 
-        self.assertEqual(len(handgrading_dict["criteria"]), 1)
-        self.assertEqual(len(handgrading_dict["annotations"]), 1)
+        self.assertEqual(len(handgrading_dict["criteria"]), 2)
+        self.assertEqual(len(handgrading_dict["annotations"]), 2)
 
         self.assertCountEqual(handgrading_dict["criteria"][0].keys(), criterion_dict.keys())
         self.assertCountEqual(handgrading_dict["annotations"][0].keys(), annotation_dict.keys())
+
+        criteria_pk_sequence = [criteria["pk"] for criteria in handgrading_dict["criteria"]]
+        annotation_pk_sequence = [annotation["pk"] for annotation in handgrading_dict["annotations"]]
+
+        self.assertSequenceEqual(criteria_pk_sequence, reverse_criterion_order)
+        self.assertSequenceEqual(annotation_pk_sequence, reverse_annotation_order)

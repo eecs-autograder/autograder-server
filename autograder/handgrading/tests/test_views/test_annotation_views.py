@@ -15,29 +15,22 @@ class ListAnnotationsTestCase(UnitTestBase):
 
     def setUp(self):
         super().setUp()
-        handgrading_rubric_inputs = {
-            "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
-            "max_points": 0,
-            "show_grades_and_rubric_to_students": False,
-            "handgraders_can_leave_comments": True,
-            "handgraders_can_adjust_points": True,
-            "project": obj_build.build_project()
-        }
-
         handgrading_rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
-                **handgrading_rubric_inputs)
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_adjust_points=True,
+                project=obj_build.build_project())
         )
 
-        annotation_data = {
-            "short_description": "Short description text.",
-            "long_description": "Looooong description text.",
-            "deduction": -3,
-            "handgrading_rubric": handgrading_rubric
-        }
-
         self.annotation = handgrading_models.Annotation.objects.validate_and_create(
-            **annotation_data)
+            short_description="Short description text.",
+            long_description="Looooong description text.",
+            deduction=-3,
+            handgrading_rubric=handgrading_rubric)
+
         self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('annotations',
@@ -64,18 +57,14 @@ class CreateAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
     def setUp(self):
         super().setUp()
-        handgrading_rubric_inputs = {
-            "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
-            "max_points": 0,
-            "show_grades_and_rubric_to_students": False,
-            "handgraders_can_leave_comments": True,
-            "handgraders_can_adjust_points": True,
-            "project": obj_build.build_project()
-        }
-
         self.handgrading_rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
-                **handgrading_rubric_inputs)
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_adjust_points=True,
+                project=obj_build.build_project())
         )
 
         self.course = self.handgrading_rubric.project.course
@@ -108,29 +97,20 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
 
     def setUp(self):
         super().setUp()
-        handgrading_rubric_inputs = {
-            "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
-            "max_points": 0,
-            "show_grades_and_rubric_to_students": False,
-            "handgraders_can_leave_comments": True,
-            "handgraders_can_adjust_points": True,
-            "project": obj_build.build_project()
-        }
-
-        handgrading_rubric = (
-            handgrading_models.HandgradingRubric.objects.validate_and_create(
-                **handgrading_rubric_inputs)
-        )
-
-        annotation_data = {
-            "short_description": "Short description text.",
-            "long_description": "Looooong description text.",
-            "deduction": -3,
-            "handgrading_rubric": handgrading_rubric
-        }
+        handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_adjust_points=True,
+                project=obj_build.build_project())
 
         self.annotation = handgrading_models.Annotation.objects.validate_and_create(
-            **annotation_data)
+            short_description="Short description text.",
+            long_description="Looooong description text.",
+            deduction=-3,
+            handgrading_rubric=handgrading_rubric)
+
         self.course = handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('annotation-detail', kwargs={'pk': self.annotation.pk})
@@ -184,31 +164,27 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
 class AnnotationOrderTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        handgrading_rubric_inputs = {
-            "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
-            "max_points": 0,
-            "show_grades_and_rubric_to_students": False,
-            "handgraders_can_leave_comments": True,
-            "handgraders_can_adjust_points": True,
-            "project": obj_build.build_project()
-        }
-
         self.handgrading_rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
-                **handgrading_rubric_inputs)
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_adjust_points=True,
+                project=obj_build.build_project())
         )
 
-        annotation_data = {
-            "short_description": "Short description text.",
-            "long_description": "Looooong description text.",
-            "deduction": -3,
-            "handgrading_rubric": self.handgrading_rubric
-        }
-
         self.annotation1 = handgrading_models.Annotation.objects.validate_and_create(
-            **annotation_data)
+            short_description="Short description text.",
+            long_description="Looooong description text.",
+            deduction=-3,
+            handgrading_rubric=self.handgrading_rubric)
+
         self.annotation2 = handgrading_models.Annotation.objects.validate_and_create(
-            **annotation_data)
+            short_description="Short description text #2.",
+            long_description="Looooong description text #2.",
+            deduction=-6,
+            handgrading_rubric=self.handgrading_rubric)
 
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
@@ -218,6 +194,7 @@ class AnnotationOrderTestCase(UnitTestBase):
     def test_staff_get_order(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
         [admin] = obj_build.make_admin_users(self.course, 1)
+
         for user in staff, admin:
             self.client.force_authenticate(user)
 
