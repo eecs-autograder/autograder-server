@@ -1,4 +1,5 @@
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -8,6 +9,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
+import autograder.core.models as ag_models
 
 
 class ListCriteriaTestCase(UnitTestBase):
@@ -99,6 +101,36 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.do_permission_denied_create_test(
             handgrading_models.Criterion.objects, self.client, enrolled, self.url, self.data)
+
+    def test_create_criterion_results_on_create(self):
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.client.force_authenticate(admin)
+
+        # Create HandgradingResult with dummy user and submission
+        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            project=self.handgrading_rubric.project,
+            pattern='*', max_num_matches=10)
+        submitted_files = [SimpleUploadedFile('file{}'.format(i), b'waaaluigi') for i in range(4)]
+        submission = obj_build.build_submission(
+            submission_group=obj_build.make_group(project=self.handgrading_rubric.project),
+            submitted_files=submitted_files)
+        handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            submission_group=submission.submission_group,
+            handgrading_rubric=self.handgrading_rubric)
+
+        self.assertEqual(0, handgrading_result.criterion_results.count())
+
+        # Create Criterion, which should create a CriterionResult for above HandgradingResult
+        response = self.client.post(self.url, self.data)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        handgrading_result.refresh_from_db()
+        self.assertEqual(1, handgrading_result.criterion_results.count())
+
+        criterion_results = handgrading_result.to_dict()["criterion_results"]
+        self.assertFalse(criterion_results[0]["selected"])
+        self.assertEqual(criterion_results[0]["criterion"], response.data)
 
 
 class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
