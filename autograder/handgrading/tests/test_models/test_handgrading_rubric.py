@@ -123,7 +123,7 @@ class HandgradingRubricTestCase(UnitTestBase):
             points=0,
             handgrading_rubric=rubric)
 
-        handgrading_models.Criterion.objects.validate_and_create(
+        criterion2 = handgrading_models.Criterion.objects.validate_and_create(
             short_description="sample short description",
             long_description="sample loooooong description",
             points=0,
@@ -132,31 +132,20 @@ class HandgradingRubricTestCase(UnitTestBase):
         annotation = handgrading_models.Annotation.objects.validate_and_create(
             handgrading_rubric=rubric)
 
-        handgrading_models.Annotation.objects.validate_and_create(
+        annotation2 = handgrading_models.Annotation.objects.validate_and_create(
             handgrading_rubric=rubric)
 
-        reverse_criterion_order = rubric.get_criterion_order()[::-1]
-        rubric.set_criterion_order(reverse_criterion_order)
-        reverse_annotation_order = rubric.get_annotation_order()[::-1]
-        rubric.set_annotation_order(reverse_annotation_order)
+        rubric.set_criterion_order([criterion2.pk, criterion.pk])
+        expected_criterion_order = [criterion2.to_dict(), criterion.to_dict()]
+        rubric.set_annotation_order([annotation2.pk, annotation.pk])
+        expected_annotation_order = [annotation2.to_dict(), annotation.to_dict()]
 
-        annotation_dict = annotation.to_dict()
-        criterion_dict = criterion.to_dict()
-        handgrading_dict = rubric.to_dict()
+        rubric.refresh_from_db()
+        handgrading_rubric_dict = rubric.to_dict()
+        self.assertCountEqual(expected_fields, handgrading_rubric_dict.keys())
 
-        self.assertCountEqual(expected_fields, handgrading_dict.keys())
+        self.assertIsInstance(handgrading_rubric_dict["criteria"], list)
+        self.assertIsInstance(handgrading_rubric_dict["annotations"], list)
 
-        self.assertIsInstance(handgrading_dict["criteria"], list)
-        self.assertIsInstance(handgrading_dict["annotations"], list)
-
-        self.assertEqual(len(handgrading_dict["criteria"]), 2)
-        self.assertEqual(len(handgrading_dict["annotations"]), 2)
-
-        self.assertCountEqual(handgrading_dict["criteria"][0].keys(), criterion_dict.keys())
-        self.assertCountEqual(handgrading_dict["annotations"][0].keys(), annotation_dict.keys())
-
-        criteria_pk_sequence = [criteria["pk"] for criteria in handgrading_dict["criteria"]]
-        annotation_pk_sequence = [annotation["pk"] for annotation in handgrading_dict["annotations"]]
-
-        self.assertSequenceEqual(criteria_pk_sequence, reverse_criterion_order)
-        self.assertSequenceEqual(annotation_pk_sequence, reverse_annotation_order)
+        self.assertSequenceEqual(handgrading_rubric_dict["criteria"], expected_criterion_order)
+        self.assertSequenceEqual(handgrading_rubric_dict["annotations"], expected_annotation_order)

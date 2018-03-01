@@ -72,11 +72,13 @@ class RetrieveHandgradingRubricTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(self.handgrading_rubric.to_dict(), response.data)
 
-        res_criteria_order = [c["pk"] for c in response.data["criteria"]]
-        res_annotation_order = [a["pk"] for a in response.data["annotations"]]
+        response_criteria_order = [criteria["pk"] for criteria in response.data["criteria"]]
+        response_annotation_order = [annotation["pk"]
+                                     for annotation in response.data["annotations"]]
 
-        self.assertSequenceEqual(res_criteria_order, self.handgrading_rubric.get_criterion_order())
-        self.assertSequenceEqual(res_annotation_order,
+        self.assertSequenceEqual(response_criteria_order,
+                                 self.handgrading_rubric.get_criterion_order())
+        self.assertSequenceEqual(response_annotation_order,
                                  self.handgrading_rubric.get_annotation_order())
 
     def test_non_staff_retrieve_permission_denied(self):

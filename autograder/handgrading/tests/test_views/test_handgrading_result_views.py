@@ -96,7 +96,8 @@ class RetrieveHandgradingResultTestCase(_SetUp):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(self.handgrading_result.to_dict(), response.data)
 
-        result_criterion_order = [c["criterion"]["pk"] for c in response.data["criterion_results"]]
+        result_criterion_order = [criterion_result["criterion"]["pk"]
+                                  for criterion_result in response.data["criterion_results"]]
         result_comment_order = [comment["pk"] for comment in response.data["comments"]]
         correct_comment_order = sorted(result_comment_order)
 
