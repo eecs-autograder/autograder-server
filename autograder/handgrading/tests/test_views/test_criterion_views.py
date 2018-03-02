@@ -1,6 +1,4 @@
 from django.urls import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -9,7 +7,6 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
-import autograder.core.models as ag_models
 
 
 class ListCriteriaTestCase(UnitTestBase):
@@ -67,19 +64,13 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
     def setUp(self):
         super().setUp()
-        handgrading_rubric_inputs = {
-            "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
-            "max_points": 0,
-            "show_grades_and_rubric_to_students": False,
-            "handgraders_can_leave_comments": True,
-            "handgraders_can_adjust_points": True,
-            "project": obj_build.build_project()
-        }
-
-        self.handgrading_rubric = (
-            handgrading_models.HandgradingRubric.objects.validate_and_create(
-                **handgrading_rubric_inputs)
-        )
+        self.handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_adjust_points=True,
+                project=obj_build.build_project())
 
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
@@ -106,20 +97,44 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.client.force_authenticate(admin)
 
-        # Create HandgradingResult with dummy user and submission
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
-            project=self.handgrading_rubric.project,
-            pattern='*', max_num_matches=10)
-        submitted_files = [SimpleUploadedFile('file{}'.format(i), b'waaaluigi') for i in range(4)]
+        # Create HandgradingResult
         submission = obj_build.build_submission(
-            submission_group=obj_build.make_group(project=self.handgrading_rubric.project),
-            submitted_files=submitted_files)
+            submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
             submission_group=submission.submission_group,
             handgrading_rubric=self.handgrading_rubric)
 
+        # Create dummy submissions and groups with no submissions. These should not be affected
+        dummy_submission = obj_build.build_submission(
+            submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
+        dummy_submission = obj_build.build_submission(
+            submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
+        group_with_no_submission = obj_build.make_group(project=self.handgrading_rubric.project)
+        group_with_no_submission = obj_build.make_group(project=self.handgrading_rubric.project)
+
         self.assertEqual(0, handgrading_result.criterion_results.count())
+        self.assertEqual(1, handgrading_models.HandgradingResult.objects.count())
+
+        # Create dummy project with its own groups and HandgradingResults.
+        #   These should not be affected
+        dummy_project = obj_build.make_project(course=self.handgrading_rubric.project.course)
+        dummy_handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_adjust_points=True,
+                project=dummy_project)
+        dummy_submission = obj_build.build_submission(
+            submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
+        dummy_handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=dummy_submission,
+            submission_group=dummy_submission.submission_group,
+            handgrading_rubric=dummy_handgrading_rubric)
+
+        self.assertEqual(0, handgrading_models.CriterionResult.objects.count())
+        self.assertEqual(2, handgrading_models.HandgradingResult.objects.count())
 
         # Create Criterion, which should create a CriterionResult for above HandgradingResult
         response = self.client.post(self.url, self.data)
@@ -127,6 +142,7 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
         handgrading_result.refresh_from_db()
         self.assertEqual(1, handgrading_result.criterion_results.count())
+        self.assertEqual(1, handgrading_models.CriterionResult.objects.count())
 
         criterion_results = handgrading_result.to_dict()["criterion_results"]
         self.assertFalse(criterion_results[0]["selected"])

@@ -2,7 +2,6 @@ import autograder.handgrading.models as hg_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from django.db import transaction
-from rest_framework import response, status
 
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
@@ -25,12 +24,9 @@ class CriterionListCreateView(ListCreateNestedModelView):
         handgrading_rubric = self.get_object()
 
         # Create criterion first
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
+        criterion_response = super().create(request=request)
 
-        criterion = hg_models.Criterion.objects.get(**serializer.data)
+        criterion = hg_models.Criterion.objects.get(**criterion_response.data)
         results = hg_models.HandgradingResult.objects.filter(handgrading_rubric=handgrading_rubric)
 
         # Create CriterionResult for every HandgradingResult with the same HandgradingRubric
@@ -40,7 +36,7 @@ class CriterionListCreateView(ListCreateNestedModelView):
                 criterion=criterion,
                 handgrading_result=result)
 
-        return response.Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return criterion_response
 
 
 class CriterionDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
