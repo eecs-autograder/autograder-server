@@ -1,3 +1,4 @@
+import datetime
 from django.urls import reverse
 from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -68,6 +69,36 @@ class RetrieveGroupTestCase(test_data.Client,
             guests_can_submit=False)
         self.do_permission_denied_get_test(
             self.client, self.nobody, self.group_url(group))
+
+    def test_handgrader_get_group_permission_denied(self):
+        for project in self.all_projects:
+            for group in self.at_least_enrolled_groups(project):
+                self.do_permission_denied_get_test(self.client, self.handgrader,
+                                                   self.group_url(group))
+
+        for project in self.public_projects:
+            group = self.non_enrolled_group(project)
+            self.do_permission_denied_get_test(self.client, self.handgrader, self.group_url(group))
+
+    def test_prefetching_doesnt_skew_num_submissions_and_num_submissions_towards_limit(self):
+        group = obj_build.make_group(project=self.visible_public_project)
+        yesterday_submission = obj_build.build_submission(
+            submission_group=group,
+            timestamp=timezone.now() - datetime.timedelta(days=1))
+        not_towards_limit_submission = obj_build.build_submission(
+            submission_group=group,
+            count_towards_daily_limit=False)
+        towards_limit_submission = obj_build.build_submission(submission_group=group)
+
+        group.refresh_from_db()
+        self.assertEqual(3, group.num_submissions)
+        self.assertEqual(1, group.num_submits_towards_limit)
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(self.group_url(group))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(3, response.data['num_submissions'])
+        self.assertEqual(1, response.data['num_submits_towards_limit'])
 
 
 class UpdateGroupTestCase(test_data.Client,
@@ -161,7 +192,7 @@ class UpdateGroupTestCase(test_data.Client,
         for group in (self.staff_group(self.visible_public_project),
                       self.enrolled_group(self.visible_public_project),
                       self.non_enrolled_group(self.visible_public_project)):
-            for user in self.staff, self.enrolled, self.nobody:
+            for user in self.staff, self.enrolled, self.nobody, self.handgrader:
                 self.do_patch_object_permission_denied_test(
                     group, self.client, user, self.group_url(group),
                     {'extended_due_date': self.new_due_date})
@@ -242,6 +273,12 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             self.do_get_ultimate_submission_test(
                 [self.visible_public_project], [self.non_enrolled_group],
                 [self.nobody], closing_time=closing_time)
+
+    def test_handgrader_get_students_ultimate_permission_denied(self):
+        group = self.enrolled_group(self.project)
+        obj_build.build_finished_submission(submission_group=group)
+        self.do_permission_denied_get_test(
+            self.client, self.handgrader, self.ultimate_submission_url(group))
 
     def test_non_member_get_ultimate_permission_denied(self):
         self.visible_public_project.validate_and_update(
@@ -461,7 +498,7 @@ class MergeGroupsTestCase(test_data.Client,
                                  file_.read())
 
     def test_non_admin_permission_denied(self):
-        for user in self.staff, self.enrolled, self.nobody:
+        for user in self.staff, self.enrolled, self.nobody, self.handgrader:
             with self.assert_queryset_count_unchanged(ag_models.SubmissionGroup.objects):
                 self.client.force_authenticate(user)
                 response = self.client.post(self.get_merge_url(self.group1, self.group2))

@@ -35,6 +35,28 @@ def is_staff(get_course_fn: GetCourseFnType=lambda course: course) -> Permission
     return IsStaff
 
 
+def is_handgrader(get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
+    class IsHandgrader(permissions.BasePermission):
+        def has_object_permission(self, request, view, obj):
+            course = get_course_fn(obj)
+            return course.is_handgrader(request.user)
+
+    return IsHandgrader
+
+
+def is_admin_or_handgrader_or_read_only_staff(
+        get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
+    class IsAdminOrHandgraderOrReadOnlyStaff(permissions.BasePermission):
+        def has_object_permission(self, request, view, obj):
+            course = get_course_fn(obj)
+            is_read_only_staff = (request.method in permissions.SAFE_METHODS and
+                                  course.is_course_staff(request.user))
+            return (course.is_administrator(request.user) or course.is_handgrader(request.user) or
+                    is_read_only_staff)
+
+    return IsAdminOrHandgraderOrReadOnlyStaff
+
+
 def is_admin_or_read_only_staff(
         get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
     class IsAdminOrReadOnlyStaff(permissions.BasePermission):
@@ -53,20 +75,20 @@ def can_view_project(
     class CanViewProject(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             project = get_project_fn(obj)
-            if project.course.is_course_staff(request.user):
+            if (project.course.is_course_staff(request.user) or
+                    project.course.is_handgrader(request.user)):
                 return True
 
             if not project.visible_to_students:
                 return False
 
-            return (project.course.is_enrolled_student(request.user) or
-                    project.guests_can_submit)
+            return project.course.is_enrolled_student(request.user) or project.guests_can_submit
 
     return CanViewProject
 
 
 def is_staff_or_group_member(
-    get_group_fn: Callable[[Any], ag_models.SubmissionGroup]=lambda group: group
+    get_group_fn: GetGroupFnType=lambda group: group
 ) -> Type[permissions.BasePermission]:
     class IsStaffOrGroupMember(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
@@ -77,7 +99,7 @@ def is_staff_or_group_member(
     return IsStaffOrGroupMember
 
 
-def is_group_member(get_group_fn: GetGroupFnType) -> PermissionClassType:
+def is_group_member(get_group_fn: GetGroupFnType=lambda group: group) -> PermissionClassType:
     class IsGroupMember(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             group = get_group_fn(obj)

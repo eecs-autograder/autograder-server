@@ -21,6 +21,12 @@ class RetrieveProjectTestCase(test_data.Client, test_data.Project, UnitTestBase)
                 self.staff, project, exclude_closing_time=True)
             self.assertNotIn('closing_time', response.data)
 
+    def test_handgrader_get_project(self):
+        for project in self.all_projects:
+            response = self.do_valid_load_project_test(
+                self.handgrader, project, exclude_closing_time=True)
+            self.assertNotIn('closing_time', response.data)
+
     def test_student_get_project(self):
         for project in self.visible_projects:
             response = self.do_valid_load_project_test(
@@ -97,7 +103,7 @@ class UpdateProjectTestCase(test_data.Client, test_data.Project, UnitTestBase):
 
     def test_non_admin_edit_project_permission_denied(self):
         original_name = self.project.name
-        for user in self.staff, self.enrolled, self.nobody:
+        for user in self.staff, self.enrolled, self.nobody, self.handgrader:
             self.client.force_authenticate(user)
             response = self.client.patch(self.url, {'name': 'steve'})
             self.assertEqual(403, response.status_code)
@@ -191,12 +197,14 @@ class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
         self.assertCountEqual([task1.to_dict(), task2.to_dict()], response.data)
 
     def test_non_admin_list_project_download_tasks_permission_denied(self):
-        [user] = obj_build.make_staff_users(self.project.course, 1)
+        [staff] = obj_build.make_staff_users(self.project.course, 1)
+        [handgrader] = obj_build.make_handgrader_users(self.project.course, 1)
 
         url = reverse('project-download-tasks', kwargs={'pk': self.project.pk})
-        self.client.force_authenticate(user)
-        response = self.client.get(url)
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+        for user in staff, handgrader:
+            self.client.force_authenticate(user)
+            response = self.client.get(url)
+            self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_get_download_task_detail(self):
         [user] = obj_build.make_admin_users(self.project.course, 1)

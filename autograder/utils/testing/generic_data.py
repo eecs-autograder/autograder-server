@@ -51,6 +51,14 @@ class Course:
         return self._enrolled
 
     @property
+    def handgrader(self):
+        if not hasattr(self, '_handgrader'):
+            self._handgrader = obj_build.create_dummy_user()
+            self.course.handgraders.add(self._handgrader)
+
+        return self._handgrader
+
+    @property
     def nobody(self):
         if not hasattr(self, '_nobody'):
             self._nobody = obj_build.create_dummy_user()

@@ -2,14 +2,12 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Prefetch
 
-from rest_framework import decorators, response, status
+from rest_framework import response, status, permissions
 
 from drf_composable_permissions.p import P
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-from autograder.core.models.submission_group.submission_group import (
-    get_submissions_for_daily_limit_queryset)
 from autograder.rest_api import permissions as ag_permissions
 
 from autograder import utils
@@ -20,11 +18,25 @@ from autograder.rest_api.views.ag_model_views import (
 
 is_admin = ag_permissions.is_admin(lambda project: project.course)
 is_staff = ag_permissions.is_staff(lambda project: project.course)
+is_handgrader = ag_permissions.is_handgrader(lambda project: project.course)
+
+
+class _CanCreateSoloGroup(permissions.BasePermission):
+    def has_object_permission(self, request, view, project):
+        if project.course.is_course_staff(request.user):
+            return True
+
+        if not project.visible_to_students:
+            return False
+
+        return (project.course.is_enrolled_student(request.user) or
+                project.guests_can_submit)
 
 
 class GroupsViewSet(ListCreateNestedModelView):
     serializer_class = ag_serializers.SubmissionGroupSerializer
-    permission_classes = (P(is_admin) | (P(is_staff) & ag_permissions.IsReadOnly),)
+    permission_classes = (P(is_admin) |
+                          ((P(is_staff) | P(is_handgrader)) & ag_permissions.IsReadOnly),)
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
@@ -34,9 +46,10 @@ class GroupsViewSet(ListCreateNestedModelView):
     def get_queryset(self):
         queryset = super().get_queryset()
         if self.request.method.lower() == 'get':
-            submissions_prefetch = Prefetch(
-                'submissions', get_submissions_for_daily_limit_queryset(self.get_object()))
-            queryset = queryset.prefetch_related('members', submissions_prefetch)
+            queryset = queryset.prefetch_related(
+                Prefetch('members', User.objects.order_by('username')), 'submissions')
+            queryset = list(
+                sorted(queryset.all(), key=lambda group: group.members.first().username))
 
         return queryset
 
@@ -61,7 +74,7 @@ class GroupsViewSet(ListCreateNestedModelView):
 
 
 class CreateSoloGroupView(AGModelGenericView):
-    permission_classes = (P(is_staff) | P(ag_permissions.can_view_project()),)
+    permission_classes = (_CanCreateSoloGroup,)
     serializer_class = ag_serializers.SubmissionGroupSerializer
 
     pk_key = 'project_pk'

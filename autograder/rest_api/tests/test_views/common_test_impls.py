@@ -79,6 +79,8 @@ class CreateObjectTest(CreateObjectInvalidArgsTest, PermissionDeniedCreateTest):
         self.assertDictContentsEqual(loaded.to_dict(), response.data)
 
         for arg_name, value in request_data.items():
+            # TODO: This fails if request_data has foreign keys
+            # IDEA: actual = loaded.to_dict()[arg_name]
             actual = getattr(loaded, arg_name)
             try:
                 self.assertCountEqual(value, actual)

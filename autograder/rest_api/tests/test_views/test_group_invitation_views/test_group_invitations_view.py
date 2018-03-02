@@ -32,6 +32,11 @@ class ListGroupInvitationsTestCase(_InvitationsSetUp,
             self.do_permission_denied_get_test(
                 self.client, self.enrolled, self.get_invitations_url(project))
 
+    def test_handgrader_list_invitations(self):
+        for project in self.all_projects:
+            self.do_permission_denied_get_test(
+                self.client, self.handgrader, self.get_invitations_url(project))
+
     def test_other_list_invitations(self):
         for project in self.all_projects:
             self.do_permission_denied_get_test(
@@ -76,6 +81,39 @@ class CreateInvitationTestCase(_InvitationsSetUp,
             self.client, self.enrolled,
             self.get_invitations_url(self.visible_private_project),
             args)
+
+    def test_handgrader_create_invitation_permission_denied(self):
+        args = {'invited_usernames': ["some_user"]}
+        for project in self.all_projects:
+            project.validate_and_update(max_group_size=3)
+            self.do_permission_denied_create_test(
+                project.submission_group_invitations, self.client,
+                self.handgrader, self.get_invitations_url(project), args)
+
+    def test_handgrader_also_enrolled_create_invitation(self):
+        [handgrader_student] = obj_build.make_users(1)
+        self.course.handgraders.add(handgrader_student)
+        self.course.enrolled_students.add(handgrader_student)
+
+        self.project.validate_and_update(max_group_size=3)
+        other_enrolled = self.clone_user(self.enrolled)
+        args = {'invited_usernames': [other_enrolled.username]}
+        self.do_create_object_test(
+            self.project.submission_group_invitations,
+            self.client, handgrader_student,
+            self.get_invitations_url(self.project),
+            args)
+
+    def test_handgrader_also_staff_create_invitation(self):
+        [handgrader_staff] = obj_build.make_users(1)
+        self.course.handgraders.add(handgrader_staff)
+        self.course.staff.add(handgrader_staff)
+
+        self.project.validate_and_update(max_group_size=3)
+        args = {'invited_usernames': [self.admin.username]}
+        self.do_create_object_test(
+            self.project.submission_group_invitations, self.client,
+            handgrader_staff, self.get_invitations_url(self.project), args)
 
     def test_other_create_invitation(self):
         self.visible_public_project.validate_and_update(max_group_size=3)

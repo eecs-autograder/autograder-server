@@ -44,8 +44,7 @@ class ListCoursesTestCase(test_data.Client, test_data.Superuser,
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class CreateCourseTestCase(test_data.Client, test_data.Superuser,
-                           UnitTestBase):
+class CreateCourseTestCase(test_data.Client, test_data.Superuser, UnitTestBase):
     def test_superuser_create_course(self):
         self.client.force_authenticate(self.superuser)
         name = 'new_course'
@@ -66,13 +65,11 @@ class CreateCourseTestCase(test_data.Client, test_data.Superuser,
         self.assertEqual(0, ag_models.Course.objects.count())
 
 
-class RetrieveCourseTestCase(test_data.Client, test_data.Course,
-                             UnitTestBase):
+class RetrieveCourseTestCase(test_data.Client, test_data.Course, UnitTestBase):
     def test_get_course(self):
         for user in self.admin, self.nobody:
             self.client.force_authenticate(user)
-            response = self.client.get(
-                reverse('course-detail', kwargs={'pk': self.course.pk}))
+            response = self.client.get(reverse('course-detail', kwargs={'pk': self.course.pk}))
 
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertEqual(self.course.to_dict(), response.data)
@@ -80,8 +77,7 @@ class RetrieveCourseTestCase(test_data.Client, test_data.Course,
     def test_get_course_not_found(self):
         self.client.force_authenticate(self.admin)
 
-        response = self.client.get(
-            reverse('course-detail', kwargs={'pk': 3456}))
+        response = self.client.get(reverse('course-detail', kwargs={'pk': 3456}))
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
@@ -93,8 +89,7 @@ class UpdateCourseTestCase(test_data.Client, test_data.Course,
 
         self.client.force_authenticate(self.admin)
         response = self.client.patch(
-            reverse('course-detail', kwargs={'pk': self.course.pk}),
-            {"name": new_name})
+            reverse('course-detail', kwargs={'pk': self.course.pk}), {"name": new_name})
 
         with self.assertRaises(exceptions.ObjectDoesNotExist):
             ag_models.Course.objects.get(name=old_name)
@@ -108,9 +103,8 @@ class UpdateCourseTestCase(test_data.Client, test_data.Course,
         old_name = self.course.name
         self.client.force_authenticate(self.nobody)
 
-        response = self.client.patch(
-            reverse('course-detail', kwargs={'pk': self.course.pk}),
-            {"name": 'steve'})
+        response = self.client.patch(reverse('course-detail', kwargs={'pk': self.course.pk}),
+                                     {"name": 'steve'})
 
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
@@ -120,9 +114,8 @@ class UpdateCourseTestCase(test_data.Client, test_data.Course,
     def test_patch_course_not_found(self):
         self.client.force_authenticate(self.admin)
 
-        response = self.client.patch(
-            reverse('course-detail', kwargs={'pk': 3456}),
-            {"name": 'spam'})
+        response = self.client.patch(reverse('course-detail', kwargs={'pk': 3456}),
+                                     {"name": 'spam'})
 
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
@@ -133,7 +126,8 @@ class UserRolesForCourseTestCase(test_data.Client, test_data.Course,
         return {
             "is_admin": False,
             "is_staff": False,
-            "is_enrolled": False
+            "is_enrolled": False,
+            "is_handgrader": False
         }
 
     def test_admin_user_roles(self):
@@ -142,24 +136,28 @@ class UserRolesForCourseTestCase(test_data.Client, test_data.Course,
         expected['is_staff'] = True
 
         self.do_get_object_test(
-            self.client, self.admin, self.course_roles_url(self.course),
-            expected)
+            self.client, self.admin, self.course_roles_url(self.course), expected)
 
     def test_staff_user_roles(self):
         expected = self.expected_response_base()
         expected['is_staff'] = True
 
         self.do_get_object_test(
-            self.client, self.staff, self.course_roles_url(self.course),
-            expected)
+            self.client, self.staff, self.course_roles_url(self.course), expected)
 
     def test_enrolled_user_roles(self):
         expected = self.expected_response_base()
         expected['is_enrolled'] = True
 
         self.do_get_object_test(
-            self.client, self.enrolled, self.course_roles_url(self.course),
-            expected)
+            self.client, self.enrolled, self.course_roles_url(self.course), expected)
+
+    def test_handgrader_user_roles(self):
+        expected = self.expected_response_base()
+        expected['is_handgrader'] = True
+
+        self.do_get_object_test(
+            self.client, self.handgrader, self.course_roles_url(self.course), expected)
 
     def test_other_user_roles(self):
         self.do_get_object_test(

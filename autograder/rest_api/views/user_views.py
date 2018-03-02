@@ -42,6 +42,13 @@ class UserViewSet(mixins.RetrieveModelMixin,
                                             many=True).data)
 
     @decorators.detail_route()
+    def courses_is_handgrader_for(self, request, *args, **kwargs):
+        user = self.get_object()
+        return response.Response(
+            ag_serializers.CourseSerializer(user.courses_is_handgrader_for.all(),
+                                            many=True).data)
+
+    @decorators.detail_route()
     def courses_is_enrolled_in(self, request, *args, **kwargs):
         user = self.get_object()
         return response.Response(

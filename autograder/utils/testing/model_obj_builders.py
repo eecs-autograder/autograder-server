@@ -1,6 +1,5 @@
 import copy
 import uuid
-import base64
 import typing
 
 from django.contrib.auth.models import User
@@ -12,13 +11,10 @@ import autograder.core.models as ag_models
 
 def get_unique_id() -> str:
     """
-    Returns a base64 encoded uuid as a string. The value returned can
+    Returns a hex encoded uuid as a string. The value returned can
     be added to a database object's fields to make them unique.
-    A base64 representation is used because it is short enough to fit
-    within the length restrictions of the "username" field of django
-    User objects.
     """
-    return base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8')
+    return uuid.uuid4().hex
 
 
 def create_dummy_user(is_superuser: bool=False):
@@ -39,11 +35,10 @@ def create_dummy_users(num_users: int, is_superuser: bool=False):
     for i in range(num_users):
         user_id = get_unique_id()
         user = User.objects.create_user(
-            first_name='fn{}'.format(user_id),
+            first_name='steve'.format(user_id),  # Username length limit is 30 chars
             last_name='ln{}'.format(user_id),
             username='usr{}'.format(user_id),
             email='jameslp@umich.edu',
-            password='pw{}'.format(user_id),
             is_superuser=is_superuser)
         users.append(user)
     return users
@@ -93,6 +88,12 @@ def make_staff_users(course: ag_models.Course, num_users: int) -> typing.Sequenc
 def make_enrolled_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
     users = create_dummy_users(num_users=num_users)
     course.enrolled_students.add(*users)
+    return users
+
+
+def make_handgrader_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+    users = create_dummy_users(num_users=num_users)
+    course.handgraders.add(*users)
     return users
 
 

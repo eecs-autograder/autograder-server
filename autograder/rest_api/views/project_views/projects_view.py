@@ -14,8 +14,9 @@ class IsAdminOrReadOnlyStaffOrStudent(permissions.BasePermission):
         is_staff = course.is_course_staff(request.user)
         read_only = request.method in permissions.SAFE_METHODS
         is_enrolled = course.is_enrolled_student(request.user)
+        is_handgrader = course.is_handgrader(request.user)
 
-        return is_admin or (read_only and (is_staff or is_enrolled))
+        return is_admin or (read_only and (is_staff or is_enrolled or is_handgrader))
 
 
 class ListCreateProjectView(ListCreateNestedModelView):

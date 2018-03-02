@@ -31,6 +31,9 @@ class CourseListProjectsTestCase(_ProjectsSetUp):
         all_projects = self.all_projects
         self.do_valid_list_projects_test(self.enrolled, self.visible_projects)
 
+    def test_handgrader_list_all_projects(self):
+        self.do_valid_list_projects_test(self.handgrader, self.all_projects)
+
     def test_other_list_projects_permission_denied(self):
         self.client.force_authenticate(self.nobody)
         response = self.client.get(self.url)
@@ -66,7 +69,7 @@ class CourseAddProjectTestCase(_ProjectsSetUp):
 
     def test_other_add_project_permission_denied(self):
         project_name = 'project123'
-        for user in self.staff, self.enrolled, self.nobody:
+        for user in self.staff, self.enrolled, self.handgrader, self.nobody:
             self.client.force_authenticate(user)
             response = self.client.post(self.url, {'name': project_name})
 

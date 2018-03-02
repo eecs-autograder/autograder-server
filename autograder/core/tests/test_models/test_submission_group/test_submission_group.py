@@ -41,6 +41,7 @@ class MiscSubmissionGroupTestCase(_SetUp):
             'extended_due_date',
 
             'num_submits_towards_limit',
+            'num_submissions',
         ]
 
         self.assertCountEqual(

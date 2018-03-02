@@ -36,6 +36,7 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
         project = group.project
         course = group.project.course
         is_staff = course.is_course_staff(request.user)
+
         # Staff and higher can always view their own ultimate submission
         if is_staff and group.members.filter(pk=request.user.pk).exists():
             return True
@@ -61,7 +62,7 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
     permission_classes = (group_permissions,)
 
     model_manager = ag_models.SubmissionGroup.objects.select_related(
-        'project__course').prefetch_related('members')
+        'project__course').prefetch_related('members', 'submissions')
 
     def update(self, request, *args, **kwargs):
         if 'member_names' in request.data:

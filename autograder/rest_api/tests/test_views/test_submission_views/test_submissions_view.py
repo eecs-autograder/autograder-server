@@ -52,6 +52,14 @@ class ListGroupSubmissionsTestCase(test_data.Client,
                 self.client, self.enrolled, self.submissions_url(group),
                 expected_data)
 
+    def test_handgrader_list_student_group_submissions_permission_denied(self):
+        for project in self.visible_projects:
+            group = self.enrolled_group(project)
+            expected_data = ag_serializers.SubmissionSerializer(
+                self.build_submissions(group), many=True).data
+            self.do_permission_denied_get_test(
+                self.client, self.handgrader, self.submissions_url(group), expected_data)
+
     def test_non_enrolled_list_submissions(self):
         group = self.non_enrolled_group(self.visible_public_project)
         expected_data = ag_serializers.SubmissionSerializer(
@@ -152,12 +160,18 @@ class CreateSubmissionTestCase(test_data.Client,
         self.assertIn('*.txt', response.data['missing_files'])
         self.assertIn('spam.cpp', response.data['missing_files'])
 
-    # Note that non-group members in this case includes staff and admin.
+    # Note that non-group members in this case includes staff, admin, and handgrader.
     def test_non_group_member_submit_permission_denied(self):
         group = self.enrolled_group(self.visible_public_project)
         other_user = self.clone_user(self.enrolled)
-        for user in self.admin, self.staff, other_user, self.nobody:
+        for user in self.admin, self.staff, other_user, self.nobody, self.handgrader:
             self.do_permission_denied_submit_test(group, user)
+
+    def test_handgraders_that_are_also_students_submit(self):
+        for project in self.visible_projects:
+            group = self.enrolled_group(project)
+            project.course.handgraders.add(group.members.last())
+            self.do_normal_submit_test(group, group.members.last())
 
     def test_enrolled_submit_hidden_project_permission_denied(self):
         for project in self.hidden_projects:

@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'autograder.rest_api',
     'autograder.grading_tasks',
     'autograder.utils',
+    'autograder.handgrading',
 
     # Used for testing ag_model_base
     'autograder.core.tests.test_models',
