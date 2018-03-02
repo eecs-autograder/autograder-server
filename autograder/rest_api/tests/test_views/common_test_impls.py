@@ -20,12 +20,16 @@ class PermissionDeniedGetTest:
 
 
 class ListObjectsTest(PermissionDeniedGetTest):
-    def do_list_objects_test(self, client, user, url, expected_data,
+    def do_list_objects_test(self, client, user, url, expected_data, *,
+                             check_order=False,
                              format='json'):
         client.force_authenticate(user)
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertListContentsEqual(expected_data, response.data)
+        if check_order:
+            self.assertSequenceEqual(expected_data, response.data)
+        else:
+            self.assertListContentsEqual(expected_data, response.data)
 
         return response
 

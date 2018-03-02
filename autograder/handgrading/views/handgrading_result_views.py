@@ -65,18 +65,15 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
 
     @handle_object_does_not_exist_404
     def retrieve(self, request, *args, **kwargs):
-        try:
-            group = self.get_object()  # type: ag_models.SubmissionGroup
+        group = self.get_object()  # type: ag_models.SubmissionGroup
 
-            if 'filename' not in request.query_params:
-                return response.Response(self.get_serializer(group.handgrading_result).data)
+        if 'filename' not in request.query_params:
+            return response.Response(self.get_serializer(group.handgrading_result).data)
 
-            submission = group.handgrading_result.submission
+        submission = group.handgrading_result.submission
 
-            filename = request.query_params['filename']
-            return FileResponse(submission.get_file(filename))
-        except ObjectDoesNotExist:
-            return response.Response(status=status.HTTP_404_NOT_FOUND)
+        filename = request.query_params['filename']
+        return FileResponse(submission.get_file(filename))
 
     @transaction.atomic()
     def create(self, *args, **kwargs):
@@ -159,10 +156,9 @@ class ListHandgradingResultsView(AGModelAPIView):
             Prefetch('members', User.objects.order_by('username')),
         ).all()
 
-        sorted_results = list(sorted(groups, key=lambda group: group.members.first().username))
         paginator = HandgradingResultPaginator()
         page = paginator.paginate_queryset(
-            queryset=sorted_results, request=self.request, view=self)
+            queryset=groups, request=self.request, view=self)
 
         results = []
         for group in page:

@@ -58,13 +58,13 @@ class ListGroupsTestCase(_GroupsSetUp,
         for project in self.all_projects:
             self.do_list_objects_test(
                 self.client, self.admin, self.get_groups_url(project),
-                self.build_groups(project))
+                self.build_groups(project), check_order=True)
 
     def test_staff_list_groups(self):
         for project in self.all_projects:
             self.do_list_objects_test(
                 self.client, self.staff, self.get_groups_url(project),
-                self.build_groups(project))
+                self.build_groups(project), check_order=True)
 
     def test_enrolled_list_groups(self):
         for project in self.all_projects:
@@ -180,9 +180,6 @@ class CreateGroupTestCase(_GroupsSetUp,
             self.do_permission_denied_create_test(
                 self.project.submission_groups, self.client, user,
                 self.get_groups_url(self.project), args)
-
-    # def test_pending_invitations_deleted_after_group_create(self):
-    #     self.fail()
 
     def get_legal_members(self):
         if hasattr(self, '_legal_members'):

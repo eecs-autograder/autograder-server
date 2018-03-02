@@ -120,8 +120,8 @@ def _make_submission_archive(
     with open(dest_filename, 'wb') as archive:
         with zipfile.ZipFile(archive, 'w') as z:
             for index, s in enumerate(submissions):
-                archive_dirname = '_'.join(
-                    sorted(s.submission_group.member_names)) + '-' + s.timestamp.isoformat()
+                archive_dirname = ('_'.join(s.submission_group.member_names) +
+                                   '-' + s.timestamp.isoformat())
                 with utils.ChangeDirectory(core_ut.get_submission_dir(s)):
                     for filename in s.submitted_filenames:
                         target_name = os.path.join(
@@ -173,7 +173,7 @@ def _make_scores_csv(
         for progress_index, submission in enumerate(sorted_submissions):
             row = {timestamp_header: submission.timestamp.isoformat()}
 
-            for index, username in enumerate(sorted(submission.submission_group.member_names)):
+            for index, username in enumerate(submission.submission_group.member_names):
                 row[user_tmpl.format(index + 1)] = username
 
             fdbk = submission.get_fdbk(ag_models.FeedbackCategory.max)

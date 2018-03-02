@@ -40,7 +40,7 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
         name='submission{}-suite{}-{}'.format(
             submission.pk, student_test_suite.pk, uuid.uuid4().hex),
         environment_variables={
-            'usernames': ' '.join(sorted(submission.submission_group.member_names))
+            'usernames': ' '.join(submission.submission_group.member_names)
         },
         allow_network_access=student_test_suite.allow_network_access,
         docker_image=constants.DOCKER_IMAGE_IDS_TO_URLS[student_test_suite.docker_image_to_use])

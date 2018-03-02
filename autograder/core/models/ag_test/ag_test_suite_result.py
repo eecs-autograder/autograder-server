@@ -226,10 +226,6 @@ class AGTestSuiteResult(AutograderModel):
                 return []
 
             return list(self._visible_ag_test_case_results)
-            # test_order = list(self._ag_test_suite.get_agtestcase_order())
-            # results = sorted(self._visible_ag_test_case_results,
-            #                  key=lambda result: test_order.index(result.ag_test_case.pk))
-            # return list(results)
 
         @property
         def _visible_ag_test_case_results(self) -> Iterable[AGTestCaseResult]:

@@ -81,10 +81,6 @@ class AGTestCaseResult(AutograderModel):
                 return []
 
             return list(self._visible_cmd_results)
-            # cmd_order = list(self._ag_test_case.get_agtestcommand_order())
-            # results = sorted(self._visible_cmd_results,
-            #                  key=lambda result: cmd_order.index(result.ag_test_command.pk))
-            # return list(results)
 
         @property
         def _visible_cmd_results(self) -> Iterable[AGTestCommandResult]:
