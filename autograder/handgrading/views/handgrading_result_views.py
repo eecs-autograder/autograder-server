@@ -85,7 +85,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
                 {'handgrading_rubric':
                     'Project {} has not enabled handgrading'.format(group.project.pk)})
 
-        ultimate_submission = get_ultimate_submission(group.project, group.pk)
+        ultimate_submission = get_ultimate_submission(group)
         if not ultimate_submission:
             raise exceptions.ValidationError(
                 {'num_submissions': 'Group {} has no submissions'.format(group.pk)})

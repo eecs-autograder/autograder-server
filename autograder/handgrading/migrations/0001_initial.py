@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('core', '0020_course_handgraders'),
+        # ('core', '0020_course_handgraders'),
     ]
 
     operations = [
@@ -49,9 +49,6 @@ class Migration(migrations.Migration):
                 ('last_modified', models.DateTimeField(auto_now=True)),
                 ('text', models.TextField(help_text='Text to be shown to students.')),
             ],
-            options={
-                'ordering': ('pk',),
-            },
             bases=(autograder.core.models.ag_model_base.ToDictMixin, models.Model),
         ),
         migrations.CreateModel(
@@ -73,9 +70,6 @@ class Migration(migrations.Migration):
                 ('selected', models.BooleanField(help_text="When True, indicates that the criterion's point allotment should be\n                     added to (or subtracted from if negative) the total handgrading points.")),
                 ('criterion', models.ForeignKey(help_text='The Criterion that the CriterionResult is tied to.', on_delete=django.db.models.deletion.CASCADE, related_name='criterion_results', to='handgrading.Criterion')),
             ],
-            options={
-                'ordering': ('criterion___order',),
-            },
             bases=(autograder.core.models.ag_model_base.ToDictMixin, models.Model),
         ),
         migrations.CreateModel(
@@ -171,13 +165,5 @@ class Migration(migrations.Migration):
             model_name='annotation',
             name='handgrading_rubric',
             field=models.ForeignKey(help_text='The HandgradingRubric this Annotation belongs to.', on_delete=django.db.models.deletion.CASCADE, related_name='annotations', to='handgrading.HandgradingRubric'),
-        ),
-        migrations.AlterOrderWithRespectTo(
-            name='criterion',
-            order_with_respect_to='handgrading_rubric',
-        ),
-        migrations.AlterOrderWithRespectTo(
-            name='annotation',
-            order_with_respect_to='handgrading_rubric',
         ),
     ]

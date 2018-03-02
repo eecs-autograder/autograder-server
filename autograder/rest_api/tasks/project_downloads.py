@@ -62,7 +62,7 @@ def _get_all_submissions(project: ag_models.Project,
 
 def _get_ultimate_submissions(project: ag_models.Project,
                               groups: Sequence[ag_models.SubmissionGroup]):
-    return get_ultimate_submissions(project, *(group.pk for group in groups)), len(groups)
+    return get_ultimate_submissions(project, *groups), len(groups)
 
 
 # Given a task, an iterator of submissions, the number of submissions

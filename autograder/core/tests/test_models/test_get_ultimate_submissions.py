@@ -3,8 +3,8 @@ from typing import List
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions, \
-    get_ultimate_submission
+from autograder.core.models.get_ultimate_submissions import (
+    get_ultimate_submissions, get_ultimate_submission)
 from autograder.utils.testing import UnitTestBase
 
 
@@ -24,28 +24,28 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
 
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
-        [ultimate_most_recent] = get_ultimate_submissions(self.project, group.pk)
+        [ultimate_most_recent] = get_ultimate_submissions(self.project, group)
         self.assertEqual(most_recent, ultimate_most_recent)
 
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
-        [ultimate_best] = get_ultimate_submissions(self.project, group.pk)
+        [ultimate_best] = get_ultimate_submissions(self.project, group)
         self.assertEqual(best_sub, ultimate_best)
 
     def test_get_ultimate_for_many_groups(self):
         data = self.prepare_data(self.project, num_groups=3)
-        group_pks = [datum.group.pk for datum in data]
+        groups = [datum.group for datum in data]
         expected_most_recents = [datum.most_recent_submission for datum in data]
         expected_bests = [datum.best_submission for datum in data]
 
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
-        ultimate_most_recents = get_ultimate_submissions(self.project, *group_pks)
+        ultimate_most_recents = get_ultimate_submissions(self.project, *groups)
         self.assertCountEqual(expected_most_recents, ultimate_most_recents)
 
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
-        ultimate_bests = get_ultimate_submissions(self.project, *group_pks)
+        ultimate_bests = get_ultimate_submissions(self.project, *groups)
         self.assertCountEqual(expected_bests, ultimate_bests)
 
     def test_get_ultimate_only_finished_grading_status_considered(self):
@@ -73,7 +73,7 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             group = obj_build.make_group(project=self.project)
 
             self.assertEqual(0, group.submissions.count())
-            ultimate_submission = get_ultimate_submission(self.project, group.pk)
+            ultimate_submission = get_ultimate_submission(group)
             self.assertIsNone(ultimate_submission)
 
     def test_get_ultimate_submission_no_finished_submissions(self):
@@ -84,7 +84,7 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
 
             self.assertEqual(1, group.submissions.count())
             self.assertNotEqual(ag_models.Submission.GradingStatus.finished_grading, submission.status)
-            ultimate_submission = get_ultimate_submission(self.project, group.pk)
+            ultimate_submission = get_ultimate_submission(group)
             self.assertIsNone(ultimate_submission)
 
     class GroupAndSubmissionData:

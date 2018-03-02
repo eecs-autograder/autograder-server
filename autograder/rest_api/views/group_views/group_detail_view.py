@@ -97,7 +97,7 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
           overridden as being hidden.
         """
         group = self.get_object()
-        ultimate_submission = get_ultimate_submission(group.project, group.pk)
+        ultimate_submission = get_ultimate_submission(group)
         if ultimate_submission is None:
             return response.Response(status=status.HTTP_404_NOT_FOUND)
 

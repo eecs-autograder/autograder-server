@@ -150,7 +150,7 @@ def can_request_feedback_category(
                 # Staff can only request max feedback for other groups'
                 # ultimate submissions if the project deadline and group's
                 # extension have passed.
-                [group_ultimate_submission] = get_ultimate_submissions(project, group.pk)
+                [group_ultimate_submission] = get_ultimate_submissions(project, group)
                 return deadline_past and group_ultimate_submission == submission
 
             # Non-staff users cannot view other groups' submissions
@@ -164,7 +164,7 @@ def can_request_feedback_category(
                 return submission.is_past_daily_limit
 
             if fdbk_category == ag_models.FeedbackCategory.ultimate_submission:
-                [group_ultimate_submission] = get_ultimate_submissions(project, group.pk)
+                [group_ultimate_submission] = get_ultimate_submissions(project, group)
                 return (not project.hide_ultimate_submission_fdbk and
                         group_ultimate_submission == submission and
                         deadline_past)
