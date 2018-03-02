@@ -321,26 +321,28 @@ class HandgradingResultTestCase(UnitTestBase):
             text="HI",
             handgrading_result=result)
 
-        criterion_result = handgrading_models.CriterionResult.objects.validate_and_create(
+        criterion1 = handgrading_models.Criterion.objects.validate_and_create(
+            points=0,
+            handgrading_rubric=self.rubric)
+        criterion_result1 = handgrading_models.CriterionResult.objects.validate_and_create(
             selected=True,
-            criterion=handgrading_models.Criterion.objects.validate_and_create(
-                points=0,
-                handgrading_rubric=self.rubric),
+            criterion=criterion1,
             handgrading_result=result)
 
+        criterion2 = handgrading_models.Criterion.objects.validate_and_create(
+            points=0,
+            handgrading_rubric=self.rubric)
         criterion_result2 = handgrading_models.CriterionResult.objects.validate_and_create(
             selected=True,
-            criterion=handgrading_models.Criterion.objects.validate_and_create(
-                points=0,
-                handgrading_rubric=self.rubric),
+            criterion=criterion2,
             handgrading_result=result)
 
-        result.handgrading_rubric.set_criterion_order([criterion_result2.pk, criterion_result.pk])
-        expected_criterion_result_order = [criterion_result2.to_dict(), criterion_result.to_dict()]
+        result.handgrading_rubric.set_criterion_order([criterion2.pk, criterion1.pk])
+        expected_criterion_results = [criterion_result2.to_dict(), criterion_result1.to_dict()]
 
         # Make list of comments ordered by pk
-        expected_comment_order = sorted([comment.to_dict(), comment2.to_dict()],
-                                        key=lambda comment: comment["pk"])
+        expected_comments = sorted([comment.to_dict(), comment2.to_dict()],
+                                   key=lambda comment: comment["pk"])
 
         result.refresh_from_db()
         result_dict = result.to_dict()
@@ -353,8 +355,8 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertIsInstance(result_dict["submission_group"], int)
 
         self.assertSequenceEqual(result_dict["applied_annotations"], [applied_annotation.to_dict()])
-        self.assertSequenceEqual(result_dict["criterion_results"], expected_criterion_result_order)
-        self.assertSequenceEqual(result_dict["comments"], expected_comment_order)
+        self.assertSequenceEqual(result_dict["criterion_results"], expected_criterion_results)
+        self.assertSequenceEqual(result_dict["comments"], expected_comments)
 
     def test_editable_fields(self):
         result = handgrading_models.HandgradingResult.objects.validate_and_create(

@@ -1,5 +1,4 @@
 from django.urls import reverse
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -65,19 +64,13 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
     def setUp(self):
         super().setUp()
-        handgrading_rubric_inputs = {
-            "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
-            "max_points": 0,
-            "show_grades_and_rubric_to_students": False,
-            "handgraders_can_leave_comments": True,
-            "handgraders_can_adjust_points": True,
-            "project": obj_build.build_project()
-        }
-
-        self.handgrading_rubric = (
-            handgrading_models.HandgradingRubric.objects.validate_and_create(
-                **handgrading_rubric_inputs)
-        )
+        self.handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_adjust_points=True,
+                project=obj_build.build_project())
 
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
@@ -99,6 +92,61 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.do_permission_denied_create_test(
             handgrading_models.Criterion.objects, self.client, enrolled, self.url, self.data)
+
+    def test_create_criterion_results_on_create(self):
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.client.force_authenticate(admin)
+
+        # Create HandgradingResult
+        submission = obj_build.build_submission(
+            submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
+        handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            submission_group=submission.submission_group,
+            handgrading_rubric=self.handgrading_rubric)
+
+        # Create dummy submissions and groups with no submissions. These should not be affected
+        dummy_submission = obj_build.build_submission(
+            submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
+        dummy_submission = obj_build.build_submission(
+            submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
+        group_with_no_submission = obj_build.make_group(project=self.handgrading_rubric.project)
+        group_with_no_submission = obj_build.make_group(project=self.handgrading_rubric.project)
+
+        self.assertEqual(0, handgrading_result.criterion_results.count())
+        self.assertEqual(1, handgrading_models.HandgradingResult.objects.count())
+
+        # Create dummy project with its own groups and HandgradingResults.
+        #   These should not be affected
+        dummy_project = obj_build.make_project(course=self.handgrading_rubric.project.course)
+        dummy_handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
+                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+                max_points=0,
+                show_grades_and_rubric_to_students=False,
+                handgraders_can_leave_comments=True,
+                handgraders_can_adjust_points=True,
+                project=dummy_project)
+        dummy_submission = obj_build.build_submission(
+            submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
+        dummy_handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+            submission=dummy_submission,
+            submission_group=dummy_submission.submission_group,
+            handgrading_rubric=dummy_handgrading_rubric)
+
+        self.assertEqual(0, handgrading_models.CriterionResult.objects.count())
+        self.assertEqual(2, handgrading_models.HandgradingResult.objects.count())
+
+        # Create Criterion, which should create a CriterionResult for above HandgradingResult
+        response = self.client.post(self.url, self.data)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        handgrading_result.refresh_from_db()
+        self.assertEqual(1, handgrading_result.criterion_results.count())
+        self.assertEqual(1, handgrading_models.CriterionResult.objects.count())
+
+        criterion_results = handgrading_result.to_dict()["criterion_results"]
+        self.assertFalse(criterion_results[0]["selected"])
+        self.assertEqual(criterion_results[0]["criterion"], response.data)
 
 
 class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
