@@ -83,3 +83,4 @@ venv_ag
 tags
 venv
 celerybeat-schedule
+venv-*

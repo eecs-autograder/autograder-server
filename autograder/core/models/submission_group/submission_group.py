@@ -5,8 +5,11 @@ from django.db import models, transaction
 from django.http import Http404
 from django.utils import timezone
 
+import django.contrib.postgres.fields as pg_fields
+
 import autograder.core.utils as core_ut
 from autograder import utils
+from autograder.core import constants
 
 from .. import ag_model_base
 from ..project import Project, UltimateSubmissionPolicy
@@ -32,7 +35,9 @@ class SubmissionGroupManager(ag_model_base.AutograderModelManager):
                 members, kwargs['project'], 'members',
                 check_group_size_limits=check_group_size_limits)
 
-            group = self.model(**kwargs)
+            member_names = [
+                user.username for user in sorted(members, key=lambda user: user.username)]
+            group = self.model(_member_names=member_names, **kwargs)
             group.save()
             group.members.add(*members)
             group.full_clean()
@@ -48,16 +53,8 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         submissions -- The Submissions that this group has made for the
             associated Project.
     """
-    SERIALIZABLE_FIELDS = (
-        'pk',
-        'project',
-        'extended_due_date',
-        'member_names',
-
-        'num_submits_towards_limit',
-    )
-
-    EDITABLE_FIELDS = ('extended_due_date',)
+    class Meta:
+        ordering = ('_member_names',)
 
     objects = SubmissionGroupManager()
 
@@ -68,6 +65,18 @@ class SubmissionGroup(ag_model_base.AutograderModel):
             project.max_group_size members. A User can only be a member
             of one submission group per project.
             This field is REQUIRED.""")
+
+    @property
+    def member_names(self):
+        """A list of usernames of the group members, sorted alphabetically."""
+        return self._member_names
+
+    _member_names = pg_fields.ArrayField(
+        models.CharField(max_length=constants.MAX_USERNAME_LEN),
+        default=list,
+        help_text="""A list of usernames of the group members, sorted alphabetically.
+                     This field is updated automatically when self.members is updated
+                     through self.validate_and_update""")
 
     project = models.ForeignKey(Project, related_name="submission_groups",
                                 on_delete=models.CASCADE)
@@ -80,11 +89,8 @@ class SubmissionGroup(ag_model_base.AutograderModel):
             Default value: None""")
 
     @property
-    def member_names(self):
-        """
-        The usernames of the members of this SubmissionGroup.
-        """
-        return list(user.username for user in self.members.all())
+    def num_submissions(self) -> int:
+        return self.submissions.count()
 
     @property
     def num_submits_towards_limit(self):
@@ -185,7 +191,23 @@ class SubmissionGroup(ag_model_base.AutograderModel):
                 check_group_size_limits=check_group_size_limits)
 
             self.members.set(members, clear=True)
+            self._member_names = [
+                user.username for user in sorted(members, key=lambda user: user.username)]
             self.full_clean()
+            self.save()
+
+    # -------------------------------------------------------------------------
+
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        'project',
+        'extended_due_date',
+        'member_names',
+
+        'num_submits_towards_limit',
+    )
+
+    EDITABLE_FIELDS = ('extended_due_date',)
 
 
 def get_submissions_for_daily_limit_queryset(project: Project):

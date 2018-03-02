@@ -16,8 +16,8 @@ from autograder.rest_api.auth import GOOGLE_API_SCOPES
 from autograder import utils
 
 
-_DJANGO_FIRST_NAME_MAX_LEN = 30
-_DJANGO_LAST_NAME_MAX_LEN = 150
+_DJANGO_FIRST_NAME_MAX_LEN = User._meta.get_field('first_name').max_length
+_DJANGO_LAST_NAME_MAX_LEN = User._meta.get_field('last_name').max_length
 
 
 def oauth2_callback(request):

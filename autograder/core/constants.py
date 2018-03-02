@@ -1,5 +1,9 @@
 import enum
 import autograder_sandbox
+from django.contrib.auth.models import User
+
+
+MAX_USERNAME_LEN = User._meta.get_field('username').max_length
 
 MAX_CHAR_FIELD_LEN = 255
 
