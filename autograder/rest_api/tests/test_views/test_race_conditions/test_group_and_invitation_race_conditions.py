@@ -111,6 +111,7 @@ class RaceConditionTestCase(test_data.Client,
             response = client.patch(self.group_url(first_group),
                                     {'member_names': member_names})
             self.assertEqual(status.HTTP_200_OK, response.status_code)
+            first_group.refresh_from_db()
             self.assertCountEqual(member_names, first_group.member_names)
 
         subtest = update_first_group()
@@ -122,12 +123,6 @@ class RaceConditionTestCase(test_data.Client,
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         second_group.refresh_from_db()
         self.assertNotIn(overlap_member.username, second_group.member_names)
-
-    # There may not be a good way to test for this reliably. Make sure
-    # that users are always locked simultaneously using the lock_users()
-    # utility function.
-    # def test_update_groups_with_multiple_overlap_no_deadlock(self):
-    #     self.fail()
 
     def test_create_and_update_groups_with_member_overlap(self):
         self.project.validate_and_update(max_group_size=4)
