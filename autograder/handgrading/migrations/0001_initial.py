@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        # ('core', '0020_course_handgraders'),
+        ('core', '0020_course_handgraders'),
     ]
 
     operations = [
