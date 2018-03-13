@@ -10,6 +10,13 @@ def store_member_names(apps, schema_editor):
         group.save()
 
 
+def clear_member_names(apps, schema_editor):
+    SubmissionGroup = apps.get_model('core', 'SubmissionGroup')
+    for group in SubmissionGroup.objects.all():
+        group._member_names = []
+        group.save()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -17,5 +24,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(store_member_names)
+        migrations.RunPython(store_member_names, reverse_code=clear_member_names)
     ]
