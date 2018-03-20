@@ -44,7 +44,6 @@ class AppliedAnnotationTestCase(UnitTestBase):
         )
 
         self.default_applied_annotation_inputs = {
-            "comment": "",
             "location": self.default_location_dict,
             "annotation": self.annotation,
             "handgrading_result": self.default_handgrading_result_obj
@@ -55,8 +54,6 @@ class AppliedAnnotationTestCase(UnitTestBase):
             **self.default_applied_annotation_inputs
         )
 
-        self.assertEqual(app_annotation_obj.comment,
-                         self.default_applied_annotation_inputs["comment"])
         self.assertEqual(app_annotation_obj.annotation,
                          self.default_applied_annotation_inputs["annotation"])
         self.assertEqual(app_annotation_obj.handgrading_result,
@@ -68,35 +65,6 @@ class AppliedAnnotationTestCase(UnitTestBase):
                          self.default_applied_annotation_inputs["location"]["last_line"])
         self.assertEqual(app_annotation_obj.location.filename,
                          self.default_applied_annotation_inputs["location"]["filename"])
-
-    def test_applied_annotation_with_comment(self):
-        inputs = {
-            "comment": "Testing comment. This can be longer.",
-            "location": self.default_location_dict,
-            "annotation": self.annotation,
-            "handgrading_result": self.default_handgrading_result_obj
-        }
-
-        app_annotation_obj = handgrading_models.AppliedAnnotation.objects.validate_and_create(
-            **inputs
-        )
-
-        self.assertEqual(app_annotation_obj.comment, inputs["comment"])
-        self.assertEqual(app_annotation_obj.annotation, inputs["annotation"])
-        self.assertEqual(app_annotation_obj.handgrading_result, inputs["handgrading_result"])
-
-        self.assertEqual(app_annotation_obj.location.first_line, inputs["location"]["first_line"])
-        self.assertEqual(app_annotation_obj.location.last_line, inputs["location"]["last_line"])
-        self.assertEqual(app_annotation_obj.location.filename, inputs["location"]["filename"])
-
-    def test_allow_applied_annotation_to_not_have_comments(self):
-        annotation_obj = handgrading_models.AppliedAnnotation.objects.validate_and_create(
-            location=self.default_location_dict,
-            annotation=self.annotation,
-            handgrading_result=self.default_handgrading_result_obj
-        )
-
-        self.assertEqual(annotation_obj.comment, "")
 
     def test_filename_in_location_must_be_in_submitted_files(self):
         """
@@ -122,7 +90,6 @@ class AppliedAnnotationTestCase(UnitTestBase):
             'pk',
             'last_modified',
 
-            'comment',
             'location',
             'annotation',
             'handgrading_result',
@@ -147,7 +114,6 @@ class AppliedAnnotationTestCase(UnitTestBase):
             'pk',
             'last_modified',
 
-            'comment',
             'location',
             'annotation',
             'handgrading_result',

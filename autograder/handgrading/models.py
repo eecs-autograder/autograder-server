@@ -347,8 +347,6 @@ class AppliedAnnotation(AutograderModel):
         'Location', related_name='+', on_delete=models.PROTECT,
         help_text='''The source code location where the Annotation was applied.''')
 
-    comment = models.TextField(blank=True, help_text="REMOVE ME")
-
     def clean(self):
         """
         Checks that the filename specified in the location is actually one of
@@ -360,14 +358,11 @@ class AppliedAnnotation(AutograderModel):
     SERIALIZABLE_FIELDS = ('pk',
                            'last_modified',
 
-                           'comment',
                            'location',
                            'annotation',
                            'handgrading_result',)
 
     TRANSPARENT_TO_ONE_FIELDS = ('location',)
-
-    EDITABLE_FIELDS = ('comment',)
 
     SERIALIZE_RELATED = ('annotation',)
 

@@ -211,7 +211,6 @@ class HandgradingResultTestCase(UnitTestBase):
 
         for i in range(3):
             handgrading_models.AppliedAnnotation.objects.validate_and_create(
-                comment="",
                 location={
                     "first_line": 0,
                     "last_line": 1,
@@ -239,7 +238,6 @@ class HandgradingResultTestCase(UnitTestBase):
 
         for i in range(8):
             handgrading_models.AppliedAnnotation.objects.validate_and_create(
-                comment="",
                 location={
                     "first_line": 0,
                     "last_line": 1,
@@ -293,7 +291,6 @@ class HandgradingResultTestCase(UnitTestBase):
         )
 
         applied_annotation = handgrading_models.AppliedAnnotation.objects.validate_and_create(
-            comment="",
             location={
                 "first_line": 0,
                 "last_line": 1,
