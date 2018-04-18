@@ -32,6 +32,7 @@ class AnnotationDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGene
         'handgrading_rubric__project__course',
     )
 
+
 class AnnotationOrderView(AGModelGenericView):
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(

@@ -46,7 +46,6 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
         )
 
         applied_annotation_data = {
-            "comment": "Sample comment.",
             "location": location_data,
             "annotation": annotation,
             "handgrading_result": self.handgrading_result
@@ -121,7 +120,6 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
                            kwargs={'handgrading_result_pk': self.handgrading_result.pk})
 
         self.data = {
-            "comment": "Sample comment.",
             "location": location_data,
             "annotation": annotation.pk,
         }
@@ -137,8 +135,6 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
 
             loaded = handgrading_models.AppliedAnnotation.objects.get(pk=response.data['pk'])
             self.assertDictContentsEqual(loaded.to_dict(), response.data)
-
-            self.assertEqual(self.data["comment"], loaded.comment)
 
             annotation = handgrading_models.Annotation.objects.get(pk=self.data['annotation'])
             self.assertEqual(annotation.to_dict(), loaded.annotation.to_dict())
@@ -198,7 +194,6 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
         )
 
         applied_annotation_data = {
-            "comment": "Sample comment.",
             "location": location_data,
             "annotation": annotation,
             "handgrading_result": self.handgrading_result
@@ -224,17 +219,6 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
         [enrolled] = obj_build.make_enrolled_users(self.course, 1)
         self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
-    def test_admin_or_handgrader_valid_update(self):
-        patch_data = {
-            "comment": "Changing the comment",
-        }
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
-
-        for user in admin, handgrader:
-            self.do_patch_object_test(self.applied_annotation, self.client, user, self.url,
-                                      patch_data)
-
     def test_admin_or_handgrader_update_bad_values(self):
         bad_data = {
             "location": "Not an editable field!",
@@ -245,17 +229,6 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
         for user in admin, handgrader:
             self.do_patch_object_invalid_args_test(self.applied_annotation, self.client, user,
                                                    self.url, bad_data)
-
-    def test_staff_or_student_update_permission_denied(self):
-        patch_data = {
-            "comment": "Changing the comment",
-        }
-        [staff] = obj_build.make_staff_users(self.course, 1)
-        [student] = obj_build.make_enrolled_users(self.course, 1)
-
-        for user in staff, student:
-            self.do_patch_object_permission_denied_test(
-                self.applied_annotation, self.client, user, self.url, patch_data)
 
     def test_admin_valid_delete(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
