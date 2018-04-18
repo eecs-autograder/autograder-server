@@ -65,8 +65,7 @@ class AddCourseAdminsTestCase(_SetUp):
             self.client.force_authenticate(self.superuser)
             response = self.client.post(
                 self.url,
-                {'new_admins':
-                    new_admin_names + [user.username for user in new_admins]})
+                {'new_admins': new_admin_names + [user.username for user in new_admins]})
 
             self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
@@ -86,11 +85,15 @@ class AddCourseAdminsTestCase(_SetUp):
             self.client.force_authenticate(user)
 
             new_admin_name = 'steve'
-            response = self.client.post(self.url,
-                                         {'new_admins': [new_admin_name]})
+            response = self.client.post(self.url, {'new_admins': [new_admin_name]})
 
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
             self.assertEqual(0, self.course.administrators.count())
+
+    def test_error_missing_request_param(self):
+        self.client.force_authenticate(self.superuser)
+        response = self.client.post(self.url, {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
 
 class RemoveCourseAdminsTestCase(_SetUp):
@@ -143,3 +146,8 @@ class RemoveCourseAdminsTestCase(_SetUp):
 
             self.assertCountEqual(self.all_admins,
                                   self.course.administrators.all())
+
+    def test_error_missing_request_param(self):
+        self.client.force_authenticate(self.superuser)
+        response = self.client.patch(self.url, {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)

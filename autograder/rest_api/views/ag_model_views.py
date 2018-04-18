@@ -2,7 +2,8 @@ from django.core.exceptions import ObjectDoesNotExist, FieldDoesNotExist
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
-from rest_framework import viewsets, permissions, mixins, generics, response
+from rest_framework import viewsets, permissions, mixins, generics, response, status
+from rest_framework.request import Request
 from rest_framework.views import APIView
 
 from autograder.rest_api.views.schema_generation import AGModelViewAutoSchema, NestedModelViewAutoSchema
@@ -238,3 +239,55 @@ def handle_object_does_not_exist_404(func):
             raise Http404
 
     return decorated_func
+
+
+def require_body_params(*required_body_params: str):
+    """
+    When applied to a view, checks whether each parameter listed in
+    required_body_params is present in the request body. If any of
+    the parameters are missing, returns a 400 response.
+    """
+    def decorator(view):
+        def decorated_view(request: Request, *args, **kwargs):
+            missing_params = []
+            for param in required_body_params:
+                if param not in request.data:
+                    missing_params.append(param)
+
+            if missing_params:
+                error_msg = 'Missing required body parameter(s): {}'.format(
+                    ', '.join(missing_params)
+                )
+                return response.Response(data=error_msg, status=status.HTTP_400_BAD_REQUEST)
+
+            return view(request, *args, **kwargs)
+
+        return decorated_view
+
+    return decorator
+
+
+def require_query_params(*required_query_params: str):
+    """
+    When applied to a view, checks whether each parameter listed in
+    required_query_params is present in the request query string.
+    If any of the parameters are missing, returns a 400 response.
+    """
+    def decorator(view):
+        def decorated_view(request: Request, *args, **kwargs):
+            missing_params = []
+            for param in required_query_params:
+                if param not in request.query_params:
+                    missing_params.append(param)
+
+            if missing_params:
+                error_msg = 'Missing required query parameter(s): {}'.format(
+                    ', '.join(missing_params)
+                )
+                return response.Response(data=error_msg, status=status.HTTP_400_BAD_REQUEST)
+
+            return view(request, *args, **kwargs)
+
+        return decorated_view
+
+    return decorator
