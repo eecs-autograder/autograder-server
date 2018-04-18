@@ -38,7 +38,7 @@ comment_detail_router.register(r'comments',
 
 urlpatterns = [
     url(r'^projects/(?P<project_pk>[0-9]+)/handgrading_rubric/$',
-        views.HandgradingRubricRetrieveCreateView.as_view(), name='handgrading_rubric'),
+        views.HandgradingRubricRetrieveCreateViewSet.as_view(), name='handgrading_rubric'),
     url(r'', include(handgrading_rubric_detail_router.urls)),
 
     url(r'^handgrading_rubrics/(?P<handgrading_rubric_pk>[0-9]+)/annotations/$',

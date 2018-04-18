@@ -5,7 +5,7 @@ from rest_framework import permissions
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
-from autograder.rest_api.views.ag_model_views import ListCreateNestedModelView
+from autograder.rest_api.views.ag_model_views import ListCreateNestedModelViewSet
 
 
 class IsAdminOrReadOnlyStaffOrStudent(permissions.BasePermission):
@@ -19,13 +19,13 @@ class IsAdminOrReadOnlyStaffOrStudent(permissions.BasePermission):
         return is_admin or (read_only and (is_staff or is_enrolled or is_handgrader))
 
 
-class ListCreateProjectView(ListCreateNestedModelView):
+class ListCreateProjectView(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.ProjectSerializer
     permission_classes = (IsAdminOrReadOnlyStaffOrStudent,)
 
     model_manager = ag_models.Course.objects
-    foreign_key_field_name = 'course'
-    reverse_foreign_key_field_name = 'projects'
+    to_one_field_name = 'course'
+    reverse_to_one_field_name = 'projects'
 
     def get_queryset(self):
         queryset = super().get_queryset()

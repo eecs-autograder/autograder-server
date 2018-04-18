@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from autograder.rest_api.views.schema_generation import AGModelViewAutoSchema, NestedModelViewAutoSchema
 from ..transaction_mixins import (
     TransactionCreateMixin, TransactionUpdateMixin,
-    TransactionDestroyMixin, TransactionRetrieveMixin)
+    TransactionDestroyMixin)
 
 
 class GetObjectLockOnUnsafeMixin:
@@ -89,122 +89,132 @@ class AGModelGenericView(GetObjectLockOnUnsafeMixin,
     pass
 
 
-class ListCreateNestedModelView(GetObjectLockOnUnsafeMixin,
-                                AlwaysIsAuthenticatedMixin,
-                                mixins.ListModelMixin,
-                                TransactionCreateMixin,
-                                generics.GenericAPIView):
+class NestedModelViewSet(GetObjectLockOnUnsafeMixin,
+                         AlwaysIsAuthenticatedMixin,
+                         generics.GenericAPIView):
     """
-    Provides 'list' and 'create' functionality for models
-    that conceptually cannot exist without some foreign key
-    relationship.
-    For 'list' and 'create' functionality, this allows Django REST
-    Framework's object-level permission checking to examine the -to-one
-    (foreign) related object when querying for the -to-many (related)
-    objects or creating a new related object.
-    For 'create' functionality, this lets us make sure that newly
-    created related objects belong to the appropriate foreign object,
-    as specified by a primary key loaded from the URL.
+    A generic view set for models that conceptually cannot exist without
+    some foreign key relationship.
 
-    For example, setting foreign_key_field_name to 'course'
-    and reverse_foreign_key_field_name to 'projects' would allow the following:
-    A GET request to /courses/2/projects/ could return a list of Projects
-    that belong to Course 2, but only if the user is staff for or enrolled
-    in that Course.
-    A POST request to /courses/2/projects/ would create a new Project that
-    belongs to Course 2 (overriding any 'course' field included in the
-    request body), but only if the user is admin for that Course.
+    This allows Django REST Framework's object-level permission checking
+    to examine the -to-one (foreign) related object when requesting
+    the -to-many or -to-one (related) objects or creating a new related
+    object.
     """
 
     swagger_schema = NestedModelViewAutoSchema
 
-    foreign_key_field_name = None
-    reverse_foreign_key_field_name = None
+    to_one_field_name = None
+    reverse_to_one_field_name = None
 
     def get_queryset(self):
-        if self.reverse_foreign_key_field_name is None:
-            raise ValueError('"reverse_foreign_key_field_name" must not be None.')
+        if self.reverse_to_one_field_name is None:
+            raise ValueError('"reverse_to_one_field_name" must not be None.')
 
-        return getattr(self.get_object(), self.reverse_foreign_key_field_name).all()
+        return getattr(self.get_object(), self.reverse_to_one_field_name).all()
 
-    def perform_create(self, serializer):
-        if self.foreign_key_field_name is None:
-            raise ValueError(
-                'You must either set "foreign_key_field_name" or override this method.')
 
-        # This makes sure that the object specified in the url
-        # is the one that the newly created object belongs to,
-        # even if something different is specified in the
-        # request body.
-        serializer.save(**{self.foreign_key_field_name: self.get_object()})
+class ListNestedModelMixin(mixins.ListModelMixin):
+    """
+    Provides 'list' functionality when mixed with a NestedModelViewSet.
+
+    For example, setting NestedModelViewSet.foreign_key_field_name to
+    'course' and NestedModelViewSet.reverse_foreign_key_field_name to
+    'projects' could allow the following:
+        A GET request to /courses/2/projects/ could return a list of
+        Projects that belong to Course 2, but only if the user is staff
+        for or enrolled in that Course.
+
+    NOTE: Do NOT mix ListNestedModelMixin with RetrieveNestedModelMixin,
+    as the GET implementations will interfere.
+    """
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
 
-
-class RetrieveCreateNestedModelView(GetObjectLockOnUnsafeMixin,
-                                    AlwaysIsAuthenticatedMixin,
-                                    TransactionCreateMixin,
-                                    TransactionRetrieveMixin,
-                                    generics.GenericAPIView):
+class RetrieveNestedModelMixin(mixins.RetrieveModelMixin):
     """
-    Provides 'retrieve' and 'create' functionality for models
-    that conceptually cannot exist without some one-to-one
-    relationship. This works similarly to the ListCreateNestedModelView,
-    except it returns a single object with 'retrieve' instead of a list
-    of objects with 'list'.
-    For 'retrieve' and 'create' functionality, this allows Django REST
-    Framework's object-level permission checking to examine the -to-one
-    (foreign) related object when querying for the -to-many (related)
-    objects or creating a new related object.
-    For 'create' functionality, this lets us make sure that newly
-    created related objects belong to the appropriate foreign object,
-    as specified by a primary key loaded from the URL.
+    Provides 'retrieve' functionality when mixed with a
+    NestedModelViewSet.
 
-    For example, setting one_to_one_field_name to 'project'
-    and reverse_one_to_one_field_name to 'handgrading_rubric' would
-    allow the following:
-    A GET request to /project/2/handgrading_rubric/ returns the
-    designated Project 2's handgrading rubric, but only if the user
-    is staff for or enrolled in Project 2's Course.
-    A POST request to /project/2/handgrading_rubric/ would create a new
-    Handgrading Rubric that now has a one-to-one relationship with Project 2
-    (overriding any 'course' field included in the request body),
-    but only if the user is admin for Project 2's Course.
+    For example, setting NestedModelViewSet.one_to_one_field_name to
+    'project' and NestedModelViewSet.reverse_one_to_one_field_name to
+    'handgrading_rubric' could allow the following:
+        A GET request to /project/2/handgrading_rubric/ returns the
+        designated Project 2's handgrading rubric, but only if the user
+        is staff for or enrolled in Project 2's Course.
+
+    NOTE: Do NOT mix ListNestedModelMixin with RetrieveNestedModelMixin,
+    as the GET implementations will interfere.
     """
 
-    swagger_schema = NestedModelViewAutoSchema
-
-    one_to_one_field_name = None
-    reverse_one_to_one_field_name = None
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
 
     def retrieve(self, *args, **kwargs):
-        if self.reverse_one_to_one_field_name is None:
-            raise ValueError('"reverse_one_to_one_field_name" must not be None.')
+        if self.reverse_to_one_field_name is None:
+            raise ValueError('"reverse_to_one_field_name" must not be None.')
 
-        instance = getattr(self.get_object(), self.reverse_one_to_one_field_name)
+        instance = getattr(self.get_object(), self.reverse_to_one_field_name)
         serializer = self.get_serializer(instance)
         return response.Response(serializer.data)
 
+
+class CreateNestedModelViewSet(TransactionCreateMixin):
+    """
+    Provides 'create' functionality when mixed with a
+    NestedModelViewSet.
+
+    For example, setting NestedModelViewSet.one_to_one_field_name to
+    'project' and NestedModelViewSet.reverse_one_to_one_field_name to
+    'handgrading_rubric' could allow the following:
+        A POST request to /courses/2/projects/ would create a new
+        Project that belongs to Course 2 (overriding any 'course' field
+        erroneously included in the request body), but only if the user
+        is admin for that Course.
+    """
+
     def perform_create(self, serializer):
-        if self.one_to_one_field_name is None:
+        if self.to_one_field_name is None:
             raise ValueError(
-                'You must either set "one_to_one_field_name" or override this method.')
+                'You must either set "to_one_field_name" or override this method.')
 
         # This makes sure that the object specified in the url
         # is the one that the newly created object belongs to,
         # even if something different is specified in the
         # request body.
-        serializer.save(**{self.one_to_one_field_name: self.get_object()})
-
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+        serializer.save(**{self.to_one_field_name: self.get_object()})
 
     def post(self, request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
+
+
+class ListNestedModelViewSet(ListNestedModelMixin, NestedModelViewSet):
+    """
+    Shortcut class for a nested model view set with list functionality.
+    """
+    pass
+
+
+class ListCreateNestedModelViewSet(ListNestedModelMixin,
+                                   CreateNestedModelViewSet,
+                                   NestedModelViewSet):
+    """
+    Shortcut class for a nested model view set with list and create
+    functionality.
+    """
+    pass
+
+
+class RetrieveCreateNestedModelViewSet(RetrieveNestedModelMixin,
+                                       CreateNestedModelViewSet,
+                                       NestedModelViewSet):
+    """
+    Shortcut class for a nested model view set with retrieve and create
+    functionality.
+    """
+    pass
 
 
 class TransactionRetrieveUpdateDestroyMixin(mixins.RetrieveModelMixin,

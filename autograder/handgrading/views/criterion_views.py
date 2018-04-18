@@ -6,11 +6,11 @@ import autograder.handgrading.models as hg_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrieveUpdateDestroyMixin,
     AGModelAPIView)
 
 
-class CriterionListCreateView(ListCreateNestedModelView):
+class CriterionListCreateView(ListCreateNestedModelViewSet):
     serializer_class = handgrading_serializers.CriterionSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
@@ -18,8 +18,8 @@ class CriterionListCreateView(ListCreateNestedModelView):
 
     pk_key = 'handgrading_rubric_pk'
     model_manager = hg_models.HandgradingRubric.objects.select_related('project__course')
-    foreign_key_field_name = 'handgrading_rubric'
-    reverse_foreign_key_field_name = 'criteria'
+    to_one_field_name = 'handgrading_rubric'
+    reverse_to_one_field_name = 'criteria'
 
     @transaction.atomic()
     def create(self, request, *args, **kwargs):

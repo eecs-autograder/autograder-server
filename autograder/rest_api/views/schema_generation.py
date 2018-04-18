@@ -125,8 +125,12 @@ class AGModelViewAutoSchema(SwaggerAutoSchema):
             field for field_name, field in schema.properties.items()
             if field_name in ag_model_class.get_editable_fields())
 
-    # def get_response_schemas(self, response_serializers):
-    #     # FIXME: add appropriate schemas for 200, 201, and 204
+    def serializer_to_schema(self, serializer):
+        if not isinstance(serializer, AGModelSerializer):
+            return super().serializer_to_schema(serializer)
+
+        ag_model_class = serializer.ag_model_class  # type: APIType
+        return AGModelSchemaBuilder.get().get_schema(ag_model_class)
 
 
 class NestedModelViewAutoSchema(AGModelViewAutoSchema):
@@ -224,13 +228,13 @@ def _get_django_field_type(django_field) -> str:
             if field_name in model_class.get_serialize_related_fields():
                 return 'List[{}]'.format(API_MODELS[django_field.related_model])
             else:
-                return 'List[id]'
+                return 'List[integer]'
 
         if (field_name in model_class.get_serialize_related_fields() or
                 field_name in model_class.get_transparent_to_one_fields()):
             return API_MODELS[django_field.related_model]
         else:
-            return 'id'
+            return 'integer'
 
     return 'FIXME FIELD'
 

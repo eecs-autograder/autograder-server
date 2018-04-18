@@ -130,11 +130,11 @@ def can_request_feedback_category(
             course = project.course
             deadline_past = _deadline_is_past(submission)
 
-            is_group_member = group.members.filter(pk=request.user.pk).exists()
+            in_group = group.members.filter(pk=request.user.pk).exists()
             if course.is_course_staff(request.user):
                 # Staff can always request any feedback category for
                 # their own submissions.
-                if is_group_member:
+                if in_group:
                     return True
 
                 # Staff can always request staff_viewer feedback

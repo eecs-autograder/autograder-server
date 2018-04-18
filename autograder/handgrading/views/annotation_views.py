@@ -5,11 +5,11 @@ from rest_framework import response
 from django.db import transaction
 
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrieveUpdateDestroyMixin,
     AGModelAPIView)
 
 
-class AnnotationListCreateView(ListCreateNestedModelView):
+class AnnotationListCreateView(ListCreateNestedModelViewSet):
     serializer_class = handgrading_serializers.AnnotationSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
@@ -17,8 +17,8 @@ class AnnotationListCreateView(ListCreateNestedModelView):
 
     pk_key = 'handgrading_rubric_pk'
     model_manager = handgrading_models.HandgradingRubric.objects.select_related('project__course')
-    foreign_key_field_name = 'handgrading_rubric'
-    reverse_foreign_key_field_name = 'annotations'
+    to_one_field_name = 'handgrading_rubric'
+    reverse_to_one_field_name = 'annotations'
 
 
 class AnnotationDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):

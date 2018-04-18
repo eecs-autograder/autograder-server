@@ -7,11 +7,11 @@ import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.permissions as ag_permissions
 
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrieveUpdateDestroyMixin,
     GetObjectLockOnUnsafeMixin)
 
 
-class AGTestCaseListCreateView(ListCreateNestedModelView):
+class AGTestCaseListCreateView(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.AGTestCaseSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
@@ -20,8 +20,8 @@ class AGTestCaseListCreateView(ListCreateNestedModelView):
 
     pk_key = 'ag_test_suite_pk'
     model_manager = ag_models.AGTestSuite.objects.select_related('project__course')
-    foreign_key_field_name = 'ag_test_suite'
-    reverse_foreign_key_field_name = 'ag_test_cases'
+    to_one_field_name = 'ag_test_suite'
+    reverse_to_one_field_name = 'ag_test_cases'
 
 
 class AGTestCaseOrderView(GetObjectLockOnUnsafeMixin, APIView):

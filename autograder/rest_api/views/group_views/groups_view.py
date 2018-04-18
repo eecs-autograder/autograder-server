@@ -13,7 +13,7 @@ from autograder.rest_api import permissions as ag_permissions
 from autograder import utils
 import autograder.utils.testing as test_ut
 from autograder.rest_api.views.ag_model_views import (
-    ListCreateNestedModelView, AGModelGenericView)
+    ListCreateNestedModelViewSet, AGModelGenericView)
 
 
 is_admin = ag_permissions.is_admin(lambda project: project.course)
@@ -33,15 +33,15 @@ class _CanCreateSoloGroup(permissions.BasePermission):
                 project.guests_can_submit)
 
 
-class GroupsViewSet(ListCreateNestedModelView):
+class GroupsViewSet(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.SubmissionGroupSerializer
     permission_classes = (P(is_admin) |
                           ((P(is_staff) | P(is_handgrader)) & ag_permissions.IsReadOnly),)
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
-    foreign_key_field_name = 'project'
-    reverse_foreign_key_field_name = 'submission_groups'
+    to_one_field_name = 'project'
+    reverse_to_one_field_name = 'submission_groups'
 
     def get_queryset(self):
         queryset = super().get_queryset()

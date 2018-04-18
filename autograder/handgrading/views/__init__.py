@@ -16,4 +16,4 @@ from .criterion_views import (
 from .handgrading_result_views import HandgradingResultView, ListHandgradingResultsView
 
 from .handgrading_rubric_views import (
-    HandgradingRubricDetailViewSet, HandgradingRubricRetrieveCreateView)
+    HandgradingRubricDetailViewSet, HandgradingRubricRetrieveCreateViewSet)

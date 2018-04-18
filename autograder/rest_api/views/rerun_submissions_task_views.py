@@ -14,20 +14,20 @@ from rest_framework.request import Request
 from autograder.grading_tasks import tasks
 from autograder.grading_tasks.tasks.utils import retry_should_recover
 from autograder.rest_api.views.ag_model_views import (
-    ListCreateNestedModelView, AGModelGenericViewSet)
+    ListCreateNestedModelViewSet, AGModelGenericViewSet)
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.permissions as ag_permissions
 
 
-class RerunSubmissionsTaskListCreateView(ListCreateNestedModelView):
+class RerunSubmissionsTaskListCreateView(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.RerunSubmissionTaskSerializer
     permission_classes = [ag_permissions.is_admin(lambda project: project.course)]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
-    foreign_key_field_name = 'project'
-    reverse_foreign_key_field_name = 'rerun_submission_tasks'
+    to_one_field_name = 'project'
+    reverse_to_one_field_name = 'rerun_submission_tasks'
 
     @transaction.atomic()
     def create(self, request: Request, *args, **kwargs):

@@ -5,7 +5,7 @@ import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
 
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrieveUpdateDestroyMixin,
 )
 
 GetRubricFnType = Callable[[Any], handgrading_models.HandgradingRubric]
@@ -28,7 +28,7 @@ def comment_permissions(get_course_fn: GetRubricFnType=lambda rubric: rubric):
     return CommentPermissions
 
 
-class CommentListCreateView(ListCreateNestedModelView):
+class CommentListCreateView(ListCreateNestedModelViewSet):
     serializer_class = handgrading_serializers.CommentSerializer
     permission_classes = [
         comment_permissions(
@@ -37,8 +37,8 @@ class CommentListCreateView(ListCreateNestedModelView):
     pk_key = 'handgrading_result_pk'
     model_manager = handgrading_models.HandgradingResult.objects.select_related(
         'handgrading_rubric__project__course')
-    foreign_key_field_name = 'handgrading_result'
-    reverse_foreign_key_field_name = 'comments'
+    to_one_field_name = 'handgrading_result'
+    reverse_to_one_field_name = 'comments'
 
 
 class CommentDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
