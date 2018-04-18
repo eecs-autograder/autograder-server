@@ -4,8 +4,7 @@ from .ag_model_serializer import AGModelSerializer
 
 
 class CourseSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.Course.objects
+    ag_model_class = ag_models.Course
 
 
 class ProjectSerializer(AGModelSerializer):
@@ -30,33 +29,27 @@ class ProjectSerializer(AGModelSerializer):
 
         return result
 
-    def get_ag_model_manager(self):
-        return ag_models.Project.objects
+    ag_model_class = ag_models.Project
 
 
 class UploadedFileSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.UploadedFile.objects
+    ag_model_class = ag_models.UploadedFile
 
 
 class ExpectedStudentFilePatternSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.ExpectedStudentFilePattern.objects
+    ag_model_class = ag_models.ExpectedStudentFilePattern
 
 
 class DownloadTaskSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.DownloadTask.objects
+    ag_model_class = ag_models.DownloadTask
 
 
 class SubmissionGroupSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.SubmissionGroup.objects
+    ag_model_class = ag_models.SubmissionGroup
 
 
 class SubmissionGroupInvitationSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.SubmissionGroupInvitation.objects
+    ag_model_class = ag_models.SubmissionGroupInvitation
 
 
 class SubmissionSerializer(AGModelSerializer):
@@ -75,35 +68,28 @@ class SubmissionSerializer(AGModelSerializer):
 
         super().__init__(*args, data=fixed_data, **kwargs)
 
-    def get_ag_model_manager(self):
-        return ag_models.Submission.objects
+    ag_model_class = ag_models.Submission
 
 
 class AGTestSuiteSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.AGTestSuite.objects
+    ag_model_class = ag_models.AGTestSuite
 
 
 class AGTestCaseSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.AGTestCase.objects
+    ag_model_class = ag_models.AGTestCase
 
 
 class AGTestCommandSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.AGTestCommand.objects
+    ag_model_class = ag_models.AGTestCommand
 
 
 class StudentTestSuiteSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.StudentTestSuite.objects
+    ag_model_class = ag_models.StudentTestSuite
 
 
 class RerunSubmissionTaskSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.RerunSubmissionsTask.objects
+    ag_model_class = ag_models.RerunSubmissionsTask
 
 
 class NotificationSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return ag_models.Notification.objects
+    ag_model_class = ag_models.Notification

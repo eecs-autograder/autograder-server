@@ -6,6 +6,7 @@ from django.http import Http404
 from django.utils import timezone
 
 import django.contrib.postgres.fields as pg_fields
+from typing import List
 
 import autograder.core.utils as core_ut
 from autograder import utils
@@ -68,7 +69,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
             This field is REQUIRED.""")
 
     @property
-    def member_names(self):
+    def member_names(self) -> List[str]:
         """A list of usernames of the group members, sorted alphabetically."""
         return self._member_names
 
@@ -94,7 +95,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
         return self.submissions.count()
 
     @property
-    def num_submits_towards_limit(self):
+    def num_submits_towards_limit(self) -> int:
         """
         The number of submissions this group has made in the current 24
         hour period that are counted towards the daily submission limit.
@@ -106,62 +107,11 @@ class SubmissionGroup(ag_model_base.AutograderModel):
             timezone.now().astimezone(self.project.submission_limit_reset_timezone))
 
         def _is_towards_limit(submission):
-            return (submission.timestamp >= start_datetime and
-                    submission.timestamp < end_datetime and
+            return (start_datetime <= submission.timestamp < end_datetime and
                     submission.count_towards_daily_limit and
                     submission.status in Submission.GradingStatus.count_towards_limit_statuses)
 
         return utils.count_if(self.submissions.all(), _is_towards_limit)
-
-    @property
-    def submission_with_best_basic_score(self):
-        """
-        The Submission belonging to this group that has the highest
-        score, as calculated using the normal feedback configuration
-        for each test case.
-        In the event of a tie, returns the more recent submission.
-        """
-        # Submissions are ordered by pk, descending, so the max function
-        # will automatically return the more recent one in the event of
-        # a tie.
-        return max(self.submissions.all(), key=lambda sub: sub.basic_score)
-
-    @property
-    def ultimate_submission(self):
-        """
-        Returns the submission that should be used for final grading.
-        The method used to choose which submission is the ultimate
-        submission is specified in
-        self.project.ultimate_submission_policy
-        Raises Http404 if this group has no submissions.
-        """
-        if not self.submissions.count():
-            raise Http404('Group {} has no submissions'.format(self.pk))
-
-        if (self.project.ultimate_submission_policy ==
-                UltimateSubmissionPolicy.most_recent):
-            return self.submissions.first()
-
-        if (self.project.ultimate_submission_policy ==
-                UltimateSubmissionPolicy.best):
-            return self.submission_with_best_basic_score
-
-        raise Exception('Invalid ultimate submission selection method ' +
-                        self.project.ultimate_submission_policy)
-
-    # -------------------------------------------------------------------------
-
-    @staticmethod
-    def get_group(user, project):
-        """
-        Returns the SubmissionGroup that contains the specified user for
-        the given project.
-        Raises ObjectDoesNotExist if no such SubmissionGroup
-        exists.
-        """
-        return user.groups_is_member_of.get(project=project)
-
-    # -------------------------------------------------------------------------
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -196,8 +146,6 @@ class SubmissionGroup(ag_model_base.AutograderModel):
                 user.username for user in sorted(members, key=lambda user: user.username)]
             self.full_clean()
             self.save()
-
-    # -------------------------------------------------------------------------
 
     SERIALIZABLE_FIELDS = (
         'pk',

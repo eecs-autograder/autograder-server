@@ -1,12 +1,11 @@
-from contextlib import ContextDecorator
-
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, FieldDoesNotExist
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from rest_framework import viewsets, permissions, mixins, generics, response
 from rest_framework.views import APIView
 
+from autograder.rest_api.views.schema_generation import AGModelViewAutoSchema, NestedModelViewAutoSchema
 from ..transaction_mixins import (
     TransactionCreateMixin, TransactionUpdateMixin,
     TransactionDestroyMixin, TransactionRetrieveMixin)
@@ -14,7 +13,7 @@ from ..transaction_mixins import (
 
 class GetObjectLockOnUnsafeMixin:
     """
-    This mixin for Django REST Framework view classes Provides
+    This mixin for Django REST Framework view classes provides
     a get_object() method that calls select_for_update()
     on the queryset used to load the object.
 
@@ -77,7 +76,7 @@ class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,
     A derived class of GenericViewSet that inherits from the mixins
     GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
     """
-    pass
+    swagger_schema = AGModelViewAutoSchema
 
 
 class AGModelGenericView(GetObjectLockOnUnsafeMixin,
@@ -117,6 +116,8 @@ class ListCreateNestedModelView(GetObjectLockOnUnsafeMixin,
     request body), but only if the user is admin for that Course.
     """
 
+    swagger_schema = NestedModelViewAutoSchema
+
     foreign_key_field_name = None
     reverse_foreign_key_field_name = None
 
@@ -149,7 +150,6 @@ class RetrieveCreateNestedModelView(GetObjectLockOnUnsafeMixin,
                                     TransactionCreateMixin,
                                     TransactionRetrieveMixin,
                                     generics.GenericAPIView):
-    # TODO: CONFIRM DOCUMENTATION IS APPROPRIATE
     """
     Provides 'retrieve' and 'create' functionality for models
     that conceptually cannot exist without some one-to-one
@@ -175,6 +175,8 @@ class RetrieveCreateNestedModelView(GetObjectLockOnUnsafeMixin,
     (overriding any 'course' field included in the request body),
     but only if the user is admin for Project 2's Course.
     """
+
+    swagger_schema = NestedModelViewAutoSchema
 
     one_to_one_field_name = None
     reverse_one_to_one_field_name = None

@@ -9,19 +9,20 @@ class AGModelSerializer(serializers.BaseSerializer):
     the database level while making it still be possible to use django-
     rest-framework's generic views when desired.
     """
+    ag_model_class = None
 
     def get_ag_model_manager(self):
         """
-        Returns a django model manager object that can be used to create
-        objects of the desired autograder model type.
-
-        Derived classes should either override this method or override
-        validate_and_create with an implementation that doesn't call
-        this method.
+        Defaults to ag_model_class.objects if that attribute is set.
+        Otherwise, raises NotImplementedError.
         """
+        if self.ag_model_class is not None:
+            return self.ag_model_class.objects
+
         raise NotImplementedError(
-            "Derived classes should override either this method or"
-            "validate_and_create")
+            "Derived classes should set ag_model_class or "
+            "override this method."
+        )
 
     def to_representation(self, obj):
         if isinstance(obj, dict):

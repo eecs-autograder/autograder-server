@@ -7,7 +7,7 @@ import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
-    AGModelGenericView)
+    AGModelAPIView)
 
 
 class CriterionListCreateView(ListCreateNestedModelView):
@@ -51,7 +51,7 @@ class CriterionDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGener
         'handgrading_rubric__project__course',)
 
 
-class CriterionOrderView(AGModelGenericView):
+class CriterionOrderView(AGModelAPIView):
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
             lambda handgrading_rubric: handgrading_rubric.project.course)]

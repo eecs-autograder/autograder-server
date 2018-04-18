@@ -53,11 +53,11 @@ class AGTestCaseResult(AutograderModel):
             return self._ag_test_case_result.pk
 
         @property
-        def ag_test_case_name(self):
+        def ag_test_case_name(self) -> str:
             return self._ag_test_case.name
 
         @property
-        def ag_test_case_pk(self):
+        def ag_test_case_pk(self) -> int:
             return self._ag_test_case.pk
 
         @property
@@ -65,13 +65,13 @@ class AGTestCaseResult(AutograderModel):
             return self._fdbk.to_dict()
 
         @property
-        def total_points(self):
+        def total_points(self) -> int:
             points = sum((cmd_res.get_fdbk(self._fdbk_category).total_points for cmd_res in
                           self._visible_cmd_results))
             return max(0, points)
 
         @property
-        def total_points_possible(self):
+        def total_points_possible(self) -> int:
             return sum((cmd_res.get_fdbk(self._fdbk_category).total_points_possible for cmd_res in
                         self._visible_cmd_results))
 

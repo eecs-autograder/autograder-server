@@ -3,40 +3,32 @@ from autograder.rest_api.serializers.ag_model_serializer import AGModelSerialize
 
 
 class HandgradingRubricSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return handgrading_models.HandgradingRubric.objects
+    ag_model_class = handgrading_models.HandgradingRubric
 
 
 class CriterionSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return handgrading_models.Criterion.objects
+    ag_model_class = handgrading_models.Criterion
 
 
 class AnnotationSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return handgrading_models.Annotation.objects
+    ag_model_class = handgrading_models.Annotation
 
 
 class HandgradingResultSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return handgrading_models.HandgradingResult.objects
+    ag_model_class = handgrading_models.HandgradingResult
 
 
 class CriterionResultSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return handgrading_models.CriterionResult.objects
+    ag_model_class = handgrading_models.CriterionResult
 
 
 class AppliedAnnotationSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return handgrading_models.AppliedAnnotation.objects
+    ag_model_class = handgrading_models.AppliedAnnotation
 
 
 class CommentSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return handgrading_models.Comment.objects
+    ag_model_class = handgrading_models.Comment
 
 
 class LocationSerializer(AGModelSerializer):
-    def get_ag_model_manager(self):
-        return handgrading_models.Location.objects
+    ag_model_class = handgrading_models.Location

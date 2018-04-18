@@ -3,6 +3,7 @@ import itertools
 from django.contrib.auth.models import User
 from django.core import exceptions
 from django.db import models, transaction
+from typing import List
 
 from .. import ag_model_base
 from .. project import Project
@@ -81,14 +82,14 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
                 {'invited_users': 'This field may not be empty'})
 
     @property
-    def invited_usernames(self):
+    def invited_usernames(self) -> List[str]:
         """
         The usernames of the Users that will receive this invitation.
         """
         return [user.username for user in self.invited_users.all()]
 
     @property
-    def invitees_who_accepted(self):
+    def invitees_who_accepted(self) -> List[str]:
         """
         A list of usernames indicating which invitees have accepted
         this invitation.

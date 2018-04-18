@@ -120,11 +120,11 @@ class AGTestSuiteResult(AutograderModel):
             return self._ag_test_suite_result.pk
 
         @property
-        def ag_test_suite_name(self):
+        def ag_test_suite_name(self) -> str:
             return self._ag_test_suite.name
 
         @property
-        def ag_test_suite_pk(self):
+        def ag_test_suite_pk(self) -> int:
             return self._ag_test_suite.pk
 
         @property
@@ -209,13 +209,13 @@ class AGTestSuiteResult(AutograderModel):
                     self._fdbk.show_setup_and_teardown_timed_out)
 
         @property
-        def total_points(self):
+        def total_points(self) -> int:
             return sum((ag_test_case_result.get_fdbk(self._fdbk_category).total_points
                         for ag_test_case_result in
                         self._visible_ag_test_case_results))
 
         @property
-        def total_points_possible(self):
+        def total_points_possible(self) -> int:
             return sum((ag_test_case_result.get_fdbk(self._fdbk_category).total_points_possible
                         for ag_test_case_result in
                         self._visible_ag_test_case_results))

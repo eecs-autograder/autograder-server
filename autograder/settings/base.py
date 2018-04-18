@@ -70,6 +70,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 
+    'drf_yasg',
+
     'django_extensions',
 
     'timezone_field',
@@ -150,5 +152,18 @@ CACHES = {
         }
     },
 }
+
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
+    # 'SECURITY_DEFINITIONS': {
+    #     'google': {
+    #         'type': 'oauth2',
+    #         'name': ''
+    #     }
+    # },
+    'DOC_EXPANSION': 'None'
+}
+
 
 from autograder.settings.celery_settings import *  # noqa

@@ -1,6 +1,6 @@
 import os
 from io import FileIO
-from typing import Sequence
+from typing import Sequence, Optional, BinaryIO, List
 
 from django.db import models
 
@@ -119,11 +119,11 @@ class StudentTestSuiteResult(AutograderModel):
             return self._student_test_suite_result.pk
 
         @property
-        def student_test_suite_name(self):
+        def student_test_suite_name(self) -> str:
             return self._student_test_suite.name
 
         @property
-        def student_test_suite_pk(self):
+        def student_test_suite_pk(self) -> int:
             return self._student_test_suite.pk
 
         @property
@@ -146,14 +146,14 @@ class StudentTestSuiteResult(AutograderModel):
             return self._student_test_suite.use_setup_command
 
         @property
-        def setup_command_name(self) -> str:
+        def setup_command_name(self) -> Optional[str]:
             if not self._student_test_suite.use_setup_command:
                 return None
 
             return self._student_test_suite.setup_command.name
 
         @property
-        def setup_return_code(self) -> int:
+        def setup_return_code(self) -> Optional[int]:
             if not self._fdbk.show_setup_return_code:
                 return None
 
@@ -163,14 +163,14 @@ class StudentTestSuiteResult(AutograderModel):
             return self._student_test_suite_result.setup_result.return_code
 
         @property
-        def setup_timed_out(self):
+        def setup_timed_out(self) -> Optional[bool]:
             if self.setup_return_code is None:
                 return None
 
             return self._student_test_suite_result.setup_result.timed_out
 
         @property
-        def setup_stdout(self) -> FileIO:
+        def setup_stdout(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_setup_stdout:
                 return None
 
@@ -180,7 +180,7 @@ class StudentTestSuiteResult(AutograderModel):
             return open(self._student_test_suite_result.setup_result.stdout_filename, 'rb')
 
         @property
-        def setup_stderr(self) -> FileIO:
+        def setup_stderr(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_setup_stderr:
                 return None
 
@@ -190,43 +190,43 @@ class StudentTestSuiteResult(AutograderModel):
             return open(self._student_test_suite_result.setup_result.stderr_filename, 'rb')
 
         @property
-        def student_tests(self) -> Sequence[str]:
+        def student_tests(self) -> List[str]:
             return self._student_test_suite_result.student_tests
 
         @property
-        def discarded_tests(self):
+        def discarded_tests(self) -> List[str]:
             return self._student_test_suite_result.discarded_tests
 
         @property
-        def invalid_tests(self) -> Sequence[str]:
+        def invalid_tests(self) -> Optional[List[str]]:
             if not self._fdbk.show_invalid_test_names:
                 return None
 
             return self._student_test_suite_result.invalid_tests
 
         @property
-        def timed_out_tests(self) -> Sequence[str]:
+        def timed_out_tests(self) -> Optional[List[str]]:
             if not self._fdbk.show_invalid_test_names:
                 return None
 
             return self._student_test_suite_result.timed_out_tests
 
         @property
-        def get_student_test_names_return_code(self):
+        def get_student_test_names_return_code(self) -> Optional[int]:
             if not self._fdbk.show_get_test_names_return_code:
                 return None
 
             return self._student_test_suite_result.get_test_names_result.return_code
 
         @property
-        def get_student_test_names_timed_out(self):
+        def get_student_test_names_timed_out(self) -> Optional[bool]:
             if self.get_student_test_names_return_code is None:
                 return None
 
             return self._student_test_suite_result.get_test_names_result.timed_out
 
         @property
-        def get_student_test_names_stdout(self) -> FileIO:
+        def get_student_test_names_stdout(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_get_test_names_stdout:
                 return None
 
@@ -234,7 +234,7 @@ class StudentTestSuiteResult(AutograderModel):
                 self._student_test_suite_result.get_test_names_result.stdout_filename, 'rb')
 
         @property
-        def get_student_test_names_stderr(self) -> FileIO:
+        def get_student_test_names_stderr(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_get_test_names_stderr:
                 return None
 
@@ -242,42 +242,42 @@ class StudentTestSuiteResult(AutograderModel):
                 self._student_test_suite_result.get_test_names_result.stderr_filename, 'rb')
 
         @property
-        def num_bugs_exposed(self) -> int:
+        def num_bugs_exposed(self) -> Optional[int]:
             if self._fdbk.bugs_exposed_fdbk_level < BugsExposedFeedbackLevel.num_bugs_exposed:
                 return None
 
             return len(self._student_test_suite_result.bugs_exposed)
 
         @property
-        def bugs_exposed(self) -> Sequence[str]:
+        def bugs_exposed(self) -> Optional[List[str]]:
             if self._fdbk.bugs_exposed_fdbk_level != BugsExposedFeedbackLevel.exposed_bug_names:
                 return None
 
             return self._student_test_suite_result.bugs_exposed
 
         @property
-        def validity_check_stdout(self) -> FileIO:
+        def validity_check_stdout(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_validity_check_stdout:
                 return None
 
             return open(self._student_test_suite_result.validity_check_stdout_filename, 'rb')
 
         @property
-        def validity_check_stderr(self) -> FileIO:
+        def validity_check_stderr(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_validity_check_stderr:
                 return None
 
             return open(self._student_test_suite_result.validity_check_stderr_filename, 'rb')
 
         @property
-        def grade_buggy_impls_stdout(self) -> FileIO:
+        def grade_buggy_impls_stdout(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_grade_buggy_impls_stdout:
                 return None
 
             return open(self._student_test_suite_result.grade_buggy_impls_stdout_filename, 'rb')
 
         @property
-        def grade_buggy_impls_stderr(self) -> FileIO:
+        def grade_buggy_impls_stderr(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_grade_buggy_impls_stderr:
                 return None
 

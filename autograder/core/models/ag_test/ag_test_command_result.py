@@ -1,6 +1,6 @@
 import os
 import tempfile
-from io import FileIO
+from typing import Optional, BinaryIO
 
 from django.db import models
 
@@ -78,15 +78,15 @@ class AGTestCommandResult(AGCommandResultBase):
             return self._ag_test_command_result.pk
 
         @property
-        def ag_test_command_name(self):
+        def ag_test_command_name(self) -> str:
             return self._cmd.name
 
         @property
-        def ag_test_command_pk(self):
+        def ag_test_command_pk(self) -> pk:
             return self._cmd.pk
 
         @property
-        def fdbk_conf(self) -> FeedbackCategory:
+        def fdbk_conf(self) -> AGTestCommandFeedbackConfig:
             """
             :return: The FeedbackConfig object that this object was
             initialized with.
@@ -98,14 +98,14 @@ class AGTestCommandResult(AGCommandResultBase):
             return self.fdbk_conf.to_dict()
 
         @property
-        def timed_out(self):
+        def timed_out(self) -> Optional[bool]:
             if self._fdbk.show_whether_timed_out:
                 return self._ag_test_command_result.timed_out
 
             return None
 
         @property
-        def return_code_correct(self):
+        def return_code_correct(self) -> Optional[bool]:
             if (self._cmd.expected_return_code == ExpectedReturnCode.none or
                     self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.no_feedback):
                 return None
@@ -113,14 +113,14 @@ class AGTestCommandResult(AGCommandResultBase):
             return self._ag_test_command_result.return_code_correct
 
         @property
-        def expected_return_code(self):
+        def expected_return_code(self) -> Optional[ValueFeedbackLevel]:
             if self._fdbk.return_code_fdbk_level != ValueFeedbackLevel.expected_and_actual:
                 return None
 
             return self._cmd.expected_return_code
 
         @property
-        def actual_return_code(self):
+        def actual_return_code(self) -> Optional[int]:
             if (self._fdbk.show_actual_return_code or
                     self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.expected_and_actual):
                 return self._ag_test_command_result.return_code
@@ -128,7 +128,7 @@ class AGTestCommandResult(AGCommandResultBase):
             return None
 
         @property
-        def return_code_points(self):
+        def return_code_points(self) -> int:
             if self.return_code_correct is None:
                 return 0
 
@@ -137,14 +137,14 @@ class AGTestCommandResult(AGCommandResultBase):
             return self._cmd.deduction_for_wrong_return_code
 
         @property
-        def return_code_points_possible(self):
+        def return_code_points_possible(self) -> int:
             if self.return_code_correct is None:
                 return 0
 
             return self._cmd.points_for_correct_return_code
 
         @property
-        def stdout_correct(self):
+        def stdout_correct(self) -> Optional[bool]:
             if (self._cmd.expected_stdout_source == ExpectedOutputSource.none or
                     self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.no_feedback):
                 return None
@@ -152,7 +152,7 @@ class AGTestCommandResult(AGCommandResultBase):
             return self._ag_test_command_result.stdout_correct
 
         @property
-        def stdout(self) -> FileIO:
+        def stdout(self) -> Optional[BinaryIO]:
             if (self._fdbk.show_actual_stdout or
                     self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual):
                 return open(self._ag_test_command_result.stdout_filename, 'rb')
@@ -160,7 +160,7 @@ class AGTestCommandResult(AGCommandResultBase):
             return None
 
         @property
-        def stdout_diff(self) -> core_ut.DiffResult:
+        def stdout_diff(self) -> Optional[core_ut.DiffResult]:
             if (self._cmd.expected_stdout_source == ExpectedOutputSource.none or
                     self._fdbk.stdout_fdbk_level != ValueFeedbackLevel.expected_and_actual):
                 return None
@@ -189,7 +189,7 @@ class AGTestCommandResult(AGCommandResultBase):
                     'Invalid expected stdout source: {}'.format(self._cmd.expected_stdout_source))
 
         @property
-        def stdout_points(self):
+        def stdout_points(self) -> int:
             if self.stdout_correct is None:
                 return 0
 
@@ -199,14 +199,14 @@ class AGTestCommandResult(AGCommandResultBase):
             return self._cmd.deduction_for_wrong_stdout
 
         @property
-        def stdout_points_possible(self):
+        def stdout_points_possible(self) -> int:
             if self.stdout_correct is None:
                 return 0
 
             return self._cmd.points_for_correct_stdout
 
         @property
-        def stderr_correct(self):
+        def stderr_correct(self) -> Optional[bool]:
             if (self._cmd.expected_stderr_source == ExpectedOutputSource.none or
                     self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.no_feedback):
                 return None
@@ -214,7 +214,7 @@ class AGTestCommandResult(AGCommandResultBase):
             return self._ag_test_command_result.stderr_correct
 
         @property
-        def stderr(self) -> FileIO:
+        def stderr(self) -> Optional[BinaryIO]:
             if (self._fdbk.show_actual_stderr or
                     self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual):
                 return open(self._ag_test_command_result.stderr_filename, 'rb')
@@ -222,7 +222,7 @@ class AGTestCommandResult(AGCommandResultBase):
             return None
 
         @property
-        def stderr_diff(self) -> core_ut.DiffResult:
+        def stderr_diff(self) -> Optional[core_ut.DiffResult]:
             if (self._cmd.expected_stderr_source == ExpectedOutputSource.none or
                     self._fdbk.stderr_fdbk_level != ValueFeedbackLevel.expected_and_actual):
                 return None
@@ -250,7 +250,7 @@ class AGTestCommandResult(AGCommandResultBase):
                     'Invalid expected stderr source: {}'.format(self._cmd.expected_stdout_source))
 
         @property
-        def stderr_points(self):
+        def stderr_points(self) -> int:
             if self.stderr_correct is None:
                 return 0
 
@@ -260,21 +260,21 @@ class AGTestCommandResult(AGCommandResultBase):
             return self._cmd.deduction_for_wrong_stderr
 
         @property
-        def stderr_points_possible(self):
+        def stderr_points_possible(self) -> int:
             if self.stderr_correct is None:
                 return 0
 
             return self._cmd.points_for_correct_stderr
 
         @property
-        def total_points(self):
+        def total_points(self) -> int:
             if not self._fdbk.show_points:
                 return 0
 
             return self.return_code_points + self.stdout_points + self.stderr_points
 
         @property
-        def total_points_possible(self):
+        def total_points_possible(self) -> int:
             if not self._fdbk.show_points:
                 return 0
 

@@ -63,7 +63,7 @@ class RerunSubmissionsTask(Task):
     celery_group_result_id = models.UUIDField(blank=True, null=True, default=None)
 
     @property
-    def progress(self):
+    def progress(self) -> int:
         if self.rerun_all_submissions:
             num_submissions = Submission.objects.filter(
                 submission_group__project=self.project).count()

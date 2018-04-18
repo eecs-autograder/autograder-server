@@ -1,3 +1,5 @@
+from typing import List
+
 from django.core.validators import MaxValueValidator
 from django.db import models
 
@@ -217,7 +219,7 @@ class HandgradingResult(AutograderModel):
                      Note that this does not affect total points possible.''')
 
     @property
-    def submitted_filenames(self):
+    def submitted_filenames(self) -> List[str]:
         """
         Returns a list of strings containing the filenames of the Submission this result
         belongs to.
@@ -225,7 +227,7 @@ class HandgradingResult(AutograderModel):
         return self.submission.submitted_filenames
 
     @property
-    def total_points(self):
+    def total_points(self) -> int:
         """
         Returns the total number of points awarded. Note that it is possible
         for this value to be greater than total_points.
@@ -255,7 +257,7 @@ class HandgradingResult(AutograderModel):
         return max(0, total)
 
     @property
-    def total_points_possible(self):
+    def total_points_possible(self) -> int:
         """
         Returns the denominator of the handgrading score based on the
         handgrading rubric's points style and max points.

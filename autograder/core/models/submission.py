@@ -282,7 +282,7 @@ class Submission(ag_model_base.AutograderModel):
         return 'submission_basic_score{}'.format(self.pk)
 
     @property
-    def position_in_queue(self):
+    def position_in_queue(self) -> int:
         """
         Returns this submissions position in the queue of submissions to
         be graded for the associated project.

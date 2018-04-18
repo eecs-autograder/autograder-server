@@ -18,5 +18,5 @@ class Task(AutograderModel):
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property
-    def has_error(self):
+    def has_error(self) -> bool:
         return self.error_msg != ''

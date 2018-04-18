@@ -1,14 +1,19 @@
+from django.conf import settings
 from django.conf.urls import url, include
-from rest_framework import generics
-from rest_framework import response
+
+from rest_framework import response, permissions
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 
 from rest_framework_nested import routers
 
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
 from autograder.rest_api import views
 from autograder.rest_api.views.ag_model_views import AlwaysIsAuthenticatedMixin
+from autograder.rest_api.views.schema_generation import AGSchemaGenerator
 
 user_router = routers.SimpleRouter()
 user_router.register(r'users', views.UserViewSet, base_name='user')
@@ -112,13 +117,32 @@ rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
                                               base_name='rerun-submissions-task')
 
 
-class LogoutView(AlwaysIsAuthenticatedMixin, generics.GenericAPIView):
+class LogoutView(AlwaysIsAuthenticatedMixin, APIView):
     def post(self, request, *args, **kwargs):
         Token.objects.filter(user=request.user).delete()
         return response.Response(status=status.HTTP_200_OK)
 
 
+schema_view = get_schema_view(
+    openapi.Info(
+       title="Autograder API",
+       default_version=settings.VERSION,
+       # description="Test description",
+       # terms_of_service="https://www.google.com/policies/terms/",
+       # contact=openapi.Contact(email="contact@snippets.local"),
+       # license=openapi.License(name="BSD License"),
+    ),
+    # validators=['flex', 'ssv'],
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+    generator_class=AGSchemaGenerator,
+    # authentication_classes=
+)
+
+
 urlpatterns = [
+    url(r'^docs/$', schema_view.with_ui('swagger'), name='schema-swagger-ui'),
+
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
     url(r'^logout/$', LogoutView.as_view()),
 

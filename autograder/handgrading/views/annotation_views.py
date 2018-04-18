@@ -6,8 +6,7 @@ from django.db import transaction
 
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, ListCreateNestedModelView, TransactionRetrieveUpdateDestroyMixin,
-    AGModelGenericView
-)
+    AGModelAPIView)
 
 
 class AnnotationListCreateView(ListCreateNestedModelView):
@@ -33,7 +32,7 @@ class AnnotationDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGene
     )
 
 
-class AnnotationOrderView(AGModelGenericView):
+class AnnotationOrderView(AGModelAPIView):
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
             lambda handgrading_rubric: handgrading_rubric.project.course)]

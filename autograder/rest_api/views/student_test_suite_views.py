@@ -1,6 +1,7 @@
 from django.db import transaction
 
-from rest_framework import generics, response
+from rest_framework import response
+from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -22,7 +23,7 @@ class StudentTestSuiteListCreateView(ListCreateNestedModelView):
     reverse_foreign_key_field_name = 'student_test_suites'
 
 
-class StudentTestSuiteOrderView(GetObjectLockOnUnsafeMixin, generics.GenericAPIView):
+class StudentTestSuiteOrderView(GetObjectLockOnUnsafeMixin, APIView):
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)]
 

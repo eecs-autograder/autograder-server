@@ -64,7 +64,7 @@ class UploadedFile(AutograderModel):
         max_length=const.MAX_CHAR_FIELD_LEN * 2)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.basename
 
     def rename(self, new_name):
@@ -95,7 +95,7 @@ class UploadedFile(AutograderModel):
         return os.path.basename(self.file_obj.name)
 
     @property
-    def size(self):
+    def size(self) -> int:
         return self.file_obj.size
 
     def delete(self, **kwargs):
