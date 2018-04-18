@@ -103,6 +103,10 @@ class NestedModelViewSet(GetObjectLockOnUnsafeMixin,
 
     See mixin classes ListNestedModelMixin and CreateNestedModelMixin
     for more details and examples.
+
+    NOTE: Do NOT use Django Rest Framework permissions classes with
+    this kind of view set, as those classes may not have overridden
+    has_object_permissions() as needed.
     """
 
     swagger_schema = NestedModelViewAutoSchema

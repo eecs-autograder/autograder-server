@@ -63,7 +63,7 @@ class AddCourseAdminsTestCase(_SetUp):
                              self.course.administrators.count())
 
             self.client.force_authenticate(self.superuser)
-            response = self.client.patch(
+            response = self.client.post(
                 self.url,
                 {'new_admins':
                     new_admin_names + [user.username for user in new_admins]})
@@ -86,7 +86,7 @@ class AddCourseAdminsTestCase(_SetUp):
             self.client.force_authenticate(user)
 
             new_admin_name = 'steve'
-            response = self.client.patch(self.url,
+            response = self.client.post(self.url,
                                          {'new_admins': [new_admin_name]})
 
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)

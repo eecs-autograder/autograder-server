@@ -8,7 +8,7 @@ from django.db.models import fields
 import django.contrib.postgres.fields as pg_fields
 from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.inspectors import SwaggerAutoSchema
-from drf_yasg.openapi import Schema, Parameter
+from drf_yasg.openapi import Schema, Parameter, Response
 from sphinx.ext.autodoc import format_annotation
 
 from timezone_field.fields import TimeZoneField
@@ -115,6 +115,10 @@ class AGSchemaGenerator(OpenAPISchemaGenerator):
 
 class AGModelViewAutoSchema(SwaggerAutoSchema):
     def get_request_body_parameters(self, consumes):
+        overrides = self.overrides.get('overrides', {})
+        if 'request_body_parameters' in overrides:
+            return overrides['request_body_parameters']
+
         serializer = self.get_request_serializer()
         if not isinstance(serializer, AGModelSerializer):
             return super().get_request_body_parameters(serializer)

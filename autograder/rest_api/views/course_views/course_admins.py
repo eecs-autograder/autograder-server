@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import transaction
 from drf_composable_permissions.p import P
+from drf_yasg.openapi import Parameter
+from drf_yasg.utils import swagger_auto_schema
 
 from rest_framework import response, status, exceptions
 
@@ -8,6 +10,29 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet
+
+_add_admins_params = [
+    Parameter(
+        'new_admins',
+        'body',
+        type='List[string]',
+        required=True,
+        description='A list of usernames who should be granted admin '
+                    'privileges for this course.'
+    )
+]
+
+
+_remove_admins_params = [
+    Parameter(
+        'remove_admins',
+        'body',
+        type='List[string]',
+        required=True,
+        description='A list of usernames whose admin privileges '
+                    'should be revoked for this course.'
+    )
+]
 
 
 class CourseAdminViewSet(ListNestedModelViewSet):
@@ -18,13 +43,21 @@ class CourseAdminViewSet(ListNestedModelViewSet):
     model_manager = ag_models.Course.objects
     reverse_to_one_field_name = 'administrators'
 
+    @swagger_auto_schema(overrides={'request_body_parameters': _add_admins_params},
+                         responses={'204': ''})
+    @transaction.atomic()
+    def post(self, request, *args, **kwargs):
+        course = self.get_object()
+        self.add_admins(course, request.data['new_admins'])
+
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    @swagger_auto_schema(overrides={'request_body_parameters': _remove_admins_params},
+                         responses={'204': ''})
     @transaction.atomic()
     def patch(self, request, *args, **kwargs):
         course = self.get_object()
-        if 'new_admins' in request.data:
-            self.add_admins(course, request.data['new_admins'])
-        elif 'remove_admins' in request.data:
-            self.remove_admins(course, request.data['remove_admins'])
+        self.remove_admins(course, request.data['remove_admins'])
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
