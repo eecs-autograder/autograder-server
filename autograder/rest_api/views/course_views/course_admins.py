@@ -1,37 +1,22 @@
 from django.contrib.auth.models import User
 from django.db import transaction
+from drf_composable_permissions.p import P
 
-from rest_framework import (
-    viewsets, mixins, permissions, response,
-    status, exceptions)
+from rest_framework import response, status, exceptions
 
 import autograder.core.models as ag_models
+import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
-
-from ..load_object_mixin import build_load_object_mixin
-
-
-class IsSuperuserOrAdminOrReadOnlyStaff(permissions.BasePermission):
-    def has_object_permission(self, request, view, course):
-        can_edit = (request.user.is_superuser or
-                    course.is_administrator(request.user))
-
-        staff_and_read_only = (course.is_course_staff(request.user) and
-                               request.method in permissions.SAFE_METHODS)
-
-        return can_edit or staff_and_read_only
+from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet
 
 
-class CourseAdminViewSet(build_load_object_mixin(ag_models.Course, pk_key='course_pk'),
-                         mixins.ListModelMixin,
-                         viewsets.GenericViewSet):
+class CourseAdminViewSet(ListNestedModelViewSet):
     serializer_class = ag_serializers.UserSerializer
-    permission_classes = (permissions.IsAuthenticated,
-                          IsSuperuserOrAdminOrReadOnlyStaff,)
+    permission_classes = (
+        P(ag_permissions.IsSuperuser) | P(ag_permissions.is_admin_or_read_only_staff()),)
 
-    def get_queryset(self):
-        course = self.get_object()
-        return course.administrators.all()
+    model_manager = ag_models.Course.objects
+    reverse_to_one_field_name = 'administrators'
 
     @transaction.atomic()
     def patch(self, request, *args, **kwargs):

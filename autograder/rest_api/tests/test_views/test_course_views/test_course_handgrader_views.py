@@ -20,7 +20,6 @@ class _HandgradersSetUp(test_data.Client, test_data.Course):
 class ListCourseHandgradersTestCase(_HandgradersSetUp,
                                     test_impls.ListObjectsTest,
                                     UnitTestBase):
-    """/api/courses/<pk>/handgraders"""
     def setUp(self):
         super().setUp()
 
@@ -38,7 +37,6 @@ class ListCourseHandgradersTestCase(_HandgradersSetUp,
 
 
 class AddCourseHandgradersTestCase(_HandgradersSetUp, UnitTestBase):
-    """/api/courses/<pk>/handgraders"""
     def setUp(self):
         super().setUp()
 
@@ -69,7 +67,6 @@ class AddCourseHandgradersTestCase(_HandgradersSetUp, UnitTestBase):
 
 
 class RemoveCourseHandgraderTestCase(_HandgradersSetUp, UnitTestBase):
-    """/api/courses/<pk>/handgraders"""
     def setUp(self):
         super().setUp()
 

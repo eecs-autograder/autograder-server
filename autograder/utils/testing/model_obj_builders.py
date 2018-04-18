@@ -97,8 +97,8 @@ def make_handgrader_users(course: ag_models.Course, num_users: int) -> typing.Se
     return users
 
 
-def make_users(num_users: int) -> typing.Sequence[User]:
-    return create_dummy_users(num_users=num_users)
+def make_users(num_users: int, superuser=False) -> typing.Sequence[User]:
+    return create_dummy_users(num_users=num_users, is_superuser=superuser)
 
 
 def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_models.Project:

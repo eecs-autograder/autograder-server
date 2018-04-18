@@ -93,18 +93,20 @@ class NestedModelViewSet(GetObjectLockOnUnsafeMixin,
                          AlwaysIsAuthenticatedMixin,
                          generics.GenericAPIView):
     """
-    A generic view set for models that conceptually cannot exist without
-    some foreign key relationship.
+    A generic view set used for defining nested endpoints
+    (one level of nesting only).
 
     This allows Django REST Framework's object-level permission checking
-    to examine the -to-one (foreign) related object when requesting
+    to examine the -to-one (foreign) object when requesting
     the -to-many or -to-one (related) objects or creating a new related
     object.
+
+    See mixin classes ListNestedModelMixin and CreateNestedModelMixin
+    for more details and examples.
     """
 
     swagger_schema = NestedModelViewAutoSchema
 
-    to_one_field_name = None
     reverse_to_one_field_name = None
 
     def get_queryset(self):
@@ -118,8 +120,8 @@ class ListNestedModelMixin(mixins.ListModelMixin):
     """
     Provides 'list' functionality when mixed with a NestedModelViewSet.
 
-    For example, setting NestedModelViewSet.foreign_key_field_name to
-    'course' and NestedModelViewSet.reverse_foreign_key_field_name to
+    For example, setting
+    NestedModelViewSet.reverse_foreign_key_field_name to
     'projects' could allow the following:
         A GET request to /courses/2/projects/ could return a list of
         Projects that belong to Course 2, but only if the user is staff
@@ -138,8 +140,8 @@ class RetrieveNestedModelMixin(mixins.RetrieveModelMixin):
     Provides 'retrieve' functionality when mixed with a
     NestedModelViewSet.
 
-    For example, setting NestedModelViewSet.one_to_one_field_name to
-    'project' and NestedModelViewSet.reverse_one_to_one_field_name to
+    For example, setting
+    NestedModelViewSet.reverse_one_to_one_field_name to
     'handgrading_rubric' could allow the following:
         A GET request to /project/2/handgrading_rubric/ returns the
         designated Project 2's handgrading rubric, but only if the user
@@ -166,14 +168,15 @@ class CreateNestedModelViewSet(TransactionCreateMixin):
     Provides 'create' functionality when mixed with a
     NestedModelViewSet.
 
-    For example, setting NestedModelViewSet.one_to_one_field_name to
-    'project' and NestedModelViewSet.reverse_one_to_one_field_name to
-    'handgrading_rubric' could allow the following:
+    For example, setting CreateNestedModelViewSet.one_to_one_field_name
+    to 'project' could allow the following:
         A POST request to /courses/2/projects/ would create a new
         Project that belongs to Course 2 (overriding any 'course' field
         erroneously included in the request body), but only if the user
         is admin for that Course.
     """
+
+    to_one_field_name = None
 
     def perform_create(self, serializer):
         if self.to_one_field_name is None:

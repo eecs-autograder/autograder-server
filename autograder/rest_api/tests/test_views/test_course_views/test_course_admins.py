@@ -3,22 +3,28 @@ import itertools
 from django.urls import reverse
 
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.rest_api.serializers as ag_serializers
 
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
-class _AdminsSetUp(test_data.Client, test_data.Superuser, test_data.Course):
+class _SetUp(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.url = reverse('course-admins-list',
-                           kwargs={'course_pk': self.course.pk})
+        self.course = obj_build.make_course()
+        self.client = APIClient()
+        self.url = reverse('course-admins', kwargs={'pk': self.course.pk})
+
+        [self.superuser] = obj_build.make_users(1, superuser=True)
+        [self.staff] = obj_build.make_staff_users(self.course, 1)
+        [self.enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [self.guest] = obj_build.make_users(1)
 
 
-class ListCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
+class ListCourseAdminsTestCase(_SetUp):
     def test_superuser_admin_or_staff_list_administrators(self):
         admins = obj_build.create_dummy_users(3)
         self.course.administrators.add(*admins)
@@ -35,14 +41,14 @@ class ListCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
             self.assertCountEqual(expected_content, response.data)
 
     def test_other_list_administrators_permission_denied(self):
-        for user in self.nobody, self.enrolled:
+        for user in self.guest, self.enrolled:
             self.client.force_authenticate(user)
 
             response = self.client.get(self.url)
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class AddCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
+class AddCourseAdminsTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
@@ -76,7 +82,7 @@ class AddCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
             self.course.administrators.set(current_admins, clear=True)
 
     def test_other_add_administrators_permission_denied(self):
-        for user in self.staff, self.enrolled, self.nobody:
+        for user in self.staff, self.enrolled, self.guest:
             self.client.force_authenticate(user)
 
             new_admin_name = 'steve'
@@ -87,7 +93,7 @@ class AddCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
             self.assertEqual(0, self.course.administrators.count())
 
 
-class RemoveCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
+class RemoveCourseAdminsTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
@@ -129,7 +135,7 @@ class RemoveCourseAdminsTestCase(_AdminsSetUp, UnitTestBase):
         self.assertTrue(self.course.is_administrator(self.remaining_admin))
 
     def test_other_remove_administrators_permission_denied(self):
-        for user in self.nobody, self.enrolled, self.staff:
+        for user in self.guest, self.enrolled, self.staff:
             self.client.force_authenticate(user)
             response = self.client.patch(self.url, self.request_body)
 

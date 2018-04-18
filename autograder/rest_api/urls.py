@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.conf.urls import url, include
+from django.urls import path
 
 from rest_framework import response, permissions
 from rest_framework import status
@@ -21,10 +22,6 @@ user_router.register(r'users', views.UserViewSet, base_name='user')
 course_router = routers.SimpleRouter()
 course_router.register(r'courses', views.CourseViewSet, base_name='course')
 
-admin_router = routers.NestedSimpleRouter(course_router, r'courses', lookup='course')
-admin_router.register(r'admins',
-                      views.CourseAdminViewSet,
-                      base_name='course-admins')
 staff_router = routers.NestedSimpleRouter(course_router, r'courses', lookup='course')
 staff_router.register(r'staff',
                       views.CourseStaffViewSet,
@@ -149,7 +146,9 @@ urlpatterns = [
     url(r'', include(user_router.urls)),
 
     url(r'', include(course_router.urls)),
-    url(r'', include(admin_router.urls)),
+    # url(r'', include(admin_router.urls)),
+    path('courses/<int:pk>/admins/', views.CourseAdminViewSet.as_view(),
+         name='course-admins'),
     url(r'', include(staff_router.urls)),
     url(r'', include(enrolled_students_router.urls)),
     url(r'', include(course_projects_router.urls)),
