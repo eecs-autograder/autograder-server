@@ -17,7 +17,6 @@ class _SetUp(UnitTestBase):
         self.client = APIClient()
         self.url = reverse('course-staff', kwargs={'pk': self.course.pk})
 
-        [self.superuser] = obj_build.make_users(1, superuser=True)
         [self.admin] = obj_build.make_admin_users(self.course, 1)
         [self.enrolled] = obj_build.make_enrolled_users(self.course, 1)
         [self.guest] = obj_build.make_users(1)
@@ -82,7 +81,7 @@ class AddStaffTestCase(_SetUp):
                                   self.course.staff.all())
 
     def test_error_missing_request_param(self):
-        self.client.force_authenticate(self.superuser)
+        self.client.force_authenticate(self.admin)
         response = self.client.post(self.url, {})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
@@ -126,6 +125,6 @@ class RemoveStaffTestCase(_SetUp):
             self.course.staff.add(*self.staff_to_remove)
 
     def test_error_missing_request_param(self):
-        self.client.force_authenticate(self.superuser)
+        self.client.force_authenticate(self.admin)
         response = self.client.patch(self.url, {})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)

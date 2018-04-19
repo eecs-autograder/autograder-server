@@ -16,7 +16,7 @@ class ProjectSerializer(AGModelSerializer):
 
         request = self.context['request']
         try:
-            self.show_closing_time = self.instance.course.is_administrator(request.user)
+            self.show_closing_time = self.instance.course.is_admin(request.user)
         except AttributeError:
             # self.instance is a QuerySet, don't show closing time
             # for any of the results.

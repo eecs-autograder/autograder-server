@@ -20,12 +20,12 @@ class GroupInvitationsPermissions(IsAdminOrReadOnlyStaff):
             return super().has_object_permission(request, view, project)
 
         if (project.disallow_group_registration and
-                not project.course.is_course_staff(request.user)):
+                not project.course.is_staff(request.user)):
             return False
 
         if (project.course.is_handgrader(request.user) and
-                not project.course.is_enrolled_student(request.user) and
-                not project.course.is_course_staff(request.user)):
+                not project.course.is_student(request.user) and
+                not project.course.is_staff(request.user)):
             return False
 
         return user_can_view_project(request.user, project)

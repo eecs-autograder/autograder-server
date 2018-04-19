@@ -5,7 +5,7 @@ from .ag_model_base import AutograderModel
 from .notification import Notification
 from .task import Task
 
-from .course import Course, UserRole
+from .course import Course
 from .project import Project, UltimateSubmissionPolicy
 from .project.expected_student_file_pattern import ExpectedStudentFilePattern
 from .project.uploaded_file import UploadedFile

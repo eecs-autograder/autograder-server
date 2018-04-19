@@ -110,7 +110,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
     @handle_object_does_not_exist_404
     def partial_update(self, request, *args, **kwargs):
         group = self.get_object()  # type: ag_models.SubmissionGroup
-        is_admin = group.project.course.is_administrator(request.user)
+        is_admin = group.project.course.is_admin(request.user)
         can_adjust_points = (
             is_admin or
             group.project.course.is_handgrader(request.user) and

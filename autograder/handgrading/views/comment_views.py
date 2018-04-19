@@ -18,8 +18,8 @@ def comment_permissions(get_course_fn: GetRubricFnType=lambda rubric: rubric):
             course = rubric.project.course
             can_edit = rubric.handgraders_can_leave_comments
 
-            is_admin = course.is_administrator(request.user)
-            is_staff = course.is_course_staff(request.user)
+            is_admin = course.is_admin(request.user)
+            is_staff = course.is_staff(request.user)
             is_handgrader = course.is_handgrader(request.user)
             read_only = request.method in permissions.SAFE_METHODS
 

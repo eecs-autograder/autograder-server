@@ -26,7 +26,7 @@ def is_admin(get_course_fn: GetCourseFnType=lambda course: course) -> Permission
     class IsAdmin(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
-            return course.is_administrator(request.user)
+            return course.is_admin(request.user)
 
     return IsAdmin
 
@@ -35,7 +35,7 @@ def is_staff(get_course_fn: GetCourseFnType=lambda course: course) -> Permission
     class IsStaff(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
-            return course.is_course_staff(request.user)
+            return course.is_staff(request.user)
 
     return IsStaff
 
@@ -55,8 +55,8 @@ def is_admin_or_handgrader_or_read_only_staff(
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
             is_read_only_staff = (request.method in permissions.SAFE_METHODS and
-                                  course.is_course_staff(request.user))
-            return (course.is_administrator(request.user) or course.is_handgrader(request.user) or
+                                  course.is_staff(request.user))
+            return (course.is_admin(request.user) or course.is_handgrader(request.user) or
                     is_read_only_staff)
 
     return IsAdminOrHandgraderOrReadOnlyStaff
@@ -68,8 +68,8 @@ def is_admin_or_read_only_staff(
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
             is_read_only_staff = (request.method in permissions.SAFE_METHODS and
-                                  course.is_course_staff(request.user))
-            return course.is_administrator(request.user) or is_read_only_staff
+                                  course.is_staff(request.user))
+            return course.is_admin(request.user) or is_read_only_staff
 
     return IsAdminOrReadOnlyStaff
 
@@ -80,14 +80,14 @@ def can_view_project(
     class CanViewProject(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             project = get_project_fn(obj)
-            if (project.course.is_course_staff(request.user) or
+            if (project.course.is_staff(request.user) or
                     project.course.is_handgrader(request.user)):
                 return True
 
             if not project.visible_to_students:
                 return False
 
-            return project.course.is_enrolled_student(request.user) or project.guests_can_submit
+            return project.course.is_student(request.user) or project.guests_can_submit
 
     return CanViewProject
 
@@ -98,7 +98,7 @@ def is_staff_or_group_member(
     class IsStaffOrGroupMember(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             group = get_group_fn(obj)
-            return (group.project.course.is_course_staff(request.user) or
+            return (group.project.course.is_staff(request.user) or
                     group.members.filter(pk=request.user.pk).exists())
 
     return IsStaffOrGroupMember
@@ -136,7 +136,7 @@ def can_request_feedback_category(
             deadline_past = _deadline_is_past(submission)
 
             in_group = group.members.filter(pk=request.user.pk).exists()
-            if course.is_course_staff(request.user):
+            if course.is_staff(request.user):
                 # Staff can always request any feedback category for
                 # their own submissions.
                 if in_group:

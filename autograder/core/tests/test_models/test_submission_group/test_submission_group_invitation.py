@@ -21,7 +21,7 @@ class _SetUp:
         self.project = obj_build.build_project(
             project_kwargs={'min_group_size': 1, 'max_group_size': 4},
             course_kwargs={
-                'enrolled_students': list(itertools.chain(
+                'students': list(itertools.chain(
                     [self.invitation_creator], self.to_invite))})
 
 
@@ -191,7 +191,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         for user in itertools.chain([self.invitation_creator], self.to_invite):
             user.courses_is_enrolled_in.remove(self.project.course)
             user.courses_is_staff_for.add(self.project.course)
-            self.assertTrue(self.project.course.is_course_staff(user))
+            self.assertTrue(self.project.course.is_staff(user))
 
         ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
@@ -202,7 +202,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.project.save()
         for user in itertools.chain([self.invitation_creator], self.to_invite):
             user.courses_is_enrolled_in.remove(self.project.course)
-            self.assertFalse(self.project.course.is_enrolled_student(user))
+            self.assertFalse(self.project.course.is_student(user))
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.SubmissionGroupInvitation.objects.validate_and_create(
@@ -217,7 +217,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.project.save()
         for user in itertools.chain([self.invitation_creator], self.to_invite):
             user.courses_is_enrolled_in.remove(self.project.course)
-            self.assertFalse(self.project.course.is_enrolled_student(user))
+            self.assertFalse(self.project.course.is_student(user))
 
         ag_models.SubmissionGroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
@@ -336,7 +336,7 @@ class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
             project=self.project)
 
         other_invitees = obj_build.create_dummy_users(len(self.to_invite))
-        self.project.course.enrolled_students.add(*other_invitees)
+        self.project.course.students.add(*other_invitees)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.SubmissionGroupInvitation.objects.validate_and_create(
@@ -354,7 +354,7 @@ class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
 
         creator = self.to_invite[0]
         other_invitees = obj_build.create_dummy_users(len(self.to_invite))
-        self.project.course.enrolled_students.add(*other_invitees)
+        self.project.course.students.add(*other_invitees)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.SubmissionGroupInvitation.objects.validate_and_create(

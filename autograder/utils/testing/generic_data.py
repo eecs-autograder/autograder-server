@@ -30,7 +30,7 @@ class Course:
     def admin(self):
         if not hasattr(self, '_admin'):
             self._admin = obj_build.create_dummy_user()
-            self.course.administrators.add(self._admin)
+            self.course.admins.add(self._admin)
 
         return self._admin
 
@@ -46,7 +46,7 @@ class Course:
     def enrolled(self):
         if not hasattr(self, '_enrolled'):
             self._enrolled = obj_build.create_dummy_user()
-            self.course.enrolled_students.add(self._enrolled)
+            self.course.students.add(self._enrolled)
 
         return self._enrolled
 

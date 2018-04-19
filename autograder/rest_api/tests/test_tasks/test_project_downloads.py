@@ -12,6 +12,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from django.urls import reverse
 
+import autograder.utils.testing.model_obj_builders
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -55,7 +56,7 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
             submission_group=self.student_group2)
 
         self.staff_group = obj_build.make_group(project=self.project,
-                                                members_role=ag_models.UserRole.staff)
+                                                members_role=obj_build.UserRole.staff)
         self.staff_submission1 = obj_build.build_finished_submission(
             submitted_files=self.files,
             submission_group=self.staff_group)
@@ -282,7 +283,7 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             bugs_exposed=self.student_suite2_bugs[:-1])
 
         self.staff_group = obj_build.make_group(project=self.project,
-                                                members_role=ag_models.UserRole.staff)
+                                                members_role=obj_build.UserRole.staff)
         self.staff_submission1 = obj_build.build_finished_submission(
             submission_group=self.staff_group)
         obj_build.make_correct_ag_test_command_result(self.suite1_cmd,

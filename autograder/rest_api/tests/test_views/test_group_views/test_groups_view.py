@@ -187,7 +187,7 @@ class CreateGroupTestCase(_GroupsSetUp,
 
         self.project.validate_and_update(max_group_size=3)
         self._legal_members = obj_build.create_dummy_users(2)
-        self.project.course.enrolled_students.add(*self._legal_members)
+        self.project.course.students.add(*self._legal_members)
         return self._legal_members
 
     def get_legal_member_names(self):
@@ -255,7 +255,7 @@ class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
 
     def test_handgrader_create_solo_group_when_enrolled(self):
         for project in self.visible_projects:
-            project.course.enrolled_students.add(self.handgrader)
+            project.course.students.add(self.handgrader)
             self.do_create_object_test(project.submission_groups, self.client,
                                        self.handgrader,
                                        self.get_solo_group_url(project), {})

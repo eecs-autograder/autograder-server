@@ -23,13 +23,13 @@ is_handgrader = ag_permissions.is_handgrader(lambda project: project.course)
 
 class _CanCreateSoloGroup(permissions.BasePermission):
     def has_object_permission(self, request, view, project):
-        if project.course.is_course_staff(request.user):
+        if project.course.is_staff(request.user):
             return True
 
         if not project.visible_to_students:
             return False
 
-        return (project.course.is_enrolled_student(request.user) or
+        return (project.course.is_student(request.user) or
                 project.guests_can_submit)
 
 
@@ -65,7 +65,7 @@ class GroupsViewSet(ListCreateNestedModelViewSet):
 
         request.data['members'] = users
         request.data['check_group_size_limits'] = (
-            not project.course.is_administrator(request.user))
+            not project.course.is_admin(request.user))
 
         return super().create(request, *args, **kwargs)
 
@@ -87,7 +87,7 @@ class CreateSoloGroupView(AGModelGenericView):
             'project': project,
             'members': [request.user],
             'check_group_size_limits': (
-                not project.course.is_course_staff(request.user))
+                not project.course.is_staff(request.user))
         }
         serializer = self.get_serializer(data=data)
         serializer.is_valid()

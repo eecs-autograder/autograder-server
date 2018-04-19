@@ -17,10 +17,10 @@ from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 class _Permissions(permissions.BasePermission):
     def has_object_permission(self, request, view, uploaded_file):
-        if not uploaded_file.project.course.is_course_staff(request.user):
+        if not uploaded_file.project.course.is_staff(request.user):
             return False
 
-        if not uploaded_file.project.course.is_administrator(request.user):
+        if not uploaded_file.project.course.is_admin(request.user):
             return request.method in permissions.SAFE_METHODS
 
         return True

@@ -42,7 +42,7 @@ class CourseAdminViewSet(ListNestedModelViewSet):
         P(ag_permissions.IsSuperuser) | P(ag_permissions.is_admin_or_read_only_staff()),)
 
     model_manager = ag_models.Course.objects
-    reverse_to_one_field_name = 'administrators'
+    reverse_to_one_field_name = 'admins'
 
     @swagger_auto_schema(overrides={'request_body_parameters': _add_admins_params},
                          responses={'204': ''})
@@ -64,18 +64,17 @@ class CourseAdminViewSet(ListNestedModelViewSet):
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    def add_admins(self, course, usernames):
+    def add_admins(self, course: ag_models.Course, usernames):
         users_to_add = [
             User.objects.get_or_create(username=username)[0]
             for username in usernames]
-        course.administrators.add(*users_to_add)
+        course.admins.add(*users_to_add)
 
-    def remove_admins(self, course, users_json):
+    def remove_admins(self, course: ag_models.Course, users_json):
         users_to_remove = User.objects.filter(pk__in=[user['pk'] for user in users_json])
 
         if self.request.user in users_to_remove:
             raise exceptions.ValidationError(
-                {'remove_admins':
-                    ["You cannot remove your own admin privileges."]})
+                {'remove_admins': ["You cannot remove your own admin privileges."]})
 
-        course.administrators.remove(*users_to_remove)
+        course.admins.remove(*users_to_remove)

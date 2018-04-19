@@ -7,6 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 import autograder.core.models as ag_models
+from autograder.core import utils as core_ut
 
 
 def get_unique_id() -> str:
@@ -62,20 +63,20 @@ def build_course(course_kwargs: dict=None) -> ag_models.Course:
     if 'name' not in course_kwargs:
         course_kwargs['name'] = 'course{}'.format(get_unique_id())
 
-    admins = course_kwargs.pop('administrators', [])
+    admins = course_kwargs.pop('admins', [])
     staff = course_kwargs.pop('staff', [])
-    students = course_kwargs.pop('enrolled_students', [])
+    students = course_kwargs.pop('students', [])
     course = ag_models.Course.objects.validate_and_create(**course_kwargs)
-    course.administrators.add(*admins)
+    course.admins.add(*admins)
     course.staff.add(*staff)
-    course.enrolled_students.add(*students)
+    course.students.add(*students)
 
     return course
 
 
 def make_admin_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
     users = create_dummy_users(num_users=num_users)
-    course.administrators.add(*users)
+    course.admins.add(*users)
     return users
 
 
@@ -87,7 +88,7 @@ def make_staff_users(course: ag_models.Course, num_users: int) -> typing.Sequenc
 
 def make_enrolled_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
     users = create_dummy_users(num_users=num_users)
-    course.enrolled_students.add(*users)
+    course.students.add(*users)
     return users
 
 
@@ -146,7 +147,7 @@ def build_submission_group(num_members=1,
 
     if 'members' not in group_kwargs:
         members = create_dummy_users(num_members)
-        project.course.enrolled_students.add(*members)
+        project.course.students.add(*members)
         group_kwargs['members'] = members
     else:
         num_members = len(group_kwargs['members'])
@@ -217,8 +218,16 @@ def make_expected_student_pattern(project: ag_models.Project) -> ag_models.Expec
         pattern='pattern' + get_unique_id())
 
 
+class UserRole(core_ut.OrderedEnum):
+    guest = 'guest'
+    student = 'student'
+    handgrader = 'handgrader'
+    staff = 'staff'
+    admin = 'admin'
+
+
 def make_group(num_members: int=1,
-               members_role: ag_models.UserRole=ag_models.UserRole.student,
+               members_role: UserRole = UserRole.student,
                project: ag_models.Project=None,
                **group_kwargs) -> ag_models.SubmissionGroup:
     if project is None:
@@ -227,14 +236,14 @@ def make_group(num_members: int=1,
     if 'members' not in group_kwargs:
         group_kwargs['members'] = create_dummy_users(num_members)
 
-    if members_role == ag_models.UserRole.guest:
+    if members_role == UserRole.guest:
         project.validate_and_update(guests_can_submit=True)
-    elif members_role == ag_models.UserRole.student:
-        project.course.enrolled_students.add(*group_kwargs['members'])
-    elif members_role == ag_models.UserRole.staff:
+    elif members_role == UserRole.student:
+        project.course.students.add(*group_kwargs['members'])
+    elif members_role == UserRole.staff:
         project.course.staff.add(*group_kwargs['members'])
-    elif members_role == ag_models.UserRole.admin:
-        project.course.administrators.add(*group_kwargs['members'])
+    elif members_role == UserRole.admin:
+        project.course.admins.add(*group_kwargs['members'])
 
     return ag_models.SubmissionGroup.objects.validate_and_create(
         project=project, check_group_size_limits=False, **group_kwargs)

@@ -22,16 +22,6 @@ user_router.register(r'users', views.UserViewSet, base_name='user')
 course_router = routers.SimpleRouter()
 course_router.register(r'courses', views.CourseViewSet, base_name='course')
 
-staff_router = routers.NestedSimpleRouter(course_router, r'courses', lookup='course')
-staff_router.register(r'staff',
-                      views.CourseStaffViewSet,
-                      base_name='course-staff')
-enrolled_students_router = routers.NestedSimpleRouter(course_router,
-                                                      r'courses',
-                                                      lookup='course')
-enrolled_students_router.register(r'enrolled_students',
-                                  views.CourseEnrolledStudentsViewSet,
-                                  base_name='course-enrolled-students')
 course_projects_router = routers.NestedSimpleRouter(course_router, r'courses',
                                                     lookup='course')
 
@@ -150,7 +140,8 @@ urlpatterns = [
          name='course-admins'),
     path('courses/<int:pk>/staff/', views.CourseStaffViewSet.as_view(),
          name='course-staff'),
-    url(r'', include(enrolled_students_router.urls)),
+    path('courses/<int:pk>/students/', views.CourseStudentsViewSet.as_view(),
+         name='course-students'),
     url(r'', include(course_projects_router.urls)),
 
     url(r'', include(project_router.urls)),

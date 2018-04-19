@@ -19,7 +19,7 @@ class _Permissions(permissions.BasePermission):
         if not user_can_view_project(request.user, invitation.project):
             return False
 
-        is_staff = invitation.project.course.is_course_staff(request.user)
+        is_staff = invitation.project.course.is_staff(request.user)
         is_involved = (request.user == invitation.invitation_creator or
                        request.user in invitation.invited_users.all())
 

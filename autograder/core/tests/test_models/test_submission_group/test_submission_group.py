@@ -144,7 +144,7 @@ class MiscSubmissionGroupTestCase(_SetUp):
 class SubmissionGroupSizeTestCase(_SetUp):
     def test_valid_override_group_max_size(self):
         self.enrolled_users += obj_build.create_dummy_users(3)
-        self.project.course.enrolled_students.add(*self.enrolled_users)
+        self.project.course.students.add(*self.enrolled_users)
         group = ag_models.SubmissionGroup.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project,
@@ -189,7 +189,7 @@ class SubmissionGroupSizeTestCase(_SetUp):
         self.project.save()
 
         new_user = obj_build.create_dummy_user()
-        self.course.enrolled_students.add(new_user)
+        self.course.students.add(new_user)
         self.enrolled_users.append(new_user)
 
         with self.assertRaises(exceptions.ValidationError):
@@ -218,7 +218,7 @@ class UpdateSubmissionGroupTestCase(_SetUp):
             project=self.project)
 
         new_members = obj_build.create_dummy_users(5)
-        self.project.course.enrolled_students.add(*new_members)
+        self.project.course.students.add(*new_members)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             group.validate_and_update(members=new_members)
@@ -231,7 +231,7 @@ class UpdateSubmissionGroupTestCase(_SetUp):
             project=self.project)
 
         new_members = obj_build.create_dummy_users(2)
-        self.project.course.enrolled_students.add(*new_members)
+        self.project.course.students.add(*new_members)
 
         self.project.min_group_size = 10
         self.project.max_group_size = 10
@@ -252,7 +252,7 @@ class UpdateSubmissionGroupTestCase(_SetUp):
         self.project.save()
 
         new_members = obj_build.create_dummy_users(2)
-        self.project.course.enrolled_students.add(*new_members)
+        self.project.course.students.add(*new_members)
         group.validate_and_update(members=new_members,
                                   check_group_size_limits=False)
 
@@ -266,7 +266,7 @@ class UpdateSubmissionGroupTestCase(_SetUp):
             project=self.project)
 
         new_members = obj_build.create_dummy_users(5)
-        self.project.course.enrolled_students.add(*new_members)
+        self.project.course.students.add(*new_members)
 
         group.validate_and_update(members=new_members,
                                   check_group_size_limits=False)

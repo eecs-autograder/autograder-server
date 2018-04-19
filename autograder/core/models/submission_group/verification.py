@@ -18,7 +18,7 @@ def verify_users_have_same_enrollment_status(users, project,
 
     Checks to see whether the users have the same enrollment status.
     - All users must either be:
-        - staff members/course administrators
+        - staff members/course admins
         - enrolled students
         - non-enrolled students AND the project must allow submissions
             from non-enrolled students
@@ -28,9 +28,9 @@ def verify_users_have_same_enrollment_status(users, project,
     users = tuple(users)
 
     num_enrolled = utils.count_if(
-        users, lambda member: project.course.is_enrolled_student(member))
+        users, lambda member: project.course.is_student(member))
     num_staff = utils.count_if(
-        users, lambda member: project.course.is_course_staff(member))
+        users, lambda member: project.course.is_staff(member))
 
     if num_staff:
         if num_staff != len(users):

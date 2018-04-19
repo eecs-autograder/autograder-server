@@ -1,5 +1,5 @@
 from .course_views.course_admins import CourseAdminViewSet
-from .course_views.course_enrolled_students import CourseEnrolledStudentsViewSet
+from .course_views.course_students import CourseStudentsViewSet
 from .course_views.course_staff import CourseStaffViewSet
 
 from .course_views.course_views import CourseViewSet

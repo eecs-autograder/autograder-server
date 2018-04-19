@@ -13,7 +13,7 @@ class _Permissions(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return user_can_view_project(request.user, pattern.project)
 
-        return pattern.project.course.is_administrator(request.user)
+        return pattern.project.course.is_admin(request.user)
 
 
 class ExpectedStudentFilePatternDetailViewSet(

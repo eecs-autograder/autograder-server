@@ -93,7 +93,7 @@ class CreateInvitationTestCase(_InvitationsSetUp,
     def test_handgrader_also_enrolled_create_invitation(self):
         [handgrader_student] = obj_build.make_users(1)
         self.course.handgraders.add(handgrader_student)
-        self.course.enrolled_students.add(handgrader_student)
+        self.course.students.add(handgrader_student)
 
         self.project.validate_and_update(max_group_size=3)
         other_enrolled = self.clone_user(self.enrolled)

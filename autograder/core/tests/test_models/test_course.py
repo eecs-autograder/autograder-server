@@ -70,39 +70,39 @@ class CourseFilesystemTestCase(UnitTestBase):
         self.assertTrue(os.path.isdir(expected_course_root_dir))
 
 
-class CourseAdminStaffEnrolledStudentAndHandgraderTestCase(UnitTestBase):
+class CourseRolesTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
         self.course = obj_build.build_course()
         self.user = obj_build.create_dummy_user()
 
-    def test_is_administrator(self):
+    def test_is_admin(self):
         self.course = obj_build.build_course()
         self.user = obj_build.create_dummy_user()
 
-        self.assertFalse(self.course.is_administrator(self.user))
+        self.assertFalse(self.course.is_admin(self.user))
 
-        self.course.administrators.add(self.user)
-        self.assertTrue(self.course.is_administrator(self.user))
+        self.course.admins.add(self.user)
+        self.assertTrue(self.course.is_admin(self.user))
 
-    def test_is_course_staff(self):
-        self.assertFalse(self.course.is_course_staff(self.user))
+    def test_is_staff(self):
+        self.assertFalse(self.course.is_staff(self.user))
 
         self.course.staff.add(self.user)
-        self.assertTrue(self.course.is_course_staff(self.user))
+        self.assertTrue(self.course.is_staff(self.user))
 
     def test_admin_counts_as_staff(self):
-        self.assertFalse(self.course.is_course_staff(self.user))
+        self.assertFalse(self.course.is_staff(self.user))
 
-        self.course.administrators.add(self.user)
-        self.assertTrue(self.course.is_course_staff(self.user))
+        self.course.admins.add(self.user)
+        self.assertTrue(self.course.is_staff(self.user))
 
-    def test_is_enrolled_student(self):
-        self.assertFalse(self.course.is_enrolled_student(self.user))
+    def test_is_student(self):
+        self.assertFalse(self.course.is_student(self.user))
 
-        self.course.enrolled_students.add(self.user)
-        self.assertTrue(self.course.is_enrolled_student(self.user))
+        self.course.students.add(self.user)
+        self.assertTrue(self.course.is_student(self.user))
 
     def test_is_handgrader(self):
         self.assertFalse(self.course.is_handgrader(self.user))

@@ -19,7 +19,7 @@ class ListCoursesTestCase(test_data.Client, test_data.Superuser,
         self.admin = obj_build.create_dummy_user()
         self.courses = [
             obj_build.build_course(
-                course_kwargs={'administrators': [self.admin]})
+                course_kwargs={'admins': [self.admin]})
             for i in range(4)]
 
     def test_superuser_get_course_list(self):

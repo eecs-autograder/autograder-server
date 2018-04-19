@@ -21,7 +21,7 @@ class CoursePermissions(permissions.BasePermission):
         if view.action == 'retrieve' or request.method.lower() == 'get':
             return True
 
-        return course.is_administrator(request.user)
+        return course.is_admin(request.user)
 
 
 class CourseViewSet(build_load_object_mixin(ag_models.Course),
@@ -40,9 +40,9 @@ class CourseViewSet(build_load_object_mixin(ag_models.Course),
     def my_roles(self, request, *args, **kwargs):
         course = self.get_object()
         return response.Response({
-            'is_admin': course.is_administrator(request.user),
-            'is_staff': course.is_course_staff(request.user),
-            'is_enrolled': course.is_enrolled_student(request.user),
+            'is_admin': course.is_admin(request.user),
+            'is_staff': course.is_staff(request.user),
+            'is_enrolled': course.is_student(request.user),
             'is_handgrader': course.is_handgrader(request.user)
         })
 

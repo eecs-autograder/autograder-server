@@ -97,7 +97,7 @@ def _get_groups(project, include_staff) -> Sequence[ag_models.SubmissionGroup]:
     groups = filter(lambda group: group.submissions.count(), groups)
     if not include_staff:
         groups = filter(
-            lambda group: not project.course.is_course_staff(group.members.first()), groups)
+            lambda group: not project.course.is_staff(group.members.first()), groups)
     groups = list(groups)
     return groups
 

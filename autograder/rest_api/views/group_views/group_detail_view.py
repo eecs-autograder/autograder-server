@@ -35,7 +35,7 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
     def has_object_permission(self, request, view, group):
         project = group.project
         course = group.project.course
-        is_staff = course.is_course_staff(request.user)
+        is_staff = course.is_staff(request.user)
 
         # Staff and higher can always view their own ultimate submission
         if is_staff and group.members.filter(pk=request.user.pk).exists():

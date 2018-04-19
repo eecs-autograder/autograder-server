@@ -67,7 +67,7 @@ class SubmissionsViewSet(
 
         # Provided they don't have a submission being processed, staff
         # should always be able to submit.
-        if (group.project.course.is_course_staff(request.user) and
+        if (group.project.course.is_staff(request.user) and
                 group.members.filter(pk=request.user.pk).exists()):
             return
 

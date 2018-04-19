@@ -11,6 +11,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
+import autograder.utils.testing.model_obj_builders
 from autograder.core.models import Submission
 import autograder.core.utils as core_ut
 from autograder.core.models.ag_test.ag_test_command import MAX_AG_TEST_COMMAND_FDBK_SETTINGS
@@ -343,7 +344,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
         # --------- staff --------------
         self.staff_group = obj_build.make_group(
-            project=self.project, members_role=ag_models.UserRole.staff)
+            project=self.project, members_role=obj_build.UserRole.staff)
         self.staff = self.staff_group.members.first()
 
         self.staff_normal_submission = obj_build.build_finished_submission(
@@ -983,7 +984,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
         self.submission = obj_build.build_submission(
             submission_group=obj_build.make_group(project=self.project,
-                                                  members_role=ag_models.UserRole.admin))
+                                                  members_role=obj_build.UserRole.admin))
 
         self.setup_stdout = 'setupp stdouttt'
         self.setup_stderr = 'sortoop stdear'
@@ -1222,7 +1223,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         project = cmd.ag_test_case.ag_test_suite.project
         project.validate_and_update(visible_to_students=True)
 
-        admin_group = obj_build.make_group(project=project, members_role=ag_models.UserRole.admin)
+        admin_group = obj_build.make_group(project=project, members_role=autograder.utils.testing.obj_build.UserRole.admin)
         submission1 = obj_build.build_finished_submission(submission_group=admin_group)
         submission2 = obj_build.build_finished_submission(submission_group=admin_group)
 
@@ -1260,7 +1261,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         project = cmd.ag_test_case.ag_test_suite.project
         project.validate_and_update(visible_to_students=True)
 
-        admin_group = obj_build.make_group(project=project, members_role=ag_models.UserRole.admin)
+        admin_group = obj_build.make_group(project=project, members_role=autograder.utils.testing.obj_build.UserRole.admin)
         submission = obj_build.build_finished_submission(submission_group=admin_group)
 
         cmd_result = obj_build.make_correct_ag_test_command_result(cmd, submission=submission)
@@ -1381,7 +1382,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         project.validate_and_update(visible_to_students=True)
 
         student_group = obj_build.make_group(project=project,
-                                             members_role=ag_models.UserRole.admin)
+                                             members_role=autograder.utils.testing.obj_build.UserRole.admin)
         submission = obj_build.build_finished_submission(submission_group=student_group)
 
         submission_cmd_result = obj_build.make_correct_ag_test_command_result(
@@ -1440,7 +1441,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
                 ag_test_suite=obj_build.make_ag_test_suite(project=project2)))
 
         project1_group = obj_build.make_group(project=project1,
-                                              members_role=ag_models.UserRole.admin)
+                                              members_role=autograder.utils.testing.obj_build.UserRole.admin)
         project1_submission1 = obj_build.build_finished_submission(submission_group=project1_group)
         project1_submission1_cmd_result = obj_build.make_incorrect_ag_test_command_result(
             project1_cmd, submission=project1_submission1)
@@ -1450,7 +1451,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
             project1_cmd, submission=project1_submission2)
 
         project2_group = obj_build.make_group(project=project2,
-                                              members_role=ag_models.UserRole.admin)
+                                              members_role=autograder.utils.testing.obj_build.UserRole.admin)
         project2_submission = obj_build.build_finished_submission(submission_group=project2_group)
         project2_cmd_result = obj_build.make_correct_ag_test_command_result(
             project2_cmd, submission=project2_submission)
