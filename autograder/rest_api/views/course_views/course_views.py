@@ -6,6 +6,8 @@ import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
 import autograder.rest_api.permissions as ag_permissions
+from autograder.rest_api.views.ag_model_views import (
+    AGModelGenericViewSet, TransactionRetrieveUpdateDestroyMixin)
 
 from ..load_object_mixin import build_load_object_mixin
 
@@ -24,14 +26,14 @@ class CoursePermissions(permissions.BasePermission):
         return course.is_admin(request.user)
 
 
-class CourseViewSet(build_load_object_mixin(ag_models.Course),
+class CourseViewSet(TransactionRetrieveUpdateDestroyMixin,
                     transaction_mixins.TransactionCreateMixin,
-                    transaction_mixins.TransactionUpdateMixin,
-                    mixins.RetrieveModelMixin,
                     mixins.ListModelMixin,
-                    viewsets.GenericViewSet):
+                    AGModelGenericViewSet):
     serializer_class = ag_serializers.CourseSerializer
     permission_classes = (permissions.IsAuthenticated, CoursePermissions,)
+
+    model_manager = ag_models.Course.objects
 
     def get_queryset(self):
         return ag_models.Course.objects.all()
@@ -42,6 +44,6 @@ class CourseViewSet(build_load_object_mixin(ag_models.Course),
         return response.Response({
             'is_admin': course.is_admin(request.user),
             'is_staff': course.is_staff(request.user),
-            'is_enrolled': course.is_student(request.user),
+            'is_student': course.is_student(request.user),
             'is_handgrader': course.is_handgrader(request.user)
         })

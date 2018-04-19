@@ -2,30 +2,23 @@ from django.urls import reverse
 from django.core import exceptions
 
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-class ListCoursesTestCase(test_data.Client, test_data.Superuser,
-                          UnitTestBase):
+class ListCoursesTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-
-        self.admin = obj_build.create_dummy_user()
-        self.courses = [
-            obj_build.build_course(
-                course_kwargs={'admins': [self.admin]})
-            for i in range(4)]
+        self.client = APIClient()
+        self.courses = [obj_build.make_course() for i in range(4)]
 
     def test_superuser_get_course_list(self):
-        superuser = obj_build.create_dummy_user()
-        superuser.is_superuser = True
-        superuser.save()
+        [superuser] = obj_build.make_users(1, superuser=True)
 
         self.client.force_authenticate(user=superuser)
         response = self.client.get(reverse('course-list'))
@@ -36,17 +29,26 @@ class ListCoursesTestCase(test_data.Client, test_data.Superuser,
         self.assertCountEqual(expected_content, response.data)
 
     def test_other_get_course_list_permission_denied(self):
-        nobody = obj_build.create_dummy_user()
+        [admin] = obj_build.make_users(1)
+        for course in self.courses:
+            course.admins.add(admin)
+        [guest] = obj_build.make_users(1)
 
-        for user in self.admin, nobody:
+        for user in admin, guest:
             self.client.force_authenticate(user=user)
             response = self.client.get(reverse('course-list'))
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class CreateCourseTestCase(test_data.Client, test_data.Superuser, UnitTestBase):
+class CreateCourseTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
     def test_superuser_create_course(self):
-        self.client.force_authenticate(self.superuser)
+        [superuser] = obj_build.make_users(1, superuser=True)
+        self.client.force_authenticate(superuser)
+
         name = 'new_course'
         response = self.client.post(reverse('course-list'), {'name': name})
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
@@ -55,39 +57,54 @@ class CreateCourseTestCase(test_data.Client, test_data.Superuser, UnitTestBase):
         self.assertEqual(loaded_course.to_dict(), response.data)
 
     def test_other_create_course_permission_denied(self):
-        nobody = obj_build.create_dummy_user()
+        [guest] = obj_build.make_users(1)
 
         name = 'spam'
-        self.client.force_authenticate(nobody)
+        self.client.force_authenticate(guest)
         response = self.client.post(reverse('course-list'), {'name': name})
 
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertEqual(0, ag_models.Course.objects.count())
 
 
-class RetrieveCourseTestCase(test_data.Client, test_data.Course, UnitTestBase):
+class RetrieveCourseTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
     def test_get_course(self):
-        for user in self.admin, self.nobody:
+        course = obj_build.make_course()
+        [admin] = obj_build.make_admin_users(course, 1)
+        [guest] = obj_build.make_users(1)
+
+        for user in admin, guest:
             self.client.force_authenticate(user)
-            response = self.client.get(reverse('course-detail', kwargs={'pk': self.course.pk}))
+            response = self.client.get(reverse('course-detail', kwargs={'pk': course.pk}))
 
             self.assertEqual(status.HTTP_200_OK, response.status_code)
-            self.assertEqual(self.course.to_dict(), response.data)
+            self.assertEqual(course.to_dict(), response.data)
 
     def test_get_course_not_found(self):
-        self.client.force_authenticate(self.admin)
+        [guest] = obj_build.make_users(1)
+        self.client.force_authenticate(guest)
 
         response = self.client.get(reverse('course-detail', kwargs={'pk': 3456}))
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
-class UpdateCourseTestCase(test_data.Client, test_data.Course,
-                           UnitTestBase):
+class UpdateCourseTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.course = obj_build.make_course()
+        [self.guest] = obj_build.make_users(1)
+
     def test_admin_patch_course(self):
         old_name = self.course.name
         new_name = 'steve'
 
-        self.client.force_authenticate(self.admin)
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.client.force_authenticate(admin)
         response = self.client.patch(
             reverse('course-detail', kwargs={'pk': self.course.pk}), {"name": new_name})
 
@@ -101,7 +118,7 @@ class UpdateCourseTestCase(test_data.Client, test_data.Course,
 
     def test_other_patch_course_permission_denied(self):
         old_name = self.course.name
-        self.client.force_authenticate(self.nobody)
+        self.client.force_authenticate(self.guest)
 
         response = self.client.patch(reverse('course-detail', kwargs={'pk': self.course.pk}),
                                      {"name": 'steve'})
@@ -112,7 +129,7 @@ class UpdateCourseTestCase(test_data.Client, test_data.Course,
         self.assertEqual(self.course.name, old_name)
 
     def test_patch_course_not_found(self):
-        self.client.force_authenticate(self.admin)
+        self.client.force_authenticate(self.guest)
 
         response = self.client.patch(reverse('course-detail', kwargs={'pk': 3456}),
                                      {"name": 'spam'})
@@ -120,46 +137,57 @@ class UpdateCourseTestCase(test_data.Client, test_data.Course,
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
-class UserRolesForCourseTestCase(test_data.Client, test_data.Course,
-                                 test_impls.GetObjectTest, UnitTestBase):
+class UserRolesForCourseTestCase(test_impls.GetObjectTest, UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.course = obj_build.make_course()
+        self.url = reverse('course-my-roles', kwargs={'pk': self.course.pk})
+
     def expected_response_base(self):
         return {
             "is_admin": False,
             "is_staff": False,
-            "is_enrolled": False,
+            "is_student": False,
             "is_handgrader": False
         }
 
     def test_admin_user_roles(self):
+        [admin] = obj_build.make_admin_users(self.course, 1)
+
         expected = self.expected_response_base()
         expected['is_admin'] = True
         expected['is_staff'] = True
 
-        self.do_get_object_test(
-            self.client, self.admin, self.course_roles_url(self.course), expected)
+        self.do_get_object_test(self.client, admin, self.url, expected)
 
     def test_staff_user_roles(self):
+        [staff] = obj_build.make_staff_users(self.course, 1)
+
         expected = self.expected_response_base()
         expected['is_staff'] = True
 
-        self.do_get_object_test(
-            self.client, self.staff, self.course_roles_url(self.course), expected)
+        self.do_get_object_test(self.client, staff, self.url, expected)
 
-    def test_enrolled_user_roles(self):
+    def test_student_user_roles(self):
+        [student] = obj_build.make_student_users(self.course, 1)
+
         expected = self.expected_response_base()
-        expected['is_enrolled'] = True
+        expected['is_student'] = True
 
-        self.do_get_object_test(
-            self.client, self.enrolled, self.course_roles_url(self.course), expected)
+        self.do_get_object_test(self.client, student, self.url, expected)
 
     def test_handgrader_user_roles(self):
+        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
+
         expected = self.expected_response_base()
         expected['is_handgrader'] = True
 
-        self.do_get_object_test(
-            self.client, self.handgrader, self.course_roles_url(self.course), expected)
+        self.do_get_object_test(self.client, handgrader, self.url, expected)
 
     def test_other_user_roles(self):
+        [guest] = obj_build.make_users(1)
+
         self.do_get_object_test(
-            self.client, self.nobody, self.course_roles_url(self.course),
+            self.client, guest, self.url,
             self.expected_response_base())
