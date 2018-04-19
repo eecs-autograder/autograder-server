@@ -28,9 +28,9 @@ _remove_admins_params = [
     Parameter(
         'remove_admins',
         'body',
-        type='List[string]',
+        type='List[User]',
         required=True,
-        description='A list of usernames whose admin privileges '
+        description='A list of users whose admin privileges '
                     'should be revoked for this course.'
     )
 ]

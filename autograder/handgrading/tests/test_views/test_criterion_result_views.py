@@ -64,7 +64,7 @@ class ListCriterionResultsTestCase(UnitTestBase):
             self.assertSequenceEqual(self.criterion_result.to_dict(), response.data[0])
 
     def test_student_list_criterion_results_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)
@@ -126,7 +126,7 @@ class CreateCriterionResultTestCase(test_impls.CreateObjectTest, UnitTestBase):
             self.assertEqual(criterion.to_dict(), loaded.criterion.to_dict())
 
     def test_student_create_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_create_test(handgrading_models.CriterionResult.objects,
                                               self.client, enrolled, self.url, self.data)
 
@@ -183,7 +183,7 @@ class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
             self.do_get_object_test(self.client, user, self.url, self.criterion_result.to_dict())
 
     def test_student_get_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
     def test_admin_or_handgradre_valid_update(self):
@@ -207,7 +207,7 @@ class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
     def test_staff_or_student_update_permission_denied(self):
         patch_data = {"selected": False}
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [student] = obj_build.make_enrolled_users(self.course, 1)
+        [student] = obj_build.make_student_users(self.course, 1)
 
         for user in staff, student:
             self.do_patch_object_permission_denied_test(self.criterion_result, self.client, user,
@@ -223,7 +223,7 @@ class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
 
     def test_staff_or_student_delete_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [student] = obj_build.make_enrolled_users(self.course, 1)
+        [student] = obj_build.make_student_users(self.course, 1)
 
         for user in staff, student:
             self.do_delete_object_permission_denied_test(

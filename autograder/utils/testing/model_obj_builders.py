@@ -86,7 +86,7 @@ def make_staff_users(course: ag_models.Course, num_users: int) -> typing.Sequenc
     return users
 
 
-def make_enrolled_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+def make_student_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
     users = create_dummy_users(num_users=num_users)
     course.students.add(*users)
     return users

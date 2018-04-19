@@ -45,7 +45,7 @@ class ListAnnotationsTestCase(UnitTestBase):
         self.assertSequenceEqual(self.annotation.to_dict(), response.data[0])
 
     def test_non_staff_list_cases_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)
@@ -84,7 +84,7 @@ class CreateAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase):
             handgrading_models.Annotation.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_create_test(
             handgrading_models.Annotation.objects, self.client, enrolled, self.url, self.data)
 
@@ -120,7 +120,7 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
         self.do_get_object_test(self.client, staff, self.url, self.annotation.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
     def test_admin_valid_update(self):
@@ -211,7 +211,7 @@ class AnnotationOrderTestCase(UnitTestBase):
             self.assertSequenceEqual(new_order, response.data)
 
     def test_non_staff_get_order_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
         for user in enrolled, handgrader:
@@ -231,7 +231,7 @@ class AnnotationOrderTestCase(UnitTestBase):
 
     def test_non_admin_set_order_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
         for user in staff, enrolled, handgrader:

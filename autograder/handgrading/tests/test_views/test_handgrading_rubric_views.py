@@ -82,7 +82,7 @@ class RetrieveHandgradingRubricTestCase(UnitTestBase):
                                  self.handgrading_rubric.get_annotation_order())
 
     def test_non_staff_retrieve_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)
@@ -126,7 +126,7 @@ class CreateHandgradingRubricTestCase(test_impls.CreateObjectTest, UnitTestBase)
                          loaded.handgraders_can_adjust_points)
 
     def test_non_admin_create_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         [staff] = obj_build.make_staff_users(self.course, 1)
         [handgrader] = obj_build.make_users(1)
         self.project.course.handgraders.add(handgrader)
@@ -166,7 +166,7 @@ class GetUpdateDeleteHandgradingRubricTestCase(test_impls.GetObjectTest,
         self.do_get_object_test(self.client, staff, self.url, self.handgrading_rubric.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
     def test_admin_valid_update(self):

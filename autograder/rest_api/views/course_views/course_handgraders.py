@@ -12,64 +12,64 @@ import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet, require_body_params
 
 
-_add_staff_params = [
+_add_handgraders_params = [
     Parameter(
-        'new_staff',
+        'new_handgraders',
         'body',
         type='List[string]',
         required=True,
-        description='A list of usernames who should be granted staff '
+        description='A list of usernames who should be granted handgrader '
                     'privileges for this course.'
     )
 ]
 
 
-_remove_staff_params = [
+_remove_handgraders_params = [
     Parameter(
-        'remove_staff',
+        'remove_handgraders',
         'body',
         type='List[User]',
         required=True,
-        description='A list of users whose staff privileges '
+        description='A list of users whose handgrader privileges '
                     'should be revoked for this course.'
     )
 ]
 
 
-class CourseStaffViewSet(ListNestedModelViewSet):
+class CourseHandgradersViewSet(ListNestedModelViewSet):
     serializer_class = ag_serializers.UserSerializer
     permission_classes = (ag_permissions.is_admin_or_read_only_staff(),)
 
     model_manager = ag_models.Course.objects
-    reverse_to_one_field_name = 'staff'
+    reverse_to_one_field_name = 'handgraders'
 
-    @swagger_auto_schema(overrides={'request_body_parameters': _add_staff_params},
+    @swagger_auto_schema(overrides={'request_body_parameters': _add_handgraders_params},
                          responses={'204': ''})
     @transaction.atomic()
-    @method_decorator(require_body_params('new_staff'))
+    @method_decorator(require_body_params('new_handgraders'))
     def post(self, request, *args, **kwargs):
         course = self.get_object()
-        self.add_staff(course, request.data['new_staff'])
+        self.add_handgraders(course, request.data['new_handgraders'])
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(overrides={'request_body_parameters': _remove_staff_params},
+    @swagger_auto_schema(overrides={'request_body_parameters': _remove_handgraders_params},
                          responses={'204': ''})
     @transaction.atomic()
-    @method_decorator(require_body_params('remove_staff'))
+    @method_decorator(require_body_params('remove_handgraders'))
     def patch(self, request, *args, **kwargs):
         course = self.get_object()
-        self.remove_staff(course, request.data['remove_staff'])
+        self.remove_handgraders(course, request.data['remove_handgraders'])
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    def add_staff(self, course, usernames):
-        staff_to_add = [
+    def add_handgraders(self, course: ag_models.Course, usernames):
+        handgraders_to_add = [
             User.objects.get_or_create(username=username)[0]
             for username in usernames]
-        course.staff.add(*staff_to_add)
+        course.handgraders.add(*handgraders_to_add)
 
-    def remove_staff(self, course, users_json):
-        staff_to_remove = User.objects.filter(
+    def remove_handgraders(self, course: ag_models.Course, users_json):
+        handgraders_to_remove = User.objects.filter(
             pk__in=[user['pk'] for user in users_json])
-        course.staff.remove(*staff_to_remove)
+        course.handgraders.remove(*handgraders_to_remove)

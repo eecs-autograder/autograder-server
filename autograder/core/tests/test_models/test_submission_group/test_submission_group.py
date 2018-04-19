@@ -19,7 +19,7 @@ class _SetUp(test_ut.UnitTestBase):
             project_kwargs={'max_group_size': 2})
         self.course = self.project.course
 
-        self.enrolled_users = unsorted_users(obj_build.make_enrolled_users(self.course, 2))
+        self.enrolled_users = unsorted_users(obj_build.make_student_users(self.course, 2))
         self.staff_users = unsorted_users(obj_build.make_staff_users(self.course, 2))
         self.guest_group = obj_build.make_users(2)
 
@@ -203,7 +203,7 @@ class UpdateSubmissionGroupTestCase(_SetUp):
             members=self.enrolled_users,
             project=self.project)
 
-        new_members = unsorted_users(obj_build.make_enrolled_users(self.course, 2))
+        new_members = unsorted_users(obj_build.make_student_users(self.course, 2))
 
         group.validate_and_update(members=new_members)
 

@@ -61,7 +61,7 @@ class ListCommentsTestCase(UnitTestBase):
             self.assertSequenceEqual(self.comment.to_dict(), response.data[0])
 
     def test_student_list_comments_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)
@@ -133,7 +133,7 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
                                        self.url, data)
 
     def test_enrolled_or_staff_create_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         [staff] = obj_build.make_staff_users(self.course, 1)
 
         for user in enrolled, staff:
@@ -197,7 +197,7 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
             self.do_get_object_test(self.client, user, self.url, self.comment.to_dict())
 
     def test_enrolled_get_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
     def test_admin_or_handgrader_valid_update(self):
@@ -220,7 +220,7 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
     def test_staff_or_student_update_permission_denied(self):
         patch_data = {"text": "Changing comment text."}
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [student] = obj_build.make_enrolled_users(self.course, 1)
+        [student] = obj_build.make_student_users(self.course, 1)
 
         for user in staff, student:
             self.do_patch_object_permission_denied_test(self.comment, self.client, user, self.url,
@@ -236,7 +236,7 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
 
     def test_student_or_staff_delete_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [student] = obj_build.make_enrolled_users(self.course, 1)
+        [student] = obj_build.make_student_users(self.course, 1)
 
         for user in staff, student:
             self.do_delete_object_permission_denied_test(self.comment, self.client, user, self.url)

@@ -142,6 +142,9 @@ urlpatterns = [
          name='course-staff'),
     path('courses/<int:pk>/students/', views.CourseStudentsViewSet.as_view(),
          name='course-students'),
+    path('courses/<int:pk>/handgraders/', views.CourseHandgradersViewSet.as_view(),
+         name='course-handgraders'),
+
     url(r'', include(course_projects_router.urls)),
 
     url(r'', include(project_router.urls)),

@@ -29,7 +29,7 @@ class ListAGTestCasesTestCase(UnitTestBase):
         self.assertSequenceEqual([self.case1.to_dict(), self.case2.to_dict()], response.data)
 
     def test_non_staff_list_cases_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)
@@ -59,7 +59,7 @@ class CreateAGTestCaseTestCase(test_impls.CreateObjectTest, UnitTestBase):
         self.do_permission_denied_create_test(
             ag_models.AGTestCase.objects, self.client, staff, self.url, data)
 
-        [enrolled] = obj_build.make_enrolled_users(self.ag_test_suite.project.course, 1)
+        [enrolled] = obj_build.make_student_users(self.ag_test_suite.project.course, 1)
         self.do_permission_denied_create_test(
             ag_models.AGTestCase.objects, self.client, enrolled, self.url, data)
 
@@ -90,7 +90,7 @@ class AGTestCaseOrderTestCase(UnitTestBase):
         self.assertSequenceEqual([self.case2.pk, self.case1.pk], response.data)
 
     def test_non_staff_get_order_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)
@@ -132,7 +132,7 @@ class GetUpdateDeleteAGTestCaseTestCase(test_impls.GetObjectTest,
         self.do_get_object_test(self.client, staff, self.url, self.ag_test_case.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
     def test_admin_valid_update(self):

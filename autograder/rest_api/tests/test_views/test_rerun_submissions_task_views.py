@@ -41,7 +41,7 @@ class ListRerunSubmissionsTasksTestCase(UnitTestBase):
         self.assertCountEqual([self.task1.to_dict(), self.task2.to_dict()], response.data)
 
     def test_non_admin_list_rerun_tasks_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.project.course, 1)
+        [enrolled] = obj_build.make_student_users(self.project.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)

@@ -1,6 +1,7 @@
 from .course_views.course_admins import CourseAdminViewSet
 from .course_views.course_students import CourseStudentsViewSet
 from .course_views.course_staff import CourseStaffViewSet
+from .course_views.course_handgraders import CourseHandgradersViewSet
 
 from .course_views.course_views import CourseViewSet
 

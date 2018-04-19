@@ -28,9 +28,9 @@ _remove_students_params = [
     Parameter(
         'remove_students',
         'body',
-        type='List[string]',
+        type='List[User]',
         required=True,
-        description='A list of usernames whose student privileges '
+        description='A list of users whose student privileges '
                     'should be revoked for this course.'
     )
 ]

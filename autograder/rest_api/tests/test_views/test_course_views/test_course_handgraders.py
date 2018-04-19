@@ -2,24 +2,29 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.rest_api.serializers as ag_serializers
 
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.common_test_impls as test_impls
 
 
-class _HandgradersSetUp(test_data.Client, test_data.Course):
+class _SetUp(UnitTestBase):
     def setUp(self):
         super().setUp()
+        self.course = obj_build.make_course()
+        self.client = APIClient()
         self.url = reverse('course-handgraders', kwargs={'pk': self.course.pk})
 
+        [self.admin] = obj_build.make_admin_users(self.course, 1)
+        [self.staff] = obj_build.make_staff_users(self.course, 1)
+        [self.student] = obj_build.make_student_users(self.course, 1)
+        [self.guest] = obj_build.make_users(1)
 
-class ListCourseHandgradersTestCase(_HandgradersSetUp,
-                                    test_impls.ListObjectsTest,
-                                    UnitTestBase):
+
+class ListCourseHandgradersTestCase(test_impls.ListObjectsTest, _SetUp):
     def setUp(self):
         super().setUp()
 
@@ -32,11 +37,11 @@ class ListCourseHandgradersTestCase(_HandgradersSetUp,
         self.do_list_objects_test(self.client, self.admin, self.url, expected_content)
 
     def test_list_handgraders_permission_denied(self):
-        for user in self.enrolled, self.staff, self.handgraders[0], self.nobody:
+        for user in self.student, self.handgraders[0], self.guest:
             self.do_permission_denied_get_test(self.client, user, self.url)
 
 
-class AddCourseHandgradersTestCase(_HandgradersSetUp, UnitTestBase):
+class AddCourseHandgradersTestCase(_SetUp, UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -50,23 +55,28 @@ class AddCourseHandgradersTestCase(_HandgradersSetUp, UnitTestBase):
 
         self.assertEqual(len(self.current_handgraders), self.course.handgraders.count())
 
-        response = self.client.patch(self.url, {'new_handgraders': new_handgrader_names})
+        response = self.client.post(self.url, {'new_handgraders': new_handgrader_names})
 
         new_users = list(User.objects.filter(username__in=new_handgrader_names))
 
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertCountEqual(new_users + self.current_handgraders, self.course.handgraders.all())
 
     def test_add_handgraders_permission_denied(self):
-        for user in self.staff, self.current_handgraders[0], self.nobody:
+        for user in self.staff, self.current_handgraders[0], self.guest:
             self.client.force_authenticate(user)
-            response = self.client.patch(self.url, {'new_handgraders': ['fake_name']})
+            response = self.client.post(self.url, {'new_handgraders': ['fake_name']})
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
             self.assertCountEqual(self.current_handgraders, self.course.handgraders.all())
 
+    def test_error_missing_request_param(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.url, {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-class RemoveCourseHandgraderTestCase(_HandgradersSetUp, UnitTestBase):
+
+class RemoveCourseHandgraderTestCase(_SetUp, UnitTestBase):
     def setUp(self):
         super().setUp()
 
@@ -90,10 +100,15 @@ class RemoveCourseHandgraderTestCase(_HandgradersSetUp, UnitTestBase):
         self.assertCountEqual(self.remaining_handgraders, self.course.handgraders.all())
 
     def test_remove_handgraders_permission_denied(self):
-        for user in self.staff, self.remaining_handgraders[0], self.nobody:
+        for user in self.staff, self.remaining_handgraders[0], self.guest:
             self.client.force_authenticate(user)
 
             response = self.client.patch(self.url, self.request_body)
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
             self.assertCountEqual(self.all_handgraders, self.course.handgraders.all())
+
+    def test_error_missing_request_param(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(self.url, {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)

@@ -166,7 +166,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
         self.handgrading_rubric.validate_and_update(show_grades_and_rubric_to_students=True)
         self.project.validate_and_update(visible_to_students=True)
 
-        [other_student] = obj_build.make_enrolled_users(self.course, 1)
+        [other_student] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(other_student)
 
         response = self.client.get(self.url)
@@ -327,7 +327,7 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
         self.do_handgrading_results_test(self.handgrader, num_results=2, num_groups=4)
 
     def test_non_staff_non_handgrader_get_handgrading_results_permission_denied(self):
-        [student] = obj_build.make_enrolled_users(self.course, 1)
+        [student] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(student)
         response = self.client.get(reverse('handgrading_results', kwargs={'pk': self.project.pk}))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)

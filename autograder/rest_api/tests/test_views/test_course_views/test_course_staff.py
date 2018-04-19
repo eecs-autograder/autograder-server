@@ -18,7 +18,7 @@ class _SetUp(UnitTestBase):
         self.url = reverse('course-staff', kwargs={'pk': self.course.pk})
 
         [self.admin] = obj_build.make_admin_users(self.course, 1)
-        [self.enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [self.student] = obj_build.make_student_users(self.course, 1)
         [self.guest] = obj_build.make_users(1)
 
 
@@ -38,7 +38,7 @@ class ListStaffTestCase(_SetUp):
             self.assertCountEqual(expected_content, response.data)
 
     def test_other_list_staff_permission_denied(self):
-        for user in self.enrolled, self.guest:
+        for user in self.student, self.guest:
             self.client.force_authenticate(user)
 
             response = self.client.get(self.url)
@@ -70,7 +70,7 @@ class AddStaffTestCase(_SetUp):
         current_staff = obj_build.create_dummy_user()
         self.course.staff.add(current_staff)
 
-        for user in current_staff, self.enrolled, self.guest:
+        for user in current_staff, self.student, self.guest:
             self.client.force_authenticate(user)
             response = self.client.post(
                 self.url, {'new_staff': ['spam', 'steve']})
@@ -112,7 +112,7 @@ class RemoveStaffTestCase(_SetUp):
                               self.course.staff.all())
 
     def test_other_remove_staff_permission_denied(self):
-        for user in self.remaining_staff, self.enrolled, self.guest:
+        for user in self.remaining_staff, self.student, self.guest:
             self.assertEqual(self.total_num_staff,
                              self.course.staff.count())
 

@@ -29,7 +29,7 @@ class ListAGTestCommandsTestCase(UnitTestBase):
         self.assertSequenceEqual([self.cmd1.to_dict(), self.cmd2.to_dict()], response.data)
 
     def test_non_staff_list_cmds_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)
@@ -63,7 +63,7 @@ class CreateAGTestCommandsTestCase(test_impls.CreateObjectTest, UnitTestBase):
         self.do_permission_denied_create_test(
             ag_models.AGTestCommand.objects, self.client, staff, self.url, data)
 
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_create_test(
             ag_models.AGTestCommand.objects, self.client, enrolled, self.url, data)
 
@@ -94,7 +94,7 @@ class AGTestCommandOrderTestCase(UnitTestBase):
         self.assertSequenceEqual(new_order, response.data)
 
     def test_non_staff_get_order_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.client.force_authenticate(enrolled)
 
         response = self.client.get(self.url)
@@ -136,7 +136,7 @@ class GetUpdateDeleteAGTestCommandTestCase(test_impls.GetObjectTest,
         self.do_get_object_test(self.client, staff, self.url, self.ag_test_cmd.to_dict())
 
     def test_non_staff_get_permission_denied(self):
-        [enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_get_test(self.client, enrolled,self.url)
 
     def test_admin_valid_update(self):

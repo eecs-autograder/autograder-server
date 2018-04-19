@@ -20,7 +20,7 @@ class _SetUp(UnitTestBase):
 
         [self.superuser] = obj_build.make_users(1, superuser=True)
         [self.staff] = obj_build.make_staff_users(self.course, 1)
-        [self.enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [self.student] = obj_build.make_student_users(self.course, 1)
         [self.guest] = obj_build.make_users(1)
 
 
@@ -41,7 +41,7 @@ class ListCourseAdminsTestCase(_SetUp):
             self.assertCountEqual(expected_content, response.data)
 
     def test_other_list_admins_permission_denied(self):
-        for user in self.guest, self.enrolled:
+        for user in self.guest, self.student:
             self.client.force_authenticate(user)
 
             response = self.client.get(self.url)
@@ -81,7 +81,7 @@ class AddCourseAdminsTestCase(_SetUp):
             self.course.admins.set(current_admins, clear=True)
 
     def test_other_add_admins_permission_denied(self):
-        for user in self.staff, self.enrolled, self.guest:
+        for user in self.staff, self.student, self.guest:
             self.client.force_authenticate(user)
 
             new_admin_name = 'steve'
@@ -138,7 +138,7 @@ class RemoveCourseAdminsTestCase(_SetUp):
         self.assertTrue(self.course.is_admin(self.remaining_admin))
 
     def test_other_remove_admins_permission_denied(self):
-        for user in self.guest, self.enrolled, self.staff:
+        for user in self.guest, self.student, self.staff:
             self.client.force_authenticate(user)
             response = self.client.patch(self.url, self.request_body)
 
