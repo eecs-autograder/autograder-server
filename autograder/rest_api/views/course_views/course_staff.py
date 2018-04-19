@@ -1,34 +1,70 @@
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.utils.decorators import method_decorator
+from drf_yasg.openapi import Parameter
+from drf_yasg.utils import swagger_auto_schema
 
 from rest_framework import (
     viewsets, mixins, permissions, response, status)
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
+import autograder.rest_api.permissions as ag_permissions
+from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet, require_body_params
 
 from .permissions import IsAdminOrReadOnlyStaff
 
 from ..load_object_mixin import build_load_object_mixin
 
 
-class CourseStaffViewSet(build_load_object_mixin(ag_models.Course, pk_key='course_pk'),
-                         mixins.ListModelMixin,
-                         viewsets.GenericViewSet):
+_add_staff_params = [
+    Parameter(
+        'new_staff',
+        'body',
+        type='List[string]',
+        required=True,
+        description='A list of usernames who should be granted staff '
+                    'privileges for this course.'
+    )
+]
+
+
+_remove_staff_params = [
+    Parameter(
+        'remove_staff',
+        'body',
+        type='List[string]',
+        required=True,
+        description='A list of usernames whose staff privileges '
+                    'should be revoked for this course.'
+    )
+]
+
+
+class CourseStaffViewSet(ListNestedModelViewSet):
     serializer_class = ag_serializers.UserSerializer
-    permission_classes = (permissions.IsAuthenticated, IsAdminOrReadOnlyStaff)
+    permission_classes = (ag_permissions.is_admin_or_read_only_staff(),)
 
-    def get_queryset(self):
-        course = self.get_object()
-        return course.staff.all()
+    model_manager = ag_models.Course.objects
+    reverse_to_one_field_name = 'staff'
 
+    @swagger_auto_schema(overrides={'request_body_parameters': _add_staff_params},
+                         responses={'204': ''})
     @transaction.atomic()
+    @method_decorator(require_body_params('new_staff'))
+    def post(self, request, *args, **kwargs):
+        course = self.get_object()
+        self.add_staff(course, request.data['new_staff'])
+
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    @swagger_auto_schema(overrides={'request_body_parameters': _remove_staff_params},
+                         responses={'204': ''})
+    @transaction.atomic()
+    @method_decorator(require_body_params('remove_staff'))
     def patch(self, request, *args, **kwargs):
         course = self.get_object()
-        if 'new_staff' in request.data:
-            self.add_staff(course, request.data['new_staff'])
-        elif 'remove_staff' in request.data:
-            self.remove_staff(course, request.data['remove_staff'])
+        self.remove_staff(course, request.data['remove_staff'])
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 

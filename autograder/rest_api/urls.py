@@ -146,10 +146,10 @@ urlpatterns = [
     url(r'', include(user_router.urls)),
 
     url(r'', include(course_router.urls)),
-    # url(r'', include(admin_router.urls)),
     path('courses/<int:pk>/admins/', views.CourseAdminViewSet.as_view(),
          name='course-admins'),
-    url(r'', include(staff_router.urls)),
+    path('courses/<int:pk>/staff/', views.CourseStaffViewSet.as_view(),
+         name='course-staff'),
     url(r'', include(enrolled_students_router.urls)),
     url(r'', include(course_projects_router.urls)),
 

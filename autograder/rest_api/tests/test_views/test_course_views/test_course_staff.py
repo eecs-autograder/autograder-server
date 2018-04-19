@@ -2,22 +2,28 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.rest_api.serializers as ag_serializers
 
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 
 
-class _StaffSetUp(test_data.Client, test_data.Course):
+class _SetUp(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.url = reverse('course-staff-list',
-                           kwargs={'course_pk': self.course.pk})
+        self.course = obj_build.make_course()
+        self.client = APIClient()
+        self.url = reverse('course-staff', kwargs={'pk': self.course.pk})
+
+        [self.superuser] = obj_build.make_users(1, superuser=True)
+        [self.admin] = obj_build.make_admin_users(self.course, 1)
+        [self.enrolled] = obj_build.make_enrolled_users(self.course, 1)
+        [self.guest] = obj_build.make_users(1)
 
 
-class ListStaffTestCase(_StaffSetUp, UnitTestBase):
+class ListStaffTestCase(_SetUp):
     def test_admin_or_staff_list_staff(self):
         staff = obj_build.create_dummy_users(3)
         self.course.staff.add(*staff)
@@ -33,14 +39,14 @@ class ListStaffTestCase(_StaffSetUp, UnitTestBase):
             self.assertCountEqual(expected_content, response.data)
 
     def test_other_list_staff_permission_denied(self):
-        for user in self.enrolled, self.nobody:
+        for user in self.enrolled, self.guest:
             self.client.force_authenticate(user)
 
             response = self.client.get(self.url)
             self.assertEqual(403, response.status_code)
 
 
-class AddStaffTestCase(_StaffSetUp, UnitTestBase):
+class AddStaffTestCase(_SetUp):
     def test_admin_add_staff(self):
         current_staff = obj_build.create_dummy_users(2)
         self.course.staff.add(*current_staff)
@@ -52,7 +58,7 @@ class AddStaffTestCase(_StaffSetUp, UnitTestBase):
         self.assertEqual(len(current_staff), self.course.staff.count())
 
         self.client.force_authenticate(self.admin)
-        response = self.client.patch(
+        response = self.client.post(
             self.url, {'new_staff': new_staff_names})
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
@@ -65,9 +71,9 @@ class AddStaffTestCase(_StaffSetUp, UnitTestBase):
         current_staff = obj_build.create_dummy_user()
         self.course.staff.add(current_staff)
 
-        for user in current_staff, self.enrolled, self.nobody:
+        for user in current_staff, self.enrolled, self.guest:
             self.client.force_authenticate(user)
-            response = self.client.patch(
+            response = self.client.post(
                 self.url, {'new_staff': ['spam', 'steve']})
 
             self.assertEqual(403, response.status_code)
@@ -75,8 +81,13 @@ class AddStaffTestCase(_StaffSetUp, UnitTestBase):
             self.assertCountEqual([current_staff],
                                   self.course.staff.all())
 
+    def test_error_missing_request_param(self):
+        self.client.force_authenticate(self.superuser)
+        response = self.client.post(self.url, {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-class RemoveStaffTestCase(_StaffSetUp, UnitTestBase):
+
+class RemoveStaffTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
@@ -102,7 +113,7 @@ class RemoveStaffTestCase(_StaffSetUp, UnitTestBase):
                               self.course.staff.all())
 
     def test_other_remove_staff_permission_denied(self):
-        for user in self.remaining_staff, self.enrolled, self.nobody:
+        for user in self.remaining_staff, self.enrolled, self.guest:
             self.assertEqual(self.total_num_staff,
                              self.course.staff.count())
 
@@ -113,3 +124,8 @@ class RemoveStaffTestCase(_StaffSetUp, UnitTestBase):
             self.assertCountEqual(self.all_staff, self.course.staff.all())
 
             self.course.staff.add(*self.staff_to_remove)
+
+    def test_error_missing_request_param(self):
+        self.client.force_authenticate(self.superuser)
+        response = self.client.patch(self.url, {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
