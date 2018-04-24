@@ -1,15 +1,10 @@
 from rest_framework import viewsets, mixins, permissions, decorators, response, status
-from django.contrib.auth.models import User
-from django.db import transaction
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
-import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, TransactionRetrieveUpdateDestroyMixin)
-
-from ..load_object_mixin import build_load_object_mixin
 
 
 class CoursePermissions(permissions.BasePermission):

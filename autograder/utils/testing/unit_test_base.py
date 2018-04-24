@@ -7,7 +7,7 @@ from django.test import TransactionTestCase
 from django.test.utils import override_settings
 
 
-@override_settings(MEDIA_ROOT=os.path.join(settings.BASE_DIR, 'tmp_filesystem'))
+@override_settings(MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem'))
 class UnitTestBase(TransactionTestCase):
     """
     Base class for test cases that use either the filesystem or the

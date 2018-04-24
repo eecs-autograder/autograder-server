@@ -8,24 +8,7 @@ MEDIA_ROOT += '_dev'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
 INSTALLED_APPS += [
-    'django.contrib.staticfiles',
     'debug_toolbar',
 ]
 
@@ -37,9 +20,6 @@ def show_toolbar_callback(request):
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': show_toolbar_callback
 }
-
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 MIDDLEWARE += (
     'debug_toolbar.middleware.DebugToolbarMiddleware',

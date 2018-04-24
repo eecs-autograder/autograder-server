@@ -10,9 +10,13 @@ from django.utils.crypto import get_random_string
 VERSION = '2.1.0'
 
 # This is the autograder-server directory
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# autograder-server/autograder
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # autograder-server/media_root
-MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media_root'))
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(PROJECT_ROOT, 'media_root'))
 
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -156,14 +160,38 @@ CACHES = {
 
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
-    # 'SECURITY_DEFINITIONS': {
-    #     'google': {
-    #         'type': 'oauth2',
-    #         'name': ''
-    #     }
-    # },
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
     'DOC_EXPANSION': 'None'
 }
 
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+INSTALLED_APPS += [
+    'django.contrib.staticfiles',
+]
+
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
 
 from autograder.settings.celery_settings import *  # noqa
