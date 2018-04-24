@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 from django.core.exceptions import ObjectDoesNotExist, FieldDoesNotExist
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -78,6 +80,11 @@ class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,
     GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
     """
     swagger_schema = AGModelViewAutoSchema
+
+    # Tags to apply to all operations in this view.
+    # This can be overridden on individual operations by passing
+    # 'api_tags' to @swagger_auto_schema
+    api_tags = None  # type: Optional[List[str]]
 
 
 class AGModelGenericView(GetObjectLockOnUnsafeMixin,

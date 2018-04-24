@@ -43,8 +43,9 @@ class CourseStaffViewSet(ListNestedModelViewSet):
     model_manager = ag_models.Course.objects
     reverse_to_one_field_name = 'staff'
 
-    @swagger_auto_schema(overrides={'request_body_parameters': _add_staff_params},
-                         responses={'204': ''})
+    api_tags = ['courses', 'permissions']
+
+    @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_add_staff_params)
     @transaction.atomic()
     @method_decorator(require_body_params('new_staff'))
     def post(self, request, *args, **kwargs):
@@ -53,8 +54,7 @@ class CourseStaffViewSet(ListNestedModelViewSet):
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(overrides={'request_body_parameters': _remove_staff_params},
-                         responses={'204': ''})
+    @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_remove_staff_params)
     @transaction.atomic()
     @method_decorator(require_body_params('remove_staff'))
     def patch(self, request, *args, **kwargs):

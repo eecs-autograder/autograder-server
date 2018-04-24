@@ -44,8 +44,9 @@ class CourseAdminViewSet(ListNestedModelViewSet):
     model_manager = ag_models.Course.objects
     reverse_to_one_field_name = 'admins'
 
-    @swagger_auto_schema(overrides={'request_body_parameters': _add_admins_params},
-                         responses={'204': ''})
+    api_tags = ['courses', 'permissions']
+
+    @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_add_admins_params)
     @transaction.atomic()
     @method_decorator(require_body_params('new_admins'))
     def post(self, request, *args, **kwargs):
@@ -54,8 +55,7 @@ class CourseAdminViewSet(ListNestedModelViewSet):
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(overrides={'request_body_parameters': _remove_admins_params},
-                         responses={'204': ''})
+    @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_remove_admins_params)
     @transaction.atomic()
     @method_decorator(require_body_params('remove_admins'))
     def patch(self, request, *args, **kwargs):

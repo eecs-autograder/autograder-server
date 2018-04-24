@@ -1,6 +1,6 @@
 import functools
 from collections import OrderedDict
-from typing import Union, Type, List, get_type_hints, Tuple
+from typing import Union, Type, List, get_type_hints, Tuple, Optional
 
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
@@ -115,9 +115,8 @@ class AGSchemaGenerator(OpenAPISchemaGenerator):
 
 class AGModelViewAutoSchema(SwaggerAutoSchema):
     def get_request_body_parameters(self, consumes):
-        overrides = self.overrides.get('overrides', {})
-        if 'request_body_parameters' in overrides:
-            return overrides['request_body_parameters']
+        if 'request_body_parameters' in self.overrides:
+            return self.overrides['request_body_parameters']
 
         serializer = self.get_request_serializer()
         if not isinstance(serializer, AGModelSerializer):
@@ -136,9 +135,21 @@ class AGModelViewAutoSchema(SwaggerAutoSchema):
         ag_model_class = serializer.ag_model_class  # type: APIType
         return AGModelSchemaBuilder.get().get_schema(ag_model_class)
 
+    def get_tags(self, operation_keys):
+        if 'api_tags' in self.overrides:
+            return self.overrides['api_tags']
+
+        if hasattr(self.view, 'api_tags') and self.view.api_tags is not None:
+            return self.view.api_tags
+
+        return self._get_tags_impl(operation_keys)
+
+    def _get_tags_impl(self, operation_keys):
+        return super().get_tags(operation_keys)
+
 
 class NestedModelViewAutoSchema(AGModelViewAutoSchema):
-    def get_tags(self, operation_keys):
+    def _get_tags_impl(self, operation_keys):
         return [operation_keys[1]]
 
 

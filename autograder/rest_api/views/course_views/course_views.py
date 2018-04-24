@@ -1,3 +1,5 @@
+from drf_yasg.openapi import Parameter, Schema
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, mixins, permissions, decorators, response, status
 
 import autograder.core.models as ag_models
@@ -21,6 +23,17 @@ class CoursePermissions(permissions.BasePermission):
         return course.is_admin(request.user)
 
 
+_my_roles_schema = Schema(
+    type='object',
+    properties={
+        'is_admin': Parameter('is_admin', 'body', type='boolean'),
+        'is_staff': Parameter('is_staff', 'body', type='boolean'),
+        'is_student': Parameter('is_student', 'body', type='boolean'),
+        'is_handgrader': Parameter('is_handgrader', 'body', type='boolean'),
+    }
+)
+
+
 class CourseViewSet(TransactionRetrieveUpdateDestroyMixin,
                     transaction_mixins.TransactionCreateMixin,
                     mixins.ListModelMixin,
@@ -33,6 +46,7 @@ class CourseViewSet(TransactionRetrieveUpdateDestroyMixin,
     def get_queryset(self):
         return ag_models.Course.objects.all()
 
+    @swagger_auto_schema(responses={'200': _my_roles_schema}, api_tags=['courses', 'permissions'])
     @decorators.detail_route()
     def my_roles(self, request, *args, **kwargs):
         course = self.get_object()
