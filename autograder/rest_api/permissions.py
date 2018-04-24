@@ -1,3 +1,4 @@
+from functools import singledispatch
 from typing import Any, Callable, Type
 
 from django.utils import timezone
@@ -6,10 +7,45 @@ from rest_framework import exceptions, permissions
 import autograder.core.models as ag_models
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 
-
-GetCourseFnType = Callable[[Any], ag_models.Course]
-GetGroupFnType = Callable[[Any], ag_models.SubmissionGroup]
+GetCourseFnType = Callable[[ag_models.AutograderModel], ag_models.Course]
+GetProjectFnType = Callable[[ag_models.AutograderModel], ag_models.Project]
+GetGroupFnType = Callable[[ag_models.AutograderModel], ag_models.SubmissionGroup]
 PermissionClassType = Type[permissions.BasePermission]
+
+
+@singledispatch
+def _get_course(model: ag_models.AutograderModel) -> ag_models.Course:
+    raise NotImplementedError
+
+
+@_get_course.register(ag_models.Course)
+def _(course: ag_models.Course) -> ag_models.Course:
+    return course
+
+
+@_get_course.register(ag_models.Project)
+def _(project: ag_models.Project) -> ag_models.Course:
+    return project.course
+
+
+@_get_course.register(ag_models.SubmissionGroup)
+def _(group: ag_models.SubmissionGroup) -> ag_models.Course:
+    return group.project.course
+
+
+@singledispatch
+def _get_project(model: ag_models.AutograderModel) -> ag_models.Course:
+    raise NotImplementedError
+
+
+@_get_project.register(ag_models.Project)
+def _(project: ag_models.Project) -> ag_models.Project:
+    return project
+
+
+@_get_project.register(ag_models.SubmissionGroup)
+def _(group: ag_models.SubmissionGroup) -> ag_models.Project:
+    return group.project
 
 
 class IsReadOnly(permissions.BasePermission):
@@ -22,7 +58,7 @@ class IsSuperuser(permissions.BasePermission):
         return request.user.is_superuser
 
 
-def is_admin(get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
+def is_admin(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
     class IsAdmin(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -31,7 +67,7 @@ def is_admin(get_course_fn: GetCourseFnType=lambda course: course) -> Permission
     return IsAdmin
 
 
-def is_staff(get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
+def is_staff(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
     class IsStaff(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -40,7 +76,7 @@ def is_staff(get_course_fn: GetCourseFnType=lambda course: course) -> Permission
     return IsStaff
 
 
-def is_handgrader(get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
+def is_handgrader(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
     class IsHandgrader(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -49,8 +85,17 @@ def is_handgrader(get_course_fn: GetCourseFnType=lambda course: course) -> Permi
     return IsHandgrader
 
 
+def is_student(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
+    class IsStudent(permissions.BasePermission):
+        def has_object_permission(self, request, view, obj):
+            course = get_course_fn(obj)
+            return course.is_student(request.user)
+
+    return IsStudent
+
+
 def is_admin_or_handgrader_or_read_only_staff(
-        get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
+        get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
     class IsAdminOrHandgraderOrReadOnlyStaff(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -63,7 +108,7 @@ def is_admin_or_handgrader_or_read_only_staff(
 
 
 def is_admin_or_read_only_staff(
-        get_course_fn: GetCourseFnType=lambda course: course) -> PermissionClassType:
+        get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
     class IsAdminOrReadOnlyStaff(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
@@ -75,7 +120,7 @@ def is_admin_or_read_only_staff(
 
 
 def can_view_project(
-    get_project_fn: Callable[[Any], ag_models.Project]=lambda project: project
+    get_project_fn: GetProjectFnType=_get_project
 ) -> Type[permissions.BasePermission]:
     class CanViewProject(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):

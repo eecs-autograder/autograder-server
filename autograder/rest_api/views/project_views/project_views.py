@@ -1,7 +1,11 @@
 from django.core.cache import cache
 from django.db import transaction
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.http import FileResponse
-from rest_framework import decorators, mixins, permissions, response
+from drf_composable_permissions.p import P
+from rest_framework import decorators, mixins, response
+from rest_framework import permissions
 from rest_framework import status
 
 import autograder.core.models as ag_models
@@ -9,7 +13,58 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import tasks as api_tasks, transaction_mixins
 from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
-from .permissions import ProjectPermissions
+from autograder.rest_api.views.ag_model_views import ListCreateNestedModelViewSet
+
+can_list_projects = (
+    P(ag_permissions.IsReadOnly) &
+    (P(ag_permissions.is_staff()) |
+     P(ag_permissions.is_student()) |
+     P(ag_permissions.is_handgrader()))
+)
+list_create_project_permissions = P(ag_permissions.is_admin()) | can_list_projects
+
+
+class ListCreateProjectView(ListCreateNestedModelViewSet):
+    serializer_class = ag_serializers.ProjectSerializer
+    permission_classes = (list_create_project_permissions,)
+
+    model_manager = ag_models.Course.objects
+    to_one_field_name = 'course'
+    reverse_to_one_field_name = 'projects'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.method not in permissions.SAFE_METHODS:
+            return queryset
+
+        course = self.get_object()
+        if course.is_student(self.request.user):
+            return queryset.filter(visible_to_students=True)
+
+        return queryset
+
+
+@receiver(post_save, sender=ag_models.Project)
+def on_project_created(sender, instance, created, **kwargs):
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == 'test':
+        return
+
+    if not created:
+        return
+
+    from autograder.grading_tasks.tasks import register_project_queues
+
+    from autograder.celery import app
+    register_project_queues.apply_async(
+        kwargs={'project_pks': [instance.pk]}, queue='small_tasks',
+        connection=app.connection())
+
+
+project_detail_permissions = (
+    P(ag_permissions.is_admin()) |
+    (P(ag_permissions.IsReadOnly) & P(ag_permissions.can_view_project()))
+)
 
 
 class ProjectDetailViewSet(mixins.RetrieveModelMixin,
@@ -18,7 +73,7 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
     model_manager = ag_models.Project.objects.select_related('course')
 
     serializer_class = ag_serializers.ProjectSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermissions)
+    permission_classes = (project_detail_permissions,)
 
     @decorators.detail_route()
     def num_queued_submissions(self, *args, **kwargs):
