@@ -1,11 +1,11 @@
+from django.db import transaction
+from rest_framework import response
+
 import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
-from rest_framework import response
-from django.db import transaction
-
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrievePatchDestroyMixin,
     AGModelAPIView)
 
 
@@ -21,7 +21,7 @@ class AnnotationListCreateView(ListCreateNestedModelViewSet):
     reverse_to_one_field_name = 'annotations'
 
 
-class AnnotationDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
+class AnnotationDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGenericViewSet):
     serializer_class = handgrading_serializers.AnnotationSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(

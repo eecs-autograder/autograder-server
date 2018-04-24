@@ -4,13 +4,13 @@ from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
-
 from rest_framework import response, status, exceptions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet, require_body_params
+from autograder.rest_api.views.schema_generation import APITags
 
 _add_admins_params = [
     Parameter(
@@ -44,7 +44,7 @@ class CourseAdminViewSet(ListNestedModelViewSet):
     model_manager = ag_models.Course.objects
     reverse_to_one_field_name = 'admins'
 
-    api_tags = ['courses', 'permissions']
+    api_tags = [APITags.permissions]
 
     @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_add_admins_params)
     @transaction.atomic()

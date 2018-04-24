@@ -1,14 +1,12 @@
 from typing import Optional
 
 from django.core import exceptions
+from django.core.cache import cache
 from django.db import transaction
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.core.cache import cache
-
-from rest_framework import decorators, mixins, response, status
-
 from drf_composable_permissions.p import P
+from rest_framework import decorators, mixins, response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
@@ -16,7 +14,6 @@ import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.submission import get_submissions_with_results_queryset
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
-
 
 is_admin = ag_permissions.is_admin(lambda submission: submission.submission_group.project.course)
 can_view_project = ag_permissions.can_view_project(
@@ -27,7 +24,7 @@ is_group_member = ag_permissions.is_group_member(lambda submission: submission.s
 
 
 class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
-                              transaction_mixins.TransactionUpdateMixin,
+                              transaction_mixins.TransactionPartialUpdateMixin,
                               AGModelGenericViewSet):
     model_manager = ag_models.Submission.objects.select_related(
         'submission_group__project__course')

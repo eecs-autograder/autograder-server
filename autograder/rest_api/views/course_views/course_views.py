@@ -1,12 +1,12 @@
 from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import viewsets, mixins, permissions, decorators, response, status
+from rest_framework import mixins, permissions, decorators, response
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, TransactionRetrieveUpdateDestroyMixin)
+from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
+from autograder.rest_api.views.schema_generation import APITags
 
 
 class CoursePermissions(permissions.BasePermission):
@@ -34,19 +34,22 @@ _my_roles_schema = Schema(
 )
 
 
-class CourseViewSet(TransactionRetrieveUpdateDestroyMixin,
+class CourseViewSet(mixins.ListModelMixin,
+                    mixins.RetrieveModelMixin,
+                    transaction_mixins.TransactionPartialUpdateMixin,
                     transaction_mixins.TransactionCreateMixin,
-                    mixins.ListModelMixin,
                     AGModelGenericViewSet):
     serializer_class = ag_serializers.CourseSerializer
     permission_classes = (permissions.IsAuthenticated, CoursePermissions,)
 
     model_manager = ag_models.Course.objects
 
+    api_tags = [APITags.courses]
+
     def get_queryset(self):
         return ag_models.Course.objects.all()
 
-    @swagger_auto_schema(responses={'200': _my_roles_schema}, api_tags=['courses', 'permissions'])
+    @swagger_auto_schema(responses={'200': _my_roles_schema}, api_tags=[APITags.permissions])
     @decorators.detail_route()
     def my_roles(self, request, *args, **kwargs):
         course = self.get_object()

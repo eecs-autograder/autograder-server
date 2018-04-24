@@ -1,11 +1,11 @@
-from rest_framework import permissions
 from typing import Any, Callable
+
+from rest_framework import permissions
 
 import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
-
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrievePatchDestroyMixin,
 )
 
 GetRubricFnType = Callable[[Any], handgrading_models.HandgradingRubric]
@@ -41,7 +41,7 @@ class CommentListCreateView(ListCreateNestedModelViewSet):
     reverse_to_one_field_name = 'comments'
 
 
-class CommentDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
+class CommentDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGenericViewSet):
     serializer_class = handgrading_serializers.CommentSerializer
     permission_classes = [
         comment_permissions(

@@ -3,11 +3,10 @@ from rest_framework import response
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.permissions as ag_permissions
-
+import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrievePatchDestroyMixin,
     GetObjectLockOnUnsafeMixin)
 
 
@@ -44,7 +43,7 @@ class AGTestCaseOrderView(GetObjectLockOnUnsafeMixin, APIView):
             return response.Response(list(ag_test_suite.get_agtestcase_order()))
 
 
-class AGTestCaseDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
+class AGTestCaseDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGenericViewSet):
     serializer_class = ag_serializers.AGTestCaseSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(

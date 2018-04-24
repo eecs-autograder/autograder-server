@@ -1,21 +1,20 @@
 from django.core.cache import cache
 from django.db import transaction
 from django.http import FileResponse
-
 from rest_framework import decorators, mixins, permissions, response
 from rest_framework import status
 
 import autograder.core.models as ag_models
-
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, TransactionRetrieveUpdateDestroyMixin)
-from autograder.rest_api import tasks as api_tasks
+from autograder.rest_api import tasks as api_tasks, transaction_mixins
+from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
 from .permissions import ProjectPermissions
 
 
-class ProjectDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
+class ProjectDetailViewSet(mixins.RetrieveModelMixin,
+                           transaction_mixins.TransactionPartialUpdateMixin,
+                           AGModelGenericViewSet):
     model_manager = ag_models.Project.objects.select_related('course')
 
     serializer_class = ag_serializers.ProjectSerializer

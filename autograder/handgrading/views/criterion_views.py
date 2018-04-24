@@ -1,12 +1,11 @@
 from django.db import transaction
-
 from rest_framework import response
 
 import autograder.handgrading.models as hg_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrievePatchDestroyMixin,
     AGModelAPIView)
 
 
@@ -41,7 +40,7 @@ class CriterionListCreateView(ListCreateNestedModelViewSet):
         return criterion_response
 
 
-class CriterionDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
+class CriterionDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGenericViewSet):
     serializer_class = handgrading_serializers.CriterionSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(

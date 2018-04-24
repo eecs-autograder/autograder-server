@@ -1,14 +1,12 @@
 from django.db import transaction
-
 from rest_framework import response
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.permissions as ag_permissions
-
+import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrieveUpdateDestroyMixin,
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrievePatchDestroyMixin,
     GetObjectLockOnUnsafeMixin)
 
 
@@ -42,7 +40,7 @@ class AGTestSuiteOrderView(GetObjectLockOnUnsafeMixin, APIView):
             return response.Response(list(project.get_agtestsuite_order()))
 
 
-class AGTestSuiteDetailViewSet(TransactionRetrieveUpdateDestroyMixin, AGModelGenericViewSet):
+class AGTestSuiteDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGenericViewSet):
     serializer_class = ag_serializers.AGTestSuiteSerializer
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(

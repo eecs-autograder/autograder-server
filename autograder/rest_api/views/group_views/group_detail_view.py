@@ -1,28 +1,23 @@
-import tempfile
+import itertools
 import os
 import shutil
-import itertools
+import tempfile
 
 from django.contrib.auth.models import User
-from django.utils import timezone
 from django.db import transaction
-
+from django.utils import timezone
+from drf_composable_permissions.p import P
 from rest_framework import mixins, permissions, decorators, response, status
 
-from drf_composable_permissions.p import P
-
 import autograder.core.models as ag_models
-from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
-import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api import transaction_mixins
-
-from autograder import utils
-import autograder.utils.testing as test_ut
 import autograder.core.utils as core_ut
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
-
 import autograder.rest_api.permissions as ag_permissions
-
+import autograder.rest_api.serializers as ag_serializers
+import autograder.utils.testing as test_ut
+from autograder import utils
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
+from autograder.rest_api import transaction_mixins
+from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
 
 is_admin = ag_permissions.is_admin(lambda group: group.project.course)
 is_staff_or_member = ag_permissions.is_staff_or_group_member()
@@ -56,7 +51,7 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
 
 
 class GroupDetailViewSet(mixins.RetrieveModelMixin,
-                         transaction_mixins.TransactionUpdateMixin,
+                         transaction_mixins.TransactionPartialUpdateMixin,
                          AGModelGenericViewSet):
     serializer_class = ag_serializers.SubmissionGroupSerializer
     permission_classes = (group_permissions,)

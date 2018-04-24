@@ -3,14 +3,13 @@ from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
-
 from rest_framework import response, status
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.permissions as ag_permissions
+import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet, require_body_params
-
+from autograder.rest_api.views.schema_generation import APITags
 
 _add_handgraders_params = [
     Parameter(
@@ -43,7 +42,7 @@ class CourseHandgradersViewSet(ListNestedModelViewSet):
     model_manager = ag_models.Course.objects
     reverse_to_one_field_name = 'handgraders'
 
-    api_tags = ['courses', 'permissions']
+    api_tags = [APITags.permissions]
 
     @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_add_handgraders_params)
     @transaction.atomic()

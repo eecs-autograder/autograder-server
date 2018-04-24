@@ -1,16 +1,16 @@
 from typing import Optional, List
 
-from django.core.exceptions import ObjectDoesNotExist, FieldDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-
 from rest_framework import viewsets, permissions, mixins, generics, response, status
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
-from autograder.rest_api.views.schema_generation import AGModelViewAutoSchema, NestedModelViewAutoSchema
+from autograder.rest_api.views.schema_generation import AGModelViewAutoSchema, \
+    NestedModelViewAutoSchema, APITags
 from ..transaction_mixins import (
-    TransactionCreateMixin, TransactionUpdateMixin,
+    TransactionCreateMixin, TransactionPartialUpdateMixin,
     TransactionDestroyMixin)
 
 
@@ -84,7 +84,7 @@ class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,
     # Tags to apply to all operations in this view.
     # This can be overridden on individual operations by passing
     # 'api_tags' to @swagger_auto_schema
-    api_tags = None  # type: Optional[List[str]]
+    api_tags = None  # type: Optional[List[APITags]]
 
 
 class AGModelGenericView(GetObjectLockOnUnsafeMixin,
@@ -232,9 +232,9 @@ class RetrieveCreateNestedModelViewSet(RetrieveNestedModelMixin,
     pass
 
 
-class TransactionRetrieveUpdateDestroyMixin(mixins.RetrieveModelMixin,
-                                            TransactionUpdateMixin,
-                                            TransactionDestroyMixin):
+class TransactionRetrievePatchDestroyMixin(mixins.RetrieveModelMixin,
+                                           TransactionPartialUpdateMixin,
+                                           TransactionDestroyMixin):
     pass
 
 

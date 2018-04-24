@@ -1,26 +1,23 @@
+import enum
 import functools
 from collections import OrderedDict
-from typing import Union, Type, List, get_type_hints, Tuple, Optional
+from typing import Union, Type, get_type_hints
 
-from django.core.exceptions import FieldDoesNotExist
-from django.db import models
-from django.db.models import fields
 import django.contrib.postgres.fields as pg_fields
+from django.core.exceptions import FieldDoesNotExist
+from django.db.models import fields
 from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.inspectors import SwaggerAutoSchema
-from drf_yasg.openapi import Schema, Parameter, Response
+from drf_yasg.openapi import Schema, Parameter
 from sphinx.ext.autodoc import format_annotation
-
 from timezone_field.fields import TimeZoneField
 
-from autograder.core.models import AutograderModel
-import autograder.core.models as ag_models
 import autograder.core.fields as ag_fields
+import autograder.core.models as ag_models
+import autograder.handgrading.models as hg_models
+from autograder.core.models import AutograderModel
 from autograder.core.models.ag_model_base import ToDictMixin
 from autograder.rest_api.serializers.ag_model_serializer import AGModelSerializer
-
-import autograder.handgrading.models as hg_models
-
 
 AGModelType = Type[AutograderModel]
 AGSerializableType = Type[ToDictMixin]
@@ -73,44 +70,48 @@ class AGSchemaGenerator(OpenAPISchemaGenerator):
             (title, AGModelSchemaBuilder.get().get_schema(api_type))
             for api_type, title in API_MODELS.items()]
         schema.definitions.update(ag_model_definitions)
+
+        schema.tags = [{'name': tag.value} for tag in APITags]
         return schema
 
 
-# _TAGS_ORDER = [
-#     'courses',
-#
-#     'projects',
-#     'uploaded_files',
-#     'expected_patterns',
-#
-#     'ag_test_suites',
-#     'ag_test_cases',
-#     'ag_test_commands',
-#
-#     'student_test_suites',
-#
-#     'group_invitations',
-#     'groups',
-#     'submission_groups',
-#
-#     'submissions',
-#
-#     'handgrading_rubrics',
-#     'handgrading_rubric',
-#
-#     'criteria',
-#     'annotations',
-#
-#     'criterion_results',
-#     'applied_annotations',
-#     'comments',
-#
-#     'download_tasks',
-#     'rerun_submissions_tasks',
-#
-#     'users',
-#     'logout',
-# ]
+# Defines the order of API tags and provides a single point of
+# maintenance for their string values.
+class APITags(enum.Enum):
+    courses = 'courses'
+    permissions = 'permissions'
+
+    projects = 'projects'
+    uploaded_files = 'uploaded_files'
+    expected_patterns = 'expected_patterns'
+
+    ag_test_suites = 'ag_test_suites'
+    ag_test_cases = 'ag_test_cases'
+    ag_test_commands = 'ag_test_commands'
+
+    student_test_suites = 'student_test_suites'
+
+    group_invitations = 'group_invitations'
+    groups = 'groups'
+    submission_groups = 'submission_groups'
+
+    submissions = 'submissions'
+
+    handgrading_rubrics = 'handgrading_rubrics'
+    handgrading_rubric = 'handgrading_rubric'
+
+    criteria = 'criteria'
+    annotations = 'annotations'
+
+    criterion_results = 'criterion_results'
+    applied_annotations = 'applied_annotations'
+    comments = 'comments'
+
+    download_tasks = 'download_tasks'
+    rerun_submissions_tasks = 'rerun_submissions_tasks'
+
+    users = 'users'
+    logout = 'logout'
 
 
 class AGModelViewAutoSchema(SwaggerAutoSchema):
@@ -137,10 +138,10 @@ class AGModelViewAutoSchema(SwaggerAutoSchema):
 
     def get_tags(self, operation_keys):
         if 'api_tags' in self.overrides:
-            return self.overrides['api_tags']
+            return [tag.value for tag in self.overrides['api_tags']]
 
         if hasattr(self.view, 'api_tags') and self.view.api_tags is not None:
-            return self.view.api_tags
+            return [tag.value for tag in self.view.api_tags]
 
         return self._get_tags_impl(operation_keys)
 
