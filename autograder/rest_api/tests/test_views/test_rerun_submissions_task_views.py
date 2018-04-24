@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.tests.test_views.common_test_impls as test_impls
+import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.grading_tasks import tasks
 from autograder.utils.testing import UnitTestBase

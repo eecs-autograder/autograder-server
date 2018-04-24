@@ -22,9 +22,6 @@ user_router.register(r'users', views.UserViewSet, base_name='user')
 course_router = routers.SimpleRouter()
 course_router.register(r'courses', views.CourseViewSet, base_name='course')
 
-course_projects_router = routers.NestedSimpleRouter(course_router, r'courses',
-                                                    lookup='course')
-
 project_router = routers.SimpleRouter()
 project_router.register(r'projects', views.ProjectDetailViewSet, base_name='project')
 
@@ -136,16 +133,14 @@ urlpatterns = [
     url(r'', include(user_router.urls)),
 
     url(r'', include(course_router.urls)),
-    path('courses/<int:pk>/admins/', views.CourseAdminViewSet.as_view(),
-         name='course-admins'),
-    path('courses/<int:pk>/staff/', views.CourseStaffViewSet.as_view(),
-         name='course-staff'),
+    path('courses/<int:pk>/admins/', views.CourseAdminViewSet.as_view(), name='course-admins'),
+    path('courses/<int:pk>/staff/', views.CourseStaffViewSet.as_view(), name='course-staff'),
     path('courses/<int:pk>/students/', views.CourseStudentsViewSet.as_view(),
          name='course-students'),
     path('courses/<int:pk>/handgraders/', views.CourseHandgradersViewSet.as_view(),
          name='course-handgraders'),
 
-    url(r'', include(course_projects_router.urls)),
+    path('courses/<int:pk>/projects/', views.ListCreateProjectView.as_view(), name='projects'),
 
     url(r'', include(project_router.urls)),
     url(r'', include(project_downloads_router.urls)),
@@ -161,9 +156,6 @@ urlpatterns = [
     url(r'', include(group_submissions_router.urls)),
 
     url(r'', include(submission_router.urls)),
-
-    url(r'^courses/(?P<pk>[0-9]+)/projects/$',
-        views.ListCreateProjectView.as_view(), name='project-list-create'),
 
     url(r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/$',
         views.AGTestSuiteListCreateView.as_view(), name='ag_test_suites'),

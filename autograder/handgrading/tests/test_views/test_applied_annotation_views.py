@@ -7,7 +7,7 @@ import autograder.handgrading.models as handgrading_models
 import autograder.utils.testing.model_obj_builders as obj_build
 
 from autograder.utils.testing import UnitTestBase
-import autograder.rest_api.tests.test_views.common_test_impls as test_impls
+import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 
 
 class ListAppliedAnnotationsTestCase(UnitTestBase):

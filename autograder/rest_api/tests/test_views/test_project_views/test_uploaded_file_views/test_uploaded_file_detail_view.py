@@ -9,7 +9,7 @@ from autograder.core import constants
 
 from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
-import autograder.rest_api.tests.test_views.common_test_impls as test_impls
+import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 
 
 def file_url(uploaded_file):

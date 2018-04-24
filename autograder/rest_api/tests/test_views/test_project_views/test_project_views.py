@@ -3,42 +3,54 @@ import tempfile
 from django.core import exceptions
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from autograder.utils.testing import UnitTestBase
 
 
-class _ProjectsSetUp(test_data.Client, test_data.Project, UnitTestBase):
+class _SetUp(AGViewTestBase):
     def setUp(self):
         super().setUp()
-        self.url = reverse('project-list-create',
-                           kwargs={'pk': self.course.pk})
+        self.client = APIClient()
+        self.course = obj_build.make_course()
+        self.url = reverse('projects', kwargs={'pk': self.course.pk})
 
 
-class CourseListProjectsTestCase(_ProjectsSetUp):
+class CourseListProjectsTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
+
+        self.hidden_project = obj_build.make_project()
+        self.course = self.hidden_project.course
+        self.visible_project = obj_build.make_project(course=self.course, visible_to_students=True)
+        self.all_projects = [self.hidden_project, self.visible_project]
+
+        self.client = APIClient()
+        self.url = reverse('projects', kwargs={'pk': self.course.pk})
 
     def test_admin_list_projects(self):
-        self.do_valid_list_projects_test(self.admin, self.all_projects)
+        [admin] = obj_build.make_admin_users(self.course, 1)
+        self.do_valid_list_projects_test(admin, self.all_projects)
 
     def test_staff_list_projects(self):
-        self.do_valid_list_projects_test(self.staff, self.all_projects)
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        self.do_valid_list_projects_test(staff, self.all_projects)
 
     def test_student_list_projects_visible_only(self):
-        # Make sure more than just visible projects exist
-        all_projects = self.all_projects
-        self.do_valid_list_projects_test(self.enrolled, self.visible_projects)
+        [student] = obj_build.make_student_users(self.course, 1)
+        self.do_valid_list_projects_test(student, [self.visible_project])
 
     def test_handgrader_list_all_projects(self):
-        self.do_valid_list_projects_test(self.handgrader, self.all_projects)
+        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
+        self.do_valid_list_projects_test(handgrader, self.all_projects)
 
     def test_other_list_projects_permission_denied(self):
-        self.client.force_authenticate(self.nobody)
-        response = self.client.get(self.url)
-        self.assertEqual(403, response.status_code)
+        [guest] = obj_build.make_users(1)
+        self.do_permission_denied_get_test(self.client, guest, self.url)
 
     def do_valid_list_projects_test(self, user, expected_projects):
         expected_data = []
@@ -54,7 +66,7 @@ class CourseListProjectsTestCase(_ProjectsSetUp):
         self.assertCountEqual(expected_data, response.data)
 
 
-class CourseAddProjectTestCase(_ProjectsSetUp):
+class CourseAddProjectTestCase(_SetUp):
     def test_course_admin_add_project(self):
         args = {'name': 'spam project',
                 'min_group_size': 2,

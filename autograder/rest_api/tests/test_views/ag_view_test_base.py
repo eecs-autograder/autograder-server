@@ -8,9 +8,10 @@ from django.core import exceptions
 from rest_framework import status
 
 from autograder import utils
+from autograder.utils.testing import UnitTestBase
 
 
-class PermissionDeniedGetTest:
+class AGViewTestBase(UnitTestBase):
     def do_permission_denied_get_test(self, client, user, url, format='json'):
         client.force_authenticate(user)
         response = client.get(url)
@@ -18,11 +19,8 @@ class PermissionDeniedGetTest:
 
         return response
 
-
-class ListObjectsTest(PermissionDeniedGetTest):
     def do_list_objects_test(self, client, user, url, expected_data, *,
-                             check_order=False,
-                             format='json'):
+                             check_order=False):
         client.force_authenticate(user)
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -33,14 +31,9 @@ class ListObjectsTest(PermissionDeniedGetTest):
 
         return response
 
-
-class GetObjectTest(ListObjectsTest):
-    def do_get_object_test(self, client, user, url, expected_data,
-                           format='json'):
+    def do_get_object_test(self, client, user, url, expected_data):
         return self.do_list_objects_test(client, user, url, expected_data)
 
-
-class CreateObjectInvalidArgsTest:
     def do_invalid_create_object_test(self, model_manager, client,
                                       user, url, request_data, format='json'):
         original_num = model_manager.count()
@@ -51,8 +44,6 @@ class CreateObjectInvalidArgsTest:
 
         return response
 
-
-class PermissionDeniedCreateTest:
     def do_permission_denied_create_test(self, model_manager, client,
                                          user, url, request_data,
                                          format='json'):
@@ -64,9 +55,6 @@ class PermissionDeniedCreateTest:
 
         return response
 
-
-# TODO: merge mixin methods into this class
-class CreateObjectTest(CreateObjectInvalidArgsTest, PermissionDeniedCreateTest):
     def do_create_object_test(self, model_manager, client,
                               user, url, request_data, format='json',
                               check_data=True):
@@ -93,8 +81,6 @@ class CreateObjectTest(CreateObjectInvalidArgsTest, PermissionDeniedCreateTest):
 
         return response
 
-
-class UpdateObjectTest:
     def do_patch_object_test(self, ag_model_obj, client, user, url,
                              request_data, format='json'):
         expected_data = ag_model_obj.to_dict()
@@ -173,8 +159,6 @@ class UpdateObjectTest:
 
         return response
 
-
-class DestroyObjectTest:
     def do_delete_object_test(self, ag_model_obj, client, user, url):
         client.force_authenticate(user)
         response = client.delete(url)
@@ -192,3 +176,35 @@ class DestroyObjectTest:
         ag_model_obj.refresh_from_db()
 
         return response
+
+
+class PermissionDeniedGetTest(AGViewTestBase):
+    pass
+
+
+class ListObjectsTest(AGViewTestBase):
+    pass
+
+
+class GetObjectTest(AGViewTestBase):
+    pass
+
+
+class CreateObjectInvalidArgsTest(AGViewTestBase):
+    pass
+
+
+class PermissionDeniedCreateTest(AGViewTestBase):
+    pass
+
+
+class CreateObjectTest(AGViewTestBase):
+    pass
+
+
+class UpdateObjectTest(AGViewTestBase):
+    pass
+
+
+class DestroyObjectTest(AGViewTestBase):
+    pass
