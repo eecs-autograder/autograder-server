@@ -149,7 +149,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         self.assertFalse(res.stdout_correct)
 
     def test_correct_expected_stdout_proj_file(self, *args):
-        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+        proj_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
@@ -162,7 +162,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         self.assertTrue(res.stdout_correct)
 
     def test_wrong_expected_stdout_proj_file(self, *args):
-        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+        proj_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
@@ -197,7 +197,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         self.assertFalse(res.stderr_correct)
 
     def test_correct_expected_stderr_proj_file(self, *args):
-        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+        proj_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
@@ -210,7 +210,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         self.assertTrue(res.stderr_correct)
 
     def test_wrong_expected_stderr_proj_file(self, *args):
-        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+        proj_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
@@ -251,7 +251,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
 
     def test_stdin_source_proj_file(self, *args):
         text = ',vnaejfal;skjdf;lakjsdfklajsl;dkjf;'
-        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+        proj_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=SimpleUploadedFile('filey.txt', text.encode()))
         cmd = obj_build.make_full_ag_test_command(
@@ -299,7 +299,7 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
 
         self.ag_suite = self.cmd.ag_test_case.ag_test_suite
         self.project = self.ag_suite.project
-        self.project_file = ag_models.UploadedFile.objects.validate_and_create(
+        self.project_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile(project_filename, b'asdkfasdjkf'))
         self.group = obj_build.make_group(project=self.project)
         self.ag_suite.project_files_needed.add(self.project_file)
@@ -342,10 +342,10 @@ print('a' * {0}, end='')
 print('b' * {0}, file=sys.stderr, end='')
         """.format(self.too_much_output_size)
 
-        self.too_much_output_file = ag_models.UploadedFile.objects.validate_and_create(
+        self.too_much_output_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=SimpleUploadedFile('too_long.py', too_much_output_prog.encode())
-        )  # type: ag_models.UploadedFile
+        )  # type: ag_models.InstructorFile
 
         self.timeout_cmd = "sleep 10"
 
@@ -360,7 +360,7 @@ sys.stderr.buffer.write({0})
 sys.stderr.flush()
         """.format(self.non_utf_bytes)
 
-        self.non_utf_file = ag_models.UploadedFile.objects.validate_and_create(
+        self.non_utf_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=SimpleUploadedFile('non_utf.py', non_utf_prog.encode()))
 

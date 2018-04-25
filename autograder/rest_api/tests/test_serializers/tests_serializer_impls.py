@@ -74,7 +74,7 @@ class ExpectedStudentFilePatternSerializerTestCase(SerializerTestCase):
 class UploadedFileSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
         project = obj_build.build_project()
-        uploaded_file = ag_models.UploadedFile.objects.validate_and_create(
+        uploaded_file = ag_models.InstructorFile.objects.validate_and_create(
             file_obj=SimpleUploadedFile('spam', b'waaaaluigi'),
             project=project
         )

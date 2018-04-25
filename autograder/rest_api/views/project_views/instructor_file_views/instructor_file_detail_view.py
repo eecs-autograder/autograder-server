@@ -1,5 +1,3 @@
-# from wsgiref.util import FileWrapper
-
 from django.core import exceptions
 from django.db import transaction
 from django.http import FileResponse
@@ -26,11 +24,11 @@ class _Permissions(permissions.BasePermission):
         return True
 
 
-class UploadedFileDetailViewSet(build_load_object_mixin(ag_models.UploadedFile),
+class UploadedFileDetailViewSet(build_load_object_mixin(ag_models.InstructorFile),
                                 mixins.RetrieveModelMixin,
                                 transaction_mixins.TransactionDestroyMixin,
                                 viewsets.GenericViewSet):
-    queryset = ag_models.UploadedFile.objects.all()
+    queryset = ag_models.InstructorFile.objects.all()
     serializer_class = ag_serializers.UploadedFileSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)
 

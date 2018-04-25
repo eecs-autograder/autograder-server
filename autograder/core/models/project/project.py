@@ -41,7 +41,7 @@ class Project(AutograderModel):
             to this Project.
             DEPRECATED
 
-        uploaded_files -- Resource files to be used in project test
+        instructor_files -- Resource files to be used in project test
             cases.
 
         expected_student_file_patterns -- Patterns that
@@ -224,12 +224,12 @@ class Project(AutograderModel):
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
 
-        'uploaded_files',
+        'instructor_files',
         'expected_student_file_patterns',
     )
 
     SERIALIZE_RELATED = (
-        'uploaded_files',
+        'instructor_files',
         'expected_student_file_patterns',
     )
 

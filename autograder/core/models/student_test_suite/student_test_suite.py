@@ -4,7 +4,7 @@ from django.db import models
 
 from autograder.core import constants
 from ..ag_model_base import AutograderModel
-from ..project import Project, UploadedFile, ExpectedStudentFilePattern
+from ..project import Project, InstructorFile, ExpectedStudentFilePattern
 from ..ag_command import AGCommand, StdinSource
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
@@ -211,7 +211,7 @@ class StudentTestSuite(AutograderModel):
         help_text="The Project that this student test suite belongs to.")
 
     project_files_needed = models.ManyToManyField(
-        UploadedFile,
+        InstructorFile,
         help_text="""The project files that will be copied into the sandbox before the suite
                      is graded.""")
 

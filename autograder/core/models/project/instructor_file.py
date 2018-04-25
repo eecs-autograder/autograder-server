@@ -22,7 +22,7 @@ def _validate_filename(file_obj):
     core_ut.check_filename(file_obj.name)
 
 
-class UploadedFileManager(AutograderModelManager):
+class InstructorFileManager(AutograderModelManager):
     def validate_and_create(self, **kwargs):
         if 'file_obj' in kwargs and 'project' in kwargs:
             file_obj = kwargs['file_obj']
@@ -33,7 +33,7 @@ class UploadedFileManager(AutograderModelManager):
             project = kwargs['project']
 
             file_exists = utils.find_if(
-                project.uploaded_files.all(),
+                project.instructor_files.all(),
                 lambda uploaded: uploaded.name == file_obj.name)
             if file_exists:
                 raise exceptions.ValidationError(
@@ -42,12 +42,12 @@ class UploadedFileManager(AutograderModelManager):
         return super().validate_and_create(**kwargs)
 
 
-class UploadedFile(AutograderModel):
+class InstructorFile(AutograderModel):
     """
     These objects provide a means for storing uploaded files
     to be used in project test cases.
     """
-    objects = UploadedFileManager()
+    objects = InstructorFileManager()
 
     SERIALIZABLE_FIELDS = (
         'pk',
@@ -57,7 +57,7 @@ class UploadedFile(AutograderModel):
         'size',
     )
 
-    project = models.ForeignKey(Project, related_name='uploaded_files', on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, related_name='instructor_files', on_delete=models.CASCADE)
     file_obj = models.FileField(
         upload_to=_get_project_file_upload_to_path,
         validators=[_validate_filename],

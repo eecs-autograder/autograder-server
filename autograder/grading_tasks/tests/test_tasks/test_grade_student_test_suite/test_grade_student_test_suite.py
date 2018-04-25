@@ -31,7 +31,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
             full_path = os.path.join(self.files_dir, filename)
             with open(full_path, 'rb') as f:
                 file_obj = SimpleUploadedFile(filename, f.read())
-            ag_models.UploadedFile.objects.validate_and_create(
+            ag_models.InstructorFile.objects.validate_and_create(
                 project=self.project, file_obj=file_obj)
 
         ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
@@ -42,7 +42,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         self.bugs_not_exposed = ['RETURN_3_BUG']
         self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name='EECS 280 Student Tests', project=self.project,
-            project_files_needed=self.project.uploaded_files.all(),
+            project_files_needed=self.project.instructor_files.all(),
             student_files_needed=self.project.expected_student_file_patterns.all(),
             buggy_impl_names=self.bugs_exposed + self.bugs_not_exposed,
 
@@ -214,7 +214,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
     def test_non_unicode_chars_in_test_names(self, *args):
         non_unicode = b'test\x80 test2 test3'
         escaped_names = non_unicode.decode(errors='backslashreplace').split()
-        proj_file = ag_models.UploadedFile.objects.validate_and_create(
+        proj_file = ag_models.InstructorFile.objects.validate_and_create(
             file_obj=SimpleUploadedFile('test_names', non_unicode),
             project=self.project)
 

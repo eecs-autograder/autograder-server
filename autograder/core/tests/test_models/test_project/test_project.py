@@ -126,13 +126,13 @@ class ProjectMiscTestCase(UnitTestBase):
             'ultimate_submission_policy',
             'hide_ultimate_submission_fdbk',
 
-            'uploaded_files',
+            'instructor_files',
             'expected_student_file_patterns',
         ]
         self.assertCountEqual(expected_keys, project_dict.keys())
         self.assertEqual('UTC', project_dict['submission_limit_reset_timezone'])
 
-        self.assertSequenceEqual([proj_file.to_dict()], project_dict['uploaded_files'])
+        self.assertSequenceEqual([proj_file.to_dict()], project_dict['instructor_files'])
         self.assertSequenceEqual([pattern.to_dict()],
                                  project_dict['expected_student_file_patterns'])
 
@@ -140,7 +140,7 @@ class ProjectMiscTestCase(UnitTestBase):
         update_dict.pop('pk')
         update_dict.pop('course')
         update_dict.pop('last_modified')
-        update_dict.pop('uploaded_files')
+        update_dict.pop('instructor_files')
         update_dict.pop('expected_student_file_patterns')
         project.validate_and_update(**update_dict)
 

@@ -19,9 +19,9 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
 
     new_project.save()
 
-    for uploaded_file in project.uploaded_files.all():
+    for uploaded_file in project.instructor_files.all():
         with uploaded_file.open('rb') as f:
-            ag_models.UploadedFile.objects.validate_and_create(
+            ag_models.InstructorFile.objects.validate_and_create(
                 project=new_project,
                 file_obj=SimpleUploadedFile(uploaded_file.name, f.read()))
 
@@ -39,7 +39,7 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
 def _copy_ag_tests(project, new_project):
     for suite in project.ag_test_suites.all():
         project_files_needed = [
-            file_ for file_ in new_project.uploaded_files.all()
+            file_ for file_ in new_project.instructor_files.all()
             if utils.find_if(suite.project_files_needed.all(),
                              lambda proj_file: proj_file.name == file_.name)
         ]
@@ -68,19 +68,19 @@ def _copy_ag_tests(project, new_project):
                 stdin_project_file = None
                 if cmd.stdin_project_file is not None:
                     stdin_project_file = utils.find_if(
-                        new_project.uploaded_files.all(),
+                        new_project.instructor_files.all(),
                         lambda proj_file: proj_file.name == cmd.stdin_project_file.name)
 
                 expected_stdout_project_file = None
                 if cmd.expected_stdout_project_file is not None:
                     expected_stdout_project_file = utils.find_if(
-                        new_project.uploaded_files.all(),
+                        new_project.instructor_files.all(),
                         lambda proj_file: proj_file.name == cmd.expected_stdout_project_file.name)
 
                 expected_stderr_project_file = None
                 if cmd.expected_stderr_project_file is not None:
                     expected_stderr_project_file = utils.find_if(
-                        new_project.uploaded_files.all(),
+                        new_project.instructor_files.all(),
                         lambda proj_file: proj_file.name == cmd.expected_stderr_project_file.name)
 
                 ag_models.AGTestCommand.objects.validate_and_create(
@@ -97,7 +97,7 @@ def _copy_ag_tests(project, new_project):
 def _copy_student_suites(project, new_project):
     for student_suite in project.student_test_suites.all():
         project_files_needed = [
-            file_ for file_ in new_project.uploaded_files.all()
+            file_ for file_ in new_project.instructor_files.all()
             if utils.find_if(student_suite.project_files_needed.all(),
                              lambda proj_file: proj_file.name == file_.name)
         ]

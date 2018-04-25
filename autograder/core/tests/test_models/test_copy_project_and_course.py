@@ -68,15 +68,15 @@ class CopyProjectTestCase(UnitTestBase):
         self.assertNotEqual(project.course, other_course)
 
         ignore_fields = ['pk', 'course', 'last_modified',
-                         'uploaded_files', 'expected_student_file_patterns']
+                         'instructor_files', 'expected_student_file_patterns']
         expected_ag_tests = _pop_many(project.to_dict(), ignore_fields)
         expected_ag_tests.update({'visible_to_students': False, 'hide_ultimate_submission_fdbk': True})
         self.assertEqual(expected_ag_tests, _pop_many(new_project.to_dict(), ignore_fields))
 
-        self.assertEqual(project.uploaded_files.count(), new_project.uploaded_files.count())
+        self.assertEqual(project.instructor_files.count(), new_project.instructor_files.count())
         for old_file, new_file in itertools.zip_longest(
-                sorted(project.uploaded_files.all(), key=lambda obj: obj.name),
-                sorted(new_project.uploaded_files.all(), key=lambda obj: obj.name)):
+                sorted(project.instructor_files.all(), key=lambda obj: obj.name),
+                sorted(new_project.instructor_files.all(), key=lambda obj: obj.name)):
             self.assertNotEqual(new_file.pk, old_file.pk)
             self.assertNotEqual(new_file.abspath, old_file.abspath)
 

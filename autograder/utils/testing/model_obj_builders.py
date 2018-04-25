@@ -226,8 +226,8 @@ def make_project(course: ag_models.Course=None, **project_kwargs) -> ag_models.P
     return ag_models.Project.objects.validate_and_create(course=course, **project_kwargs)
 
 
-def make_uploaded_file(project: ag_models.Project) -> ag_models.UploadedFile:
-    return ag_models.UploadedFile.objects.validate_and_create(
+def make_uploaded_file(project: ag_models.Project) -> ag_models.InstructorFile:
+    return ag_models.InstructorFile.objects.validate_and_create(
         file_obj=SimpleUploadedFile('file' + get_unique_id(), b'content'),
         project=project)
 

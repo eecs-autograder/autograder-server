@@ -35,7 +35,7 @@ class Project(gen_data.Project):
         return reverse('project-expected-patterns-list',
                        kwargs={'project_pk': project.pk})
 
-    def get_uploaded_files_url(self, project):
+    def get_instructor_files_url(self, project):
         return reverse('project-uploaded-files-list',
                        kwargs={'project_pk': project.pk})
 

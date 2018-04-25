@@ -4,7 +4,7 @@ from django.core import exceptions
 import autograder.core.fields as ag_fields
 from autograder.core import constants
 from ..ag_model_base import AutograderModel
-from ..project import ExpectedStudentFilePattern, Project, UploadedFile
+from ..project import ExpectedStudentFilePattern, Project, InstructorFile
 
 
 class AGTestSuiteFeedbackConfig(AutograderModel):
@@ -77,7 +77,7 @@ class AGTestSuite(AutograderModel):
                                              This field is REQUIRED.''')
 
     project_files_needed = models.ManyToManyField(
-        UploadedFile,
+        InstructorFile,
         help_text='''The project files that will be copied into the sandbox before the suite's
                      tests are run.''')
 

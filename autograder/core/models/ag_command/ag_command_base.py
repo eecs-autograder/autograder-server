@@ -8,7 +8,7 @@ from django.db import models
 from autograder.core import constants
 from autograder.core.models import AutograderModel
 import autograder.core.fields as ag_fields
-from ..project.uploaded_file import UploadedFile
+from ..project.instructor_file import InstructorFile
 
 
 class StdinSource(enum.Enum):
@@ -49,9 +49,9 @@ class AGCommandBase(AutograderModel):
                      This value is used when stdin_source is StdinSource.text and is ignored
                      otherwise.''')
     stdin_project_file = models.ForeignKey(
-        UploadedFile, blank=True, null=True, default=None, related_name='+',
+        InstructorFile, blank=True, null=True, default=None, related_name='+',
         on_delete=models.CASCADE,
-        help_text='''An UploadedFile whose contents should be redirected to the stdin of this
+        help_text='''An InstructorFile whose contents should be redirected to the stdin of this
                      command. This value is used when stdin_source is StdinSource.project_file
                      and is ignored otherwise.''')
 

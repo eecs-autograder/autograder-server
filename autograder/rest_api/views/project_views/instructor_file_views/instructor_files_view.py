@@ -20,7 +20,7 @@ class UploadedFilesViewSet(build_load_object_mixin(ag_models.Project),
 
     def get_queryset(self):
         project = self.load_object(self.kwargs['project_pk'])
-        return project.uploaded_files.all()
+        return project.instructor_files.all()
 
     @transaction.atomic()
     def create(self, *args, **kwargs):

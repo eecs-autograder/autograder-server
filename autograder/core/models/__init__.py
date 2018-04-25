@@ -8,7 +8,7 @@ from .task import Task
 from .course import Course
 from .project import Project, UltimateSubmissionPolicy
 from .project.expected_student_file_pattern import ExpectedStudentFilePattern
-from .project.uploaded_file import UploadedFile
+from .project.instructor_file import InstructorFile
 from .project.download_task import DownloadTask, DownloadType
 
 from .submission_group import SubmissionGroup, SubmissionGroupInvitation

@@ -4,7 +4,7 @@ from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from autograder.core import constants
-from autograder.core.models.project.uploaded_file import UploadedFile
+from autograder.core.models.project.instructor_file import InstructorFile
 
 from autograder import utils
 import autograder.core.utils as core_ut
@@ -31,7 +31,7 @@ class _SetUp(UnitTestBase):
 
 class CreateUploadedFileTestCase(_SetUp):
     def test_valid_create(self):
-        uploaded_file = UploadedFile.objects.validate_and_create(
+        uploaded_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
 
@@ -49,14 +49,14 @@ class CreateUploadedFileTestCase(_SetUp):
 
     def test_create_file_exception_file_already_exists(self):
         self.file_obj.seek(0)
-        uploaded_file = UploadedFile.objects.validate_and_create(
+        uploaded_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
 
         duplicate_file = SimpleUploadedFile(
             self.file_obj.name, b'some content that should not be here')
         with self.assertRaises(exceptions.ValidationError) as cm:
-            UploadedFile.objects.validate_and_create(
+            InstructorFile.objects.validate_and_create(
                 project=self.project, file_obj=duplicate_file)
 
         self.assertIn('filename', cm.exception.message_dict)
@@ -72,7 +72,7 @@ class CreateUploadedFileTestCase(_SetUp):
         new_filename = 'new_filename.txt'
         self.file_obj.name = '../../' + new_filename
 
-        uploaded_file = UploadedFile.objects.validate_and_create(
+        uploaded_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
 
@@ -83,7 +83,7 @@ class CreateUploadedFileTestCase(_SetUp):
             self.file_obj.name = filename
             with self.assertRaises(exceptions.ValidationError,
                                    msg='Filename: ' + filename) as cm:
-                UploadedFile.objects.validate_and_create(
+                InstructorFile.objects.validate_and_create(
                     project=self.project,
                     file_obj=self.file_obj)
 
@@ -92,7 +92,7 @@ class CreateUploadedFileTestCase(_SetUp):
     def test_error_file_too_big(self):
         too_big = SimpleUploadedFile('wee', b'a' * (constants.MAX_PROJECT_FILE_SIZE + 1))
         with self.assertRaises(exceptions.ValidationError) as cm:
-            UploadedFile.objects.validate_and_create(project=self.project, file_obj=too_big)
+            InstructorFile.objects.validate_and_create(project=self.project, file_obj=too_big)
 
         self.assertIn('content', cm.exception.message_dict)
 
@@ -101,7 +101,7 @@ class RenameUploadedFileTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
-        self.uploaded_file = UploadedFile.objects.validate_and_create(
+        self.uploaded_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
 
@@ -139,7 +139,7 @@ class RenameUploadedFileTestCase(_SetUp):
 
 class DeleteUploadedFileTestCase(_SetUp):
     def test_file_deleted_from_filesystem(self):
-        uploaded_file = UploadedFile.objects.validate_and_create(
+        uploaded_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
         self.assertTrue(os.path.exists(uploaded_file.abspath))
@@ -159,13 +159,13 @@ class UploadedFileMiscTestCase(_SetUp):
         ]
 
         self.assertCountEqual(expected,
-                              UploadedFile.get_serializable_fields())
+                              InstructorFile.get_serializable_fields())
 
-        uploaded_file = UploadedFile.objects.validate_and_create(
+        uploaded_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
         self.assertTrue(uploaded_file.to_dict())
 
     def test_editable_fields(self):
         expected = []
-        self.assertCountEqual(expected, UploadedFile.get_editable_fields())
+        self.assertCountEqual(expected, InstructorFile.get_editable_fields())

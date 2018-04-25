@@ -27,7 +27,7 @@ API_MODELS = OrderedDict([
     [ag_models.Course, 'Course'],
     [ag_models.Project, 'Project'],
     [ag_models.ExpectedStudentFilePattern, 'ExpectedStudentFilePattern'],
-    [ag_models.UploadedFile, 'UploadedFile'],
+    [ag_models.InstructorFile, 'InstructorFile'],
     [ag_models.DownloadTask, 'DownloadTask'],
     [ag_models.SubmissionGroup, 'SubmissionGroup'],
     [ag_models.SubmissionGroupInvitation, 'SubmissionGroupInvitation'],
@@ -82,7 +82,7 @@ class APITags(enum.Enum):
     permissions = 'permissions'
 
     projects = 'projects'
-    uploaded_files = 'uploaded_files'
+    instructor_files = 'instructor_files'
     expected_patterns = 'expected_patterns'
 
     ag_test_suites = 'ag_test_suites'

@@ -35,10 +35,10 @@ expected_patterns_router.register(
     r'expected_patterns', views.ExpectedStudentFilePatternsViewSet,
     base_name='project-expected-patterns')
 
-uploaded_files_router = routers.NestedSimpleRouter(
+instructor_files_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
-uploaded_files_router.register(
-    r'uploaded_files', views.UploadedFilesViewSet,
+instructor_files_router.register(
+    r'instructor_files', views.UploadedFilesViewSet,
     base_name='project-uploaded-files')
 
 invitations_router = routers.NestedSimpleRouter(
@@ -53,7 +53,7 @@ expected_pattern_router.register(r'expected_patterns',
                                  base_name='expected-pattern')
 
 uploaded_file_router = routers.SimpleRouter()
-uploaded_file_router.register(r'uploaded_files',
+uploaded_file_router.register(r'instructor_files',
                               views.UploadedFileDetailViewSet,
                               base_name='uploaded-file')
 
@@ -145,7 +145,7 @@ urlpatterns = [
     url(r'', include(project_router.urls)),
     url(r'', include(project_downloads_router.urls)),
     url(r'', include(expected_patterns_router.urls)),
-    url(r'', include(uploaded_files_router.urls)),
+    url(r'', include(instructor_files_router.urls)),
     url(r'', include(invitations_router.urls)),
 
     url(r'', include(expected_pattern_router.urls)),

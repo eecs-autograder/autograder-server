@@ -9,7 +9,7 @@ import autograder.core.models.ag_test.ag_test_command
 import autograder.core.models.ag_test.ag_test_suite
 import autograder.core.models.ag_command
 import autograder.core.models.project.project
-import autograder.core.models.project.uploaded_file
+import autograder.core.models.project.instructor_file
 import autograder.core.utils
 import datetime
 from django.conf import settings
@@ -148,7 +148,7 @@ class Migration(migrations.Migration):
             name='UploadedFile',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file_obj', models.FileField(max_length=510, upload_to=autograder.core.models.project.uploaded_file._get_project_file_upload_to_path, validators=[autograder.core.models.project.uploaded_file._validate_filename])),
+                ('file_obj', models.FileField(max_length=510, upload_to=autograder.core.models.project.instructor_file._get_project_file_upload_to_path, validators=[autograder.core.models.project.instructor_file._validate_filename])),
                 ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='uploaded_files', to='core.Project')),
                 ('last_modified', models.DateTimeField(auto_now=True)),
             ],

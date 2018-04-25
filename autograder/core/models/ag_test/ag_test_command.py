@@ -11,7 +11,7 @@ import autograder.core.utils as core_ut
 from ..ag_command import AGCommandBase
 from .ag_test_case import AGTestCase
 from ..ag_model_base import AutograderModel
-from ..project import UploadedFile
+from ..project import InstructorFile
 
 
 class ValueFeedbackLevel(core_ut.OrderedEnum):
@@ -150,9 +150,9 @@ class AGTestCommand(AGCommandBase):
                      This value is used when expected_stdout_source is ExpectedOutputSource.text
                      and is ignored otherwise.''')
     expected_stdout_project_file = models.ForeignKey(
-        UploadedFile, blank=True, null=True, default=None, related_name='+',
+        InstructorFile, blank=True, null=True, default=None, related_name='+',
         on_delete=models.CASCADE,
-        help_text='''An UploadedFile whose contents should be compared against this command's
+        help_text='''An InstructorFile whose contents should be compared against this command's
                      stdout. This value is used (and may not be null) when expected_stdout_source
                      is ExpectedOutputSource.project_file and is ignored otherwise.''')
 
@@ -166,9 +166,9 @@ class AGTestCommand(AGCommandBase):
                      This value is used when expected_stderr_source is ExpectedOutputSource.text
                      and is ignored otherwise.''')
     expected_stderr_project_file = models.ForeignKey(
-        UploadedFile, blank=True, null=True, default=None, related_name='+',
+        InstructorFile, blank=True, null=True, default=None, related_name='+',
         on_delete=models.CASCADE,
-        help_text='''An UploadedFile whose contents should be compared against this command's
+        help_text='''An InstructorFile whose contents should be compared against this command's
                      stderr. This value is used (and may not be null) when expected_stderr_source
                      is ExpectedOutputSource.project_file and is ignored otherwise.''')
 

@@ -224,7 +224,7 @@ void file2() {
             project=self.project,
             pattern='*.h', max_num_matches=5)
 
-        uploaded_makefile = ag_models.UploadedFile.objects.validate_and_create(
+        uploaded_makefile = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=SimpleUploadedFile('Makefile', makefile.encode()))
 

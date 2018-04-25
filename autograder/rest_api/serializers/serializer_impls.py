@@ -33,7 +33,7 @@ class ProjectSerializer(AGModelSerializer):
 
 
 class UploadedFileSerializer(AGModelSerializer):
-    ag_model_class = ag_models.UploadedFile
+    ag_model_class = ag_models.InstructorFile
 
 
 class ExpectedStudentFilePatternSerializer(AGModelSerializer):
