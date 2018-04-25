@@ -15,13 +15,13 @@ from .group_views.group_detail_view import GroupDetailViewSet
 from .group_views.groups_view import GroupsViewSet, CreateSoloGroupView
 from .oauth2callback import oauth2_callback
 from .project_views.expected_student_file_pattern_views \
-    .expected_student_file_pattern_detail_view import ExpectedStudentFilePatternDetailViewSet
+    .expected_student_file_detail_view import ExpectedStudentFilePatternDetailViewSet
 from .project_views.expected_student_file_pattern_views \
-    .expected_student_file_patterns_view import ExpectedStudentFilePatternsViewSet
-from .project_views.project_views import DownloadTaskDetailViewSet
-from .project_views.project_views import ProjectDetailViewSet, ListCreateProjectView
+    .expected_student_files_view import ExpectedStudentFilePatternsViewSet
 from .project_views.instructor_file_views import (
     ListCreateInstructorFilesViewSet, InstructorFileDetailViewSet, InstructorFileContentView)
+from .project_views.project_views import DownloadTaskDetailViewSet
+from .project_views.project_views import ProjectDetailViewSet, ListCreateProjectView
 from .rerun_submissions_task_views import (
     RerunSubmissionsTaskListCreateView, RerunSubmissionsTaskDetailVewSet)
 from .student_test_suite_views import (

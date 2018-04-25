@@ -1,8 +1,8 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
-import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.handgrading.models as handgrading_models
+import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase
 
 
@@ -14,7 +14,7 @@ class HandgradingResultTestCase(UnitTestBase):
         self.rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
             project=obj_build.build_project())
 
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
             project=self.rubric.project,
             pattern='*', max_num_matches=10)
         self.submitted_files = [

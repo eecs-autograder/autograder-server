@@ -5,17 +5,16 @@ from django.contrib.auth.models import User
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.handgrading.models as hg_models
+import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.models import Submission
 from autograder.handgrading.views.handgrading_result_views import HandgradingResultPaginator
 from autograder.utils.testing import UnitTestBase
-import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 
 
 class _SetUp(UnitTestBase):
@@ -24,7 +23,7 @@ class _SetUp(UnitTestBase):
         self.group = obj_build.make_group()
         self.student = self.group.members.first()
         self.project = self.group.project
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
             pattern='*', max_num_matches=10, project=self.project)
 
         self.submitted_files = [SimpleUploadedFile('file{}'.format(i),

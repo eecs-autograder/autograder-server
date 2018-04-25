@@ -39,7 +39,7 @@ class SubmissionTestCase(UnitTestBase):
         ]
 
         for pattern_settings in expected_files:
-            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            ag_models.ExpectedStudentFile.objects.validate_and_create(
                 **pattern_settings)
 
     def test_valid_init(self):
@@ -129,7 +129,7 @@ class SubmissionTestCase(UnitTestBase):
         self.assertEqual({'eggs.cpp': 1}, submission.missing_files)
 
     def test_submission_not_enough_files_matching_pattern(self):
-        self.project.expected_student_file_patterns.get(
+        self.project.expected_student_files.get(
             max_num_matches=2
         ).validate_and_update(min_num_matches=2, max_num_matches=3)
         files = [
@@ -197,7 +197,7 @@ class SubmissionTestCase(UnitTestBase):
             SimpleUploadedFile('.', b'merp'),
             SimpleUploadedFile('', b'cheeese')
         ]
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
             project=self.project, pattern='*', max_num_matches=10)
 
         self._do_files_discarded_test([SimpleUploadedFile('test_spam.cpp', b'cheeese')], bad_files)

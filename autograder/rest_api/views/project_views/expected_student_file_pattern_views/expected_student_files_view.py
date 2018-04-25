@@ -1,12 +1,10 @@
 from django.db import transaction
-
 from rest_framework import viewsets, mixins, permissions
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-
-from autograder.rest_api.views.project_views.permissions import ProjectPermissions
 from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
+from autograder.rest_api.views.project_views.permissions import ProjectPermissions
 
 
 class ExpectedStudentFilePatternsViewSet(
@@ -19,7 +17,7 @@ class ExpectedStudentFilePatternsViewSet(
 
     def get_queryset(self):
         project = self.load_object(self.kwargs['project_pk'])
-        return project.expected_student_file_patterns.all()
+        return project.expected_student_files.all()
 
     @transaction.atomic()
     def create(self, request, project_pk, *args, **kwargs):

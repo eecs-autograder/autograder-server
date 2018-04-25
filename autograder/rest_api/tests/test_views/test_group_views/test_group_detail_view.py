@@ -1,15 +1,15 @@
 import datetime
+
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
-from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 
 import autograder.core.models as ag_models
-
+import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
+import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
-import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 
 
 class RetrieveGroupTestCase(test_data.Client,
@@ -461,7 +461,7 @@ class MergeGroupsTestCase(test_data.Client,
         files = []
         for i in range(2):
             file_name = 'whatever_you_want' + str(i)
-            ag_models.ExpectedStudentFilePattern.objects.create(
+            ag_models.ExpectedStudentFile.objects.create(
                 pattern=file_name, project=self.visible_public_project)
             files.append(
                 SimpleUploadedFile(file_name,

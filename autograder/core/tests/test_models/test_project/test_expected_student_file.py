@@ -2,11 +2,10 @@ import random
 
 from django.core import exceptions
 
-from autograder.core.models.project.expected_student_file_pattern import (
-    ExpectedStudentFilePattern)
-
-from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core.models.project.expected_student_file import (
+    ExpectedStudentFile)
+from autograder.utils.testing import UnitTestBase
 
 
 class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
@@ -27,9 +26,9 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
 
         self.assertCountEqual(
             expected,
-            ExpectedStudentFilePattern.get_serializable_fields())
+            ExpectedStudentFile.get_serializable_fields())
 
-        pattern = ExpectedStudentFilePattern.objects.validate_and_create(
+        pattern = ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern=self.valid_pattern)
 
@@ -42,10 +41,10 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
             'max_num_matches'
         ]
         self.assertCountEqual(expected,
-                              ExpectedStudentFilePattern.get_editable_fields())
+                              ExpectedStudentFile.get_editable_fields())
 
     def test_valid_create_defaults(self):
-        pattern = ExpectedStudentFilePattern.objects.validate_and_create(
+        pattern = ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern=self.valid_pattern)
 
@@ -59,7 +58,7 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
     def test_valid_create_no_defaults(self):
         min_matches = random.randint(0, 2)
         max_matches = min_matches + random.randint(0, 2)
-        pattern = ExpectedStudentFilePattern.objects.validate_and_create(
+        pattern = ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern=self.valid_pattern,
             min_num_matches=min_matches,
@@ -74,28 +73,28 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
         self.assertEqual(max_matches, pattern.max_num_matches)
 
     def test_exception_pattern_exists(self):
-        ExpectedStudentFilePattern.objects.validate_and_create(
+        ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern=self.valid_pattern,
             min_num_matches=1,
             max_num_matches=2)
 
         with self.assertRaises(exceptions.ValidationError):
-            ExpectedStudentFilePattern.objects.validate_and_create(
+            ExpectedStudentFile.objects.validate_and_create(
                 project=self.project,
                 pattern=self.valid_pattern,
                 min_num_matches=1,
                 max_num_matches=2)
 
     def test_no_exception_same_pattern_as_other_project(self):
-        ExpectedStudentFilePattern.objects.validate_and_create(
+        ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern=self.valid_pattern,
             min_num_matches=1,
             max_num_matches=2)
 
         other_project = obj_build.build_project()
-        ExpectedStudentFilePattern.objects.validate_and_create(
+        ExpectedStudentFile.objects.validate_and_create(
             project=other_project,
             pattern=self.valid_pattern,
             min_num_matches=1,
@@ -103,7 +102,7 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
 
     def test_exception_negative_min_matches(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ExpectedStudentFilePattern.objects.validate_and_create(
+            ExpectedStudentFile.objects.validate_and_create(
                 project=self.project,
                 pattern=self.valid_pattern,
                 min_num_matches=-1,
@@ -114,7 +113,7 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
     def test_exception_max_matches_less_than_min(self):
         min_matches = random.randint(1, 4)
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ExpectedStudentFilePattern.objects.validate_and_create(
+            ExpectedStudentFile.objects.validate_and_create(
                 project=self.project,
                 pattern=self.valid_pattern,
                 min_num_matches=min_matches,
@@ -133,7 +132,7 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
         for pattern in illegal_patterns:
             with self.assertRaises(exceptions.ValidationError,
                                    msg="Pattern: " + pattern) as cm:
-                ExpectedStudentFilePattern.objects.validate_and_create(
+                ExpectedStudentFile.objects.validate_and_create(
                     project=self.project,
                     pattern=pattern,
                     min_num_matches=1,

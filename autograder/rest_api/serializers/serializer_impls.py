@@ -37,7 +37,7 @@ class UploadedFileSerializer(AGModelSerializer):
 
 
 class ExpectedStudentFilePatternSerializer(AGModelSerializer):
-    ag_model_class = ag_models.ExpectedStudentFilePattern
+    ag_model_class = ag_models.ExpectedStudentFile
 
 
 class DownloadTaskSerializer(AGModelSerializer):

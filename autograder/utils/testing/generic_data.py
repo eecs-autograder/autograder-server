@@ -1,12 +1,11 @@
 import copy
+import warnings
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 import autograder.core.models as ag_models
 from autograder.utils.testing import model_obj_builders as obj_build
 
-
-import warnings
 warnings.warn(
     "generic_data is deprecated. "
     "Use autograder.utils.testing.model_obj_builders and "
@@ -325,12 +324,12 @@ class Submission(Group):
         ]
 
     def add_expected_patterns(self, project):
-        if project.expected_student_file_patterns.count():
+        if project.expected_student_files.count():
             return
 
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
             pattern='spam.cpp', project=project)
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
             pattern='*.txt', project=project, max_num_matches=3)
 
     def build_submission(self, group):

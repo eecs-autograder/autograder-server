@@ -1,4 +1,5 @@
 import copy
+
 from django.core import exceptions
 
 import autograder.core.models as ag_models
@@ -67,7 +68,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_stderr)
 
     def test_valid_create_non_defaults(self):
-        student_file = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        student_file = ag_models.ExpectedStudentFile.objects.validate_and_create(
             pattern='filey',
             project=self.project)
 
@@ -131,7 +132,7 @@ class AGTestSuiteTestCase(UnitTestBase):
     def test_error_project_files_and_patterns_dont_belong_to_same_project(self):
         other_project = obj_build.build_project()
         other_proj_file = obj_build.make_uploaded_file(other_project)
-        other_proj_pattern = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        other_proj_pattern = ag_models.ExpectedStudentFile.objects.validate_and_create(
             pattern='alsdnvaoweijf', project=other_project)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -166,7 +167,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertCountEqual([suite1, suite2], self.project.ag_test_suites.all())
 
     def test_serialization(self):
-        student_file = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        student_file = ag_models.ExpectedStudentFile.objects.validate_and_create(
             pattern='filey',
             project=self.project)
 

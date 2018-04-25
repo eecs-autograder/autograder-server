@@ -3,14 +3,12 @@ import os
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+import autograder.core.utils as core_ut
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder import utils
 from autograder.core import constants
 from autograder.core.models.project.instructor_file import InstructorFile
-
-from autograder import utils
-import autograder.core.utils as core_ut
 from autograder.utils.testing import UnitTestBase
-import autograder.utils.testing.model_obj_builders as obj_build
-
 
 _illegal_filenames = [
     '..',

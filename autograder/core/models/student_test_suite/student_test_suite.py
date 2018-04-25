@@ -2,12 +2,12 @@ from django.core import exceptions
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
-from autograder.core import constants
-from ..ag_model_base import AutograderModel
-from ..project import Project, InstructorFile, ExpectedStudentFilePattern
-from ..ag_command import AGCommand, StdinSource
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
+from autograder.core import constants
+from ..ag_command import AGCommand, StdinSource
+from ..ag_model_base import AutograderModel
+from ..project import Project, InstructorFile, ExpectedStudentFile
 
 
 class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
@@ -221,7 +221,7 @@ class StudentTestSuite(AutograderModel):
                      suite is graded.""")
 
     student_files_needed = models.ManyToManyField(
-        ExpectedStudentFilePattern,
+        ExpectedStudentFile,
         help_text='''Student-submitted files matching these patterns will be copied into the
                      sandbox before the suite is graded.''')
 

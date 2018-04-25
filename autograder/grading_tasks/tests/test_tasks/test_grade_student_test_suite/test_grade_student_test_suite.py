@@ -5,11 +5,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import tag
 
 import autograder.core.models as ag_models
-from autograder.core import constants
-from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
-
+from autograder.core import constants
 from autograder.grading_tasks import tasks
+from autograder.utils.testing import UnitTestBase
 
 
 @tag('slow', 'sandbox')
@@ -34,7 +33,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
             ag_models.InstructorFile.objects.validate_and_create(
                 project=self.project, file_obj=file_obj)
 
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern='student_tests.cpp')
 
@@ -43,7 +42,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name='EECS 280 Student Tests', project=self.project,
             project_files_needed=self.project.instructor_files.all(),
-            student_files_needed=self.project.expected_student_file_patterns.all(),
+            student_files_needed=self.project.expected_student_files.all(),
             buggy_impl_names=self.bugs_exposed + self.bugs_not_exposed,
 
             use_setup_command=True,

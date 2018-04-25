@@ -1,22 +1,19 @@
 import csv
+import itertools
 import os
 import tempfile
 import zipfile
-
-from typing import Iterator, IO, BinaryIO
-
-import itertools
+from typing import Iterator, BinaryIO
 from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework import status
 from django.urls import reverse
+from rest_framework import status
 
-import autograder.utils.testing.model_obj_builders
-from autograder.utils.testing import UnitTestBase
+import autograder.core.models as ag_models
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
-import autograder.core.models as ag_models
+from autograder.utils.testing import UnitTestBase
 
 
 @mock.patch('autograder.rest_api.tasks.project_downloads._PROGRESS_UPDATE_FREQUENCY', new=1)
@@ -39,7 +36,7 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
         max_group_size = 3
         self.project = obj_build.make_project(visible_to_students=True,
                                               max_group_size=max_group_size)
-        ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        ag_models.ExpectedStudentFile.objects.validate_and_create(
             project=self.project, pattern='*', max_num_matches=3)
         self.student_group1 = obj_build.make_group(project=self.project)
         self.group1_submission1 = obj_build.build_finished_submission(

@@ -8,9 +8,8 @@ from django.utils import timezone
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
-
-from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 
 
 class ProjectMiscTestCase(UnitTestBase):
@@ -99,7 +98,7 @@ class ProjectMiscTestCase(UnitTestBase):
             name='qeiruqioewiur', course=self.course
         )  # type: ag_models.Project
         proj_file = obj_build.make_uploaded_file(project)
-        pattern = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        pattern = ag_models.ExpectedStudentFile.objects.validate_and_create(
             project=project, pattern='qweiourqpweioru')
 
         project_dict = project.to_dict()
@@ -127,21 +126,21 @@ class ProjectMiscTestCase(UnitTestBase):
             'hide_ultimate_submission_fdbk',
 
             'instructor_files',
-            'expected_student_file_patterns',
+            'expected_student_files',
         ]
         self.assertCountEqual(expected_keys, project_dict.keys())
         self.assertEqual('UTC', project_dict['submission_limit_reset_timezone'])
 
         self.assertSequenceEqual([proj_file.to_dict()], project_dict['instructor_files'])
         self.assertSequenceEqual([pattern.to_dict()],
-                                 project_dict['expected_student_file_patterns'])
+                                 project_dict['expected_student_files'])
 
         update_dict = copy.deepcopy(project_dict)
         update_dict.pop('pk')
         update_dict.pop('course')
         update_dict.pop('last_modified')
         update_dict.pop('instructor_files')
-        update_dict.pop('expected_student_file_patterns')
+        update_dict.pop('expected_student_files')
         project.validate_and_update(**update_dict)
 
         other_timezone = 'America/Chicago'

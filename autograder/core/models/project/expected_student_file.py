@@ -1,14 +1,13 @@
-from django.db import models
 from django.core import validators, exceptions
+from django.db import models
 
-from ..ag_model_base import AutograderModel
-from .project import Project
-
-import autograder.core.utils as core_ut
 import autograder.core.fields as ag_fields
+import autograder.core.utils as core_ut
+from .project import Project
+from ..ag_model_base import AutograderModel
 
 
-class ExpectedStudentFilePattern(AutograderModel):
+class ExpectedStudentFile(AutograderModel):
     """
     These objects describe Unix-style shell patterns that files
     submitted by students can or should match.
@@ -31,7 +30,7 @@ class ExpectedStudentFilePattern(AutograderModel):
     )
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE,
-                                related_name='expected_student_file_patterns')
+                                related_name='expected_student_files')
 
     pattern = ag_fields.ShortStringField(
         validators=[core_ut.check_filename],

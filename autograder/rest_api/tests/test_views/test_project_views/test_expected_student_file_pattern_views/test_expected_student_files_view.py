@@ -4,9 +4,8 @@ from rest_framework import status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-
-from autograder.utils.testing import UnitTestBase
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
+from autograder.utils.testing import UnitTestBase
 
 
 class _PatternSetUp(test_data.Client, test_data.Project):
@@ -50,11 +49,11 @@ class ListPatternsTestCase(_PatternSetUp, UnitTestBase):
 
     def build_patterns(self, project):
         num_patterns = 4
-        if not project.expected_student_file_patterns.count():
+        if not project.expected_student_files.count():
             for i in range(num_patterns):
                 min_matches = random.randint(0, 3)
                 max_matches = min_matches + 2
-                ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+                ag_models.ExpectedStudentFile.objects.validate_and_create(
                     project=project,
                     pattern=project.name + '_pattern_' + str(i),
                     min_num_matches=min_matches,
@@ -62,7 +61,7 @@ class ListPatternsTestCase(_PatternSetUp, UnitTestBase):
 
         serialized_patterns = (
             ag_serializers.ExpectedStudentFilePatternSerializer(
-                project.expected_student_file_patterns.all(), many=True)
+                project.expected_student_files.all(), many=True)
         ).data
         self.assertEqual(num_patterns, len(serialized_patterns))
         return serialized_patterns
@@ -71,7 +70,7 @@ class ListPatternsTestCase(_PatternSetUp, UnitTestBase):
 class CreatePatternTestCase(_PatternSetUp, UnitTestBase):
     def test_admin_create_pattern(self):
         self.assertEqual(
-            0, self.project.expected_student_file_patterns.count())
+            0, self.project.expected_student_files.count())
 
         args = {
             'pattern': 'spam.cpp',
@@ -83,15 +82,15 @@ class CreatePatternTestCase(_PatternSetUp, UnitTestBase):
         response = self.client.post(self.get_patterns_url(self.project), args)
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         self.assertEqual(
-            1, self.project.expected_student_file_patterns.count())
-        created_pattern = self.project.expected_student_file_patterns.first()
+            1, self.project.expected_student_files.count())
+        created_pattern = self.project.expected_student_files.first()
         for arg_name, value in args.items():
             self.assertEqual(value, getattr(created_pattern, arg_name),
                              msg=arg_name)
 
     def test_admin_create_pattern_invalid_settings(self):
         self.assertEqual(
-            0, self.project.expected_student_file_patterns.count())
+            0, self.project.expected_student_files.count())
 
         args = {
             'pattern': 'spam.cpp',
@@ -103,7 +102,7 @@ class CreatePatternTestCase(_PatternSetUp, UnitTestBase):
         response = self.client.post(self.get_patterns_url(self.project), args)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(
-            0, self.project.expected_student_file_patterns.count())
+            0, self.project.expected_student_files.count())
 
     def test_non_admin_create_pattern_permission_denied(self):
         args = {
@@ -118,4 +117,4 @@ class CreatePatternTestCase(_PatternSetUp, UnitTestBase):
                 self.get_patterns_url(self.visible_public_project), args)
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertEqual(
-            0, self.project.expected_student_file_patterns.count())
+            0, self.project.expected_student_files.count())

@@ -2,7 +2,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 
 import autograder.core.models as ag_models
-
 from autograder import utils
 
 
@@ -25,7 +24,7 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
                 project=new_project,
                 file_obj=SimpleUploadedFile(uploaded_file.name, f.read()))
 
-    for pattern in project.expected_student_file_patterns.all():
+    for pattern in project.expected_student_files.all():
         pattern.pk = None
         pattern.project = new_project
         pattern.save()
@@ -44,7 +43,7 @@ def _copy_ag_tests(project, new_project):
                              lambda proj_file: proj_file.name == file_.name)
         ]
         student_files_needed = list(
-            new_project.expected_student_file_patterns.filter(
+            new_project.expected_student_files.filter(
                 pattern__in=[pattern.pattern for pattern in suite.student_files_needed.all()]))
 
         new_suite = ag_models.AGTestSuite.objects.validate_and_create(
@@ -102,7 +101,7 @@ def _copy_student_suites(project, new_project):
                              lambda proj_file: proj_file.name == file_.name)
         ]
         student_files_needed = list(
-            new_project.expected_student_file_patterns.filter(
+            new_project.expected_student_files.filter(
                 pattern__in=[
                     pattern.pattern for pattern in student_suite.student_files_needed.all()]))
         ag_models.StudentTestSuite.objects.validate_and_create(

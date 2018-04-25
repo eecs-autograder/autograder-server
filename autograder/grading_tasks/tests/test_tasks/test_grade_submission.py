@@ -1,4 +1,3 @@
-import shlex
 from unittest import mock
 
 from django.conf import settings
@@ -6,11 +5,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import tag
 
 import autograder.core.models as ag_models
-from autograder.core import constants
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.utils.testing import UnitTestBase
-
+from autograder.core import constants
 from autograder.grading_tasks import tasks
+from autograder.utils.testing import UnitTestBase
 
 
 class _MockException(Exception):
@@ -217,10 +215,10 @@ void file2() {
     cout << "file2" << endl;
 }
 """
-        cpp_pattern = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        cpp_pattern = ag_models.ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern='*.cpp', max_num_matches=5)
-        h_pattern = ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+        h_pattern = ag_models.ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern='*.h', max_num_matches=5)
 

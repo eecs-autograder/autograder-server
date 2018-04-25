@@ -2,9 +2,9 @@ import itertools
 from typing import Sequence
 
 import autograder.core.models as ag_models
+import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.models.copy_project_and_course import copy_project, copy_course
 from autograder.utils.testing import UnitTestBase
-import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class CopyProjectTestCase(UnitTestBase):
@@ -68,7 +68,7 @@ class CopyProjectTestCase(UnitTestBase):
         self.assertNotEqual(project.course, other_course)
 
         ignore_fields = ['pk', 'course', 'last_modified',
-                         'instructor_files', 'expected_student_file_patterns']
+                         'instructor_files', 'expected_student_files']
         expected_ag_tests = _pop_many(project.to_dict(), ignore_fields)
         expected_ag_tests.update({'visible_to_students': False, 'hide_ultimate_submission_fdbk': True})
         self.assertEqual(expected_ag_tests, _pop_many(new_project.to_dict(), ignore_fields))
@@ -84,11 +84,11 @@ class CopyProjectTestCase(UnitTestBase):
             with old_file.open() as old_f, new_file.open() as new_f:
                 self.assertEqual(old_f.read(), new_f.read())
 
-        self.assertEqual(project.expected_student_file_patterns.count(),
-                         new_project.expected_student_file_patterns.count())
+        self.assertEqual(project.expected_student_files.count(),
+                         new_project.expected_student_files.count())
         for old_pattern, new_pattern in itertools.zip_longest(
-                project.expected_student_file_patterns.order_by('pattern'),
-                new_project.expected_student_file_patterns.order_by('pattern')):
+                project.expected_student_files.order_by('pattern'),
+                new_project.expected_student_files.order_by('pattern')):
             self.assertNotEqual(old_pattern.pk, new_pattern.pk)
 
             self.assertEqual(_pop_many(old_pattern.to_dict(), ['pk', 'project']),

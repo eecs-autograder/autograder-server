@@ -44,7 +44,7 @@ class Project(AutograderModel):
         instructor_files -- Resource files to be used in project test
             cases.
 
-        expected_student_file_patterns -- Patterns that
+        expected_student_files -- Patterns that
             student-submitted files can or should match.
 
         submission_groups -- The submission groups registered for this
@@ -225,12 +225,12 @@ class Project(AutograderModel):
         'hide_ultimate_submission_fdbk',
 
         'instructor_files',
-        'expected_student_file_patterns',
+        'expected_student_files',
     )
 
     SERIALIZE_RELATED = (
         'instructor_files',
-        'expected_student_file_patterns',
+        'expected_student_files',
     )
 
     EDITABLE_FIELDS = (

@@ -26,7 +26,7 @@ APIType = Union[AGModelType, AGSerializableType]
 API_MODELS = OrderedDict([
     [ag_models.Course, 'Course'],
     [ag_models.Project, 'Project'],
-    [ag_models.ExpectedStudentFilePattern, 'ExpectedStudentFilePattern'],
+    [ag_models.ExpectedStudentFile, 'ExpectedStudentFile'],
     [ag_models.InstructorFile, 'InstructorFile'],
     [ag_models.DownloadTask, 'DownloadTask'],
     [ag_models.SubmissionGroup, 'SubmissionGroup'],
@@ -83,7 +83,7 @@ class APITags(enum.Enum):
 
     projects = 'projects'
     instructor_files = 'instructor_files'
-    expected_patterns = 'expected_patterns'
+    expected_student_files = 'expected_student_files'
 
     ag_test_suites = 'ag_test_suites'
     ag_test_cases = 'ag_test_cases'

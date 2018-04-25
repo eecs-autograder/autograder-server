@@ -14,12 +14,11 @@ import autograder.core.constants as const
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core.models.ag_model_base import ToDictMixin
-
 from . import ag_model_base
-from .ag_test.feedback_category import FeedbackCategory
-from .ag_test.ag_test_suite_result import AGTestSuiteResult
 from .ag_test.ag_test_case_result import AGTestCaseResult
 from .ag_test.ag_test_command_result import AGTestCommandResult
+from .ag_test.ag_test_suite_result import AGTestSuiteResult
+from .ag_test.feedback_category import FeedbackCategory
 from .student_test_suite import StudentTestSuiteResult
 
 
@@ -81,7 +80,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
         submitted_filenames = submission.get_submitted_file_basenames()
 
         patterns = (submission.submission_group.project
-                              .expected_student_file_patterns.all())
+                              .expected_student_files.all())
         for pattern in patterns:
             count = len(fnmatch.filter(submitted_filenames, pattern.pattern))
             if count < pattern.min_num_matches:
@@ -90,7 +89,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
 
     def file_is_extra(self, submission, filename):
         project = submission.submission_group.project
-        for pattern in project.expected_student_file_patterns.all():
+        for pattern in project.expected_student_files.all():
             if not fnmatch.fnmatch(filename, pattern.pattern):
                 continue
 

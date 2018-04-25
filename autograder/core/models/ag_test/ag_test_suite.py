@@ -1,10 +1,10 @@
-from django.db import models
 from django.core import exceptions
+from django.db import models
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
 from ..ag_model_base import AutograderModel
-from ..project import ExpectedStudentFilePattern, Project, InstructorFile
+from ..project import ExpectedStudentFile, Project, InstructorFile
 
 
 class AGTestSuiteFeedbackConfig(AutograderModel):
@@ -87,7 +87,7 @@ class AGTestSuite(AutograderModel):
                      suite is run.""")
 
     student_files_needed = models.ManyToManyField(
-        ExpectedStudentFilePattern,
+        ExpectedStudentFile,
         help_text='''Student-submitted files matching these patterns will be copied into the
                      sandbox before the suite's tests are run.''')
 

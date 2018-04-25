@@ -3,11 +3,9 @@ import itertools
 from django.urls import reverse
 
 import autograder.core.models as ag_models
-
-from autograder.utils.testing import UnitTestBase
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
-
+import autograder.rest_api.tests.test_views.common_generic_data as test_data
+from autograder.utils.testing import UnitTestBase
 
 base_pattern_kwargs = {
     'pattern': 'spaaaaaam',
@@ -17,7 +15,7 @@ base_pattern_kwargs = {
 
 
 def build_pattern(project):
-    return ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+    return ag_models.ExpectedStudentFile.objects.validate_and_create(
         project=project, **base_pattern_kwargs)
 
 

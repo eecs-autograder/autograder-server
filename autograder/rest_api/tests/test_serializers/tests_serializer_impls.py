@@ -1,15 +1,13 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import QueryDict
-
 from rest_framework import request
 from rest_framework.test import APIRequestFactory
 
-import autograder.rest_api.serializers as ag_serializers
 import autograder.core.models as ag_models
-from autograder.utils.testing import UnitTestBase
-import autograder.utils.testing.model_obj_builders as obj_build
+import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.common_generic_data as gen_data
-
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 from .serializer_test_case import SerializerTestCase
 
 
@@ -64,7 +62,7 @@ class ExpectedStudentFilePatternSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
         project = obj_build.build_project()
         pattern = (
-            ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+            ag_models.ExpectedStudentFile.objects.validate_and_create(
                 pattern='spam',
                 project=project))
         self.do_basic_serialize_test(

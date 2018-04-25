@@ -1,6 +1,6 @@
 import copy
-import uuid
 import typing
+import uuid
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -232,8 +232,8 @@ def make_uploaded_file(project: ag_models.Project) -> ag_models.InstructorFile:
         project=project)
 
 
-def make_expected_student_pattern(project: ag_models.Project) -> ag_models.ExpectedStudentFilePattern:
-    return ag_models.ExpectedStudentFilePattern.objects.validate_and_create(
+def make_expected_student_pattern(project: ag_models.Project) -> ag_models.ExpectedStudentFile:
+    return ag_models.ExpectedStudentFile.objects.validate_and_create(
         project=project,
         pattern='pattern' + get_unique_id())
 

@@ -16,11 +16,11 @@ class _Permissions(permissions.BasePermission):
 
 
 class ExpectedStudentFilePatternDetailViewSet(
-        build_load_object_mixin(ag_models.ExpectedStudentFilePattern),
+        build_load_object_mixin(ag_models.ExpectedStudentFile),
         mixins.RetrieveModelMixin,
         transaction_mixins.TransactionPartialUpdateMixin,
         transaction_mixins.TransactionDestroyMixin,
         viewsets.GenericViewSet):
-    queryset = ag_models.ExpectedStudentFilePattern.objects.all()
+    queryset = ag_models.ExpectedStudentFile.objects.all()
     serializer_class = ag_serializers.ExpectedStudentFilePatternSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)

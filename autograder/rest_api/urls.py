@@ -1,16 +1,13 @@
 from django.conf import settings
 from django.conf.urls import url, include
 from django.urls import path
-
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
 from rest_framework import response, permissions
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-
 from rest_framework_nested import routers
-
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
 
 from autograder.rest_api import views
 from autograder.rest_api.views.ag_model_views import AlwaysIsAuthenticatedMixin
@@ -32,7 +29,7 @@ project_downloads_router.register(r'download_tasks', views.DownloadTaskDetailVie
 expected_patterns_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 expected_patterns_router.register(
-    r'expected_patterns', views.ExpectedStudentFilePatternsViewSet,
+    r'expected_student_files', views.ExpectedStudentFilePatternsViewSet,
     base_name='project-expected-patterns')
 
 invitations_router = routers.NestedSimpleRouter(
@@ -42,7 +39,7 @@ invitations_router.register(
     base_name='project-group-invitations')
 
 expected_pattern_router = routers.SimpleRouter()
-expected_pattern_router.register(r'expected_patterns',
+expected_pattern_router.register(r'expected_student_files',
                                  views.ExpectedStudentFilePatternDetailViewSet,
                                  base_name='expected-pattern')
 
