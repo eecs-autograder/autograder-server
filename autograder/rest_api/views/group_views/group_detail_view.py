@@ -59,7 +59,8 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
     model_manager = ag_models.SubmissionGroup.objects.select_related(
         'project__course').prefetch_related('members', 'submissions')
 
-    def update(self, request, *args, **kwargs):
+    @transaction.atomic()
+    def partial_update(self, request, *args, **kwargs):
         if 'member_names' in request.data:
             users = [
                 User.objects.get_or_create(
@@ -72,7 +73,7 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
 
             request.data['members'] = users
             request.data['check_group_size_limits'] = False
-        return super().update(request, *args, **kwargs)
+        return super().partial_update(request, *args, **kwargs)
 
     @decorators.detail_route(
         permission_classes=(group_permissions, _UltimateSubmissionPermissions,))

@@ -82,12 +82,6 @@ class UpdateExpectedPatternTestCase(test_data.Client,
             self.do_patch_object_test(pattern, self.client, self.admin,
                                       pattern_url(pattern), self.valid_args)
 
-    def test_admin_put_pattern(self):
-        for project in self.all_projects:
-            pattern = build_pattern(project)
-            self.do_put_object_test(pattern, self.client, self.admin,
-                                    pattern_url(pattern), self.valid_args)
-
     def test_admin_update_pattern_invalid_args(self):
         args = {
             'min_num_matches': 3,
@@ -95,9 +89,6 @@ class UpdateExpectedPatternTestCase(test_data.Client,
         }
         pattern = build_pattern(self.visible_public_project)
         self.do_patch_object_invalid_args_test(
-            pattern, self.client, self.admin, pattern_url(pattern), args)
-
-        self.do_put_object_invalid_args_test(
             pattern, self.client, self.admin, pattern_url(pattern), args)
 
     def test_other_update_pattern_permission_denied(self):
@@ -108,8 +99,6 @@ class UpdateExpectedPatternTestCase(test_data.Client,
         url = pattern_url(pattern)
         for user in self.staff, self.enrolled, self.nobody:
             self.do_patch_object_permission_denied_test(
-                pattern, self.client, user, url, args)
-            self.do_put_object_permission_denied_test(
                 pattern, self.client, user, url, args)
 
 
