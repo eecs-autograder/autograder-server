@@ -24,6 +24,8 @@ def _validate_filename(file_obj):
 
 class InstructorFileManager(AutograderModelManager):
     def validate_and_create(self, **kwargs):
+        # Custom validation that we want to run only when the file
+        # is created.
         if 'file_obj' in kwargs and 'project' in kwargs:
             file_obj = kwargs['file_obj']
             if file_obj.size > const.MAX_PROJECT_FILE_SIZE:

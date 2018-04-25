@@ -16,8 +16,7 @@ class _UploadedFilesSetUp(test_data.Client, test_data.Project):
     pass
 
 
-class ListUploadedFilesTestCase(_UploadedFilesSetUp,
-                                UnitTestBase):
+class ListUploadedFilesTestCase(_UploadedFilesSetUp, UnitTestBase):
     def test_admin_list_files(self):
         for project in self.all_projects:
             self.do_list_instructor_files_test(self.admin, project)
@@ -116,6 +115,12 @@ class CreateUploadedFileTestCase(_UploadedFilesSetUp,
                 format='multipart')
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
             self.assertEqual(0, self.project.instructor_files.count())
+
+    def test_missing_file_obj_param(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(
+            self.get_instructor_files_url(self.project), {}, format='multipart')
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
 
 def file_url(uploaded_file):
@@ -291,6 +296,12 @@ class UpdateUploadedFileContentTestCase(_BuildFile,
         file_.refresh_from_db()
         with file_.open('rb') as f:
             self.assertEqual(self.file_obj_kwargs['content'], f.read())
+
+    def test_missing_file_obj_param(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(
+            self.get_instructor_files_url(self.project), {}, format='multipart')
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
 
 class DeleteUploadedFileTestCase(_BuildFile,

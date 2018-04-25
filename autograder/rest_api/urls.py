@@ -35,12 +35,6 @@ expected_patterns_router.register(
     r'expected_patterns', views.ExpectedStudentFilePatternsViewSet,
     base_name='project-expected-patterns')
 
-instructor_files_router = routers.NestedSimpleRouter(
-    project_router, r'projects', lookup='project')
-instructor_files_router.register(
-    r'instructor_files', views.UploadedFilesViewSet,
-    base_name='project-uploaded-files')
-
 invitations_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 invitations_router.register(
@@ -54,7 +48,7 @@ expected_pattern_router.register(r'expected_patterns',
 
 uploaded_file_router = routers.SimpleRouter()
 uploaded_file_router.register(r'instructor_files',
-                              views.UploadedFileDetailViewSet,
+                              views.InstructorFileDetailViewSet,
                               base_name='uploaded-file')
 
 group_invitation_router = routers.SimpleRouter()
@@ -143,9 +137,12 @@ urlpatterns = [
     path('courses/<int:pk>/projects/', views.ListCreateProjectView.as_view(), name='projects'),
 
     url(r'', include(project_router.urls)),
+    path('projects/<int:pk>/instructor_files/', views.ListCreateInstructorFilesViewSet.as_view(),
+         name='instructor-files'),
+    path('instructor_files/<int:pk>/content/', views.InstructorFileContentView.as_view(),
+         name='uploaded-file-content'),
     url(r'', include(project_downloads_router.urls)),
     url(r'', include(expected_patterns_router.urls)),
-    url(r'', include(instructor_files_router.urls)),
     url(r'', include(invitations_router.urls)),
 
     url(r'', include(expected_pattern_router.urls)),

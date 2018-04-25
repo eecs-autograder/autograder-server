@@ -69,7 +69,12 @@ class AGModelAPIView(GetObjectLockOnUnsafeMixin, AlwaysIsAuthenticatedMixin, API
     A derived class of APIView that inherits from the mixins
     GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
     """
-    pass
+    swagger_schema = AGModelViewAutoSchema
+
+    # Tags to apply to all operations in this view.
+    # This can be overridden on individual operations by passing
+    # 'api_tags' to @swagger_auto_schema
+    api_tags = None  # type: Optional[List[APITags]]
 
 
 class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,

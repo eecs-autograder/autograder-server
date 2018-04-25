@@ -20,9 +20,8 @@ from .project_views.expected_student_file_pattern_views \
     .expected_student_file_patterns_view import ExpectedStudentFilePatternsViewSet
 from .project_views.project_views import DownloadTaskDetailViewSet
 from .project_views.project_views import ProjectDetailViewSet, ListCreateProjectView
-from .project_views.instructor_file_views.instructor_file_detail_view import \
-    UploadedFileDetailViewSet
-from .project_views.instructor_file_views.instructor_files_view import UploadedFilesViewSet
+from .project_views.instructor_file_views import (
+    ListCreateInstructorFilesViewSet, InstructorFileDetailViewSet, InstructorFileContentView)
 from .rerun_submissions_task_views import (
     RerunSubmissionsTaskListCreateView, RerunSubmissionsTaskDetailVewSet)
 from .student_test_suite_views import (
