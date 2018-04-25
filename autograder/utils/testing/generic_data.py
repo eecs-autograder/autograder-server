@@ -5,8 +5,13 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 import autograder.core.models as ag_models
 from autograder.utils.testing import model_obj_builders as obj_build
 
-# TODO: clean up unused submission methods
-# TODO: DOCUMENT, especially about caching
+
+import warnings
+warnings.warn(
+    "generic_data is deprecated. "
+    "Use autograder.utils.testing.model_obj_builders and "
+    "test fixtures (setUp) instead", DeprecationWarning,
+    stacklevel=2)
 
 
 class Superuser:

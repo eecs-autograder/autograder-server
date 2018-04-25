@@ -11,6 +11,13 @@ from rest_framework.test import APIClient
 
 import autograder.utils.testing.generic_data as gen_data
 
+import warnings
+warnings.warn(
+    "common_generic_data is deprecated. "
+    "Use autograder.utils.testing.model_obj_builders and "
+    "test fixtures (setUp) instead", DeprecationWarning,
+    stacklevel=2)
+
 
 class Client:
     def setUp(self):
