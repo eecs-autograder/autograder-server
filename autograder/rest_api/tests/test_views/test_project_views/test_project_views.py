@@ -6,18 +6,10 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
+from autograder.utils import exclude_dict
 from autograder.utils.testing import UnitTestBase
-
-
-class _SetUp(AGViewTestBase):
-    def setUp(self):
-        super().setUp()
-        self.client = APIClient()
-        self.course = obj_build.make_course()
-        self.url = reverse('projects', kwargs={'pk': self.course.pk})
 
 
 class CourseListProjectsTestCase(AGViewTestBase):
@@ -33,23 +25,23 @@ class CourseListProjectsTestCase(AGViewTestBase):
         self.url = reverse('projects', kwargs={'pk': self.course.pk})
 
     def test_admin_list_projects(self):
-        [admin] = obj_build.make_admin_users(self.course, 1)
+        admin = obj_build.make_admin_user(self.course)
         self.do_valid_list_projects_test(admin, self.all_projects)
 
     def test_staff_list_projects(self):
-        [staff] = obj_build.make_staff_users(self.course, 1)
+        staff = obj_build.make_staff_user(self.course)
         self.do_valid_list_projects_test(staff, self.all_projects)
 
     def test_student_list_projects_visible_only(self):
-        [student] = obj_build.make_student_users(self.course, 1)
+        student = obj_build.make_student_user(self.course)
         self.do_valid_list_projects_test(student, [self.visible_project])
 
     def test_handgrader_list_all_projects(self):
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
+        handgrader = obj_build.make_handgrader_user(self.course)
         self.do_valid_list_projects_test(handgrader, self.all_projects)
 
     def test_other_list_projects_permission_denied(self):
-        [guest] = obj_build.make_users(1)
+        guest = obj_build.make_user()
         self.do_permission_denied_get_test(self.client, guest, self.url)
 
     def do_valid_list_projects_test(self, user, expected_projects):
@@ -66,23 +58,34 @@ class CourseListProjectsTestCase(AGViewTestBase):
         self.assertCountEqual(expected_data, response.data)
 
 
-class CourseAddProjectTestCase(_SetUp):
+class CourseAddProjectTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.course = obj_build.make_course()
+        self.url = reverse('projects', kwargs={'pk': self.course.pk})
+
     def test_course_admin_add_project(self):
+        admin = obj_build.make_admin_user(self.course)
         args = {'name': 'spam project',
                 'min_group_size': 2,
                 'max_group_size': 3}
-        self.client.force_authenticate(self.admin)
+        self.client.force_authenticate(admin)
         response = self.client.post(self.url, args)
 
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         loaded = self.course.projects.get(name=args['name'])
         for arg_name, value in args.items():
-            self.assertEqual(value, getattr(loaded, arg_name), msg='arg_name')
+            self.assertEqual(value, getattr(loaded, arg_name), msg=arg_name)
 
     def test_other_add_project_permission_denied(self):
+        staff = obj_build.make_staff_user(self.course)
+        student = obj_build.make_student_user(self.course)
+        handgrader = obj_build.make_handgrader_user(self.course)
+        guest = obj_build.make_user()
         project_name = 'project123'
-        for user in self.staff, self.enrolled, self.handgrader, self.nobody:
+        for user in staff, student, handgrader, guest:
             self.client.force_authenticate(user)
             response = self.client.post(self.url, {'name': project_name})
 
@@ -92,126 +95,111 @@ class CourseAddProjectTestCase(_SetUp):
                 ag_models.Project.objects.get(name=project_name)
 
 
-class RetrieveProjectTestCase(test_data.Client, test_data.Project, UnitTestBase):
-    def test_admin_get_project(self):
-        for project in self.all_projects:
-            response = self.do_valid_load_project_test(
-                self.admin, project, exclude_closing_time=False)
-            self.assertIn('closing_time', response.data)
-
-    def test_staff_get_project(self):
-        for project in self.all_projects:
-            response = self.do_valid_load_project_test(
-                self.staff, project, exclude_closing_time=True)
-            self.assertNotIn('closing_time', response.data)
-
-    def test_handgrader_get_project(self):
-        for project in self.all_projects:
-            response = self.do_valid_load_project_test(
-                self.handgrader, project, exclude_closing_time=True)
-            self.assertNotIn('closing_time', response.data)
-
-    def test_student_get_project(self):
-        for project in self.visible_projects:
-            response = self.do_valid_load_project_test(
-                self.enrolled, project, exclude_closing_time=True)
-            self.assertNotIn('closing_time', response.data)
-
-        for project in self.hidden_projects:
-            self.do_permission_denied_test(self.enrolled, project)
-
-    def test_other_get_project(self):
-        response = self.do_valid_load_project_test(
-            self.nobody, self.visible_public_project, exclude_closing_time=True)
-        self.assertNotIn('closing_time', response.data)
-
-        self.do_permission_denied_test(self.nobody,
-                                       self.visible_private_project)
-
-        for project in self.hidden_projects:
-            self.do_permission_denied_test(self.nobody, project)
-
-    def do_valid_load_project_test(self, user, project, exclude_closing_time):
-        self.client.force_authenticate(user)
-        response = self.client.get(self.get_proj_url(project))
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-
-        proj_dict = project.to_dict()
-        if exclude_closing_time:
-            proj_dict.pop('closing_time', None)
-        self.assertEqual(proj_dict, response.data)
-
-        return response
-
-    def do_permission_denied_test(self, user, project):
-        self.client.force_authenticate(user)
-        response = self.client.get(self.get_proj_url(project))
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-
-
-class UpdateProjectTestCase(test_data.Client, test_data.Project, UnitTestBase):
+class RetrieveProjectTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
-        self.url = self.get_proj_url(self.project)
+        self.client = APIClient()
+        self.project = obj_build.make_project()
+        self.course = self.project.course
+        self.url = reverse('project-detail', kwargs={'pk': self.project.pk})
+
+    def test_admin_get_project(self):
+        self.assertFalse(self.project.visible_to_students)
+        admin = obj_build.make_admin_user(self.course)
+        self.do_get_object_test(self.client, admin, self.url, self.project.to_dict())
+
+    def test_staff_get_project(self):
+        self.assertFalse(self.project.visible_to_students)
+        staff = obj_build.make_staff_user(self.course)
+        # closing_time is only shown to admins.
+        self.do_get_object_test(self.client, staff, self.url,
+                                exclude_dict(self.project.to_dict(), ['closing_time']))
+
+    def test_handgrader_get_project(self):
+        self.assertFalse(self.project.visible_to_students)
+        handgrader = obj_build.make_handgrader_user(self.course)
+        # closing_time is only shown to admins.
+        self.do_get_object_test(self.client, handgrader, self.url,
+                                exclude_dict(self.project.to_dict(), ['closing_time']))
+
+    def test_student_get_visible_project(self):
+        self.project.validate_and_update(visible_to_students=True)
+        student = obj_build.make_student_user(self.course)
+        # closing_time is only shown to admins.
+        self.do_get_object_test(self.client, student, self.url,
+                                exclude_dict(self.project.to_dict(), ['closing_time']))
+
+    def test_student_get_hidden_project_permission_denied(self):
+        student = obj_build.make_student_user(self.course)
+        self.do_permission_denied_get_test(self.client, student, self.url)
+
+    def test_guest_get_project(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        guest = obj_build.make_user()
+        self.do_get_object_test(self.client, guest, self.url,
+                                exclude_dict(self.project.to_dict(), ['closing_time']))
+
+    def test_guest_get_visible_non_guest_allowed_project_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
+        guest = obj_build.make_user()
+        self.do_permission_denied_get_test(self.client, guest, self.url)
+
+    def test_guest_get_guest_allowed_hidden_project_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=False, guests_can_submit=True)
+        guest = obj_build.make_user()
+        self.do_permission_denied_get_test(self.client, guest, self.url)
+
+
+class UpdateProjectTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.project = obj_build.make_project()
+        self.course = self.project.course
+        self.url = reverse('project-detail', kwargs={'pk': self.project.pk})
+        self.client = APIClient()
 
     def test_admin_edit_project(self):
-        args = {
+        request_data = {
             'name': self.project.name + 'waaaaa',
-            'min_group_size': self.project.min_group_size + 4,
-            'max_group_size': self.project.max_group_size + 5
+            'min_group_size': 3,
+            'max_group_size': 5
         }
 
-        self.client.force_authenticate(self.admin)
-        response = self.client.patch(self.url, args)
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-
-        self.project.refresh_from_db()
-        self.assertEqual(self.project.to_dict(), response.data)
-
-        for arg_name, value in args.items():
-            self.assertEqual(value, getattr(self.project, arg_name))
+        admin = obj_build.make_admin_user(self.course)
+        self.do_patch_object_test(self.project, self.client, admin, self.url, request_data)
 
     def test_edit_project_invalid_settings(self):
-        args = {
-            'min_group_size': self.project.min_group_size + 2,
-            'max_group_size': self.project.max_group_size + 1
+        request_data = {
+            'min_group_size': 2,
+            'max_group_size': 1
         }
 
-        self.client.force_authenticate(self.admin)
-        response = self.client.patch(self.url, args)
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-
-        self.project.refresh_from_db()
-        for arg_name, value in args.items():
-            self.assertNotEqual(value, getattr(self.project, arg_name))
+        admin = obj_build.make_admin_user(self.course)
+        self.do_patch_object_invalid_args_test(
+            self.project, self.client, admin, self.url, request_data)
 
     def test_non_admin_edit_project_permission_denied(self):
-        original_name = self.project.name
-        for user in self.staff, self.enrolled, self.nobody, self.handgrader:
-            self.client.force_authenticate(user)
-            response = self.client.patch(self.url, {'name': 'steve'})
-            self.assertEqual(403, response.status_code)
-
-            self.project.refresh_from_db()
-            self.assertEqual(original_name, self.project.name)
+        staff = obj_build.make_staff_user(self.course)
+        self.do_patch_object_permission_denied_test(
+            self.project, self.client, staff, self.url, {'name': 'waaaaaaaaluigi'})
 
 
-class NumQueuedSubmissionsTestCase(test_data.Client, test_data.Project, UnitTestBase):
+class NumQueuedSubmissionsTestCase(UnitTestBase):
     def test_get_num_queued_submissions(self):
-        course = obj_build.build_course()
-        proj_args = {
-            'course': course,
+        client = APIClient()
+
+        course = obj_build.make_course()
+        admin = obj_build.make_admin_user(course)
+        proj_kwargs = {
             'visible_to_students': True,
             'guests_can_submit': True
         }
-        no_submits = obj_build.build_project(proj_args)
-        with_submits1 = obj_build.build_project(proj_args)
-        with_submits2 = obj_build.build_project(proj_args)
+        no_submits = obj_build.make_project(course, **proj_kwargs)
+        with_submits1 = obj_build.make_project(course, **proj_kwargs)
+        with_submits2 = obj_build.make_project(course, **proj_kwargs)
 
-        group_with_submits1 = obj_build.build_submission_group(
-            group_kwargs={'project': with_submits1})
-        group_with_submits2 = obj_build.build_submission_group(
-            group_kwargs={'project': with_submits2})
+        group_with_submits1 = obj_build.make_group(project=with_submits1)
+        group_with_submits2 = obj_build.make_group(project=with_submits2)
 
         g1_statuses = [ag_models.Submission.GradingStatus.queued,
                        ag_models.Submission.GradingStatus.finished_grading,
@@ -230,20 +218,20 @@ class NumQueuedSubmissionsTestCase(test_data.Client, test_data.Project, UnitTest
                 status=ag_models.Submission.GradingStatus.queued,
                 submission_group=group_with_submits2)
 
-        self.client.force_authenticate(self.admin)
-        response = self.client.get(
+        client.force_authenticate(admin)
+        response = client.get(
             reverse('project-num-queued-submissions',
                     kwargs={'pk': no_submits.pk}))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(0, response.data)
 
-        response = self.client.get(
+        response = client.get(
             reverse('project-num-queued-submissions',
                     kwargs={'pk': with_submits1.pk}))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(1, response.data)
 
-        response = self.client.get(
+        response = client.get(
             reverse('project-num-queued-submissions',
                     kwargs={'pk': with_submits2.pk}))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -252,10 +240,11 @@ class NumQueuedSubmissionsTestCase(test_data.Client, test_data.Project, UnitTest
 
 # Note: Creating and running a download task is tested in
 # autograder/rest_api/tests/test_views/test_tasks/test_project_downloads.py
-class DownloadTaskEndpointsTestCase(test_data.Client, UnitTestBase):
+class DownloadTaskEndpointsTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.project = obj_build.build_project()
+        self.project = obj_build.make_project()
+        self.client = APIClient()
 
     def test_list_project_download_tasks(self):
         # All admins should be able to see all download tasks.

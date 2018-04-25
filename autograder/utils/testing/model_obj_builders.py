@@ -80,10 +80,18 @@ def make_admin_users(course: ag_models.Course, num_users: int) -> typing.Sequenc
     return users
 
 
+def make_admin_user(course: ag_models.Course) -> User:
+    return make_admin_users(course, 1)[0]
+
+
 def make_staff_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
     users = create_dummy_users(num_users=num_users)
     course.staff.add(*users)
     return users
+
+
+def make_staff_user(course: ag_models.Course) -> User:
+    return make_staff_users(course, 1)[0]
 
 
 def make_student_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
@@ -92,14 +100,26 @@ def make_student_users(course: ag_models.Course, num_users: int) -> typing.Seque
     return users
 
 
+def make_student_user(course: ag_models.Course) -> User:
+    return make_student_users(course, 1)[0]
+
+
 def make_handgrader_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
     users = create_dummy_users(num_users=num_users)
     course.handgraders.add(*users)
     return users
 
 
+def make_handgrader_user(course: ag_models.Course) -> User:
+    return make_handgrader_users(course, 1)[0]
+
+
 def make_users(num_users: int, superuser=False) -> typing.Sequence[User]:
     return create_dummy_users(num_users=num_users, is_superuser=superuser)
+
+
+def make_user(superuser=False) -> User:
+    return make_users(num_users=1, superuser=superuser)[0]
 
 
 def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_models.Project:
@@ -227,7 +247,7 @@ class UserRole(core_ut.OrderedEnum):
 
 
 def make_group(num_members: int=1,
-               members_role: UserRole = UserRole.student,
+               members_role: UserRole=UserRole.student,
                project: ag_models.Project=None,
                **group_kwargs) -> ag_models.SubmissionGroup:
     if project is None:
