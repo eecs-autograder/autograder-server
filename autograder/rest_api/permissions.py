@@ -2,6 +2,7 @@ from functools import singledispatch
 from typing import Any, Callable, Type
 
 from django.utils import timezone
+from drf_composable_permissions.p import P
 from rest_framework import exceptions, permissions
 
 import autograder.core.models as ag_models
@@ -15,6 +16,9 @@ PermissionClassType = Type[permissions.BasePermission]
 
 @singledispatch
 def _get_course(model: ag_models.AutograderModel) -> ag_models.Course:
+    if hasattr(model, 'project'):
+        return model.project.course
+
     raise NotImplementedError
 
 
@@ -35,6 +39,9 @@ def _(group: ag_models.SubmissionGroup) -> ag_models.Course:
 
 @singledispatch
 def _get_project(model: ag_models.AutograderModel) -> ag_models.Course:
+    if hasattr(model, 'project'):
+        return model.project
+
     raise NotImplementedError
 
 
@@ -135,6 +142,15 @@ def can_view_project(
             return project.course.is_student(request.user) or project.guests_can_submit
 
     return CanViewProject
+
+
+def is_admin_or_read_only_can_view_project(
+    get_project_fn: GetProjectFnType=_get_project
+) -> Type[permissions.BasePermission]:
+    return (
+        P(is_admin(lambda obj: get_project_fn(obj).course)) |
+        (P(IsReadOnly) & can_view_project(get_project_fn))
+    )
 
 
 def is_staff_or_group_member(

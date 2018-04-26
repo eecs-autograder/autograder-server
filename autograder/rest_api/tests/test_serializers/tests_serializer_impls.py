@@ -66,7 +66,7 @@ class ExpectedStudentFilePatternSerializerTestCase(SerializerTestCase):
                 pattern='spam',
                 project=project))
         self.do_basic_serialize_test(
-            pattern, ag_serializers.ExpectedStudentFilePatternSerializer)
+            pattern, ag_serializers.ExpectedStudentFileSerializer)
 
 
 class UploadedFileSerializerTestCase(SerializerTestCase):
@@ -77,7 +77,7 @@ class UploadedFileSerializerTestCase(SerializerTestCase):
             project=project
         )
         self.do_basic_serialize_test(uploaded_file,
-                                     ag_serializers.UploadedFileSerializer)
+                                     ag_serializers.InstructorFileSerializer)
 
 
 class SubmissionGroupInvitationSerializerTestCase(SerializerTestCase):

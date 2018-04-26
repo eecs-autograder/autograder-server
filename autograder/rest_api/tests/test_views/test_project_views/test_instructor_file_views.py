@@ -55,7 +55,7 @@ class ListUploadedFilesTestCase(_UploadedFilesSetUp, UnitTestBase):
                 ag_models.InstructorFile.objects.validate_and_create(
                     project=project, file_obj=file_)
 
-        serialized_files = ag_serializers.UploadedFileSerializer(
+        serialized_files = ag_serializers.InstructorFileSerializer(
             project.instructor_files.all(), many=True).data
         self.assertEqual(num_files, len(serialized_files))
         return serialized_files

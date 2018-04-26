@@ -20,13 +20,13 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         self.files_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             'eecs280_student_test_grading')
-        project_filenames = ['proj_module.h', 'proj_module.cpp',
+        instructor_filenames = ['proj_module.h', 'proj_module.cpp',
                              'unit_test_framework.h', 'unit_test_framework.cpp',
                              'Makefile']
 
         self.project = obj_build.make_project()
 
-        for filename in project_filenames:
+        for filename in instructor_filenames:
             full_path = os.path.join(self.files_dir, filename)
             with open(full_path, 'rb') as f:
                 file_obj = SimpleUploadedFile(filename, f.read())
@@ -41,7 +41,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         self.bugs_not_exposed = ['RETURN_3_BUG']
         self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name='EECS 280 Student Tests', project=self.project,
-            project_files_needed=self.project.instructor_files.all(),
+            instructor_files_needed=self.project.instructor_files.all(),
             student_files_needed=self.project.expected_student_files.all(),
             buggy_impl_names=self.bugs_exposed + self.bugs_not_exposed,
 
@@ -213,16 +213,16 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
     def test_non_unicode_chars_in_test_names(self, *args):
         non_unicode = b'test\x80 test2 test3'
         escaped_names = non_unicode.decode(errors='backslashreplace').split()
-        proj_file = ag_models.InstructorFile.objects.validate_and_create(
+        instructor_file = ag_models.InstructorFile.objects.validate_and_create(
             file_obj=SimpleUploadedFile('test_names', non_unicode),
             project=self.project)
 
         student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name='qeoriuqewrpqiuerqopwr',
             project=self.project,
-            project_files_needed=[proj_file],
+            instructor_files_needed=[instructor_file],
             get_student_test_names_command={
-                'cmd': 'cat {}'.format(proj_file.name)
+                'cmd': 'cat {}'.format(instructor_file.name)
             }
         )
         tasks.grade_submission(self.submission.pk)

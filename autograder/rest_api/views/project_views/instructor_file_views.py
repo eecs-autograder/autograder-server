@@ -31,16 +31,12 @@ _create_file_params = [
     name='post',
     decorator=swagger_auto_schema(request_body_parameters=_create_file_params))
 class ListCreateInstructorFilesViewSet(ListCreateNestedModelViewSet):
-    serializer_class = ag_serializers.UploadedFileSerializer
+    serializer_class = ag_serializers.InstructorFileSerializer
     permission_classes = (ag_permissions.is_admin_or_read_only_staff(),)
 
     model_manager = ag_models.Project.objects
     to_one_field_name = 'project'
     reverse_to_one_field_name = 'instructor_files'
-
-
-def _get_course(instructor_file: ag_models.InstructorFile):
-    return instructor_file.project.course
 
 
 _rename_file_params = [
@@ -68,8 +64,8 @@ _update_content_params = [
 class InstructorFileDetailViewSet(mixins.RetrieveModelMixin,
                                   transaction_mixins.TransactionDestroyMixin,
                                   AGModelGenericViewSet):
-    serializer_class = ag_serializers.UploadedFileSerializer
-    permission_classes = (ag_permissions.is_admin_or_read_only_staff(_get_course),)
+    serializer_class = ag_serializers.InstructorFileSerializer
+    permission_classes = (ag_permissions.is_admin_or_read_only_staff(),)
 
     model_manager = ag_models.InstructorFile.objects
 
@@ -91,8 +87,8 @@ class InstructorFileDetailViewSet(mixins.RetrieveModelMixin,
 
 
 class InstructorFileContentView(AGModelAPIView):
-    serializer_class = ag_serializers.UploadedFileSerializer
-    permission_classes = (ag_permissions.is_admin_or_read_only_staff(_get_course),)
+    serializer_class = ag_serializers.InstructorFileSerializer
+    permission_classes = (ag_permissions.is_admin_or_read_only_staff(),)
 
     model_manager = ag_models.InstructorFile.objects
 

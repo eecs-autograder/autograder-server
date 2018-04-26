@@ -20,8 +20,8 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertEqual(suite_name, suite.name)
         self.assertEqual(self.project, suite.project)
 
-        self.assertCountEqual([], suite.project_files_needed.all())
-        self.assertTrue(suite.read_only_project_files)
+        self.assertCountEqual([], suite.instructor_files_needed.all())
+        self.assertTrue(suite.read_only_instructor_files)
         self.assertCountEqual([], suite.student_files_needed.all())
 
         self.assertEqual('', suite.setup_suite_cmd_name)
@@ -74,7 +74,7 @@ class AGTestSuiteTestCase(UnitTestBase):
 
         name = 'wee'
         project = self.project
-        project_files_needed = [obj_build.make_uploaded_file(self.project)]
+        instructor_files_needed = [obj_build.make_instructor_file(self.project)]
         student_files_needed = [student_file]
         setup_cmd = "echo 'hello world'"
         teardown_cmd = "echo 'bye'"
@@ -84,8 +84,8 @@ class AGTestSuiteTestCase(UnitTestBase):
         suite = ag_models.AGTestSuite.objects.validate_and_create(
             name=name,
             project=project,
-            project_files_needed=project_files_needed,
-            read_only_project_files=False,
+            instructor_files_needed=instructor_files_needed,
+            read_only_instructor_files=False,
             student_files_needed=student_files_needed,
             setup_suite_cmd=setup_cmd,
             teardown_suite_cmd=teardown_cmd,
@@ -107,8 +107,8 @@ class AGTestSuiteTestCase(UnitTestBase):
         suite.refresh_from_db()
         self.assertEqual(name, suite.name)
         self.assertEqual(project, suite.project)
-        self.assertCountEqual(project_files_needed, suite.project_files_needed.all())
-        self.assertFalse(suite.read_only_project_files)
+        self.assertCountEqual(instructor_files_needed, suite.instructor_files_needed.all())
+        self.assertFalse(suite.read_only_instructor_files)
         self.assertCountEqual(student_files_needed, suite.student_files_needed.all())
         self.assertEqual(allow_network_access, suite.allow_network_access)
         self.assertEqual(deferred, suite.deferred)
@@ -129,19 +129,19 @@ class AGTestSuiteTestCase(UnitTestBase):
 
             self.assertIn('name', cm.exception.message_dict)
 
-    def test_error_project_files_and_patterns_dont_belong_to_same_project(self):
+    def test_error_instructor_and_student_files_dont_belong_to_same_project(self):
         other_project = obj_build.build_project()
-        other_proj_file = obj_build.make_uploaded_file(other_project)
-        other_proj_pattern = ag_models.ExpectedStudentFile.objects.validate_and_create(
+        other_instructor_file = obj_build.make_instructor_file(other_project)
+        other_student_file = ag_models.ExpectedStudentFile.objects.validate_and_create(
             pattern='alsdnvaoweijf', project=other_project)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGTestSuite.objects.validate_and_create(
                 name='aldksjfnaweij', project=self.project,
-                project_files_needed=[other_proj_file],
-                student_files_needed=[other_proj_pattern])
+                instructor_files_needed=[other_instructor_file],
+                student_files_needed=[other_student_file])
 
-        self.assertIn('project_files_needed', cm.exception.message_dict)
+        self.assertIn('instructor_files_needed', cm.exception.message_dict)
         self.assertIn('student_files_needed', cm.exception.message_dict)
 
     def test_suite_ordering(self):
@@ -174,7 +174,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='a;dlskfj',
             project=self.project,
-            project_files_needed=[obj_build.make_uploaded_file(self.project)],
+            instructor_files_needed=[obj_build.make_instructor_file(self.project)],
             student_files_needed=[student_file],
             setup_suite_cmd="echo 'hello world'",
             teardown_suite_cmd="echo 'bye'",
@@ -195,8 +195,8 @@ class AGTestSuiteTestCase(UnitTestBase):
             'project',
             'last_modified',
 
-            'project_files_needed',
-            'read_only_project_files',
+            'instructor_files_needed',
+            'read_only_instructor_files',
             'student_files_needed',
 
             'ag_test_cases',
@@ -218,7 +218,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         ]
         self.assertCountEqual(expected_keys, suite_dict.keys())
 
-        self.assertIsInstance(suite_dict['project_files_needed'][0], dict)
+        self.assertIsInstance(suite_dict['instructor_files_needed'][0], dict)
         self.assertIsInstance(suite_dict['student_files_needed'][0], dict)
         self.assertSequenceEqual([ag_test.to_dict()], suite_dict['ag_test_cases'])
 

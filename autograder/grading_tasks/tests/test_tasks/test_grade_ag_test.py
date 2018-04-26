@@ -148,27 +148,27 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.stdout_correct)
 
-    def test_correct_expected_stdout_proj_file(self, *args):
-        proj_file = ag_models.InstructorFile.objects.validate_and_create(
+    def test_correct_expected_stdout_instructor_file(self, *args):
+        instructor_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='printf "waluigi"',
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_stdout_project_file=proj_file)
+            expected_=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.stdout_correct)
 
-    def test_wrong_expected_stdout_proj_file(self, *args):
-        proj_file = ag_models.InstructorFile.objects.validate_and_create(
+    def test_wrong_expected_stdout_instructor_file(self, *args):
+        instructor_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='printf "nope"',
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_stdout_project_file=proj_file)
+            expected_=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -196,27 +196,27 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertFalse(res.stderr_correct)
 
-    def test_correct_expected_stderr_proj_file(self, *args):
-        proj_file = ag_models.InstructorFile.objects.validate_and_create(
+    def test_correct_expected_stderr_instructor_file(self, *args):
+        instructor_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='bash -c "printf waluigi >&2"',
             expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
-            expected_stderr_project_file=proj_file)
+            expected_stderr_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.stderr_correct)
 
-    def test_wrong_expected_stderr_proj_file(self, *args):
-        proj_file = ag_models.InstructorFile.objects.validate_and_create(
+    def test_wrong_expected_stderr_instructor_file(self, *args):
+        instructor_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile('filey.txt', b'waluigi'))
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='bash -c "printf norp >&2"',
             expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
-            expected_stderr_project_file=proj_file)
+            expected_stderr_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -249,16 +249,16 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertEqual(text, open(res.stdout_filename).read())
 
-    def test_stdin_source_proj_file(self, *args):
+    def test_stdin_source_instructor_file(self, *args):
         text = ',vnaejfal;skjdf;lakjsdfklajsl;dkjf;'
-        proj_file = ag_models.InstructorFile.objects.validate_and_create(
+        instructor_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=SimpleUploadedFile('filey.txt', text.encode()))
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='cat',
             stdin_source=ag_models.StdinSource.project_file,
-            stdin_project_file=proj_file)
+            stdin_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -302,11 +302,11 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
         self.project_file = ag_models.InstructorFile.objects.validate_and_create(
             project=self.project, file_obj=SimpleUploadedFile(project_filename, b'asdkfasdjkf'))
         self.group = obj_build.make_group(project=self.project)
-        self.ag_suite.project_files_needed.add(self.project_file)
+        self.ag_suite.instructor_files_needed.add(self.project_file)
         self.submission = obj_build.build_submission(submission_group=self.group)
 
     def test_project_files_read_only(self, *args):
-        self.assertTrue(self.ag_suite.read_only_project_files)
+        self.assertTrue(self.ag_suite.read_only_instructor_files)
         tasks.grade_submission(self.submission.pk)
         self.submission.refresh_from_db()
         self.assertEqual(0, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
@@ -315,7 +315,7 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
             self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_project_files_not_read_only(self, *args):
-        self.ag_suite.validate_and_update(read_only_project_files=False)
+        self.ag_suite.validate_and_update(read_only_instructor_files=False)
         tasks.grade_submission(self.submission.pk)
         self.submission.refresh_from_db()
         self.assertEqual(self.retcode_points,
@@ -349,7 +349,7 @@ print('b' * {0}, file=sys.stderr, end='')
 
         self.timeout_cmd = "sleep 10"
 
-        self.ag_test_suite.project_files_needed.add(self.too_much_output_file)
+        self.ag_test_suite.instructor_files_needed.add(self.too_much_output_file)
 
         self.non_utf_bytes = b'\x80 and some other stuff just because\n'
         non_utf_prog = """
@@ -364,7 +364,7 @@ sys.stderr.flush()
             project=self.project,
             file_obj=SimpleUploadedFile('non_utf.py', non_utf_prog.encode()))
 
-        self.ag_test_suite.project_files_needed.add(self.non_utf_file)
+        self.ag_test_suite.instructor_files_needed.add(self.non_utf_file)
 
     def test_program_times_out(self, *args):
         cmd = obj_build.make_full_ag_test_command(

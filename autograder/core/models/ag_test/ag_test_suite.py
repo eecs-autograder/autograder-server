@@ -76,12 +76,12 @@ class AGTestSuite(AutograderModel):
                                 help_text='''The project this suite belongs to.
                                              This field is REQUIRED.''')
 
-    project_files_needed = models.ManyToManyField(
+    instructor_files_needed = models.ManyToManyField(
         InstructorFile,
         help_text='''The project files that will be copied into the sandbox before the suite's
                      tests are run.''')
 
-    read_only_project_files = models.BooleanField(
+    read_only_instructor_files = models.BooleanField(
         default=True,
         help_text="""When True, project files needed for this suite will be read-only when this
                      suite is run.""")
@@ -155,11 +155,11 @@ class AGTestSuite(AutograderModel):
 
         errors = {}
 
-        for proj_file in self.project_files_needed.all():
-            if proj_file.project != self.project:
-                errors['project_files_needed'] = (
+        for instructor_file in self.instructor_files_needed.all():
+            if instructor_file.project != self.project:
+                errors['instructor_files_needed'] = (
                     'File {} does not belong to the project "{}".'.format(
-                        proj_file.name, self.project.name))
+                        instructor_file.name, self.project.name))
 
         for pattern in self.student_files_needed.all():
             if pattern.project != self.project:
@@ -176,8 +176,8 @@ class AGTestSuite(AutograderModel):
         'project',
         'last_modified',
 
-        'project_files_needed',
-        'read_only_project_files',
+        'instructor_files_needed',
+        'read_only_instructor_files',
         'student_files_needed',
 
         'ag_test_cases',
@@ -199,7 +199,7 @@ class AGTestSuite(AutograderModel):
     )
 
     SERIALIZE_RELATED = (
-        'project_files_needed',
+        'instructor_files_needed',
         'student_files_needed',
 
         'ag_test_cases',
@@ -215,8 +215,8 @@ class AGTestSuite(AutograderModel):
     EDITABLE_FIELDS = (
         'name',
 
-        'project_files_needed',
-        'read_only_project_files',
+        'instructor_files_needed',
+        'read_only_instructor_files',
         'student_files_needed',
 
         'setup_suite_cmd',

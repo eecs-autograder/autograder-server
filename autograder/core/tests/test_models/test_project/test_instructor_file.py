@@ -27,27 +27,27 @@ class _SetUp(UnitTestBase):
             b'contents more contents.')
 
 
-class CreateUploadedFileTestCase(_SetUp):
+class CreateInstuctorFileTestCase(_SetUp):
     def test_valid_create(self):
-        uploaded_file = InstructorFile.objects.validate_and_create(
+        instructor_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
 
-        self.assertEqual(self.file_obj.name, uploaded_file.name)
+        self.assertEqual(self.file_obj.name, instructor_file.name)
         expected_abspath = os.path.join(
             core_ut.get_project_files_dir(self.project), self.file_obj.name)
-        self.assertEqual(expected_abspath, uploaded_file.abspath)
-        self.assertEqual(self.file_obj.size, uploaded_file.size)
+        self.assertEqual(expected_abspath, instructor_file.abspath)
+        self.assertEqual(self.file_obj.size, instructor_file.size)
 
         self.file_obj.seek(0)
-        self.assertEqual(self.file_obj.read(), uploaded_file.file_obj.read())
+        self.assertEqual(self.file_obj.read(), instructor_file.file_obj.read())
 
         with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(self.file_obj.name))
 
     def test_create_file_exception_file_already_exists(self):
         self.file_obj.seek(0)
-        uploaded_file = InstructorFile.objects.validate_and_create(
+        instructor_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
 
@@ -59,22 +59,22 @@ class CreateUploadedFileTestCase(_SetUp):
 
         self.assertIn('filename', cm.exception.message_dict)
         self.file_obj.seek(0)
-        self.assertEqual(uploaded_file.file_obj.read(), self.file_obj.read())
+        self.assertEqual(instructor_file.file_obj.read(), self.file_obj.read())
 
     # Note: Django's uploaded file objects strip path information from
     # uploaded files
-    def test_path_info_stripped_from_uploaded_filenames(self):
+    def test_path_info_stripped_from_instructor_filenames(self):
         # This test makes sure that these objects don't allow
         # the user to add files in subdirectories (or worse,
         # somewhere else in the filesystem).
         new_filename = 'new_filename.txt'
         self.file_obj.name = '../../' + new_filename
 
-        uploaded_file = InstructorFile.objects.validate_and_create(
+        instructor_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
 
-        self.assertEqual(new_filename, uploaded_file.name)
+        self.assertEqual(new_filename, instructor_file.name)
 
     def test_exception_illegal_filenames(self):
         for filename in _illegal_filenames:
@@ -95,34 +95,34 @@ class CreateUploadedFileTestCase(_SetUp):
         self.assertIn('content', cm.exception.message_dict)
 
 
-class RenameUploadedFileTestCase(_SetUp):
+class RenameInstructorFileTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
-        self.uploaded_file = InstructorFile.objects.validate_and_create(
+        self.instructor_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
 
     def test_valid_rename(self):
-        original_last_modified = self.uploaded_file.last_modified
+        original_last_modified = self.instructor_file.last_modified
         new_name = 'new_filename'
-        self.uploaded_file.rename(new_name)
+        self.instructor_file.rename(new_name)
 
-        self.uploaded_file.refresh_from_db()
+        self.instructor_file.refresh_from_db()
 
-        self.assertNotEqual(original_last_modified, self.uploaded_file.last_modified)
-        self.assertEqual(new_name, self.uploaded_file.name)
+        self.assertNotEqual(original_last_modified, self.instructor_file.last_modified)
+        self.assertEqual(new_name, self.instructor_file.name)
         with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(new_name))
 
     def test_path_info_stripped_from_new_name(self):
         name_with_path = '../../hack/you'
-        self.uploaded_file.rename(name_with_path)
+        self.instructor_file.rename(name_with_path)
 
-        self.uploaded_file.refresh_from_db()
+        self.instructor_file.refresh_from_db()
 
         expected_new_name = 'you'
-        self.assertEqual(expected_new_name, self.uploaded_file.name)
+        self.assertEqual(expected_new_name, self.instructor_file.name)
         with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(expected_new_name))
 
@@ -130,23 +130,23 @@ class RenameUploadedFileTestCase(_SetUp):
         for filename in _illegal_filenames:
             with self.assertRaises(exceptions.ValidationError,
                                    msg='Filename: ' + filename) as cm:
-                self.uploaded_file.rename(filename)
+                self.instructor_file.rename(filename)
 
             self.assertIn('name', cm.exception.message_dict)
 
 
-class DeleteUploadedFileTestCase(_SetUp):
+class DeleteInstructorFileTestCase(_SetUp):
     def test_file_deleted_from_filesystem(self):
-        uploaded_file = InstructorFile.objects.validate_and_create(
+        instructor_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
-        self.assertTrue(os.path.exists(uploaded_file.abspath))
+        self.assertTrue(os.path.exists(instructor_file.abspath))
 
-        uploaded_file.delete()
-        self.assertFalse(os.path.exists(uploaded_file.abspath))
+        instructor_file.delete()
+        self.assertFalse(os.path.exists(instructor_file.abspath))
 
 
-class UploadedFileMiscTestCase(_SetUp):
+class InstructorFileMiscTestCase(_SetUp):
     def test_serializable_fields(self):
         expected = [
             'pk',
@@ -159,10 +159,10 @@ class UploadedFileMiscTestCase(_SetUp):
         self.assertCountEqual(expected,
                               InstructorFile.get_serializable_fields())
 
-        uploaded_file = InstructorFile.objects.validate_and_create(
+        instructor_file = InstructorFile.objects.validate_and_create(
             project=self.project,
             file_obj=self.file_obj)
-        self.assertTrue(uploaded_file.to_dict())
+        self.assertTrue(instructor_file.to_dict())
 
     def test_editable_fields(self):
         expected = []

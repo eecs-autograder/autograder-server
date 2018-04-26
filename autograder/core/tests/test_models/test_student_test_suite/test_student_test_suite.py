@@ -18,8 +18,8 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
         self.assertEqual(self.name, student_suite.name)
         self.assertEqual(self.project, student_suite.project)
-        self.assertSequenceEqual([], student_suite.project_files_needed.all())
-        self.assertTrue(student_suite.read_only_project_files)
+        self.assertSequenceEqual([], student_suite.instructor_files_needed.all())
+        self.assertTrue(student_suite.read_only_instructor_files)
         self.assertSequenceEqual([], student_suite.student_files_needed.all())
         self.assertSequenceEqual([], student_suite.buggy_impl_names)
 
@@ -69,14 +69,14 @@ class StudentTestSuiteTestCase(UnitTestBase):
                          past_limit_fdbk.bugs_exposed_fdbk_level)
 
     def test_valid_init_non_defaults(self):
-        proj_file1 = obj_build.make_uploaded_file(self.project)
-        proj_file2 = obj_build.make_uploaded_file(self.project)
-        student_file = obj_build.make_expected_student_pattern(self.project)
+        instructor_file1 = obj_build.make_instructor_file(self.project)
+        instructor_file2 = obj_build.make_instructor_file(self.project)
+        student_file = obj_build.make_expected_student_file(self.project)
         values = {
             'name': 'adnlakshfdklajhsdlf',
             'project': self.project,
-            'project_files_needed': [proj_file1.to_dict(), proj_file2.to_dict()],
-            'read_only_project_files': False,
+            'instructor_files_needed': [instructor_file1.to_dict(), instructor_file2.to_dict()],
+            'read_only_instructor_files': False,
             'student_files_needed': [student_file.to_dict()],
             'buggy_impl_names': ['spam', 'egg', 'sausage', 'waaaaluigi'],
             'setup_command': {'cmd': 'g++ some_stuff.cpp'},
@@ -116,13 +116,14 @@ class StudentTestSuiteTestCase(UnitTestBase):
         )  # type: ag_models.StudentTestSuite
 
         self.assertCountEqual(
-            [uploaded_file['pk'] for uploaded_file in values['project_files_needed']],
-            [uploaded_file.pk for uploaded_file in student_suite.project_files_needed.all()])
-        values.pop('project_files_needed')
+            [instructor_file['pk'] for instructor_file in values['instructor_files_needed']],
+            [instructor_file.pk for instructor_file in
+             student_suite.instructor_files_needed.all()])
+        values.pop('instructor_files_needed')
 
         self.assertCountEqual(
-            [pattern['pk'] for pattern in values['student_files_needed']],
-            [pattern.pk for pattern in student_suite.student_files_needed.all()])
+            [student_file['pk'] for student_file in values['student_files_needed']],
+            [student_file.pk for student_file in student_suite.student_files_needed.all()])
         values.pop('student_files_needed')
 
         for key, value in values.items():
@@ -214,19 +215,19 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
         self.assertIn('max_points', cm.exception.message_dict)
 
-    def test_error_project_file_needed_that_belongs_to_other_project(self):
+    def test_error_instructor_file_needed_that_belongs_to_other_project(self):
         other_project = obj_build.make_project(course=self.project.course)
-        other_proj_file = obj_build.make_uploaded_file(project=other_project)
+        other_instructor_file = obj_build.make_instructor_file(project=other_project)
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.StudentTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
-                project_files_needed=[other_proj_file.pk])
+                instructor_files_needed=[other_instructor_file.pk])
 
-        self.assertIn('project_files_needed', cm.exception.message_dict)
+        self.assertIn('instructor_files_needed', cm.exception.message_dict)
 
     def test_error_student_file_needed_that_belongs_to_other_project(self):
         other_project = obj_build.make_project(course=self.project.course)
-        other_student_file = obj_build.make_expected_student_pattern(other_project)
+        other_student_file = obj_build.make_expected_student_file(other_project)
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.StudentTestSuite.objects.validate_and_create(
                 name=self.name, project=self.project,
@@ -234,9 +235,9 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
         self.assertIn('student_files_needed', cm.exception.message_dict)
 
-    def test_error_stdin_project_file_belongs_to_other_project(self):
+    def test_error_stdin_instructor_file_belongs_to_other_project(self):
         other_project = obj_build.make_project(course=self.project.course)
-        other_proj_file = obj_build.make_uploaded_file(project=other_project)
+        other_instructor_file = obj_build.make_instructor_file(project=other_project)
 
         cmd_json = {
             # This command will satisfy the requirements of the validity check
@@ -244,7 +245,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'cmd': 'echo {} {}'.format(ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER,
                                        ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER),
             'stdin_source': ag_models.StdinSource.project_file.value,
-            'stdin_project_file': other_proj_file.pk
+            'stdin_instructor_file': other_instructor_file.pk
         }
         cmd_fields = [
             'setup_command',
@@ -265,8 +266,8 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'pk',
             'name',
             'project',
-            'project_files_needed',
-            'read_only_project_files',
+            'instructor_files_needed',
+            'read_only_instructor_files',
             'student_files_needed',
             'buggy_impl_names',
 
@@ -289,20 +290,20 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'last_modified',
         ]
 
-        proj_file = obj_build.make_uploaded_file(self.project)
-        student_file = obj_build.make_expected_student_pattern(self.project)
+        instructor_file = obj_build.make_instructor_file(self.project)
+        student_file = obj_build.make_expected_student_file(self.project)
 
         student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name=self.name, project=self.project,
             setup_command={'cmd': 'setuppy'},
-            project_files_needed=[proj_file],
+            instructor_files_needed=[instructor_file],
             student_files_needed=[student_file]
         )  # type: ag_models.StudentTestSuite
 
         serialized = student_suite.to_dict()
         self.assertCountEqual(expected_field_names, serialized.keys())
 
-        self.assertIsInstance(serialized['project_files_needed'][0], dict)
+        self.assertIsInstance(serialized['instructor_files_needed'][0], dict)
         self.assertIsInstance(serialized['student_files_needed'][0], dict)
 
         self.assertIsInstance(serialized['setup_command'], dict)

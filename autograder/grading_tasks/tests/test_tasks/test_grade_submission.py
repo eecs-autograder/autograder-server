@@ -227,7 +227,7 @@ void file2() {
             file_obj=SimpleUploadedFile('Makefile', makefile.encode()))
 
         suite = obj_build.make_ag_test_suite(self.project, setup_suite_cmd='make')
-        suite.project_files_needed.add(uploaded_makefile)
+        suite.instructor_files_needed.add(uploaded_makefile)
         suite.student_files_needed.add(cpp_pattern, h_pattern)
         case = obj_build.make_ag_test_case(suite)
         cmd = ag_models.AGTestCommand.objects.validate_and_create(

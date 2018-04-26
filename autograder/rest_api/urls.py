@@ -26,22 +26,16 @@ project_downloads_router = routers.SimpleRouter()
 project_downloads_router.register(r'download_tasks', views.DownloadTaskDetailViewSet,
                                   base_name='download_tasks')
 
-expected_patterns_router = routers.NestedSimpleRouter(
-    project_router, r'projects', lookup='project')
-expected_patterns_router.register(
-    r'expected_student_files', views.ExpectedStudentFilePatternsViewSet,
-    base_name='project-expected-patterns')
-
 invitations_router = routers.NestedSimpleRouter(
     project_router, r'projects', lookup='project')
 invitations_router.register(
     r'group_invitations', views.GroupInvitationsViewSet,
     base_name='project-group-invitations')
 
-expected_pattern_router = routers.SimpleRouter()
-expected_pattern_router.register(r'expected_student_files',
-                                 views.ExpectedStudentFilePatternDetailViewSet,
-                                 base_name='expected-pattern')
+expected_student_pattern_router = routers.SimpleRouter()
+expected_student_pattern_router.register(r'expected_student_files',
+                                         views.ExpectedStudentFilePatternDetailViewSet,
+                                         base_name='expected-student-file')
 
 uploaded_file_router = routers.SimpleRouter()
 uploaded_file_router.register(r'instructor_files',
@@ -132,17 +126,20 @@ urlpatterns = [
          name='course-handgraders'),
 
     path('courses/<int:pk>/projects/', views.ListCreateProjectView.as_view(), name='projects'),
-
     url(r'', include(project_router.urls)),
+
     path('projects/<int:pk>/instructor_files/', views.ListCreateInstructorFilesViewSet.as_view(),
          name='instructor-files'),
     path('instructor_files/<int:pk>/content/', views.InstructorFileContentView.as_view(),
          name='uploaded-file-content'),
+
+    path('projects/<int:pk>/expected_student_files/',
+         views.ListCreateExpectedStudentFilesViewSet.as_view(), name='expected-student-files'),
+
     url(r'', include(project_downloads_router.urls)),
-    url(r'', include(expected_patterns_router.urls)),
     url(r'', include(invitations_router.urls)),
 
-    url(r'', include(expected_pattern_router.urls)),
+    url(r'', include(expected_student_pattern_router.urls)),
     url(r'', include(uploaded_file_router.urls)),
     url(r'', include(group_invitation_router.urls)),
 

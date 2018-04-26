@@ -210,12 +210,12 @@ class StudentTestSuite(AutograderModel):
         related_name='student_test_suites',
         help_text="The Project that this student test suite belongs to.")
 
-    project_files_needed = models.ManyToManyField(
+    instructor_files_needed = models.ManyToManyField(
         InstructorFile,
         help_text="""The project files that will be copied into the sandbox before the suite
                      is graded.""")
 
-    read_only_project_files = models.BooleanField(
+    read_only_instructor_files = models.BooleanField(
         default=True,
         help_text="""When True, project files needed for this suite will be read-only when this
                      suite is graded.""")
@@ -353,11 +353,11 @@ class StudentTestSuite(AutograderModel):
 
         errors = {}
 
-        for proj_file in self.project_files_needed.all():
-            if proj_file.project != self.project:
-                errors['project_files_needed'] = (
+        for instructor_file in self.instructor_files_needed.all():
+            if instructor_file.project != self.project:
+                errors['instructor_files_needed'] = (
                     'File {} does not belong to the project "{}".'.format(
-                        proj_file.name, self.project.name))
+                        instructor_file.name, self.project.name))
 
         for pattern in self.student_files_needed.all():
             if pattern.project != self.project:
@@ -376,9 +376,9 @@ class StudentTestSuite(AutograderModel):
             if cmd.stdin_source != StdinSource.project_file:
                 continue
 
-            if cmd.stdin_project_file.project != self.project:
+            if cmd.stdin_instructor_file.project != self.project:
                 errors[cmd_field] = 'In {}, file "{}" does not belong to the project "{}"'.format(
-                    cmd_field, cmd.stdin_project_file.name, self.project.name)
+                    cmd_field, cmd.stdin_instructor_file.name, self.project.name)
 
         if self.STUDENT_TEST_NAME_PLACEHOLDER not in self.student_test_validity_check_command.cmd:
             errors['student_test_validity_check_command'] = (
@@ -403,8 +403,8 @@ class StudentTestSuite(AutograderModel):
         'name',
         'project',
 
-        'project_files_needed',
-        'read_only_project_files',
+        'instructor_files_needed',
+        'read_only_instructor_files',
         'student_files_needed',
         'buggy_impl_names',
 
@@ -433,8 +433,8 @@ class StudentTestSuite(AutograderModel):
     EDITABLE_FIELDS = (
         'name',
 
-        'project_files_needed',
-        'read_only_project_files',
+        'instructor_files_needed',
+        'read_only_instructor_files',
         'student_files_needed',
         'buggy_impl_names',
 
@@ -461,7 +461,7 @@ class StudentTestSuite(AutograderModel):
     )
 
     SERIALIZE_RELATED = (
-        'project_files_needed',
+        'instructor_files_needed',
         'student_files_needed',
     )
 

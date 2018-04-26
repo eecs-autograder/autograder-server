@@ -48,7 +48,7 @@ class AGCommandBase(AutograderModel):
         help_text='''A string whose contents should be redirected to the stdin of this command.
                      This value is used when stdin_source is StdinSource.text and is ignored
                      otherwise.''')
-    stdin_project_file = models.ForeignKey(
+    stdin_instructor_file = models.ForeignKey(
         InstructorFile, blank=True, null=True, default=None, related_name='+',
         on_delete=models.CASCADE,
         help_text='''An InstructorFile whose contents should be redirected to the stdin of this
@@ -95,6 +95,6 @@ class AGCommandBase(AutograderModel):
                     program's process limit.''')
 
     def clean(self):
-        if self.stdin_source == StdinSource.project_file and self.stdin_project_file is None:
+        if self.stdin_source == StdinSource.project_file and self.stdin_instructor_file is None:
             msg = 'This field may not be None when stdin source is project file.'
-            raise exceptions.ValidationError({'stdin_project_file': msg})
+            raise exceptions.ValidationError({'stdin_instructor_file': msg})

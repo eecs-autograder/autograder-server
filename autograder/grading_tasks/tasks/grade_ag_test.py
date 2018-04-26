@@ -217,7 +217,7 @@ def _get_expected_stdout_file_and_name(
         expected_stdout.flush()
         expected_stdout_filename = expected_stdout.name
     elif ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.project_file:
-        expected_stdout_filename = ag_test_cmd.expected_stdout_project_file.abspath
+        expected_stdout_filename = ag_test_cmd.expected_stdout_instructor_file.abspath
 
     return expected_stdout, expected_stdout_filename
 
@@ -232,6 +232,6 @@ def _get_expected_stderr_file_and_name(
         expected_stderr.flush()
         expected_stderr_filename = expected_stderr.name
     elif ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.project_file:
-        expected_stderr_filename = ag_test_cmd.expected_stderr_project_file.abspath
+        expected_stderr_filename = ag_test_cmd.expected_stderr_instructor_file.abspath
 
     return expected_stderr, expected_stderr_filename

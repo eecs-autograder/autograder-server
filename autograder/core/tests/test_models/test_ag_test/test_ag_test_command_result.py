@@ -435,13 +435,13 @@ class AGTestCommandResultTestCase(UnitTestBase):
                          fdbk.stdout_points_possible)
 
     def test_stdout_correctness_show_diff_from_file(self):
-        proj_file = obj_build.make_uploaded_file(self.project)
+        instructor_file = obj_build.make_instructor_file(self.project)
         self.ag_test_command.expected_stdout_source = ag_models.ExpectedOutputSource.project_file
-        self.ag_test_command.expected_stdout_project_file = proj_file
+        self.ag_test_command.expected_stdout_instructor_file = instructor_file
         self.ag_test_command.save()
 
         result = self.make_correct_result()
-        with proj_file.open() as f:
+        with instructor_file.open() as f:
             expected_stdout = f.read()
         result.stdout = expected_stdout
         result.save()
@@ -567,13 +567,13 @@ class AGTestCommandResultTestCase(UnitTestBase):
                          fdbk.stderr_points_possible)
 
     def test_stderr_correctness_show_diff_from_file(self):
-        proj_file = obj_build.make_uploaded_file(self.project)
+        instructor_file = obj_build.make_instructor_file(self.project)
         self.ag_test_command.expected_stderr_source = ag_models.ExpectedOutputSource.project_file
-        self.ag_test_command.expected_stderr_project_file = proj_file
+        self.ag_test_command.expected_stderr_instructor_file = instructor_file
         self.ag_test_command.save()
 
         result = self.make_correct_result()
-        with proj_file.open() as f:
+        with instructor_file.open() as f:
             expected_stderr = f.read()
         result.stderr = expected_stderr
         result.save()

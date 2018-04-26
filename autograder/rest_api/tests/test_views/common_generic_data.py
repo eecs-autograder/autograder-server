@@ -39,8 +39,8 @@ class Project(gen_data.Project):
         return reverse('project-detail', kwargs={'pk': project.pk})
 
     def get_patterns_url(self, project):
-        return reverse('project-expected-patterns-list',
-                       kwargs={'project_pk': project.pk})
+        return reverse('expected-student-files',
+                       kwargs={'pk': project.pk})
 
     def get_instructor_files_url(self, project):
         return reverse('instructor-files',

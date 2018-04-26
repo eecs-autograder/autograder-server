@@ -130,11 +130,11 @@ def add_files_to_sandbox(sandbox: AutograderSandbox,
     if student_files_to_add:
         sandbox.add_files(*student_files_to_add)
 
-    project_files_to_add = [file_.abspath for file_ in suite.project_files_needed.all()]
+    project_files_to_add = [file_.abspath for file_ in suite.instructor_files_needed.all()]
     if project_files_to_add:
         owner_and_read_only = {
-            'owner': 'root' if suite.read_only_project_files else SANDBOX_USERNAME,
-            'read_only': suite.read_only_project_files
+            'owner': 'root' if suite.read_only_instructor_files else SANDBOX_USERNAME,
+            'read_only': suite.read_only_instructor_files
         }
         sandbox.add_files(*project_files_to_add, **owner_and_read_only)
 
@@ -185,7 +185,7 @@ def get_stdin_file(cmd: ag_models.AGCommand,
         stdin.seek(0)
         return stdin
     elif cmd.stdin_source == ag_models.StdinSource.project_file:
-        return cmd.stdin_project_file.open('rb')
+        return cmd.stdin_instructor_file.open('rb')
     elif cmd.stdin_source == ag_models.StdinSource.setup_stdout:
         if ag_test_suite_result is None:
             raise Exception('Expected ag test suite result, but got None.')

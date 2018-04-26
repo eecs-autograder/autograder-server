@@ -14,37 +14,39 @@ class CopyProjectTestCase(UnitTestBase):
         # and guests_can_submit should be set to False
         project = obj_build.make_project(hide_ultimate_submission_fdbk=False,
                                          visible_to_students=True)
-        proj_file1 = obj_build.make_uploaded_file(project)
-        proj_file2 = obj_build.make_uploaded_file(project)
-        student_file1 = obj_build.make_expected_student_pattern(project)
-        student_file2 = obj_build.make_expected_student_pattern(project)
+        instructor_file1 = obj_build.make_instructor_file(project)
+        instructor_file2 = obj_build.make_instructor_file(project)
+        student_file1 = obj_build.make_expected_student_file(project)
+        student_file2 = obj_build.make_expected_student_file(project)
 
-        suite1 = obj_build.make_ag_test_suite(project, project_files_needed=[proj_file1],
+        suite1 = obj_build.make_ag_test_suite(project, instructor_files_needed=[instructor_file1],
                                               student_files_needed=[student_file1])
         case1 = obj_build.make_ag_test_case(suite1)
         cmd1 = obj_build.make_full_ag_test_command(
             case1,
             expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
-            expected_stderr_project_file=proj_file2)
+            expected_stderr_instructor_file=instructor_file2)
         cmd2 = obj_build.make_full_ag_test_command(
             case1, set_arbitrary_points=False,
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_stdout_project_file=proj_file1)
+            expected_=instructor_file1)
 
-        suite2 = obj_build.make_ag_test_suite(project, project_files_needed=[proj_file1, proj_file2],
-                                              student_files_needed=[student_file2])
+        suite2 = obj_build.make_ag_test_suite(
+            project,
+            instructor_files_needed=[instructor_file1, instructor_file2],
+            student_files_needed=[student_file2])
         case2 = obj_build.make_ag_test_case(suite2)
         cmd3 = obj_build.make_full_ag_test_command(
             case2, set_arbitrary_expected_vals=False,
             stdin_source=ag_models.StdinSource.project_file,
-            stdin_project_file=proj_file2)
+            stdin_instructor_file=instructor_file2)
         case3 = obj_build.make_ag_test_case(suite2)
 
         suite3 = obj_build.make_ag_test_suite(project)
 
         student_suite1 = obj_build.make_student_test_suite(
             project,
-            project_files_needed=[proj_file1, proj_file2],
+            instructor_files_needed=[instructor_file1, instructor_file2],
             student_files_needed=[student_file1],
             setup_command={
                 'name':'stave',
@@ -53,7 +55,7 @@ class CopyProjectTestCase(UnitTestBase):
 
         student_suite2 = obj_build.make_student_test_suite(
             project,
-            project_files_needed=[proj_file1],
+            instructor_files_needed=[instructor_file1],
             student_files_needed=[student_file1, student_file2])
 
         student_suite3 = obj_build.make_student_test_suite(project)
@@ -70,7 +72,8 @@ class CopyProjectTestCase(UnitTestBase):
         ignore_fields = ['pk', 'course', 'last_modified',
                          'instructor_files', 'expected_student_files']
         expected_ag_tests = _pop_many(project.to_dict(), ignore_fields)
-        expected_ag_tests.update({'visible_to_students': False, 'hide_ultimate_submission_fdbk': True})
+        expected_ag_tests.update(
+            {'visible_to_students': False, 'hide_ultimate_submission_fdbk': True})
         self.assertEqual(expected_ag_tests, _pop_many(new_project.to_dict(), ignore_fields))
 
         self.assertEqual(project.instructor_files.count(), new_project.instructor_files.count())
@@ -121,24 +124,24 @@ class CopyProjectTestCase(UnitTestBase):
         expected_ag_tests = _recursive_pop(
             [suite.to_dict() for suite in project.ag_test_suites.all()], ignore_fields)
         for dict_ in expected_ag_tests:
-            dict_['project_files_needed'].sort(key=lambda obj: obj['name'])
+            dict_['instructor_files_needed'].sort(key=lambda obj: obj['name'])
             dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
         actual_ag_tests = _recursive_pop(
             [suite.to_dict() for suite in new_project.ag_test_suites.all()], ignore_fields)
         for dict_ in actual_ag_tests:
-            dict_['project_files_needed'].sort(key=lambda obj: obj['name'])
+            dict_['instructor_files_needed'].sort(key=lambda obj: obj['name'])
             dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
         self.assertEqual(expected_ag_tests, actual_ag_tests)
 
         expected_student_suites = _recursive_pop(
             [suite.to_dict() for suite in project.student_test_suites.all()], ignore_fields)
         for dict_ in expected_student_suites:
-            dict_['project_files_needed'].sort(key=lambda obj: obj['name'])
+            dict_['instructor_files_needed'].sort(key=lambda obj: obj['name'])
             dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
         actual_student_suites = _recursive_pop(
             [suite.to_dict() for suite in new_project.student_test_suites.all()], ignore_fields)
         for dict_ in actual_student_suites:
-            dict_['project_files_needed'].sort(key=lambda obj: obj['name'])
+            dict_['instructor_files_needed'].sort(key=lambda obj: obj['name'])
             dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
         self.assertEqual(expected_student_suites, actual_student_suites)
 

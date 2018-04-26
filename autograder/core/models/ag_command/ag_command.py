@@ -12,7 +12,7 @@ class AGCommand(AGCommandBase):
         'cmd',
         'stdin_source',
         'stdin_text',
-        'stdin_project_file',
+        'stdin_instructor_file',
         'time_limit',
         'stack_size_limit',
         'virtual_memory_limit',
@@ -24,7 +24,7 @@ class AGCommand(AGCommandBase):
         'cmd',
         'stdin_source',
         'stdin_text',
-        'stdin_project_file',
+        'stdin_instructor_file',
         'time_limit',
         'stack_size_limit',
         'virtual_memory_limit',
@@ -32,5 +32,5 @@ class AGCommand(AGCommandBase):
     ]
 
     SERIALIZE_RELATED = [
-        'stdin_project_file',
+        'stdin_instructor_file',
     ]

@@ -226,13 +226,13 @@ def make_project(course: ag_models.Course=None, **project_kwargs) -> ag_models.P
     return ag_models.Project.objects.validate_and_create(course=course, **project_kwargs)
 
 
-def make_uploaded_file(project: ag_models.Project) -> ag_models.InstructorFile:
+def make_instructor_file(project: ag_models.Project) -> ag_models.InstructorFile:
     return ag_models.InstructorFile.objects.validate_and_create(
         file_obj=SimpleUploadedFile('file' + get_unique_id(), b'content'),
         project=project)
 
 
-def make_expected_student_pattern(project: ag_models.Project) -> ag_models.ExpectedStudentFile:
+def make_expected_student_file(project: ag_models.Project) -> ag_models.ExpectedStudentFile:
     return ag_models.ExpectedStudentFile.objects.validate_and_create(
         project=project,
         pattern='pattern' + get_unique_id())
@@ -361,14 +361,14 @@ def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand
     if ag_test_command.expected_stdout_source == ag_models.ExpectedOutputSource.text:
         stdout = ag_test_command.expected_stdout_text
     elif ag_test_command.expected_stdout_source == ag_models.ExpectedOutputSource.project_file:
-        with ag_test_command.expected_stdout_project_file.open() as f:
+        with ag_test_command.expected_stdout_instructor_file.open() as f:
             stdout = f.read()
 
     stderr = ''
     if ag_test_command.expected_stderr_source == ag_models.ExpectedOutputSource.text:
         stderr = ag_test_command.expected_stderr_text
     elif ag_test_command.expected_stderr_source == ag_models.ExpectedOutputSource.project_file:
-        with ag_test_command.expected_stderr_project_file.open() as f:
+        with ag_test_command.expected_stderr_instructor_file.open() as f:
             stderr = f.read()
 
     kwargs = {

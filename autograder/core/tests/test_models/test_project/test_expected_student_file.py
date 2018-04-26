@@ -8,7 +8,7 @@ from autograder.core.models.project.expected_student_file import (
 from autograder.utils.testing import UnitTestBase
 
 
-class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
+class ExpectedStudentFileTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.project = obj_build.build_project()
@@ -44,33 +44,33 @@ class CreateExpectedStudentFilePatternTestCase(UnitTestBase):
                               ExpectedStudentFile.get_editable_fields())
 
     def test_valid_create_defaults(self):
-        pattern = ExpectedStudentFile.objects.validate_and_create(
+        student_file = ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern=self.valid_pattern)
 
-        pattern.refresh_from_db()
+        student_file.refresh_from_db()
 
-        self.assertEqual(self.project, pattern.project)
-        self.assertEqual(self.valid_pattern, pattern.pattern)
-        self.assertEqual(1, pattern.min_num_matches)
-        self.assertEqual(1, pattern.max_num_matches)
+        self.assertEqual(self.project, student_file.project)
+        self.assertEqual(self.valid_pattern, student_file.pattern)
+        self.assertEqual(1, student_file.min_num_matches)
+        self.assertEqual(1, student_file.max_num_matches)
 
     def test_valid_create_no_defaults(self):
         min_matches = random.randint(0, 2)
         max_matches = min_matches + random.randint(0, 2)
-        pattern = ExpectedStudentFile.objects.validate_and_create(
+        student_file = ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
             pattern=self.valid_pattern,
             min_num_matches=min_matches,
             max_num_matches=max_matches
         )
 
-        pattern.refresh_from_db()
+        student_file.refresh_from_db()
 
-        self.assertEqual(self.project, pattern.project)
-        self.assertEqual(self.valid_pattern, pattern.pattern)
-        self.assertEqual(min_matches, pattern.min_num_matches)
-        self.assertEqual(max_matches, pattern.max_num_matches)
+        self.assertEqual(self.project, student_file.project)
+        self.assertEqual(self.valid_pattern, student_file.pattern)
+        self.assertEqual(min_matches, student_file.min_num_matches)
+        self.assertEqual(max_matches, student_file.max_num_matches)
 
     def test_exception_pattern_exists(self):
         ExpectedStudentFile.objects.validate_and_create(

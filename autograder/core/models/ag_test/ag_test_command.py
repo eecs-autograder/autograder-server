@@ -149,7 +149,7 @@ class AGTestCommand(AGCommandBase):
         help_text='''A string whose contents should be compared against this command's stdout.
                      This value is used when expected_stdout_source is ExpectedOutputSource.text
                      and is ignored otherwise.''')
-    expected_stdout_project_file = models.ForeignKey(
+    expected_stdout_instructor_file = models.ForeignKey(
         InstructorFile, blank=True, null=True, default=None, related_name='+',
         on_delete=models.CASCADE,
         help_text='''An InstructorFile whose contents should be compared against this command's
@@ -165,7 +165,7 @@ class AGTestCommand(AGCommandBase):
         help_text='''A string whose contents should be compared against this command's stderr.
                      This value is used when expected_stderr_source is ExpectedOutputSource.text
                      and is ignored otherwise.''')
-    expected_stderr_project_file = models.ForeignKey(
+    expected_stderr_instructor_file = models.ForeignKey(
         InstructorFile, blank=True, null=True, default=None, related_name='+',
         on_delete=models.CASCADE,
         help_text='''An InstructorFile whose contents should be compared against this command's
@@ -251,13 +251,13 @@ class AGTestCommand(AGCommandBase):
             error_dict = e.error_dict
 
         if (self.expected_stdout_source == ExpectedOutputSource.project_file and
-                self.expected_stdout_project_file is None):
-            error_dict['expected_stdout_project_file'] = (
+                self.expected_stdout_instructor_file is None):
+            error_dict['expected_stdout_instructor_file'] = (
                 'This field may not be None when expected stdout source is project file.')
 
         if (self.expected_stderr_source == ExpectedOutputSource.project_file and
-                self.expected_stderr_project_file is None):
-            error_dict['expected_stderr_project_file'] = (
+                self.expected_stderr_instructor_file is None):
+            error_dict['expected_stderr_instructor_file'] = (
                 'This field may not be None when expected stderr source is project file.')
 
         if error_dict:
@@ -272,17 +272,17 @@ class AGTestCommand(AGCommandBase):
 
         'stdin_source',
         'stdin_text',
-        'stdin_project_file',
+        'stdin_instructor_file',
 
         'expected_return_code',
 
         'expected_stdout_source',
         'expected_stdout_text',
-        'expected_stdout_project_file',
+        'expected_stdout_instructor_file',
 
         'expected_stderr_source',
         'expected_stderr_text',
-        'expected_stderr_project_file',
+        'expected_stderr_instructor_file',
 
         'ignore_case',
         'ignore_whitespace',
@@ -315,17 +315,17 @@ class AGTestCommand(AGCommandBase):
 
         'stdin_source',
         'stdin_text',
-        'stdin_project_file',
+        'stdin_instructor_file',
 
         'expected_return_code',
 
         'expected_stdout_source',
         'expected_stdout_text',
-        'expected_stdout_project_file',
+        'expected_stdout_instructor_file',
 
         'expected_stderr_source',
         'expected_stderr_text',
-        'expected_stderr_project_file',
+        'expected_stderr_instructor_file',
 
         'ignore_case',
         'ignore_whitespace',
@@ -352,9 +352,9 @@ class AGTestCommand(AGCommandBase):
     )
 
     SERIALIZE_RELATED = (
-        'stdin_project_file',
-        'expected_stdout_project_file',
-        'expected_stderr_project_file',
+        'stdin_instructor_file',
+        'expected_stdout_instructor_file',
+        'expected_stderr_instructor_file',
     )
 
     TRANSPARENT_TO_ONE_FIELDS = (
