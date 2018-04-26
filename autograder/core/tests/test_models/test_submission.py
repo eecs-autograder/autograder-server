@@ -38,9 +38,9 @@ class SubmissionTestCase(UnitTestBase):
             }
         ]
 
-        for pattern_settings in expected_files:
+        for expected_file_dict in expected_files:
             ag_models.ExpectedStudentFile.objects.validate_and_create(
-                **pattern_settings)
+                **expected_file_dict)
 
     def test_valid_init(self):
         SimpleFileTuple = namedtuple('SimpleFileTuple', ['name', 'content'])

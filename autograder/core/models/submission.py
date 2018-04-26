@@ -79,24 +79,23 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
     def check_for_missing_files(self, submission):
         submitted_filenames = submission.get_submitted_file_basenames()
 
-        patterns = (submission.submission_group.project
-                              .expected_student_files.all())
-        for pattern in patterns:
-            count = len(fnmatch.filter(submitted_filenames, pattern.pattern))
-            if count < pattern.min_num_matches:
-                submission.missing_files[pattern.pattern] = (
-                    pattern.min_num_matches - count)
+        expected_student_files = submission.submission_group.project.expected_student_files.all()
+        for expected_file in expected_student_files:
+            count = len(fnmatch.filter(submitted_filenames, expected_file.pattern))
+            if count < expected_file.min_num_matches:
+                submission.missing_files[expected_file.pattern] = (
+                    expected_file.min_num_matches - count)
 
     def file_is_extra(self, submission, filename):
         project = submission.submission_group.project
-        for pattern in project.expected_student_files.all():
-            if not fnmatch.fnmatch(filename, pattern.pattern):
+        for expected_file in project.expected_student_files.all():
+            if not fnmatch.fnmatch(filename, expected_file.pattern):
                 continue
 
             num_matches_so_far = len(
                 fnmatch.filter(submission.submitted_filenames,
-                               pattern.pattern))
-            if num_matches_so_far == pattern.max_num_matches:
+                               expected_file.pattern))
+            if num_matches_so_far == expected_file.max_num_matches:
                 continue
 
             return False

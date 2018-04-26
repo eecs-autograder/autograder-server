@@ -89,13 +89,13 @@ class CopyProjectTestCase(UnitTestBase):
 
         self.assertEqual(project.expected_student_files.count(),
                          new_project.expected_student_files.count())
-        for old_pattern, new_pattern in itertools.zip_longest(
+        for old_expected_file, new_expected_file in itertools.zip_longest(
                 project.expected_student_files.order_by('pattern'),
                 new_project.expected_student_files.order_by('pattern')):
-            self.assertNotEqual(old_pattern.pk, new_pattern.pk)
+            self.assertNotEqual(old_expected_file.pk, new_expected_file.pk)
 
-            self.assertEqual(_pop_many(old_pattern.to_dict(), ['pk', 'project']),
-                             _pop_many(new_pattern.to_dict(), ['pk', 'project']))
+            self.assertEqual(_pop_many(old_expected_file.to_dict(), ['pk', 'project']),
+                             _pop_many(new_expected_file.to_dict(), ['pk', 'project']))
 
         old_suite_pks = {suite.pk for suite in project.ag_test_suites.all()}
         new_suite_pks = {suite.pk for suite in new_project.ag_test_suites.all()}

@@ -106,7 +106,11 @@ def _copy_student_suites(project, new_project):
         student_files_needed = list(
             new_project.expected_student_files.filter(
                 pattern__in=[
-                    pattern.pattern for pattern in student_suite.student_files_needed.all()]))
+                    expected_file.pattern for expected_file in
+                    student_suite.student_files_needed.all()
+                ]
+            )
+        )
         ag_models.StudentTestSuite.objects.validate_and_create(
             project=new_project,
             instructor_files_needed=instructor_files_needed,

@@ -161,11 +161,11 @@ class AGTestSuite(AutograderModel):
                     'File {} does not belong to the project "{}".'.format(
                         instructor_file.name, self.project.name))
 
-        for pattern in self.student_files_needed.all():
-            if pattern.project != self.project:
+        for student_file in self.student_files_needed.all():
+            if student_file.project != self.project:
                 errors['student_files_needed'] = (
                     'Student file pattern {} does not belong to the project "{}".'.format(
-                        pattern.pattern, self.project.name))
+                        student_file.pattern, self.project.name))
 
         if errors:
             raise exceptions.ValidationError(errors)

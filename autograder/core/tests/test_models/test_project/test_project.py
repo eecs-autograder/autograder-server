@@ -98,7 +98,7 @@ class ProjectMiscTestCase(UnitTestBase):
             name='qeiruqioewiur', course=self.course
         )  # type: ag_models.Project
         instructor_file = obj_build.make_instructor_file(project)
-        pattern = ag_models.ExpectedStudentFile.objects.validate_and_create(
+        student_file = ag_models.ExpectedStudentFile.objects.validate_and_create(
             project=project, pattern='qweiourqpweioru')
 
         project_dict = project.to_dict()
@@ -132,7 +132,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual('UTC', project_dict['submission_limit_reset_timezone'])
 
         self.assertSequenceEqual([instructor_file.to_dict()], project_dict['instructor_files'])
-        self.assertSequenceEqual([pattern.to_dict()],
+        self.assertSequenceEqual([student_file.to_dict()],
                                  project_dict['expected_student_files'])
 
         update_dict = copy.deepcopy(project_dict)
