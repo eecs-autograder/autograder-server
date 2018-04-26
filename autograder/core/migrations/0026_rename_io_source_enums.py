@@ -37,7 +37,7 @@ def revert_io_source_enums(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0002_remove_stdin_from_ag_command'),
+        ('core', '0025_remove_stdin_from_ag_command'),
     ]
 
     operations = [
