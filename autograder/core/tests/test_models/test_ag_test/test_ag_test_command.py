@@ -47,7 +47,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
 
         self.assertEqual(ag_models.ExpectedOutputSource.none, ag_cmd.expected_stdout_source)
         self.assertEqual('', ag_cmd.expected_stdout_text)
-        self.assertIsNone(ag_cmd.expected_)
+        self.assertIsNone(ag_cmd.expected_stdout_instructor_file)
 
         self.assertEqual(ag_models.ExpectedOutputSource.none, ag_cmd.expected_stderr_source)
         self.assertEqual('', ag_cmd.expected_stderr_text)
@@ -158,12 +158,12 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             stdin_source=ag_models.StdinSource.project_file,
             stdin_instructor_file=stdin,
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_=stdout,
+            expected_stdout_instructor_file=stdout,
             expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
             expected_stderr_instructor_file=stderr)
 
         self.assertEqual(stdin, ag_cmd.stdin_instructor_file)
-        self.assertEqual(stdout, ag_cmd.expected_)
+        self.assertEqual(stdout, ag_cmd.expected_stdout_instructor_file)
         self.assertEqual(stderr, ag_cmd.expected_stderr_instructor_file)
 
     def test_error_missing_stdin_instructor_file(self):
@@ -371,7 +371,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
             stdin_instructor_file=stdin,
-            expected_=stdout,
+            expected_stdout_instructor_file=stdout,
             expected_stderr_instructor_file=stderr)
 
         cmd_dict = ag_cmd.to_dict()
@@ -393,12 +393,12 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             stdin_source=ag_models.StdinSource.project_file,
             stdin_instructor_file=stdin.to_dict(),
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_=stdout.to_dict(),
+            expected_stdout_instructor_file=stdout.to_dict(),
             expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
             expected_stderr_instructor_file=stderr.to_dict())
 
         self.assertEqual(stdin, ag_cmd.stdin_instructor_file)
-        self.assertEqual(stdout, ag_cmd.expected_)
+        self.assertEqual(stdout, ag_cmd.expected_stdout_instructor_file)
         self.assertEqual(stderr, ag_cmd.expected_stderr_instructor_file)
 
     def test_file_io_sources_deserialized_on_update(self):
@@ -411,35 +411,35 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             stdin_source=ag_models.StdinSource.project_file,
             stdin_instructor_file=stdin,
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_=stdout,
+            expected_stdout_instructor_file=stdout,
             expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
             expected_stderr_instructor_file=stderr)
 
         self.assertEqual(stdin, ag_cmd.stdin_instructor_file)
-        self.assertEqual(stdout, ag_cmd.expected_)
+        self.assertEqual(stdout, ag_cmd.expected_stdout_instructor_file)
         self.assertEqual(stderr, ag_cmd.expected_stderr_instructor_file)
 
         ag_cmd.validate_and_update(
             stdin_source=ag_models.StdinSource.none,
             stdin_instructor_file=None,
             expected_stdout_source=ag_models.ExpectedOutputSource.none,
-            expected_=None,
+            expected_stdout_instructor_file=None,
             expected_stderr_source=ag_models.ExpectedOutputSource.none,
             expected_stderr_instructor_file=None,
         )
 
         self.assertIsNone(ag_cmd.stdin_instructor_file)
-        self.assertIsNone(ag_cmd.expected_)
+        self.assertIsNone(ag_cmd.expected_stdout_instructor_file)
         self.assertIsNone(ag_cmd.expected_stderr_instructor_file)
 
         ag_cmd.validate_and_update(
             stdin_source=ag_models.StdinSource.project_file,
             stdin_instructor_file=stdin.to_dict(),
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_=stdout.to_dict(),
+            expected_stdout_instructor_file=stdout.to_dict(),
             expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
             expected_stderr_instructor_file=stderr.to_dict())
 
         self.assertEqual(stdin, ag_cmd.stdin_instructor_file)
-        self.assertEqual(stdout, ag_cmd.expected_)
+        self.assertEqual(stdout, ag_cmd.expected_stdout_instructor_file)
         self.assertEqual(stderr, ag_cmd.expected_stderr_instructor_file)

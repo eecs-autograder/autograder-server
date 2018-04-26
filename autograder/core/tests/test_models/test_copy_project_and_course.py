@@ -29,7 +29,7 @@ class CopyProjectTestCase(UnitTestBase):
         cmd2 = obj_build.make_full_ag_test_command(
             case1, set_arbitrary_points=False,
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_=instructor_file1)
+            expected_stdout_instructor_file=instructor_file1)
 
         suite2 = obj_build.make_ag_test_suite(
             project,

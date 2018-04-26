@@ -24,8 +24,6 @@ import timezone_field.fields
 
 class Migration(migrations.Migration):
 
-    replaces = [('core', '0001_initial'), ('core', '0002_project_disallow_group_registration'), ('core', '0003_auto_20161004_2249'), ('core', '0004_auto_20161024_0420'), ('core', '0005_auto_20161101_1701'), ('core', '0006_auto_20161118_0024'), ('core', '0007_auto_20161228_2258'), ('core', '0008_auto_20161231_1626'), ('core', '0009_auto_20170103_0024'), ('core', '0010_autogradertestcasebase_randomly_obfuscated_name_prefix'), ('core', '0011_auto_20170403_0213'), ('core', '0012_auto_20170713_2044'), ('core', '0013_auto_20170825_1604'), ('core', '0014_auto_20170825_1709')]
-
     initial = True
 
     dependencies = [

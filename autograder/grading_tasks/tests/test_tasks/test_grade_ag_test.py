@@ -155,7 +155,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             self.ag_test_case,
             cmd='printf "waluigi"',
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_=instructor_file)
+            expected_stdout_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -168,7 +168,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             self.ag_test_case,
             cmd='printf "nope"',
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
-            expected_=instructor_file)
+            expected_stdout_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)

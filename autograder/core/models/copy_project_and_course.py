@@ -71,24 +71,26 @@ def _copy_ag_tests(project, new_project):
                         new_project.instructor_files.all(),
                         lambda instr_file: instr_file.name == cmd.stdin_instructor_file.name)
 
-                expected_ = None
-                if cmd.expected_ is not None:
-                    expected_ = utils.find_if(
+                expected_stdout_instructor_file = None
+                if cmd.expected_stdout_instructor_file is not None:
+                    expected_stdout_instructor_file = utils.find_if(
                         new_project.instructor_files.all(),
-                        lambda instr_file: instr_file.name == cmd.expected_.name
+                        lambda instr_file:
+                            instr_file.name == cmd.expected_stdout_instructor_file.name
                     )
 
                 expected_stderr_instructor_file = None
                 if cmd.expected_stderr_instructor_file is not None:
                     expected_stderr_instructor_file = utils.find_if(
                         new_project.instructor_files.all(),
-                        lambda instr_file: instr_file.name == cmd.expected_stderr_instructor_file.name
+                        lambda instr_file:
+                            instr_file.name == cmd.expected_stderr_instructor_file.name
                     )
 
                 ag_models.AGTestCommand.objects.validate_and_create(
                     ag_test_case=new_case,
                     stdin_instructor_file=stdin_instructor_file,
-                    expected_=expected_,
+                    expected_stdout_instructor_file=expected_stdout_instructor_file,
                     expected_stderr_instructor_file=expected_stderr_instructor_file,
                     **utils.exclude_dict(cmd.to_dict(),
                                          ('pk', 'ag_test_case') +
