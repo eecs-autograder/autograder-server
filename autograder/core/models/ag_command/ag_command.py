@@ -10,9 +10,6 @@ class AGCommand(AGCommandBase):
     SERIALIZABLE_FIELDS = [
         'name',
         'cmd',
-        'stdin_source',
-        'stdin_text',
-        'stdin_instructor_file',
         'time_limit',
         'stack_size_limit',
         'virtual_memory_limit',
@@ -22,9 +19,6 @@ class AGCommand(AGCommandBase):
     EDITABLE_FIELDS = [
         'name',
         'cmd',
-        'stdin_source',
-        'stdin_text',
-        'stdin_instructor_file',
         'time_limit',
         'stack_size_limit',
         'virtual_memory_limit',

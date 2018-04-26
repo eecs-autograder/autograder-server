@@ -18,33 +18,10 @@ class AGCommandTestCase(UnitTestBase):
 
         self.assertEqual('', cmd.name)
         self.assertEqual(self.cmd, cmd.cmd)
-        self.assertEqual(ag_models.StdinSource.none, cmd.stdin_source)
-        self.assertEqual('', cmd.stdin_text)
-        self.assertIsNone(cmd.stdin_instructor_file)
         self.assertEqual(constants.DEFAULT_SUBPROCESS_TIMEOUT, cmd.time_limit)
         self.assertEqual(constants.DEFAULT_STACK_SIZE_LIMIT, cmd.stack_size_limit)
         self.assertEqual(constants.DEFAULT_VIRTUAL_MEM_LIMIT, cmd.virtual_memory_limit)
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, cmd.process_spawn_limit)
-
-    def test_stdin_sources(self):
-        cmd = ag_models.AGCommand.objects.validate_and_create(
-            cmd=self.cmd
-        )  # type: ag_models.AGCommand
-        instructor_file = obj_build.make_instructor_file(obj_build.make_project())
-
-        cmd.validate_and_update(stdin_source=ag_models.StdinSource.project_file,
-                                stdin_instructor_file=instructor_file)
-
-        cmd.refresh_from_db()
-
-        self.assertEqual(instructor_file, cmd.stdin_instructor_file)
-        self.assertEqual(ag_models.StdinSource.project_file, cmd.stdin_source)
-
-        stdin_text = 'weeeeee'
-        cmd.validate_and_update(stdin_source=ag_models.StdinSource.text, stdin_text=stdin_text)
-
-        self.assertEqual(stdin_text, cmd.stdin_text)
-        self.assertEqual(ag_models.StdinSource.text, cmd.stdin_source)
 
     def test_error_cmd_empty(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -122,9 +99,6 @@ class AGCommandTestCase(UnitTestBase):
         expected_fields = [
             'name',
             'cmd',
-            'stdin_source',
-            'stdin_text',
-            'stdin_instructor_file',
             'time_limit',
             'stack_size_limit',
             'virtual_memory_limit',
@@ -144,31 +118,3 @@ class AGCommandTestCase(UnitTestBase):
 
         update_dict = cmd.to_dict()
         cmd.validate_and_update(**update_dict)
-
-    def test_deserialize_stdin_instructor_file_from_pk(self):
-        proj = obj_build.make_project()
-        instructor_file = obj_build.make_instructor_file(proj)
-        cmd = ag_models.AGCommand.objects.validate_and_create(
-            cmd=self.cmd,
-            stdin_source=ag_models.StdinSource.project_file,
-            stdin_instructor_file=instructor_file.pk,
-        )  # type: ag_models.AGCommand
-        self.assertEqual(instructor_file, cmd.stdin_instructor_file)
-
-        other_instructor_file = obj_build.make_instructor_file(proj)
-        cmd.validate_and_update(stdin_instructor_file=other_instructor_file.pk)
-        self.assertEqual(other_instructor_file, cmd.stdin_instructor_file)
-
-    def test_deserialize_stdin_instructor_file_from_dict(self):
-        proj = obj_build.make_project()
-        instructor_file = obj_build.make_instructor_file(proj)
-        cmd = ag_models.AGCommand.objects.validate_and_create(
-            cmd=self.cmd,
-            stdin_source=ag_models.StdinSource.project_file,
-            stdin_instructor_file=instructor_file.to_dict(),
-        )  # type: ag_models.AGCommand
-        self.assertEqual(instructor_file, cmd.stdin_instructor_file)
-
-        other_instructor_file = obj_build.make_instructor_file(proj)
-        cmd.validate_and_update(stdin_instructor_file=other_instructor_file.to_dict())
-        self.assertEqual(other_instructor_file, cmd.stdin_instructor_file)

@@ -5,7 +5,7 @@ from django.db import models
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
-from ..ag_command import AGCommand, StdinSource
+from ..ag_command import AGCommand
 from ..ag_model_base import AutograderModel
 from ..project import Project, InstructorFile, ExpectedStudentFile
 
@@ -372,13 +372,6 @@ class StudentTestSuite(AutograderModel):
             cmd = getattr(self, cmd_field)  # type: AGCommand
             if cmd is None:
                 continue
-
-            if cmd.stdin_source != StdinSource.project_file:
-                continue
-
-            if cmd.stdin_instructor_file.project != self.project:
-                errors[cmd_field] = 'In {}, file "{}" does not belong to the project "{}"'.format(
-                    cmd_field, cmd.stdin_instructor_file.name, self.project.name)
 
         if self.STUDENT_TEST_NAME_PLACEHOLDER not in self.student_test_validity_check_command.cmd:
             errors['student_test_validity_check_command'] = (

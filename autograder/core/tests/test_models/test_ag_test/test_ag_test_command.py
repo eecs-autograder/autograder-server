@@ -174,7 +174,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
 
         self.assertIn('stdin_instructor_file', cm.exception.message_dict)
 
-    def test_error_missing_expected_(self):
+    def test_error_missing_expected_stdout_instructor_file(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,

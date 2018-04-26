@@ -102,6 +102,14 @@ def make_max_command_fdbk() -> int:
     ).pk
 
 
+class StdinSource(enum.Enum):
+    none = 'none'  # No input to redirect
+    text = 'text'
+    project_file = 'project_file'
+    setup_stdout = 'setup_stdout'
+    setup_stderr = 'setup_stderr'
+
+
 class ExpectedOutputSource(enum.Enum):
     none = 'none'  # Don't check output
     text = 'text'
@@ -135,6 +143,21 @@ class AGTestCommand(AGCommandBase):
         related_name='ag_test_commands',
         on_delete=models.CASCADE,
         help_text="""The AGTestCase that this command belongs to.""")
+
+    stdin_source = ag_fields.EnumField(
+        StdinSource, default=StdinSource.none,
+        help_text='''Specifies what kind of source stdin will be redirected from.''')
+    stdin_text = models.TextField(
+        blank=True,
+        help_text='''A string whose contents should be redirected to the stdin of this command.
+                     This value is used when stdin_source is StdinSource.text and is ignored
+                     otherwise.''')
+    stdin_instructor_file = models.ForeignKey(
+        InstructorFile, blank=True, null=True, default=None, related_name='+',
+        on_delete=models.CASCADE,
+        help_text='''An InstructorFile whose contents should be redirected to the stdin of this
+                     command. This value is used when stdin_source is StdinSource.project_file
+                     and is ignored otherwise.''')
 
     expected_return_code = ag_fields.EnumField(
         ExpectedReturnCode, default=ExpectedReturnCode.none,
@@ -249,6 +272,10 @@ class AGTestCommand(AGCommandBase):
             super().clean()
         except exceptions.ValidationError as e:
             error_dict = e.error_dict
+
+        if self.stdin_source == StdinSource.project_file and self.stdin_instructor_file is None:
+            error_dict['stdin_instructor_file'] = (
+                'This field may not be None when stdin source is project file.')
 
         if (self.expected_stdout_source == ExpectedOutputSource.project_file and
                 self.expected_stdout_instructor_file is None):
