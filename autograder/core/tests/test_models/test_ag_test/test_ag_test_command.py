@@ -155,7 +155,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         stderr = obj_build.make_instructor_file(self.project)
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
-            stdin_source=ag_models.StdinSource.project_file,
+            stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=stdin,
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
             expected_stdout_instructor_file=stdout,
@@ -170,7 +170,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
-                stdin_source=ag_models.StdinSource.project_file)
+                stdin_source=ag_models.StdinSource.instructor_file)
 
         self.assertIn('stdin_instructor_file', cm.exception.message_dict)
 
@@ -390,7 +390,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
 
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
-            stdin_source=ag_models.StdinSource.project_file,
+            stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=stdin.to_dict(),
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
             expected_stdout_instructor_file=stdout.to_dict(),
@@ -408,7 +408,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
 
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
-            stdin_source=ag_models.StdinSource.project_file,
+            stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=stdin,
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
             expected_stdout_instructor_file=stdout,
@@ -433,7 +433,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertIsNone(ag_cmd.expected_stderr_instructor_file)
 
         ag_cmd.validate_and_update(
-            stdin_source=ag_models.StdinSource.project_file,
+            stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=stdin.to_dict(),
             expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
             expected_stdout_instructor_file=stdout.to_dict(),

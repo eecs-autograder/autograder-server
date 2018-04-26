@@ -244,7 +244,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
             # and grade buggy impl commands.
             'cmd': 'echo {} {}'.format(ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER,
                                        ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER),
-            'stdin_source': ag_models.StdinSource.project_file.value,
+            'stdin_source': ag_models.StdinSource.instructor_file.value,
             'stdin_instructor_file': other_instructor_file.pk
         }
         cmd_fields = [

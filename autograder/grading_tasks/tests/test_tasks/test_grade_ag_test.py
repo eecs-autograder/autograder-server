@@ -257,7 +257,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='cat',
-            stdin_source=ag_models.StdinSource.project_file,
+            stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 

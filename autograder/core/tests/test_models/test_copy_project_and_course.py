@@ -38,7 +38,7 @@ class CopyProjectTestCase(UnitTestBase):
         case2 = obj_build.make_ag_test_case(suite2)
         cmd3 = obj_build.make_full_ag_test_command(
             case2, set_arbitrary_expected_vals=False,
-            stdin_source=ag_models.StdinSource.project_file,
+            stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=instructor_file2)
         case3 = obj_build.make_ag_test_case(suite2)
 

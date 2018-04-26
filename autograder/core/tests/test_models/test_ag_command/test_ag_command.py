@@ -39,7 +39,7 @@ class AGCommandTestCase(UnitTestBase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGCommand.objects.validate_and_create(
                 cmd=self.cmd,
-                stdin_source=ag_models.StdinSource.project_file)
+                stdin_source=ag_models.StdinSource.instructor_file)
 
         self.assertIn('stdin_instructor_file', cm.exception.message_dict)
 

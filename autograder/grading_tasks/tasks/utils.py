@@ -184,7 +184,7 @@ def get_stdin_file(cmd: ag_models.AGCommand,
         stdin.flush()
         stdin.seek(0)
         return stdin
-    elif cmd.stdin_source == ag_models.StdinSource.project_file:
+    elif cmd.stdin_source == ag_models.StdinSource.instructor_file:
         return cmd.stdin_instructor_file.open('rb')
     elif cmd.stdin_source == ag_models.StdinSource.setup_stdout:
         if ag_test_suite_result is None:

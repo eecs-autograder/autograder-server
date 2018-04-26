@@ -23,7 +23,7 @@ class _SetUp(UnitTestBase):
 
         self.project = obj_build.build_project()
         self.file_obj = SimpleUploadedFile(
-            'project_file.txt',
+            'instructor_file.txt',
             b'contents more contents.')
 
 

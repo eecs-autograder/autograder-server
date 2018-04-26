@@ -105,7 +105,7 @@ def make_max_command_fdbk() -> int:
 class StdinSource(enum.Enum):
     none = 'none'  # No input to redirect
     text = 'text'
-    project_file = 'project_file'
+    instructor_file = 'instructor_file'
     setup_stdout = 'setup_stdout'
     setup_stderr = 'setup_stderr'
 
@@ -113,7 +113,7 @@ class StdinSource(enum.Enum):
 class ExpectedOutputSource(enum.Enum):
     none = 'none'  # Don't check output
     text = 'text'
-    project_file = 'project_file'
+    project_file = 'instructor_file'
 
 
 class ExpectedReturnCode(enum.Enum):
@@ -156,7 +156,7 @@ class AGTestCommand(AGCommandBase):
         InstructorFile, blank=True, null=True, default=None, related_name='+',
         on_delete=models.CASCADE,
         help_text='''An InstructorFile whose contents should be redirected to the stdin of this
-                     command. This value is used when stdin_source is StdinSource.project_file
+                     command. This value is used when stdin_source is StdinSource.instructor_file
                      and is ignored otherwise.''')
 
     expected_return_code = ag_fields.EnumField(
@@ -177,7 +177,7 @@ class AGTestCommand(AGCommandBase):
         on_delete=models.CASCADE,
         help_text='''An InstructorFile whose contents should be compared against this command's
                      stdout. This value is used (and may not be null) when expected_stdout_source
-                     is ExpectedOutputSource.project_file and is ignored otherwise.''')
+                     is ExpectedOutputSource.instructor_file and is ignored otherwise.''')
 
     expected_stderr_source = ag_fields.EnumField(
         ExpectedOutputSource, default=ExpectedOutputSource.none,
@@ -193,7 +193,7 @@ class AGTestCommand(AGCommandBase):
         on_delete=models.CASCADE,
         help_text='''An InstructorFile whose contents should be compared against this command's
                      stderr. This value is used (and may not be null) when expected_stderr_source
-                     is ExpectedOutputSource.project_file and is ignored otherwise.''')
+                     is ExpectedOutputSource.instructor_file and is ignored otherwise.''')
 
     ignore_case = models.BooleanField(
         default=False,
@@ -273,7 +273,7 @@ class AGTestCommand(AGCommandBase):
         except exceptions.ValidationError as e:
             error_dict = e.error_dict
 
-        if self.stdin_source == StdinSource.project_file and self.stdin_instructor_file is None:
+        if self.stdin_source == StdinSource.instructor_file and self.stdin_instructor_file is None:
             error_dict['stdin_instructor_file'] = (
                 'This field may not be None when stdin source is project file.')
 
