@@ -157,14 +157,56 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
             stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=stdin,
-            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stdout_instructor_file=stdout,
-            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stderr_instructor_file=stderr)
 
         self.assertEqual(stdin, ag_cmd.stdin_instructor_file)
         self.assertEqual(stdout, ag_cmd.expected_stdout_instructor_file)
         self.assertEqual(stderr, ag_cmd.expected_stderr_instructor_file)
+
+    def test_error_stdin_instructor_file_belongs_to_other_project(self):
+        other_project = obj_build.make_project(course=self.project.course)
+        other_instructor_file = obj_build.make_instructor_file(project=other_project)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestCommand.objects.validate_and_create(
+                name=self.name,
+                ag_test_case=self.ag_test,
+                cmd='true',
+                stdin_source=ag_models.StdinSource.instructor_file,
+                stdin_instructor_file=other_instructor_file)
+
+        self.assertIn('stdin_instructor_file', cm.exception.message_dict)
+
+    def test_error_expected_stdout_instructor_file_belongs_to_other_project(self):
+        other_project = obj_build.make_project(course=self.project.course)
+        other_instructor_file = obj_build.make_instructor_file(project=other_project)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestCommand.objects.validate_and_create(
+                name=self.name,
+                ag_test_case=self.ag_test,
+                cmd='true',
+                expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
+                expected_stdout_instructor_file=other_instructor_file)
+
+        self.assertIn('expected_stdout_instructor_file', cm.exception.message_dict)
+
+    def test_error_expected_stderr_instructor_file_belongs_to_other_project(self):
+        other_project = obj_build.make_project(course=self.project.course)
+        other_instructor_file = obj_build.make_instructor_file(project=other_project)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestCommand.objects.validate_and_create(
+                name=self.name,
+                ag_test_case=self.ag_test,
+                cmd='true',
+                expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
+                expected_stderr_instructor_file=other_instructor_file)
+
+        self.assertIn('expected_stderr_instructor_file', cm.exception.message_dict)
 
     def test_error_missing_stdin_instructor_file(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -178,7 +220,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
-                expected_stdout_source=ag_models.ExpectedOutputSource.project_file)
+                expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file)
 
         self.assertIn('expected_stdout_instructor_file', cm.exception.message_dict)
 
@@ -186,7 +228,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.AGTestCommand.objects.validate_and_create(
                 name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
-                expected_stderr_source=ag_models.ExpectedOutputSource.project_file)
+                expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file)
 
         self.assertIn('expected_stderr_instructor_file', cm.exception.message_dict)
 
@@ -392,9 +434,9 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
             stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=stdin.to_dict(),
-            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stdout_instructor_file=stdout.to_dict(),
-            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stderr_instructor_file=stderr.to_dict())
 
         self.assertEqual(stdin, ag_cmd.stdin_instructor_file)
@@ -410,9 +452,9 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
             stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=stdin,
-            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stdout_instructor_file=stdout,
-            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stderr_instructor_file=stderr)
 
         self.assertEqual(stdin, ag_cmd.stdin_instructor_file)
@@ -435,9 +477,9 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         ag_cmd.validate_and_update(
             stdin_source=ag_models.StdinSource.instructor_file,
             stdin_instructor_file=stdin.to_dict(),
-            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stdout_instructor_file=stdout.to_dict(),
-            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stderr_instructor_file=stderr.to_dict())
 
         self.assertEqual(stdin, ag_cmd.stdin_instructor_file)

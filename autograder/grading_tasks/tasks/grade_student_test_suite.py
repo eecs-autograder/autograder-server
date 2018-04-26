@@ -14,7 +14,7 @@ import autograder.core.models as ag_models
 from autograder.core import constants
 from .utils import (
     add_files_to_sandbox, retry_should_recover, mark_submission_as_error,
-    run_ag_command)
+    run_ag_test_command, run_ag_command)
 
 
 @celery.shared_task(queue='deferred', max_retries=1, acks_late=True)

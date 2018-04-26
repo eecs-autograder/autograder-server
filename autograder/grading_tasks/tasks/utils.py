@@ -5,7 +5,7 @@ import traceback
 
 import time
 from io import FileIO
-from typing import Union
+from typing import Union, Optional, List
 
 from autograder_sandbox import AutograderSandbox
 from autograder_sandbox import SANDBOX_USERNAME
@@ -139,16 +139,14 @@ def add_files_to_sandbox(sandbox: AutograderSandbox,
         sandbox.add_files(*project_files_to_add, **owner_and_read_only)
 
 
-def run_ag_command(cmd: ag_models.AGCommand,
-                   sandbox: AutograderSandbox,
-                   ag_test_suite_result: ag_models.AGTestSuiteResult=None,
-                   cmd_str_override: str=None) -> CompletedCommand:
+def run_ag_test_command(cmd: ag_models.AGTestCommand,
+                        sandbox: AutograderSandbox,
+                        ag_test_suite_result: ag_models.AGTestSuiteResult) -> CompletedCommand:
     with FileCloser() as file_closer:
         stdin = get_stdin_file(cmd, ag_test_suite_result)
         file_closer.register_file(stdin)
 
-        cmd_str = cmd_str_override if cmd_str_override is not None else cmd.cmd
-        return run_command_from_args(cmd=cmd_str,
+        return run_command_from_args(cmd=cmd.cmd,
                                      sandbox=sandbox,
                                      max_num_processes=cmd.process_spawn_limit,
                                      max_stack_size=cmd.stack_size_limit,
@@ -157,8 +155,21 @@ def run_ag_command(cmd: ag_models.AGCommand,
                                      stdin=stdin)
 
 
+def run_ag_command(cmd: ag_models.AGCommand, sandbox: AutograderSandbox,
+                   cmd_str_override: Optional[str]=None):
+    cmd_str = cmd_str_override if cmd_str_override is not None else cmd.cmd
+    return run_command_from_args(cmd_str,
+                                 sandbox=sandbox,
+                                 max_num_processes=cmd.process_spawn_limit,
+                                 max_stack_size=cmd.stack_size_limit,
+                                 max_virtual_memory=cmd.virtual_memory_limit,
+                                 timeout=cmd.time_limit,
+                                 stdin=None)
+
+
 def run_command_from_args(cmd: str,
                           sandbox: AutograderSandbox,
+                          *,
                           max_num_processes: int,
                           max_stack_size: int,
                           max_virtual_memory: int,
@@ -176,8 +187,8 @@ def run_command_from_args(cmd: str,
     return run_result
 
 
-def get_stdin_file(cmd: ag_models.AGCommand,
-                   ag_test_suite_result: ag_models.AGTestSuiteResult=None) -> FileIO:
+def get_stdin_file(cmd: ag_models.AGTestCommand,
+                   ag_test_suite_result: ag_models.AGTestSuiteResult=None) -> Optional[FileIO]:
     if cmd.stdin_source == ag_models.StdinSource.text:
         stdin = tempfile.NamedTemporaryFile()
         stdin.write(cmd.stdin_text.encode())

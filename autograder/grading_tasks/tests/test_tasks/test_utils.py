@@ -78,7 +78,13 @@ class RunCommandTestCase(UnitTestBase):
     def test_shell_parse_error(self):
         with AutograderSandbox() as sandbox:
             ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='echo hello"')
-            result = tasks.run_ag_command(ag_command, sandbox)
+            result = tasks.run_command_from_args(
+                ag_command.cmd, sandbox,
+                max_num_processes=ag_command.process_spawn_limit,
+                max_stack_size=ag_command.stack_size_limit,
+                max_virtual_memory=ag_command.virtual_memory_limit,
+                timeout=ag_command.time_limit,
+            )
             self.assertNotEqual(0, result.return_code)
             print(result.stdout.read())
             print(result.stderr.read())
@@ -86,7 +92,13 @@ class RunCommandTestCase(UnitTestBase):
     def test_command_not_found(self):
         with AutograderSandbox() as sandbox:
             ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='not_a_command')
-            result = tasks.run_ag_command(ag_command, sandbox)
+            result = tasks.run_command_from_args(
+                ag_command.cmd, sandbox,
+                max_num_processes=ag_command.process_spawn_limit,
+                max_stack_size=ag_command.stack_size_limit,
+                max_virtual_memory=ag_command.virtual_memory_limit,
+                timeout=ag_command.time_limit,
+            )
             self.assertNotEqual(0, result.return_code)
             print(result.stdout.read())
             print(result.stderr.read())
@@ -94,7 +106,13 @@ class RunCommandTestCase(UnitTestBase):
     def test_file_not_found(self):
         with AutograderSandbox() as sandbox:
             ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='./not_a_file')
-            result = tasks.run_ag_command(ag_command, sandbox)
+            result = tasks.run_command_from_args(
+                ag_command.cmd, sandbox,
+                max_num_processes=ag_command.process_spawn_limit,
+                max_stack_size=ag_command.stack_size_limit,
+                max_virtual_memory=ag_command.virtual_memory_limit,
+                timeout=ag_command.time_limit,
+            )
             self.assertNotEqual(0, result.return_code)
             print(result.stdout.read())
             print(result.stderr.read())
@@ -104,7 +122,13 @@ class RunCommandTestCase(UnitTestBase):
             sandbox.run_command(['touch', 'not_executable'], check=True)
             sandbox.run_command(['chmod', '666', 'not_executable'], check=True)
             ag_command = ag_models.AGCommand.objects.validate_and_create(cmd='./not_executable')
-            result = tasks.run_ag_command(ag_command, sandbox)
+            result = tasks.run_command_from_args(
+                ag_command.cmd, sandbox,
+                max_num_processes=ag_command.process_spawn_limit,
+                max_stack_size=ag_command.stack_size_limit,
+                max_virtual_memory=ag_command.virtual_memory_limit,
+                timeout=ag_command.time_limit,
+            )
             self.assertNotEqual(0, result.return_code)
             print(result.stdout.read())
             print(result.stderr.read())
@@ -115,14 +139,26 @@ class RunCommandTestCase(UnitTestBase):
         with AutograderSandbox() as sandbox:
             ag_command = ag_models.AGCommand.objects.validate_and_create(
                 cmd='echo hello', process_spawn_limit=0)
-            result = tasks.run_ag_command(ag_command, sandbox)
+            result = tasks.run_command_from_args(
+                ag_command.cmd, sandbox,
+                max_num_processes=ag_command.process_spawn_limit,
+                max_stack_size=ag_command.stack_size_limit,
+                max_virtual_memory=ag_command.virtual_memory_limit,
+                timeout=ag_command.time_limit,
+            )
             self.assertEqual(0, result.return_code)
             print(result.stdout.read())
             print(result.stderr.read())
 
             extra_bash_dash_c = ag_models.AGCommand.objects.validate_and_create(
                 cmd='bash -c "echo hello"', process_spawn_limit=0)
-            result = tasks.run_ag_command(extra_bash_dash_c, sandbox)
+            result = tasks.run_command_from_args(
+                extra_bash_dash_c.cmd, sandbox,
+                max_num_processes=ag_command.process_spawn_limit,
+                max_stack_size=ag_command.stack_size_limit,
+                max_virtual_memory=ag_command.virtual_memory_limit,
+                timeout=ag_command.time_limit,
+            )
             self.assertEqual(0, result.return_code)
             print(result.stdout.read())
             print(result.stderr.read())
@@ -131,7 +167,13 @@ class RunCommandTestCase(UnitTestBase):
         with AutograderSandbox() as sandbox:
             ag_command = ag_models.AGCommand.objects.validate_and_create(
                 cmd='printf "spam" > file', process_spawn_limit=0)
-            tasks.run_ag_command(ag_command, sandbox)
+            tasks.run_command_from_args(
+                ag_command.cmd, sandbox,
+                max_num_processes=ag_command.process_spawn_limit,
+                max_stack_size=ag_command.stack_size_limit,
+                max_virtual_memory=ag_command.virtual_memory_limit,
+                timeout=ag_command.time_limit,
+            )
             result = sandbox.run_command(['cat', 'file'], check=True)
             self.assertEqual(0, result.return_code)
             self.assertEqual('spam', result.stdout.read().decode())

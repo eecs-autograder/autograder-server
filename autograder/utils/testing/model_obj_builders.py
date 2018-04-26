@@ -360,14 +360,14 @@ def make_correct_ag_test_command_result(ag_test_command: ag_models.AGTestCommand
     stdout = ''
     if ag_test_command.expected_stdout_source == ag_models.ExpectedOutputSource.text:
         stdout = ag_test_command.expected_stdout_text
-    elif ag_test_command.expected_stdout_source == ag_models.ExpectedOutputSource.project_file:
+    elif ag_test_command.expected_stdout_source == ag_models.ExpectedOutputSource.instructor_file:
         with ag_test_command.expected_stdout_instructor_file.open() as f:
             stdout = f.read()
 
     stderr = ''
     if ag_test_command.expected_stderr_source == ag_models.ExpectedOutputSource.text:
         stderr = ag_test_command.expected_stderr_text
-    elif ag_test_command.expected_stderr_source == ag_models.ExpectedOutputSource.project_file:
+    elif ag_test_command.expected_stderr_source == ag_models.ExpectedOutputSource.instructor_file:
         with ag_test_command.expected_stderr_instructor_file.open() as f:
             stderr = f.read()
 

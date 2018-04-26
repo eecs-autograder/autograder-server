@@ -180,7 +180,7 @@ class AGTestCommandResult(AGCommandResultBase):
                     expected_stdout.flush()
                     return core_ut.get_diff(expected_stdout.name, stdout_filename,
                                             **diff_whitespace_kwargs)
-            elif self._cmd.expected_stdout_source == ExpectedOutputSource.project_file:
+            elif self._cmd.expected_stdout_source == ExpectedOutputSource.instructor_file:
                 return core_ut.get_diff(self._cmd.expected_stdout_instructor_file.abspath,
                                         stdout_filename,
                                         **diff_whitespace_kwargs)
@@ -241,7 +241,7 @@ class AGTestCommandResult(AGCommandResultBase):
                     expected_stderr.flush()
                     return core_ut.get_diff(expected_stderr.name, stderr_filename,
                                             **diff_whitespace_kwargs)
-            elif self._cmd.expected_stderr_source == ExpectedOutputSource.project_file:
+            elif self._cmd.expected_stderr_source == ExpectedOutputSource.instructor_file:
                 return core_ut.get_diff(self._cmd.expected_stderr_instructor_file.abspath,
                                         stderr_filename,
                                         **diff_whitespace_kwargs)

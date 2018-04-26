@@ -154,7 +154,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='printf "waluigi"',
-            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stdout_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
@@ -167,7 +167,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='printf "nope"',
-            expected_stdout_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stdout_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
@@ -202,7 +202,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='bash -c "printf waluigi >&2"',
-            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stderr_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 
@@ -215,7 +215,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         cmd = obj_build.make_full_ag_test_command(
             self.ag_test_case,
             cmd='bash -c "printf norp >&2"',
-            expected_stderr_source=ag_models.ExpectedOutputSource.project_file,
+            expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
             expected_stderr_instructor_file=instructor_file)
         tasks.grade_submission(self.submission.pk)
 

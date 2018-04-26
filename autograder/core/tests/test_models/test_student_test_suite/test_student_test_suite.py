@@ -235,32 +235,6 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
         self.assertIn('student_files_needed', cm.exception.message_dict)
 
-    def test_error_stdin_instructor_file_belongs_to_other_project(self):
-        other_project = obj_build.make_project(course=self.project.course)
-        other_instructor_file = obj_build.make_instructor_file(project=other_project)
-
-        cmd_json = {
-            # This command will satisfy the requirements of the validity check
-            # and grade buggy impl commands.
-            'cmd': 'echo {} {}'.format(ag_models.StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER,
-                                       ag_models.StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER),
-            'stdin_source': ag_models.StdinSource.instructor_file.value,
-            'stdin_instructor_file': other_instructor_file.pk
-        }
-        cmd_fields = [
-            'setup_command',
-            'get_student_test_names_command',
-            'student_test_validity_check_command',
-            'grade_buggy_impl_command',
-        ]
-        with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.StudentTestSuite.objects.validate_and_create(
-                name=self.name, project=self.project,
-                **{field_name: cmd_json for field_name in cmd_fields})
-
-        for field_name in cmd_fields:
-            self.assertIn(field_name, cm.exception.message_dict)
-
     def test_serialization(self):
         expected_field_names = [
             'pk',

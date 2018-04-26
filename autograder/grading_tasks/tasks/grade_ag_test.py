@@ -15,7 +15,7 @@ from autograder.core import constants
 import autograder.core.utils as core_ut
 from .utils import (
     retry_should_recover, retry_ag_test_cmd, mark_submission_as_error, add_files_to_sandbox,
-    FileCloser, run_ag_command, run_command_from_args)
+    FileCloser, run_ag_test_command, run_command_from_args)
 
 
 @celery.shared_task(bind=True, queue='deferred', max_retries=1, acks_late=True)
@@ -151,7 +151,7 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                                ag_test_cmd: ag_models.AGTestCommand,
                                case_result: ag_models.AGTestCaseResult):
     with FileCloser() as file_closer:
-        run_result = run_ag_command(ag_test_cmd, sandbox, case_result.ag_test_suite_result)
+        run_result = run_ag_test_command(ag_test_cmd, sandbox, case_result.ag_test_suite_result)
 
         result_data = {
             'return_code': run_result.return_code,
@@ -216,7 +216,7 @@ def _get_expected_stdout_file_and_name(
         expected_stdout.write(ag_test_cmd.expected_stdout_text.encode())
         expected_stdout.flush()
         expected_stdout_filename = expected_stdout.name
-    elif ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.project_file:
+    elif ag_test_cmd.expected_stdout_source == ag_models.ExpectedOutputSource.instructor_file:
         expected_stdout_filename = ag_test_cmd.expected_stdout_instructor_file.abspath
 
     return expected_stdout, expected_stdout_filename
@@ -231,7 +231,7 @@ def _get_expected_stderr_file_and_name(
         expected_stderr.write(ag_test_cmd.expected_stderr_text.encode())
         expected_stderr.flush()
         expected_stderr_filename = expected_stderr.name
-    elif ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.project_file:
+    elif ag_test_cmd.expected_stderr_source == ag_models.ExpectedOutputSource.instructor_file:
         expected_stderr_filename = ag_test_cmd.expected_stderr_instructor_file.abspath
 
     return expected_stderr, expected_stderr_filename

@@ -436,7 +436,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
 
     def test_stdout_correctness_show_diff_from_file(self):
         instructor_file = obj_build.make_instructor_file(self.project)
-        self.ag_test_command.expected_stdout_source = ag_models.ExpectedOutputSource.project_file
+        self.ag_test_command.expected_stdout_source = ag_models.ExpectedOutputSource.instructor_file
         self.ag_test_command.expected_stdout_instructor_file = instructor_file
         self.ag_test_command.save()
 
@@ -568,7 +568,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
 
     def test_stderr_correctness_show_diff_from_file(self):
         instructor_file = obj_build.make_instructor_file(self.project)
-        self.ag_test_command.expected_stderr_source = ag_models.ExpectedOutputSource.project_file
+        self.ag_test_command.expected_stderr_source = ag_models.ExpectedOutputSource.instructor_file
         self.ag_test_command.expected_stderr_instructor_file = instructor_file
         self.ag_test_command.save()
 

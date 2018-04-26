@@ -113,7 +113,7 @@ class StdinSource(enum.Enum):
 class ExpectedOutputSource(enum.Enum):
     none = 'none'  # Don't check output
     text = 'text'
-    project_file = 'instructor_file'
+    instructor_file = 'instructor_file'
 
 
 class ExpectedReturnCode(enum.Enum):
@@ -273,19 +273,40 @@ class AGTestCommand(AGCommandBase):
         except exceptions.ValidationError as e:
             error_dict = e.error_dict
 
-        if self.stdin_source == StdinSource.instructor_file and self.stdin_instructor_file is None:
-            error_dict['stdin_instructor_file'] = (
-                'This field may not be None when stdin source is project file.')
+        if self.stdin_source == StdinSource.instructor_file:
+            if self.stdin_instructor_file is None:
+                error_dict['stdin_instructor_file'] = (
+                    'This field may not be None when stdin source is project file.')
+            elif self.stdin_instructor_file.project != self.ag_test_case.ag_test_suite.project:
+                error_dict['stdin_instructor_file'] = (
+                    'Instructor file {} does not belong to project {}'.format(
+                        self.stdin_instructor_file.name,
+                        self.ag_test_case.ag_test_suite.project)
+                )
 
-        if (self.expected_stdout_source == ExpectedOutputSource.project_file and
-                self.expected_stdout_instructor_file is None):
-            error_dict['expected_stdout_instructor_file'] = (
-                'This field may not be None when expected stdout source is project file.')
+        if self.expected_stdout_source == ExpectedOutputSource.instructor_file:
+            if self.expected_stdout_instructor_file is None:
+                error_dict['expected_stdout_instructor_file'] = (
+                    'This field may not be None when expected stdout source is project file.')
+            elif self.expected_stdout_instructor_file.project != self.ag_test_case.ag_test_suite.project:
+                error_dict['expected_stdout_instructor_file'] = (
+                    'Instructor_file {} does not belong to project {}'.format(
+                        self.expected_stdout_instructor_file.name,
+                        self.ag_test_case.ag_test_suite.project
+                    )
+                )
 
-        if (self.expected_stderr_source == ExpectedOutputSource.project_file and
-                self.expected_stderr_instructor_file is None):
-            error_dict['expected_stderr_instructor_file'] = (
-                'This field may not be None when expected stderr source is project file.')
+        if self.expected_stderr_source == ExpectedOutputSource.instructor_file:
+            if self.expected_stderr_instructor_file is None:
+                error_dict['expected_stderr_instructor_file'] = (
+                    'This field may not be None when expected stderr source is project file.')
+            elif self.expected_stderr_instructor_file.project != self.ag_test_case.ag_test_suite.project:
+                error_dict['expected_stderr_instructor_file'] = (
+                    'Instructor_file {} does not belong to project {}'.format(
+                        self.expected_stderr_instructor_file.name,
+                        self.ag_test_case.ag_test_suite.project
+                    )
+                )
 
         if error_dict:
             raise exceptions.ValidationError(error_dict)

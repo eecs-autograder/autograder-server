@@ -3,7 +3,6 @@ from django.core import exceptions
 import autograder.core.models as ag_models
 from autograder.core import constants
 from autograder.utils.testing import UnitTestBase
-import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class AGCommandTestCase(UnitTestBase):
@@ -34,14 +33,6 @@ class AGCommandTestCase(UnitTestBase):
             cmd.validate_and_update(cmd='')
 
         self.assertIn('cmd', cm.exception.message_dict)
-
-    def test_error_stdin_instructor_file_none_stdin_source_instructor_file(self):
-        with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.AGCommand.objects.validate_and_create(
-                cmd=self.cmd,
-                stdin_source=ag_models.StdinSource.instructor_file)
-
-        self.assertIn('stdin_instructor_file', cm.exception.message_dict)
 
     def test_error_time_limt_out_of_range(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -108,13 +99,6 @@ class AGCommandTestCase(UnitTestBase):
         cmd = ag_models.AGCommand.objects.validate_and_create(
             cmd=self.cmd)  # type: ag_models.AGCommand
         self.assertCountEqual(expected_fields, cmd.to_dict().keys())
-
-        self.assertIsNone(cmd.to_dict()['stdin_instructor_file'])
-
-        instructor_file = obj_build.make_instructor_file(obj_build.make_project())
-        cmd.stdin_instructor_file = instructor_file
-
-        self.assertEqual(instructor_file.to_dict(), cmd.to_dict()['stdin_instructor_file'])
 
         update_dict = cmd.to_dict()
         cmd.validate_and_update(**update_dict)
