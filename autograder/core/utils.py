@@ -212,7 +212,7 @@ def get_submission_relative_dir(submission):
     MEDIA_ROOT.
     """
     return os.path.join(
-        get_student_submission_group_relative_dir(submission.submission_group),
+        get_student_submission_group_relative_dir(submission.group),
         get_submission_dir_basename(submission))
 
 

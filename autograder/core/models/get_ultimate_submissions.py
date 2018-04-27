@@ -5,7 +5,7 @@ from django.db.models import Prefetch
 
 from .project import Project, UltimateSubmissionPolicy
 from .ag_test.feedback_category import FeedbackCategory
-from .submission_group import Group
+from .group import Group
 from .submission import Submission, get_submissions_with_results_queryset
 
 

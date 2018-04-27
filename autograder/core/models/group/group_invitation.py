@@ -117,10 +117,8 @@ class GroupInvitation(ag_model_base.AutograderModel):
         self._invitees_who_accepted.append(user.username)
         self.save()
 
-    def to_dict(self, **kwargs):
-        result = super().to_dict(**kwargs)
-
-        if 'invitation_creator' in result:
-            result['invitation_creator'] = self.invitation_creator.username
+    def to_dict(self):
+        result = super().to_dict()
+        result['invitation_creator'] = self.invitation_creator.username
 
         return result
