@@ -197,7 +197,7 @@ class Submission(ag_model_base.AutograderModel):
     # -------------------------------------------------------------------------
 
     submission_group = models.ForeignKey(
-        'SubmissionGroup', related_name='submissions',
+        'core.Group', related_name='submissions',
         on_delete=models.CASCADE,
         help_text='''
             The SubmissionGroup that this submission belongs to. Note

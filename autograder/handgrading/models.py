@@ -8,7 +8,7 @@ from django.core import validators
 from django.core.exceptions import ValidationError
 from enum import Enum
 
-from autograder.core.models import AutograderModel, Project, Submission, SubmissionGroup
+from autograder.core.models import AutograderModel, Project, Submission, Group
 
 
 class PointsStyle(Enum):
@@ -197,7 +197,7 @@ class HandgradingResult(AutograderModel):
     Represents the handgrading result of a group's best submission.
     """
     submission_group = models.OneToOneField(
-        SubmissionGroup, related_name='handgrading_result', on_delete=models.CASCADE,
+        Group, related_name='handgrading_result', on_delete=models.CASCADE,
         help_text='''The SubmissionGroup that this HandgradingResult is for.''')
 
     submission = models.OneToOneField(

@@ -161,7 +161,7 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         all_users = invited_users + [invitation.invitation_creator]
         original_invite_count = (
             ag_models.SubmissionGroupInvitation.objects.count())
-        original_group_count = ag_models.SubmissionGroup.objects.count()
+        original_group_count = ag_models.Group.objects.count()
         num_accepted = 0
         for user in invited_users[:-1]:
             num_accepted += 1
@@ -187,14 +187,14 @@ class AcceptGroupInvitationTestCase(test_data.Client,
 
         self.assertEqual(
             original_group_count + 1,
-            ag_models.SubmissionGroup.objects.count())
-        group = ag_models.SubmissionGroup.objects.first()
+            ag_models.Group.objects.count())
+        group = ag_models.Group.objects.first()
         self.assertCountEqual(all_users, group.members.all())
         self.assertEqual(group.to_dict(), response.data)
 
         # Cleanup so that this method will work if called again in the
         # same test case.
-        ag_models.SubmissionGroup.objects.all().delete()
+        ag_models.Group.objects.all().delete()
 
     def do_accept_permission_denied_test(self, invitation, user):
         current_invite_count = (
@@ -320,7 +320,7 @@ class RejectGroupInvitationTestCase(test_data.Client,
     def do_reject_invitation_test(self, invitation, user):
         original_invite_count = (
             ag_models.SubmissionGroupInvitation.objects.count())
-        original_group_count = ag_models.SubmissionGroup.objects.count()
+        original_group_count = ag_models.Group.objects.count()
 
         users = ([invitation.invitation_creator] +
                  list(invitation.invited_users.all()))
@@ -332,7 +332,7 @@ class RejectGroupInvitationTestCase(test_data.Client,
             original_invite_count - 1,
             ag_models.SubmissionGroupInvitation.objects.count())
         self.assertEqual(
-            original_group_count, ag_models.SubmissionGroup.objects.count())
+            original_group_count, ag_models.Group.objects.count())
 
         # Make sure the correct notifications were sent
         self.assertEqual(expected_num_notifications,

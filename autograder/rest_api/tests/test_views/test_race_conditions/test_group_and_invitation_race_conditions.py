@@ -31,7 +31,7 @@ class RaceConditionTestCase(test_data.Client,
                 self.get_groups_url(project),
                 {'member_names': [invitor.username, 'this_one']})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+            self.assertEqual(1, ag_models.Group.objects.count())
 
         subtest = create_group(project_id)
         self.client.force_authenticate(invitor)
@@ -39,7 +39,7 @@ class RaceConditionTestCase(test_data.Client,
             self.get_invitations_url(self.visible_public_project),
             {'invited_usernames': ['other_one']})
         subtest.join()
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
     def test_create_group_and_invitation_with_member_in_both(self):
@@ -58,7 +58,7 @@ class RaceConditionTestCase(test_data.Client,
                 self.get_groups_url(project),
                 {'member_names': [overlap_username, 'this_one']})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+            self.assertEqual(1, ag_models.Group.objects.count())
 
         subtest = do_request_and_wait(project_id)
         self.client.force_authenticate(invitor)
@@ -67,7 +67,7 @@ class RaceConditionTestCase(test_data.Client,
             {'invited_usernames': [overlap_username]})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_create_groups_with_member_overlap(self):
         self.visible_public_project.validate_and_update(max_group_size=4)
@@ -84,7 +84,7 @@ class RaceConditionTestCase(test_data.Client,
                 self.get_groups_url(project),
                 {'member_names': [overlap_username, 'this_one']})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+            self.assertEqual(1, ag_models.Group.objects.count())
 
         subtest = do_request_and_wait(project_id)
         self.client.force_authenticate(self.admin)
@@ -93,7 +93,7 @@ class RaceConditionTestCase(test_data.Client,
             {'member_names': [overlap_username, 'other_one']})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_update_groups_with_member_overlap(self):
         self.visible_public_project.validate_and_update(max_group_size=4)
@@ -130,7 +130,7 @@ class RaceConditionTestCase(test_data.Client,
         overlap_member = self.clone_user(self.staff)
         new_member_names = group.member_names + [overlap_member.username]
         path = 'autograder.rest_api.views.group_views.groups_view.GroupsViewSet.serializer_class'
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())
 
         @test_ut.sleeper_subtest(path, wraps=GroupsViewSet.serializer_class)
         def create_group():
@@ -140,7 +140,7 @@ class RaceConditionTestCase(test_data.Client,
             response = client.post(self.get_groups_url(self.project),
                                    {'member_names': member_names})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-            self.assertEqual(2, ag_models.SubmissionGroup.objects.count())
+            self.assertEqual(2, ag_models.Group.objects.count())
 
         subtest = create_group()
         self.client.force_authenticate(self.admin)
@@ -226,14 +226,14 @@ class RaceConditionTestCase(test_data.Client,
             client.force_authenticate(first_invitee)
             response = client.post(self.invitation_url(first_invitation))
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+            self.assertEqual(1, ag_models.Group.objects.count())
 
         subtest = first_final_accept()
         self.client.force_authenticate(invitor_and_second_invitee)
         response = self.client.post(self.invitation_url(second_invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_two_different_final_invitation_acceptances_member_overlap(self):
         self.project.validate_and_update(max_group_size=2)
@@ -257,14 +257,14 @@ class RaceConditionTestCase(test_data.Client,
             client.force_authenticate(invitee)
             response = client.post(self.invitation_url(first_invitation))
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+            self.assertEqual(1, ag_models.Group.objects.count())
 
         subtest = first_final_accept()
         self.client.force_authenticate(invitee)
         response = self.client.post(self.invitation_url(second_invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_create_group_and_final_invitation_accept_invitor_overlap(self):
         self.project.validate_and_update(max_group_size=2)
@@ -285,14 +285,14 @@ class RaceConditionTestCase(test_data.Client,
                 self.get_groups_url(self.project),
                 {'member_names': [invitor.username]})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+            self.assertEqual(1, ag_models.Group.objects.count())
 
         subtest = create_group()
         self.client.force_authenticate(other_member)
         response = self.client.post(self.invitation_url(invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_create_group_and_final_invitation_accept_member_overlap(self):
         self.project.validate_and_update(max_group_size=2)
@@ -313,14 +313,14 @@ class RaceConditionTestCase(test_data.Client,
                 self.get_groups_url(self.project),
                 {'member_names': [other_member.username]})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-            self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+            self.assertEqual(1, ag_models.Group.objects.count())
 
         subtest = create_group()
         self.client.force_authenticate(other_member)
         response = self.client.post(self.invitation_url(invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_update_group_and_final_invitation_accept_invitor_overlap(self):
         self.project.validate_and_update(max_group_size=4)
@@ -350,7 +350,7 @@ class RaceConditionTestCase(test_data.Client,
         response = self.client.post(self.invitation_url(invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_update_group_and_final_invitation_accept_member_overlap(self):
         self.project.validate_and_update(max_group_size=4)
@@ -380,4 +380,4 @@ class RaceConditionTestCase(test_data.Client,
         response = self.client.post(self.invitation_url(invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(1, ag_models.SubmissionGroup.objects.count())
+        self.assertEqual(1, ag_models.Group.objects.count())

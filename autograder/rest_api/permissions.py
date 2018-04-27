@@ -10,7 +10,7 @@ from autograder.core.models.get_ultimate_submissions import get_ultimate_submiss
 
 GetCourseFnType = Callable[[ag_models.AutograderModel], ag_models.Course]
 GetProjectFnType = Callable[[ag_models.AutograderModel], ag_models.Project]
-GetGroupFnType = Callable[[ag_models.AutograderModel], ag_models.SubmissionGroup]
+GetGroupFnType = Callable[[ag_models.AutograderModel], ag_models.Group]
 PermissionClassType = Type[permissions.BasePermission]
 
 
@@ -32,8 +32,8 @@ def _(project: ag_models.Project) -> ag_models.Course:
     return project.course
 
 
-@_get_course.register(ag_models.SubmissionGroup)
-def _(group: ag_models.SubmissionGroup) -> ag_models.Course:
+@_get_course.register(ag_models.Group)
+def _(group: ag_models.Group) -> ag_models.Course:
     return group.project.course
 
 
@@ -50,8 +50,8 @@ def _(project: ag_models.Project) -> ag_models.Project:
     return project
 
 
-@_get_project.register(ag_models.SubmissionGroup)
-def _(group: ag_models.SubmissionGroup) -> ag_models.Project:
+@_get_project.register(ag_models.Group)
+def _(group: ag_models.Group) -> ag_models.Project:
     return group.project
 
 

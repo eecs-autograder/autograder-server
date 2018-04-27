@@ -45,7 +45,7 @@ class DownloadTaskSerializer(AGModelSerializer):
 
 
 class SubmissionGroupSerializer(AGModelSerializer):
-    ag_model_class = ag_models.SubmissionGroup
+    ag_model_class = ag_models.Group
 
 
 class SubmissionGroupInvitationSerializer(AGModelSerializer):

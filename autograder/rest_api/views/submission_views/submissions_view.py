@@ -32,7 +32,7 @@ class _Permissions(permissions.BasePermission):
 
 
 class SubmissionsViewSet(
-        build_load_object_mixin(ag_models.SubmissionGroup, pk_key='group_pk'),
+        build_load_object_mixin(ag_models.Group, pk_key='group_pk'),
         mixins.ListModelMixin,
         mixins.CreateModelMixin,
         viewsets.GenericViewSet):

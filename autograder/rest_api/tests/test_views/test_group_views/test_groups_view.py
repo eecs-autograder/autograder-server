@@ -27,18 +27,18 @@ class SortedListGroupsTestCase(test_data.Client, UnitTestBase):
         [admin] = obj_build.make_admin_users(project.course, 1)
 
         group1_user1 = User.objects.create(username='fred')
-        group1 = ag_models.SubmissionGroup.objects.validate_and_create(
+        group1 = ag_models.Group.objects.validate_and_create(
             members=[group1_user1], project=project)
 
         group2_user1 = User.objects.create(username='steve')
         group2_user2 = User.objects.create(username='anna')
-        group2 = ag_models.SubmissionGroup.objects.validate_and_create(
+        group2 = ag_models.Group.objects.validate_and_create(
             members=[group2_user1, group2_user2], project=project)
 
         group3_user1 = User.objects.create(username='georgina')
         group3_user2 = User.objects.create(username='joe')
         group3_user3 = User.objects.create(username='belinda')
-        group3 = ag_models.SubmissionGroup.objects.validate_and_create(
+        group3 = ag_models.Group.objects.validate_and_create(
             members=[group3_user1, group3_user2, group3_user3], project=project)
 
         expected = [group2.to_dict(), group3.to_dict(), group1.to_dict()]  # type: List[dict]
@@ -124,7 +124,7 @@ class ListGroupsTestCase(_GroupsSetUp,
         project.validate_and_update(
             guests_can_submit=True)
         for user in self.admin, self.staff, self.enrolled, self.nobody:
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 project=project, members=[user])
 
         serialized_groups = ag_serializers.SubmissionGroupSerializer(

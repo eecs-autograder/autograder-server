@@ -20,7 +20,7 @@ from ..submission import Submission
 from . import verification
 
 
-class SubmissionGroupManager(ag_model_base.AutograderModelManager):
+class GroupManager(ag_model_base.AutograderModelManager):
     def validate_and_create(self, members,
                             check_group_size_limits=True,
                             **kwargs):
@@ -45,7 +45,7 @@ class SubmissionGroupManager(ag_model_base.AutograderModelManager):
             return group
 
 
-class SubmissionGroup(ag_model_base.AutograderModel):
+class Group(ag_model_base.AutograderModel):
     """
     This class represents a group of students that can submit
     to a particular project.
@@ -58,7 +58,7 @@ class SubmissionGroup(ag_model_base.AutograderModel):
     class Meta:
         ordering = ('_member_names',)
 
-    objects = SubmissionGroupManager()
+    objects = GroupManager()
 
     members = models.ManyToManyField(
         User, related_name="groups_is_member_of",

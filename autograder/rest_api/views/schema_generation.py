@@ -29,7 +29,7 @@ API_MODELS = OrderedDict([
     [ag_models.ExpectedStudentFile, 'ExpectedStudentFile'],
     [ag_models.InstructorFile, 'InstructorFile'],
     [ag_models.DownloadTask, 'DownloadTask'],
-    [ag_models.SubmissionGroup, 'SubmissionGroup'],
+    [ag_models.Group, 'SubmissionGroup'],
     [ag_models.SubmissionGroupInvitation, 'SubmissionGroupInvitation'],
     [ag_models.Submission, 'Submission'],
 

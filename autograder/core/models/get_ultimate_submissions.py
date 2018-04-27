@@ -5,11 +5,11 @@ from django.db.models import Prefetch
 
 from .project import Project, UltimateSubmissionPolicy
 from .ag_test.feedback_category import FeedbackCategory
-from .submission_group import SubmissionGroup
+from .submission_group import Group
 from .submission import Submission, get_submissions_with_results_queryset
 
 
-def get_ultimate_submission(group: SubmissionGroup) -> Submission:
+def get_ultimate_submission(group: Group) -> Submission:
     result = list(get_ultimate_submissions(group.project, group))
     if not result:
         return None
@@ -17,7 +17,7 @@ def get_ultimate_submission(group: SubmissionGroup) -> Submission:
     return result[0]
 
 
-def get_ultimate_submissions(project: Project, *groups: SubmissionGroup) -> Iterator[Submission]:
+def get_ultimate_submissions(project: Project, *groups: Group) -> Iterator[Submission]:
 
     finished_submissions_queryset = Submission.objects.filter(
         status=Submission.GradingStatus.finished_grading)
@@ -46,7 +46,7 @@ def get_ultimate_submissions(project: Project, *groups: SubmissionGroup) -> Iter
         return _best_submissions_generator(groups, FeedbackCategory.max)
 
 
-def _best_submissions_generator(groups: Iterable[SubmissionGroup],
+def _best_submissions_generator(groups: Iterable[Group],
                                 fdbk_category: FeedbackCategory):
     for group in groups:
         submissions = list(group.submissions.all())

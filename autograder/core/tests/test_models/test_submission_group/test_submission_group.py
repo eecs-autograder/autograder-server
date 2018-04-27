@@ -46,17 +46,17 @@ class MiscSubmissionGroupTestCase(_SetUp):
 
         self.assertCountEqual(
             expected_fields,
-            ag_models.SubmissionGroup.get_serializable_fields())
+            ag_models.Group.get_serializable_fields())
 
         group = obj_build.build_submission_group()
         self.assertTrue(group.to_dict())
 
     def test_editable_fields(self):
         self.assertCountEqual(['extended_due_date'],
-                              ag_models.SubmissionGroup.get_editable_fields())
+                              ag_models.Group.get_editable_fields())
 
     def test_num_submits_towards_limit(self):
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project)
 
@@ -68,7 +68,7 @@ class MiscSubmissionGroupTestCase(_SetUp):
         self.assertEqual(num_submissions, group.num_submissions)
 
     def test_valid_initialization_with_defaults(self):
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project)
 
@@ -84,7 +84,7 @@ class MiscSubmissionGroupTestCase(_SetUp):
 
     def test_valid_initialization_no_defaults(self):
         extended_due_date = timezone.now() + datetime.timedelta(days=1)
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project,
             extended_due_date=extended_due_date)
@@ -103,10 +103,10 @@ class MiscSubmissionGroupTestCase(_SetUp):
 
         repeated_user = self.enrolled_users[0]
 
-        first_group = ag_models.SubmissionGroup.objects.validate_and_create(
+        first_group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users, project=self.project)
 
-        second_group = ag_models.SubmissionGroup.objects.validate_and_create(
+        second_group = ag_models.Group.objects.validate_and_create(
             members=[repeated_user], project=other_project)
 
         first_group.refresh_from_db()
@@ -128,24 +128,24 @@ class MiscSubmissionGroupTestCase(_SetUp):
         group3_members = [User.objects.create(username='fff'), User.objects.create(username='ccc')]
         group4_members = [User.objects.create(username='ddd'), User.objects.create(username='bbb')]
 
-        group1 = ag_models.SubmissionGroup.objects.validate_and_create(
+        group1 = ag_models.Group.objects.validate_and_create(
             members=group1_members, project=self.project)
-        group2 = ag_models.SubmissionGroup.objects.validate_and_create(
+        group2 = ag_models.Group.objects.validate_and_create(
             members=group2_members, project=self.project)
-        group3 = ag_models.SubmissionGroup.objects.validate_and_create(
+        group3 = ag_models.Group.objects.validate_and_create(
             members=group3_members, project=self.project)
-        group4 = ag_models.SubmissionGroup.objects.validate_and_create(
+        group4 = ag_models.Group.objects.validate_and_create(
             members=group4_members, project=self.project)
 
         self.assertSequenceEqual([group2, group4, group3, group1],
-                                 ag_models.SubmissionGroup.objects.all())
+                                 ag_models.Group.objects.all())
 
 
 class SubmissionGroupSizeTestCase(_SetUp):
     def test_valid_override_group_max_size(self):
         self.enrolled_users += obj_build.create_dummy_users(3)
         self.project.course.students.add(*self.enrolled_users)
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project,
             check_group_size_limits=False)
@@ -158,7 +158,7 @@ class SubmissionGroupSizeTestCase(_SetUp):
         self.project.min_group_size = 10
         self.project.max_group_size = 10
         self.project.save()
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project,
             check_group_size_limits=False)
@@ -169,19 +169,19 @@ class SubmissionGroupSizeTestCase(_SetUp):
 
     def test_error_create_empty_group_with_override_size(self):
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 members=[], project=self.project,
                 check_group_size_limits=False)
 
     def test_exception_on_too_few_group_members(self):
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 members=[], project=self.project)
 
         self.project.min_group_size = 2
         self.project.save()
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 members=self.enrolled_users[0:1],
                 project=self.project)
 
@@ -193,13 +193,13 @@ class SubmissionGroupSizeTestCase(_SetUp):
         self.enrolled_users.append(new_user)
 
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 members=self.enrolled_users, project=self.project)
 
 
 class UpdateSubmissionGroupTestCase(_SetUp):
     def test_normal_update_group(self):
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project)
 
@@ -207,13 +207,13 @@ class UpdateSubmissionGroupTestCase(_SetUp):
 
         group.validate_and_update(members=new_members)
 
-        loaded_group = ag_models.SubmissionGroup.objects.get(pk=group.pk)
+        loaded_group = ag_models.Group.objects.get(pk=group.pk)
         self.assertCountEqual(new_members, loaded_group.members.all())
         self.assertSequenceEqual([user.username for user in sorted_users(new_members)],
                                  loaded_group.member_names)
 
     def test_update_group_error_too_many_members(self):
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project)
 
@@ -226,7 +226,7 @@ class UpdateSubmissionGroupTestCase(_SetUp):
         self.assertTrue('members' in cm.exception.message_dict)
 
     def test_update_group_error_too_few_members(self):
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project)
 
@@ -243,7 +243,7 @@ class UpdateSubmissionGroupTestCase(_SetUp):
         self.assertTrue('members' in cm.exception.message_dict)
 
     def test_update_group_override_min_size(self):
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project)
 
@@ -261,7 +261,7 @@ class UpdateSubmissionGroupTestCase(_SetUp):
         self.assertCountEqual(new_members, group.members.all())
 
     def test_update_group_override_max_size(self):
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project)
 
@@ -276,7 +276,7 @@ class UpdateSubmissionGroupTestCase(_SetUp):
         self.assertCountEqual(new_members, group.members.all())
 
     def test_error_update_empty_group_with_override_size(self):
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users,
             project=self.project)
 
@@ -287,28 +287,28 @@ class UpdateSubmissionGroupTestCase(_SetUp):
 
 class GroupMembershipTestCase(_SetUp):
     def test_exception_on_group_member_already_in_another_group(self):
-        ag_models.SubmissionGroup.objects.validate_and_create(
+        ag_models.Group.objects.validate_and_create(
             members=self.enrolled_users[0:1], project=self.project)
 
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 members=self.enrolled_users, project=self.project)
 
     def test_exception_on_some_members_not_enrolled(self):
         mixed_group = self.enrolled_users[0:1] + [obj_build.create_dummy_user()]
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 members=mixed_group, project=self.project)
 
         self.project.guests_can_submit = True
         self.project.save()
 
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 members=mixed_group, project=self.project)
 
     def test_no_exception_group_of_staff_members(self):
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.staff_users, project=self.project)
 
         group.refresh_from_db()
@@ -318,14 +318,14 @@ class GroupMembershipTestCase(_SetUp):
 
     def test_exception_all_members_not_enrolled_and_unenrolled_not_allowed(self):
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 members=self.guest_group, project=self.project)
 
     def test_no_exception_on_all_members_not_enrolled_and_unenrolled_allowed(self):
         self.project.guests_can_submit = True
         self.project.save()
 
-        group = ag_models.SubmissionGroup.objects.validate_and_create(
+        group = ag_models.Group.objects.validate_and_create(
             members=self.guest_group, project=self.project)
 
         group.refresh_from_db()
@@ -337,6 +337,6 @@ class GroupMembershipTestCase(_SetUp):
         self.project.max_group_size = 5
         self.project.save()
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.SubmissionGroup.objects.validate_and_create(
+            ag_models.Group.objects.validate_and_create(
                 members=self.staff_users + self.enrolled_users,
                 project=self.project)

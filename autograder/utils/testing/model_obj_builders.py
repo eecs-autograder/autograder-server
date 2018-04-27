@@ -147,7 +147,7 @@ def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_mod
 def build_submission_group(num_members=1,
                            group_kwargs=None,
                            project_kwargs=None,
-                           course_kwargs=None) -> ag_models.SubmissionGroup:
+                           course_kwargs=None) -> ag_models.Group:
     """
     Creates a SubmissionGroup with the specified data.
     If the "members" key is not present in group_kwargs, then
@@ -175,7 +175,7 @@ def build_submission_group(num_members=1,
     if num_members > project.max_group_size:
         project.validate_and_update(max_group_size=num_members)
 
-    group = ag_models.SubmissionGroup.objects.validate_and_create(**group_kwargs)
+    group = ag_models.Group.objects.validate_and_create(**group_kwargs)
     return group
 
 
@@ -249,7 +249,7 @@ class UserRole(core_ut.OrderedEnum):
 def make_group(num_members: int=1,
                members_role: UserRole=UserRole.student,
                project: ag_models.Project=None,
-               **group_kwargs) -> ag_models.SubmissionGroup:
+               **group_kwargs) -> ag_models.Group:
     if project is None:
         project = make_project()
 
@@ -265,7 +265,7 @@ def make_group(num_members: int=1,
     elif members_role == UserRole.admin:
         project.course.admins.add(*group_kwargs['members'])
 
-    return ag_models.SubmissionGroup.objects.validate_and_create(
+    return ag_models.Group.objects.validate_and_create(
         project=project, check_group_size_limits=False, **group_kwargs)
 
 

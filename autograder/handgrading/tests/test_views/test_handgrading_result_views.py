@@ -197,7 +197,7 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
 
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
-            self.group = ag_models.SubmissionGroup.objects.get(pk=self.group.pk)
+            self.group = ag_models.Group.objects.get(pk=self.group.pk)
             handgrading_result = self.group.handgrading_result
             self.assertEqual(handgrading_result.to_dict(), response.data)
 
@@ -211,7 +211,7 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
                 self.assertIn(criterion_result.criterion, self.criteria)
 
             handgrading_result.delete()
-            self.group = ag_models.SubmissionGroup.objects.get(pk=self.group.pk)
+            self.group = ag_models.Group.objects.get(pk=self.group.pk)
 
     def test_no_handgrading_rubric(self):
         self.handgrading_rubric.delete()

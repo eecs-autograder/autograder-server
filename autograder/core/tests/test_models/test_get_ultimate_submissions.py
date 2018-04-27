@@ -88,7 +88,7 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             self.assertIsNone(ultimate_submission)
 
     class GroupAndSubmissionData:
-        def __init__(self, group: ag_models.SubmissionGroup,
+        def __init__(self, group: ag_models.Group,
                      best_submission: ag_models.Submission,
                      most_recent_submission: ag_models.Submission):
             self.group = group

@@ -11,7 +11,7 @@ from .project.expected_student_file import ExpectedStudentFile
 from .project.instructor_file import InstructorFile
 from .project.download_task import DownloadTask, DownloadType
 
-from .submission_group import SubmissionGroup, SubmissionGroupInvitation
+from .submission_group import Group, SubmissionGroupInvitation
 from .submission import (
     Submission,
     get_submissions_with_results_queryset,

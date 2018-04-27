@@ -21,7 +21,7 @@ class RaceConditionTestCase(test_data.Client,
 
         @test_ut.sleeper_subtest(path)
         def create_submission_first(group_id):
-            group = ag_models.SubmissionGroup.objects.get(pk=group_id)
+            group = ag_models.Group.objects.get(pk=group_id)
             client = APIClient()
             client.force_authenticate(group.members.first())
             response = client.post(self.submissions_url(group),

@@ -138,7 +138,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
     def test_exception_on_invitee_already_in_another_group(self):
-        ag_models.SubmissionGroup.objects.validate_and_create(
+        ag_models.Group.objects.validate_and_create(
             project=self.project,
             members=self.to_invite[:1])
 
@@ -151,7 +151,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
     def test_exception_on_invitation_creator_already_in_another_group(self):
-        ag_models.SubmissionGroup.objects.validate_and_create(
+        ag_models.Group.objects.validate_and_create(
             project=self.project,
             members=[self.invitation_creator])
 

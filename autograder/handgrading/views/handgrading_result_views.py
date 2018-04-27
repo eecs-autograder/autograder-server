@@ -27,7 +27,7 @@ can_view_project = ag_permissions.can_view_project(lambda group: group.project)
 
 
 class HandgradingResultsPublished(BasePermission):
-    def has_object_permission(self, request, view, group: ag_models.SubmissionGroup):
+    def has_object_permission(self, request, view, group: ag_models.Group):
         return group.project.handgrading_rubric.show_grades_and_rubric_to_students
 
 
@@ -48,7 +48,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
     ]
 
     pk_key = 'group_pk'
-    model_manager = ag_models.SubmissionGroup.objects.select_related(
+    model_manager = ag_models.Group.objects.select_related(
         'project__course'
     )
     one_to_one_field_name = 'submission_group'
@@ -65,7 +65,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
 
     @handle_object_does_not_exist_404
     def retrieve(self, request, *args, **kwargs):
-        group = self.get_object()  # type: ag_models.SubmissionGroup
+        group = self.get_object()  # type: ag_models.Group
 
         if 'filename' not in request.query_params:
             return response.Response(self.get_serializer(group.handgrading_result).data)
@@ -109,7 +109,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
     @transaction.atomic()
     @handle_object_does_not_exist_404
     def partial_update(self, request, *args, **kwargs):
-        group = self.get_object()  # type: ag_models.SubmissionGroup
+        group = self.get_object()  # type: ag_models.Group
         is_admin = group.project.course.is_admin(request.user)
         can_adjust_points = (
             is_admin or

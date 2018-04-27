@@ -29,7 +29,7 @@ def ultimate_submission_files_task(project_pk, task_pk, include_staff, *args, **
 @shared_task(queue='project_downloads', acks_late=True)
 def all_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwargs):
     def _get_all_finished_grading_submissions(project: ag_models.Project,
-                                              groups: Sequence[ag_models.SubmissionGroup]):
+                                              groups: Sequence[ag_models.Group]):
         submissions = list(
             ag_models.get_submissions_with_results_queryset(
                 ag_models.FeedbackCategory.max,
@@ -50,18 +50,18 @@ def ultimate_submission_scores_task(project_pk, task_pk, include_staff, *args, *
 
 # Given a project and a sequence of submission groups, return a tuple of
 # (submissions, num_submissions).
-GetSubmissionsFnType = Callable[[ag_models.Project, Sequence[ag_models.SubmissionGroup]],
+GetSubmissionsFnType = Callable[[ag_models.Project, Sequence[ag_models.Group]],
                                 Tuple[Iterator[ag_models.Submission], int]]
 
 
 def _get_all_submissions(project: ag_models.Project,
-                         groups: Sequence[ag_models.SubmissionGroup]):
+                         groups: Sequence[ag_models.Group]):
     submissions = list(ag_models.Submission.objects.filter(submission_group__in=groups))
     return submissions, len(submissions)
 
 
 def _get_ultimate_submissions(project: ag_models.Project,
-                              groups: Sequence[ag_models.SubmissionGroup]):
+                              groups: Sequence[ag_models.Group]):
     return get_ultimate_submissions(project, *groups), len(groups)
 
 
@@ -92,7 +92,7 @@ def _make_download_file_task_impl(project_pk, task_pk, include_staff,
         task.save()
 
 
-def _get_groups(project, include_staff) -> Sequence[ag_models.SubmissionGroup]:
+def _get_groups(project, include_staff) -> Sequence[ag_models.Group]:
     groups = project.submission_groups.all()
     groups = filter(lambda group: group.submissions.count(), groups)
     if not include_staff:

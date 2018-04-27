@@ -56,7 +56,7 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
     serializer_class = ag_serializers.SubmissionGroupSerializer
     permission_classes = (group_permissions,)
 
-    model_manager = ag_models.SubmissionGroup.objects.select_related(
+    model_manager = ag_models.Group.objects.select_related(
         'project__course').prefetch_related('members', 'submissions')
 
     @transaction.atomic()
