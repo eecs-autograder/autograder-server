@@ -83,12 +83,12 @@ class RetrieveGroupTestCase(test_data.Client,
     def test_prefetching_doesnt_skew_num_submissions_and_num_submissions_towards_limit(self):
         group = obj_build.make_group(project=self.visible_public_project)
         yesterday_submission = obj_build.build_submission(
-            submission_group=group,
+            group=group,
             timestamp=timezone.now() - datetime.timedelta(days=1))
         not_towards_limit_submission = obj_build.build_submission(
-            submission_group=group,
+            group=group,
             count_towards_daily_limit=False)
-        towards_limit_submission = obj_build.build_submission(submission_group=group)
+        towards_limit_submission = obj_build.build_submission(group=group)
 
         group.refresh_from_db()
         self.assertEqual(3, group.num_submissions)
@@ -230,7 +230,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
         for policy in ag_models.UltimateSubmissionPolicy:
             self.project.validate_and_update(ultimate_submission_policy=policy)
             group = self.admin_group(self.project)
-            submission = obj_build.build_submission(submission_group=group)
+            submission = obj_build.build_submission(group=group)
             self.assertEqual(1, group.submissions.count())
             self.assertNotEqual(ag_models.Submission.GradingStatus.finished_grading, submission.status)
             self.client.force_authenticate(group.members.first())
@@ -276,7 +276,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
 
     def test_handgrader_get_students_ultimate_permission_denied(self):
         group = self.enrolled_group(self.project)
-        obj_build.build_finished_submission(submission_group=group)
+        obj_build.build_finished_submission(group=group)
         self.do_permission_denied_get_test(
             self.client, self.handgrader, self.ultimate_submission_url(group))
 
@@ -285,7 +285,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             closing_time=self.past_closing_time,
             hide_ultimate_submission_fdbk=False)
         group = self.enrolled_group(self.visible_public_project)
-        obj_build.build_finished_submission(submission_group=group)
+        obj_build.build_finished_submission(group=group)
         other_user = self.clone_user(self.enrolled)
         for user in self.nobody, other_user:
             self.do_permission_denied_get_test(
@@ -297,7 +297,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
                 closing_time=self.past_closing_time,
                 hide_ultimate_submission_fdbk=False)
             group = self.enrolled_group(project)
-            obj_build.build_finished_submission(submission_group=group)
+            obj_build.build_finished_submission(group=group)
             self.do_permission_denied_get_test(
                 self.client, self.enrolled,
                 self.ultimate_submission_url(group))
@@ -306,7 +306,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
         self.hidden_public_project.validate_and_update(
             closing_time=None, hide_ultimate_submission_fdbk=False)
         group = self.non_enrolled_group(self.hidden_public_project)
-        obj_build.build_finished_submission(submission_group=group)
+        obj_build.build_finished_submission(group=group)
         self.do_permission_denied_get_test(
             self.client, self.nobody, self.ultimate_submission_url(group))
 
@@ -316,7 +316,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             guests_can_submit=False,
             closing_time=self.past_closing_time,
             hide_ultimate_submission_fdbk=False)
-        obj_build.build_finished_submission(submission_group=group)
+        obj_build.build_finished_submission(group=group)
         self.do_permission_denied_get_test(
             self.client, self.nobody, self.ultimate_submission_url(group))
 
@@ -325,7 +325,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             closing_time=timezone.now() + timezone.timedelta(minutes=5),
             hide_ultimate_submission_fdbk=False)
         for group in self.non_staff_groups(self.visible_public_project):
-            obj_build.build_finished_submission(submission_group=group)
+            obj_build.build_finished_submission(group=group)
             self.do_permission_denied_get_test(
                 self.client, group.members.first(),
                 self.ultimate_submission_url(group))
@@ -347,7 +347,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
                 hide_ultimate_submission_fdbk=True,
                 closing_time=closing_time)
             for group in self.non_staff_groups(self.visible_public_project):
-                obj_build.build_finished_submission(submission_group=group)
+                obj_build.build_finished_submission(group=group)
                 self.do_permission_denied_get_test(
                     self.client, group.members.first(),
                     self.ultimate_submission_url(group))
@@ -367,7 +367,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             hide_ultimate_submission_fdbk=False)
         for group in self.non_staff_groups(self.visible_public_project):
             group.validate_and_update(extended_due_date=self.not_past_extension)
-            obj_build.build_finished_submission(submission_group=group)
+            obj_build.build_finished_submission(group=group)
             self.do_permission_denied_get_test(
                 self.client, group.members.first(),
                 self.ultimate_submission_url(group))
@@ -391,7 +391,7 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             hide_ultimate_submission_fdbk=True)
         for group in self.non_staff_groups(self.visible_public_project):
             group.validate_and_update(extended_due_date=self.past_extension)
-            obj_build.build_finished_submission(submission_group=group)
+            obj_build.build_finished_submission(group=group)
             self.do_permission_denied_get_test(
                 self.client, group.members.first(),
                 self.ultimate_submission_url(group))
@@ -420,9 +420,9 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
                 suite = obj_build.make_ag_test_suite(project)
                 case = obj_build.make_ag_test_case(suite)
                 cmd = obj_build.make_full_ag_test_command(case)
-                best_submission = obj_build.build_finished_submission(submission_group=group)
+                best_submission = obj_build.build_finished_submission(group=group)
                 most_recent_submission = obj_build.build_finished_submission(
-                    submission_group=group)
+                    group=group)
 
                 obj_build.make_correct_ag_test_command_result(cmd, submission=best_submission)
                 obj_build.make_incorrect_ag_test_command_result(
@@ -468,11 +468,11 @@ class MergeGroupsTestCase(test_data.Client,
                                    ('heeey' + str(i)).encode('utf-8')))
 
         for i in range(2):
-            obj_build.build_submission(submission_group=self.group1,
+            obj_build.build_submission(group=self.group1,
                                        submitted_files=files)
 
         for i in range(3):
-            obj_build.build_submission(submission_group=self.group2,
+            obj_build.build_submission(group=self.group2,
                                        submitted_files=files)
 
         expected_submission_count = (self.group1.submissions.count() +

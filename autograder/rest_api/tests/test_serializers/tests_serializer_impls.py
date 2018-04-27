@@ -107,7 +107,7 @@ class SubmissionSerializerTestCase(SerializerTestCase):
         group = obj_build.build_submission_group()
         submission = ag_models.Submission.objects.validate_and_create(
             submitted_files=[],
-            submission_group=group)
+            group=group)
         self.do_basic_serialize_test(submission,
                                      ag_serializers.SubmissionSerializer)
 
@@ -137,7 +137,7 @@ class SubmissionSerializerTestCase(SerializerTestCase):
     def test_update(self):
         group = obj_build.build_submission_group()
         submission = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=group)
+            [], group=group)
         self.assertTrue(submission.count_towards_daily_limit)
 
         serializer = ag_serializers.SubmissionSerializer(

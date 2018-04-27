@@ -87,12 +87,12 @@ class ListGroupsTestCase(_GroupsSetUp,
         self.maxDiff = None
         group1 = obj_build.make_group(project=self.visible_public_project)
         group1_yesterday_submission = obj_build.build_submission(
-            submission_group=group1,
+            group=group1,
             timestamp=timezone.now() - datetime.timedelta(days=1))
         group1_not_towards_limit_submission = obj_build.build_submission(
-            submission_group=group1,
+            group=group1,
             count_towards_daily_limit=False)
-        group1_towards_limit_submission = obj_build.build_submission(submission_group=group1)
+        group1_towards_limit_submission = obj_build.build_submission(group=group1)
 
         group1.refresh_from_db()
         self.assertEqual(3, group1.num_submissions)
@@ -100,15 +100,15 @@ class ListGroupsTestCase(_GroupsSetUp,
 
         group2 = obj_build.make_group(project=self.visible_public_project)
         group2_yesterday_submission = obj_build.build_submission(
-            submission_group=group2,
+            group=group2,
             timestamp=timezone.now() - datetime.timedelta(days=1))
         group2_yesterday_submission2 = obj_build.build_submission(
-            submission_group=group2,
+            group=group2,
             timestamp=timezone.now() - datetime.timedelta(days=1))
         group2_not_towards_limit_submission = obj_build.build_submission(
-            submission_group=group2,
+            group=group2,
             count_towards_daily_limit=False)
-        group2_towards_limit_submission = obj_build.build_submission(submission_group=group2)
+        group2_towards_limit_submission = obj_build.build_submission(group=group2)
 
         group2.refresh_from_db()
         self.assertEqual(4, group2.num_submissions)

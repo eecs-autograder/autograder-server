@@ -46,7 +46,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
             timestamp = timezone.now()
 
         with transaction.atomic():
-            submission = self.model(submission_group=submission_group,
+            submission = self.model(group=submission_group,
                                     timestamp=timestamp,
                                     submitter=submitter)
             submission.is_past_daily_limit = _new_submission_is_past_limit(submission)
@@ -117,7 +117,7 @@ def _new_submission_is_past_limit(submission: 'Submission'):
         timestamp__lt=end_datetime,
         count_towards_daily_limit=True,
         status__in=Submission.GradingStatus.count_towards_limit_statuses,
-        submission_group=submission.group
+        group=submission.group
     ).count()
 
     return num_submissions_before_self >= project.submission_limit_per_day

@@ -248,7 +248,7 @@ class FileSystemUtilTestCase(UnitTestBase):
 
     def test_get_submission_dir(self):
         submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=self.group, submitted_files=[])
+            group=self.group, submitted_files=[])
         submission_dir_basename = 'submission{}'.format(submission.pk)
 
         expected_relative = "{0}/{1}/{2}/{3}/{4}/{5}".format(
@@ -269,7 +269,7 @@ class FileSystemUtilTestCase(UnitTestBase):
 
     def test_get_result_output_dir(self):
         submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=self.group, submitted_files=[])
+            group=self.group, submitted_files=[])
 
         submission_dir_basename = 'submission{}'.format(submission.pk)
 

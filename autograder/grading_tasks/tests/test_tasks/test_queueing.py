@@ -17,7 +17,7 @@ from autograder.grading_tasks import tasks
 class RaceConditionTestCase(UnitTestBase):
     def test_remove_from_queue_when_being_marked_as_being_graded_race_condition_prevented(self):
         group = obj_build.make_group(members_role=obj_build.UserRole.admin)
-        submission = obj_build.build_submission(submission_group=group)
+        submission = obj_build.build_submission(group=group)
 
         path = ('autograder.core.models'
                 '.Submission.GradingStatus.removed_from_queue')

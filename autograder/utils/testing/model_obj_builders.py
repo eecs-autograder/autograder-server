@@ -193,7 +193,7 @@ def build_submission(**submission_kwargs) -> ag_models.Submission:
     timestamp = submission_kwargs.pop('timestamp', timezone.now())
 
     submission = ag_models.Submission.objects.validate_and_create(
-        submission_group=group,
+        group=group,
         submitted_files=submitted_files,
         timestamp=timestamp
     )

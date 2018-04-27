@@ -93,7 +93,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
         handgrading_result, created = handgrading_models.HandgradingResult.objects.get_or_create(
             defaults={'submission': ultimate_submission},
             handgrading_rubric=handgrading_rubric,
-            submission_group=group)
+            group=group)
 
         for criterion in handgrading_rubric.criteria.all():
             handgrading_models.CriterionResult.objects.get_or_create(

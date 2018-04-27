@@ -230,7 +230,7 @@ class CreateSubmissionTestCase(test_data.Client,
     def test_all_users_already_has_submission_being_processed(self):
         for group in self.all_groups(self.visible_public_project):
             ag_models.Submission.objects.validate_and_create(
-                [], submission_group=group)
+                [], group=group)
             response = self.do_bad_request_submit_test(group, group.members.last())
             self.assertIn('submission', response.data)
 
@@ -241,7 +241,7 @@ class CreateSubmissionTestCase(test_data.Client,
                         ag_models.Submission.GradingStatus.active_statuses):
                     continue
 
-                obj_build.build_submission(submission_group=group, status=grading_status)
+                obj_build.build_submission(group=group, status=grading_status)
 
                 self.do_normal_submit_test(group, group.members.first())
 

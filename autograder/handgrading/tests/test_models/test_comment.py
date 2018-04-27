@@ -34,7 +34,7 @@ class CommentTestCase(UnitTestBase):
             "text": "HI",
             "handgrading_result": handgrading_models.HandgradingResult.objects.validate_and_create(
                 submission=submission,
-                submission_group=submission.group,
+                group=submission.group,
                 handgrading_rubric=self.default_handgrading_rubric
             )
         }
@@ -55,7 +55,7 @@ class CommentTestCase(UnitTestBase):
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.group,
+            group=submission.group,
             handgrading_rubric=self.default_handgrading_rubric
         )
 
@@ -75,7 +75,7 @@ class CommentTestCase(UnitTestBase):
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.group,
+            group=submission.group,
             handgrading_rubric=self.default_handgrading_rubric
         )
 
@@ -89,7 +89,7 @@ class CommentTestCase(UnitTestBase):
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.group,
+            group=submission.group,
             handgrading_rubric=self.default_handgrading_rubric)
 
         # Using create instead of validate_and_create in order to define the pk
@@ -136,7 +136,7 @@ class CommentTestCase(UnitTestBase):
             text="hello",
             handgrading_result=handgrading_models.HandgradingResult.objects.validate_and_create(
                 submission=submission,
-                submission_group=submission.group,
+                group=submission.group,
                 handgrading_rubric=self.default_handgrading_rubric
             )
         )

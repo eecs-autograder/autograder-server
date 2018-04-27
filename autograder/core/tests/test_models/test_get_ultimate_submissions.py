@@ -50,12 +50,12 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
 
     def test_get_ultimate_only_finished_grading_status_considered(self):
         group = obj_build.make_group(project=self.project)
-        ultimate_submission = obj_build.build_finished_submission(submission_group=group)
+        ultimate_submission = obj_build.build_finished_submission(group=group)
         non_considered_statuses = filter(
             lambda val: val != ag_models.Submission.GradingStatus.finished_grading,
             ag_models.Submission.GradingStatus.values)
         for grading_status in non_considered_statuses:
-            obj_build.build_submission(submission_group=group, status=grading_status)
+            obj_build.build_submission(group=group, status=grading_status)
 
         self.assertEqual(
             1,
@@ -80,7 +80,7 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
         for policy in ag_models.UltimateSubmissionPolicy:
             self.project.validate_and_update(ultimate_submission_policy=policy)
             group = obj_build.make_group(project=self.project)
-            submission = obj_build.build_submission(submission_group=group)
+            submission = obj_build.build_submission(group=group)
 
             self.assertEqual(1, group.submissions.count())
             self.assertNotEqual(ag_models.Submission.GradingStatus.finished_grading, submission.status)
@@ -117,16 +117,16 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             sys.stdout.write('\rBuilding group {}'.format(i))
             sys.stdout.flush()
             group = obj_build.make_group(project=project)
-            best_sub = obj_build.build_finished_submission(submission_group=group)
+            best_sub = obj_build.build_finished_submission(group=group)
             for cmd in cmds:
                 obj_build.make_correct_ag_test_command_result(cmd, submission=best_sub)
 
             for j in range(num_other_submissions):
-                sub = obj_build.build_finished_submission(submission_group=group)
+                sub = obj_build.build_finished_submission(group=group)
                 for cmd in cmds:
                     obj_build.make_incorrect_ag_test_command_result(cmd, submission=sub)
 
-            most_recent = obj_build.build_finished_submission(submission_group=group)
+            most_recent = obj_build.build_finished_submission(group=group)
             for cmd in cmds:
                 obj_build.make_incorrect_ag_test_command_result(cmd, submission=most_recent)
 

@@ -56,9 +56,9 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
 
         self.project = obj_build.make_project()
         self.submission1 = obj_build.build_submission(
-            submission_group=obj_build.make_group(project=self.project))
+            group=obj_build.make_group(project=self.project))
         self.submission2 = obj_build.build_submission(
-            submission_group=obj_build.make_group(project=self.project))
+            group=obj_build.make_group(project=self.project))
         [self.admin] = obj_build.make_admin_users(self.project.course, 1)
 
         self.ag_test_suite1 = obj_build.make_ag_test_suite(self.project)
@@ -172,7 +172,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
         # doesn't accidentally pick it up.
         self.other_project = obj_build.make_project()
         self.other_submission = obj_build.build_submission(
-            submission_group=obj_build.make_group(project=self.other_project))
+            group=obj_build.make_group(project=self.other_project))
 
         self.other_ag_test_suite = obj_build.make_ag_test_suite(self.other_project)
         self.other_ag_test_case = obj_build.make_ag_test_case(self.other_ag_test_suite)
@@ -340,7 +340,7 @@ class GetRerunSubmissionsTaskTestCase(test_impls.GetObjectTest, UnitTestBase):
 
         self.project = obj_build.make_project()
         [self.admin] = obj_build.make_admin_users(self.project.course, 1)
-        self.submission = obj_build.build_submission(submission_group=obj_build.make_group())
+        self.submission = obj_build.build_submission(group=obj_build.make_group())
 
         # Create a rerun task using the api so that it gets run and we have a
         # real celery task ID to look up.

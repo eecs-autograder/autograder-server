@@ -28,7 +28,7 @@ class ListCommentsTestCase(UnitTestBase):
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.group,
+            group=submission.group,
             handgrading_rubric=handgrading_rubric
         )
 
@@ -86,7 +86,7 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.group,
+            group=submission.group,
             handgrading_rubric=self.handgrading_rubric
         )
 
@@ -168,7 +168,7 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.group,
+            group=submission.group,
             handgrading_rubric=self.handgrading_rubric
         )
 

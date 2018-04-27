@@ -303,7 +303,7 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
             project=self.project, file_obj=SimpleUploadedFile(project_filename, b'asdkfasdjkf'))
         self.group = obj_build.make_group(project=self.project)
         self.ag_suite.instructor_files_needed.add(self.project_file)
-        self.submission = obj_build.build_submission(submission_group=self.group)
+        self.submission = obj_build.build_submission(group=self.group)
 
     def test_project_files_read_only(self, *args):
         self.assertTrue(self.ag_suite.read_only_instructor_files)

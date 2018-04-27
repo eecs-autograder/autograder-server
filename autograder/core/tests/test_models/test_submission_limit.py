@@ -19,13 +19,13 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
         other_group = obj_build.build_submission_group()
         self.assertNotEqual(other_group, self.submission_group)
         ag_models.Submission.objects.validate_and_create(
-            [], submission_group=other_group)
+            [], group=other_group)
 
     def test_no_daily_limit(self):
         self.assertIsNone(self.project.submission_limit_per_day)
         for i in range(10):
             sub = ag_models.Submission.objects.validate_and_create(
-                [], submission_group=self.submission_group)
+                [], group=self.submission_group)
             self.assertTrue(sub.count_towards_daily_limit)
             self.assertFalse(sub.is_past_daily_limit)
 
@@ -37,7 +37,7 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
         timestamp = timestamp.replace(tzinfo=timezone.now().tzinfo)
         for i in range(limit):
             sub = ag_models.Submission.objects.validate_and_create(
-                [], submission_group=self.submission_group,
+                [], group=self.submission_group,
                 timestamp=timestamp)
             self.assertTrue(sub.count_towards_daily_limit)
             self.assertFalse(sub.is_past_daily_limit)
@@ -45,7 +45,7 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
         # Place submission at exact beginning of next cycle
         next_cycle_timestamp = timestamp + timezone.timedelta(days=1)
         sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group,
+            [], group=self.submission_group,
             timestamp=next_cycle_timestamp)
         self.assertTrue(sub.count_towards_daily_limit)
         self.assertFalse(sub.is_past_daily_limit)
@@ -56,12 +56,12 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
         not_past_limit = []
         for i in range(limit):
             sub = ag_models.Submission.objects.validate_and_create(
-                [], submission_group=self.submission_group)
+                [], group=self.submission_group)
             not_past_limit.append(sub)
 
         for i in range(2):
             sub = ag_models.Submission.objects.validate_and_create(
-                [], submission_group=self.submission_group)
+                [], group=self.submission_group)
 
             self.assertTrue(sub.count_towards_daily_limit)
             self.assertTrue(sub.is_past_daily_limit)
@@ -77,14 +77,14 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
         self.project.validate_and_update(submission_limit_per_day=limit)
         submissions = []
         sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group, timestamp=timestamp)
+            [], group=self.submission_group, timestamp=timestamp)
         sub.count_towards_daily_limit = False
         sub.save()
         submissions.append(sub)
         self.assertFalse(sub.count_towards_daily_limit)
         for i in range(limit):
             sub = ag_models.Submission.objects.validate_and_create(
-                [], submission_group=self.submission_group,
+                [], group=self.submission_group,
                 timestamp=timestamp)
             sub.count_towards_daily_limit = True
             sub.save()
@@ -101,7 +101,7 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
             self.assertEqual(
                 i, self.submission_group.num_submits_towards_limit)
             sub = ag_models.Submission.objects.validate_and_create(
-                [], submission_group=self.submission_group)
+                [], group=self.submission_group)
             self.assertTrue(sub.count_towards_daily_limit)
             if i > limit:
                 self.assertTrue(sub.is_past_daily_limit)
@@ -119,10 +119,10 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
             submission_limit_reset_timezone=local_timezone)
 
         before_reset_time_submission = obj_build.build_submission(
-            submission_group=self.submission_group,
+            group=self.submission_group,
             timestamp=now - timezone.timedelta(hours=1))
         after_reset_time_submission = obj_build.build_submission(
-            submission_group=self.submission_group,
+            group=self.submission_group,
             timestamp=now + timezone.timedelta(hours=1))
 
         self.assertEqual(1, self.submission_group.num_submits_towards_limit)
@@ -135,7 +135,7 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
             count_towards_limit = i % 2 != 0
 
             sub = ag_models.Submission.objects.validate_and_create(
-                [], submission_group=self.submission_group)
+                [], group=self.submission_group)
             sub.count_towards_daily_limit = count_towards_limit
             sub.save()
             self.assertEqual(count_towards_limit,
@@ -148,7 +148,7 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
                              self.submission_group.num_submits_towards_limit)
 
         sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group)
+            [], group=self.submission_group)
         self.assertTrue(sub.is_past_daily_limit)
 
     def test_non_default_limit_reset_time_and_timezone(self):
@@ -163,21 +163,21 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
 
         within_limit_timestamp = reset_datetime + timezone.timedelta(hours=-23)
         within_limit_submission = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group,
+            [], group=self.submission_group,
             timestamp=within_limit_timestamp)
         self.assertTrue(within_limit_submission.count_towards_daily_limit)
         self.assertFalse(within_limit_submission.is_past_daily_limit)
 
         past_limit_timestamp = reset_datetime + timezone.timedelta(hours=-1)
         past_limit_submission = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group,
+            [], group=self.submission_group,
             timestamp=past_limit_timestamp)
         self.assertTrue(past_limit_submission.count_towards_daily_limit)
         self.assertTrue(past_limit_submission.is_past_daily_limit)
 
         next_cycle_timestamp = reset_datetime
         next_cycle_submission = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group,
+            [], group=self.submission_group,
             timestamp=next_cycle_timestamp)
         self.assertTrue(next_cycle_submission.count_towards_daily_limit)
         self.assertFalse(next_cycle_submission.is_past_daily_limit)
@@ -199,7 +199,7 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
         for count, status in zip(range(1, num_statuses + 1),
                                  count_towards_limit_statuses):
             submission = ag_models.Submission.objects.validate_and_create(
-                [], submission_group=self.submission_group)
+                [], group=self.submission_group)
             submission.status = status
             submission.save()
             self.assertEqual(count,
@@ -207,7 +207,7 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
             self.assertFalse(submission.is_past_daily_limit)
 
         past_limit = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group)
+            [], group=self.submission_group)
         self.assertEqual(num_statuses + 1,
                          self.submission_group.num_submits_towards_limit)
         self.assertTrue(past_limit.is_past_daily_limit)
@@ -215,30 +215,30 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
     def test_statuses_not_counted_towards_limit(self):
         self.project.validate_and_update(submission_limit_per_day=2)
         first_sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group)
+            [], group=self.submission_group)
         self.assertEqual(1, self.submission_group.num_submits_towards_limit)
         self.assertFalse(first_sub.is_past_daily_limit)
 
         removed_sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group)
+            [], group=self.submission_group)
         removed_sub.status = ag_models.Submission.GradingStatus.removed_from_queue
         removed_sub.save()
         self.assertEqual(1, self.submission_group.num_submits_towards_limit)
         self.assertFalse(removed_sub.is_past_daily_limit)
 
         error_sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group)
+            [], group=self.submission_group)
         error_sub.status = ag_models.Submission.GradingStatus.error
         error_sub.save()
         self.assertEqual(1, self.submission_group.num_submits_towards_limit)
         self.assertFalse(error_sub.is_past_daily_limit)
 
         second_sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group)
+            [], group=self.submission_group)
         self.assertEqual(2, self.submission_group.num_submits_towards_limit)
         self.assertFalse(second_sub.is_past_daily_limit)
 
         third_sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group)
+            [], group=self.submission_group)
         self.assertEqual(3, self.submission_group.num_submits_towards_limit)
         self.assertTrue(third_sub.is_past_daily_limit)

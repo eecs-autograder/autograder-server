@@ -54,7 +54,7 @@ class SubmissionsViewSet(
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        serializer.save(submission_group=self.get_object(),
+        serializer.save(group=self.get_object(),
                         submitter=self.request.user.username)
 
     def _validate_can_submit(self, request, group, timestamp):

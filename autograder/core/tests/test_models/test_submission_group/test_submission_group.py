@@ -63,7 +63,7 @@ class MiscSubmissionGroupTestCase(_SetUp):
         num_submissions = 4
         for i in range(num_submissions):
             ag_models.Submission.objects.validate_and_create(submitted_files=[],
-                                                             submission_group=group)
+                                                             group=group)
         group.refresh_from_db()
         self.assertEqual(num_submissions, group.num_submissions)
 

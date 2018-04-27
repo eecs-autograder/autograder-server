@@ -336,7 +336,7 @@ class Submission(Group):
         self.add_expected_patterns(group.project)
 
         return ag_models.Submission.objects.validate_and_create(
-            self.files_to_submit, submission_group=group,
+            self.files_to_submit, group=group,
             submitter=group.members.first().username)
 
     def build_submissions(self, group):

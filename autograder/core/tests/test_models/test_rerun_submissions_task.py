@@ -18,7 +18,7 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
         self.student_test_suite = obj_build.make_student_test_suite(self.project)
 
         self.submission = obj_build.build_submission(
-            submission_group=obj_build.make_group(project=self.project))
+            group=obj_build.make_group(project=self.project))
 
     def test_default_create(self):
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
@@ -98,7 +98,7 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
         self.assertEqual(100, rerun_task.progress)
 
     def test_error_some_submissions_not_in_project(self):
-        other_submission = obj_build.build_submission(submission_group=obj_build.make_group())
+        other_submission = obj_build.build_submission(group=obj_build.make_group())
 
         with self.assertRaises(exceptions.ValidationError) as cm:
             ag_models.RerunSubmissionsTask.objects.validate_and_create(

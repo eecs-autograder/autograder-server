@@ -67,7 +67,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         with open(os.path.join(self.files_dir, 'student_tests.cpp'), 'rb') as f:
             self.submission = obj_build.build_submission(
                 submitted_files=[SimpleUploadedFile('student_tests.cpp', f.read())],
-                submission_group=obj_build.make_group(project=self.project))
+                group=obj_build.make_group(project=self.project))
 
         self.valid_tests = ['test_return_42', 'test_return_true']
         self.invalid_tests = ['incorrectly_test_return3', 'this_test_times_out']
@@ -208,7 +208,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         super().setUp()
         self.project = obj_build.make_project()
         self.submission = obj_build.build_submission(
-            submission_group=obj_build.make_group(project=self.project))
+            group=obj_build.make_group(project=self.project))
 
     def test_non_unicode_chars_in_test_names(self, *args):
         non_unicode = b'test\x80 test2 test3'

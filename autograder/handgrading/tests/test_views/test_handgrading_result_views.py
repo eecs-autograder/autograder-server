@@ -30,7 +30,7 @@ class _SetUp(UnitTestBase):
                                                    'waaaluigi{}'.format(i).encode())
                                 for i in range(3)]
         self.submission = obj_build.build_submission(
-            submission_group=self.group,
+            group=self.group,
             submitted_files=self.submitted_files,
             status=Submission.GradingStatus.finished_grading)
 
@@ -57,7 +57,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
 
         self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.group,
+            group=self.submission.group,
             handgrading_rubric=self.handgrading_rubric
         )  # type: hg_models.HandgradingResult
 
@@ -243,7 +243,7 @@ class UpdateHandgradingResultPointsAdjustmentTestCase(test_impls.UpdateObjectTes
 
         self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.group,
+            group=self.submission.group,
             handgrading_rubric=self.handgrading_rubric
         )  # type: hg_models.HandgradingResult
 
@@ -343,10 +343,10 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
         expected_data = []
         for i in range(num_results):
             group = groups[i]
-            s = obj_build.build_finished_submission(submission_group=group)
+            s = obj_build.build_finished_submission(group=group)
             score = random.randint(0, self.rubric.max_points + 3)
             hg_result = hg_models.HandgradingResult.objects.validate_and_create(
-                submission=s, submission_group=group, handgrading_rubric=self.rubric,
+                submission=s, group=group, handgrading_rubric=self.rubric,
                 points_adjustment=score,
                 finished_grading=bool(random.getrandbits(1)))
 

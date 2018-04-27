@@ -243,7 +243,7 @@ void file2() {
              SimpleUploadedFile('file1.cpp', file1_cpp.encode()),
              SimpleUploadedFile('file2.h', file2_h.encode()),
              SimpleUploadedFile('file2.cpp', file2_cpp.encode())],
-            submission_group=self.submission.group)
+            group=self.submission.group)
         tasks.grade_submission(submission.pk)
 
         cmd_res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)

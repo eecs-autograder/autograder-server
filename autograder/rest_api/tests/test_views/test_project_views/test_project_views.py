@@ -211,12 +211,12 @@ class NumQueuedSubmissionsTestCase(UnitTestBase):
         for grading_status in g1_statuses:
             obj_build.build_submission(
                 status=grading_status,
-                submission_group=group_with_submits1)
+                group=group_with_submits1)
 
         for i in range(3):
             obj_build.build_submission(
                 status=ag_models.Submission.GradingStatus.queued,
-                submission_group=group_with_submits2)
+                group=group_with_submits2)
 
         client.force_authenticate(admin)
         response = client.get(

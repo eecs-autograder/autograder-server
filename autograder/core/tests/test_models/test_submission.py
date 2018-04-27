@@ -55,7 +55,7 @@ class SubmissionTestCase(UnitTestBase):
 
         submitter = 'steve'
         submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
+            group=self.submission_group,
             submitted_files=[
                 SimpleUploadedFile(name, content) for
                 name, content in files_to_submit],
@@ -106,7 +106,7 @@ class SubmissionTestCase(UnitTestBase):
         timestamp = timezone.now() + timezone.timedelta(hours=1)
 
         sub = ag_models.Submission.objects.validate_and_create(
-            [], submission_group=self.submission_group, timestamp=timestamp)
+            [], group=self.submission_group, timestamp=timestamp)
 
         sub.refresh_from_db()
 
@@ -119,7 +119,7 @@ class SubmissionTestCase(UnitTestBase):
         ]
 
         submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
+            group=self.submission_group,
             submitted_files=files)
 
         submission.refresh_from_db()
@@ -139,7 +139,7 @@ class SubmissionTestCase(UnitTestBase):
         ]
 
         submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
+            group=self.submission_group,
             submitted_files=files)
 
         submission.refresh_from_db()
@@ -204,7 +204,7 @@ class SubmissionTestCase(UnitTestBase):
 
     def _do_files_discarded_test(self, files, files_to_discard):
         submission = ag_models.Submission.objects.validate_and_create(
-            submission_group=self.submission_group,
+            group=self.submission_group,
             submitted_files=files + files_to_discard)
 
         submission.refresh_from_db()
@@ -251,7 +251,7 @@ class SubmissionTestCase(UnitTestBase):
             expected,
             ag_models.Submission.get_serializable_fields())
         group = obj_build.build_submission_group()
-        submission = ag_models.Submission(submission_group=group)
+        submission = ag_models.Submission(group=group)
         self.assertTrue(submission.to_dict())
 
     def test_editable_fields(self):
@@ -277,28 +277,28 @@ class PositionInQueueTestCase(UnitTestBase):
             group_kwargs={'project': project2})
 
         submission_group1_p1 = obj_build.build_submission(
-            submission_group=group1_proj1)
+            group=group1_proj1)
         submission_group1_p1.status = (
             ag_models.Submission.GradingStatus.queued)
         submission_group1_p1.save()
         submission_group1_p1_queue_pos = 1
 
         submission_group2_p1 = obj_build.build_submission(
-            submission_group=group2_proj1)
+            group=group2_proj1)
         submission_group2_p1.status = (
             ag_models.Submission.GradingStatus.queued)
         submission_group2_p1.save()
         submission_group2_p1_queue_pos = 2
 
         submission_group1_p2 = obj_build.build_submission(
-            submission_group=group1_proj2)
+            group=group1_proj2)
         submission_group1_p2.status = (
             ag_models.Submission.GradingStatus.queued)
         submission_group1_p2.save()
         submission_group1_p2_queue_pos = 1
 
         submission_group2_p2 = obj_build.build_submission(
-            submission_group=group2_proj2)
+            group=group2_proj2)
         submission_group2_p2.status = (
             ag_models.Submission.GradingStatus.queued)
         submission_group2_p2.save()
@@ -358,7 +358,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         )  # type: ag_models.StudentTestSuite
 
         self.group = obj_build.make_group(1, project=self.project)
-        self.submission = obj_build.build_submission(submission_group=self.group)
+        self.submission = obj_build.build_submission(group=self.group)
 
         self.ag_suite_result1 = ag_models.AGTestSuiteResult.objects.validate_and_create(
             ag_test_suite=self.ag_test_suite1, submission=self.submission
