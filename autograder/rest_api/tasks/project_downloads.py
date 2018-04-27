@@ -93,7 +93,7 @@ def _make_download_file_task_impl(project_pk, task_pk, include_staff,
 
 
 def _get_groups(project, include_staff) -> Sequence[ag_models.Group]:
-    groups = project.submission_groups.all()
+    groups = project.groups.all()
     groups = filter(lambda group: group.submissions.count(), groups)
     if not include_staff:
         groups = filter(

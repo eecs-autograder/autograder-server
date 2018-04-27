@@ -80,7 +80,7 @@ class Group(ag_model_base.AutograderModel):
                      This field is updated automatically when self.members is updated
                      through self.validate_and_update""")
 
-    project = models.ForeignKey(Project, related_name="submission_groups",
+    project = models.ForeignKey(Project, related_name="groups",
                                 on_delete=models.CASCADE)
 
     extended_due_date = models.DateTimeField(

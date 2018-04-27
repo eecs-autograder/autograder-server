@@ -128,7 +128,7 @@ class ListGroupsTestCase(_GroupsSetUp,
                 project=project, members=[user])
 
         serialized_groups = ag_serializers.SubmissionGroupSerializer(
-            project.submission_groups.all(), many=True).data
+            project.groups.all(), many=True).data
         self.assertEqual(4, len(serialized_groups))
         return serialized_groups
 
@@ -144,32 +144,32 @@ class CreateGroupTestCase(_GroupsSetUp,
 
     def test_admin_create_enrolled_group(self):
         args = {'member_names': self.get_legal_member_names()}
-        self.do_create_object_test(self.project.submission_groups,
+        self.do_create_object_test(self.project.groups,
                                    self.client, self.admin, self.url, args)
 
     def test_admin_create_non_enrolled_group(self):
         self.project.validate_and_update(
             guests_can_submit=True)
         args = {'member_names': ['not_enrolled1', 'not_enrolled2']}
-        self.do_create_object_test(self.project.submission_groups,
+        self.do_create_object_test(self.project.groups,
                                    self.client, self.admin, self.url, args)
 
     def test_admin_create_group_override_size(self):
         self.project.validate_and_update(max_group_size=1)
         args = {'member_names': self.get_legal_member_names()}
 
-        self.do_create_object_test(self.project.submission_groups,
+        self.do_create_object_test(self.project.groups,
                                    self.client, self.admin, self.url, args)
 
     def test_admin_create_group_error_invalid_members(self):
         args = {'member_names': [self.enrolled.username, self.nobody.username]}
         self.do_invalid_create_object_test(
-            self.project.submission_groups, self.client, self.admin, self.url,
+            self.project.groups, self.client, self.admin, self.url,
             args)
 
     def test_handgrader_create_group_permission_denied(self):
         for project in self.all_projects:
-            self.do_permission_denied_create_test(project.submission_groups, self.client,
+            self.do_permission_denied_create_test(project.groups, self.client,
                                                   self.handgrader,
                                                   self.get_groups_url(project), {})
 
@@ -178,7 +178,7 @@ class CreateGroupTestCase(_GroupsSetUp,
         for user in (self.staff, self.enrolled, self.handgrader, self.get_legal_members()[0],
                      self.nobody):
             self.do_permission_denied_create_test(
-                self.project.submission_groups, self.client, user,
+                self.project.groups, self.client, user,
                 self.get_groups_url(self.project), args)
 
     def get_legal_members(self):
@@ -203,7 +203,7 @@ class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
     def test_create_solo_group_min_size_one(self):
         for user in self.admin, self.staff, self.enrolled, self.nobody:
             response = self.do_create_object_test(
-                self.visible_public_project.submission_groups,
+                self.visible_public_project.groups,
                 self.client, user,
                 self.get_solo_group_url(self.visible_public_project), {},
                 check_data=False)
@@ -212,7 +212,7 @@ class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
 
     def test_student_create_solo_group_visible_private_project(self):
         response = self.do_create_object_test(
-            self.visible_private_project.submission_groups,
+            self.visible_private_project.groups,
             self.client, self.enrolled,
             self.get_solo_group_url(self.visible_private_project), {},
             check_data=False)
@@ -224,13 +224,13 @@ class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
             min_group_size=2, max_group_size=2)
         for user in self.enrolled, self.nobody:
             self.do_invalid_create_object_test(
-                self.visible_public_project.submission_groups,
+                self.visible_public_project.groups,
                 self.client, user,
                 self.get_solo_group_url(self.visible_public_project), {})
 
     def test_staff_create_solo_group_project_hidden_allowed(self):
         response = self.do_create_object_test(
-            self.hidden_private_project.submission_groups,
+            self.hidden_private_project.groups,
             self.client, self.staff,
             self.get_solo_group_url(self.hidden_private_project), {},
             check_data=False)
@@ -240,7 +240,7 @@ class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
     def test_staff_create_solo_group_min_size_not_one_allowed(self):
         self.project.validate_and_update(min_group_size=2, max_group_size=2)
         response = self.do_create_object_test(
-            self.project.submission_groups,
+            self.project.groups,
             self.client, self.staff,
             self.get_solo_group_url(self.project), {},
             check_data=False)
@@ -249,26 +249,26 @@ class CreateSoloGroupTestCase(_GroupsSetUp, test_impls.CreateObjectTest,
 
     def test_handgrader_create_solo_group_permission_denied(self):
         for project in self.visible_private_project, self.hidden_private_project:
-            self.do_permission_denied_create_test(project.submission_groups, self.client,
+            self.do_permission_denied_create_test(project.groups, self.client,
                                                   self.handgrader,
                                                   self.get_solo_group_url(project), {})
 
     def test_handgrader_create_solo_group_when_enrolled(self):
         for project in self.visible_projects:
             project.course.students.add(self.handgrader)
-            self.do_create_object_test(project.submission_groups, self.client,
+            self.do_create_object_test(project.groups, self.client,
                                        self.handgrader,
                                        self.get_solo_group_url(project), {})
 
     def test_student_create_solo_group_project_hidden_permission_denied(self):
         for user in self.enrolled, self.nobody:
             self.do_permission_denied_create_test(
-                self.hidden_public_project.submission_groups,
+                self.hidden_public_project.groups,
                 self.client, user,
                 self.get_solo_group_url(self.hidden_public_project), {})
 
     def test_non_enrolled_create_solo_group_project_private_permission_denied(self):
         self.do_permission_denied_create_test(
-            self.visible_private_project.submission_groups,
+            self.visible_private_project.groups,
             self.client, self.nobody,
             self.get_solo_group_url(self.visible_private_project), {})

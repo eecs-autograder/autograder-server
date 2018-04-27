@@ -21,7 +21,7 @@ def get_ultimate_submissions(project: Project, *groups: Group) -> Iterator[Submi
 
     finished_submissions_queryset = Submission.objects.filter(
         status=Submission.GradingStatus.finished_grading)
-    base_group_queryset = project.submission_groups
+    base_group_queryset = project.groups
 
     if groups:
         base_group_queryset = base_group_queryset.filter(pk__in=[group.pk for group in groups])

@@ -150,7 +150,7 @@ class ListHandgradingResultsView(AGModelAPIView):
             'comments__location'
         )
 
-        groups = project.submission_groups.prefetch_related(
+        groups = project.groups.prefetch_related(
             'submissions',
             Prefetch('handgrading_result', hg_result_queryset),
             Prefetch('members', User.objects.order_by('username')),
