@@ -18,8 +18,8 @@ class SubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.submission_group = obj_build.build_submission_group(num_members=2)
-        self.project = self.submission_group.project
+        self.group = obj_build.build_submission_group(num_members=2)
+        self.project = self.group.project
 
         expected_files = [
             {
@@ -55,7 +55,7 @@ class SubmissionTestCase(UnitTestBase):
 
         submitter = 'steve'
         submission = ag_models.Submission.objects.validate_and_create(
-            group=self.submission_group,
+            group=self.group,
             submitted_files=[
                 SimpleUploadedFile(name, content) for
                 name, content in files_to_submit],
@@ -106,7 +106,7 @@ class SubmissionTestCase(UnitTestBase):
         timestamp = timezone.now() + timezone.timedelta(hours=1)
 
         sub = ag_models.Submission.objects.validate_and_create(
-            [], group=self.submission_group, timestamp=timestamp)
+            [], group=self.group, timestamp=timestamp)
 
         sub.refresh_from_db()
 
@@ -119,7 +119,7 @@ class SubmissionTestCase(UnitTestBase):
         ]
 
         submission = ag_models.Submission.objects.validate_and_create(
-            group=self.submission_group,
+            group=self.group,
             submitted_files=files)
 
         submission.refresh_from_db()
@@ -139,7 +139,7 @@ class SubmissionTestCase(UnitTestBase):
         ]
 
         submission = ag_models.Submission.objects.validate_and_create(
-            group=self.submission_group,
+            group=self.group,
             submitted_files=files)
 
         submission.refresh_from_db()
@@ -204,7 +204,7 @@ class SubmissionTestCase(UnitTestBase):
 
     def _do_files_discarded_test(self, files, files_to_discard):
         submission = ag_models.Submission.objects.validate_and_create(
-            group=self.submission_group,
+            group=self.group,
             submitted_files=files + files_to_discard)
 
         submission.refresh_from_db()

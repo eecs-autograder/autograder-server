@@ -186,7 +186,7 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
                 expected_filenames.append(
                     '{}_{}/{}-{}/{}'.format(
                         self.project.course.name, self.project.name,
-                        '_'.join(sorted(submission.submission_group.member_names)),
+                        '_'.join(sorted(submission.group.member_names)),
                         submission.timestamp.isoformat(), filename))
 
         return expected_filenames
@@ -447,8 +447,8 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
         expected_result = []
         for submission in expected_submissions:
             values = []
-            user_padding_len = project.max_group_size - submission.submission_group.members.count()
-            usernames = itertools.chain(sorted(submission.submission_group.member_names),
+            user_padding_len = project.max_group_size - submission.group.members.count()
+            usernames = itertools.chain(sorted(submission.group.member_names),
                                         itertools.repeat('', user_padding_len))
             values += list(usernames)
             values.append(submission.timestamp.isoformat())

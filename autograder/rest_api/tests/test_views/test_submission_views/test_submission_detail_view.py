@@ -48,7 +48,7 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
     def test_enrolled_view_submission(self):
         for project in self.visible_projects:
             submission = self.enrolled_submission(project)
-            for user in submission.submission_group.members.all():
+            for user in submission.group.members.all():
                 self.do_get_object_test(
                     self.client, user, submission_url(submission),
                     submission.to_dict())
@@ -56,7 +56,7 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
 
     def test_non_enrolled_view_submission(self):
         submission = self.enrolled_submission(self.visible_public_project)
-        for user in submission.submission_group.members.all():
+        for user in submission.group.members.all():
             self.do_get_object_test(
                 self.client, user, submission_url(submission),
                 submission.to_dict())
@@ -166,7 +166,7 @@ class UpdateSubmissionTestCase(test_data.Client,
         for submission in submissions:
             self.do_patch_object_permission_denied_test(
                 submission, self.client,
-                submission.submission_group.members.first(),
+                submission.group.members.first(),
                 submission_url(submission),
                 {'count_towards_daily_limit': False})
 
@@ -205,12 +205,12 @@ class RemoveFromQueueTestCase(test_data.Client,
         for project in self.hidden_projects:
             submission = self.enrolled_submission(project)
             self.do_permission_denied_remove_from_queue_test(
-                submission, submission.submission_group.members.first())
+                submission, submission.group.members.first())
 
     def test_non_enrolled_remove_from_queue_project_hidden_permission_denied(self):
         submission = self.non_enrolled_submission(self.hidden_public_project)
         self.do_permission_denied_remove_from_queue_test(
-            submission, submission.submission_group.members.first())
+            submission, submission.group.members.first())
 
     def test_handgrader_remove_student_submission_from_queue_permission_denied(self):
         self.do_permission_denied_remove_from_queue_test(
@@ -221,12 +221,12 @@ class RemoveFromQueueTestCase(test_data.Client,
         self.visible_public_project.validate_and_update(
             guests_can_submit=False)
         self.do_permission_denied_remove_from_queue_test(
-            submission, submission.submission_group.members.first())
+            submission, submission.group.members.first())
 
     def test_remove_others_submission_from_queue_permission_denied(self):
         for submission in self.all_submissions(self.visible_public_project):
             for user in self.admin, self.staff, self.enrolled, self.nobody:
-                group = submission.submission_group
+                group = submission.group
                 if group.members.filter(pk=user.pk).exists():
                     continue
 
@@ -250,7 +250,7 @@ class RemoveFromQueueTestCase(test_data.Client,
             submission.save()
 
             if user is None:
-                user = submission.submission_group.members.first()
+                user = submission.group.members.first()
 
             self.client.force_authenticate(user)
             response = self.client.post(
@@ -273,7 +273,7 @@ class RemoveFromQueueTestCase(test_data.Client,
     def _do_bad_remove_from_queue_test(self, submission, user, expected_status):
         original_status = submission.status
         if user is None:
-            user = submission.submission_group.members.first()
+            user = submission.group.members.first()
 
         self.client.force_authenticate(user)
         response = self.client.post(submission_remove_from_queue_url(submission))

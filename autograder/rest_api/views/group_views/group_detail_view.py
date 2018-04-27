@@ -154,7 +154,7 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
                 os.path.join(tempdir_path,
                              core_ut.get_submission_dir_basename(submission)))
 
-            submission.submission_group = merged_group
+            submission.group = merged_group
             submission.save()
 
         merged_group_dir = core_ut.get_student_submission_group_dir(merged_group)

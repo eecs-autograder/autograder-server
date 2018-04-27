@@ -242,7 +242,7 @@ def can_request_feedback_category(
 
 def _deadline_is_past(submission):
     now = timezone.now()
-    group = submission.submission_group
+    group = submission.group
     project = group.project
     if project.closing_time is None:
         return True

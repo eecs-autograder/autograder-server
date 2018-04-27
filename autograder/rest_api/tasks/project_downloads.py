@@ -168,7 +168,7 @@ def _make_scores_csv(
         writer.writeheader()
 
         sorted_submissions = sorted(
-            submissions, key=lambda s: min(s.submission_group.member_names)
+            submissions, key=lambda s: min(s.group.member_names)
         )  # type: Iterator[ag_models.Submission]
         for progress_index, submission in enumerate(sorted_submissions):
             row = {timestamp_header: submission.timestamp.isoformat()}

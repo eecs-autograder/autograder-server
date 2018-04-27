@@ -15,12 +15,12 @@ from autograder.core.models.submission import get_submissions_with_results_query
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
 
-is_admin = ag_permissions.is_admin(lambda submission: submission.submission_group.project.course)
+is_admin = ag_permissions.is_admin(lambda submission: submission.group.project.course)
 can_view_project = ag_permissions.can_view_project(
-    lambda submission: submission.submission_group.project)
+    lambda submission: submission.group.project)
 is_staff_or_group_member = ag_permissions.is_staff_or_group_member(
-    lambda submission: submission.submission_group)
-is_group_member = ag_permissions.is_group_member(lambda submission: submission.submission_group)
+    lambda submission: submission.group)
+is_group_member = ag_permissions.is_group_member(lambda submission: submission.group)
 
 
 class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
@@ -196,7 +196,7 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                 return response.Response(self._get_fdbk_calculator(fdbk_category).to_dict())
 
             cache_key = 'project_{}_submission_normal_results_{}'.format(
-                submission.submission_group.project.pk,
+                submission.group.project.pk,
                 submission.pk)
 
             result = cache.get(cache_key)

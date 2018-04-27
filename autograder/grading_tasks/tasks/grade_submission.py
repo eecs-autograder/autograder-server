@@ -19,7 +19,7 @@ def grade_submission(submission_pk):
         if submission is None:
             return
 
-        project = submission.submission_group.project  # type: ag_models.Project
+        project = submission.group.project  # type: ag_models.Project
 
         @retry_should_recover
         def load_non_deferred_ag_suites():
@@ -115,5 +115,5 @@ def _mark_submission_as_finished_impl(submission_pk):
     submission = ag_models.Submission.objects.select_related(
         'submission_group__project').get(pk=submission_pk)
     cache_key = 'project_{}_submission_normal_results_{}'.format(
-        submission.submission_group.project.pk, submission.pk)
+        submission.group.project.pk, submission.pk)
     cache.delete(cache_key)

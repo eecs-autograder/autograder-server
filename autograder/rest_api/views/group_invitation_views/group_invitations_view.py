@@ -42,7 +42,7 @@ class GroupInvitationsViewSet(
 
     def get_queryset(self):
         project = self.load_object(self.kwargs['project_pk'])
-        return project.submission_group_invitations.all()
+        return project.group_invitations.all()
 
     @transaction.atomic()
     def create(self, request, project_pk, *args, **kwargs):

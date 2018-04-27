@@ -351,7 +351,7 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
                 finished_grading=bool(random.getrandbits(1)))
 
             # Groups that have a handgrading result
-            data = hg_result.submission_group.to_dict()
+            data = hg_result.group.to_dict()
             data['handgrading_result'] = {
                 'total_points': hg_result.total_points,
                 'total_points_possible': hg_result.total_points_possible,
