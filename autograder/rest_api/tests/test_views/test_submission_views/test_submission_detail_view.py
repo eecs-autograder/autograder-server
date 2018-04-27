@@ -1033,7 +1033,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             f.write(self.buggy_impls_stderr)
 
         self.client = APIClient()
-        self.admin = self.submission.submission_group.members.first()
+        self.admin = self.submission.group.members.first()
 
         self.setup_stdout_params = {'stdout_for_student_suite_setup': self.student_suite_result.pk}
         self.setup_stderr_params = {'stderr_for_student_suite_setup': self.student_suite_result.pk}

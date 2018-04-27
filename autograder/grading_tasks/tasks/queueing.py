@@ -45,4 +45,4 @@ def register_project_queues(worker_names=None, project_pks=None):
 
 
 def _get_submission_queue_name(submission: ag_models.Submission):
-    return 'project{}'.format(submission.submission_group.project_id)
+    return 'project{}'.format(submission.group.project_id)

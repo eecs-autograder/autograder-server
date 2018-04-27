@@ -48,7 +48,7 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
     sandbox = AutograderSandbox(
         name='submission{}-suite{}-{}'.format(submission.pk, ag_test_suite.pk, uuid.uuid4().hex),
         environment_variables={
-            'usernames': ' '.join(submission.submission_group.member_names)
+            'usernames': ' '.join(submission.group.member_names)
         },
         allow_network_access=ag_test_suite.allow_network_access,
         docker_image=constants.DOCKER_IMAGE_IDS_TO_URLS[ag_test_suite.docker_image_to_use])

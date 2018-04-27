@@ -46,7 +46,7 @@ class _SetUp(UnitTestBase):
         self.client = APIClient()
         self.course = self.handgrading_rubric.project.course
         self.url = reverse('handgrading_result',
-                           kwargs={'group_pk': self.submission.submission_group.pk})
+                           kwargs={'group_pk': self.submission.group.pk})
 
 
 class RetrieveHandgradingResultTestCase(_SetUp):
@@ -57,7 +57,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
 
         self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.handgrading_rubric
         )  # type: hg_models.HandgradingResult
 
@@ -243,7 +243,7 @@ class UpdateHandgradingResultPointsAdjustmentTestCase(test_impls.UpdateObjectTes
 
         self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.handgrading_rubric
         )  # type: hg_models.HandgradingResult
 

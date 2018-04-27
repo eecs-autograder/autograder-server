@@ -38,7 +38,7 @@ class AppliedAnnotationTestCase(UnitTestBase):
         self.default_handgrading_result_obj = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
                 submission=submission,
-                submission_group=submission.submission_group,
+                submission_group=submission.group,
                 handgrading_rubric=rubric
             )
         )

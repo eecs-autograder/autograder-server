@@ -104,7 +104,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
 
 
 def _new_submission_is_past_limit(submission: 'Submission'):
-    project = submission.submission_group.project
+    project = submission.group.project
     if project.submission_limit_per_day is None:
         return False
 
@@ -112,12 +112,12 @@ def _new_submission_is_past_limit(submission: 'Submission'):
         project.submission_limit_reset_time,
         submission.timestamp.astimezone(project.submission_limit_reset_timezone))
 
-    num_submissions_before_self = submission.submission_group.submissions.filter(
+    num_submissions_before_self = submission.group.submissions.filter(
         timestamp__gte=start_datetime,
         timestamp__lt=end_datetime,
         count_towards_daily_limit=True,
         status__in=Submission.GradingStatus.count_towards_limit_statuses,
-        submission_group=submission.submission_group
+        submission_group=submission.group
     ).count()
 
     return num_submissions_before_self >= project.submission_limit_per_day
@@ -196,7 +196,7 @@ class Submission(ag_model_base.AutograderModel):
 
     # -------------------------------------------------------------------------
 
-    submission_group = models.ForeignKey(
+    group = models.ForeignKey(
         'core.Group', related_name='submissions',
         on_delete=models.CASCADE,
         help_text='''
@@ -290,7 +290,7 @@ class Submission(ag_model_base.AutograderModel):
 
         return Submission.objects.filter(
             status=Submission.GradingStatus.queued,
-            submission_group__project=self.submission_group.project,
+            submission_group__project=self.group.project,
             pk__lte=self.pk
         ).count()
 
@@ -334,7 +334,7 @@ class Submission(ag_model_base.AutograderModel):
         def __init__(self, submission: 'Submission', fdbk_category: FeedbackCategory):
             self._submission = submission
             self._fdbk_category = fdbk_category
-            self._project = self._submission.submission_group.project
+            self._project = self._submission.group.project
 
         @property
         def pk(self):

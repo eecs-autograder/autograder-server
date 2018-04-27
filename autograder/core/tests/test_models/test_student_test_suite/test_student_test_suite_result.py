@@ -10,7 +10,7 @@ class StudentTestSuiteResultTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.build_submission()
-        self.project = self.submission.submission_group.project
+        self.project = self.submission.group.project
         self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name='qewirqwekljr', project=self.project)
 
@@ -55,7 +55,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.build_submission()
-        self.project = self.submission.submission_group.project
+        self.project = self.submission.group.project
 
         self.bug_names = ['bug{}'.format(i) for i in range(5)]
         self.points_per_exposed_bug = 2

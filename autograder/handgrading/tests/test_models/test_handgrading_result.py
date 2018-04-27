@@ -26,12 +26,12 @@ class HandgradingResultTestCase(UnitTestBase):
     def test_default_initialization(self):
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.rubric)  # type: handgrading_models.HandgradingResult
 
         self.assertEqual(result.submission, self.submission)
         self.assertEqual(result.handgrading_rubric, self.rubric)
-        self.assertEqual(result.submission_group, self.submission.submission_group)
+        self.assertEqual(result.submission_group, self.submission.group)
         self.assertEqual(0, result.points_adjustment)
         self.assertFalse(result.finished_grading)
 
@@ -43,7 +43,7 @@ class HandgradingResultTestCase(UnitTestBase):
         for points in points_to_try:
             result = handgrading_models.HandgradingResult.objects.validate_and_create(
                 submission=self.submission,
-                submission_group=self.submission.submission_group,
+                submission_group=self.submission.group,
                 handgrading_rubric=self.rubric,
                 points_adjustment=points)
 
@@ -59,7 +59,7 @@ class HandgradingResultTestCase(UnitTestBase):
 
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.rubric)
 
         selected_positive_crit = handgrading_models.Criterion.objects.validate_and_create(
@@ -134,7 +134,7 @@ class HandgradingResultTestCase(UnitTestBase):
 
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.rubric)
 
         self.assertEqual(criterion1.points + criterion2.points, result.total_points_possible)
@@ -146,7 +146,7 @@ class HandgradingResultTestCase(UnitTestBase):
 
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.rubric)
 
         criterion1 = handgrading_models.Criterion.objects.validate_and_create(
@@ -170,7 +170,7 @@ class HandgradingResultTestCase(UnitTestBase):
 
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.rubric,
             points_adjustment=-3)
 
@@ -202,7 +202,7 @@ class HandgradingResultTestCase(UnitTestBase):
             max_points=10, points_style=handgrading_models.PointsStyle.start_at_max_and_subtract)
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.rubric)
 
         annotation = handgrading_models.Annotation.objects.validate_and_create(
@@ -228,7 +228,7 @@ class HandgradingResultTestCase(UnitTestBase):
             max_points=20, points_style=handgrading_models.PointsStyle.start_at_max_and_subtract)
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.rubric)
 
         annotation = handgrading_models.Annotation.objects.validate_and_create(
@@ -253,7 +253,7 @@ class HandgradingResultTestCase(UnitTestBase):
     def test_total_points_with_no_criteria_or_annotations(self):
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.rubric)
 
         self.assertEqual(0, result.criterion_results.count())
@@ -286,7 +286,7 @@ class HandgradingResultTestCase(UnitTestBase):
 
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.submission_group,
+            submission_group=submission.group,
             handgrading_rubric=self.rubric
         )
 
@@ -358,7 +358,7 @@ class HandgradingResultTestCase(UnitTestBase):
     def test_editable_fields(self):
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=self.submission,
-            submission_group=self.submission.submission_group,
+            submission_group=self.submission.group,
             handgrading_rubric=self.rubric)
 
         result.validate_and_update(points_adjustment=3, finished_grading=True)

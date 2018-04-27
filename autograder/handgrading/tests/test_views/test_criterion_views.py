@@ -102,7 +102,7 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
             submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.submission_group,
+            submission_group=submission.group,
             handgrading_rubric=self.handgrading_rubric)
 
         # Create dummy submissions and groups with no submissions. These should not be affected
@@ -130,7 +130,7 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
             submission_group=obj_build.make_group(project=self.handgrading_rubric.project))
         dummy_handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=dummy_submission,
-            submission_group=dummy_submission.submission_group,
+            submission_group=dummy_submission.group,
             handgrading_rubric=dummy_handgrading_rubric)
 
         self.assertEqual(0, handgrading_models.CriterionResult.objects.count())

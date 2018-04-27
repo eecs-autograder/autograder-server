@@ -34,7 +34,7 @@ class RaceConditionTestCase(UnitTestBase):
         print('sending remove from queue request')
         client = APIClient()
         client.force_authenticate(
-            submission.submission_group.members.first())
+            submission.group.members.first())
         response = client.post(reverse('submission-remove-from-queue',
                                        kwargs={'pk': submission.pk}))
         subtest.join()

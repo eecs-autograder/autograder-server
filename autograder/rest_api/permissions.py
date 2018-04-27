@@ -191,7 +191,7 @@ def can_request_feedback_category(
                         request.query_params.get('feedback_category'))})
 
             submission = get_submission_fn(obj)
-            group = submission.submission_group
+            group = submission.group
             project = group.project
             course = project.course
             deadline_past = _deadline_is_past(submission)

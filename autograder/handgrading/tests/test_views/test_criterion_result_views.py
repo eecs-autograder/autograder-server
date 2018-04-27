@@ -33,7 +33,7 @@ class ListCriterionResultsTestCase(UnitTestBase):
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.submission_group,
+            submission_group=submission.group,
             handgrading_rubric=handgrading_rubric
         )
 
@@ -94,7 +94,7 @@ class CreateCriterionResultTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.submission_group,
+            submission_group=submission.group,
             handgrading_rubric=handgrading_rubric
         )
 
@@ -157,7 +157,7 @@ class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
-            submission_group=submission.submission_group,
+            submission_group=submission.group,
             handgrading_rubric=handgrading_rubric
         )
 

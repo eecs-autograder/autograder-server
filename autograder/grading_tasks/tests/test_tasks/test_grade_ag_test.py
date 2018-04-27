@@ -22,7 +22,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.build_submission()
-        self.project = self.submission.submission_group.project
+        self.project = self.submission.group.project
         self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
         self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
 
@@ -228,7 +228,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.build_submission()
-        self.project = self.submission.submission_group.project
+        self.project = self.submission.group.project
         self.setup_stdout = 'setuppy stdouty'
         self.setup_stderr = 'setuppy stderrrry'
         self.ag_test_suite = obj_build.make_ag_test_suite(
@@ -331,7 +331,7 @@ class ResourceLimitsExceededTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.build_submission()
-        self.project = self.submission.submission_group.project
+        self.project = self.submission.group.project
         self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
         self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
 
@@ -528,7 +528,7 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
 
         super().setUp()
         self.submission = obj_build.build_submission()
-        self.project = self.submission.submission_group.project
+        self.project = self.submission.group.project
         self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
 
         self.ag_test_case_1 = obj_build.make_ag_test_case(self.ag_test_suite)

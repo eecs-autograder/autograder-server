@@ -13,7 +13,7 @@ from autograder.utils.testing import UnitTestBase
 class AGTestCommandResultTestCase(UnitTestBase):
     def setUp(self):
         submission = obj_build.build_submission()
-        self.project = submission.submission_group.project
+        self.project = submission.group.project
         suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='kajsdhf', project=self.project)
         self.ag_test_case = ag_models.AGTestCase.objects.validate_and_create(

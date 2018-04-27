@@ -34,7 +34,7 @@ class GradeSubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.submission = obj_build.build_submission()
-        self.project = self.submission.submission_group.project
+        self.project = self.submission.group.project
 
     def test_one_suite_one_case_one_cmd(self, *args):
         suite = obj_build.make_ag_test_suite(self.project)
@@ -243,7 +243,7 @@ void file2() {
              SimpleUploadedFile('file1.cpp', file1_cpp.encode()),
              SimpleUploadedFile('file2.h', file2_h.encode()),
              SimpleUploadedFile('file2.cpp', file2_cpp.encode())],
-            submission_group=self.submission.submission_group)
+            submission_group=self.submission.group)
         tasks.grade_submission(submission.pk)
 
         cmd_res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
@@ -286,7 +286,7 @@ void file2() {
         tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
-        self.assertEqual(' '.join(self.submission.submission_group.member_names),
+        self.assertEqual(' '.join(self.submission.group.member_names),
                          open(res.stdout_filename).read())
 
     def test_one_ag_suite_deferred_one_student_suite_deferred(self, *args):

@@ -12,7 +12,7 @@ class AGTestSuiteResultTestCase(UnitTestBase):
     def setUp(self):
         self.maxDiff = None
         submission = obj_build.build_submission()
-        project = submission.submission_group.project
+        project = submission.group.project
         self.ag_test_suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='kajsdhf', project=project,
             setup_suite_cmd_name='asdlkjfa;skldjf;aksdf',
