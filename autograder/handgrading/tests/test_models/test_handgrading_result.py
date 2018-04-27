@@ -31,7 +31,7 @@ class HandgradingResultTestCase(UnitTestBase):
 
         self.assertEqual(result.submission, self.submission)
         self.assertEqual(result.handgrading_rubric, self.rubric)
-        self.assertEqual(result.submission_group, self.submission.group)
+        self.assertEqual(result.group, self.submission.group)
         self.assertEqual(0, result.points_adjustment)
         self.assertFalse(result.finished_grading)
 

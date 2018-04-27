@@ -196,7 +196,7 @@ class HandgradingResult(AutograderModel):
     Contains general information about a group's handgrading result
     Represents the handgrading result of a group's best submission.
     """
-    submission_group = models.OneToOneField(
+    group = models.OneToOneField(
         Group, related_name='handgrading_result', on_delete=models.CASCADE,
         help_text='''The SubmissionGroup that this HandgradingResult is for.''')
 

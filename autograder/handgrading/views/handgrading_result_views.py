@@ -139,7 +139,7 @@ class ListHandgradingResultsView(AGModelAPIView):
 
         hg_result_queryset = handgrading_models.HandgradingResult.objects.select_related(
             'handgrading_rubric__project',
-            'submission_group',
+            'group',
             'submission'
         ).prefetch_related(
             'handgrading_rubric__annotations',
