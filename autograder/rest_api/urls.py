@@ -177,8 +177,8 @@ urlpatterns = [
 
     url(r'', include(rerun_submissions_task_detail_router.urls)),
 
-    url(r'^projects/(?P<project_pk>[0-9]+)/submission_groups/$',
-        views.GroupsViewSet.as_view(), name='submission_groups'),
-    url(r'^projects/(?P<project_pk>[0-9]+)/submission_groups/solo_group/$',
+    url(r'^projects/(?P<project_pk>[0-9]+)/groups/$',
+        views.GroupsViewSet.as_view(), name='groups'),
+    url(r'^projects/(?P<project_pk>[0-9]+)/groups/solo_group/$',
         views.CreateSoloGroupView.as_view(), name='solo_group'),
 ]

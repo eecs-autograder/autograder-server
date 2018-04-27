@@ -34,7 +34,7 @@ def all_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwar
             ag_models.get_submissions_with_results_queryset(
                 ag_models.FeedbackCategory.max,
                 base_manager=ag_models.Submission.objects.filter(
-                    submission_group__in=groups,
+                    group__in=groups,
                     status=ag_models.Submission.GradingStatus.finished_grading)))
         return submissions, len(submissions)
 
@@ -56,7 +56,7 @@ GetSubmissionsFnType = Callable[[ag_models.Project, Sequence[ag_models.Group]],
 
 def _get_all_submissions(project: ag_models.Project,
                          groups: Sequence[ag_models.Group]):
-    submissions = list(ag_models.Submission.objects.filter(submission_group__in=groups))
+    submissions = list(ag_models.Submission.objects.filter(group__in=groups))
     return submissions, len(submissions)
 
 

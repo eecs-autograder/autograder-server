@@ -71,7 +71,7 @@ class GroupInvitation(ag_model_base.AutograderModel):
         default=list, blank=True)
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE,
-                                related_name='submission_group_invitations')
+                                related_name='group_invitations')
 
     objects = GroupInvitationManager()
 

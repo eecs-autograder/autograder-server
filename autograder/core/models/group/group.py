@@ -115,10 +115,10 @@ class Group(ag_model_base.AutograderModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        submission_group_dir = core_ut.get_student_submission_group_dir(self)
+        group_dir = core_ut.get_student_group_dir(self)
 
-        if not os.path.isdir(submission_group_dir):
-            os.makedirs(submission_group_dir)
+        if not os.path.isdir(group_dir):
+            os.makedirs(group_dir)
 
     def validate_and_update(self, check_group_size_limits=True, **kwargs):
         """

@@ -10,13 +10,13 @@ from autograder.utils.testing import UnitTestBase
 class SubmissionLimitAndCountTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.group = obj_build.build_submission_group()
+        self.group = obj_build.build_group()
         self.project = self.group.project
 
         # We want to make sure that only submissions for the specified
         # group are counted, so we'll create an extra other submission
         # to make sure it isn't counted.
-        other_group = obj_build.build_submission_group()
+        other_group = obj_build.build_group()
         self.assertNotEqual(other_group, self.group)
         ag_models.Submission.objects.validate_and_create(
             [], group=other_group)

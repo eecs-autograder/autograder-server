@@ -97,14 +97,14 @@ class SubmissionGroupInvitationSerializerTestCase(SerializerTestCase):
 
 class SubmissionGroupSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
-        group = obj_build.build_submission_group()
+        group = obj_build.build_group()
         self.do_basic_serialize_test(group,
                                      ag_serializers.SubmissionGroupSerializer)
 
 
 class SubmissionSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
-        group = obj_build.build_submission_group()
+        group = obj_build.build_group()
         submission = ag_models.Submission.objects.validate_and_create(
             submitted_files=[],
             group=group)
@@ -115,7 +115,7 @@ class SubmissionSerializerTestCase(SerializerTestCase):
         files = [SimpleUploadedFile('spam', b'spammo'),
                  SimpleUploadedFile('egg', b'waaaaluigi')]
         data = QueryDict(mutable=True)
-        data['submission_group'] = obj_build.build_submission_group()
+        data['group'] = obj_build.build_group()
         # We are adding the files one at a time because of the way that
         # QueryDict appends values to lists
         for file_ in files:
@@ -135,7 +135,7 @@ class SubmissionSerializerTestCase(SerializerTestCase):
             (file_.name for file_ in files), loaded.discarded_files)
 
     def test_update(self):
-        group = obj_build.build_submission_group()
+        group = obj_build.build_group()
         submission = ag_models.Submission.objects.validate_and_create(
             [], group=group)
         self.assertTrue(submission.count_towards_daily_limit)

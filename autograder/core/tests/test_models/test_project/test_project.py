@@ -322,12 +322,12 @@ class ProjectFilesystemTest(UnitTestBase):
         self.assertFalse(
             os.path.exists(
                 os.path.dirname(
-                    core_ut.get_project_submission_groups_dir(project))))
+                    core_ut.get_project_groups_dir(project))))
 
         project.save()
 
         expected_project_submissions_by_student_dir = (
-            core_ut.get_project_submission_groups_dir(project))
+            core_ut.get_project_groups_dir(project))
 
         self.assertTrue(
             os.path.isdir(expected_project_submissions_by_student_dir))

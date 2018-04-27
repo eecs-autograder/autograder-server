@@ -47,10 +47,10 @@ class Project(AutograderModel):
         expected_student_files -- Patterns that
             student-submitted files can or should match.
 
-        submission_groups -- The submission groups registered for this
+        groups -- The submission groups registered for this
             Project.
 
-        submission_group_invitations -- The pending submission group
+        group_invitations -- The pending submission group
             invitations belonging to this Project.
     """
     class Meta:
@@ -168,7 +168,7 @@ class Project(AutograderModel):
 
         project_root_dir = core_ut.get_project_root_dir(self)
         project_files_dir = core_ut.get_project_files_dir(self)
-        project_submissions_dir = core_ut.get_project_submission_groups_dir(self)
+        project_submissions_dir = core_ut.get_project_groups_dir(self)
 
         if not os.path.isdir(project_root_dir):
             # Since the database is in charge of validating the

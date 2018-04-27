@@ -27,7 +27,7 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                               transaction_mixins.TransactionPartialUpdateMixin,
                               AGModelGenericViewSet):
     model_manager = ag_models.Submission.objects.select_related(
-        'submission_group__project__course')
+        'group__project__course')
 
     serializer_class = ag_serializers.SubmissionSerializer
     permission_classes = ((P(is_admin) | P(ag_permissions.IsReadOnly)),

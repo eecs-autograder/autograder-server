@@ -274,7 +274,7 @@ class HandgradingResult(AutograderModel):
 
         'submission',
         'handgrading_rubric',
-        'submission_group',
+        'group',
 
         'applied_annotations',
         'comments',

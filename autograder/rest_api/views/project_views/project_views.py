@@ -80,7 +80,7 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
         project = self.get_object()
         num_queued_submissions = ag_models.Submission.objects.filter(
             status=ag_models.Submission.GradingStatus.queued,
-            submission_group__project=project).count()
+            group__project=project).count()
 
         return response.Response(data=num_queued_submissions)
 

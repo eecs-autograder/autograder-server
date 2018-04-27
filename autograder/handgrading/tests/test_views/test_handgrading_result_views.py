@@ -50,8 +50,6 @@ class _SetUp(UnitTestBase):
 
 
 class RetrieveHandgradingResultTestCase(_SetUp):
-    """/api/submission_groups/<group_pk>/handgrading_result/"""
-
     def setUp(self):
         super().setUp()
 
@@ -176,8 +174,6 @@ class RetrieveHandgradingResultTestCase(_SetUp):
 
 
 class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
-    """/api/submission_groups/<group_pk>/handgrading_result/"""
-
     def setUp(self):
         super().setUp()
 

@@ -93,7 +93,6 @@ class APITags(enum.Enum):
 
     group_invitations = 'group_invitations'
     groups = 'groups'
-    submission_groups = 'submission_groups'
 
     submissions = 'submissions'
 

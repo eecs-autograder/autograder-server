@@ -333,7 +333,7 @@ class CreateSubmissionTestCase(test_data.Client,
         timestamp_difference = loaded.timestamp - timezone.now()
         self.assertLess(timestamp_difference, timezone.timedelta(seconds=2))
 
-        self.assertEqual(group.pk, response.data['submission_group'])
+        self.assertEqual(group.pk, response.data['group'])
         self.assertEqual(ag_models.Submission.GradingStatus.received,
                          response.data['status'])
         self.assertCountEqual([file_.name for file_ in self.files_to_submit],

@@ -317,7 +317,7 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             status=ag_models.Submission.GradingStatus.error)
         url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
         self.assertEqual(2, ag_models.Submission.objects.filter(
-            submission_group__project=self.project
+            group__project=self.project
         ).exclude(
             status=ag_models.Submission.GradingStatus.finished_grading).count())
         self.do_download_scores_test(

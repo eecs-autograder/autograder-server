@@ -450,9 +450,9 @@ class MergeGroupsTestCase(test_data.Client,
                           UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.group1 = obj_build.build_submission_group(
+        self.group1 = obj_build.build_group(
             group_kwargs={'project': self.visible_public_project})
-        self.group2 = obj_build.build_submission_group(
+        self.group2 = obj_build.build_group(
             group_kwargs={'project': self.visible_public_project})
         self.original_num_groups = 2
         self.assertEqual(self.original_num_groups, ag_models.Group.objects.count())
@@ -560,7 +560,7 @@ class MergeGroupsTestCase(test_data.Client,
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
     def test_error_merge_groups_diff_projects(self):
-        group_diff_proj = obj_build.build_submission_group(
+        group_diff_proj = obj_build.build_group(
             group_kwargs={'project': self.visible_private_project})
         self.assertNotEqual(self.group1.project, group_diff_proj.project)
         with self.assert_queryset_count_unchanged(ag_models.Group.objects):

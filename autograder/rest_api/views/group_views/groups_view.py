@@ -41,7 +41,7 @@ class GroupsViewSet(ListCreateNestedModelViewSet):
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
     to_one_field_name = 'project'
-    reverse_to_one_field_name = 'submission_groups'
+    reverse_to_one_field_name = 'groups'
 
     def get_queryset(self):
         queryset = super().get_queryset()

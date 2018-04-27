@@ -66,7 +66,7 @@ class RerunSubmissionsTask(Task):
     def progress(self) -> int:
         if self.rerun_all_submissions:
             num_submissions = Submission.objects.filter(
-                submission_group__project=self.project).count()
+                group__project=self.project).count()
         else:
             num_submissions = len(self.submission_pks)
 
@@ -94,7 +94,7 @@ class RerunSubmissionsTask(Task):
 
         if not self.rerun_all_submissions:
             submissions = Submission.objects.filter(
-                pk__in=self.submission_pks, submission_group__project=self.project)
+                pk__in=self.submission_pks, group__project=self.project)
             found_pks = {submission.pk for submission in submissions}
             not_found_pks = set(self.submission_pks) - found_pks
 

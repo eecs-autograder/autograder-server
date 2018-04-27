@@ -156,19 +156,19 @@ def get_project_files_relative_dir(project):
         get_project_relative_root_dir(project), const.PROJECT_FILES_DIRNAME)
 
 
-def get_project_submission_groups_dir(project):
+def get_project_groups_dir(project):
     """
     Computes the absolute path of the directory where student submission
     groups should be stored for the given project.
     """
     return os.path.join(
         settings.MEDIA_ROOT,
-        get_project_submission_groups_relative_dir(project))
+        get_project_groups_relative_dir(project))
 
 
-def get_project_submission_groups_relative_dir(project):
+def get_project_groups_relative_dir(project):
     """
-    Same as get_project_submission_groups_dir() but returns a path
+    Same as get_project_groups_dir() but returns a path
     that is relative to MEDIA_ROOT.
     """
     return os.path.join(
@@ -176,24 +176,24 @@ def get_project_submission_groups_relative_dir(project):
         const.PROJECT_SUBMISSIONS_DIRNAME)
 
 
-def get_student_submission_group_dir(submission_group):
+def get_student_group_dir(group):
     """
     Computes the absolute path of the directory where submissions for the
     given group should be stored.
     """
     return os.path.join(
         settings.MEDIA_ROOT,
-        get_student_submission_group_relative_dir(submission_group))
+        get_student_group_relative_dir(group))
 
 
-def get_student_submission_group_relative_dir(submission_group):
+def get_student_group_relative_dir(group):
     """
-    Same as get_student_submission_group_dir() but returns a path that is
+    Same as get_student_group_dir() but returns a path that is
     relative to MEDIA_ROOT.
     """
     return os.path.join(
-        get_project_submission_groups_relative_dir(submission_group.project),
-        'group{}'.format(submission_group.pk))
+        get_project_groups_relative_dir(group.project),
+        'group{}'.format(group.pk))
 
 
 def get_submission_dir(submission):
@@ -212,7 +212,7 @@ def get_submission_relative_dir(submission):
     MEDIA_ROOT.
     """
     return os.path.join(
-        get_student_submission_group_relative_dir(submission.group),
+        get_student_group_relative_dir(submission.group),
         get_submission_dir_basename(submission))
 
 

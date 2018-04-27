@@ -80,7 +80,7 @@ def grade_submission(submission_pk):
 def _mark_submission_as_being_graded(submission_pk):
     with transaction.atomic():
         submission = ag_models.Submission.objects.select_for_update().select_related(
-            'submission_group__project').get(pk=submission_pk)
+            'group__project').get(pk=submission_pk)
         if (submission.status ==
                 ag_models.Submission.GradingStatus.removed_from_queue):
             print('submission {} has been removed '
@@ -113,7 +113,7 @@ def _mark_submission_as_finished_impl(submission_pk):
     ).update(status=ag_models.Submission.GradingStatus.finished_grading)
 
     submission = ag_models.Submission.objects.select_related(
-        'submission_group__project').get(pk=submission_pk)
+        'group__project').get(pk=submission_pk)
     cache_key = 'project_{}_submission_normal_results_{}'.format(
         submission.group.project.pk, submission.pk)
     cache.delete(cache_key)

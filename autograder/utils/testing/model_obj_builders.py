@@ -1,10 +1,10 @@
 import copy
-import typing
 import uuid
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
+from typing import Sequence, Optional
 
 import autograder.core.models as ag_models
 from autograder.core import utils as core_ut
@@ -74,7 +74,7 @@ def build_course(course_kwargs: dict=None) -> ag_models.Course:
     return course
 
 
-def make_admin_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+def make_admin_users(course: ag_models.Course, num_users: int) -> Sequence[User]:
     users = create_dummy_users(num_users=num_users)
     course.admins.add(*users)
     return users
@@ -84,7 +84,7 @@ def make_admin_user(course: ag_models.Course) -> User:
     return make_admin_users(course, 1)[0]
 
 
-def make_staff_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+def make_staff_users(course: ag_models.Course, num_users: int) -> Sequence[User]:
     users = create_dummy_users(num_users=num_users)
     course.staff.add(*users)
     return users
@@ -94,7 +94,7 @@ def make_staff_user(course: ag_models.Course) -> User:
     return make_staff_users(course, 1)[0]
 
 
-def make_student_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+def make_student_users(course: ag_models.Course, num_users: int) -> Sequence[User]:
     users = create_dummy_users(num_users=num_users)
     course.students.add(*users)
     return users
@@ -104,7 +104,7 @@ def make_student_user(course: ag_models.Course) -> User:
     return make_student_users(course, 1)[0]
 
 
-def make_handgrader_users(course: ag_models.Course, num_users: int) -> typing.Sequence[User]:
+def make_handgrader_users(course: ag_models.Course, num_users: int) -> Sequence[User]:
     users = create_dummy_users(num_users=num_users)
     course.handgraders.add(*users)
     return users
@@ -114,7 +114,7 @@ def make_handgrader_user(course: ag_models.Course) -> User:
     return make_handgrader_users(course, 1)[0]
 
 
-def make_users(num_users: int, superuser=False) -> typing.Sequence[User]:
+def make_users(num_users: int, superuser=False) -> Sequence[User]:
     return create_dummy_users(num_users=num_users, is_superuser=superuser)
 
 
@@ -144,10 +144,10 @@ def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_mod
     return project
 
 
-def build_submission_group(num_members=1,
-                           group_kwargs=None,
-                           project_kwargs=None,
-                           course_kwargs=None) -> ag_models.Group:
+def build_group(num_members=1,
+                group_kwargs=None,
+                project_kwargs=None,
+                course_kwargs=None) -> ag_models.Group:
     """
     Creates a SubmissionGroup with the specified data.
     If the "members" key is not present in group_kwargs, then
@@ -179,16 +179,15 @@ def build_submission_group(num_members=1,
     return group
 
 
-def build_submission(**submission_kwargs) -> ag_models.Submission:
+def build_submission(group: Optional[ag_models.Group]=None, **submission_kwargs) -> ag_models.Submission:
     """
     Creates a Submission with the given keyword arguments.
-    If the "submission_group" argument is not specified, then a
-    SubmissionGroup will be created with build_submission_group() and
+    If the "group" argument is None, then a
+    SubmissionGroup will be created with make_group() and
     used instead.
     """
-    group = submission_kwargs.pop('submission_group', None)
     if group is None:
-        group = build_submission_group()
+        group = make_group()
     submitted_files = submission_kwargs.pop('submitted_files', [])
     timestamp = submission_kwargs.pop('timestamp', timezone.now())
 

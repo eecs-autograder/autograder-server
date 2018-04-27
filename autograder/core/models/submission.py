@@ -29,7 +29,7 @@ def _get_submission_file_upload_to_dir(submission, filename):
 
 
 class _SubmissionManager(ag_model_base.AutograderModelManager):
-    def validate_and_create(self, submitted_files, submission_group, timestamp=None, submitter=''):
+    def validate_and_create(self, submitted_files, group, timestamp=None, submitter=''):
         """
         This method override handles additional details required for
         creating a Submission.
@@ -46,7 +46,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
             timestamp = timezone.now()
 
         with transaction.atomic():
-            submission = self.model(group=submission_group,
+            submission = self.model(group=group,
                                     timestamp=timestamp,
                                     submitter=submitter)
             submission.is_past_daily_limit = _new_submission_is_past_limit(submission)
@@ -134,7 +134,7 @@ class Submission(ag_model_base.AutograderModel):
 
     SERIALIZABLE_FIELDS = (
         'pk',
-        "submission_group",
+        "group",
         "timestamp",
         "submitter",
         "submitted_filenames",
@@ -290,7 +290,7 @@ class Submission(ag_model_base.AutograderModel):
 
         return Submission.objects.filter(
             status=Submission.GradingStatus.queued,
-            submission_group__project=self.group.project,
+            group__project=self.group.project,
             pk__lte=self.pk
         ).count()
 

@@ -268,7 +268,7 @@ class HandgradingResultTestCase(UnitTestBase):
 
             'submission',
             'handgrading_rubric',
-            'submission_group',
+            'group',
 
             'applied_annotations',
             'comments',
@@ -349,7 +349,7 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertIsInstance(result_dict["comments"], list)
         self.assertIsInstance(result_dict["criterion_results"], list)
         self.assertIsInstance(result_dict["handgrading_rubric"], object)
-        self.assertIsInstance(result_dict["submission_group"], int)
+        self.assertIsInstance(result_dict["group"], int)
 
         self.assertSequenceEqual(result_dict["applied_annotations"], [applied_annotation.to_dict()])
         self.assertSequenceEqual(result_dict["criterion_results"], expected_criterion_results)

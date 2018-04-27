@@ -53,7 +53,7 @@ urlpatterns = [
         views.CriterionOrderView.as_view(), name='criterion_order'),
     url(r'', include(criterion_detail_router.urls)),
 
-    url(r'^submission_groups/(?P<group_pk>[0-9]+)/handgrading_result/$',
+    url(r'^groups/(?P<group_pk>[0-9]+)/handgrading_result/$',
         views.HandgradingResultView.as_view(), name='handgrading_result'),
 
     url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/applied_annotations/$',

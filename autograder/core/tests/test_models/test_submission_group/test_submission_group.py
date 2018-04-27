@@ -48,7 +48,7 @@ class MiscSubmissionGroupTestCase(_SetUp):
             expected_fields,
             ag_models.Group.get_serializable_fields())
 
-        group = obj_build.build_submission_group()
+        group = obj_build.build_group()
         self.assertTrue(group.to_dict())
 
     def test_editable_fields(self):
@@ -80,7 +80,7 @@ class MiscSubmissionGroupTestCase(_SetUp):
                                  group.member_names)
         self.assertEqual(self.project, group.project)
 
-        self.assertTrue(os.path.isdir(core_ut.get_student_submission_group_dir(group)))
+        self.assertTrue(os.path.isdir(core_ut.get_student_group_dir(group)))
 
     def test_valid_initialization_no_defaults(self):
         extended_due_date = timezone.now() + datetime.timedelta(days=1)

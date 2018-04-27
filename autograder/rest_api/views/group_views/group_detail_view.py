@@ -157,7 +157,7 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
             submission.group = merged_group
             submission.save()
 
-        merged_group_dir = core_ut.get_student_submission_group_dir(merged_group)
+        merged_group_dir = core_ut.get_student_group_dir(merged_group)
         shutil.rmtree(merged_group_dir)
         shutil.move(tempdir_path, merged_group_dir)
 

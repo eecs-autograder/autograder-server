@@ -51,7 +51,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
     model_manager = ag_models.Group.objects.select_related(
         'project__course'
     )
-    one_to_one_field_name = 'submission_group'
+    one_to_one_field_name = 'group'
     reverse_one_to_one_field_name = 'handgrading_result'
 
     def get(self, request, *args, **kwargs):

@@ -18,7 +18,7 @@ class SubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.group = obj_build.build_submission_group(num_members=2)
+        self.group = obj_build.build_group(num_members=2)
         self.project = self.group.project
 
         expected_files = [
@@ -234,7 +234,7 @@ class SubmissionTestCase(UnitTestBase):
         # limit).
         expected = [
             'pk',
-            'submission_group',
+            'group',
             'timestamp',
             'submitter',
             'submitted_filenames',
@@ -250,7 +250,7 @@ class SubmissionTestCase(UnitTestBase):
         self.assertCountEqual(
             expected,
             ag_models.Submission.get_serializable_fields())
-        group = obj_build.build_submission_group()
+        group = obj_build.build_group()
         submission = ag_models.Submission(group=group)
         self.assertTrue(submission.to_dict())
 
@@ -265,53 +265,53 @@ class PositionInQueueTestCase(UnitTestBase):
         Makes sure that position in queue is calculated per-project
         """
         project1 = obj_build.build_project()
-        group1_proj1 = obj_build.build_submission_group(
+        group1_proj1 = obj_build.build_group(
             group_kwargs={'project': project1})
-        group2_proj1 = obj_build.build_submission_group(
+        group2_proj1 = obj_build.build_group(
             group_kwargs={'project': project1})
 
         project2 = obj_build.build_project()
-        group1_proj2 = obj_build.build_submission_group(
+        group1_proj2 = obj_build.build_group(
             group_kwargs={'project': project2})
-        group2_proj2 = obj_build.build_submission_group(
+        group2_proj2 = obj_build.build_group(
             group_kwargs={'project': project2})
 
-        submission_group1_p1 = obj_build.build_submission(
+        group1_p1 = obj_build.build_submission(
             group=group1_proj1)
-        submission_group1_p1.status = (
+        group1_p1.status = (
             ag_models.Submission.GradingStatus.queued)
-        submission_group1_p1.save()
-        submission_group1_p1_queue_pos = 1
+        group1_p1.save()
+        group1_p1_queue_pos = 1
 
-        submission_group2_p1 = obj_build.build_submission(
+        group2_p1 = obj_build.build_submission(
             group=group2_proj1)
-        submission_group2_p1.status = (
+        group2_p1.status = (
             ag_models.Submission.GradingStatus.queued)
-        submission_group2_p1.save()
-        submission_group2_p1_queue_pos = 2
+        group2_p1.save()
+        group2_p1_queue_pos = 2
 
-        submission_group1_p2 = obj_build.build_submission(
+        group1_p2 = obj_build.build_submission(
             group=group1_proj2)
-        submission_group1_p2.status = (
+        group1_p2.status = (
             ag_models.Submission.GradingStatus.queued)
-        submission_group1_p2.save()
-        submission_group1_p2_queue_pos = 1
+        group1_p2.save()
+        group1_p2_queue_pos = 1
 
-        submission_group2_p2 = obj_build.build_submission(
+        group2_p2 = obj_build.build_submission(
             group=group2_proj2)
-        submission_group2_p2.status = (
+        group2_p2.status = (
             ag_models.Submission.GradingStatus.queued)
-        submission_group2_p2.save()
-        submission_group2_p2_queue_pos = 2
+        group2_p2.save()
+        group2_p2_queue_pos = 2
 
-        self.assertEqual(submission_group1_p1_queue_pos,
-                         submission_group1_p1.position_in_queue)
-        self.assertEqual(submission_group2_p1_queue_pos,
-                         submission_group2_p1.position_in_queue)
-        self.assertEqual(submission_group1_p2_queue_pos,
-                         submission_group1_p2.position_in_queue)
-        self.assertEqual(submission_group2_p2_queue_pos,
-                         submission_group2_p2.position_in_queue)
+        self.assertEqual(group1_p1_queue_pos,
+                         group1_p1.position_in_queue)
+        self.assertEqual(group2_p1_queue_pos,
+                         group2_p1.position_in_queue)
+        self.assertEqual(group1_p2_queue_pos,
+                         group1_p2.position_in_queue)
+        self.assertEqual(group2_p2_queue_pos,
+                         group2_p2.position_in_queue)
 
     def test_position_in_queue_for_non_queued_submission(self):
         submission = obj_build.build_submission()

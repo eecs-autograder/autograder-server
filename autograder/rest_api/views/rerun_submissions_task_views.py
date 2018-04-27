@@ -39,7 +39,7 @@ class RerunSubmissionsTaskListCreateView(ListCreateNestedModelViewSet):
             project=project, creator=request.user
         )  # type: ag_models.RerunSubmissionsTask
 
-        submissions = ag_models.Submission.objects.filter(submission_group__project=project)
+        submissions = ag_models.Submission.objects.filter(group__project=project)
         if not request.data.get('rerun_all_submissions', True):
             submissions = submissions.filter(pk__in=request.data.get('submission_pks', []))
 

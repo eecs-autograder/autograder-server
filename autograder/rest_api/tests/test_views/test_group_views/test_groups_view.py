@@ -46,7 +46,7 @@ class SortedListGroupsTestCase(test_data.Client, UnitTestBase):
             group_dict['member_names'] = list(sorted(group_dict['member_names']))
 
         self.client.force_authenticate(admin)
-        response = self.client.get(reverse('submission_groups', kwargs={'project_pk': project.pk}))
+        response = self.client.get(reverse('groups', kwargs={'project_pk': project.pk}))
         self.assertEqual(expected, response.data)
 
 

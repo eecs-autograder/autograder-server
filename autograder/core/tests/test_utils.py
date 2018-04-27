@@ -160,7 +160,7 @@ class CheckFilenameTest(TestCase):
 
 class FileSystemUtilTestCase(UnitTestBase):
     def setUp(self):
-        self.group = obj_build.build_submission_group()
+        self.group = obj_build.build_group()
         self.project = self.group.project
         self.course = self.project.course
 
@@ -212,23 +212,23 @@ class FileSystemUtilTestCase(UnitTestBase):
         actual_absolute = core_ut.get_project_files_dir(self.project)
         self.assertEqual(expected_absolute, actual_absolute)
 
-    def test_get_project_submission_groups_dir(self):
+    def test_get_project_groups_dir(self):
         expected_relative = "{0}/{1}/{2}/{3}".format(
             constants.FILESYSTEM_ROOT_COURSES_DIRNAME,
             self.course_dirname,
             self.project_dirname,
             constants.PROJECT_SUBMISSIONS_DIRNAME)
-        actual_relative = core_ut.get_project_submission_groups_relative_dir(
+        actual_relative = core_ut.get_project_groups_relative_dir(
             self.project)
         self.assertEqual(expected_relative, actual_relative)
 
         expected_absolute = os.path.join(
             settings.MEDIA_ROOT, expected_relative)
-        actual_absolute = core_ut.get_project_submission_groups_dir(
+        actual_absolute = core_ut.get_project_groups_dir(
             self.project)
         self.assertEqual(expected_absolute, actual_absolute)
 
-    def test_get_student_submission_group_dir(self):
+    def test_get_student_group_dir(self):
         expected_relative = "{0}/{1}/{2}/{3}/{4}".format(
             constants.FILESYSTEM_ROOT_COURSES_DIRNAME,
             self.course_dirname,
@@ -236,13 +236,13 @@ class FileSystemUtilTestCase(UnitTestBase):
             constants.PROJECT_SUBMISSIONS_DIRNAME,
             self.group_dir_basename)
 
-        actual_relative = core_ut.get_student_submission_group_relative_dir(
+        actual_relative = core_ut.get_student_group_relative_dir(
             self.group)
         self.assertEqual(expected_relative, actual_relative)
 
         expected_absolute = os.path.join(
             settings.MEDIA_ROOT, expected_relative)
-        actual_absolute = core_ut.get_student_submission_group_dir(self.group)
+        actual_absolute = core_ut.get_student_group_dir(self.group)
 
         self.assertEqual(expected_absolute, actual_absolute)
 
