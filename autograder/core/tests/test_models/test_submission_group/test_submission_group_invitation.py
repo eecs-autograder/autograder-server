@@ -37,9 +37,9 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp, UnitTestBase):
 
         self.assertCountEqual(
             expected_fields,
-            ag_models.SubmissionGroupInvitation.get_serializable_fields())
+            ag_models.GroupInvitation.get_serializable_fields())
 
-        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -49,10 +49,10 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp, UnitTestBase):
     def test_editable_fields(self):
         self.assertCountEqual(
             [],
-            ag_models.SubmissionGroupInvitation.get_editable_fields())
+            ag_models.GroupInvitation.get_editable_fields())
 
     def test_invitation_creator_username_expanded(self):
-        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -62,7 +62,7 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp, UnitTestBase):
                          result['invitation_creator'])
 
     def test_valid_initialization(self):
-        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -77,7 +77,7 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp, UnitTestBase):
         self.assertFalse(invitation.all_invitees_accepted)
 
     def test_invitee_accept(self):
-        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -89,7 +89,7 @@ class MiscSubmissionGroupInvitationTestCase(_SetUp, UnitTestBase):
         self.assertFalse(invitation.all_invitees_accepted)
 
     def test_all_members_accepted(self):
-        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -108,7 +108,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.project.save()
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=[],
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -120,7 +120,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.project.save()
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite[:1],
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -130,7 +130,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
     def test_exception_on_too_many_invitees(self):
         self.to_invite.append(obj_build.create_dummy_user())
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -143,7 +143,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             members=self.to_invite[:1])
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -156,7 +156,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             members=[self.invitation_creator])
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -168,7 +168,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             self.project.course)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -180,7 +180,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             self.project.course)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -193,7 +193,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             user.courses_is_staff_for.add(self.project.course)
             self.assertTrue(self.project.course.is_staff(user))
 
-        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        ag_models.GroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -205,7 +205,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             self.assertFalse(self.project.course.is_student(user))
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -219,7 +219,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             user.courses_is_enrolled_in.remove(self.project.course)
             self.assertFalse(self.project.course.is_student(user))
 
-        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        ag_models.GroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -231,7 +231,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
         self.to_invite[0].courses_is_staff_for.add(self.project.course)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -245,7 +245,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             self.project.course)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -265,7 +265,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             user.courses_is_enrolled_in.remove(self.project.course)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -278,7 +278,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             user.courses_is_staff_for.add(self.project.course)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -293,7 +293,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             self.project.course)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -311,7 +311,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
             user.courses_is_staff_for.add(self.project.course)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invited_users=self.to_invite,
                 invitation_creator=self.invitation_creator,
                 project=self.project)
@@ -320,7 +320,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
 
     def test_exception_invitees_includes_invitor(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invitation_creator=self.invitation_creator,
                 invited_users=[self.invitation_creator],
                 project=self.project)
@@ -330,7 +330,7 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
 
 class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
     def test_invalid_invitation_create_user_has_pending_invite_sent(self):
-        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        ag_models.GroupInvitation.objects.validate_and_create(
             invited_users=self.to_invite,
             invitation_creator=self.invitation_creator,
             project=self.project)
@@ -339,7 +339,7 @@ class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
         self.project.course.students.add(*other_invitees)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invitation_creator=self.invitation_creator,
                 invited_users=other_invitees,
                 project=self.project)
@@ -347,7 +347,7 @@ class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
         self.assertIn('pending_invitation', cm.exception.message_dict)
 
     def test_invalid_invitation_create_user_has_pending_invite_received(self):
-        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        ag_models.GroupInvitation.objects.validate_and_create(
             invitation_creator=self.invitation_creator,
             invited_users=self.to_invite,
             project=self.project)
@@ -357,7 +357,7 @@ class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
         self.project.course.students.add(*other_invitees)
 
         with self.assertRaises(exceptions.ValidationError) as cm:
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invitation_creator=creator, invited_users=other_invitees,
                 project=self.project)
 
@@ -368,13 +368,13 @@ class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
             course=self.project.course, max_group_size=4,
             name='project2')
 
-        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        ag_models.GroupInvitation.objects.validate_and_create(
             invitation_creator=self.invitation_creator,
             invited_users=self.to_invite,
             project=self.project)
 
         # Same creator (and invitees), different project
-        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        ag_models.GroupInvitation.objects.validate_and_create(
             invitation_creator=self.invitation_creator,
             invited_users=self.to_invite,
             project=project2)
@@ -384,7 +384,7 @@ class PendingInvitationRestrictionsTestCase(_SetUp, UnitTestBase):
             name='project3')
 
         # Creator has pending invites received on different project
-        ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        ag_models.GroupInvitation.objects.validate_and_create(
             invitation_creator=self.to_invite[0],
             invited_users=self.to_invite[1:],
             project=project3)

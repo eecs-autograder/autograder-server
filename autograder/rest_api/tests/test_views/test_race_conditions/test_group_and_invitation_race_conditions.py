@@ -175,7 +175,7 @@ class RaceConditionTestCase(test_data.Client,
             {'invited_usernames': [self.clone_user(self.admin).username]})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(0, ag_models.SubmissionGroupInvitation.objects.count())
+        self.assertEqual(0, ag_models.GroupInvitation.objects.count())
 
     def test_update_group_and_create_invitation_with_member_in_both(self):
         self.project.validate_and_update(max_group_size=4)
@@ -202,7 +202,7 @@ class RaceConditionTestCase(test_data.Client,
             {'invited_usernames': [new_member.username]})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual(0, ag_models.SubmissionGroupInvitation.objects.count())
+        self.assertEqual(0, ag_models.GroupInvitation.objects.count())
 
     def test_two_different_final_invitation_acceptances_invitor_overlap(self):
         self.project.validate_and_update(max_group_size=2)
@@ -211,10 +211,10 @@ class RaceConditionTestCase(test_data.Client,
         second_invitor = self.clone_user(self.admin)
 
         first_invitation = (
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invitor_and_second_invitee, [first_invitee], project=self.project))
         second_invitation = (
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 second_invitor, [invitor_and_second_invitee], project=self.project))
 
         path = ('autograder.rest_api.views.group_invitation_views.'
@@ -242,10 +242,10 @@ class RaceConditionTestCase(test_data.Client,
         invitee = self.clone_user(self.admin)
 
         first_invitation = (
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 first_invitor, [invitee], project=self.project))
         second_invitation = (
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 second_invitor, [invitee], project=self.project))
 
         path = ('autograder.rest_api.views'
@@ -272,7 +272,7 @@ class RaceConditionTestCase(test_data.Client,
         other_member = self.clone_user(self.admin)
 
         invitation = (
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invitor, [other_member], project=self.project))
 
         path = 'autograder.rest_api.views.group_views.groups_view.test_ut.mocking_hook'
@@ -300,7 +300,7 @@ class RaceConditionTestCase(test_data.Client,
         other_member = self.clone_user(self.admin)
 
         invitation = (
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invitor, [other_member], project=self.project))
 
         path = 'autograder.rest_api.views.group_views.groups_view.test_ut.mocking_hook'
@@ -328,7 +328,7 @@ class RaceConditionTestCase(test_data.Client,
         other_member = self.clone_user(self.admin)
 
         invitation = (
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invitor, [other_member], project=self.project))
         group = self.admin_group(self.project)
 
@@ -358,7 +358,7 @@ class RaceConditionTestCase(test_data.Client,
         other_member = self.clone_user(self.admin)
 
         invitation = (
-            ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+            ag_models.GroupInvitation.objects.validate_and_create(
                 invitor, [other_member], project=self.project))
         group = self.admin_group(self.project)
 

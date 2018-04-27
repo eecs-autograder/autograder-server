@@ -49,7 +49,7 @@ class SubmissionGroupSerializer(AGModelSerializer):
 
 
 class SubmissionGroupInvitationSerializer(AGModelSerializer):
-    ag_model_class = ag_models.SubmissionGroupInvitation
+    ag_model_class = ag_models.GroupInvitation
 
 
 class SubmissionSerializer(AGModelSerializer):

@@ -188,7 +188,7 @@ class Group(Course):
             return invitation
 
         invitees = [self.clone_user(user_to_clone) for i in range(2)]
-        invitation = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
             user_to_clone, invitees, project=project)
 
         self._store_invitation(project, label, invitation)

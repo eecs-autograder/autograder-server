@@ -33,10 +33,10 @@ class _Permissions(permissions.BasePermission):
 
 
 class GroupInvitationDetailViewSet(
-        build_load_object_mixin(ag_models.SubmissionGroupInvitation),
+        build_load_object_mixin(ag_models.GroupInvitation),
         mixins.RetrieveModelMixin,
         viewsets.GenericViewSet):
-    queryset = ag_models.SubmissionGroupInvitation.objects.all()
+    queryset = ag_models.GroupInvitation.objects.all()
     serializer_class = ag_serializers.SubmissionGroupInvitationSerializer
     permission_classes = (permissions.IsAuthenticated, _Permissions)
 

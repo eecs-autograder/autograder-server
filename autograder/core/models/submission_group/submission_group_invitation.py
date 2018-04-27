@@ -12,7 +12,7 @@ from autograder.core import fields as ag_fields
 from . import verification
 
 
-class SubmissionGroupInvitationManager(ag_model_base.AutograderModelManager):
+class GroupInvitationManager(ag_model_base.AutograderModelManager):
     def validate_and_create(self, invitation_creator, invited_users, **kwargs):
         with transaction.atomic():
             if invitation_creator in invited_users:
@@ -41,7 +41,7 @@ class SubmissionGroupInvitationManager(ag_model_base.AutograderModelManager):
             return invitation
 
 
-class SubmissionGroupInvitation(ag_model_base.AutograderModel):
+class GroupInvitation(ag_model_base.AutograderModel):
     """
     This class stores an invitation for a set of users to create a
     SubmissionGroup together.
@@ -73,7 +73,7 @@ class SubmissionGroupInvitation(ag_model_base.AutograderModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE,
                                 related_name='submission_group_invitations')
 
-    objects = SubmissionGroupInvitationManager()
+    objects = GroupInvitationManager()
 
     def clean(self):
         super().clean()

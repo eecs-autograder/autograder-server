@@ -160,7 +160,7 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         # Computing this for later use.
         all_users = invited_users + [invitation.invitation_creator]
         original_invite_count = (
-            ag_models.SubmissionGroupInvitation.objects.count())
+            ag_models.GroupInvitation.objects.count())
         original_group_count = ag_models.Group.objects.count()
         num_accepted = 0
         for user in invited_users[:-1]:
@@ -183,7 +183,7 @@ class AcceptGroupInvitationTestCase(test_data.Client,
 
         self.assertEqual(
             original_invite_count - 1,
-            ag_models.SubmissionGroupInvitation.objects.count())
+            ag_models.GroupInvitation.objects.count())
 
         self.assertEqual(
             original_group_count + 1,
@@ -198,12 +198,12 @@ class AcceptGroupInvitationTestCase(test_data.Client,
 
     def do_accept_permission_denied_test(self, invitation, user):
         current_invite_count = (
-            ag_models.SubmissionGroupInvitation.objects.count())
+            ag_models.GroupInvitation.objects.count())
         self.client.force_authenticate(user)
         response = self.client.post(self.invitation_url(invitation))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertEqual(current_invite_count,
-                         ag_models.SubmissionGroupInvitation.objects.count())
+                         ag_models.GroupInvitation.objects.count())
         invitation.refresh_from_db()  # Make sure invitation is still valid.
 
 
@@ -319,7 +319,7 @@ class RejectGroupInvitationTestCase(test_data.Client,
 
     def do_reject_invitation_test(self, invitation, user):
         original_invite_count = (
-            ag_models.SubmissionGroupInvitation.objects.count())
+            ag_models.GroupInvitation.objects.count())
         original_group_count = ag_models.Group.objects.count()
 
         users = ([invitation.invitation_creator] +
@@ -330,7 +330,7 @@ class RejectGroupInvitationTestCase(test_data.Client,
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertEqual(
             original_invite_count - 1,
-            ag_models.SubmissionGroupInvitation.objects.count())
+            ag_models.GroupInvitation.objects.count())
         self.assertEqual(
             original_group_count, ag_models.Group.objects.count())
 

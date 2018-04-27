@@ -44,9 +44,9 @@ class ListGroupInvitationsTestCase(_InvitationsSetUp,
 
     def build_invitations(self, project):
         project.validate_and_update(max_group_size=3)
-        first = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        first = ag_models.GroupInvitation.objects.validate_and_create(
             self.admin, [self.staff], project=project)
-        second = ag_models.SubmissionGroupInvitation.objects.validate_and_create(
+        second = ag_models.GroupInvitation.objects.validate_and_create(
             self.clone_user(self.staff), [self.clone_user(self.admin)],
             project=project)
         return ag_serializers.SubmissionGroupInvitationSerializer(
@@ -166,7 +166,7 @@ class CreateInvitationTestCase(_InvitationsSetUp,
         other_enrolled = self.clone_user(self.enrolled)
         data = {'invited_usernames': [other_enrolled.username]}
         self.do_permission_denied_create_test(
-            ag_models.SubmissionGroupInvitation.objects,
+            ag_models.GroupInvitation.objects,
             self.client, self.enrolled,
             self.get_invitations_url(self.visible_public_project), data)
 
@@ -175,7 +175,7 @@ class CreateInvitationTestCase(_InvitationsSetUp,
             max_group_size=3, disallow_group_registration=True)
         data = {'invited_usernames': [obj_build.create_dummy_user().username]}
         self.do_permission_denied_create_test(
-            ag_models.SubmissionGroupInvitation.objects,
+            ag_models.GroupInvitation.objects,
             self.client, self.nobody,
             self.get_invitations_url(self.visible_public_project), data)
 
