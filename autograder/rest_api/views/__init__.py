@@ -9,8 +9,7 @@ from .course_views.course_handgraders import CourseHandgradersViewSet
 from .course_views.course_staff import CourseStaffViewSet
 from .course_views.course_students import CourseStudentsViewSet
 from .course_views.course_views import CourseViewSet
-from .group_invitation_views.group_invitation_detail_view import GroupInvitationDetailViewSet
-from .group_invitation_views.group_invitations_view import GroupInvitationsViewSet
+from .group_invitation_views import ListCreateGroupInvitationViewSet, GroupInvitationDetailViewSet
 from .group_views.group_detail_view import GroupDetailViewSet
 from .group_views.groups_view import GroupsViewSet, CreateSoloGroupView
 from .oauth2callback import oauth2_callback

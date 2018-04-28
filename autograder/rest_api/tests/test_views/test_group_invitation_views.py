@@ -1,10 +1,209 @@
+from django.urls import reverse
 from rest_framework import status
 
 import autograder.core.models as ag_models
-
-from autograder.utils.testing import UnitTestBase
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
+import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
+import autograder.rest_api.tests.test_views.common_generic_data as test_data
+import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
+
+
+class _InvitationsSetUp(test_data.Client, test_data.Project, test_data.Group):
+    pass
+
+
+class ListGroupInvitationsTestCase(_InvitationsSetUp,
+                                   test_impls.ListObjectsTest,
+                                   test_impls.PermissionDeniedGetTest,
+                                   UnitTestBase):
+    def test_admin_list_invitations(self):
+        for project in self.all_projects:
+            self.do_list_objects_test(
+                self.client, self.admin, self.get_invitations_url(project),
+                self.build_invitations(project))
+
+    def test_staff_list_invitations(self):
+        for project in self.all_projects:
+            self.do_list_objects_test(
+                self.client, self.staff, self.get_invitations_url(project),
+                self.build_invitations(project))
+
+    def test_enrolled_list_invitations(self):
+        for project in self.all_projects:
+            self.do_permission_denied_get_test(
+                self.client, self.enrolled, self.get_invitations_url(project))
+
+    def test_handgrader_list_invitations(self):
+        for project in self.all_projects:
+            self.do_permission_denied_get_test(
+                self.client, self.handgrader, self.get_invitations_url(project))
+
+    def test_other_list_invitations(self):
+        for project in self.all_projects:
+            self.do_permission_denied_get_test(
+                self.client, self.nobody, self.get_invitations_url(project))
+
+    def build_invitations(self, project):
+        project.validate_and_update(max_group_size=3)
+        first = ag_models.GroupInvitation.objects.validate_and_create(
+            self.admin, [self.staff], project=project)
+        second = ag_models.GroupInvitation.objects.validate_and_create(
+            self.clone_user(self.staff), [self.clone_user(self.admin)],
+            project=project)
+        return ag_serializers.SubmissionGroupInvitationSerializer(
+            [first, second], many=True).data
+
+
+class CreateInvitationTestCase(_InvitationsSetUp,
+                               test_impls.CreateObjectTest,
+                               test_impls.CreateObjectInvalidArgsTest,
+                               test_impls.PermissionDeniedCreateTest,
+                               UnitTestBase):
+    def test_admin_create_invitation(self):
+        self.project.validate_and_update(max_group_size=3)
+        args = {'invited_usernames': [self.staff.username]}
+        self.do_create_object_test(
+            self.project.group_invitations, self.client,
+            self.admin, self.get_invitations_url(self.project), args)
+
+    def test_staff_create_invitation(self):
+        self.project.validate_and_update(max_group_size=3)
+        args = {'invited_usernames': [self.admin.username]}
+        self.do_create_object_test(
+            self.project.group_invitations, self.client,
+            self.staff, self.get_invitations_url(self.project), args)
+
+    def test_enrolled_create_invitation(self):
+        self.visible_private_project.validate_and_update(max_group_size=3)
+        other_enrolled = self.clone_user(self.enrolled)
+        args = {'invited_usernames': [other_enrolled.username]}
+        self.do_create_object_test(
+            self.visible_private_project.group_invitations,
+            self.client, self.enrolled,
+            self.get_invitations_url(self.visible_private_project),
+            args)
+
+    def test_handgrader_create_invitation_permission_denied(self):
+        args = {'invited_usernames': ["some_user"]}
+        for project in self.all_projects:
+            project.validate_and_update(max_group_size=3)
+            self.do_permission_denied_create_test(
+                project.group_invitations, self.client,
+                self.handgrader, self.get_invitations_url(project), args)
+
+    def test_handgrader_also_enrolled_create_invitation(self):
+        [handgrader_student] = obj_build.make_users(1)
+        self.course.handgraders.add(handgrader_student)
+        self.course.students.add(handgrader_student)
+
+        self.project.validate_and_update(max_group_size=3)
+        other_enrolled = self.clone_user(self.enrolled)
+        args = {'invited_usernames': [other_enrolled.username]}
+        self.do_create_object_test(
+            self.project.group_invitations,
+            self.client, handgrader_student,
+            self.get_invitations_url(self.project),
+            args)
+
+    def test_handgrader_also_staff_create_invitation(self):
+        [handgrader_staff] = obj_build.make_users(1)
+        self.course.handgraders.add(handgrader_staff)
+        self.course.staff.add(handgrader_staff)
+
+        self.project.validate_and_update(max_group_size=3)
+        args = {'invited_usernames': [self.admin.username]}
+        self.do_create_object_test(
+            self.project.group_invitations, self.client,
+            handgrader_staff, self.get_invitations_url(self.project), args)
+
+    def test_other_create_invitation(self):
+        self.visible_public_project.validate_and_update(max_group_size=3)
+        other_nobody = obj_build.create_dummy_user()
+        args = {'invited_usernames': [other_nobody.username, 'steve']}
+        self.do_create_object_test(
+            self.visible_public_project.group_invitations,
+            self.client, self.nobody,
+            self.get_invitations_url(self.visible_public_project), args)
+
+    def test_invalid_create_invitation_enrollement_mismatch(self):
+        self.visible_public_project.validate_and_update(max_group_size=3)
+        args = {'invited_usernames': [self.nobody.username]}
+        response = self.do_invalid_create_object_test(
+            self.visible_public_project.group_invitations,
+            self.client, self.enrolled,
+            self.get_invitations_url(self.visible_public_project), args)
+        print(response.data)
+
+    def test_invalid_create_invitation_group_too_big(self):
+        args = {'invited_usernames': ['steve']}
+        response = self.do_invalid_create_object_test(
+            self.visible_public_project.group_invitations,
+            self.client, self.nobody,
+            self.get_invitations_url(self.visible_public_project), args)
+        print(response.data)
+
+    def test_enrolled_create_invitation_hidden_project_permission_denied(self):
+        other_enrolled = self.clone_user(self.enrolled)
+        args = {'invited_usernames': [other_enrolled.username]}
+        for project in self.hidden_projects:
+            project.validate_and_update(max_group_size=3)
+            self.do_permission_denied_create_test(
+                project.group_invitations, self.client,
+                self.enrolled, self.get_invitations_url(project), args)
+
+    def test_nobody_create_invitation_private_or_hidden_project_permission_denied(self):
+        other_nobody = obj_build.create_dummy_user()
+        args = {'invited_usernames': [other_nobody.username]}
+        for project in (self.visible_private_project,
+                        self.hidden_public_project,
+                        self.hidden_private_project):
+            self.do_permission_denied_create_test(
+                project.group_invitations, self.client,
+                self.nobody, self.get_invitations_url(project), args)
+
+    def test_registration_disabled_permission_denied_for_enrolled(self):
+        self.visible_public_project.validate_and_update(
+            max_group_size=3, disallow_group_registration=True)
+        other_enrolled = self.clone_user(self.enrolled)
+        data = {'invited_usernames': [other_enrolled.username]}
+        self.do_permission_denied_create_test(
+            ag_models.GroupInvitation.objects,
+            self.client, self.enrolled,
+            self.get_invitations_url(self.visible_public_project), data)
+
+    def test_registration_disabled_permission_denied_for_non_enrolled(self):
+        self.visible_public_project.validate_and_update(
+            max_group_size=3, disallow_group_registration=True)
+        data = {'invited_usernames': [obj_build.create_dummy_user().username]}
+        self.do_permission_denied_create_test(
+            ag_models.GroupInvitation.objects,
+            self.client, self.nobody,
+            self.get_invitations_url(self.visible_public_project), data)
+
+    def test_registration_disabled_staff_can_still_send_invitations(self):
+        self.project.validate_and_update(
+            max_group_size=3, disallow_group_registration=True)
+        args = {'invited_usernames': [self.staff.username]}
+        self.do_create_object_test(
+            self.project.group_invitations, self.client,
+            self.admin, self.get_invitations_url(self.project), args)
+
+        args['invited_usernames'] = [self.clone_user(self.admin).username]
+        self.do_create_object_test(
+            self.project.group_invitations, self.client,
+            self.clone_user(self.staff), self.get_invitations_url(self.project),
+            args)
+
+    def test_invalid_fields_other_than_invited_usernames_in_request(self):
+        self.project.validate_and_update(max_group_size=3)
+        args = {'invited_usernames': [self.staff.username],
+                '_invitees_who_accepted': [self.staff.username]}
+        response = self.do_invalid_create_object_test(
+            self.project.group_invitations, self.client,
+            self.admin, self.get_invitations_url(self.project), args)
+        self.assertIn('invalid_fields', response.data)
+        self.assertIn('_invitees_who_accepted', response.data['invalid_fields'])
 
 
 class GetGroupInvitationTestCase(test_data.Client,
@@ -125,7 +324,7 @@ class AcceptGroupInvitationTestCase(test_data.Client,
     def test_creator_accepts_nothing_happens(self):
         invite = self.enrolled_group_invitation(self.visible_private_project)
         self.client.force_authenticate(invite.invitation_creator)
-        response = self.client.post(self.invitation_url(invite))
+        response = self.client.post(self.accept_invitation_url(invite))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(0, len(response.data['invitees_who_accepted']))
 
@@ -166,7 +365,7 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         for user in invited_users[:-1]:
             num_accepted += 1
             self.client.force_authenticate(user)
-            response = self.client.post(self.invitation_url(invitation))
+            response = self.client.post(self.accept_invitation_url(invitation))
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             invitation.refresh_from_db()
             self.assertEqual(invitation.to_dict(), response.data)
@@ -178,7 +377,7 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         # invitation was deleted and that a group was created with the
         # right members.
         self.client.force_authenticate(invited_users[-1])
-        response = self.client.post(self.invitation_url(invitation))
+        response = self.client.post(self.accept_invitation_url(invitation))
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         self.assertEqual(
@@ -196,11 +395,14 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         # same test case.
         ag_models.Group.objects.all().delete()
 
+    def accept_invitation_url(self, invitation):
+        return reverse('group-invitation-accept', kwargs={'pk': invitation.pk})
+
     def do_accept_permission_denied_test(self, invitation, user):
         current_invite_count = (
             ag_models.GroupInvitation.objects.count())
         self.client.force_authenticate(user)
-        response = self.client.post(self.invitation_url(invitation))
+        response = self.client.post(self.accept_invitation_url(invitation))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertEqual(current_invite_count,
                          ag_models.GroupInvitation.objects.count())

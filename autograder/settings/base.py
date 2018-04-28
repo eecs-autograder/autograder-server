@@ -141,9 +141,9 @@ DATABASES = {
         'PASSWORD': os.environ.get('AG_DB_PASSWORD', 'postgres'),
         'HOST': os.environ.get('AG_DB_HOST', 'localhost'),
         'PORT': os.environ.get('AG_DB_PORT', '5432'),
-        # 'TEST': {
-        #     'NAME': 'test_db_{}'.format(uuid.uuid4().hex)
-        # }
+        'TEST': {
+            'NAME': 'test_db_{}'.format(uuid.uuid4().hex)
+        }
     },
 }
 

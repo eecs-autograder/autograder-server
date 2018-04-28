@@ -26,12 +26,6 @@ project_downloads_router = routers.SimpleRouter()
 project_downloads_router.register(r'download_tasks', views.DownloadTaskDetailViewSet,
                                   base_name='download_tasks')
 
-invitations_router = routers.NestedSimpleRouter(
-    project_router, r'projects', lookup='project')
-invitations_router.register(
-    r'group_invitations', views.GroupInvitationsViewSet,
-    base_name='project-group-invitations')
-
 expected_student_pattern_router = routers.SimpleRouter()
 expected_student_pattern_router.register(r'expected_student_files',
                                          views.ExpectedStudentFilePatternDetailViewSet,
@@ -137,10 +131,13 @@ urlpatterns = [
          views.ListCreateExpectedStudentFilesViewSet.as_view(), name='expected-student-files'),
 
     url(r'', include(project_downloads_router.urls)),
-    url(r'', include(invitations_router.urls)),
 
     url(r'', include(expected_student_pattern_router.urls)),
     url(r'', include(uploaded_file_router.urls)),
+
+    path('projects/<int:pk>/group_invitations/',
+         views.ListCreateGroupInvitationViewSet.as_view(),
+         name='group-invitations'),
     url(r'', include(group_invitation_router.urls)),
 
     url(r'', include(group_router.urls)),

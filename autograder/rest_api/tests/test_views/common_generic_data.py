@@ -51,8 +51,8 @@ class Project(gen_data.Project):
                        kwargs={'project_pk': project.pk})
 
     def get_invitations_url(self, project):
-        return reverse('project-group-invitations-list',
-                       kwargs={'project_pk': project.pk})
+        return reverse('group-invitations',
+                       kwargs={'pk': project.pk})
 
     def get_ag_tests_url(self, project):
         return reverse('project-ag-tests-list',
