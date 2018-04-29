@@ -1,4 +1,5 @@
 from django.test import tag
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -217,20 +218,19 @@ class RaceConditionTestCase(test_data.Client,
             ag_models.GroupInvitation.objects.validate_and_create(
                 second_invitor, [invitor_and_second_invitee], project=self.project))
 
-        path = ('autograder.rest_api.views.group_invitation_views.'
-                'group_invitation_detail_view.test_ut.mocking_hook')
+        path = 'autograder.rest_api.views.group_invitation_views.test_ut.mocking_hook'
 
         @test_ut.sleeper_subtest(path)
         def first_final_accept():
             client = APIClient()
             client.force_authenticate(first_invitee)
-            response = client.post(self.invitation_url(first_invitation))
+            response = client.post(self.accept_invitation_url(first_invitation))
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
             self.assertEqual(1, ag_models.Group.objects.count())
 
         subtest = first_final_accept()
         self.client.force_authenticate(invitor_and_second_invitee)
-        response = self.client.post(self.invitation_url(second_invitation))
+        response = self.client.post(self.accept_invitation_url(second_invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(1, ag_models.Group.objects.count())
@@ -248,20 +248,19 @@ class RaceConditionTestCase(test_data.Client,
             ag_models.GroupInvitation.objects.validate_and_create(
                 second_invitor, [invitee], project=self.project))
 
-        path = ('autograder.rest_api.views'
-                '.group_invitation_views.group_invitation_detail_view.test_ut.mocking_hook')
+        path = 'autograder.rest_api.views.group_invitation_views.test_ut.mocking_hook'
 
         @test_ut.sleeper_subtest(path)
         def first_final_accept():
             client = APIClient()
             client.force_authenticate(invitee)
-            response = client.post(self.invitation_url(first_invitation))
+            response = client.post(self.accept_invitation_url(first_invitation))
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
             self.assertEqual(1, ag_models.Group.objects.count())
 
         subtest = first_final_accept()
         self.client.force_authenticate(invitee)
-        response = self.client.post(self.invitation_url(second_invitation))
+        response = self.client.post(self.accept_invitation_url(second_invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(1, ag_models.Group.objects.count())
@@ -289,7 +288,7 @@ class RaceConditionTestCase(test_data.Client,
 
         subtest = create_group()
         self.client.force_authenticate(other_member)
-        response = self.client.post(self.invitation_url(invitation))
+        response = self.client.post(self.accept_invitation_url(invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(1, ag_models.Group.objects.count())
@@ -317,7 +316,7 @@ class RaceConditionTestCase(test_data.Client,
 
         subtest = create_group()
         self.client.force_authenticate(other_member)
-        response = self.client.post(self.invitation_url(invitation))
+        response = self.client.post(self.accept_invitation_url(invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(1, ag_models.Group.objects.count())
@@ -347,7 +346,7 @@ class RaceConditionTestCase(test_data.Client,
 
         subtest = update_group()
         self.client.force_authenticate(other_member)
-        response = self.client.post(self.invitation_url(invitation))
+        response = self.client.post(self.accept_invitation_url(invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(1, ag_models.Group.objects.count())
@@ -377,7 +376,10 @@ class RaceConditionTestCase(test_data.Client,
 
         subtest = update_group()
         self.client.force_authenticate(other_member)
-        response = self.client.post(self.invitation_url(invitation))
+        response = self.client.post(self.accept_invitation_url(invitation))
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(1, ag_models.Group.objects.count())
+
+    def accept_invitation_url(self, invitation: ag_models.GroupInvitation):
+        return reverse('group-invitation-accept', kwargs={'pk': invitation.pk})
