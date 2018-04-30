@@ -285,7 +285,6 @@ class RemoveFromQueueTestCase(test_data.Client,
 
 
 class SubmissionFeedbackTestCase(UnitTestBase):
-
     def setUp(self):
         super().setUp()
 
@@ -386,7 +385,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.client.force_authenticate(self.staff)
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': 'not a value'})
-        url = (reverse('submission-feedback',
+        url = (reverse('submission-results',
                        kwargs={'pk': self.staff_normal_submission.pk}) + '?' +
                query_params.urlencode())
         response = self.client.get(url)
@@ -395,7 +394,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
     def test_missing_fdbk_category(self):
         self.client.force_authenticate(self.staff)
-        url = reverse('submission-feedback',
+        url = reverse('submission-results',
                       kwargs={'pk': self.staff_normal_submission.pk})
         response = self.client.get(url)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -771,18 +770,20 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         with open(self.staff_normal_res.stderr_filename, 'wb') as f:
             f.write(non_utf_bytes)
         self.client.force_authenticate(self.staff)
-        url = (reverse('submission-feedback', kwargs={'pk': self.staff_normal_submission.pk}) +
-               '?stdout_diff_for_cmd_result={}&feedback_category=max'.format(
-                   self.staff_normal_res.pk))
+        url = (reverse('ag-test-cmd-result-stdout-diff',
+                       kwargs={'pk': self.staff_normal_submission.pk,
+                               'result_pk': self.staff_normal_res.pk}) +
+               '?feedback_category=max')
 
         expected_diff = ['- ' + output, '+ ' + non_utf_bytes.decode('utf-8', 'surrogateescape')]
         response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(expected_diff, json.loads(response.content.decode('utf-8')))
 
-        url = (reverse('submission-feedback', kwargs={'pk': self.staff_normal_submission.pk}) +
-               '?stderr_diff_for_cmd_result={}&feedback_category=max'.format(
-                   self.staff_normal_res.pk))
+        url = (reverse('ag-test-cmd-result-stderr-diff',
+                       kwargs={'pk': self.staff_normal_submission.pk,
+                               'result_pk': self.staff_normal_res.pk}) +
+               '?feedback_category=max')
         response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(expected_diff, json.loads(response.content.decode('utf-8')))
@@ -844,12 +845,14 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         with suite_result.open_teardown_stderr('w') as f:
             f.write('qewiruqpewpuir')
 
-        field_names = ['setup_stdout', 'setup_stderr', 'teardown_stdout', 'teardown_stderr']
-        query_keys = ['setup_stdout_for_suite', 'setup_stderr_for_suite',
-                      'teardown_stdout_for_suite', 'teardown_stderr_for_suite']
-        for field_name, query_key in zip(field_names, query_keys):
-            url = (reverse('submission-feedback', kwargs={'pk': submission.pk}) +
-                   '?{}={}'.format(query_key, suite_result.pk) +
+        field_names = ['setup_stdout', 'setup_stderr']
+        url_lookups = [
+            'ag-test-suite-result-stdout',
+            'ag-test-suite-result-stderr'
+        ]
+        for field_name, url_lookup in zip(field_names, url_lookups):
+            url = (reverse(url_lookup,
+                           kwargs={'pk': submission.pk, 'result_pk': suite_result.pk}) +
                    '&feedback_category={}'.format(fdbk_category.value))
             response = client.get(url)
             if expect_404:
@@ -879,11 +882,11 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
     # -------------------------------------------------------------
 
-    OUTPUT_AND_DIFF_FIELDS_TO_QUERY_PARAMS = {
-        'stdout': 'stdout_for_cmd_result',
-        'stderr': 'stderr_for_cmd_result',
-        'stdout_diff': 'stdout_diff_for_cmd_result',
-        'stderr_diff': 'stderr_diff_for_cmd_result',
+    OUTPUT_AND_DIFF_FIELDS_TO_URL_LOOKUPS = {
+        'stdout': 'ag-test-cmd-result-stdout',
+        'stderr': 'ag-test-cmd-result-stderr',
+        'stdout_diff': 'ag-test-cmd-result-stdout-diff',
+        'stderr_diff': 'ag-test-cmd-result-stderr-diff',
     }
 
     def do_get_fdbk_test(self, client,
@@ -891,7 +894,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
                          fdbk_category: ag_models.FeedbackCategory):
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': fdbk_category.value})
-        url = (reverse('submission-feedback', kwargs={'pk': submission.pk}) + '?' +
+        url = (reverse('submission-results', kwargs={'pk': submission.pk}) + '?' +
                query_params.urlencode())
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -902,7 +905,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
                                            fdbk_category: ag_models.FeedbackCategory):
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': fdbk_category.value})
-        url = (reverse('submission-feedback', kwargs={'pk': submission.pk}) + '?' +
+        url = (reverse('submission-results', kwargs={'pk': submission.pk}) + '?' +
                query_params.urlencode())
         response = client.get(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -952,13 +955,13 @@ class SubmissionFeedbackTestCase(UnitTestBase):
                                       cmd_result: ag_models.AGTestCommandResult,
                                       fdbk_category: ag_models.FeedbackCategory):
         result = []
-        for field_name, query_param_name in self.OUTPUT_AND_DIFF_FIELDS_TO_QUERY_PARAMS.items():
+        for field_name, url_lookup in self.OUTPUT_AND_DIFF_FIELDS_TO_URL_LOOKUPS.items():
             query_params = QueryDict(mutable=True)
             query_params.update({
-                query_param_name: cmd_result.pk,
                 'feedback_category': fdbk_category.value
             })
-            url = (reverse('submission-feedback', kwargs={'pk': submission.pk}) + '?' +
+            url = (reverse(url_lookup,
+                           kwargs={'pk': submission.pk, 'result_pk': cmd_result.pk}) + '?' +
                    query_params.urlencode())
             result.append((url, field_name))
 
@@ -1035,30 +1038,40 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         self.client = APIClient()
         self.admin = self.submission.group.members.first()
 
-        self.setup_stdout_params = {'stdout_for_student_suite_setup': self.student_suite_result.pk}
-        self.setup_stderr_params = {'stderr_for_student_suite_setup': self.student_suite_result.pk}
-        self.get_test_names_stdout_params = {
-            'stdout_for_student_suite_get_test_names': self.student_suite_result.pk}
-        self.get_test_names_stderr_params = {
-            'stderr_for_student_suite_get_test_names': self.student_suite_result.pk}
-        self.validity_check_stdout_params = {
-            'stdout_for_student_suite_validity_check': self.student_suite_result.pk}
-        self.validity_check_stderr_params = {
-            'stderr_for_student_suite_validity_check': self.student_suite_result.pk}
-        self.buggy_impls_stdout_params = {
-            'stdout_for_student_suite_grade_buggy_impls': self.student_suite_result.pk}
-        self.buggy_impls_stderr_params = {
-            'stderr_for_student_suite_grade_buggy_impls': self.student_suite_result.pk}
+        self.setup_stdout_base_url = reverse(
+            'student-suite-setup-stdout',
+            kwargs={'result_pk': self.student_suite_result.pk})
+        self.setup_stderr_base_url = reverse(
+            'student-suite-setup-stderr',
+            kwargs={'result_pk': self.student_suite_result.pk})
+        self.get_test_names_stdout_base_url = reverse(
+            'student-suite-get-student-test-names-stdout',
+            kwargs={'result_pk': self.student_suite_result.pk})
+        self.get_test_names_stderr_base_url = reverse(
+            'student-suite-get-student-test-names-stderr',
+            kwargs={'result_pk': self.student_suite_result.pk})
+        self.validity_check_stdout_base_url = reverse(
+            'student-suite-validity-check-stdout',
+            kwargs={'result_pk': self.student_suite_result.pk})
+        self.validity_check_stderr_base_url = reverse(
+            'student-suite-validity-check-stderr',
+            kwargs={'result_pk': self.student_suite_result.pk})
+        self.buggy_impls_stdout_base_url = reverse(
+            'student-suite-grade-buggy-impls-stdout',
+            kwargs={'result_pk': self.student_suite_result.pk})
+        self.buggy_impls_stderr_base_url = reverse(
+            'student-suite-grade-buggy-impls-stderr',
+            kwargs={'result_pk': self.student_suite_result.pk})
 
-        self.param_sets = [
-            self.setup_stdout_params,
-            self.setup_stderr_params,
-            self.get_test_names_stdout_params,
-            self.get_test_names_stderr_params,
-            self.validity_check_stdout_params,
-            self.validity_check_stderr_params,
-            self.buggy_impls_stdout_params,
-            self.buggy_impls_stderr_params,
+        self.base_urls = [
+            self.setup_stdout_base_url,
+            self.setup_stderr_base_url,
+            self.get_test_names_stdout_base_url,
+            self.get_test_names_stderr_base_url,
+            self.validity_check_stdout_base_url,
+            self.validity_check_stderr_base_url,
+            self.buggy_impls_stdout_base_url,
+            self.buggy_impls_stderr_base_url,
         ]
 
         self.submission.refresh_from_db()
@@ -1071,7 +1084,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': ag_models.FeedbackCategory.max.value})
-        url = (reverse('submission-feedback', kwargs={'pk': self.submission.pk}) +
+        url = (reverse('submission-results', kwargs={'pk': self.submission.pk}) +
                '?' + query_params.urlencode())
 
         response = self.client.get(url)
@@ -1083,19 +1096,19 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
     def test_get_setup_output(self):
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.setup_stdout, **self.setup_stdout_params)
+            status.HTTP_200_OK, self.setup_stdout, **self.setup_stdout_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.setup_stdout_params)
+            status.HTTP_200_OK, None, **self.setup_stdout_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.setup_stderr, **self.setup_stderr_params)
+            status.HTTP_200_OK, self.setup_stderr, **self.setup_stderr_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.setup_stderr_params)
+            status.HTTP_200_OK, None, **self.setup_stderr_base_url)
 
     def test_get_setup_output_no_setup_cmd(self):
         self.student_suite.validate_and_update(use_setup_command=False)
@@ -1104,11 +1117,11 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, None, **self.setup_stdout_params)
+            status.HTTP_200_OK, None, **self.setup_stdout_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, None, **self.setup_stderr_params)
+            status.HTTP_200_OK, None, **self.setup_stderr_base_url)
 
     def test_get_get_test_names_result_output(self):
         # NOTE: Whether a user can view the get_test_names output does not
@@ -1116,53 +1129,53 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         # is always available to staff.
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.get_test_names_stdout, **self.get_test_names_stdout_params)
+            status.HTTP_200_OK, self.get_test_names_stdout, **self.get_test_names_stdout_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.get_test_names_stdout_params)
+            status.HTTP_200_OK, None, **self.get_test_names_stdout_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.get_test_names_stderr, **self.get_test_names_stderr_params)
+            status.HTTP_200_OK, self.get_test_names_stderr, **self.get_test_names_stderr_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.get_test_names_stderr_params)
+            status.HTTP_200_OK, None, **self.get_test_names_stderr_base_url)
 
     def test_get_validity_check_output(self):
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.validity_check_stdout, **self.validity_check_stdout_params)
+            status.HTTP_200_OK, self.validity_check_stdout, **self.validity_check_stdout_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.validity_check_stdout_params)
+            status.HTTP_200_OK, None, **self.validity_check_stdout_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.validity_check_stderr, **self.validity_check_stderr_params)
+            status.HTTP_200_OK, self.validity_check_stderr, **self.validity_check_stderr_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.validity_check_stderr_params)
+            status.HTTP_200_OK, None, **self.validity_check_stderr_base_url)
 
     def test_get_buggy_impls_output(self):
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.buggy_impls_stdout, **self.buggy_impls_stdout_params)
+            status.HTTP_200_OK, self.buggy_impls_stdout, **self.buggy_impls_stdout_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.buggy_impls_stdout_params)
+            status.HTTP_200_OK, None, **self.buggy_impls_stdout_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.buggy_impls_stderr, **self.buggy_impls_stderr_params)
+            status.HTTP_200_OK, self.buggy_impls_stderr, **self.buggy_impls_stderr_base_url)
 
         self.do_get_output_test(
             self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.buggy_impls_stderr_params)
+            status.HTTP_200_OK, None, **self.buggy_impls_stderr_base_url)
 
     def test_get_output_suite_hidden(self):
         self.maxDiff = None
@@ -1176,28 +1189,36 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             'visible': False
         })
 
-        for param_set in self.param_sets:
+        for url in self.base_urls:
             self.do_get_output_test(
                 self.client, self.admin, self.submission, ag_models.FeedbackCategory.staff_viewer,
-                status.HTTP_200_OK, None, **param_set)
+                status.HTTP_200_OK, None, url)
 
     def test_get_output_suite_not_found(self):
-        for param_set in self.param_sets:
-            self.assertEqual(1, len(param_set))
-            param_set_with_bad_pk = {key: 42 for key, _ in param_set.items()}
+        url_lookups = [
+            'student-suite-setup-stdout',
+            'student-suite-setup-stderr',
+            'student-suite-get-student-test-names-stdout',
+            'student-suite-get-student-test-names-stderr',
+            'student-suite-validity-check-stdout',
+            'student-suite-validity-check-stderr',
+            'student-suite-grade-buggy-impls-stdout',
+            'student-suite-grade-buggy-impls-stderr',
+        ]
+
+        for url_lookup in url_lookups:
+            url_with_bad_pk = reverse(url_lookup, kwargs={'pk': 9001})
             self.do_get_output_test(
                 self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-                status.HTTP_404_NOT_FOUND, None, **param_set_with_bad_pk)
+                status.HTTP_404_NOT_FOUND, None, url_with_bad_pk)
 
     def do_get_output_test(self, client: APIClient, user, submission, fdbk_category,
-                           expected_status, expected_output, **output_query_params):
+                           expected_status, expected_output, base_url):
         client.force_authenticate(user)
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': fdbk_category.value})
-        query_params.update(output_query_params)
 
-        url = (reverse('submission-feedback', kwargs={'pk': submission.pk}) +
-               '?' + query_params.urlencode())
+        url = base_url + '?' + query_params.urlencode()
         response = client.get(url)
 
         self.assertEqual(expected_status, response.status_code)
@@ -1521,7 +1542,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
     def _make_url(self, submission: ag_models.Submission,
                   fdbk_category: ag_models.FeedbackCategory=ag_models.FeedbackCategory.normal,
                   use_cache=True):
-        url = reverse('submission-feedback', kwargs={'pk': submission.pk})
+        url = reverse('submission-results', kwargs={'pk': submission.pk})
         url += '?feedback_category={}'.format(fdbk_category.value)
         if not use_cache:
             url += '&use_cache=false'

@@ -100,13 +100,13 @@ class AGTestSuite(AutograderModel):
 
     teardown_suite_cmd = models.CharField(
         max_length=constants.MAX_COMMAND_LENGTH, blank=True,
-        help_text="""A command to be run after this suite's tests are run.
+        help_text="""DEPRECATED. A command to be run after this suite's tests are run.
                      This command is only run once at the end of the suite.""")
 
     setup_suite_cmd_name = ag_fields.ShortStringField(
         blank=True, help_text="""The name of this suite's setup command.""")
     teardown_suite_cmd_name = ag_fields.ShortStringField(
-        blank=True, help_text="""The name of this suite's teardown command.""")
+        blank=True, help_text="""DEPRECATED. The name of this suite's teardown command.""")
 
     docker_image_to_use = ag_fields.EnumField(
         constants.SupportedImages,

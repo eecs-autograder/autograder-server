@@ -1,10 +1,9 @@
 from django.conf import settings
-from django.conf.urls import url, include
+from django.conf.urls import include, url
 from django.urls import path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
-from rest_framework import response, permissions
-from rest_framework import status
+from rest_framework import permissions, response, status
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework_nested import routers
@@ -178,4 +177,56 @@ urlpatterns = [
         views.GroupsViewSet.as_view(), name='groups'),
     url(r'^projects/(?P<project_pk>[0-9]+)/groups/solo_group/$',
         views.CreateSoloGroupView.as_view(), name='solo_group'),
+
+    path('submissions/<int:pk>/results/',
+         views.SubmissionResultsView.as_view(),
+         name='submission-results'),
+
+    path('submissions/<int:pk>/ag_test_suite_results/<int:result_pk>/stdout/',
+         views.AGTestSuiteResultsStdoutView.as_view(),
+         name='ag-test-suite-result-stdout'),
+    path('submissions/<int:pk>/ag_test_suite_results/<int:result_pk>/stderr/',
+         views.AGTestSuiteResultsStderrView.as_view(),
+         name='ag-test-suite-result-stderr'),
+
+    path('submissions/<int:pk>/ag_test_cmd_results/<int:result_pk>/stdout/',
+         views.AGTestCommandResultStdoutView.as_view(),
+         name='ag-test-cmd-result-stdout'),
+    path('submissions/<int:pk>/ag_test_cmd_results/<int:result_pk>/stderr/',
+         views.AGTestCommandResultStderrView.as_view(),
+         name='ag-test-cmd-result-stderr'),
+    path('submissions/<int:pk>/ag_test_cmd_results/<int:result_pk>/stdout_diff/',
+         views.AGTestCommandResultStdoutDiffView.as_view(),
+         name='ag-test-cmd-result-stdout-diff'),
+    path('submissions/<int:pk>/ag_test_cmd_results/<int:result_pk>/stderr_diff/',
+         views.AGTestCommandResultStderrDiffView.as_view(),
+         name='ag-test-cmd-result-stderr-diff'),
+
+     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/setup_stdout/',
+          views.StudentTestSuiteResultSetupStdoutView.as_view(),
+          name='student-suite-setup-stdout'),
+     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/setup_stderr/',
+          views.StudentTestSuiteResultSetupStderrView.as_view(),
+          name='student-suite-setup-stderr'),
+
+     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/get_student_test_names_stdout/',
+          views.StudentTestSuiteResultGetStudentTestsStdoutView.as_view(),
+          name='student-suite-get-student-test-names-stdout'),
+     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/get_student_test_names_stderr/',
+          views.StudentTestSuiteResultGetStudentTestsStderrView.as_view(),
+          name='student-suite-get-student-test-names-stderr'),
+
+     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/validity_check_stdout/',
+          views.StudentTestSuiteResultValidityCheckStdoutView.as_view(),
+          name='student-suite-validity-check-stdout'),
+     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/validity_check_stderr/',
+          views.StudentTestSuiteResultValidityCheckStderrView.as_view(),
+          name='student-suite-validity-check-stderr'),
+
+     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/grade_buggy_impls_stdout/',
+          views.StudentTestSuiteResultGradeBuggyImplsStdoutView.as_view(),
+          name='student-suite-grade-buggy-impls-stdout'),
+     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/grade_buggy_impls_stderr/',
+          views.StudentTestSuiteResultGradeBuggyImplsStderrView.as_view(),
+          name='student-suite-grade-buggy-impls-stderr'),
 ]

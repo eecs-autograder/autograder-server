@@ -23,6 +23,26 @@ from .rerun_submissions_task_views import (
     RerunSubmissionsTaskListCreateView, RerunSubmissionsTaskDetailVewSet)
 from .student_test_suite_views import (
     StudentTestSuiteListCreateView, StudentTestSuiteOrderView, StudentTestSuiteDetailViewSet)
-from .submission_views.submission_detail_view import SubmissionDetailViewSet
+
+from .submission_views.submission_detail_view import (
+    SubmissionDetailViewSet,
+
+    SubmissionResultsView,
+    AGTestSuiteResultsStdoutView,
+    AGTestSuiteResultsStderrView,
+    AGTestCommandResultStdoutView,
+    AGTestCommandResultStderrView,
+    AGTestCommandResultStdoutDiffView,
+    AGTestCommandResultStderrDiffView,
+
+    StudentTestSuiteResultSetupStdoutView,
+    StudentTestSuiteResultSetupStderrView,
+    StudentTestSuiteResultGetStudentTestsStdoutView,
+    StudentTestSuiteResultGetStudentTestsStderrView,
+    StudentTestSuiteResultValidityCheckStdoutView,
+    StudentTestSuiteResultValidityCheckStderrView,
+    StudentTestSuiteResultGradeBuggyImplsStdoutView,
+    StudentTestSuiteResultGradeBuggyImplsStderrView,
+)
 from .submission_views.submissions_view import SubmissionsViewSet
 from .user_views import UserViewSet
