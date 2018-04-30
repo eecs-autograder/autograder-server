@@ -110,9 +110,6 @@ class APITags(enum.Enum):
     download_tasks = 'download_tasks'
     rerun_submissions_tasks = 'rerun_submissions_tasks'
 
-    users = 'users'
-    logout = 'logout'
-
 
 class AGModelViewAutoSchema(SwaggerAutoSchema):
     def get_request_body_parameters(self, consumes):

@@ -70,26 +70,53 @@ rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
                                               base_name='rerun-submissions-task')
 
 
-class LogoutView(AlwaysIsAuthenticatedMixin, APIView):
-    def post(self, request, *args, **kwargs):
-        Token.objects.filter(user=request.user).delete()
-        return response.Response(status=status.HTTP_200_OK)
-
-
 schema_view = get_schema_view(
     openapi.Info(
        title="Autograder API",
        default_version=settings.VERSION,
-       # description="Test description",
+       description="""
+<h3>Welcome to the Autograder API documentation!</h3>
+<div>
+  This API is in Alpha. Much of it is automatically generated, and while most of it is accurate,
+  there are still some gaps. Furthermore, the API is subject to change in future versions.
+</div>
+<div>
+  You can look around as much as you like, but if you want to send real requests,
+  you'll need to authenticate. Here's how:
+</div>
+<ol>
+  <li>
+    If you'll be using the API a lot, you might want to request a dedicated access token.
+    To get one, send an email to jameslp at umich.edu, and we'll see about securely sending you
+    a new token.
+  </li>
+  <li>
+    Otherwise, you can snag the token from your user account.
+    Head over to <a href="autograder.io">autograder.io</a>, log in,
+    and open up the developer console.</li>
+  <li>
+    Under the "Network" tab, select any of the requests to the
+    "/users/current/my_roles/" endpoint. Find the "Authorization" header and copy the value
+    "Token &lt;token&gt;", where &lt;token&gt; is your authorization
+    token.
+  </li>
+  <li>
+    When sending requests from your own code, set the "Authorization" header with the value
+    "Token &lt;token&gt;"
+  </li>
+  <li>
+    When you click on the "Authorize" or "Try it out" buttons on this page,
+    enter "Token &lt;token&gt;" into the "Value" field.
+  </li>
+</ol>
+       """,
        # terms_of_service="https://www.google.com/policies/terms/",
        # contact=openapi.Contact(email="contact@snippets.local"),
        # license=openapi.License(name="BSD License"),
     ),
-    # validators=['flex', 'ssv'],
     public=True,
     permission_classes=(permissions.AllowAny,),
     generator_class=AGSchemaGenerator,
-    # authentication_classes=
 )
 
 
@@ -97,7 +124,6 @@ urlpatterns = [
     url(r'^docs/$', schema_view.with_ui('swagger'), name='schema-swagger-ui'),
 
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
-    url(r'^logout/$', LogoutView.as_view()),
 
     url(r'', include(user_router.urls)),
 

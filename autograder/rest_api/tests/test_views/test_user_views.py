@@ -2,7 +2,6 @@ import itertools
 
 from django.urls import reverse
 
-import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
@@ -130,23 +129,6 @@ class RetrieveUserTestCase(test_data.Client,
     def test_other_list_invitations_sent_forbidden(self):
         self.do_get_user_info_permission_denied_test(
             'user-group-invitations-sent')
-
-    def test_self_list_notifications(self):
-        for user in self.all_users:
-            self.do_list_objects_test(
-                self.client, user,
-                user_url(user, 'user-notifications'),
-                ag_serializers.NotificationSerializer([], many=True).data)
-
-            notification = ag_models.Notification.objects.validate_and_create(
-                message='Hai there', recipient=user)
-            self.do_list_objects_test(
-                self.client, user,
-                user_url(user, 'user-notifications'),
-                ag_serializers.NotificationSerializer([notification], many=True).data)
-
-    def test_other_list_notifications_permission_denied(self):
-        self.do_get_user_info_permission_denied_test('user-notifications')
 
     def do_get_user_info_permission_denied_test(self, url_lookup):
         for requester, to_get in itertools.product(self.all_users,
