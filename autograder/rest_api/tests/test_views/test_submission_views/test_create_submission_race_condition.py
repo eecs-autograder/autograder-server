@@ -17,7 +17,7 @@ class RaceConditionTestCase(test_data.Client,
     def test_simultaneous_create_race_condition_prevented(self):
         group = self.admin_group(self.project)
         group_id = group.pk
-        path = 'autograder.rest_api.views.submission_views.submissions_view.user_can_view_group'
+        path = 'autograder.rest_api.views.submission_views.submission_views.test_ut.mocking_hook'
 
         @test_ut.sleeper_subtest(path)
         def create_submission_first(group_id):
@@ -27,7 +27,8 @@ class RaceConditionTestCase(test_data.Client,
             response = client.post(self.submissions_url(group),
                                    {'submitted_files': []},
                                    format='multipart')
-            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code,
+                             msg=response.data)
             self.assertEqual(1, ag_models.Submission.objects.count())
 
         subtest = create_submission_first(group_id)

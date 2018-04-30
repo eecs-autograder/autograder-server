@@ -11,11 +11,12 @@ from rest_framework import decorators, exceptions, mixins, response, status
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+import autograder.utils.testing as test_ut
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import (AGModelGenericViewSet,
                                                       ListCreateNestedModelViewSet,
-                                                      require_query_params, require_body_params)
-
+                                                      require_body_params, require_query_params,
+                                                      ListNestedModelViewSet)
 
 can_view_group = (
     P(ag_permissions.IsReadOnly) &
@@ -40,7 +41,7 @@ list_create_submission_permissions = can_view_group | can_submit
         request_body_parameters=[
             Parameter(name='submitted_files', in_='body',
                       description='The files being submitted, as multipart/form-data.',
-                      required=True, type='List[file]')
+                      type='List[file]')
         ]
     )
 )
@@ -53,19 +54,26 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
     to_one_field_name = 'group'
     reverse_to_one_field_name = 'submissions'
 
-    @method_decorator(require_body_params('submitted_files'))
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
+        # NOTE: The way that submitted_files gets encoded in requests,
+        # sending no files (which is valid) will cause the key 'submitted_files'
+        # to not show up in the request body. Therefore, we will NOT require
+        # the presence of a 'submitted_files' key in the request.
         for key in request.data:
             if key != 'submitted_files':
                 raise exceptions.ValidationError({'invalid_fields': [key]})
 
         timestamp = timezone.now()
         group = self.get_object()
+        # Keep this mocking hook just after we call get_object()
+        test_ut.mocking_hook()
+
         self._validate_can_submit(request, group, timestamp)
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
+        serializer.is_valid()
         serializer.save(group=self.get_object(),
                         submitter=self.request.user.username)
 

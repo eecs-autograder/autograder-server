@@ -180,7 +180,7 @@ class RetrieveNestedModelMixin(mixins.RetrieveModelMixin):
         return response.Response(serializer.data)
 
 
-class CreateNestedModelViewSet(TransactionCreateMixin):
+class CreateNestedModelMixin(TransactionCreateMixin):
     """
     Provides 'create' functionality when mixed with a
     NestedModelViewSet.
@@ -218,7 +218,7 @@ class ListNestedModelViewSet(ListNestedModelMixin, NestedModelViewSet):
 
 
 class ListCreateNestedModelViewSet(ListNestedModelMixin,
-                                   CreateNestedModelViewSet,
+                                   CreateNestedModelMixin,
                                    NestedModelViewSet):
     """
     Shortcut class for a nested model view set with list and create
@@ -228,7 +228,7 @@ class ListCreateNestedModelViewSet(ListNestedModelMixin,
 
 
 class RetrieveCreateNestedModelViewSet(RetrieveNestedModelMixin,
-                                       CreateNestedModelViewSet,
+                                       CreateNestedModelMixin,
                                        NestedModelViewSet):
     """
     Shortcut class for a nested model view set with retrieve and create
@@ -255,7 +255,7 @@ def handle_object_does_not_exist_404(func):
 
 def require_body_params(*required_body_params: str):
     """
-    When applied to a view, checks whether each parameter listed in
+    When applied to a DRF view, checks whether each parameter listed in
     required_body_params is present in the request body. If any of
     the parameters are missing, returns a 400 response.
     """
@@ -281,7 +281,7 @@ def require_body_params(*required_body_params: str):
 
 def require_query_params(*required_query_params: str):
     """
-    When applied to a view, checks whether each parameter listed in
+    When applied to a DRF view, checks whether each parameter listed in
     required_query_params is present in the request query string.
     If any of the parameters are missing, returns a 400 response.
     """
