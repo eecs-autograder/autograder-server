@@ -2,7 +2,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.http.response import FileResponse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
+from drf_yasg.openapi import Parameter
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, exceptions, mixins, response, status
 
 import autograder.core.models as ag_models
@@ -10,7 +13,8 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import (AGModelGenericViewSet,
-                                                      ListCreateNestedModelViewSet)
+                                                      ListCreateNestedModelViewSet,
+                                                      require_query_params)
 
 
 can_view_group = (
@@ -104,27 +108,36 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                           ag_permissions.can_view_project(),
                           ag_permissions.is_staff_or_group_member())
 
+    @swagger_auto_schema(
+        manual_parameters=[
+            Parameter(
+                name='filename', in_='query',
+                description='The name of the file to return.',
+                required=True, type='str')
+        ],
+        responses={'200': 'Returns the file contents.'})
+    @method_decorator(require_query_params('filename'))
     @decorators.detail_route()
     def file(self, request, *args, **kwargs):
         submission = self.get_object()
-
+        filename = request.query_params['filename']
         try:
-            filename = request.query_params['filename']
             return FileResponse(submission.get_file(filename))
-        except KeyError:
-            return response.Response(
-                'Missing required query parameter "filename"',
-                status=status.HTTP_400_BAD_REQUEST)
         except ObjectDoesNotExist:
             return response.Response('File "{}" not found'.format(filename),
                                      status=status.HTTP_404_NOT_FOUND)
 
+    @swagger_auto_schema(responses={'204': 'The submission has been removed from the queue.'},
+                         request_body_parameters=[])
     @transaction.atomic()
     @decorators.detail_route(
         methods=['post'],
         # NOTE: Only group members can remove their own submissions from the queue.
         permission_classes=(ag_permissions.can_view_project(), ag_permissions.is_group_member()))
     def remove_from_queue(self, request, *args, **kwargs):
+        """
+        Remove this submission from the grading queue.
+        """
         submission = self.get_object()
         removeable_statuses = [ag_models.Submission.GradingStatus.received,
                                ag_models.Submission.GradingStatus.queued]

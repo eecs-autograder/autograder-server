@@ -132,7 +132,7 @@ urlpatterns = [
 
     url(r'', include(group_router.urls)),
 
-    path('groups/<int:pk>/submissins/', views.ListCreateSubmissionViewSet.as_view(),
+    path('groups/<int:pk>/submissions/', views.ListCreateSubmissionViewSet.as_view(),
          name='submissions'),
     url(r'', include(submission_router.urls)),
 
@@ -194,31 +194,31 @@ urlpatterns = [
          views.AGTestCommandResultStderrDiffView.as_view(),
          name='ag-test-cmd-result-stderr-diff'),
 
-     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/setup_stdout/',
+     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/setup_stdout/',
           views.StudentTestSuiteResultSetupStdoutView.as_view(),
           name='student-suite-setup-stdout'),
-     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/setup_stderr/',
+     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/setup_stderr/',
           views.StudentTestSuiteResultSetupStderrView.as_view(),
           name='student-suite-setup-stderr'),
 
-     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/get_student_test_names_stdout/',
+     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/get_student_test_names_stdout/',
           views.StudentTestSuiteResultGetStudentTestsStdoutView.as_view(),
           name='student-suite-get-student-test-names-stdout'),
-     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/get_student_test_names_stderr/',
+     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/get_student_test_names_stderr/',
           views.StudentTestSuiteResultGetStudentTestsStderrView.as_view(),
           name='student-suite-get-student-test-names-stderr'),
 
-     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/validity_check_stdout/',
+     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/validity_check_stdout/',
           views.StudentTestSuiteResultValidityCheckStdoutView.as_view(),
           name='student-suite-validity-check-stdout'),
-     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/validity_check_stderr/',
+     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/validity_check_stderr/',
           views.StudentTestSuiteResultValidityCheckStderrView.as_view(),
           name='student-suite-validity-check-stderr'),
 
-     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/grade_buggy_impls_stdout/',
+     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/grade_buggy_impls_stdout/',
           views.StudentTestSuiteResultGradeBuggyImplsStdoutView.as_view(),
           name='student-suite-grade-buggy-impls-stdout'),
-     path('submissions/<int:pk>/student_test_suite_result/<int:result_pk>/grade_buggy_impls_stderr/',
+     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/grade_buggy_impls_stderr/',
           views.StudentTestSuiteResultGradeBuggyImplsStderrView.as_view(),
           name='student-suite-grade-buggy-impls-stderr'),
 ]
