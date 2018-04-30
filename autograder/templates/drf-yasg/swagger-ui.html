@@ -18,6 +18,10 @@
 
 <h1>Welcome to the Autograder API documentation!</h1>
 <div>
+  This API is in Alpha. Much of it is automatically generated, and while most of it is accurate,
+  there are still some gaps. Furthermore, the API is subject to change in future versions.
+</div>
+<div>
   You can look around as much as you like, but if you want to send real requests,
   you'll need to authenticate. Here's how:
 </div>
@@ -33,20 +37,19 @@
     and open up the developer console.</li>
   <li>
     Under the "Network" tab, select any of the requests to the
-    "/users/current/my_roles/" endpoint.</li>
-  <li>
-    When you click on the "Authorize" or "Try it out" buttons on this page,
-    enter "Token &lt;token&gt;" into the "Value" field, where &lt;token&gt; is your authorization
+    "/users/current/my_roles/" endpoint. Find the "Authorization" header and copy the value
+    "Token &lt;token&gt;", where &lt;token&gt; is your authorization
     token.
   </li>
+  <li>
+    When sending requests from your own code, set the "Authorization" header with the value
+    "Token &lt;token&gt;"
+  </li>
+  <li>
+    When you click on the "Authorize" or "Try it out" buttons on this page,
+    enter "Token &lt;token&gt;" into the "Value" field.
+  </li>
 </ol>
-<div>
-  <b>IMPORTANT:</b> Logging out will DELETE your auth token. If you were using your user
-  account's token, you'll have to sign in again at autograder.io to get another one.
-  If it was a dedicated access token, you'll need to contact jameslp again to get
-  a new one.
-</div>
-
 
 <svg class="swagger-defs" xmlns="http://www.w3.org/2000/svg">
     <defs>
