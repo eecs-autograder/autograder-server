@@ -3,10 +3,9 @@ from django.conf.urls import include, url
 from django.urls import path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
-from rest_framework import permissions, response, status
+from rest_framework import permissions, response, status, routers
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-from rest_framework_nested import routers
 
 from autograder.rest_api import views
 from autograder.rest_api.views.ag_model_views import AlwaysIsAuthenticatedMixin
