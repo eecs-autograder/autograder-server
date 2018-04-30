@@ -4,6 +4,8 @@ from django.core.cache import cache
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
+from drf_yasg.openapi import Parameter
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
 from rest_framework.exceptions import ValidationError
 
@@ -22,6 +24,35 @@ class SubmissionResultsViewBase(AGModelAPIView):
                           ag_permissions.can_request_feedback_category())
     model_manager = ag_models.Submission.objects
 
+    @swagger_auto_schema(
+        manual_parameters=[
+            Parameter(name=_FDBK_CATEGORY_PARAM, in_='query',
+                      required=True, type='string',
+                      description="""
+The category of feedback being requested. Must be one of the following values: 
+
+    - {}: Can be requested by students before or after
+        the project deadline on their submissions that did not exceed 
+        the daily limit.
+    - {}: Can be requested by students on their submissions 
+        that exceeded the daily limit.
+    - {}: Can be requested by students on their own
+        ultimate (a.k.a. final graded) submission once the project
+        deadline has passed and hide_ultimate_submission_fdbk has
+        been set to False on the project.
+    - {}: Can be requested by staff when looking up another
+        user's submission results.
+    - {}: Can be requested by staff on their own submissions. Can be
+        requested by staff when looking up another user's ultimate
+        submission results after the deadline.""".format(
+                          ag_models.FeedbackCategory.normal.value,
+                          ag_models.FeedbackCategory.past_limit_submission.value,
+                          ag_models.FeedbackCategory.ultimate_submission.value,
+                          ag_models.FeedbackCategory.staff_viewer.value,
+                          ag_models.FeedbackCategory.max.value,
+                      ))
+        ]
+    )
     @method_decorator(require_query_params(_FDBK_CATEGORY_PARAM))
     def get(self, *args, **kwargs):
         fdbk_category = self._get_fdbk_category()

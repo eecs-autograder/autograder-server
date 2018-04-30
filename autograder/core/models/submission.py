@@ -216,17 +216,16 @@ class Submission(ag_model_base.AutograderModel):
         """
         An iterable of the files included in this submission.
         """
-        return (self.get_file(filename)
-                for filename in self.submitted_filenames)
+        return (self.get_file(filename) for filename in self.submitted_filenames)
 
     submitted_filenames = ag_fields.StringArrayField(
         blank=True, default=list,
-        help_text='''The names of submitted_files.''')
+        help_text='''The names of files that were submitted, 
+                     excluding those that were discarded.''')
 
     discarded_files = ag_fields.StringArrayField(
         default=list, blank=True,
-        help_text='''A list of names of files that were discarded when
-            this Submission was created.''')
+        help_text='''The names of files that were discarded when this Submission was created.''')
 
     missing_files = pg_fields.JSONField(
         default=dict, blank=True,
