@@ -3,7 +3,7 @@ from django.db import transaction
 from django.http.response import FileResponse
 from django.utils import timezone
 from drf_composable_permissions.p import P
-from rest_framework import decorators, exceptions, mixins, permissions, response, status
+from rest_framework import decorators, exceptions, mixins, response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
@@ -11,33 +11,28 @@ import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import (AGModelGenericViewSet,
                                                       ListCreateNestedModelViewSet)
-from autograder.rest_api.views.permission_components import user_can_view_group
 
 
-class _Permissions(permissions.BasePermission):
-    def has_object_permission(self, request, view, group):
-        # We want the timestamp to be immediately when the request is
-        # being processed.
-        timestamp = timezone.now()
+can_view_group = (
+    P(ag_permissions.IsReadOnly) &
+    P(ag_permissions.can_view_project()) &
+    P(ag_permissions.is_staff_or_group_member())
+)
 
-        if request.method.lower() == 'get':
-            return user_can_view_group(request.user, group)
 
-        if request.method.lower() == 'post':
-            return self._has_submit_permission(request, view, group, timestamp)
+can_submit = (
+    ~P(ag_permissions.IsReadOnly) &
+    P(ag_permissions.can_view_project()) &
+    P(ag_permissions.is_group_member())
+)
 
-        return False
 
-    def _has_submit_permission(self, request, view, group, timestamp):
-        if not user_can_view_group(request.user, group):
-            return False
-
-        return group.members.filter(pk=request.user.pk).exists()
+list_create_submission_permissions = can_view_group | can_submit
 
 
 class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.SubmissionSerializer
-    permission_classes = (_Permissions,)
+    permission_classes = (list_create_submission_permissions,)
 
     model_manager = ag_models.Group.objects
 

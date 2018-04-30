@@ -84,6 +84,11 @@ def _get_group(model: ag_models.AutograderModel) -> ag_models.Group:
     raise NotImplementedError
 
 
+@_get_group.register(ag_models.Group)
+def _(group: ag_models.Group) -> ag_models.Group:
+    return group
+
+
 class IsReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.method in permissions.SAFE_METHODS
