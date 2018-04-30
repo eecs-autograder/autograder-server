@@ -32,6 +32,7 @@ class UserViewSet(mixins.RetrieveModelMixin,
     api_tags = [APITags.permissions]
 
     @decorators.list_route()
+    @swagger_auto_schema(responses={'200': ag_serializers.UserSerializer})
     def current(self, request, *args, **kwargs):
         return response.Response(
             ag_serializers.UserSerializer(request.user).data)
