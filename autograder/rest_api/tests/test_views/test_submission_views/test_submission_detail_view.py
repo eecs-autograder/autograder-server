@@ -853,7 +853,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         for field_name, url_lookup in zip(field_names, url_lookups):
             url = (reverse(url_lookup,
                            kwargs={'pk': submission.pk, 'result_pk': suite_result.pk}) +
-                   '&feedback_category={}'.format(fdbk_category.value))
+                   '?feedback_category={}'.format(fdbk_category.value))
             response = client.get(url)
             if expect_404:
                 self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
@@ -1040,28 +1040,28 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
         self.setup_stdout_base_url = reverse(
             'student-suite-setup-stdout',
-            kwargs={'result_pk': self.student_suite_result.pk})
+            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
         self.setup_stderr_base_url = reverse(
             'student-suite-setup-stderr',
-            kwargs={'result_pk': self.student_suite_result.pk})
+            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
         self.get_test_names_stdout_base_url = reverse(
             'student-suite-get-student-test-names-stdout',
-            kwargs={'result_pk': self.student_suite_result.pk})
+            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
         self.get_test_names_stderr_base_url = reverse(
             'student-suite-get-student-test-names-stderr',
-            kwargs={'result_pk': self.student_suite_result.pk})
+            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
         self.validity_check_stdout_base_url = reverse(
             'student-suite-validity-check-stdout',
-            kwargs={'result_pk': self.student_suite_result.pk})
+            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
         self.validity_check_stderr_base_url = reverse(
             'student-suite-validity-check-stderr',
-            kwargs={'result_pk': self.student_suite_result.pk})
+            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
         self.buggy_impls_stdout_base_url = reverse(
             'student-suite-grade-buggy-impls-stdout',
-            kwargs={'result_pk': self.student_suite_result.pk})
+            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
         self.buggy_impls_stderr_base_url = reverse(
             'student-suite-grade-buggy-impls-stderr',
-            kwargs={'result_pk': self.student_suite_result.pk})
+            kwargs={'pk': self.submission.pk, 'result_pk': self.student_suite_result.pk})
 
         self.base_urls = [
             self.setup_stdout_base_url,
@@ -1095,20 +1095,20 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
     def test_get_setup_output(self):
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.setup_stdout, **self.setup_stdout_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.setup_stdout, self.setup_stdout_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.setup_stdout_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.normal,
+            status.HTTP_200_OK, None, self.setup_stdout_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.setup_stderr, **self.setup_stderr_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.setup_stderr, self.setup_stderr_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.setup_stderr_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.normal,
+            status.HTTP_200_OK, None, self.setup_stderr_base_url)
 
     def test_get_setup_output_no_setup_cmd(self):
         self.student_suite.validate_and_update(use_setup_command=False)
@@ -1116,66 +1116,66 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         self.student_suite_result.save()
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, None, **self.setup_stdout_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, None, self.setup_stdout_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, None, **self.setup_stderr_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, None, self.setup_stderr_base_url)
 
     def test_get_get_test_names_result_output(self):
         # NOTE: Whether a user can view the get_test_names output does not
         # depend on feedback configuration. Instead, this output
         # is always available to staff.
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.get_test_names_stdout, **self.get_test_names_stdout_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.get_test_names_stdout, self.get_test_names_stdout_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.get_test_names_stdout_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.normal,
+            status.HTTP_200_OK, None, self.get_test_names_stdout_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.get_test_names_stderr, **self.get_test_names_stderr_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.get_test_names_stderr, self.get_test_names_stderr_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.get_test_names_stderr_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.normal,
+            status.HTTP_200_OK, None, self.get_test_names_stderr_base_url)
 
     def test_get_validity_check_output(self):
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.validity_check_stdout, **self.validity_check_stdout_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.validity_check_stdout, self.validity_check_stdout_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.validity_check_stdout_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.normal,
+            status.HTTP_200_OK, None, self.validity_check_stdout_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.validity_check_stderr, **self.validity_check_stderr_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.validity_check_stderr, self.validity_check_stderr_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.validity_check_stderr_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.normal,
+            status.HTTP_200_OK, None, self.validity_check_stderr_base_url)
 
     def test_get_buggy_impls_output(self):
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.buggy_impls_stdout, **self.buggy_impls_stdout_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.buggy_impls_stdout, self.buggy_impls_stdout_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.buggy_impls_stdout_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.normal,
+            status.HTTP_200_OK, None, self.buggy_impls_stdout_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
-            status.HTTP_200_OK, self.buggy_impls_stderr, **self.buggy_impls_stderr_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.max,
+            status.HTTP_200_OK, self.buggy_impls_stderr, self.buggy_impls_stderr_base_url)
 
         self.do_get_output_test(
-            self.client, self.admin, self.submission, ag_models.FeedbackCategory.normal,
-            status.HTTP_200_OK, None, **self.buggy_impls_stderr_base_url)
+            self.client, self.admin, ag_models.FeedbackCategory.normal,
+            status.HTTP_200_OK, None, self.buggy_impls_stderr_base_url)
 
     def test_get_output_suite_hidden(self):
         self.maxDiff = None
@@ -1191,7 +1191,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
         for url in self.base_urls:
             self.do_get_output_test(
-                self.client, self.admin, self.submission, ag_models.FeedbackCategory.staff_viewer,
+                self.client, self.admin, ag_models.FeedbackCategory.staff_viewer,
                 status.HTTP_200_OK, None, url)
 
     def test_get_output_suite_not_found(self):
@@ -1207,12 +1207,12 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         ]
 
         for url_lookup in url_lookups:
-            url_with_bad_pk = reverse(url_lookup, kwargs={'pk': 9001})
+            url_with_bad_pk = reverse(url_lookup, kwargs={'pk': 9001, 'result_pk': 9002})
             self.do_get_output_test(
-                self.client, self.admin, self.submission, ag_models.FeedbackCategory.max,
+                self.client, self.admin, ag_models.FeedbackCategory.max,
                 status.HTTP_404_NOT_FOUND, None, url_with_bad_pk)
 
-    def do_get_output_test(self, client: APIClient, user, submission, fdbk_category,
+    def do_get_output_test(self, client: APIClient, user, fdbk_category,
                            expected_status, expected_output, base_url):
         client.force_authenticate(user)
         query_params = QueryDict(mutable=True)
