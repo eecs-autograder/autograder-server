@@ -1,13 +1,17 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.http.response import FileResponse
 from django.utils import timezone
-
-from rest_framework import viewsets, mixins, permissions, exceptions
+from drf_composable_permissions.p import P
+from rest_framework import decorators, exceptions, mixins, permissions, response, status
 
 import autograder.core.models as ag_models
+import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
-
+from autograder.rest_api import transaction_mixins
+from autograder.rest_api.views.ag_model_views import (AGModelGenericViewSet,
+                                                      ListCreateNestedModelViewSet)
 from autograder.rest_api.views.permission_components import user_can_view_group
-from autograder.rest_api.views.load_object_mixin import build_load_object_mixin
 
 
 class _Permissions(permissions.BasePermission):
@@ -31,16 +35,14 @@ class _Permissions(permissions.BasePermission):
         return group.members.filter(pk=request.user.pk).exists()
 
 
-class SubmissionsViewSet(
-        build_load_object_mixin(ag_models.Group, pk_key='group_pk'),
-        mixins.ListModelMixin,
-        mixins.CreateModelMixin,
-        viewsets.GenericViewSet):
+class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.SubmissionSerializer
-    permission_classes = (permissions.IsAuthenticated, _Permissions)
+    permission_classes = (_Permissions,)
 
-    def get_queryset(self):
-        return self.get_object().submissions.all()
+    model_manager = ag_models.Group.objects
+
+    to_one_field_name = 'group'
+    reverse_to_one_field_name = 'submissions'
 
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
@@ -94,3 +96,50 @@ class SubmissionsViewSet(
             raise exceptions.ValidationError(
                 {'submission': 'Submissions past the daily limit are '
                                'not allowed for this project'})
+
+
+class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
+                              transaction_mixins.TransactionPartialUpdateMixin,
+                              AGModelGenericViewSet):
+    model_manager = ag_models.Submission.objects.select_related(
+        'group__project__course')
+
+    serializer_class = ag_serializers.SubmissionSerializer
+    permission_classes = ((P(ag_permissions.is_admin()) | P(ag_permissions.IsReadOnly)),
+                          ag_permissions.can_view_project(),
+                          ag_permissions.is_staff_or_group_member())
+
+    @decorators.detail_route()
+    def file(self, request, *args, **kwargs):
+        submission = self.get_object()
+
+        try:
+            filename = request.query_params['filename']
+            return FileResponse(submission.get_file(filename))
+        except KeyError:
+            return response.Response(
+                'Missing required query parameter "filename"',
+                status=status.HTTP_400_BAD_REQUEST)
+        except ObjectDoesNotExist:
+            return response.Response('File "{}" not found'.format(filename),
+                                     status=status.HTTP_404_NOT_FOUND)
+
+    @transaction.atomic()
+    @decorators.detail_route(
+        methods=['post'],
+        # NOTE: Only group members can remove their own submissions from the queue.
+        permission_classes=(ag_permissions.can_view_project(), ag_permissions.is_group_member()))
+    def remove_from_queue(self, request, *args, **kwargs):
+        submission = self.get_object()
+        removeable_statuses = [ag_models.Submission.GradingStatus.received,
+                               ag_models.Submission.GradingStatus.queued]
+        if submission.status not in removeable_statuses:
+            return response.Response('This submission is not currently queued',
+                                     status=status.HTTP_400_BAD_REQUEST)
+
+        submission.status = (
+            ag_models.Submission.GradingStatus.removed_from_queue)
+        submission.save()
+
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+

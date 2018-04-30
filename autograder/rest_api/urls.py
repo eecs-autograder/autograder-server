@@ -40,16 +40,8 @@ group_invitation_router.register(r'group_invitations',
                                  views.GroupInvitationDetailViewSet,
                                  base_name='group-invitation')
 
-
 group_router = routers.SimpleRouter()
 group_router.register(r'groups', views.GroupDetailViewSet, base_name='group')
-
-group_submissions_router = routers.NestedSimpleRouter(group_router, r'groups',
-                                                      lookup='group')
-group_submissions_router.register(r'submissions',
-                                  views.SubmissionsViewSet,
-                                  base_name='group-submissions')
-
 
 submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
@@ -123,16 +115,15 @@ urlpatterns = [
 
     path('projects/<int:pk>/instructor_files/', views.ListCreateInstructorFilesViewSet.as_view(),
          name='instructor-files'),
+    url(r'', include(uploaded_file_router.urls)),
     path('instructor_files/<int:pk>/content/', views.InstructorFileContentView.as_view(),
          name='uploaded-file-content'),
 
     path('projects/<int:pk>/expected_student_files/',
          views.ListCreateExpectedStudentFilesViewSet.as_view(), name='expected-student-files'),
+    url(r'', include(expected_student_pattern_router.urls)),
 
     url(r'', include(project_downloads_router.urls)),
-
-    url(r'', include(expected_student_pattern_router.urls)),
-    url(r'', include(uploaded_file_router.urls)),
 
     path('projects/<int:pk>/group_invitations/',
          views.ListCreateGroupInvitationViewSet.as_view(),
@@ -140,8 +131,9 @@ urlpatterns = [
     url(r'', include(group_invitation_router.urls)),
 
     url(r'', include(group_router.urls)),
-    url(r'', include(group_submissions_router.urls)),
 
+    path('groups/<int:pk>/submissins/', views.ListCreateSubmissionViewSet.as_view(),
+         name='submissions'),
     url(r'', include(submission_router.urls)),
 
     url(r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/$',

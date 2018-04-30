@@ -1,83 +1,24 @@
 from typing import BinaryIO, Callable, Optional
 
-from django.core import exceptions
 from django.core.cache import cache
-from django.db import transaction
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from drf_composable_permissions.p import P
-from rest_framework import decorators, mixins, response, status
+from rest_framework import response
 from rest_framework.exceptions import ValidationError
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.submission import get_submissions_with_results_queryset
-from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelGenericViewSet,
-                                                      require_query_params)
-
-is_admin = ag_permissions.is_admin(lambda submission: submission.group.project.course)
-can_view_project = ag_permissions.can_view_project(
-    lambda submission: submission.group.project)
-is_staff_or_group_member = ag_permissions.is_staff_or_group_member(
-    lambda submission: submission.group)
-is_group_member = ag_permissions.is_group_member(lambda submission: submission.group)
-
-
-class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
-                              transaction_mixins.TransactionPartialUpdateMixin,
-                              AGModelGenericViewSet):
-    model_manager = ag_models.Submission.objects.select_related(
-        'group__project__course')
-
-    serializer_class = ag_serializers.SubmissionSerializer
-    permission_classes = ((P(is_admin) | P(ag_permissions.IsReadOnly)),
-                          can_view_project, is_staff_or_group_member)
-
-    @decorators.detail_route()
-    def file(self, request, *args, **kwargs):
-        submission = self.get_object()
-
-        try:
-            filename = request.query_params['filename']
-            return FileResponse(submission.get_file(filename))
-        except KeyError:
-            return response.Response(
-                'Missing required query parameter "filename"',
-                status=status.HTTP_400_BAD_REQUEST)
-        except exceptions.ObjectDoesNotExist:
-            return response.Response('File "{}" not found'.format(filename),
-                                     status=status.HTTP_404_NOT_FOUND)
-
-    @transaction.atomic()
-    @decorators.detail_route(
-        methods=['post'],
-        # NOTE: Only group members can remove their own submissions from the queue.
-        permission_classes=(can_view_project, is_group_member))
-    def remove_from_queue(self, request, *args, **kwargs):
-        submission = self.get_object()
-        removeable_statuses = [ag_models.Submission.GradingStatus.received,
-                               ag_models.Submission.GradingStatus.queued]
-        if submission.status not in removeable_statuses:
-            return response.Response('This submission is not currently queued',
-                                     status=status.HTTP_400_BAD_REQUEST)
-
-        submission.status = (
-            ag_models.Submission.GradingStatus.removed_from_queue)
-        submission.save()
-
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
-
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, require_query_params)
 
 _FDBK_CATEGORY_PARAM = 'feedback_category'
 
 
 class SubmissionResultsViewBase(AGModelAPIView):
-    permission_classes = (can_view_project,
-                          is_staff_or_group_member,
+    permission_classes = (ag_permissions.can_view_project(),
+                          ag_permissions.is_staff_or_group_member(),
                           ag_permissions.can_request_feedback_category())
     model_manager = ag_models.Submission.objects
 

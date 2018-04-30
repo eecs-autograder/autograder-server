@@ -24,9 +24,9 @@ from .rerun_submissions_task_views import (
 from .student_test_suite_views import (
     StudentTestSuiteListCreateView, StudentTestSuiteOrderView, StudentTestSuiteDetailViewSet)
 
-from .submission_views.submission_detail_view import (
-    SubmissionDetailViewSet,
+from .submission_views.submission_views import ListCreateSubmissionViewSet, SubmissionDetailViewSet
 
+from .submission_views.submission_result_views import (
     SubmissionResultsView,
     AGTestSuiteResultsStdoutView,
     AGTestSuiteResultsStderrView,
@@ -44,5 +44,5 @@ from .submission_views.submission_detail_view import (
     StudentTestSuiteResultGradeBuggyImplsStdoutView,
     StudentTestSuiteResultGradeBuggyImplsStderrView,
 )
-from .submission_views.submissions_view import SubmissionsViewSet
+
 from .user_views import UserViewSet

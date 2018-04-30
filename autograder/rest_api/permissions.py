@@ -14,9 +14,20 @@ GetGroupFnType = Callable[[ag_models.AutograderModel], ag_models.Group]
 PermissionClassType = Type[permissions.BasePermission]
 
 
+# Most of the functions that create permissions classes take in as an
+# argument a function that returns the kind of object that the
+# permissions class requires. For example, is_admin requires a Course,
+# and therefore takes in a function that extracts the related course
+# from whatever object it is given.
+#
+# For convenience, we define a set of function overloads that will
+# handle common AG model types. These functions are set as the
+# default argument where appropriate.
+
+
 @singledispatch
 def _get_course(model: ag_models.AutograderModel) -> ag_models.Course:
-    if hasattr(model, 'project'):
+    if hasattr(model, 'project') and isinstance(model.project, ag_models.Project):
         return model.project.course
 
     raise NotImplementedError
@@ -37,9 +48,14 @@ def _(group: ag_models.Group) -> ag_models.Course:
     return group.project.course
 
 
+@_get_course.register(ag_models.Submission)
+def _(submission: ag_models.Submission):
+    return submission.group.project.course
+
+
 @singledispatch
-def _get_project(model: ag_models.AutograderModel) -> ag_models.Course:
-    if hasattr(model, 'project'):
+def _get_project(model: ag_models.AutograderModel) -> ag_models.Project:
+    if hasattr(model, 'project') and isinstance(model.project, ag_models.Project):
         return model.project
 
     raise NotImplementedError
@@ -53,6 +69,19 @@ def _(project: ag_models.Project) -> ag_models.Project:
 @_get_project.register(ag_models.Group)
 def _(group: ag_models.Group) -> ag_models.Project:
     return group.project
+
+
+@_get_project.register(ag_models.Submission)
+def _(submission: ag_models.Submission) -> ag_models.Project:
+    return submission.group.project
+
+
+@singledispatch
+def _get_group(model: ag_models.AutograderModel) -> ag_models.Group:
+    if hasattr(model, 'group') and isinstance(model.group, ag_models.Group):
+        return model.group
+
+    raise NotImplementedError
 
 
 class IsReadOnly(permissions.BasePermission):
@@ -154,7 +183,7 @@ def is_admin_or_read_only_can_view_project(
 
 
 def is_staff_or_group_member(
-    get_group_fn: GetGroupFnType=lambda group: group
+    get_group_fn: GetGroupFnType=_get_group
 ) -> Type[permissions.BasePermission]:
     class IsStaffOrGroupMember(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
@@ -165,7 +194,7 @@ def is_staff_or_group_member(
     return IsStaffOrGroupMember
 
 
-def is_group_member(get_group_fn: GetGroupFnType=lambda group: group) -> PermissionClassType:
+def is_group_member(get_group_fn: GetGroupFnType=_get_group) -> PermissionClassType:
     class IsGroupMember(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             group = get_group_fn(obj)

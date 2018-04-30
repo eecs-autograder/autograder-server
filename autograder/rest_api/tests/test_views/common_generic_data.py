@@ -67,7 +67,7 @@ class Group(gen_data.Group):
         return reverse('group-detail', kwargs={'pk': group.pk})
 
     def submissions_url(self, group):
-        return reverse('group-submissions-list', kwargs={'group_pk': group.pk})
+        return reverse('submissinos', kwargs={'pk': group.pk})
 
 
 class Submission(gen_data.Submission):
