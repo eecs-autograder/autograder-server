@@ -42,6 +42,7 @@ API_MODELS = OrderedDict([
     [ag_models.AGTestCommand, 'AGTestCommand'],
     [ag_models.AGTestCommandFeedbackConfig, 'AGTestCommandFeedbackConfig'],
 
+    [ag_models.Submission.FeedbackCalculator, 'SubmissionResult'],
     [ag_models.AGTestSuiteResult.FeedbackCalculator, 'AGTestSuiteResult'],
     [ag_models.AGTestCaseResult.FeedbackCalculator, 'AGTestCaseResult'],
     [ag_models.AGTestCommandResult.FeedbackCalculator, 'AGTestCommandResult'],

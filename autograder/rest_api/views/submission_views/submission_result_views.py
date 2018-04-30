@@ -14,21 +14,14 @@ import autograder.core.utils as core_ut
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.submission import get_submissions_with_results_queryset
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, require_query_params)
+from autograder.rest_api.views.schema_generation import AGModelSchemaBuilder
 
 _FDBK_CATEGORY_PARAM = 'feedback_category'
 
 
-class SubmissionResultsViewBase(AGModelAPIView):
-    permission_classes = (ag_permissions.can_view_project(),
-                          ag_permissions.is_staff_or_group_member(),
-                          ag_permissions.can_request_feedback_category())
-    model_manager = ag_models.Submission.objects
-
-    @swagger_auto_schema(
-        manual_parameters=[
-            Parameter(name=_FDBK_CATEGORY_PARAM, in_='query',
-                      required=True, type='string',
-                      description="""
+_fdbk_category_param_docs = Parameter(
+    name=_FDBK_CATEGORY_PARAM, in_='query', required=True, type='string',
+    description="""
 The category of feedback being requested. Must be one of the following values: 
 
     - {}: Can be requested by students before or after
@@ -45,14 +38,20 @@ The category of feedback being requested. Must be one of the following values:
     - {}: Can be requested by staff on their own submissions. Can be
         requested by staff when looking up another user's ultimate
         submission results after the deadline.""".format(
-                          ag_models.FeedbackCategory.normal.value,
-                          ag_models.FeedbackCategory.past_limit_submission.value,
-                          ag_models.FeedbackCategory.ultimate_submission.value,
-                          ag_models.FeedbackCategory.staff_viewer.value,
-                          ag_models.FeedbackCategory.max.value,
-                      ))
-        ]
-    )
+                        ag_models.FeedbackCategory.normal.value,
+                        ag_models.FeedbackCategory.past_limit_submission.value,
+                        ag_models.FeedbackCategory.ultimate_submission.value,
+                        ag_models.FeedbackCategory.staff_viewer.value,
+                        ag_models.FeedbackCategory.max.value),
+)
+
+
+class SubmissionResultsViewBase(AGModelAPIView):
+    permission_classes = (ag_permissions.can_view_project(),
+                          ag_permissions.is_staff_or_group_member(),
+                          ag_permissions.can_request_feedback_category())
+    model_manager = ag_models.Submission.objects
+
     @method_decorator(require_query_params(_FDBK_CATEGORY_PARAM))
     def get(self, *args, **kwargs):
         fdbk_category = self._get_fdbk_category()
@@ -78,6 +77,15 @@ The category of feedback being requested. Must be one of the following values:
         raise NotImplementedError
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(
+        manual_parameters=[_fdbk_category_param_docs],
+        responses={
+            '200': AGModelSchemaBuilder.get().get_schema(ag_models.Submission.FeedbackCalculator)
+        }
+    )
+)
 class SubmissionResultsView(SubmissionResultsViewBase):
     def _get_fdbk_calculator(
         self, fdbk_category: ag_models.FeedbackCategory
@@ -118,6 +126,10 @@ class SubmissionResultsView(SubmissionResultsViewBase):
         return response.Response(result)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -128,6 +140,10 @@ class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
                                  lambda fdbk_calc: fdbk_calc.setup_stdout)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -163,6 +179,10 @@ def _find_ag_suite_result(submission_fdbk: ag_models.Submission.FeedbackCalculat
     return None
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -174,6 +194,10 @@ class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.stdout)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class AGTestCommandResultStderrView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -202,6 +226,10 @@ def _get_cmd_result_output(submission_fdbk: ag_models.Submission.FeedbackCalcula
     return FileResponse(stream_data)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -213,6 +241,10 @@ class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.stdout_diff)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class AGTestCommandResultStderrDiffView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -270,6 +302,10 @@ def _find_ag_test_cmd_result(submission_fdbk: ag_models.Submission.FeedbackCalcu
     return None
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -281,6 +317,10 @@ class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.setup_stdout)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -292,6 +332,10 @@ class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.setup_stderr)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -303,6 +347,10 @@ class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase)
             lambda fdbk_calc: fdbk_calc.get_student_test_names_stdout)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -314,6 +362,10 @@ class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase)
             lambda fdbk_calc: fdbk_calc.get_student_test_names_stderr)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -325,6 +377,10 @@ class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.validity_check_stdout)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -336,6 +392,10 @@ class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.validity_check_stderr)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -347,6 +407,10 @@ class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase)
             lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stdout)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+)
 class StudentTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase):
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
