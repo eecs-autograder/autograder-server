@@ -227,9 +227,9 @@ class HandgradingResult(AutograderModel):
         return self.submission.submitted_filenames
 
     @property
-    def total_points(self) -> int:
+    def total_points(self) -> float:
         """
-        Returns the total number of points awarded. Note that it is possible
+        The total number of points awarded. Note that it is possible
         for this value to be greater than total_points.
         """
         total = 0
@@ -257,9 +257,9 @@ class HandgradingResult(AutograderModel):
         return max(0, total)
 
     @property
-    def total_points_possible(self) -> int:
+    def total_points_possible(self) -> float:
         """
-        Returns the denominator of the handgrading score based on the
+        The denominator of the handgrading score based on the
         handgrading rubric's points style and max points.
         """
         if self.handgrading_rubric.max_points is not None:

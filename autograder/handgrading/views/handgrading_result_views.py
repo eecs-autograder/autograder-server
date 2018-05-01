@@ -3,6 +3,8 @@ from django.db.models import Prefetch
 from django.http import FileResponse
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from drf_yasg.openapi import Parameter
+from drf_yasg.utils import swagger_auto_schema
 
 from rest_framework import status, permissions
 from rest_framework.pagination import PageNumberPagination
@@ -53,6 +55,14 @@ class HandgradingResultView(AGModelGenericViewSet):
 
     api_tags = [APITags.handgrading_results]
 
+    @swagger_auto_schema(
+        manual_parameters=[
+            Parameter(
+                name='filename', in_='query', type='string',
+                description='The name of a submitted file. When this parameter is included, '
+                            'this endpoint will return the contents of the requested file.')
+        ]
+    )
     @handle_object_does_not_exist_404
     def retrieve(self, request, *args, **kwargs):
         group = self.get_object()  # type: ag_models.Group
