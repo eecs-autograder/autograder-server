@@ -96,6 +96,7 @@ class APITags(enum.Enum):
     groups = 'groups'
 
     submissions = 'submissions'
+    rerun_submissions_tasks = 'rerun_submissions_tasks'
 
     handgrading_rubrics = 'handgrading_rubrics'
     handgrading_rubric = 'handgrading_rubric'
@@ -106,9 +107,6 @@ class APITags(enum.Enum):
     criterion_results = 'criterion_results'
     applied_annotations = 'applied_annotations'
     comments = 'comments'
-
-    download_tasks = 'download_tasks'
-    rerun_submissions_tasks = 'rerun_submissions_tasks'
 
 
 class AGModelViewAutoSchema(SwaggerAutoSchema):

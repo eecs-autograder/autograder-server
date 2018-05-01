@@ -4,6 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import FileResponse
 from drf_composable_permissions.p import P
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, mixins, response
 from rest_framework import permissions
 from rest_framework import status
@@ -84,6 +85,7 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(data=num_queued_submissions)
 
+    @swagger_auto_schema(auto_schema=None)
     @decorators.detail_route(
         methods=['POST'],
         permission_classes=[
@@ -103,6 +105,7 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
+    @swagger_auto_schema(auto_schema=None)
     @decorators.detail_route(
         methods=['POST'],
         permission_classes=[
@@ -122,6 +125,7 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
+    @swagger_auto_schema(auto_schema=None)
     @decorators.detail_route(
         methods=['POST'],
         permission_classes=[
@@ -141,6 +145,7 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
+    @swagger_auto_schema(auto_schema=None)
     @decorators.detail_route(
         methods=['POST'],
         permission_classes=[
@@ -160,6 +165,7 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
+    @swagger_auto_schema(auto_schema=None)
     @decorators.detail_route(permission_classes=[
         permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
     def download_tasks(self, *args, **kwargs):
@@ -187,6 +193,8 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
     serializer_class = ag_serializers.DownloadTaskSerializer
 
     model_manager = ag_models.DownloadTask.objects
+
+    swagger_schema = None
 
     @decorators.detail_route()
     def result(self, *args, **kwargs):
