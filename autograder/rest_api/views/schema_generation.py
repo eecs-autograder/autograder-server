@@ -264,7 +264,7 @@ _FIELD_TYPES = {
     fields.IntegerField: 'integer',
     fields.BigIntegerField: 'integer',
     fields.FloatField: 'float',
-    fields.BooleanField: 'bool',
+    fields.BooleanField: 'boolean',
     fields.NullBooleanField: 'Optional[bool]',
     fields.CharField: 'string',
     fields.TextField: 'string',
