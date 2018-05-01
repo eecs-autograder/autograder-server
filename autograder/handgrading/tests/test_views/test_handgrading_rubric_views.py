@@ -1,5 +1,3 @@
-import unittest
-
 from django.urls import reverse
 
 from rest_framework import status
@@ -13,8 +11,6 @@ import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 
 
 class RetrieveHandgradingRubricTestCase(UnitTestBase):
-    """/api/projects/<project_pk>/handgrading_rubric/"""
-
     def setUp(self):
         super().setUp()
         data = {
@@ -90,8 +86,6 @@ class RetrieveHandgradingRubricTestCase(UnitTestBase):
 
 
 class CreateHandgradingRubricTestCase(test_impls.CreateObjectTest, UnitTestBase):
-    """/api/projects/<project_pk>/handgrading_rubric/"""
-
     def setUp(self):
         super().setUp()
         self.project = obj_build.build_project()

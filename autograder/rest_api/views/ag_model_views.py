@@ -222,7 +222,7 @@ class RetrieveCreateNestedModelViewSet(RetrieveNestedModelMixin,
     """
     @classmethod
     def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'get': 'retrieve'}, **initkwargs)
+        return super().as_view(actions={'get': 'retrieve', 'post': 'create'}, **initkwargs)
 
 
 class TransactionRetrievePatchDestroyMixin(mixins.RetrieveModelMixin,

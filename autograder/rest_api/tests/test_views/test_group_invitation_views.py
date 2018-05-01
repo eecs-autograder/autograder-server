@@ -147,9 +147,9 @@ class CreateInvitationTestCase(_InvitationsSetUp,
         self.project.validate_and_update(max_group_size=3)
         other_admin = obj_build.make_admin_user(self.course)
         self.do_invalid_create_object_test(
-            self.project.group_invitaitons, self.client, self.admin,
+            self.project.group_invitations, self.client, self.admin,
             self.get_invitations_url(self.project),
-            {'invited_usernames': [other_admin.username]})
+            {})
 
     def test_enrolled_create_invitation_hidden_project_permission_denied(self):
         other_enrolled = self.clone_user(self.enrolled)
