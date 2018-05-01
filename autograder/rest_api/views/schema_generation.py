@@ -99,7 +99,7 @@ class APITags(enum.Enum):
     rerun_submissions_tasks = 'rerun_submissions_tasks'
 
     handgrading_rubrics = 'handgrading_rubrics'
-    handgrading_rubric = 'handgrading_rubric'
+    handgrading_results = 'handgrading_results'
 
     criteria = 'criteria'
     annotations = 'annotations'

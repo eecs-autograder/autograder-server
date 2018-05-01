@@ -9,6 +9,7 @@ import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, TransactionRetrievePatchDestroyMixin, RetrieveCreateNestedModelViewSet)
+from autograder.rest_api.views.schema_generation import APITags
 
 is_admin_or_read_only = ag_permissions.is_admin_or_read_only_staff(lambda project: project.course)
 is_handgrader = ag_permissions.is_handgrader(lambda project: project.course)
@@ -23,6 +24,8 @@ class HandgradingRubricRetrieveCreateViewSet(RetrieveCreateNestedModelViewSet):
     model_manager = ag_models.Project.objects.select_related('course')
     to_one_field_name = 'project'
     reverse_to_one_field_name = 'handgrading_rubric'
+
+    api_tags = [APITags.handgrading_rubrics]
 
     def retrieve(self, *args, **kwargs):
         project = self.get_object()

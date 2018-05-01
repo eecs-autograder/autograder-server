@@ -16,9 +16,9 @@ import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericView, handle_object_does_not_exist_404, AGModelAPIView)
+    AGModelGenericView, handle_object_does_not_exist_404, AGModelAPIView, AGModelGenericViewSet)
 from autograder import utils
-
+from autograder.rest_api.views.schema_generation import APITags
 
 is_admin_or_read_only_staff = ag_permissions.is_admin_or_read_only_staff(
     lambda group: group.project.course)
@@ -38,10 +38,7 @@ student_permission = (
     P(HandgradingResultsPublished))
 
 
-class HandgradingResultView(mixins.RetrieveModelMixin,
-                            mixins.CreateModelMixin,
-                            mixins.UpdateModelMixin,
-                            AGModelGenericView):
+class HandgradingResultView(AGModelGenericViewSet):
     serializer_class = handgrading_serializers.HandgradingResultSerializer
     permission_classes = [
         (P(is_admin_or_read_only_staff) | P(is_handgrader) | student_permission)
@@ -54,14 +51,7 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
     one_to_one_field_name = 'group'
     reverse_one_to_one_field_name = 'handgrading_result'
 
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
-
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+    api_tags = [APITags.handgrading_results]
 
     @handle_object_does_not_exist_404
     def retrieve(self, request, *args, **kwargs):
@@ -77,6 +67,10 @@ class HandgradingResultView(mixins.RetrieveModelMixin,
 
     @transaction.atomic()
     def create(self, *args, **kwargs):
+        """
+        Creates a new HandgradingResult for the specified Group, or returns
+        an already existing one.
+        """
         group = self.get_object()
         try:
             handgrading_rubric = group.project.handgrading_rubric
@@ -132,6 +126,8 @@ class ListHandgradingResultsView(AGModelAPIView):
     permission_classes = [is_handgrader_or_staff]
 
     model_manager = ag_models.Project.objects
+
+    api_tags = [APITags.projects, APITags.handgrading_results]
 
     @handle_object_does_not_exist_404
     def get(self, *args, **kwargs):
