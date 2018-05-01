@@ -6,7 +6,10 @@ import tempfile
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
+from drf_yasg.openapi import Parameter
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, permissions, decorators, response, status
 
 import autograder.core.models as ag_models
@@ -17,7 +20,7 @@ import autograder.utils.testing as test_ut
 from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
+from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet, require_query_params
 
 is_admin = ag_permissions.is_admin(lambda group: group.project.course)
 is_staff_or_member = ag_permissions.is_staff_or_group_member()
@@ -99,15 +102,23 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(ag_serializers.SubmissionSerializer(ultimate_submission).data)
 
+    @swagger_auto_schema(
+        manual_parameters=[
+            Parameter(name='other_group_pk', in_='query',
+                      type='int', required=True,
+                      description='The ID of the second group to merge.')
+        ],
+        request_body_parameters=[]
+    )
+    @method_decorator(require_query_params('other_group_pk'))
     @decorators.detail_route(methods=['POST'])
     @transaction.atomic()
     def merge_with(self, request, *args, **kwargs):
+        """
+        Merge two groups together, preserving their submissions, and
+        return the newly created group.
+        """
         other_group_pk = request.query_params.get('other_group_pk')
-
-        if other_group_pk is None:
-            return response.Response(
-                data={'other_group_pk': 'Missing required query param: other_group_pk'},
-                status=status.HTTP_400_BAD_REQUEST)
 
         group1 = self.get_object()
         group2 = self.get_object(pk_override=other_group_pk)

@@ -3,6 +3,8 @@ import itertools
 from django.contrib.auth.models import User
 from django.db import transaction
 from drf_composable_permissions.p import P
+from drf_yasg.openapi import Schema, Response
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import exceptions, mixins, permissions, response, status, viewsets
 from rest_framework.decorators import detail_route
 
@@ -13,6 +15,7 @@ import autograder.utils.testing as test_ut
 from autograder import utils
 from autograder.rest_api.views.ag_model_views import (
     ListCreateNestedModelViewSet, AGModelGenericViewSet)
+from autograder.rest_api.views.schema_generation import AGModelSchemaBuilder
 
 
 class CanSendInvitation:
@@ -89,6 +92,18 @@ class GroupInvitationDetailViewSet(mixins.RetrieveModelMixin,
 
     model_manager = ag_models.GroupInvitation.objects
 
+    @swagger_auto_schema(
+        responses={
+            '200': Response(
+                schema=AGModelSchemaBuilder.get().get_schema(ag_models.GroupInvitation),
+                description='You have accepted the invitation.'),
+            '201': Response(
+                schema=AGModelSchemaBuilder.get().get_schema(ag_models.Group),
+                description='All invited users have accepted the invitation.'
+            )
+        }
+
+    )
     @transaction.atomic()
     @detail_route(methods=['POST'])
     def accept(self, request, *args, **kwargs):
