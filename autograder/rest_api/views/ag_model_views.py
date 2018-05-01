@@ -92,19 +92,9 @@ class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,
     api_tags = None  # type: Optional[List[APITags]]
 
 
-class AGModelGenericView(GetObjectLockOnUnsafeMixin,
-                         AlwaysIsAuthenticatedMixin,
-                         generics.GenericAPIView):
-    """
-    A derived class of GenericAPIView that inherits from the mixins
-    GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
-    """
-    pass
-
-
 class NestedModelViewSet(GetObjectLockOnUnsafeMixin,
                          AlwaysIsAuthenticatedMixin,
-                         generics.GenericAPIView):
+                         viewsets.GenericViewSet):
     """
     A generic view set used for defining nested endpoints
     (one level of nesting only).
@@ -147,9 +137,7 @@ class ListNestedModelMixin(mixins.ListModelMixin):
     NOTE: Do NOT mix ListNestedModelMixin with RetrieveNestedModelMixin,
     as the GET implementations will interfere.
     """
-
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+    pass
 
 
 class RetrieveNestedModelMixin(mixins.RetrieveModelMixin):
@@ -167,9 +155,6 @@ class RetrieveNestedModelMixin(mixins.RetrieveModelMixin):
     NOTE: Do NOT mix ListNestedModelMixin with RetrieveNestedModelMixin,
     as the GET implementations will interfere.
     """
-
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
 
     def retrieve(self, *args, **kwargs):
         if self.reverse_to_one_field_name is None:
@@ -206,15 +191,14 @@ class CreateNestedModelMixin(TransactionCreateMixin):
         # request body.
         serializer.save(**{self.to_one_field_name: self.get_object()})
 
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
-
 
 class ListNestedModelViewSet(ListNestedModelMixin, NestedModelViewSet):
     """
     Shortcut class for a nested model view set with list functionality.
     """
-    pass
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'get': 'list'}, **initkwargs)
 
 
 class ListCreateNestedModelViewSet(ListNestedModelMixin,
@@ -224,7 +208,9 @@ class ListCreateNestedModelViewSet(ListNestedModelMixin,
     Shortcut class for a nested model view set with list and create
     functionality.
     """
-    pass
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'get': 'list', 'post': 'create'}, **initkwargs)
 
 
 class RetrieveCreateNestedModelViewSet(RetrieveNestedModelMixin,
@@ -234,7 +220,9 @@ class RetrieveCreateNestedModelViewSet(RetrieveNestedModelMixin,
     Shortcut class for a nested model view set with retrieve and create
     functionality.
     """
-    pass
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'get': 'retrieve'}, **initkwargs)
 
 
 class TransactionRetrievePatchDestroyMixin(mixins.RetrieveModelMixin,

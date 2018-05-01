@@ -3,12 +3,9 @@ from django.conf.urls import include, url
 from django.urls import path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
-from rest_framework import permissions, response, status, routers
-from rest_framework.authtoken.models import Token
-from rest_framework.views import APIView
+from rest_framework import permissions, routers
 
 from autograder.rest_api import views
-from autograder.rest_api.views.ag_model_views import AlwaysIsAuthenticatedMixin
 from autograder.rest_api.views.schema_generation import AGSchemaGenerator
 
 user_router = routers.SimpleRouter()
@@ -193,7 +190,8 @@ urlpatterns = [
     url(r'^projects/(?P<project_pk>[0-9]+)/groups/$',
         views.GroupsViewSet.as_view(), name='groups'),
     url(r'^projects/(?P<project_pk>[0-9]+)/groups/solo_group/$',
-        views.CreateSoloGroupView.as_view(), name='solo_group'),
+        views.CreateSoloGroupView.as_view({'post': 'create'}),
+        name='solo_group'),
 
     path('submissions/<int:pk>/results/',
          views.SubmissionResultsView.as_view(),

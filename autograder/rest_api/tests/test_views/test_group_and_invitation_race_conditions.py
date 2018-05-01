@@ -7,9 +7,8 @@ import autograder.core.models as ag_models
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing as test_ut
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.rest_api.views.group_views.group_detail_view import GroupDetailViewSet
-from autograder.rest_api.views.group_views.groups_view import (
-    GroupsViewSet)
+
+from autograder.rest_api.views.group_views import GroupDetailViewSet, GroupsViewSet
 
 
 @tag('slow')
@@ -21,7 +20,7 @@ class RaceConditionTestCase(test_data.Client,
         self.visible_public_project.validate_and_update(max_group_size=4)
         project_id = self.visible_public_project.pk
         invitor = obj_build.create_dummy_user()
-        path = 'autograder.rest_api.views.group_views.groups_view.GroupsViewSet.serializer_class'
+        path = 'autograder.rest_api.views.group_views.GroupsViewSet.serializer_class'
 
         @test_ut.sleeper_subtest(path, wraps=GroupsViewSet.serializer_class)
         def create_group(project_id):
@@ -48,7 +47,7 @@ class RaceConditionTestCase(test_data.Client,
         project_id = self.visible_public_project.pk
         invitor = obj_build.create_dummy_user()
         overlap_username = 'steve'
-        path = 'autograder.rest_api.views.group_views.groups_view.GroupsViewSet.serializer_class'
+        path = 'autograder.rest_api.views.group_views.GroupsViewSet.serializer_class'
 
         @test_ut.sleeper_subtest(path, wraps=GroupsViewSet.serializer_class)
         def do_request_and_wait(project_id):
@@ -74,7 +73,7 @@ class RaceConditionTestCase(test_data.Client,
         self.visible_public_project.validate_and_update(max_group_size=4)
         project_id = self.visible_public_project.pk
         overlap_username = 'stave'
-        path = 'autograder.rest_api.views.group_views.groups_view.GroupsViewSet.serializer_class'
+        path = 'autograder.rest_api.views.group_views.GroupsViewSet.serializer_class'
 
         @test_ut.sleeper_subtest(path, wraps=GroupsViewSet.serializer_class)
         def do_request_and_wait(project_id):
@@ -102,7 +101,7 @@ class RaceConditionTestCase(test_data.Client,
         second_group = self.staff_group(self.visible_public_project)
         overlap_member = self.clone_user(self.staff)
         path = ('autograder.rest_api.views.group_views'
-                '.group_detail_view.GroupDetailViewSet.serializer_class')
+                '.GroupDetailViewSet.serializer_class')
 
         @test_ut.sleeper_subtest(path, wraps=GroupDetailViewSet.serializer_class)
         def update_first_group():
@@ -130,7 +129,7 @@ class RaceConditionTestCase(test_data.Client,
         group = self.admin_group(self.project)
         overlap_member = self.clone_user(self.staff)
         new_member_names = group.member_names + [overlap_member.username]
-        path = 'autograder.rest_api.views.group_views.groups_view.GroupsViewSet.serializer_class'
+        path = 'autograder.rest_api.views.group_views.GroupsViewSet.serializer_class'
         self.assertEqual(1, ag_models.Group.objects.count())
 
         @test_ut.sleeper_subtest(path, wraps=GroupsViewSet.serializer_class)
@@ -140,7 +139,7 @@ class RaceConditionTestCase(test_data.Client,
             member_names = [overlap_member.username, self.staff.username]
             response = client.post(self.get_groups_url(self.project),
                                    {'member_names': member_names})
-            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code, msg=response.data)
             self.assertEqual(2, ag_models.Group.objects.count())
 
         subtest = create_group()
@@ -157,7 +156,7 @@ class RaceConditionTestCase(test_data.Client,
         group = self.admin_group(self.project)
         invitor = self.clone_user(self.admin)
         path = ('autograder.rest_api.views.group_views'
-                '.group_detail_view.GroupDetailViewSet.serializer_class')
+                '.GroupDetailViewSet.serializer_class')
 
         @test_ut.sleeper_subtest(path, wraps=GroupDetailViewSet.serializer_class)
         def update_group():
@@ -183,7 +182,7 @@ class RaceConditionTestCase(test_data.Client,
         group = self.admin_group(self.project)
         new_member = self.clone_user(self.admin)
         path = ('autograder.rest_api.views.group_views'
-                '.group_detail_view.GroupDetailViewSet.serializer_class')
+                '.GroupDetailViewSet.serializer_class')
 
         @test_ut.sleeper_subtest(path, wraps=GroupDetailViewSet.serializer_class)
         def update_group():
@@ -274,7 +273,7 @@ class RaceConditionTestCase(test_data.Client,
             ag_models.GroupInvitation.objects.validate_and_create(
                 invitor, [other_member], project=self.project))
 
-        path = 'autograder.rest_api.views.group_views.groups_view.test_ut.mocking_hook'
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
         @test_ut.sleeper_subtest(path)
         def create_group():
@@ -302,7 +301,7 @@ class RaceConditionTestCase(test_data.Client,
             ag_models.GroupInvitation.objects.validate_and_create(
                 invitor, [other_member], project=self.project))
 
-        path = 'autograder.rest_api.views.group_views.groups_view.test_ut.mocking_hook'
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
         @test_ut.sleeper_subtest(path)
         def create_group():
@@ -331,8 +330,7 @@ class RaceConditionTestCase(test_data.Client,
                 invitor, [other_member], project=self.project))
         group = self.admin_group(self.project)
 
-        path = ('autograder.rest_api.views.group_views'
-                '.group_detail_view.test_ut.mocking_hook')
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
         @test_ut.sleeper_subtest(path)
         def update_group():
@@ -361,8 +359,7 @@ class RaceConditionTestCase(test_data.Client,
                 invitor, [other_member], project=self.project))
         group = self.admin_group(self.project)
 
-        path = ('autograder.rest_api.views.group_views'
-                '.group_detail_view.test_ut.mocking_hook')
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
         @test_ut.sleeper_subtest(path)
         def update_group():

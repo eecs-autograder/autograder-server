@@ -10,22 +10,118 @@ from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import mixins, permissions, decorators, response, status
+from rest_framework import decorators, mixins, permissions, response, status
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
-import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 import autograder.utils.testing as test_ut
 from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
-from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet, require_query_params
+from autograder.rest_api import permissions as ag_permissions, transaction_mixins
+from autograder.rest_api.views.ag_model_views import (
+    AGModelGenericViewSet,
+    ListCreateNestedModelViewSet, require_query_params, require_body_params)
+from autograder.rest_api.views.schema_generation import APITags
 
-is_admin = ag_permissions.is_admin(lambda group: group.project.course)
+
+class GroupsViewSet(ListCreateNestedModelViewSet):
+    serializer_class = ag_serializers.SubmissionGroupSerializer
+    permission_classes = (
+        P(ag_permissions.is_admin()) |
+        (
+            (P(ag_permissions.is_staff()) | P(ag_permissions.is_handgrader())) &
+            ag_permissions.IsReadOnly
+        ),
+    )
+
+    pk_key = 'project_pk'
+    model_manager = ag_models.Project.objects.select_related('course')
+    to_one_field_name = 'project'
+    reverse_to_one_field_name = 'groups'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.method.lower() == 'get':
+            queryset = queryset.prefetch_related('submissions')
+
+        return queryset
+
+    @swagger_auto_schema(
+        request_body_parameters=[
+            Parameter(name='member_names', in_='body',
+                      description='Usernames to add to the new Group.',
+                      type='List[string]', required=True)]
+    )
+    @transaction.atomic()
+    @method_decorator(require_body_params('member_names'))
+    def create(self, request, *args, **kwargs):
+        project = self.get_object()
+        request.data['project'] = project
+
+        users = [
+            User.objects.get_or_create(username=username)[0]
+            for username in request.data.pop('member_names')]
+
+        utils.lock_users(users)
+        # Keep this hook immediately after locking the users.
+        test_ut.mocking_hook()
+
+        request.data['members'] = users
+        request.data['check_group_size_limits'] = (
+            not project.course.is_admin(request.user))
+
+        return super().create(request, *args, **kwargs)
+
+
+class _CanCreateSoloGroup(permissions.BasePermission):
+    def has_object_permission(self, request, view, project):
+        if project.course.is_staff(request.user):
+            return True
+
+        if not project.visible_to_students:
+            return False
+
+        return (project.course.is_student(request.user) or
+                project.guests_can_submit)
+
+
+class CreateSoloGroupView(mixins.CreateModelMixin, AGModelGenericViewSet):
+    permission_classes = (_CanCreateSoloGroup,)
+    serializer_class = ag_serializers.SubmissionGroupSerializer
+
+    pk_key = 'project_pk'
+    model_manager = ag_models.Project.objects.select_related('course')
+
+    api_tags = [APITags.groups]
+
+    @swagger_auto_schema(request_body_parameters=[])
+    @transaction.atomic()
+    def create(self, request, *args, **kwargs):
+        """
+        Creates a group containing only the user making the request.
+        """
+        project = self.get_object()
+
+        utils.lock_users([request.user])
+
+        data = {
+            'project': project,
+            'members': [request.user],
+            'check_group_size_limits': (
+                not project.course.is_staff(request.user))
+        }
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid()
+        serializer.save()
+
+        return response.Response(serializer.data,
+                                 status=status.HTTP_201_CREATED)
+
+
 is_staff_or_member = ag_permissions.is_staff_or_group_member()
 can_view_project = ag_permissions.can_view_project(lambda group: group.project)
-group_permissions = (P(is_admin) |
+group_permissions = (P(ag_permissions.is_admin()) |
                      (P(ag_permissions.IsReadOnly) & can_view_project & is_staff_or_member))
 
 
@@ -62,6 +158,12 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
     model_manager = ag_models.Group.objects.select_related(
         'project__course').prefetch_related('members', 'submissions')
 
+    @swagger_auto_schema(
+        extra_request_body_parameters=[
+            Parameter(name='member_names', in_='body',
+                      description='Usernames to replace the current group members with.',
+                      type='List[string]')]
+    )
     @transaction.atomic()
     def partial_update(self, request, *args, **kwargs):
         if 'member_names' in request.data:

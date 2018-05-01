@@ -35,16 +35,6 @@ can_submit = (
 list_create_submission_permissions = can_view_group | can_submit
 
 
-@method_decorator(
-    name='post',
-    decorator=swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='submitted_files', in_='body',
-                      description='The files being submitted, as multipart/form-data.',
-                      type='List[file]')
-        ]
-    )
-)
 class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.SubmissionSerializer
     permission_classes = (list_create_submission_permissions,)
@@ -54,6 +44,13 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
     to_one_field_name = 'group'
     reverse_to_one_field_name = 'submissions'
 
+    @swagger_auto_schema(
+        request_body_parameters=[
+            Parameter(name='submitted_files', in_='body',
+                      description='The files being submitted, as multipart/form-data.',
+                      type='List[file]')
+        ]
+    )
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
         # NOTE: The way that submitted_files gets encoded in requests,

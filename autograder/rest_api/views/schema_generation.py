@@ -111,18 +111,20 @@ class APITags(enum.Enum):
 
 class AGModelViewAutoSchema(SwaggerAutoSchema):
     def get_request_body_parameters(self, consumes):
+        extra_params = self.overrides.get('extra_request_body_parameters', [])
         if 'request_body_parameters' in self.overrides:
-            return self.overrides['request_body_parameters']
+            return extra_params + self.overrides['request_body_parameters']
 
         serializer = self.get_request_serializer()
         if not isinstance(serializer, AGModelSerializer):
-            return super().get_request_body_parameters(serializer)
+            return extra_params + super().get_request_body_parameters(serializer)
 
         ag_model_class = serializer.ag_model_class  # type: APIType
         schema = AGModelSchemaBuilder.get().get_schema(ag_model_class)
-        return list(
+        schema_params = [
             field for field_name, field in schema.properties.items()
-            if field_name in ag_model_class.get_editable_fields())
+            if field_name in ag_model_class.get_editable_fields()]
+        return extra_params + schema_params
 
     def serializer_to_schema(self, serializer):
         if not isinstance(serializer, AGModelSerializer):

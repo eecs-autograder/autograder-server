@@ -2,10 +2,11 @@ import itertools
 
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Schema, Response
+from drf_yasg.openapi import Response, Parameter
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import exceptions, mixins, permissions, response, status, viewsets
+from rest_framework import exceptions, mixins, permissions, response, status
 from rest_framework.decorators import detail_route
 
 import autograder.core.models as ag_models
@@ -14,7 +15,7 @@ import autograder.rest_api.serializers as ag_serializers
 import autograder.utils.testing as test_ut
 from autograder import utils
 from autograder.rest_api.views.ag_model_views import (
-    ListCreateNestedModelViewSet, AGModelGenericViewSet)
+    ListCreateNestedModelViewSet, AGModelGenericViewSet, require_body_params)
 from autograder.rest_api.views.schema_generation import AGModelSchemaBuilder
 
 
@@ -47,6 +48,14 @@ class ListCreateGroupInvitationViewSet(ListCreateNestedModelViewSet):
     to_one_field_name = 'project'
     reverse_to_one_field_name = 'group_invitations'
 
+    @swagger_auto_schema(
+        request_body_parameters=[
+            Parameter(
+                name='invited_usernames', in_='body', type='List[string]', required=True,
+                description='The usernames to invite to be in a group with the current user.'
+            )]
+    )
+    @method_decorator(require_body_params('invited_usernames'))
     @transaction.atomic()
     def create(self, *args, **kwargs):
         for key in self.request.data:

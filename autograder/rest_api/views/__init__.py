@@ -10,8 +10,7 @@ from .course_views.course_staff import CourseStaffViewSet
 from .course_views.course_students import CourseStudentsViewSet
 from .course_views.course_views import CourseViewSet
 from .group_invitation_views import ListCreateGroupInvitationViewSet, GroupInvitationDetailViewSet
-from .group_views.group_detail_view import GroupDetailViewSet
-from .group_views.groups_view import GroupsViewSet, CreateSoloGroupView
+from .group_views import GroupsViewSet, CreateSoloGroupView, GroupDetailViewSet
 from .oauth2callback import oauth2_callback
 from autograder.rest_api.views.project_views.expected_student_file_views import (
     ExpectedStudentFilePatternDetailViewSet, ListCreateExpectedStudentFilesViewSet)

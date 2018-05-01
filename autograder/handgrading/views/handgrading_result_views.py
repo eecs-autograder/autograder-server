@@ -16,7 +16,7 @@ import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericView, handle_object_does_not_exist_404, AGModelAPIView, AGModelGenericViewSet)
+    handle_object_does_not_exist_404, AGModelAPIView, AGModelGenericViewSet)
 from autograder import utils
 from autograder.rest_api.views.schema_generation import APITags
 

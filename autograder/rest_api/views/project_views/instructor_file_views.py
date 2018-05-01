@@ -28,7 +28,7 @@ _create_file_params = [
 
 
 @method_decorator(
-    name='post',
+    name='create',
     decorator=swagger_auto_schema(request_body_parameters=_create_file_params))
 class ListCreateInstructorFilesViewSet(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.InstructorFileSerializer
