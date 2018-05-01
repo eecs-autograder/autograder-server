@@ -201,20 +201,22 @@ def _build_api_parameter(field, field_name: str) -> Parameter:
     type_ = _get_django_field_type(field)
     description = field.help_text if hasattr(field, 'help_text') else ''
     try:
-        required = not field.blank and field.default == fields.NOT_PROVIDED
+        required = (not field.many_to_many and
+                    not field.blank and
+                    field.default == fields.NOT_PROVIDED)
     except AttributeError:
         required = False
 
-    enum = None
+    allowed_vals = None
     if type(field) == ag_fields.EnumField:
-        enum = [item.value for item in field.enum_type]
+        allowed_vals = [item.value for item in field.enum_type]
 
     return Parameter(
         field_name, 'body',
         description=description,
         type=type_,
         required=required,
-        enum=enum
+        enum=allowed_vals
     )
 
 
