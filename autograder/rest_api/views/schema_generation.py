@@ -161,7 +161,7 @@ class NestedModelViewAutoSchema(AGModelViewAutoSchema):
 
 class AGModelSchemaBuilder:
     @staticmethod
-    def get():
+    def get() -> 'AGModelSchemaBuilder':
         if AGModelSchemaBuilder._instance is None:
             AGModelSchemaBuilder._instance = AGModelSchemaBuilder()
 
@@ -172,7 +172,7 @@ class AGModelSchemaBuilder:
     def __init__(self):
         self._schemas = {}
 
-    def get_schema(self, api_type: APIType):
+    def get_schema(self, api_type: APIType) -> Schema:
         if api_type not in self._schemas:
             self._schemas[api_type] = _build_schema(api_type)
 

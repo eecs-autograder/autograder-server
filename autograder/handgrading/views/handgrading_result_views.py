@@ -1,9 +1,10 @@
+import copy
 from django.contrib.auth.models import User
 from django.db.models import Prefetch
 from django.http import FileResponse
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from drf_yasg.openapi import Parameter
+from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
 
 from rest_framework import status, permissions
@@ -20,7 +21,7 @@ import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.views.ag_model_views import (
     handle_object_does_not_exist_404, AGModelAPIView, AGModelGenericViewSet)
 from autograder import utils
-from autograder.rest_api.views.schema_generation import APITags
+from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
 
 is_admin_or_read_only_staff = ag_permissions.is_admin_or_read_only_staff(
     lambda group: group.project.course)
@@ -132,6 +133,47 @@ is_handgrader_or_staff = (P(ag_permissions.is_staff(lambda project: project.cour
                           P(ag_permissions.is_handgrader(lambda project: project.course)))
 
 
+def _buid_minimal_handgrading_resuit_schema():
+    group_with_handgrading_result_schema = Schema(
+        type='object',
+        properties=copy.deepcopy(AGModelSchemaBuilder.get().get_schema(ag_models.Group).properties)
+    )
+    assert (group_with_handgrading_result_schema.properties is not
+            AGModelSchemaBuilder.get().get_schema(ag_models.Group).properties)
+    group_with_handgrading_result_schema.properties['handgrading_result'] = Schema(
+        title='MinimalHandgradingResult',
+        type='object',
+        properties={
+            'finished_grading': Schema(
+                type='boolean',
+                description="Indicates whether a human grader "
+                            "has finished grading this group's code.",
+            ),
+            'total_points': Schema(
+                type='float',
+            ),
+            'total_points_possible': Schema(
+                type='float',
+            ),
+        }
+    )
+
+    return group_with_handgrading_result_schema
+
+
+_handgrading_results_schema = Schema(
+    type='object',
+    properties={
+        'results': Schema(
+            type='array',
+            items=_buid_minimal_handgrading_resuit_schema()
+
+        )
+    }
+
+)
+
+
 class ListHandgradingResultsView(AGModelAPIView):
     permission_classes = [is_handgrader_or_staff]
 
@@ -139,6 +181,7 @@ class ListHandgradingResultsView(AGModelAPIView):
 
     api_tags = [APITags.projects, APITags.handgrading_results]
 
+    @swagger_auto_schema(responses={'200': _handgrading_results_schema})
     @handle_object_does_not_exist_404
     def get(self, *args, **kwargs):
         project = self.get_object()  # type: ag_models.Project
