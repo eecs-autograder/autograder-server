@@ -1,9 +1,13 @@
 import copy
+from collections import OrderedDict
+
 from django.contrib.auth.models import User
 from django.db.models import Prefetch
 from django.http import FileResponse
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from drf_yasg import openapi
+from drf_yasg.inspectors import DjangoRestResponsePagination
 from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
 
@@ -143,19 +147,19 @@ def _buid_minimal_handgrading_resuit_schema():
     group_with_handgrading_result_schema.properties['handgrading_result'] = Schema(
         title='MinimalHandgradingResult',
         type='object',
-        properties={
-            'finished_grading': Schema(
+        properties=OrderedDict([
+            ('finished_grading', Schema(
                 type='boolean',
                 description="Indicates whether a human grader "
                             "has finished grading this group's code.",
-            ),
-            'total_points': Schema(
+            )),
+            ('total_points', Schema(
                 type='float',
-            ),
-            'total_points_possible': Schema(
+            )),
+            ('total_points_possible', Schema(
                 type='float',
-            ),
-        }
+            )),
+        ])
     )
 
     return group_with_handgrading_result_schema
@@ -163,15 +167,23 @@ def _buid_minimal_handgrading_resuit_schema():
 
 _handgrading_results_schema = Schema(
     type='object',
-    properties={
-        'results': Schema(
+    properties=OrderedDict([
+        ('count', openapi.Schema(type=openapi.TYPE_INTEGER)),
+        ('next', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
+        ('previous', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
+        ('results', Schema(
             type='array',
             items=_buid_minimal_handgrading_resuit_schema()
 
-        )
-    }
-
+        )),
+    ])
 )
+
+
+class HandgradingResultPaginator(PageNumberPagination):
+    page_size = 500
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 
 class ListHandgradingResultsView(AGModelAPIView):
@@ -181,7 +193,16 @@ class ListHandgradingResultsView(AGModelAPIView):
 
     api_tags = [APITags.projects, APITags.handgrading_results]
 
-    @swagger_auto_schema(responses={'200': _handgrading_results_schema})
+    @swagger_auto_schema(
+        manual_parameters=[
+            Parameter(name='page', type='integer', in_='query'),
+            Parameter(name='page_size', type='integer', in_='query',
+                      default=HandgradingResultPaginator.page_size,
+                      description='Max page size: {}'.format(
+                          HandgradingResultPaginator.max_page_size))
+        ],
+        responses={'200': _handgrading_results_schema}
+    )
     @handle_object_does_not_exist_404
     def get(self, *args, **kwargs):
         project = self.get_object()  # type: ag_models.Project
@@ -222,8 +243,3 @@ class ListHandgradingResultsView(AGModelAPIView):
             results.append(data)
 
         return paginator.get_paginated_response(results)
-
-
-class HandgradingResultPaginator(PageNumberPagination):
-    page_size = 100
-    page_size_query_param = 'page_size'

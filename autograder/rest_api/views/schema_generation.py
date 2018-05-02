@@ -9,6 +9,7 @@ from django.db.models import fields
 from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.inspectors import SwaggerAutoSchema
 from drf_yasg.openapi import Schema, Parameter
+from drf_yasg.utils import is_list_view
 from sphinx.ext.autodoc import format_annotation
 from timezone_field.fields import TimeZoneField
 
@@ -142,6 +143,9 @@ class AGModelViewAutoSchema(SwaggerAutoSchema):
 
         return self._get_tags_impl(operation_keys)
 
+    def _get_tags_impl(self, operation_keys):
+        return super().get_tags(operation_keys)
+
     def get_operation(self, operation_keys):
         operation = super().get_operation(operation_keys)
 
@@ -149,9 +153,6 @@ class AGModelViewAutoSchema(SwaggerAutoSchema):
             operation.produces = [self.overrides['response_content_type']]
 
         return operation
-
-    def _get_tags_impl(self, operation_keys):
-        return super().get_tags(operation_keys)
 
 
 class NestedModelViewAutoSchema(AGModelViewAutoSchema):
