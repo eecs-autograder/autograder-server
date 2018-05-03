@@ -1,4 +1,4 @@
-FROM python:3.5
+FROM python:3.6
 
 RUN wget https://get.docker.com -q -O /tmp/getdocker && \
     chmod +x /tmp/getdocker && \
