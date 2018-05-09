@@ -13,7 +13,7 @@ import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.submission import get_submissions_with_results_queryset
-from autograder.rest_api.views.ag_model_views import (AGModelAPIView, require_query_params)
+from autograder.rest_api.views.ag_model_views import AGModelAPIView, require_query_params
 from autograder.rest_api.views.schema_generation import AGModelSchemaBuilder
 
 _FDBK_CATEGORY_PARAM = 'feedback_category'
@@ -21,28 +21,27 @@ _FDBK_CATEGORY_PARAM = 'feedback_category'
 
 _fdbk_category_param_docs = Parameter(
     name=_FDBK_CATEGORY_PARAM, in_='query', required=True, type='string',
-    description="""
-The category of feedback being requested. Must be one of the following values:
+    description=f"""
+The category of feedback being requested. Must be one of the following 
+values:
 
-    - {}: Can be requested by students before or after
-        the project deadline on their submissions that did not exceed
-        the daily limit.
-    - {}: Can be requested by students on their submissions
-        that exceeded the daily limit.
-    - {}: Can be requested by students on their own
-        ultimate (a.k.a. final graded) submission once the project
-        deadline has passed and hide_ultimate_submission_fdbk has
-        been set to False on the project.
-    - {}: Can be requested by staff when looking up another
-        user's submission results.
-    - {}: Can be requested by staff on their own submissions. Can be
-        requested by staff when looking up another user's ultimate
-        submission results after the deadline.""".format(
-                        ag_models.FeedbackCategory.normal.value,
-                        ag_models.FeedbackCategory.past_limit_submission.value,
-                        ag_models.FeedbackCategory.ultimate_submission.value,
-                        ag_models.FeedbackCategory.staff_viewer.value,
-                        ag_models.FeedbackCategory.max.value),
+    - {ag_models.FeedbackCategory.normal.value}: Can be requested by 
+        students before or after the project deadline on their 
+        submissions that did not exceed the daily limit.
+    - {ag_models.FeedbackCategory.past_limit_submission.value}: Can be 
+        requested by students on their submissions that exceeded the 
+        daily limit.
+    - {ag_models.FeedbackCategory.ultimate_submission.value}: Can be 
+        requested by students on their own ultimate (a.k.a. final 
+        graded) submission once the project deadline has passed and 
+        hide_ultimate_submission_fdbk has been set to False on the 
+        project.
+    - {ag_models.FeedbackCategory.staff_viewer.value}: Can be requested 
+        by staff when looking up another user's submission results.
+    - {ag_models.FeedbackCategory.max.value}: Can be requested by staff
+        on their own submissions. Can be requested by staff when looking
+        up another user's ultimate submission results after the 
+        deadline."""
 )
 
 
