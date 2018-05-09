@@ -39,10 +39,11 @@ class HandgradingResultsPublished(BasePermission):
 
 
 student_permission = (
-    P(ag_permissions.IsReadOnly) &
-    P(can_view_project) &
-    P(ag_permissions.is_group_member()) &
-    P(HandgradingResultsPublished))
+    P(ag_permissions.IsReadOnly)
+    & P(can_view_project)
+    & P(ag_permissions.is_group_member())
+    & P(HandgradingResultsPublished)
+)
 
 
 class HandgradingResultView(AGModelGenericViewSet):
@@ -121,9 +122,9 @@ class HandgradingResultView(AGModelGenericViewSet):
         group = self.get_object()  # type: ag_models.Group
         is_admin = group.project.course.is_admin(request.user)
         can_adjust_points = (
-            is_admin or
-            group.project.course.is_handgrader(request.user) and
-            group.project.handgrading_rubric.handgraders_can_adjust_points)
+            is_admin
+            or group.project.course.is_handgrader(request.user)
+            and group.project.handgrading_rubric.handgraders_can_adjust_points)
 
         if 'points_adjustment' in self.request.data and not can_adjust_points:
             raise PermissionDenied
@@ -133,8 +134,8 @@ class HandgradingResultView(AGModelGenericViewSet):
         return response.Response(self.get_serializer(handgrading_result).data)
 
 
-is_handgrader_or_staff = (P(ag_permissions.is_staff(lambda project: project.course)) |
-                          P(ag_permissions.is_handgrader(lambda project: project.course)))
+is_handgrader_or_staff = (P(ag_permissions.is_staff(lambda project: project.course))
+                          |P(ag_permissions.is_handgrader(lambda project: project.course)))
 
 
 def _buid_minimal_handgrading_resuit_schema():

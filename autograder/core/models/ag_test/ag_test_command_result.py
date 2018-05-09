@@ -4,9 +4,9 @@ from typing import Optional, BinaryIO
 
 from django.db import models
 
-from autograder.core.models.ag_model_base import ToDictMixin
 import autograder.core.utils as core_ut
 
+from ..ag_model_base import ToDictMixin
 from ..ag_command import AGCommandResultBase
 from .ag_test_command import (
     AGTestCommand, AGTestCommandFeedbackConfig, ExpectedReturnCode, ValueFeedbackLevel,
@@ -106,8 +106,8 @@ class AGTestCommandResult(AGCommandResultBase):
 
         @property
         def return_code_correct(self) -> Optional[bool]:
-            if (self._cmd.expected_return_code == ExpectedReturnCode.none or
-                    self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.no_feedback):
+            if (self._cmd.expected_return_code == ExpectedReturnCode.none
+                    or self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.no_feedback):
                 return None
 
             return self._ag_test_command_result.return_code_correct
@@ -121,8 +121,8 @@ class AGTestCommandResult(AGCommandResultBase):
 
         @property
         def actual_return_code(self) -> Optional[int]:
-            if (self._fdbk.show_actual_return_code or
-                    self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.expected_and_actual):
+            if (self._fdbk.show_actual_return_code
+                    or self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.expected_and_actual):
                 return self._ag_test_command_result.return_code
 
             return None
@@ -145,24 +145,24 @@ class AGTestCommandResult(AGCommandResultBase):
 
         @property
         def stdout_correct(self) -> Optional[bool]:
-            if (self._cmd.expected_stdout_source == ExpectedOutputSource.none or
-                    self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.no_feedback):
+            if (self._cmd.expected_stdout_source == ExpectedOutputSource.none
+                    or self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.no_feedback):
                 return None
 
             return self._ag_test_command_result.stdout_correct
 
         @property
         def stdout(self) -> Optional[BinaryIO]:
-            if (self._fdbk.show_actual_stdout or
-                    self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual):
+            if (self._fdbk.show_actual_stdout
+                    or self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual):
                 return open(self._ag_test_command_result.stdout_filename, 'rb')
 
             return None
 
         @property
         def stdout_diff(self) -> Optional[core_ut.DiffResult]:
-            if (self._cmd.expected_stdout_source == ExpectedOutputSource.none or
-                    self._fdbk.stdout_fdbk_level != ValueFeedbackLevel.expected_and_actual):
+            if (self._cmd.expected_stdout_source == ExpectedOutputSource.none
+                    or self._fdbk.stdout_fdbk_level != ValueFeedbackLevel.expected_and_actual):
                 return None
 
             stdout_filename = _get_cmd_result_stdout_filename(self._ag_test_command_result)
@@ -207,24 +207,24 @@ class AGTestCommandResult(AGCommandResultBase):
 
         @property
         def stderr_correct(self) -> Optional[bool]:
-            if (self._cmd.expected_stderr_source == ExpectedOutputSource.none or
-                    self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.no_feedback):
+            if (self._cmd.expected_stderr_source == ExpectedOutputSource.none
+                    or self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.no_feedback):
                 return None
 
             return self._ag_test_command_result.stderr_correct
 
         @property
         def stderr(self) -> Optional[BinaryIO]:
-            if (self._fdbk.show_actual_stderr or
-                    self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual):
+            if (self._fdbk.show_actual_stderr
+                    or self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual):
                 return open(self._ag_test_command_result.stderr_filename, 'rb')
 
             return None
 
         @property
         def stderr_diff(self) -> Optional[core_ut.DiffResult]:
-            if (self._cmd.expected_stderr_source == ExpectedOutputSource.none or
-                    self._fdbk.stderr_fdbk_level != ValueFeedbackLevel.expected_and_actual):
+            if (self._cmd.expected_stderr_source == ExpectedOutputSource.none
+                    or self._fdbk.stderr_fdbk_level != ValueFeedbackLevel.expected_and_actual):
                 return None
 
             stderr_filename = _get_cmd_result_stderr_filename(self._ag_test_command_result)
@@ -278,8 +278,8 @@ class AGTestCommandResult(AGCommandResultBase):
             if not self._fdbk.show_points:
                 return 0
 
-            return (self.return_code_points_possible + self.stdout_points_possible +
-                    self.stderr_points_possible)
+            return (self.return_code_points_possible + self.stdout_points_possible
+                    + self.stderr_points_possible)
 
         SERIALIZABLE_FIELDS = (
             'pk',

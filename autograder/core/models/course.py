@@ -63,8 +63,8 @@ class Course(AutograderModel):
         Course. Note that admins are also considered staff members.
         Returns False otherwise.
         """
-        return (self.staff.filter(pk=user.pk).exists() or
-                self.admins.filter(pk=user.pk).exists())
+        return (self.staff.filter(pk=user.pk).exists()
+                or self.admins.filter(pk=user.pk).exists())
 
     def is_handgrader(self, user: User) -> bool:
         """

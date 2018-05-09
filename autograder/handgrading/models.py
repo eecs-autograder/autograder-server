@@ -70,8 +70,8 @@ class HandgradingRubric(AutograderModel):
         """
         super().clean()
 
-        if (self.points_style == PointsStyle.start_at_max_and_subtract and
-                self.max_points is None):
+        if (self.points_style == PointsStyle.start_at_max_and_subtract
+                and self.max_points is None):
             raise ValidationError(
                 {'max_points':
                     'This field must not be None when "start at max" points style is chosen.'})

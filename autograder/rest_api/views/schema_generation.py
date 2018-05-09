@@ -202,9 +202,9 @@ def _build_api_parameter(field, field_name: str) -> Parameter:
     type_ = _get_django_field_type(field)
     description = field.help_text if hasattr(field, 'help_text') else ''
     try:
-        required = (not field.many_to_many and
-                    not field.blank and
-                    field.default == fields.NOT_PROVIDED)
+        required = (not field.many_to_many
+                    and not field.blank
+                    and field.default == fields.NOT_PROVIDED)
     except AttributeError:
         required = False
 
@@ -254,8 +254,8 @@ def _get_django_field_type(django_field) -> str:
             else:
                 return 'List[integer]'
 
-        if (field_name in model_class.get_serialize_related_fields() or
-                field_name in model_class.get_transparent_to_one_fields()):
+        if (field_name in model_class.get_serialize_related_fields()
+                or field_name in model_class.get_transparent_to_one_fields()):
             return API_MODELS[django_field.related_model]
         else:
             return 'integer'

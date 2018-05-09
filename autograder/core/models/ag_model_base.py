@@ -202,8 +202,8 @@ class ToDictMixin:
                     if field_val is None:
                         continue
 
-                    if (field_name in self.get_serialize_related_fields() or
-                            field_name in self.get_transparent_to_one_fields()):
+                    if (field_name in self.get_serialize_related_fields()
+                            or field_name in self.get_transparent_to_one_fields()):
                         result[field_name] = field_val.to_dict()
                     else:
                         result[field_name] = field_val.pk

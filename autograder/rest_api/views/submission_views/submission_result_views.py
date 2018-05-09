@@ -22,12 +22,12 @@ _FDBK_CATEGORY_PARAM = 'feedback_category'
 _fdbk_category_param_docs = Parameter(
     name=_FDBK_CATEGORY_PARAM, in_='query', required=True, type='string',
     description="""
-The category of feedback being requested. Must be one of the following values: 
+The category of feedback being requested. Must be one of the following values:
 
     - {}: Can be requested by students before or after
-        the project deadline on their submissions that did not exceed 
+        the project deadline on their submissions that did not exceed
         the daily limit.
-    - {}: Can be requested by students on their submissions 
+    - {}: Can be requested by students on their submissions
         that exceeded the daily limit.
     - {}: Can be requested by students on their own
         ultimate (a.k.a. final graded) submission once the project
@@ -102,14 +102,14 @@ class SubmissionResultsView(SubmissionResultsViewBase):
 
     def _make_response(self, fdbk_calculator: ag_models.Submission.FeedbackCalculator,
                        fdbk_category: ag_models.FeedbackCategory):
-        if (fdbk_category != ag_models.FeedbackCategory.normal or
-                self.request.query_params.get('use_cache', 'true') != 'true'):
+        if (fdbk_category != ag_models.FeedbackCategory.normal
+                or self.request.query_params.get('use_cache', 'true') != 'true'):
             return response.Response(self._get_fdbk_calculator(fdbk_category).to_dict())
 
         submission = self.get_object()
         not_done_enough_to_cache = (
-            submission.status != ag_models.Submission.GradingStatus.waiting_for_deferred and
-            submission.status != ag_models.Submission.GradingStatus.finished_grading)
+            submission.status != ag_models.Submission.GradingStatus.waiting_for_deferred
+            and submission.status != ag_models.Submission.GradingStatus.finished_grading)
         if not_done_enough_to_cache:
             return response.Response(self._get_fdbk_calculator(fdbk_category).to_dict())
 

@@ -19,16 +19,16 @@ from autograder.rest_api.views.ag_model_views import (AGModelGenericViewSet,
                                                       ListNestedModelViewSet)
 
 can_view_group = (
-    P(ag_permissions.IsReadOnly) &
-    P(ag_permissions.can_view_project()) &
-    P(ag_permissions.is_staff_or_group_member())
+    P(ag_permissions.IsReadOnly)
+    & P(ag_permissions.can_view_project())
+    & P(ag_permissions.is_staff_or_group_member())
 )
 
 
 can_submit = (
-    ~P(ag_permissions.IsReadOnly) &
-    P(ag_permissions.can_view_project()) &
-    P(ag_permissions.is_group_member())
+    ~P(ag_permissions.IsReadOnly)
+    & P(ag_permissions.can_view_project())
+    & P(ag_permissions.is_group_member())
 )
 
 
@@ -84,8 +84,8 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
 
         # Provided they don't have a submission being processed, staff
         # should always be able to submit.
-        if (group.project.course.is_staff(request.user) and
-                group.members.filter(pk=request.user.pk).exists()):
+        if (group.project.course.is_staff(request.user)
+                and group.members.filter(pk=request.user.pk).exists()):
             return
 
         if group.project.disallow_student_submissions:
@@ -95,19 +95,17 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
         closing_time = group.extended_due_date
         if closing_time is None:
             closing_time = group.project.closing_time
-        deadline_past = (closing_time is not None and
-                         timestamp > closing_time)
+        deadline_past = closing_time is not None and timestamp > closing_time
 
         if deadline_past:
             raise exceptions.ValidationError(
                 {'submission': 'The closing time for this project has passed'})
 
-        if (group.project.submission_limit_per_day is None or
-                group.project.allow_submissions_past_limit):
+        if (group.project.submission_limit_per_day is None
+                or group.project.allow_submissions_past_limit):
             return
 
-        if (group.num_submits_towards_limit >=
-                group.project.submission_limit_per_day):
+        if group.num_submits_towards_limit >= group.project.submission_limit_per_day:
             raise exceptions.ValidationError(
                 {'submission': 'Submissions past the daily limit are '
                                'not allowed for this project'})

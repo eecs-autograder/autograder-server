@@ -13,7 +13,7 @@ from django.utils import timezone
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
-from autograder.core.models.ag_model_base import ToDictMixin
+from .ag_model_base import ToDictMixin
 from . import ag_model_base
 from .ag_test.ag_test_case_result import AGTestCaseResult
 from .ag_test.ag_test_command_result import AGTestCommandResult
@@ -220,7 +220,7 @@ class Submission(ag_model_base.AutograderModel):
 
     submitted_filenames = ag_fields.StringArrayField(
         blank=True, default=list,
-        help_text='''The names of files that were submitted, 
+        help_text='''The names of files that were submitted,
                      excluding those that were discarded.''')
 
     discarded_files = ag_fields.StringArrayField(

@@ -21,13 +21,13 @@ from autograder.rest_api.views.schema_generation import AGModelSchemaBuilder
 
 class CanSendInvitation:
     def has_object_permission(self, request, view, project: ag_models.Project):
-        if (project.disallow_group_registration and
-                not project.course.is_staff(request.user)):
+        if (project.disallow_group_registration
+                and not project.course.is_staff(request.user)):
             return False
 
-        if (project.course.is_handgrader(request.user) and
-                not project.course.is_student(request.user) and
-                not project.course.is_staff(request.user)):
+        if (project.course.is_handgrader(request.user)
+                and not project.course.is_student(request.user)
+                and not project.course.is_staff(request.user)):
             return False
 
         return True
@@ -35,8 +35,8 @@ class CanSendInvitation:
 
 list_create_invitation_permissions = (
     # Only staff can list invitations.
-    (P(ag_permissions.IsReadOnly)) & P(ag_permissions.is_staff()) |
-    (~P(ag_permissions.IsReadOnly) & P(ag_permissions.can_view_project()) & P(CanSendInvitation))
+    (P(ag_permissions.IsReadOnly)) & P(ag_permissions.is_staff())
+    | (~P(ag_permissions.IsReadOnly) & P(ag_permissions.can_view_project()) & P(CanSendInvitation))
 )
 
 
@@ -76,8 +76,8 @@ class ListCreateGroupInvitationViewSet(ListCreateNestedModelViewSet):
 class CanReadOrEditInvitation(permissions.BasePermission):
     def has_object_permission(self, request, view, invitation):
         is_staff = invitation.project.course.is_staff(request.user)
-        is_involved = (request.user == invitation.invitation_creator or
-                       request.user in invitation.invited_users.all())
+        is_involved = (request.user == invitation.invitation_creator
+                       or request.user in invitation.invited_users.all())
 
         if request.method.lower() == 'get':
             return is_staff or is_involved

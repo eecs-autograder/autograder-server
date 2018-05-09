@@ -1,14 +1,19 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 
-import autograder.core.models as ag_models
 from autograder import utils
+from .course import Course
+from .project import Project, InstructorFile
+from .ag_test.ag_test_suite import AGTestSuite
+from .ag_test.ag_test_case import AGTestCase
+from .ag_test.ag_test_command import AGTestCommand
+from .student_test_suite import StudentTestSuite
 
 
 @transaction.atomic()
-def copy_project(project: ag_models.Project, target_course: ag_models.Course,
+def copy_project(project: Project, target_course: Course,
                  new_project_name: str=None):
-    new_project = ag_models.Project.objects.get(pk=project.pk)
+    new_project = Project.objects.get(pk=project.pk)
     new_project.pk = None
     new_project.course = target_course
     new_project.hide_ultimate_submission_fdbk = True
@@ -20,7 +25,7 @@ def copy_project(project: ag_models.Project, target_course: ag_models.Course,
 
     for instructor_file in project.instructor_files.all():
         with instructor_file.open('rb') as f:
-            ag_models.InstructorFile.objects.validate_and_create(
+            InstructorFile.objects.validate_and_create(
                 project=new_project,
                 file_obj=SimpleUploadedFile(instructor_file.name, f.read()))
 
@@ -47,21 +52,21 @@ def _copy_ag_tests(project, new_project):
                 pattern__in=[
                     student_file.pattern for student_file in suite.student_files_needed.all()]))
 
-        new_suite = ag_models.AGTestSuite.objects.validate_and_create(
+        new_suite = AGTestSuite.objects.validate_and_create(
             project=new_project,
             instructor_files_needed=instructor_files_needed,
             student_files_needed=student_files_needed,
             **utils.exclude_dict(
                 suite.to_dict(),
-                ('pk', 'project') + ag_models.AGTestSuite.get_serialize_related_fields())
+                ('pk', 'project') + AGTestSuite.get_serialize_related_fields())
         )
 
         for case in suite.ag_test_cases.all():
-            new_case = ag_models.AGTestCase.objects.validate_and_create(
+            new_case = AGTestCase.objects.validate_and_create(
                 ag_test_suite=new_suite,
                 **utils.exclude_dict(
                     case.to_dict(),
-                    ('pk', 'ag_test_suite') + ag_models.AGTestCase.get_serialize_related_fields())
+                    ('pk', 'ag_test_suite') + AGTestCase.get_serialize_related_fields())
             )
 
             for cmd in case.ag_test_commands.all():
@@ -87,14 +92,14 @@ def _copy_ag_tests(project, new_project):
                             instr_file.name == cmd.expected_stderr_instructor_file.name
                     )
 
-                ag_models.AGTestCommand.objects.validate_and_create(
+                AGTestCommand.objects.validate_and_create(
                     ag_test_case=new_case,
                     stdin_instructor_file=stdin_instructor_file,
                     expected_stdout_instructor_file=expected_stdout_instructor_file,
                     expected_stderr_instructor_file=expected_stderr_instructor_file,
-                    **utils.exclude_dict(cmd.to_dict(),
-                                         ('pk', 'ag_test_case') +
-                                         ag_models.AGTestCommand.get_serialize_related_fields())
+                    **utils.exclude_dict(
+                        cmd.to_dict(),
+                        ('pk', 'ag_test_case') + AGTestCommand.get_serialize_related_fields())
                 )
 
 
@@ -113,19 +118,19 @@ def _copy_student_suites(project, new_project):
                 ]
             )
         )
-        ag_models.StudentTestSuite.objects.validate_and_create(
+        StudentTestSuite.objects.validate_and_create(
             project=new_project,
             instructor_files_needed=instructor_files_needed,
             student_files_needed=student_files_needed,
             **utils.exclude_dict(
                 student_suite.to_dict(),
-                ('pk', 'project') + ag_models.StudentTestSuite.get_serialize_related_fields())
+                ('pk', 'project') + StudentTestSuite.get_serialize_related_fields())
         )
 
 
 @transaction.atomic()
-def copy_course(course: ag_models.Course, new_course_name: str):
-    new_course = ag_models.Course.objects.get(pk=course.pk)
+def copy_course(course: Course, new_course_name: str):
+    new_course = Course.objects.get(pk=course.pk)
     new_course.pk = None
     new_course.name = new_course_name
 

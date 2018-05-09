@@ -17,10 +17,10 @@ from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
 from autograder.rest_api.views.ag_model_views import ListCreateNestedModelViewSet
 
 can_list_projects = (
-    P(ag_permissions.IsReadOnly) &
-    (P(ag_permissions.is_staff()) |
-     P(ag_permissions.is_student()) |
-     P(ag_permissions.is_handgrader()))
+    P(ag_permissions.IsReadOnly)
+    & (P(ag_permissions.is_staff())
+       | P(ag_permissions.is_student())
+       | P(ag_permissions.is_handgrader()))
 )
 list_create_project_permissions = P(ag_permissions.is_admin()) | can_list_projects
 
@@ -63,8 +63,8 @@ def on_project_created(sender, instance, created, **kwargs):
 
 
 project_detail_permissions = (
-    P(ag_permissions.is_admin()) |
-    (P(ag_permissions.IsReadOnly) & P(ag_permissions.can_view_project()))
+    P(ag_permissions.is_admin())
+    | (P(ag_permissions.IsReadOnly) & P(ag_permissions.can_view_project()))
 )
 
 
@@ -210,10 +210,10 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
         return FileResponse(open(task.result_filename, 'rb'), content_type=content_type)
 
     def _get_content_type(self, download_type: ag_models.DownloadType):
-        if (download_type == ag_models.DownloadType.all_scores or
-                download_type == ag_models.DownloadType.final_graded_submission_scores):
+        if (download_type == ag_models.DownloadType.all_scores
+                or download_type == ag_models.DownloadType.final_graded_submission_scores):
             return 'text/csv'
 
-        if (download_type == ag_models.DownloadType.all_submission_files or
-                download_type == ag_models.DownloadType.final_graded_submission_files):
+        if (download_type == ag_models.DownloadType.all_submission_files
+                or download_type == ag_models.DownloadType.final_graded_submission_files):
             return 'application/zip'

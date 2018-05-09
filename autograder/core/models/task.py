@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
-from autograder.core.models import AutograderModel
+from .ag_model_base import AutograderModel
 
 
 class Task(AutograderModel):

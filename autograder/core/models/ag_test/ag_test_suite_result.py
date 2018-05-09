@@ -203,10 +203,10 @@ class AGTestSuiteResult(AutograderModel):
 
         @property
         def _show_setup_and_teardown_names(self):
-            return (self._fdbk.show_setup_and_teardown_stdout or
-                    self._fdbk.show_setup_and_teardown_stderr or
-                    self._fdbk.show_setup_and_teardown_return_code or
-                    self._fdbk.show_setup_and_teardown_timed_out)
+            return (self._fdbk.show_setup_and_teardown_stdout
+                    or self._fdbk.show_setup_and_teardown_stderr
+                    or self._fdbk.show_setup_and_teardown_return_code
+                    or self._fdbk.show_setup_and_teardown_timed_out)
 
         @property
         def total_points(self) -> int:

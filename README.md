@@ -62,5 +62,38 @@ python3.6 manage.py -v 2 test
 ```
 
 # Coding Standards
-- Unless otherwise stated, code must comply with [https://www.python.org/dev/peps/pep-0008/](PEP 8).
+- Unless otherwise stated, code must comply with [PEP 8](https://www.python.org/dev/peps/pep-0008/).
 - Limit lines to a maximum of 99 characters.
+- Use type annotations for all new code, unless the code is highly dynamic.
+- Don't use acronyms other than the ones listed below:
+    - 'ag' = 'autograder'
+    - 'hg' = 'handgrading'
+- Avoid abbreviations. Shortening long, frequently used words can be ok,
+especially in more local contexts.
+- Use these import aliases:
+    - `import autograder.core.models as ag_models`
+        - NOTE: Do NOT import `autograder.core.models` from modules inside 
+        that package.
+    - `import autograder.core.fields as ag_fields`
+    - `import autograder.rest_api.permissions as ag_permissions`
+    - `import autograder.rest_api.serializers as ag_serializers`
+    - `import autograder.core.utils as core_ut`
+    - `import autograder.handgrading.models as hg_models`
+- Don't use \ to wrap lines (except in `with`-statements). Use parentheses. 
+- Use a single leading underscore for non-public names.
+- When a closing brace, bracket, or parenthesis is on its own line, align
+it with the first character of the line that starts the multiline construct:
+```
+my_list = [
+    'spam', 
+    'egg',
+    'waluigi,
+]
+```
+- When using a hanging indent for a multiline `if` condition, indent an extra level:
+```
+if (spam_spam_wonderful_spam and
+        egg and waluigi):
+    print('waaaaluigi')
+```
+- Put line breaks before binary operators.

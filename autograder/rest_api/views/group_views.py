@@ -28,11 +28,9 @@ from autograder.rest_api.views.schema_generation import APITags
 class GroupsViewSet(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.SubmissionGroupSerializer
     permission_classes = (
-        P(ag_permissions.is_admin()) |
-        (
-            (P(ag_permissions.is_staff()) | P(ag_permissions.is_handgrader())) &
-            ag_permissions.IsReadOnly
-        ),
+        P(ag_permissions.is_admin())
+        | ((P(ag_permissions.is_staff()) | P(ag_permissions.is_handgrader()))
+            & ag_permissions.IsReadOnly),
     )
 
     pk_key = 'project_pk'
@@ -82,8 +80,8 @@ class _CanCreateSoloGroup(permissions.BasePermission):
         if not project.visible_to_students:
             return False
 
-        return (project.course.is_student(request.user) or
-                project.guests_can_submit)
+        return (project.course.is_student(request.user)
+                or project.guests_can_submit)
 
 
 class CreateSoloGroupView(mixins.CreateModelMixin, AGModelGenericViewSet):
@@ -121,8 +119,8 @@ class CreateSoloGroupView(mixins.CreateModelMixin, AGModelGenericViewSet):
 
 is_staff_or_member = ag_permissions.is_staff_or_group_member()
 can_view_project = ag_permissions.can_view_project(lambda group: group.project)
-group_permissions = (P(ag_permissions.is_admin()) |
-                     (P(ag_permissions.IsReadOnly) & can_view_project & is_staff_or_member))
+group_permissions = (P(ag_permissions.is_admin())
+                     | (P(ag_permissions.IsReadOnly) & can_view_project & is_staff_or_member))
 
 
 class _UltimateSubmissionPermissions(permissions.BasePermission):
@@ -137,8 +135,7 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
 
         closing_time = (project.closing_time if group.extended_due_date is None
                         else group.extended_due_date)
-        closing_time_passed = (closing_time is None or
-                               timezone.now() > closing_time)
+        closing_time_passed = closing_time is None or timezone.now() > closing_time
         if not closing_time_passed:
             return False
 

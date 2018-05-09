@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from autograder.core import constants
-from autograder.core.models import AutograderModel
+from ..ag_model_base import AutograderModel
 import autograder.core.fields as ag_fields
 
 
