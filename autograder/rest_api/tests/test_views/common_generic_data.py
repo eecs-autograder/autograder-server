@@ -1,9 +1,9 @@
-'''
+"""
 The classes defined here serve as mixins for adding members to a class
 that yield data commonly used in the REST API view test cases. Note that
 database objects are not created until the first time they are accessed
 per test case.
-'''
+"""
 
 from django.urls import reverse
 

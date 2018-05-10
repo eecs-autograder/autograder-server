@@ -26,7 +26,8 @@ def _set_eager():
 
 
 class CeleryTestSuiteRunner(DiscoverRunner):
-    """Django test runner allowing testing of celery delayed tasks.
+    """
+    Django test runner allowing testing of celery delayed tasks.
     All tasks are run locally, not in a worker.
     To use this runner set ``settings.TEST_RUNNER``::
         TEST_RUNNER = 'djcelery.contrib.test_runner.CeleryTestSuiteRunner'

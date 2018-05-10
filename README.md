@@ -63,9 +63,13 @@ python3.6 manage.py -v 2 test
 ```
 
 # Coding Standards
-To run pycodestyle:
+To run pycodestyle (settings are in setup.cnf):
 ```
-pycodestyle --config=.pycodestyle autograder
+pycodestyle autograder
+```
+To run pydocstyle (settings are in setup.cnf):
+```
+pydocstyle autograder
 ```
 - Unless otherwise stated, code must comply with [PEP 8](https://www.python.org/dev/peps/pep-0008/).
 - Limit lines to a maximum of 99 characters.

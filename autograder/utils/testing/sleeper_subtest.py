@@ -6,7 +6,7 @@ from django import db
 
 
 class sleeper_subtest:
-    '''
+    """
     The purpose of this decorator is to abstract away most of the
     subprocess, mocking, and error handling logic used when writing
     tests that target specific race conditions.
@@ -26,7 +26,7 @@ class sleeper_subtest:
         the decorator.
     4. Perform any needed test case checks (in the main process).
     5. Call join() on the return value mentioned in step 3.
-    '''
+    """
 
     def __init__(self, *mock_args, patch_func=mock.patch, **mock_kwargs):
         self.patch_func = patch_func
@@ -51,22 +51,22 @@ class sleeper_subtest:
             self.error_queue = multiprocessing.Queue()
 
         def __call__(self, *func_args, **func_kwargs):
-            '''
+            """
             Closes the current database connection and starts the
             decorated function in a sub-process, then waits on the event
             that was passed in.
-            '''
+            """
             if hasattr(self, 'proc'):
                 raise AttributeError('The subprocess has already started')
 
             def sub_func():
-                '''
+                """
                 This function is a wrapper for the subprocess target.
                 It applies the mock object, runs the wrapped function,
                 and catches and stores any exceptions that are thrown
                 from the wrapped function. It also sends a signal to
                 the event that the main processes is waiting on.
-                '''
+                """
                 def notify_sleep_and_return(*args, **kwargs):
                     self.event.set()
                     print('subprocess going to sleep')
@@ -93,10 +93,10 @@ class sleeper_subtest:
             return self
 
         def join(self):
-            '''
+            """
             Waits for the wrapped function subprocess to finish and
             propagates any errors that were raised in the subprocess.
-            '''
+            """
             print('waiting for wrapped function')
             self.proc.join()
             print('checking for errors')
