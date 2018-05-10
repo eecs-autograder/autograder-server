@@ -69,9 +69,9 @@ rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
 
 schema_view = get_schema_view(
     openapi.Info(
-       title="Autograder API",
-       default_version=settings.VERSION,
-       description="""
+        title="Autograder API",
+        default_version=settings.VERSION,
+        description="""
 <h3>Welcome to the Autograder API documentation!</h3>
 <div>
   This API is in Alpha. Much of it is automatically generated, and while most of it is accurate,
@@ -106,10 +106,10 @@ schema_view = get_schema_view(
     enter "Token &lt;token&gt;" into the "Value" field.
   </li>
 </ol>
-       """,
-       # terms_of_service="https://www.google.com/policies/terms/",
-       # contact=openapi.Contact(email="contact@snippets.local"),
-       # license=openapi.License(name="BSD License"),
+        """,
+        # terms_of_service="https://www.google.com/policies/terms/",
+        # contact=openapi.Contact(email="contact@snippets.local"),
+        # license=openapi.License(name="BSD License"),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
@@ -217,31 +217,31 @@ urlpatterns = [
          views.AGTestCommandResultStderrDiffView.as_view(),
          name='ag-test-cmd-result-stderr-diff'),
 
-     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/setup_stdout/',
-          views.StudentTestSuiteResultSetupStdoutView.as_view(),
-          name='student-suite-setup-stdout'),
-     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/setup_stderr/',
-          views.StudentTestSuiteResultSetupStderrView.as_view(),
-          name='student-suite-setup-stderr'),
+    path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/setup_stdout/',
+         views.StudentTestSuiteResultSetupStdoutView.as_view(),
+         name='student-suite-setup-stdout'),
+    path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/setup_stderr/',
+         views.StudentTestSuiteResultSetupStderrView.as_view(),
+         name='student-suite-setup-stderr'),
 
-     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/get_student_test_names_stdout/',
-          views.StudentTestSuiteResultGetStudentTestsStdoutView.as_view(),
-          name='student-suite-get-student-test-names-stdout'),
-     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/get_student_test_names_stderr/',
-          views.StudentTestSuiteResultGetStudentTestsStderrView.as_view(),
-          name='student-suite-get-student-test-names-stderr'),
+    path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/get_student_test_names_stdout/',  # noqa
+         views.StudentTestSuiteResultGetStudentTestsStdoutView.as_view(),
+         name='student-suite-get-student-test-names-stdout'),
+    path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/get_student_test_names_stderr/',  # noqa
+         views.StudentTestSuiteResultGetStudentTestsStderrView.as_view(),
+         name='student-suite-get-student-test-names-stderr'),
 
-     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/validity_check_stdout/',
-          views.StudentTestSuiteResultValidityCheckStdoutView.as_view(),
-          name='student-suite-validity-check-stdout'),
-     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/validity_check_stderr/',
-          views.StudentTestSuiteResultValidityCheckStderrView.as_view(),
-          name='student-suite-validity-check-stderr'),
+    path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/validity_check_stdout/',
+         views.StudentTestSuiteResultValidityCheckStdoutView.as_view(),
+         name='student-suite-validity-check-stdout'),
+    path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/validity_check_stderr/',
+         views.StudentTestSuiteResultValidityCheckStderrView.as_view(),
+         name='student-suite-validity-check-stderr'),
 
-     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/grade_buggy_impls_stdout/',
-          views.StudentTestSuiteResultGradeBuggyImplsStdoutView.as_view(),
-          name='student-suite-grade-buggy-impls-stdout'),
-     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/grade_buggy_impls_stderr/',
-          views.StudentTestSuiteResultGradeBuggyImplsStderrView.as_view(),
-          name='student-suite-grade-buggy-impls-stderr'),
+    path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/grade_buggy_impls_stdout/',  # noqa
+         views.StudentTestSuiteResultGradeBuggyImplsStdoutView.as_view(),
+         name='student-suite-grade-buggy-impls-stdout'),
+    path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/grade_buggy_impls_stderr/',  # noqa
+         views.StudentTestSuiteResultGradeBuggyImplsStderrView.as_view(),
+         name='student-suite-grade-buggy-impls-stderr'),
 ]

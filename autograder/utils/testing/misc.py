@@ -25,7 +25,7 @@ def timer(msg=''):
 
     def decorator(func):
         def decorated_func(*args, **kwargs):
-            nonlocal  msg
+            nonlocal msg
             if not msg:
                 msg = '  - {}'.format(func.__name__)
 
@@ -38,7 +38,7 @@ def timer(msg=''):
             nonlocal cumulative_time
             cumulative_time += t.time
 
-            print(msg, 'called {} times so far, {}s total'.format(num_times_called, cumulative_time))
+            print(msg, f'called {num_times_called} times so far, {cumulative_time}s total')
 
         return decorated_func
 

@@ -83,7 +83,8 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             submission = obj_build.build_submission(group=group)
 
             self.assertEqual(1, group.submissions.count())
-            self.assertNotEqual(ag_models.Submission.GradingStatus.finished_grading, submission.status)
+            self.assertNotEqual(
+                ag_models.Submission.GradingStatus.finished_grading, submission.status)
             ultimate_submission = get_ultimate_submission(group)
             self.assertIsNone(ultimate_submission)
 

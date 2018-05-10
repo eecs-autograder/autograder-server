@@ -102,7 +102,7 @@ class SubmissionResultTestCase(UnitTestBase):
 
     def test_staff_get_any_fdbk_on_owned_submission(self):
         self.project.validate_and_update(
-            closing_time = timezone.now() - timezone.timedelta(minutes=2))
+            closing_time=timezone.now() - timezone.timedelta(minutes=2))
         self.client.force_authenticate(self.staff)
         for submission, res in [(self.staff_normal_submission, self.staff_normal_res),
                                 (self.staff_best_submission, self.staff_best_res),
@@ -116,9 +116,8 @@ class SubmissionResultTestCase(UnitTestBase):
         self.client.force_authenticate(self.staff)
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': 'not a value'})
-        url = (reverse('submission-results',
-                       kwargs={'pk': self.staff_normal_submission.pk}) + '?' +
-               query_params.urlencode())
+        url = (reverse('submission-results', kwargs={'pk': self.staff_normal_submission.pk})
+               + '?' + query_params.urlencode())
         response = self.client.get(url)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertIn('feedback_category', response.data)
@@ -196,7 +195,7 @@ class SubmissionResultTestCase(UnitTestBase):
                                          self.student1_past_limit_res,
                                          ag_models.FeedbackCategory.past_limit_submission)
 
-    def test_student_get_past_limit_fdbk_on_non_owned_past_limit_submission_permission_denied(self):
+    def test_student_get_past_limit_fdbk_non_owned_past_limit_submission_permission_denied(self):
         self.client.force_authenticate(self.student2)
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group1_past_limit_submission,
@@ -207,7 +206,7 @@ class SubmissionResultTestCase(UnitTestBase):
             self.student1_past_limit_res,
             ag_models.FeedbackCategory.past_limit_submission)
 
-    def test_student_get_past_limit_fdbk_on_owned_non_past_limit_submission_permission_denied(self):
+    def test_student_get_past_limit_fdbk_owned_non_past_limit_submission_permission_denied(self):
         self.client.force_authenticate(self.student1)
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group1_normal_submission,
@@ -388,7 +387,7 @@ class SubmissionResultTestCase(UnitTestBase):
                 self.client, self.student_group1_best_submission,
                 self.student1_best_res, ag_models.FeedbackCategory.max)
 
-    def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_despite_ultimate_fdbk_hidden(self):
+    def test_staff_get_max_fdbk_non_owned_ultimate_submission_despite_ultimate_fdbk_hidden(self):
         self.client.force_authenticate(self.staff)
         self.project.validate_and_update(hide_ultimate_submission_fdbk=True)
 
@@ -419,7 +418,7 @@ class SubmissionResultTestCase(UnitTestBase):
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.max)
 
-    def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_before_deadline_permission_denied(self):
+    def test_staff_get_max_fdbk_non_owned_ultimate_subm_before_deadline_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
 
@@ -433,7 +432,7 @@ class SubmissionResultTestCase(UnitTestBase):
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.max)
 
-    def test_staff_get_max_fdbk_on_non_owned_ultimate_submission_before_extension_permission_denied(self):
+    def test_staff_get_max_fdbk_non_owned_ultimate_subm_before_extension_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
 
@@ -503,8 +502,8 @@ class SubmissionResultTestCase(UnitTestBase):
         self.client.force_authenticate(self.staff)
         url = (reverse('ag-test-cmd-result-stdout-diff',
                        kwargs={'pk': self.staff_normal_submission.pk,
-                               'result_pk': self.staff_normal_res.pk}) +
-               '?feedback_category=max')
+                               'result_pk': self.staff_normal_res.pk})
+               + '?feedback_category=max')
 
         expected_diff = ['- ' + output, '+ ' + non_utf_bytes.decode('utf-8', 'surrogateescape')]
         response = self.client.get(url)
@@ -513,8 +512,8 @@ class SubmissionResultTestCase(UnitTestBase):
 
         url = (reverse('ag-test-cmd-result-stderr-diff',
                        kwargs={'pk': self.staff_normal_submission.pk,
-                               'result_pk': self.staff_normal_res.pk}) +
-               '?feedback_category=max')
+                               'result_pk': self.staff_normal_res.pk})
+               + '?feedback_category=max')
         response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(expected_diff, json.loads(response.content.decode('utf-8')))
@@ -583,8 +582,8 @@ class SubmissionResultTestCase(UnitTestBase):
         ]
         for field_name, url_lookup in zip(field_names, url_lookups):
             url = (reverse(url_lookup,
-                           kwargs={'pk': submission.pk, 'result_pk': suite_result.pk}) +
-                   '?feedback_category={}'.format(fdbk_category.value))
+                           kwargs={'pk': submission.pk, 'result_pk': suite_result.pk})
+                   + '?feedback_category={}'.format(fdbk_category.value))
             response = client.get(url)
             if expect_404:
                 self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
@@ -625,8 +624,8 @@ class SubmissionResultTestCase(UnitTestBase):
                          fdbk_category: ag_models.FeedbackCategory):
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': fdbk_category.value})
-        url = (reverse('submission-results', kwargs={'pk': submission.pk}) + '?' +
-               query_params.urlencode())
+        url = (reverse('submission-results', kwargs={'pk': submission.pk})
+               + '?' + query_params.urlencode())
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(submission.get_fdbk(fdbk_category).to_dict(), response.data)
@@ -636,8 +635,8 @@ class SubmissionResultTestCase(UnitTestBase):
                                            fdbk_category: ag_models.FeedbackCategory):
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': fdbk_category.value})
-        url = (reverse('submission-results', kwargs={'pk': submission.pk}) + '?' +
-               query_params.urlencode())
+        url = (reverse('submission-results', kwargs={'pk': submission.pk})
+               + '?' + query_params.urlencode())
         response = client.get(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
@@ -692,8 +691,8 @@ class SubmissionResultTestCase(UnitTestBase):
                 'feedback_category': fdbk_category.value
             })
             url = (reverse(url_lookup,
-                           kwargs={'pk': submission.pk, 'result_pk': cmd_result.pk}) + '?' +
-                   query_params.urlencode())
+                           kwargs={'pk': submission.pk, 'result_pk': cmd_result.pk})
+                   + '?' + query_params.urlencode())
             result.append((url, field_name))
 
         return result
@@ -717,8 +716,8 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         )  # type: ag_models.StudentTestSuite
 
         self.submission = obj_build.build_submission(
-            group=obj_build.make_group(project=self.project,
-                                                  members_role=obj_build.UserRole.admin))
+            group=obj_build.make_group(
+                project=self.project, members_role=obj_build.UserRole.admin))
 
         self.setup_stdout = 'setupp stdouttt'
         self.setup_stderr = 'sortoop stdear'
@@ -815,8 +814,8 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
         query_params = QueryDict(mutable=True)
         query_params.update({'feedback_category': ag_models.FeedbackCategory.max.value})
-        url = (reverse('submission-results', kwargs={'pk': self.submission.pk}) +
-               '?' + query_params.urlencode())
+        url = (reverse('submission-results', kwargs={'pk': self.submission.pk})
+               + '?' + query_params.urlencode())
 
         response = self.client.get(url)
         expected_content = [

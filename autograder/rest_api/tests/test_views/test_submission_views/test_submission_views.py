@@ -17,11 +17,11 @@ from autograder.utils.testing import UnitTestBase
 
 
 class ListSubmissionsTestCase(test_data.Client,
-                                   test_data.Project,
-                                   test_data.Group,
-                                   test_data.Submission,
-                                   test_impls.ListObjectsTest,
-                                   UnitTestBase):
+                              test_data.Project,
+                              test_data.Group,
+                              test_data.Submission,
+                              test_impls.ListObjectsTest,
+                              UnitTestBase):
     def setUp(self):
         super().setUp()
         self.maxDiff = None
@@ -635,5 +635,5 @@ def submission_url(submission):
 def file_url(submission, filename):
     query_params = QueryDict(mutable=True)
     query_params.update({'filename': filename})
-    return (reverse('submission-file', kwargs={'pk': submission.pk}) + '?' +
-            query_params.urlencode())
+    return (reverse('submission-file', kwargs={'pk': submission.pk})
+            + '?' + query_params.urlencode())

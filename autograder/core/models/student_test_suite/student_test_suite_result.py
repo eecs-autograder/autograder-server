@@ -1,6 +1,5 @@
 import os
-from io import FileIO
-from typing import Sequence, Optional, BinaryIO, List
+from typing import Optional, BinaryIO, List
 
 from django.db import models
 
@@ -299,8 +298,8 @@ class StudentTestSuiteResult(AutograderModel):
             if self._student_test_suite.max_points is not None:
                 return self._student_test_suite.max_points
 
-            return (len(self._student_test_suite.buggy_impl_names) *
-                    self._student_test_suite.points_per_exposed_bug)
+            return (len(self._student_test_suite.buggy_impl_names)
+                    * self._student_test_suite.points_per_exposed_bug)
 
         SERIALIZABLE_FIELDS = (
             'pk',

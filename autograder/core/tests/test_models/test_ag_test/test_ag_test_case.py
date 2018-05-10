@@ -37,7 +37,8 @@ class AGTestCaseTestCase(UnitTestBase):
         name = 'stove'
         ag_models.AGTestCase.objects.validate_and_create(name=name, ag_test_suite=self.ag_suite)
         with self.assertRaises(exceptions.ValidationError):
-            ag_models.AGTestCase.objects.validate_and_create(name=name, ag_test_suite=self.ag_suite)
+            ag_models.AGTestCase.objects.validate_and_create(
+                name=name, ag_test_suite=self.ag_suite)
 
     def test_error_ag_test_name_empty_or_null(self):
         bad_names = ['', None]

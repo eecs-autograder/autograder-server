@@ -43,7 +43,7 @@ def oauth2_callback(request):
     first_name = user_info['name']['givenName'][:_DJANGO_FIRST_NAME_MAX_LEN]
     last_name = user_info['name']['familyName'][:_DJANGO_LAST_NAME_MAX_LEN]
     user = User.objects.get_or_create(
-        username=email, defaults={'first_name': first_name,'last_name': last_name})[0]
+        username=email, defaults={'first_name': first_name, 'last_name': last_name})[0]
     if user.first_name != first_name or user.last_name != last_name:
         user.first_name = first_name
         user.last_name = last_name

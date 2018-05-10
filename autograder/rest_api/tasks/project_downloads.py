@@ -120,8 +120,8 @@ def _make_submission_archive(
     with open(dest_filename, 'wb') as archive:
         with zipfile.ZipFile(archive, 'w') as z:
             for index, s in enumerate(submissions):
-                archive_dirname = ('_'.join(s.group.member_names) +
-                                   '-' + s.timestamp.isoformat())
+                archive_dirname = ('_'.join(s.group.member_names)
+                                   + '-' + s.timestamp.isoformat())
                 with utils.ChangeDirectory(core_ut.get_submission_dir(s)):
                     for filename in s.submitted_filenames:
                         target_name = os.path.join(

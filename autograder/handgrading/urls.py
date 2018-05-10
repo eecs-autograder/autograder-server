@@ -44,13 +44,13 @@ urlpatterns = [
     url(r'^handgrading_rubrics/(?P<handgrading_rubric_pk>[0-9]+)/annotations/$',
         views.AnnotationListCreateView.as_view(), name='annotations'),
     path('handgrading_rubrics/<int:handgrading_rubric_pk>/annotations/order/',
-        views.AnnotationOrderView.as_view(), name='annotation_order'),
+         views.AnnotationOrderView.as_view(), name='annotation_order'),
     url(r'', include(annotation_detail_router.urls)),
 
     url(r'^handgrading_rubrics/(?P<handgrading_rubric_pk>[0-9]+)/criteria/$',
         views.CriterionListCreateView.as_view(), name='criteria'),
     path('handgrading_rubrics/<int:handgrading_rubric_pk>/criteria/order/',
-        views.CriterionOrderView.as_view(), name='criterion_order'),
+         views.CriterionOrderView.as_view(), name='criterion_order'),
     url(r'', include(criterion_detail_router.urls)),
 
     url(r'^groups/(?P<group_pk>[0-9]+)/handgrading_result/$',

@@ -1,16 +1,13 @@
-import os
-
 from celery import Celery
 from celery.signals import worker_ready
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'autograder.settings.production')
-
+# Make sure that DJANGO_SETTINGS_MODULE is set in your environment.
 from django.conf import settings
 
 app = Celery('autograder')
 app.config_from_object('django.conf:settings')
 
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)()
 
 
 @worker_ready.connect()

@@ -132,12 +132,12 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
 
         self.student_suite2_points_possible = 4
 
-        self.student_suite_total_points_possible = (self.student_suite1_points_possible +
-                                                    self.student_suite2_points_possible)
+        self.student_suite_total_points_possible = (
+            self.student_suite1_points_possible + self.student_suite2_points_possible)
 
-        self.total_points_possible = (self.ag_test_suite1_points_possible +
-                                      self.ag_test_suite2_points_possible +
-                                      self.student_suite_total_points_possible)
+        self.total_points_possible = (self.ag_test_suite1_points_possible
+                                      + self.ag_test_suite2_points_possible
+                                      + self.student_suite_total_points_possible)
 
         tasks.grade_submission(self.submission1.pk)
         tasks.grade_submission(self.submission2.pk)

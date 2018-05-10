@@ -42,7 +42,8 @@ def get_ultimate_submissions(project: Project, *groups: Group) -> Iterator[Submi
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best:
         submissions_queryset = get_submissions_with_results_queryset(
             FeedbackCategory.max, base_manager=finished_submissions_queryset)
-        groups = base_group_queryset.prefetch_related(Prefetch('submissions', submissions_queryset))
+        groups = base_group_queryset.prefetch_related(
+            Prefetch('submissions', submissions_queryset))
         return _best_submissions_generator(groups, FeedbackCategory.max)
 
 

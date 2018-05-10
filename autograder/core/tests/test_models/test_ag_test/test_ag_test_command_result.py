@@ -37,12 +37,12 @@ class AGTestCommandResultTestCase(UnitTestBase):
                 'show_whether_timed_out': True
             }
         )
-        self.max_points_possible = (self.ag_test_command.points_for_correct_return_code +
-                                    self.ag_test_command.points_for_correct_stdout +
-                                    self.ag_test_command.points_for_correct_stderr)
-        self.min_points_possible = (self.ag_test_command.deduction_for_wrong_return_code +
-                                    self.ag_test_command.deduction_for_wrong_stdout +
-                                    self.ag_test_command.deduction_for_wrong_stderr)
+        self.max_points_possible = (self.ag_test_command.points_for_correct_return_code
+                                    + self.ag_test_command.points_for_correct_stdout
+                                    + self.ag_test_command.points_for_correct_stderr)
+        self.min_points_possible = (self.ag_test_command.deduction_for_wrong_return_code
+                                    + self.ag_test_command.deduction_for_wrong_stdout
+                                    + self.ag_test_command.deduction_for_wrong_stderr)
 
     def make_correct_result(self) -> ag_models.AGTestCommandResult:
         return obj_build.make_correct_ag_test_command_result(
@@ -143,8 +143,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.return_code_points)
         self.assertEqual(0, fdbk.return_code_points_possible)
 
-        expected_total_pts = (self.ag_test_command.points_for_correct_stdout +
-                              self.ag_test_command.points_for_correct_stderr)
+        expected_total_pts = (self.ag_test_command.points_for_correct_stdout
+                              + self.ag_test_command.points_for_correct_stderr)
         self.assertEqual(expected_total_pts, fdbk.total_points)
         expected_total_pts_possible = expected_total_pts
         self.assertEqual(expected_total_pts_possible, fdbk.total_points_possible)
@@ -157,8 +157,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.return_code_points)
         self.assertEqual(0, fdbk.return_code_points_possible)
 
-        expected_total_pts = (self.ag_test_command.deduction_for_wrong_stdout +
-                              self.ag_test_command.deduction_for_wrong_stderr)
+        expected_total_pts = (self.ag_test_command.deduction_for_wrong_stdout
+                              + self.ag_test_command.deduction_for_wrong_stderr)
         self.assertEqual(expected_total_pts, fdbk.total_points)
         self.assertEqual(expected_total_pts_possible, fdbk.total_points_possible)
 
@@ -174,8 +174,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.stdout_points)
         self.assertEqual(0, fdbk.stdout_points_possible)
 
-        expected_total_pts = (self.ag_test_command.points_for_correct_return_code +
-                              self.ag_test_command.points_for_correct_stderr)
+        expected_total_pts = (self.ag_test_command.points_for_correct_return_code
+                              + self.ag_test_command.points_for_correct_stderr)
         expected_total_pts_possible = expected_total_pts
         self.assertEqual(expected_total_pts, fdbk.total_points)
         self.assertEqual(expected_total_pts_possible, fdbk.total_points_possible)
@@ -188,8 +188,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.stdout_points)
         self.assertEqual(0, fdbk.stdout_points_possible)
 
-        expected_total_pts = (self.ag_test_command.deduction_for_wrong_return_code +
-                              self.ag_test_command.deduction_for_wrong_stderr)
+        expected_total_pts = (self.ag_test_command.deduction_for_wrong_return_code
+                              + self.ag_test_command.deduction_for_wrong_stderr)
         self.assertEqual(expected_total_pts, fdbk.total_points)
         self.assertEqual(expected_total_pts_possible, fdbk.total_points_possible)
 
@@ -205,8 +205,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.stderr_points)
         self.assertEqual(0, fdbk.stderr_points_possible)
 
-        expected_total_pts = (self.ag_test_command.points_for_correct_return_code +
-                              self.ag_test_command.points_for_correct_stdout)
+        expected_total_pts = (self.ag_test_command.points_for_correct_return_code
+                              + self.ag_test_command.points_for_correct_stdout)
         expected_total_pts_possible = expected_total_pts
         self.assertEqual(expected_total_pts, fdbk.total_points)
         self.assertEqual(expected_total_pts_possible, fdbk.total_points_possible)
@@ -219,8 +219,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.stderr_points)
         self.assertEqual(0, fdbk.stderr_points_possible)
 
-        expected_total_pts = (self.ag_test_command.deduction_for_wrong_return_code +
-                              self.ag_test_command.deduction_for_wrong_stdout)
+        expected_total_pts = (self.ag_test_command.deduction_for_wrong_return_code
+                              + self.ag_test_command.deduction_for_wrong_stdout)
         self.assertEqual(expected_total_pts, fdbk.total_points)
         self.assertEqual(expected_total_pts_possible, fdbk.total_points_possible)
 
@@ -436,7 +436,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
 
     def test_stdout_correctness_show_diff_from_file(self):
         instructor_file = obj_build.make_instructor_file(self.project)
-        self.ag_test_command.expected_stdout_source = ag_models.ExpectedOutputSource.instructor_file
+        self.ag_test_command.expected_stdout_source = (
+            ag_models.ExpectedOutputSource.instructor_file)
         self.ag_test_command.expected_stdout_instructor_file = instructor_file
         self.ag_test_command.save()
 
@@ -568,7 +569,8 @@ class AGTestCommandResultTestCase(UnitTestBase):
 
     def test_stderr_correctness_show_diff_from_file(self):
         instructor_file = obj_build.make_instructor_file(self.project)
-        self.ag_test_command.expected_stderr_source = ag_models.ExpectedOutputSource.instructor_file
+        self.ag_test_command.expected_stderr_source = (
+            ag_models.ExpectedOutputSource.instructor_file)
         self.ag_test_command.expected_stderr_instructor_file = instructor_file
         self.ag_test_command.save()
 
@@ -695,12 +697,12 @@ class AGTestCommandResultTestCase(UnitTestBase):
 
         mock_path = 'autograder.core.utils.get_diff'
         with mock.patch(mock_path) as mock_differ_cls:
-            result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff
+            diff = result.get_fdbk(ag_models.FeedbackCategory.max).stdout_diff
             mock_differ_cls.assert_called_with(mock.ANY, actual_stdout_filename,
                                                **diff_options)
 
         with mock.patch(mock_path) as mock_differ_cls:
-            result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff
+            diff = result.get_fdbk(ag_models.FeedbackCategory.max).stderr_diff
             mock_differ_cls.assert_called_with(mock.ANY, actual_stderr_filename,
                                                **diff_options)
 

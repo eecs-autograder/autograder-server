@@ -50,6 +50,7 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install wheel
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 ## Notes
@@ -62,6 +63,10 @@ python3.6 manage.py -v 2 test
 ```
 
 # Coding Standards
+To run pycodestyle:
+```
+pycodestyle --config=.pycodestyle autograder
+```
 - Unless otherwise stated, code must comply with [PEP 8](https://www.python.org/dev/peps/pep-0008/).
 - Limit lines to a maximum of 99 characters.
 - Use type annotations for all new code, unless the code is highly dynamic.
@@ -92,8 +97,8 @@ my_list = [
 ```
 - When using a hanging indent for a multiline `if` condition, indent an extra level:
 ```
-if (spam_spam_wonderful_spam and
-        egg and waluigi):
+if (spam_spam_wonderful_spam
+        and egg and waluigi):
     print('waaaaluigi')
 ```
 - Put line breaks before binary operators.

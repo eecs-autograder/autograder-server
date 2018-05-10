@@ -137,7 +137,7 @@ class GetUpdateDeleteAGTestCommandTestCase(test_impls.GetObjectTest,
 
     def test_non_staff_get_permission_denied(self):
         [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.do_permission_denied_get_test(self.client, enrolled,self.url)
+        self.do_permission_denied_get_test(self.client, enrolled, self.url)
 
     def test_admin_valid_update(self):
         [admin] = obj_build.make_admin_users(self.course, 1)

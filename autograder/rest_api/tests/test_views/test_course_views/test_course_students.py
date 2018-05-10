@@ -59,8 +59,7 @@ class AddStudentsTestCase(_SetUp):
     def test_admin_add_students(self):
         self.client.force_authenticate(self.admin)
         new_student_names = (
-            ['steve', 'bill'] +
-            [user.username for user in obj_build.create_dummy_users(3)])
+            ['steve', 'bill'] + [user.username for user in obj_build.create_dummy_users(3)])
 
         self.assertEqual(len(self.current_students), self.course.students.count())
 

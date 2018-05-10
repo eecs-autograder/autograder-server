@@ -18,7 +18,7 @@ class ListAGTestCasesTestCase(UnitTestBase):
         self.case2 = obj_build.make_ag_test_case(self.ag_test_suite)
         self.course = self.ag_test_suite.project.course
         self.client = APIClient()
-        self.url = reverse('ag_test_cases', kwargs={'ag_test_suite_pk':self.ag_test_suite.pk})
+        self.url = reverse('ag_test_cases', kwargs={'ag_test_suite_pk': self.ag_test_suite.pk})
 
     def test_staff_valid_list_cases(self):
         [staff] = obj_build.make_staff_users(self.course, 1)
@@ -42,7 +42,7 @@ class CreateAGTestCaseTestCase(test_impls.CreateObjectTest, UnitTestBase):
         self.ag_test_suite = obj_build.make_ag_test_suite()
         self.course = self.ag_test_suite.project.course
         self.client = APIClient()
-        self.url = reverse('ag_test_cases', kwargs={'ag_test_suite_pk':self.ag_test_suite.pk})
+        self.url = reverse('ag_test_cases', kwargs={'ag_test_suite_pk': self.ag_test_suite.pk})
 
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)

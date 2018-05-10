@@ -65,8 +65,8 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
             num_completed_subtasks=completed_count,
         )  # type: ag_models.RerunSubmissionsTask
 
-        num_subtasks = (self.project.ag_test_suites.count() +
-                        self.project.student_test_suites.count())
+        num_subtasks = (self.project.ag_test_suites.count()
+                        + self.project.student_test_suites.count())
 
         self.assertAlmostEqual((completed_count / num_subtasks) * 100, rerun_task.progress)
 

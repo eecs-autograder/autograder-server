@@ -18,7 +18,7 @@ class DiffResult:
         self.diff_content = diff_content
 
 
-_DIFF_LINE_REGEX = re.compile(b'^(?:  |\+ |- ).*\n+', flags=re.MULTILINE)
+_DIFF_LINE_REGEX = re.compile(r'^(?:  |\+ |- ).*\n+'.encode(), flags=re.MULTILINE)
 
 
 def get_diff(first_filename: str, second_filename: str,

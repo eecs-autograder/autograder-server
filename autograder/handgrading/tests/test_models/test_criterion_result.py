@@ -94,16 +94,16 @@ class CriterionResultTestCases(UnitTestBase):
 
     def test_criterion_result_ordering(self):
         cr1 = handgrading_models.CriterionResult.objects.validate_and_create(
-                **self.criterion_inputs)
+            **self.criterion_inputs)
 
         # Create a new criterion item for second criterion result, since two criterion results
         #   in one handgrading result should not share the same criterion
         cr2 = handgrading_models.CriterionResult.objects.validate_and_create(
-                selected=True,
-                criterion=handgrading_models.Criterion.objects.validate_and_create(
-                    points=0,
-                    handgrading_rubric=self.default_handgrading_rubric),
-                handgrading_result=self.result_obj)
+            selected=True,
+            criterion=handgrading_models.Criterion.objects.validate_and_create(
+                points=0,
+                handgrading_rubric=self.default_handgrading_rubric),
+            handgrading_result=self.result_obj)
 
         self.assertCountEqual([cr1.criterion.pk, cr2.criterion.pk],
                               self.default_handgrading_rubric.get_criterion_order())

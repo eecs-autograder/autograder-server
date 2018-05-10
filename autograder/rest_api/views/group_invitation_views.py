@@ -125,8 +125,7 @@ class GroupInvitationDetailViewSet(mixins.RetrieveModelMixin,
         if not invitation.all_invitees_accepted:
             return response.Response(invitation.to_dict())
 
-        members = ([invitation.invitation_creator] +
-                   list(invitation.invited_users.all()))
+        members = [invitation.invitation_creator] + list(invitation.invited_users.all())
         utils.lock_users(members)
         # Keep this hook just after the users are locked
         test_ut.mocking_hook()

@@ -179,7 +179,8 @@ def build_group(num_members=1,
     return group
 
 
-def build_submission(group: Optional[ag_models.Group]=None, **submission_kwargs) -> ag_models.Submission:
+def build_submission(group: Optional[ag_models.Group]=None,
+                     **submission_kwargs) -> ag_models.Submission:
     """
     Creates a Submission with the given keyword arguments.
     If the "group" argument is None, then a

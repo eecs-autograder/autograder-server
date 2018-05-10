@@ -49,7 +49,7 @@ class CopyProjectTestCase(UnitTestBase):
             instructor_files_needed=[instructor_file1, instructor_file2],
             student_files_needed=[student_file1],
             setup_command={
-                'name':'stave',
+                'name': 'stave',
                 'cmd': 'yorp'
             })
 

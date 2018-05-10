@@ -2,7 +2,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-import autograder.handgrading.models as handgrading_models
+import autograder.handgrading.models as hg_models
 import autograder.utils.testing.model_obj_builders as obj_build
 
 from autograder.utils.testing import UnitTestBase
@@ -15,7 +15,7 @@ class ListCriteriaTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         handgrading_rubric_inputs = {
-            "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
+            "points_style": hg_models.PointsStyle.start_at_max_and_subtract,
             "max_points": 0,
             "show_grades_and_rubric_to_students": False,
             "handgraders_can_leave_comments": True,
@@ -24,7 +24,7 @@ class ListCriteriaTestCase(UnitTestBase):
         }
 
         self.handgrading_rubric = (
-            handgrading_models.HandgradingRubric.objects.validate_and_create(
+            hg_models.HandgradingRubric.objects.validate_and_create(
                 **handgrading_rubric_inputs)
         )
 
@@ -35,7 +35,7 @@ class ListCriteriaTestCase(UnitTestBase):
             "handgrading_rubric": self.handgrading_rubric
         }
 
-        self.criterion = handgrading_models.Criterion.objects.validate_and_create(
+        self.criterion = hg_models.Criterion.objects.validate_and_create(
             **self.default_criterion)
 
         self.course = self.handgrading_rubric.project.course
@@ -64,13 +64,13 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
     def setUp(self):
         super().setUp()
-        self.handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
-                project=obj_build.build_project())
+        self.handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            points_style=hg_models.PointsStyle.start_at_max_and_subtract,
+            max_points=0,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=obj_build.build_project())
 
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
@@ -86,12 +86,12 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
     def test_admin_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
         self.do_create_object_test(
-            handgrading_models.Criterion.objects, self.client, admin, self.url, self.data)
+            hg_models.Criterion.objects, self.client, admin, self.url, self.data)
 
     def test_non_admin_create_permission_denied(self):
         [enrolled] = obj_build.make_student_users(self.course, 1)
         self.do_permission_denied_create_test(
-            handgrading_models.Criterion.objects, self.client, enrolled, self.url, self.data)
+            hg_models.Criterion.objects, self.client, enrolled, self.url, self.data)
 
     def test_create_criterion_results_on_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
@@ -100,7 +100,7 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
         # Create HandgradingResult
         submission = obj_build.build_submission(
             group=obj_build.make_group(project=self.handgrading_rubric.project))
-        handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+        handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
             group=submission.group,
             handgrading_rubric=self.handgrading_rubric)
@@ -114,27 +114,27 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
         group_with_no_submission = obj_build.make_group(project=self.handgrading_rubric.project)
 
         self.assertEqual(0, handgrading_result.criterion_results.count())
-        self.assertEqual(1, handgrading_models.HandgradingResult.objects.count())
+        self.assertEqual(1, hg_models.HandgradingResult.objects.count())
 
         # Create dummy project with its own groups and HandgradingResults.
         #   These should not be affected
         dummy_project = obj_build.make_project(course=self.handgrading_rubric.project.course)
-        dummy_handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
-                project=dummy_project)
+        dummy_handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            points_style=hg_models.PointsStyle.start_at_max_and_subtract,
+            max_points=0,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=dummy_project)
         dummy_submission = obj_build.build_submission(
             group=obj_build.make_group(project=self.handgrading_rubric.project))
-        dummy_handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
+        dummy_handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=dummy_submission,
             group=dummy_submission.group,
             handgrading_rubric=dummy_handgrading_rubric)
 
-        self.assertEqual(0, handgrading_models.CriterionResult.objects.count())
-        self.assertEqual(2, handgrading_models.HandgradingResult.objects.count())
+        self.assertEqual(0, hg_models.CriterionResult.objects.count())
+        self.assertEqual(2, hg_models.HandgradingResult.objects.count())
 
         # Create Criterion, which should create a CriterionResult for above HandgradingResult
         response = self.client.post(self.url, self.data)
@@ -142,7 +142,7 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
         handgrading_result.refresh_from_db()
         self.assertEqual(1, handgrading_result.criterion_results.count())
-        self.assertEqual(1, handgrading_models.CriterionResult.objects.count())
+        self.assertEqual(1, hg_models.CriterionResult.objects.count())
 
         criterion_results = handgrading_result.to_dict()["criterion_results"]
         self.assertFalse(criterion_results[0]["selected"])
@@ -159,7 +159,7 @@ class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
         super().setUp()
 
         handgrading_rubric_inputs = {
-            "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
+            "points_style": hg_models.PointsStyle.start_at_max_and_subtract,
             "max_points": 0,
             "show_grades_and_rubric_to_students": False,
             "handgraders_can_leave_comments": True,
@@ -168,7 +168,7 @@ class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
         }
 
         self.handgrading_rubric = (
-            handgrading_models.HandgradingRubric.objects.validate_and_create(
+            hg_models.HandgradingRubric.objects.validate_and_create(
                 **handgrading_rubric_inputs)
         )
 
@@ -179,7 +179,7 @@ class GetUpdateDeleteCriterionTestCase(test_impls.GetObjectTest,
             "handgrading_rubric": self.handgrading_rubric
         }
 
-        self.criterion = handgrading_models.Criterion.objects.validate_and_create(**criterion_data)
+        self.criterion = hg_models.Criterion.objects.validate_and_create(**criterion_data)
         self.course = self.handgrading_rubric.project.course
         self.client = APIClient()
         self.url = reverse('criterion-detail', kwargs={'pk': self.criterion.pk})
@@ -236,7 +236,7 @@ class CriterionOrderTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         handgrading_rubric_inputs = {
-            "points_style": handgrading_models.PointsStyle.start_at_max_and_subtract,
+            "points_style": hg_models.PointsStyle.start_at_max_and_subtract,
             "max_points": 0,
             "show_grades_and_rubric_to_students": False,
             "handgraders_can_leave_comments": True,
@@ -245,7 +245,7 @@ class CriterionOrderTestCase(UnitTestBase):
         }
 
         self.handgrading_rubric = (
-            handgrading_models.HandgradingRubric.objects.validate_and_create(
+            hg_models.HandgradingRubric.objects.validate_and_create(
                 **handgrading_rubric_inputs)
         )
 
@@ -256,9 +256,9 @@ class CriterionOrderTestCase(UnitTestBase):
             "handgrading_rubric": self.handgrading_rubric
         }
 
-        self.criterion1 = handgrading_models.Criterion.objects.validate_and_create(
+        self.criterion1 = hg_models.Criterion.objects.validate_and_create(
             **criterion_data)
-        self.criterion2 = handgrading_models.Criterion.objects.validate_and_create(
+        self.criterion2 = hg_models.Criterion.objects.validate_and_create(
             **criterion_data)
 
         self.course = self.handgrading_rubric.project.course

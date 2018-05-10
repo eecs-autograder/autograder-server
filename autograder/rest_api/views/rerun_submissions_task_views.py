@@ -112,10 +112,8 @@ def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test
     @retry_should_recover
     def _handle_rerun_error():
         error_msg = (
-            '\nError rerunning ag test suite {} for submission {}\n'.format(
-                ag_test_suite_pk, submission_pk
-            ) +
-            str(e) + traceback.format_exc() + '\n')
+            f'\nError rerunning ag test suite {ag_test_suite_pk} for submission {submission_pk}\n'
+            f'{str(e)} {traceback.format_exc()}\n')
 
         with transaction.atomic():
             ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
@@ -145,10 +143,10 @@ def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk
     @retry_should_recover
     def _handle_rerun_error():
         error_msg = (
-            '\nError rerunning student test suite {} for submission {}\n'.format(
-                student_test_suite_pk, submission_pk
-            ) +
-            str(e) + traceback.format_exc() + '\n')
+            f'\nError rerunning student test suite {student_test_suite_pk} for submission '
+            f'{submission_pk}\n'
+            f'{str(e)} {traceback.format_exc()}\n'
+        )
 
         with transaction.atomic():
             ag_models.RerunSubmissionsTask.objects.select_for_update().filter(

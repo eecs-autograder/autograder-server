@@ -164,4 +164,3 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
         submission.save()
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
-

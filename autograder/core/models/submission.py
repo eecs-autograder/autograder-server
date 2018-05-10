@@ -343,7 +343,7 @@ class Submission(ag_model_base.AutograderModel):
         def total_points(self) -> int:
             ag_suite_points = sum(
                 (ag_test_suite_result.get_fdbk(self._fdbk_category).total_points
-                for ag_test_suite_result in self._visible_ag_test_suite_results))
+                 for ag_test_suite_result in self._visible_ag_test_suite_results))
 
             student_suite_points = sum(
                 (student_test_suite_result.get_fdbk(self._fdbk_category).total_points
@@ -355,7 +355,7 @@ class Submission(ag_model_base.AutograderModel):
         def total_points_possible(self) -> int:
             ag_suite_points = sum(
                 (ag_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible
-                for ag_test_suite_result in self._visible_ag_test_suite_results))
+                 for ag_test_suite_result in self._visible_ag_test_suite_results))
 
             student_suite_points = sum(
                 (student_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible

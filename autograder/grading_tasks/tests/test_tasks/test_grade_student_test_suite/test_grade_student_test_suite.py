@@ -20,9 +20,11 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         self.files_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             'eecs280_student_test_grading')
-        instructor_filenames = ['proj_module.h', 'proj_module.cpp',
-                             'unit_test_framework.h', 'unit_test_framework.cpp',
-                             'Makefile']
+        instructor_filenames = [
+            'proj_module.h', 'proj_module.cpp',
+            'unit_test_framework.h', 'unit_test_framework.cpp',
+            'Makefile'
+        ]
 
         self.project = obj_build.make_project()
 
@@ -59,7 +61,8 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
                 'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             grade_buggy_impl_command={
-                'cmd': 'make student_test=${student_test_name} bug_name=${buggy_impl_name} buggy_impl',
+                'cmd': ('make student_test=${student_test_name} '
+                        'bug_name=${buggy_impl_name} buggy_impl'),
                 'process_spawn_limit': constants.MAX_PROCESS_LIMIT,
             },
             points_per_exposed_bug=1)  # type: ag_models.StudentTestSuite

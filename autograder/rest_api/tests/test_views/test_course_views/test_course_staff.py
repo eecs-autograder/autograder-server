@@ -51,8 +51,7 @@ class AddStaffTestCase(_SetUp):
         self.course.staff.add(*current_staff)
 
         new_staff_names = (
-            ['staffy1', 'staffy2'] +
-            [user.username for user in obj_build.create_dummy_users(2)])
+            ['staffy1', 'staffy2'] + [user.username for user in obj_build.create_dummy_users(2)])
 
         self.assertEqual(len(current_staff), self.course.staff.count())
 

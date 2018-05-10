@@ -138,8 +138,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             self.result.get_fdbk(ag_models.FeedbackCategory.ultimate_submission).fdbk_conf)
         self.assertEqual(
             self.student_suite.past_limit_submission_fdbk_config,
-            self.result.get_fdbk(
-                             ag_models.FeedbackCategory.past_limit_submission).fdbk_conf)
+            self.result.get_fdbk(ag_models.FeedbackCategory.past_limit_submission).fdbk_conf)
         self.assertEqual(
             self.student_suite.staff_viewer_fdbk_config,
             self.result.get_fdbk(ag_models.FeedbackCategory.staff_viewer).fdbk_conf)

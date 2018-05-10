@@ -121,8 +121,8 @@ class AGTestCommandResult(AGCommandResultBase):
 
         @property
         def actual_return_code(self) -> Optional[int]:
-            if (self._fdbk.show_actual_return_code
-                    or self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.expected_and_actual):
+            if (self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.expected_and_actual
+                    or self._fdbk.show_actual_return_code):
                 return self._ag_test_command_result.return_code
 
             return None

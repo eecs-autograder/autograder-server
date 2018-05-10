@@ -16,12 +16,12 @@ class ListCriterionResultsTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
-                project=obj_build.build_project()
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=0,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=obj_build.build_project()
         )
 
         criterion = handgrading_models.Criterion.objects.validate_and_create(
@@ -77,12 +77,12 @@ class CreateCriterionResultTestCase(test_impls.CreateObjectTest, UnitTestBase):
     def setUp(self):
         super().setUp()
         handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
-                project=obj_build.build_project()
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=0,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=obj_build.build_project()
         )
 
         self.criterion = handgrading_models.Criterion.objects.validate_and_create(
@@ -140,12 +140,12 @@ class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
     def setUp(self):
         super().setUp()
         handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
-                project=obj_build.build_project()
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=0,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=obj_build.build_project()
         )
 
         criterion = handgrading_models.Criterion.objects.validate_and_create(

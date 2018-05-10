@@ -1,0 +1,4 @@
+[pycodestyle]
+ignore = W503,E133,E252
+max-line-length = 99
+exclude = migrations

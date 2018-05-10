@@ -384,8 +384,7 @@ class UpdateGroupTestCase(test_data.Client,
     def test_admin_update_admin_and_staff_group_members(self):
         for project in self.all_projects:
             group = self.staff_group(project)
-            new_members = (list(group.members.all())[:-1] +
-                           [self.clone_user(self.admin)])
+            new_members = list(group.members.all())[:-1] + [self.clone_user(self.admin)]
             self.do_patch_object_test(
                 group, self.client, self.admin, self.group_url(group),
                 {'member_names': self.get_names(new_members)})
@@ -393,8 +392,7 @@ class UpdateGroupTestCase(test_data.Client,
     def test_admin_update_enrolled_group_members(self):
         for project in self.all_projects:
             group = self.enrolled_group(project)
-            new_members = (list(group.members.all())[:-1] +
-                           [self.clone_user(self.enrolled)])
+            new_members = list(group.members.all())[:-1] + [self.clone_user(self.enrolled)]
             self.do_patch_object_test(
                 group, self.client, self.admin, self.group_url(group),
                 {'member_names': self.get_names(new_members)})
@@ -411,8 +409,7 @@ class UpdateGroupTestCase(test_data.Client,
     def test_admin_update_group_override_size(self):
         for project in self.all_projects:
             group = self.enrolled_group(project)
-            new_members = (list(group.members.all()) +
-                           [self.clone_user(self.enrolled)])
+            new_members = list(group.members.all()) + [self.clone_user(self.enrolled)]
             self.assertGreater(len(new_members), project.max_group_size)
             self.do_patch_object_test(
                 group, self.client, self.admin, self.group_url(group),
@@ -499,7 +496,8 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             group = self.admin_group(self.project)
             submission = obj_build.build_submission(group=group)
             self.assertEqual(1, group.submissions.count())
-            self.assertNotEqual(ag_models.Submission.GradingStatus.finished_grading, submission.status)
+            self.assertNotEqual(
+                ag_models.Submission.GradingStatus.finished_grading, submission.status)
             self.client.force_authenticate(group.members.first())
             response = self.client.get(self.ultimate_submission_url(group))
             self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
@@ -742,8 +740,8 @@ class MergeGroupsTestCase(test_data.Client,
             obj_build.build_submission(group=self.group2,
                                        submitted_files=files)
 
-        expected_submission_count = (self.group1.submissions.count() +
-                                     self.group2.submissions.count())
+        expected_submission_count = (
+            self.group1.submissions.count() + self.group2.submissions.count())
         expected_member_names = self.group1.member_names + self.group2.member_names
         self.assertEqual(2, ag_models.Group.objects.count())
 
@@ -820,9 +818,9 @@ class MergeGroupsTestCase(test_data.Client,
     def test_query_param_pk_not_found(self):
         with self.assert_queryset_count_unchanged(ag_models.Group.objects):
             self.client.force_authenticate(self.admin)
-            response = self.client.post(reverse('group-merge-with',
-                                                kwargs={'pk': self.group1.pk}) +
-                                        '?other_group_pk=' + str(9001))
+            response = self.client.post(
+                reverse('group-merge-with', kwargs={'pk': self.group1.pk})
+                + '?other_group_pk=' + str(9001))
 
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
@@ -838,5 +836,5 @@ class MergeGroupsTestCase(test_data.Client,
         self.assertIn('groups', response.data)
 
     def get_merge_url(self, group1, group2):
-        return (reverse('group-merge-with', kwargs={'pk': group1.pk}) +
-                '?other_group_pk=' + str(group2.pk))
+        return (reverse('group-merge-with', kwargs={'pk': group1.pk})
+                + '?other_group_pk=' + str(group2.pk))

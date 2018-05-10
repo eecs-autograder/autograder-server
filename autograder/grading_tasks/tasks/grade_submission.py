@@ -81,8 +81,7 @@ def _mark_submission_as_being_graded(submission_pk):
     with transaction.atomic():
         submission = ag_models.Submission.objects.select_for_update().select_related(
             'group__project').get(pk=submission_pk)
-        if (submission.status ==
-                ag_models.Submission.GradingStatus.removed_from_queue):
+        if submission.status == ag_models.Submission.GradingStatus.removed_from_queue:
             print('submission {} has been removed '
                   'from the queue'.format(submission.pk))
             return None

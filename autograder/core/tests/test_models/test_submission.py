@@ -398,8 +398,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
         self.total_points_per_student_suite = self.num_buggy_impls * self.points_per_bug_exposed
 
-        self.total_points = (self.total_points_per_ag_suite * 2 +
-                             self.total_points_per_student_suite * 2)
+        self.total_points = (self.total_points_per_ag_suite * 2
+                             + self.total_points_per_student_suite * 2)
         self.total_points_possible = self.total_points
 
         self.assertEqual(
@@ -497,8 +497,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             show_points=True)
 
         expected_points = (
-            self.total_points_per_ag_suite - self.ag_test_cmd2.points_for_correct_return_code +
-            self.total_points_per_student_suite)
+            self.total_points_per_ag_suite - self.ag_test_cmd2.points_for_correct_return_code
+            + self.total_points_per_student_suite)
 
         fdbk = self.submission.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(expected_points, fdbk.total_points)
@@ -506,8 +506,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
         self.assertSequenceEqual([self.ag_suite_result1, self.ag_suite_result2],
                                  fdbk.ag_test_suite_results)
-        actual_cmd_results = fdbk.to_dict(
-            )['ag_test_suite_results'][0]['ag_test_case_results'][0]['ag_test_command_results']
+        actual_cmd_results = fdbk.to_dict()[
+            'ag_test_suite_results'][0]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
 
         self.assertSequenceEqual([self.student_suite_result1, self.student_suite_result2],
@@ -538,8 +538,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
         self.assertSequenceEqual([self.ag_suite_result1, self.ag_suite_result2],
                                  fdbk.ag_test_suite_results)
-        actual_cmd_results = fdbk.to_dict(
-            )['ag_test_suite_results'][1]['ag_test_case_results'][0]['ag_test_command_results']
+        actual_cmd_results = fdbk.to_dict()[
+            'ag_test_suite_results'][1]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
 
         self.assertSequenceEqual([], fdbk.student_test_suite_results)
@@ -555,8 +555,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
         self.assertSequenceEqual([self.ag_suite_result1, self.ag_suite_result2],
                                  fdbk.ag_test_suite_results)
-        actual_cmd_results = fdbk.to_dict(
-            )['ag_test_suite_results'][0]['ag_test_case_results'][0]['ag_test_command_results']
+        actual_cmd_results = fdbk.to_dict()[
+            'ag_test_suite_results'][0]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
 
         self.assertSequenceEqual([self.student_suite_result2], fdbk.student_test_suite_results)

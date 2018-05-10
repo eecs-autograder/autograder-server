@@ -239,8 +239,7 @@ class Group(Course):
         if group is not None:
             return group
 
-        members = ([user_to_clone] +
-                   [self.clone_user(user_to_clone) for i in range(2)])
+        members = [user_to_clone] + [self.clone_user(user_to_clone) for i in range(2)]
         group = ag_models.Group.objects.validate_and_create(
             members, project=project)
         self._store_group(project, label, group)

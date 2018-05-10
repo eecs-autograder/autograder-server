@@ -135,7 +135,7 @@ class HandgradingResultView(AGModelGenericViewSet):
 
 
 is_handgrader_or_staff = (P(ag_permissions.is_staff(lambda project: project.course))
-                          |P(ag_permissions.is_handgrader(lambda project: project.course)))
+                          | P(ag_permissions.is_handgrader(lambda project: project.course)))
 
 
 def _buid_minimal_handgrading_resuit_schema():

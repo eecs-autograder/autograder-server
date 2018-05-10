@@ -16,12 +16,12 @@ class ListCommentsTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
-                project=obj_build.build_project()
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=0,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=obj_build.build_project()
         )
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
@@ -74,12 +74,12 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
     def setUp(self):
         super().setUp()
         self.handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
-                project=obj_build.build_project()
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=0,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=obj_build.build_project()
         )
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
@@ -156,12 +156,12 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
     def setUp(self):
         super().setUp()
         self.handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
-                project=obj_build.build_project()
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=0,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=obj_build.build_project()
         )
 
         submission = obj_build.build_submission(submitted_filenames=["test.cpp"])

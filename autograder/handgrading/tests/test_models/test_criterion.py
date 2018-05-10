@@ -29,7 +29,7 @@ class CriterionTestCase(UnitTestBase):
 
     def test_default_initialization(self):
         criterion_obj = handgrading_models.Criterion.objects.validate_and_create(
-                                    **self.default_criterion)
+            **self.default_criterion)
 
         self.assertEqual(criterion_obj.short_description,
                          self.default_criterion["short_description"])

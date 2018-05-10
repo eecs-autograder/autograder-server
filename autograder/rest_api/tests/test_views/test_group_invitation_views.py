@@ -532,8 +532,7 @@ class RejectGroupInvitationTestCase(test_data.Client,
             ag_models.GroupInvitation.objects.count())
         original_group_count = ag_models.Group.objects.count()
 
-        users = ([invitation.invitation_creator] +
-                 list(invitation.invited_users.all()))
+        users = [invitation.invitation_creator] + list(invitation.invited_users.all())
         expected_num_notifications = len(users)
         self.client.force_authenticate(user)
         response = self.client.delete(self.invitation_url(invitation))

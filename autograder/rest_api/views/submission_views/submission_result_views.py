@@ -22,25 +22,25 @@ _FDBK_CATEGORY_PARAM = 'feedback_category'
 _fdbk_category_param_docs = Parameter(
     name=_FDBK_CATEGORY_PARAM, in_='query', required=True, type='string',
     description=f"""
-The category of feedback being requested. Must be one of the following 
+The category of feedback being requested. Must be one of the following
 values:
 
-    - {ag_models.FeedbackCategory.normal.value}: Can be requested by 
-        students before or after the project deadline on their 
+    - {ag_models.FeedbackCategory.normal.value}: Can be requested by
+        students before or after the project deadline on their
         submissions that did not exceed the daily limit.
-    - {ag_models.FeedbackCategory.past_limit_submission.value}: Can be 
-        requested by students on their submissions that exceeded the 
+    - {ag_models.FeedbackCategory.past_limit_submission.value}: Can be
+        requested by students on their submissions that exceeded the
         daily limit.
-    - {ag_models.FeedbackCategory.ultimate_submission.value}: Can be 
-        requested by students on their own ultimate (a.k.a. final 
-        graded) submission once the project deadline has passed and 
-        hide_ultimate_submission_fdbk has been set to False on the 
+    - {ag_models.FeedbackCategory.ultimate_submission.value}: Can be
+        requested by students on their own ultimate (a.k.a. final
+        graded) submission once the project deadline has passed and
+        hide_ultimate_submission_fdbk has been set to False on the
         project.
-    - {ag_models.FeedbackCategory.staff_viewer.value}: Can be requested 
+    - {ag_models.FeedbackCategory.staff_viewer.value}: Can be requested
         by staff when looking up another user's submission results.
     - {ag_models.FeedbackCategory.max.value}: Can be requested by staff
         on their own submissions. Can be requested by staff when looking
-        up another user's ultimate submission results after the 
+        up another user's ultimate submission results after the
         deadline."""
 )
 

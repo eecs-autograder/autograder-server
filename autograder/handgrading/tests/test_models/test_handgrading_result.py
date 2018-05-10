@@ -103,9 +103,9 @@ class HandgradingResultTestCase(UnitTestBase):
             deduction=-1,
             handgrading_rubric=self.rubric)
 
-        expected_points = (selected_positive_crit.points +
-                           selected_negative_crit.points +
-                           used_twice_annotation.deduction * 2)
+        expected_points = (selected_positive_crit.points
+                           + selected_negative_crit.points
+                           + used_twice_annotation.deduction * 2)
 
         expected_points_possible = selected_positive_crit.points + unselected_positive_crit.points
 
@@ -351,7 +351,8 @@ class HandgradingResultTestCase(UnitTestBase):
         self.assertIsInstance(result_dict["handgrading_rubric"], object)
         self.assertIsInstance(result_dict["group"], int)
 
-        self.assertSequenceEqual(result_dict["applied_annotations"], [applied_annotation.to_dict()])
+        self.assertSequenceEqual(
+            result_dict["applied_annotations"], [applied_annotation.to_dict()])
         self.assertSequenceEqual(result_dict["criterion_results"], expected_criterion_results)
         self.assertSequenceEqual(result_dict["comments"], expected_comments)
 

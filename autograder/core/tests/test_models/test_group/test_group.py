@@ -114,7 +114,7 @@ class MiscSubmissionGroupTestCase(_SetUp):
         self.assertEqual(self.project, first_group.project)
 
         second_group.refresh_from_db()
-        self.assertCountEqual( [repeated_user], second_group.members.all())
+        self.assertCountEqual([repeated_user], second_group.members.all())
         self.assertEqual(other_project, second_group.project)
 
         groups = list(repeated_user.groups_is_member_of.all())

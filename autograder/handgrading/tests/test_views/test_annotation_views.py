@@ -98,12 +98,12 @@ class GetUpdateDeleteAnnotationTestCase(test_impls.GetObjectTest,
     def setUp(self):
         super().setUp()
         handgrading_rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
-                points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
-                max_points=0,
-                show_grades_and_rubric_to_students=False,
-                handgraders_can_leave_comments=True,
-                handgraders_can_adjust_points=True,
-                project=obj_build.build_project())
+            points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
+            max_points=0,
+            show_grades_and_rubric_to_students=False,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True,
+            project=obj_build.build_project())
 
         self.annotation = handgrading_models.Annotation.objects.validate_and_create(
             short_description="Short description text.",
@@ -241,4 +241,5 @@ class AnnotationOrderTestCase(UnitTestBase):
             response = self.client.put(self.url, original_order[::-1])
 
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-            self.assertSequenceEqual(original_order, self.handgrading_rubric.get_annotation_order())
+            self.assertSequenceEqual(
+                original_order, self.handgrading_rubric.get_annotation_order())
