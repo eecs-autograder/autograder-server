@@ -179,8 +179,8 @@ def build_group(num_members=1,
     return group
 
 
-def build_submission(group: Optional[ag_models.Group]=None,
-                     **submission_kwargs) -> ag_models.Submission:
+def make_submission(group: Optional[ag_models.Group]=None,
+                    **submission_kwargs) -> ag_models.Submission:
     """
     Creates a Submission with the given keyword arguments.
     If the "group" argument is None, then a
@@ -204,9 +204,11 @@ def build_submission(group: Optional[ag_models.Group]=None,
     return submission
 
 
-def build_finished_submission(**submission_kwargs) -> ag_models.Submission:
-    return build_submission(status=ag_models.Submission.GradingStatus.finished_grading,
-                            **submission_kwargs)
+def make_finished_submission(group: Optional[ag_models.Group]=None,
+                             **submission_kwargs) -> ag_models.Submission:
+    return make_submission(status=ag_models.Submission.GradingStatus.finished_grading,
+                           group=group,
+                           **submission_kwargs)
 
 
 def make_course(**kwargs):

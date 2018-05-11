@@ -243,7 +243,7 @@ class CreateSubmissionTestCase(test_data.Client,
                         ag_models.Submission.GradingStatus.active_statuses):
                     continue
 
-                obj_build.build_submission(group=group, status=grading_status)
+                obj_build.make_submission(group=group, status=grading_status)
 
                 self.do_normal_submit_test(group, group.members.first())
 

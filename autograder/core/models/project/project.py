@@ -37,10 +37,6 @@ class Project(AutograderModel):
     submit solutions and have them evaluated.
 
     Related object fields:
-        autograder_test_cases -- The autograder test cases that belong
-            to this Project.
-            DEPRECATED
-
         instructor_files -- Resource files to be used in project test
             cases.
 

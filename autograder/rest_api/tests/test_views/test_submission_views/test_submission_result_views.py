@@ -50,17 +50,17 @@ class SubmissionResultTestCase(UnitTestBase):
         self.student_group1 = obj_build.make_group(project=self.project)
         self.student1 = self.student_group1.members.first()
 
-        self.student_group1_normal_submission = obj_build.build_finished_submission(
+        self.student_group1_normal_submission = obj_build.make_finished_submission(
             group=self.student_group1)
         self.student1_normal_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group1_normal_submission)
 
-        self.student_group1_best_submission = obj_build.build_finished_submission(
+        self.student_group1_best_submission = obj_build.make_finished_submission(
             group=self.student_group1)
         self.student1_best_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group1_best_submission)
 
-        self.student_group1_past_limit_submission = obj_build.build_finished_submission(
+        self.student_group1_past_limit_submission = obj_build.make_finished_submission(
             group=self.student_group1)
         self.student1_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group1_past_limit_submission)
@@ -77,17 +77,17 @@ class SubmissionResultTestCase(UnitTestBase):
             project=self.project, members_role=obj_build.UserRole.staff)
         self.staff = self.staff_group.members.first()
 
-        self.staff_normal_submission = obj_build.build_finished_submission(
+        self.staff_normal_submission = obj_build.make_finished_submission(
             group=self.staff_group)
         self.staff_normal_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_normal_submission)
 
-        self.staff_best_submission = obj_build.build_finished_submission(
+        self.staff_best_submission = obj_build.make_finished_submission(
             group=self.staff_group)
         self.staff_best_res = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_best_submission)
 
-        self.staff_past_limit_submission = obj_build.build_finished_submission(
+        self.staff_past_limit_submission = obj_build.make_finished_submission(
             group=self.staff_group)
         self.staff_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_past_limit_submission)
@@ -715,7 +715,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             }
         )  # type: ag_models.StudentTestSuite
 
-        self.submission = obj_build.build_submission(
+        self.submission = obj_build.make_submission(
             group=obj_build.make_group(
                 project=self.project, members_role=obj_build.UserRole.admin))
 
@@ -975,8 +975,8 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         project.validate_and_update(visible_to_students=True)
 
         admin_group = obj_build.make_group(project=project, members_role=obj_build.UserRole.admin)
-        submission1 = obj_build.build_finished_submission(group=admin_group)
-        submission2 = obj_build.build_finished_submission(group=admin_group)
+        submission1 = obj_build.make_finished_submission(group=admin_group)
+        submission2 = obj_build.make_finished_submission(group=admin_group)
 
         submission1_cmd_result = obj_build.make_correct_ag_test_command_result(
             cmd, submission=submission1)
@@ -1013,7 +1013,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         project.validate_and_update(visible_to_students=True)
 
         admin_group = obj_build.make_group(project=project, members_role=obj_build.UserRole.admin)
-        submission = obj_build.build_finished_submission(group=admin_group)
+        submission = obj_build.make_finished_submission(group=admin_group)
 
         cmd_result = obj_build.make_correct_ag_test_command_result(cmd, submission=submission)
 
@@ -1057,14 +1057,14 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
         # Make sure that the cache invalidation on waiting_for_deferred -> finished_grading
         # isn't overly aggressive.
-        finished_submission = obj_build.build_finished_submission(group=student_group)
+        finished_submission = obj_build.make_finished_submission(group=student_group)
         finished_result = obj_build.make_correct_ag_test_command_result(
             cmd, submission=finished_submission)
         response = self.client.get(self._make_url(finished_submission))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         old_finished_data = response.data
 
-        submission = obj_build.build_submission(
+        submission = obj_build.make_submission(
             group=student_group, status=ag_models.Submission.GradingStatus.received)
 
         url = self._make_url(submission)
@@ -1134,7 +1134,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
         student_group = obj_build.make_group(project=project,
                                              members_role=obj_build.UserRole.admin)
-        submission = obj_build.build_finished_submission(group=student_group)
+        submission = obj_build.make_finished_submission(group=student_group)
 
         submission_cmd_result = obj_build.make_correct_ag_test_command_result(
             cmd, submission=submission)
@@ -1193,17 +1193,17 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
         project1_group = obj_build.make_group(project=project1,
                                               members_role=obj_build.UserRole.admin)
-        project1_submission1 = obj_build.build_finished_submission(group=project1_group)
+        project1_submission1 = obj_build.make_finished_submission(group=project1_group)
         project1_submission1_cmd_result = obj_build.make_incorrect_ag_test_command_result(
             project1_cmd, submission=project1_submission1)
 
-        project1_submission2 = obj_build.build_finished_submission(group=project1_group)
+        project1_submission2 = obj_build.make_finished_submission(group=project1_group)
         project1_submission2_cmd_result = obj_build.make_correct_ag_test_command_result(
             project1_cmd, submission=project1_submission2)
 
         project2_group = obj_build.make_group(project=project2,
                                               members_role=obj_build.UserRole.admin)
-        project2_submission = obj_build.build_finished_submission(group=project2_group)
+        project2_submission = obj_build.make_finished_submission(group=project2_group)
         project2_cmd_result = obj_build.make_correct_ag_test_command_result(
             project2_cmd, submission=project2_submission)
 

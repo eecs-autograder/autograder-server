@@ -33,7 +33,7 @@ def _make_mock_grade_ag_test_cmd_fail_then_succeed(num_times_to_fail):
 class GradeSubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.submission = obj_build.build_submission()
+        self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
 
     def test_one_suite_one_case_one_cmd(self, *args):

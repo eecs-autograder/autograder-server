@@ -24,7 +24,7 @@ class ListCommentsTestCase(UnitTestBase):
             project=obj_build.build_project()
         )
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
@@ -82,7 +82,7 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
             project=obj_build.build_project()
         )
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
@@ -113,7 +113,7 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
                                                   user, self.url, self.data, check_data=False)
 
             loaded = handgrading_models.Comment.objects.get(pk=response.data['pk'])
-            self.assertDictContentsEqual(loaded.to_dict(), response.data)
+            self.assert_dict_contents_equal(loaded.to_dict(), response.data)
 
             self.assertEqual(self.data["text"], loaded.text)
             response_location_dict = loaded.location.to_dict()
@@ -164,7 +164,7 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
             project=obj_build.build_project()
         )
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,

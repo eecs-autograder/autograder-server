@@ -6,7 +6,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 class AGTestCaseResultTestCase(UnitTestBase):
     def setUp(self):
-        submission = obj_build.build_submission()
+        submission = obj_build.make_submission()
         project = submission.group.project
         suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='kajsdhf', project=project)

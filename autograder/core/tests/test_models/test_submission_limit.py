@@ -118,10 +118,10 @@ class SubmissionLimitAndCountTestCase(UnitTestBase):
             submission_limit_reset_time=now_local - timezone.timedelta(minutes=5),
             submission_limit_reset_timezone=local_timezone)
 
-        before_reset_time_submission = obj_build.build_submission(
+        before_reset_time_submission = obj_build.make_submission(
             group=self.group,
             timestamp=now - timezone.timedelta(hours=1))
-        after_reset_time_submission = obj_build.build_submission(
+        after_reset_time_submission = obj_build.make_submission(
             group=self.group,
             timestamp=now + timezone.timedelta(hours=1))
 

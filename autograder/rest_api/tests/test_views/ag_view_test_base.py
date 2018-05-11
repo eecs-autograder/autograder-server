@@ -27,7 +27,7 @@ class AGViewTestBase(UnitTestBase):
         if check_order:
             self.assertSequenceEqual(expected_data, response.data)
         else:
-            self.assertListContentsEqual(expected_data, response.data)
+            self.assert_list_contents_equal(expected_data, response.data)
 
         return response
 
@@ -68,7 +68,7 @@ class AGViewTestBase(UnitTestBase):
             return response
 
         loaded = model_manager.get(pk=response.data['pk'])
-        self.assertDictContentsEqual(loaded.to_dict(), response.data)
+        self.assert_dict_contents_equal(loaded.to_dict(), response.data)
 
         for arg_name, value in request_data.items():
             # TODO: This fails if request_data has foreign keys
@@ -96,10 +96,10 @@ class AGViewTestBase(UnitTestBase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
-        self.assertDictContentsEqual(expected_data,
-                                     utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
-        self.assertDictContentsEqual(expected_data,
-                                     utils.exclude_dict(response.data, 'last_modified'))
+        self.assert_dict_contents_equal(expected_data,
+                                        utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
+        self.assert_dict_contents_equal(expected_data,
+                                        utils.exclude_dict(response.data, 'last_modified'))
 
         return response
 
@@ -127,10 +127,10 @@ class AGViewTestBase(UnitTestBase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
-        self.assertDictContentsEqual(expected_data,
-                                     utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
-        self.assertDictContentsEqual(expected_data,
-                                     utils.exclude_dict(response.data, 'last_modified'))
+        self.assert_dict_contents_equal(expected_data,
+                                        utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
+        self.assert_dict_contents_equal(expected_data,
+                                        utils.exclude_dict(response.data, 'last_modified'))
 
         return response
 
@@ -155,7 +155,7 @@ class AGViewTestBase(UnitTestBase):
         self.assertEqual(expected_status, response.status_code)
 
         ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
-        self.assertDictContentsEqual(expected_data, ag_model_obj.to_dict())
+        self.assert_dict_contents_equal(expected_data, ag_model_obj.to_dict())
 
         return response
 

@@ -29,7 +29,7 @@ class _SetUp(UnitTestBase):
         self.submitted_files = [SimpleUploadedFile('file{}'.format(i),
                                                    'waaaluigi{}'.format(i).encode())
                                 for i in range(3)]
-        self.submission = obj_build.build_submission(
+        self.submission = obj_build.make_submission(
             group=self.group,
             submitted_files=self.submitted_files,
             status=Submission.GradingStatus.finished_grading)
@@ -339,7 +339,7 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
         expected_data = []
         for i in range(num_results):
             group = groups[i]
-            s = obj_build.build_finished_submission(group=group)
+            s = obj_build.make_finished_submission(group=group)
             score = random.randint(0, self.rubric.max_points + 3)
             hg_result = hg_models.HandgradingResult.objects.validate_and_create(
                 submission=s, group=group, handgrading_rubric=self.rubric,

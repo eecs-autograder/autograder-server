@@ -29,7 +29,7 @@ class ListCriterionResultsTestCase(UnitTestBase):
             handgrading_rubric=handgrading_rubric
         )
 
-        submission = obj_build.build_submission()
+        submission = obj_build.make_submission()
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
@@ -90,7 +90,7 @@ class CreateCriterionResultTestCase(test_impls.CreateObjectTest, UnitTestBase):
             handgrading_rubric=handgrading_rubric
         )
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
@@ -118,7 +118,7 @@ class CreateCriterionResultTestCase(test_impls.CreateObjectTest, UnitTestBase):
                                                   check_data=False)
 
             loaded = handgrading_models.CriterionResult.objects.get(pk=response.data['pk'])
-            self.assertDictContentsEqual(loaded.to_dict(), response.data)
+            self.assert_dict_contents_equal(loaded.to_dict(), response.data)
 
             criterion = handgrading_models.Criterion.objects.get(pk=self.data['criterion'])
 
@@ -153,7 +153,7 @@ class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
             handgrading_rubric=handgrading_rubric
         )
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         self.handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,

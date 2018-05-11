@@ -98,7 +98,7 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
         self.client.force_authenticate(admin)
 
         # Create HandgradingResult
-        submission = obj_build.build_submission(
+        submission = obj_build.make_submission(
             group=obj_build.make_group(project=self.handgrading_rubric.project))
         handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
@@ -106,9 +106,9 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
             handgrading_rubric=self.handgrading_rubric)
 
         # Create dummy submissions and groups with no submissions. These should not be affected
-        dummy_submission = obj_build.build_submission(
+        dummy_submission = obj_build.make_submission(
             group=obj_build.make_group(project=self.handgrading_rubric.project))
-        dummy_submission = obj_build.build_submission(
+        dummy_submission = obj_build.make_submission(
             group=obj_build.make_group(project=self.handgrading_rubric.project))
         group_with_no_submission = obj_build.make_group(project=self.handgrading_rubric.project)
         group_with_no_submission = obj_build.make_group(project=self.handgrading_rubric.project)
@@ -126,7 +126,7 @@ class CreateCriterionTestCase(test_impls.CreateObjectTest, UnitTestBase):
             handgraders_can_leave_comments=True,
             handgraders_can_adjust_points=True,
             project=dummy_project)
-        dummy_submission = obj_build.build_submission(
+        dummy_submission = obj_build.make_submission(
             group=obj_build.make_group(project=self.handgrading_rubric.project))
         dummy_handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=dummy_submission,

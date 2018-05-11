@@ -84,7 +84,7 @@ class AGTestCaseTestCase(UnitTestBase):
         )  # type: ag_models.AGTestCommand
 
         # This group has results for ONLY self.ag_suite
-        submission = obj_build.build_submission(
+        submission = obj_build.make_submission(
             group=obj_build.build_group(
                 group_kwargs={'project': self.project}))
         suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
@@ -96,7 +96,7 @@ class AGTestCaseTestCase(UnitTestBase):
         cmd_result = obj_build.make_correct_ag_test_command_result(cmd, ag_test_result)
 
         # This group has results for self.ag_suite and other_suite
-        submission2 = obj_build.build_submission(
+        submission2 = obj_build.make_submission(
             group=obj_build.build_group(
                 group_kwargs={'project': self.project}))
         suite_result2 = ag_models.AGTestSuiteResult.objects.validate_and_create(

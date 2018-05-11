@@ -26,7 +26,7 @@ class CriterionResultTestCases(UnitTestBase):
             handgrading_rubric=self.default_handgrading_rubric
         )
 
-        submission = obj_build.build_submission()
+        submission = obj_build.make_submission()
 
         self.result_obj = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,

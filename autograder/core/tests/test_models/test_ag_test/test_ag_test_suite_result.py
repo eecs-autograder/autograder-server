@@ -11,7 +11,7 @@ import autograder.core.utils as core_ut
 class AGTestSuiteResultTestCase(UnitTestBase):
     def setUp(self):
         self.maxDiff = None
-        submission = obj_build.build_submission()
+        submission = obj_build.make_submission()
         project = submission.group.project
         self.ag_test_suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='kajsdhf', project=project,

@@ -276,28 +276,28 @@ class PositionInQueueTestCase(UnitTestBase):
         group2_proj2 = obj_build.build_group(
             group_kwargs={'project': project2})
 
-        group1_p1 = obj_build.build_submission(
+        group1_p1 = obj_build.make_submission(
             group=group1_proj1)
         group1_p1.status = (
             ag_models.Submission.GradingStatus.queued)
         group1_p1.save()
         group1_p1_queue_pos = 1
 
-        group2_p1 = obj_build.build_submission(
+        group2_p1 = obj_build.make_submission(
             group=group2_proj1)
         group2_p1.status = (
             ag_models.Submission.GradingStatus.queued)
         group2_p1.save()
         group2_p1_queue_pos = 2
 
-        group1_p2 = obj_build.build_submission(
+        group1_p2 = obj_build.make_submission(
             group=group1_proj2)
         group1_p2.status = (
             ag_models.Submission.GradingStatus.queued)
         group1_p2.save()
         group1_p2_queue_pos = 1
 
-        group2_p2 = obj_build.build_submission(
+        group2_p2 = obj_build.make_submission(
             group=group2_proj2)
         group2_p2.status = (
             ag_models.Submission.GradingStatus.queued)
@@ -314,7 +314,7 @@ class PositionInQueueTestCase(UnitTestBase):
                          group2_p2.position_in_queue)
 
     def test_position_in_queue_for_non_queued_submission(self):
-        submission = obj_build.build_submission()
+        submission = obj_build.make_submission()
 
         non_queued_statuses = list(ag_models.Submission.GradingStatus.values)
         non_queued_statuses.remove(ag_models.Submission.GradingStatus.queued)
@@ -358,7 +358,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         )  # type: ag_models.StudentTestSuite
 
         self.group = obj_build.make_group(1, project=self.project)
-        self.submission = obj_build.build_submission(group=self.group)
+        self.submission = obj_build.make_submission(group=self.group)
 
         self.ag_suite_result1 = ag_models.AGTestSuiteResult.objects.validate_and_create(
             ag_test_suite=self.ag_test_suite1, submission=self.submission

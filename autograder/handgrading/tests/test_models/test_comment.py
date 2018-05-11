@@ -23,7 +23,7 @@ class CommentTestCase(UnitTestBase):
         )
 
     def test_default_initialization(self):
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         comment_inputs = {
             "location": {
@@ -51,7 +51,7 @@ class CommentTestCase(UnitTestBase):
     def test_filename_in_location_must_be_in_submitted_files(self):
         """ Submission in handgrading_result contains filename "test.cpp" (see defaults),
             but location's filename is set to "WRONG.cpp" """
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
@@ -71,7 +71,7 @@ class CommentTestCase(UnitTestBase):
             )
 
     def test_comment_doesnt_require_location(self):
-        submission = obj_build.build_submission()
+        submission = obj_build.make_submission()
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
@@ -85,7 +85,7 @@ class CommentTestCase(UnitTestBase):
         )
 
     def test_comment_ordering(self):
-        submission = obj_build.build_submission()
+        submission = obj_build.make_submission()
 
         handgrading_result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,
@@ -125,7 +125,7 @@ class CommentTestCase(UnitTestBase):
             'handgrading_result',
         ]
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         comment_obj = handgrading_models.Comment.objects.validate_and_create(
             location={

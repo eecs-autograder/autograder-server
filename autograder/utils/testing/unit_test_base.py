@@ -49,10 +49,10 @@ class UnitTestBase(TransactionTestCase):
         for key, value in subset_dict.items():
             self.assertEqual(value, superset_dict[key])
 
-    def assertDictContentsEqual(self, first, second):
+    def assert_dict_contents_equal(self, first, second):
         self.assertEqual(_ordered(first), _ordered(second))
 
-    def assertListContentsEqual(self, first, second):
+    def assert_list_contents_equal(self, first, second):
         self.assertCountEqual(_ordered(first), _ordered(second))
 
     def assert_queryset_count_unchanged(self, queryset):

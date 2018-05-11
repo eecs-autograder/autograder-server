@@ -35,7 +35,7 @@ class ListAppliedAnnotationsTestCase(UnitTestBase):
         annotation = handgrading_models.Annotation.objects.validate_and_create(
             handgrading_rubric=handgrading_rubric)
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
@@ -104,7 +104,7 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
             "filename": "test.cpp"
         }
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(
@@ -134,7 +134,7 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
                                                   check_data=False)
 
             loaded = handgrading_models.AppliedAnnotation.objects.get(pk=response.data['pk'])
-            self.assertDictContentsEqual(loaded.to_dict(), response.data)
+            self.assert_dict_contents_equal(loaded.to_dict(), response.data)
 
             annotation = handgrading_models.Annotation.objects.get(pk=self.data['annotation'])
             self.assertEqual(annotation.to_dict(), loaded.annotation.to_dict())
@@ -183,7 +183,7 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
         annotation = handgrading_models.Annotation.objects.validate_and_create(
             handgrading_rubric=handgrading_rubric)
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         self.handgrading_result = (
             handgrading_models.HandgradingResult.objects.validate_and_create(

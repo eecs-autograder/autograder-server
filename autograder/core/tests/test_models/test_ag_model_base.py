@@ -409,7 +409,7 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertIn('non_empty_str_val', cm.exception.message_dict)
 
         self.ag_model.refresh_from_db()
-        self.assertDictContentsEqual(old_vals, self.ag_model.to_dict())
+        self.assert_dict_contents_equal(old_vals, self.ag_model.to_dict())
 
     def test_invalid_update_nonexistant_field(self):
         with self.assertRaises(exceptions.ValidationError) as cm:

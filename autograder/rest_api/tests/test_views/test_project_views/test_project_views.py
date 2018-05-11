@@ -209,12 +209,12 @@ class NumQueuedSubmissionsTestCase(UnitTestBase):
                        ag_models.Submission.GradingStatus.error]
 
         for grading_status in g1_statuses:
-            obj_build.build_submission(
+            obj_build.make_submission(
                 status=grading_status,
                 group=group_with_submits1)
 
         for i in range(3):
-            obj_build.build_submission(
+            obj_build.make_submission(
                 status=ag_models.Submission.GradingStatus.queued,
                 group=group_with_submits2)
 

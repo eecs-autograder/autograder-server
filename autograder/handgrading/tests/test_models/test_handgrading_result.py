@@ -19,7 +19,7 @@ class HandgradingResultTestCase(UnitTestBase):
             pattern='*', max_num_matches=10)
         self.submitted_files = [
             SimpleUploadedFile('file{}'.format(i), b'waaaluigi') for i in range(4)]
-        self.submission = obj_build.build_submission(
+        self.submission = obj_build.make_submission(
             group=obj_build.make_group(project=self.rubric.project),
             submitted_files=self.submitted_files)
 
@@ -282,7 +282,7 @@ class HandgradingResultTestCase(UnitTestBase):
             'total_points_possible',
         ]
 
-        submission = obj_build.build_submission(submitted_filenames=["test.cpp"])
+        submission = obj_build.make_submission(submitted_filenames=["test.cpp"])
 
         result = handgrading_models.HandgradingResult.objects.validate_and_create(
             submission=submission,

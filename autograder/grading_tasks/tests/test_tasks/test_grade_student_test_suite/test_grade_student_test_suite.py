@@ -68,7 +68,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
             points_per_exposed_bug=1)  # type: ag_models.StudentTestSuite
 
         with open(os.path.join(self.files_dir, 'student_tests.cpp'), 'rb') as f:
-            self.submission = obj_build.build_submission(
+            self.submission = obj_build.make_submission(
                 submitted_files=[SimpleUploadedFile('student_tests.cpp', f.read())],
                 group=obj_build.make_group(project=self.project))
 
@@ -210,7 +210,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self.project = obj_build.make_project()
-        self.submission = obj_build.build_submission(
+        self.submission = obj_build.make_submission(
             group=obj_build.make_group(project=self.project))
 
     def test_non_unicode_chars_in_test_names(self, *args):

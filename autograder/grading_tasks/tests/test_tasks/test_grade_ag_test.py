@@ -21,7 +21,7 @@ from autograder.grading_tasks import tasks
 class AGTestCommandCorrectnessTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.submission = obj_build.build_submission()
+        self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
         self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
         self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
@@ -227,7 +227,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
 class AGTestCommandStdinSourceTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.submission = obj_build.build_submission()
+        self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
         self.setup_stdout = 'setuppy stdouty'
         self.setup_stderr = 'setuppy stderrrry'
@@ -303,7 +303,7 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
             project=self.project, file_obj=SimpleUploadedFile(project_filename, b'asdkfasdjkf'))
         self.group = obj_build.make_group(project=self.project)
         self.ag_suite.instructor_files_needed.add(self.project_file)
-        self.submission = obj_build.build_submission(group=self.group)
+        self.submission = obj_build.make_submission(group=self.group)
 
     def test_project_files_read_only(self, *args):
         self.assertTrue(self.ag_suite.read_only_instructor_files)
@@ -330,7 +330,7 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
 class ResourceLimitsExceededTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        self.submission = obj_build.build_submission()
+        self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
         self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
         self.ag_test_case = obj_build.make_ag_test_case(self.ag_test_suite)
@@ -527,7 +527,7 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         # 4. Update the test cases so that they will pass when they are rerun.
 
         super().setUp()
-        self.submission = obj_build.build_submission()
+        self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
         self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
 
