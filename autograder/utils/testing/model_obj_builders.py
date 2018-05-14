@@ -248,27 +248,31 @@ class UserRole(core_ut.OrderedEnum):
     admin = 'admin'
 
 
-def make_group(num_members: int=1,
+def make_group(members=None,
+               num_members: int=1,
                members_role: UserRole=UserRole.student,
                project: ag_models.Project=None,
                **group_kwargs) -> ag_models.Group:
     if project is None:
         project = make_project()
 
-    if 'members' not in group_kwargs:
-        group_kwargs['members'] = create_dummy_users(num_members)
+    if members is None:
+        members = create_dummy_users(num_members)
 
     if members_role == UserRole.guest:
         project.validate_and_update(guests_can_submit=True)
     elif members_role == UserRole.student:
-        project.course.students.add(*group_kwargs['members'])
+        project.course.students.add(*members)
     elif members_role == UserRole.staff:
-        project.course.staff.add(*group_kwargs['members'])
+        project.course.staff.add(*members)
     elif members_role == UserRole.admin:
-        project.course.admins.add(*group_kwargs['members'])
+        project.course.admins.add(*members)
 
     return ag_models.Group.objects.validate_and_create(
-        project=project, check_group_size_limits=False, **group_kwargs)
+        members=members,
+        project=project,
+        check_group_size_limits=False,
+        **group_kwargs)
 
 
 def make_ag_test_suite(project: ag_models.Project=None,

@@ -197,6 +197,10 @@ urlpatterns = [
          views.SubmissionResultsView.as_view(),
          name='submission-results'),
 
+    path('project/<int:project_pk>/all_ultimate_submission_results/',
+         views.AllUltimateSubmissionResults.as_view(),
+         name='all-ultimate-submission-results'),
+
     path('submissions/<int:pk>/ag_test_suite_results/<int:result_pk>/stdout/',
          views.AGTestSuiteResultsStdoutView.as_view(),
          name='ag-test-suite-result-stdout'),

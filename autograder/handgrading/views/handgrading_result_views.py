@@ -228,8 +228,7 @@ class ListHandgradingResultsView(AGModelAPIView):
         ).all()
 
         paginator = HandgradingResultPaginator()
-        page = paginator.paginate_queryset(
-            queryset=groups, request=self.request, view=self)
+        page = paginator.paginate_queryset(queryset=groups, request=self.request, view=self)
 
         results = []
         for group in page:
