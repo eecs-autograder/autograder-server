@@ -67,7 +67,7 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             self.assertSequenceEqual([ultimate_submission],
                                      list(get_ultimate_submissions(self.project)))
 
-    def test_get_ultimate_submission_no_submissions(self):
+    def test_get_ultimate_submission_group_has_no_submissions(self):
         for policy in ag_models.UltimateSubmissionPolicy:
             self.project.validate_and_update(ultimate_submission_policy=policy)
             group = obj_build.make_group(project=self.project)
@@ -75,6 +75,9 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             self.assertEqual(0, group.submissions.count())
             ultimate_submission = get_ultimate_submission(group)
             self.assertIsNone(ultimate_submission)
+
+            ultimate_submissions = list(get_ultimate_submissions(self.project, group))
+            self.assertSequenceEqual([], ultimate_submissions)
 
     def test_get_ultimate_submission_no_finished_submissions(self):
         for policy in ag_models.UltimateSubmissionPolicy:

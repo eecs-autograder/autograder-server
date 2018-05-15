@@ -254,13 +254,62 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         self.assertSequenceEqual(page_two, response.data['results'])
 
     def test_non_staff_get_results_permission_denied(self):
-        self.fail()
+        student_group1, student_submission1 = self._make_group_with_submissions(1)
+        self.client.force_authenticate(student_group1.members.first())
+        response = self.client.get(self.base_url)
+
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_staff_get_results_deadline_not_past_permission_denied(self):
-        self.fail()
+        self.assertLess(timezone.now(), self.project.closing_time)
+        self.project.validate_and_update(hide_ultimate_submission_fdbk=False)
+
+        staff = obj_build.make_staff_user(self.course)
+
+        self.client.force_authenticate(staff)
+        response = self.client.get(self.base_url)
+
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_staff_get_results_ultimate_scores_hidden_permission_denied(self):
-        self.fail()
+        self.project.validate_and_update(
+            closing_time=None,
+            hide_ultimate_submission_fdbk=True)
+
+        staff = obj_build.make_staff_user(self.course)
+
+        self.client.force_authenticate(staff)
+        response = self.client.get(self.base_url)
+
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_get_results_group_has_extension_ultimate_submission_is_null(self):
-        self.fail()
+        student_group, student_submission = self._make_group_with_submissions(
+            2, extended_due_date=timezone.now() + datetime.timedelta(days=1))
+
+        expected = [
+            self._make_result_content_for_user(
+                student_group.member_names[0], student_group,
+                None, points_only=True),
+            self._make_result_content_for_user(
+                student_group.member_names[1], student_group,
+                None, points_only=True),
+        ]
+
+        admin = obj_build.make_admin_user(self.course)
+        self.client.force_authenticate(admin)
+
+        response = self.client.get(self.base_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual(expected, response.data['results'])
+
+    def test_get_results_group_has_no_submissions(self):
+        group = obj_build.make_group(num_members=2, project=self.project)
+        self.assertEqual(0, group.submissions.count())
+
+        admin = obj_build.make_admin_user(self.course)
+        self.client.force_authenticate(admin)
+
+        response = self.client.get(self.base_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual([], response.data['results'])

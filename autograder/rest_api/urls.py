@@ -197,7 +197,7 @@ urlpatterns = [
          views.SubmissionResultsView.as_view(),
          name='submission-results'),
 
-    path('project/<int:project_pk>/all_ultimate_submission_results/',
+    path('projects/<int:project_pk>/all_ultimate_submission_results/',
          views.AllUltimateSubmissionResults.as_view(),
          name='all-ultimate-submission-results'),
 
