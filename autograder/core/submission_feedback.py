@@ -1,3 +1,4 @@
+import tempfile
 from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional
 
 from django.utils.functional import cached_property
@@ -9,8 +10,13 @@ from autograder.core.models.ag_test.feedback_category import FeedbackCategory
 from autograder.core.models.ag_model_base import ToDictMixin
 from autograder.core.models.project import Project
 from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
-from autograder.core.models.ag_test.ag_test_case import AGTestCase
-from autograder.core.models.ag_test.ag_test_command import AGTestCommand
+from autograder.core.models.ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
+from autograder.core.models.ag_test.ag_test_command import (
+    AGTestCommand, ExpectedOutputSource,
+    ValueFeedbackLevel, ExpectedReturnCode, AGTestCommandFeedbackConfig,
+    MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
+
+import autograder.core.utils as core_ut
 
 
 class AGTestPreLoader:
@@ -191,11 +197,13 @@ class SubmissionFeedbackCalculator(ToDictMixin):
                                                self._fdbk_category,
                                                self._ag_test_loader).fdbk_conf.visible,
             self._ag_test_suite_results)
-        return sorted(
-            visible,
-            key=lambda result: self._ag_test_loader.get_ag_test_suite(
-                result.ag_test_suite_result.ag_test_suite_id)._order
-        )
+
+        def suite_result_sort_key(suite_res: DenormalizedAGTestSuiteResult):
+            suite = self._ag_test_loader.get_ag_test_suite(
+                suite_res.ag_test_suite_result.ag_test_suite_id)
+            return suite._order
+
+        return sorted(visible, key=suite_result_sort_key)
 
     @property
     def student_test_suite_results(self) -> List['StudentTestSuiteResult']:
@@ -235,6 +243,8 @@ class AGTestSuiteFeedback(ToDictMixin):
         self._ag_test_suite_result = ag_test_suite_result.ag_test_suite_result
         self._fdbk_category = fdbk_category
         self._ag_test_case_results = ag_test_suite_result.ag_test_case_results
+
+        self._ag_test_preloader = ag_test_preloader
 
         self._ag_test_suite = ag_test_preloader.get_ag_test_suite(
             self._ag_test_suite_result.ag_test_suite_id)
@@ -352,36 +362,52 @@ class AGTestSuiteFeedback(ToDictMixin):
 
     @property
     def total_points(self) -> int:
-        return sum((ag_test_case_result.get_fdbk(self._fdbk_category).total_points
-                    for ag_test_case_result in
-                    self._visible_ag_test_case_results))
+        return sum((
+            AGTestCaseFeedbackCalculator(
+                ag_test_case_result, self._fdbk_category, self._ag_test_preloader
+            ).total_points
+            for ag_test_case_result in self._visible_ag_test_case_results
+        ))
 
     @property
     def total_points_possible(self) -> int:
-        return sum((ag_test_case_result.get_fdbk(self._fdbk_category).total_points_possible
-                    for ag_test_case_result in
-                    self._visible_ag_test_case_results))
+        return sum((
+            AGTestCaseFeedbackCalculator(
+                ag_test_case_result, self._fdbk_category, self._ag_test_preloader
+            ).total_points_possible
+            for ag_test_case_result in self._visible_ag_test_case_results
+        ))
 
     @property
-    def ag_test_case_results(self) -> List[AGTestCaseResult]:
+    def ag_test_case_results(self) -> List[DenormalizedAGTestCaseResult]:
         if not self._fdbk.show_individual_tests:
             return []
 
         return list(self._visible_ag_test_case_results)
 
     @property
-    def _visible_ag_test_case_results(self) -> Iterable[AGTestCaseResult]:
-        res = list(filter(
-            lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
-            self._ag_test_suite_result.ag_test_case_results.all()))
-        return res
+    def _visible_ag_test_case_results(self) -> Iterable[DenormalizedAGTestCaseResult]:
+        visible = filter(
+            lambda result: AGTestCaseFeedbackCalculator(result,
+                                                        self._fdbk_category,
+                                                        self._ag_test_preloader).fdbk_conf.visible,
+            self._ag_test_case_results
+        )
+
+        def case_res_sort_key(case_res: DenormalizedAGTestCaseResult):
+            case = self._ag_test_preloader.get_ag_test_case(
+                case_res.ag_test_case_result.ag_test_case_id)
+            return case._order
+
+        return sorted(visible, key=case_res_sort_key)
 
     def to_dict(self):
         result = super().to_dict()
-        ag_test_case_results = self.ag_test_case_results
         result['ag_test_case_results'] = [
-            result.get_fdbk(self._fdbk_category).to_dict()
-            for result in ag_test_case_results
+            AGTestCaseFeedbackCalculator(
+                result, self._fdbk_category, self._ag_test_preloader
+            ).to_dict()
+            for result in result['ag_test_case_results']
         ]
         return result
 
@@ -398,4 +424,367 @@ class AGTestSuiteFeedback(ToDictMixin):
         'teardown_name',
         'teardown_return_code',
         'teardown_timed_out',
+    )
+
+
+class AGTestCaseFeedbackCalculator(ToDictMixin):
+    def __init__(self, ag_test_case_result: DenormalizedAGTestCaseResult,
+                 fdbk_category: FeedbackCategory,
+                 ag_test_preloader: AGTestPreLoader):
+        self._ag_test_case_result = ag_test_case_result.ag_test_case_result
+        self._ag_test_command_results = ag_test_case_result.ag_test_command_results
+        self._fdbk_category = fdbk_category
+        self._ag_test_preloader = ag_test_preloader
+
+        self._ag_test_case = self._ag_test_preloader.get_ag_test_case(
+            self._ag_test_case_result.ag_test_case_id)
+
+        if fdbk_category == FeedbackCategory.normal:
+            self._fdbk = self._ag_test_case.normal_fdbk_config
+        elif fdbk_category == FeedbackCategory.ultimate_submission:
+            self._fdbk = self._ag_test_case.ultimate_submission_fdbk_config
+        elif fdbk_category == FeedbackCategory.past_limit_submission:
+            self._fdbk = self._ag_test_case.past_limit_submission_fdbk_config
+        elif fdbk_category == FeedbackCategory.staff_viewer:
+            self._fdbk = self._ag_test_case.staff_viewer_fdbk_config
+        elif fdbk_category == FeedbackCategory.max:
+            self._fdbk = AGTestCaseFeedbackConfig(show_individual_commands=True)
+
+    @property
+    def fdbk_conf(self):
+        return self._fdbk
+
+    @property
+    def pk(self):
+        return self._ag_test_case_result.pk
+
+    @property
+    def ag_test_case_name(self) -> str:
+        return self._ag_test_case.name
+
+    @property
+    def ag_test_case_pk(self) -> int:
+        return self._ag_test_case.pk
+
+    @property
+    def fdbk_settings(self) -> dict:
+        return self._fdbk.to_dict()
+
+    @property
+    def total_points(self) -> int:
+        points = sum((
+            AGTestCommandFeedbackCalculator(
+                cmd_res, self._fdbk_category, self._ag_test_preloader
+            ).total_points for cmd_res in
+            self._visible_cmd_results
+        ))
+        return max(0, points)
+
+    @property
+    def total_points_possible(self) -> int:
+        return sum((
+            AGTestCommandFeedbackCalculator(
+                cmd_res, self._fdbk_category, self._ag_test_preloader
+            ).total_points_possible for cmd_res in
+            self._visible_cmd_results
+        ))
+
+    @property
+    def ag_test_command_results(self) -> List[AGTestCommandResult]:
+        if not self._fdbk.show_individual_commands:
+            return []
+
+        return list(self._visible_cmd_results)
+
+    @cached_property
+    def _visible_cmd_results(self) -> Iterable[AGTestCommandResult]:
+        visible = filter(
+            lambda result: AGTestCommandFeedbackCalculator(
+                result, self._fdbk_category, self._ag_test_preloader).fdbk_conf.visible,
+            self._ag_test_command_results)
+
+        def cmd_res_sort_key(cmd_result: AGTestCommandResult):
+            cmd = self._ag_test_preloader.get_ag_test_cmd(cmd_result.ag_test_command_id)
+            return cmd._order
+
+        return sorted(visible, key=cmd_res_sort_key)
+
+    def to_dict(self):
+        result = super().to_dict()
+        result['ag_test_command_results'] = [
+            AGTestCommandFeedbackCalculator(
+                result, self._fdbk_category, self._ag_test_preloader
+            ).to_dict()
+            for result in result['ag_test_command_results']
+        ]
+        return result
+
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        'ag_test_case_name',
+        'ag_test_case_pk',
+        'fdbk_settings',
+        'total_points',
+        'total_points_possible',
+    )
+
+
+class AGTestCommandFeedbackCalculator(ToDictMixin):
+    """
+    Instances of this class dynamically calculate the appropriate
+    feedback data to give for an AGTestCommandResult.
+    """
+
+    def __init__(self, ag_test_command_result: AGTestCommandResult,
+                 fdbk_category: FeedbackCategory,
+                 ag_test_preloader: AGTestPreLoader):
+        self._ag_test_command_result = ag_test_command_result
+        self._ag_test_preloader = ag_test_preloader
+
+        self._cmd = self._ag_test_preloader.get_ag_test_cmd(
+            self._ag_test_command_result.ag_test_command_id)
+
+        if fdbk_category == FeedbackCategory.normal:
+            self._fdbk = self._cmd.normal_fdbk_config
+        elif fdbk_category == FeedbackCategory.ultimate_submission:
+            self._fdbk = self._cmd.ultimate_submission_fdbk_config
+        elif fdbk_category == FeedbackCategory.past_limit_submission:
+            self._fdbk = self._cmd.past_limit_submission_fdbk_config
+        elif fdbk_category == FeedbackCategory.staff_viewer:
+            self._fdbk = self._cmd.staff_viewer_fdbk_config
+        elif fdbk_category == FeedbackCategory.max:
+            self._fdbk = AGTestCommandFeedbackConfig(**MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
+
+    @property
+    def pk(self):
+        return self._ag_test_command_result.pk
+
+    @property
+    def ag_test_command_name(self) -> str:
+        return self._cmd.name
+
+    @property
+    def ag_test_command_pk(self) -> pk:
+        return self._cmd.pk
+
+    @property
+    def fdbk_conf(self) -> AGTestCommandFeedbackConfig:
+        """
+        :return: The FeedbackConfig object that this object was
+        initialized with.
+        """
+        return self._fdbk
+
+    @property
+    def fdbk_settings(self) -> dict:
+        return self.fdbk_conf.to_dict()
+
+    @property
+    def timed_out(self) -> Optional[bool]:
+        if self._fdbk.show_whether_timed_out:
+            return self._ag_test_command_result.timed_out
+
+        return None
+
+    @property
+    def return_code_correct(self) -> Optional[bool]:
+        if (self._cmd.expected_return_code == ExpectedReturnCode.none
+                or self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.no_feedback):
+            return None
+
+        return self._ag_test_command_result.return_code_correct
+
+    @property
+    def expected_return_code(self) -> Optional[ValueFeedbackLevel]:
+        if self._fdbk.return_code_fdbk_level != ValueFeedbackLevel.expected_and_actual:
+            return None
+
+        return self._cmd.expected_return_code
+
+    @property
+    def actual_return_code(self) -> Optional[int]:
+        if (self._fdbk.return_code_fdbk_level == ValueFeedbackLevel.expected_and_actual
+                or self._fdbk.show_actual_return_code):
+            return self._ag_test_command_result.return_code
+
+        return None
+
+    @property
+    def return_code_points(self) -> int:
+        if self.return_code_correct is None:
+            return 0
+
+        if self._ag_test_command_result.return_code_correct:
+            return self._cmd.points_for_correct_return_code
+        return self._cmd.deduction_for_wrong_return_code
+
+    @property
+    def return_code_points_possible(self) -> int:
+        if self.return_code_correct is None:
+            return 0
+
+        return self._cmd.points_for_correct_return_code
+
+    @property
+    def stdout_correct(self) -> Optional[bool]:
+        if (self._cmd.expected_stdout_source == ExpectedOutputSource.none
+                or self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.no_feedback):
+            return None
+
+        return self._ag_test_command_result.stdout_correct
+
+    @property
+    def stdout(self) -> Optional[BinaryIO]:
+        if (self._fdbk.show_actual_stdout
+                or self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual):
+            return open(self._ag_test_command_result.stdout_filename, 'rb')
+
+        return None
+
+    @property
+    def stdout_diff(self) -> Optional[core_ut.DiffResult]:
+        if (self._cmd.expected_stdout_source == ExpectedOutputSource.none
+                or self._fdbk.stdout_fdbk_level != ValueFeedbackLevel.expected_and_actual):
+            return None
+
+        stdout_filename = self._ag_test_command_result.stdout_filename
+        diff_whitespace_kwargs = {
+            'ignore_blank_lines': self._cmd.ignore_blank_lines,
+            'ignore_case': self._cmd.ignore_case,
+            'ignore_whitespace': self._cmd.ignore_whitespace,
+            'ignore_whitespace_changes': self._cmd.ignore_whitespace_changes
+        }
+
+        # check source and return diff
+        if self._cmd.expected_stdout_source == ExpectedOutputSource.text:
+            with tempfile.NamedTemporaryFile('w') as expected_stdout:
+                expected_stdout.write(self._cmd.expected_stdout_text)
+                expected_stdout.flush()
+                return core_ut.get_diff(expected_stdout.name, stdout_filename,
+                                        **diff_whitespace_kwargs)
+        elif self._cmd.expected_stdout_source == ExpectedOutputSource.instructor_file:
+            return core_ut.get_diff(self._cmd.expected_stdout_instructor_file.abspath,
+                                    stdout_filename,
+                                    **diff_whitespace_kwargs)
+        else:
+            raise ValueError(
+                'Invalid expected stdout source: {}'.format(self._cmd.expected_stdout_source))
+
+    @property
+    def stdout_points(self) -> int:
+        if self.stdout_correct is None:
+            return 0
+
+        if self._ag_test_command_result.stdout_correct:
+            return self._cmd.points_for_correct_stdout
+
+        return self._cmd.deduction_for_wrong_stdout
+
+    @property
+    def stdout_points_possible(self) -> int:
+        if self.stdout_correct is None:
+            return 0
+
+        return self._cmd.points_for_correct_stdout
+
+    @property
+    def stderr_correct(self) -> Optional[bool]:
+        if (self._cmd.expected_stderr_source == ExpectedOutputSource.none
+                or self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.no_feedback):
+            return None
+
+        return self._ag_test_command_result.stderr_correct
+
+    @property
+    def stderr(self) -> Optional[BinaryIO]:
+        if (self._fdbk.show_actual_stderr
+                or self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual):
+            return open(self._ag_test_command_result.stderr_filename, 'rb')
+
+        return None
+
+    @property
+    def stderr_diff(self) -> Optional[core_ut.DiffResult]:
+        if (self._cmd.expected_stderr_source == ExpectedOutputSource.none
+                or self._fdbk.stderr_fdbk_level != ValueFeedbackLevel.expected_and_actual):
+            return None
+
+        stderr_filename = self._ag_test_command_result.stderr_filename
+        diff_whitespace_kwargs = {
+            'ignore_blank_lines': self._cmd.ignore_blank_lines,
+            'ignore_case': self._cmd.ignore_case,
+            'ignore_whitespace': self._cmd.ignore_whitespace,
+            'ignore_whitespace_changes': self._cmd.ignore_whitespace_changes
+        }
+
+        if self._cmd.expected_stderr_source == ExpectedOutputSource.text:
+            with tempfile.NamedTemporaryFile('w') as expected_stderr:
+                expected_stderr.write(self._cmd.expected_stderr_text)
+                expected_stderr.flush()
+                return core_ut.get_diff(expected_stderr.name, stderr_filename,
+                                        **diff_whitespace_kwargs)
+        elif self._cmd.expected_stderr_source == ExpectedOutputSource.instructor_file:
+            return core_ut.get_diff(self._cmd.expected_stderr_instructor_file.abspath,
+                                    stderr_filename,
+                                    **diff_whitespace_kwargs)
+        else:
+            raise ValueError(
+                'Invalid expected stderr source: {}'.format(self._cmd.expected_stdout_source))
+
+    @property
+    def stderr_points(self) -> int:
+        if self.stderr_correct is None:
+            return 0
+
+        if self._ag_test_command_result.stderr_correct:
+            return self._cmd.points_for_correct_stderr
+
+        return self._cmd.deduction_for_wrong_stderr
+
+    @property
+    def stderr_points_possible(self) -> int:
+        if self.stderr_correct is None:
+            return 0
+
+        return self._cmd.points_for_correct_stderr
+
+    @property
+    def total_points(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+
+        return self.return_code_points + self.stdout_points + self.stderr_points
+
+    @property
+    def total_points_possible(self) -> int:
+        if not self._fdbk.show_points:
+            return 0
+
+        return (self.return_code_points_possible + self.stdout_points_possible
+                + self.stderr_points_possible)
+
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        'ag_test_command_pk',
+        'ag_test_command_name',
+        'fdbk_settings',
+
+        'timed_out',
+
+        'return_code_correct',
+        'expected_return_code',
+        'actual_return_code',
+        'return_code_points',
+        'return_code_points_possible',
+
+        'stdout_correct',
+        'stdout_points',
+        'stdout_points_possible',
+
+        'stderr_correct',
+        'stderr_points',
+        'stderr_points_possible',
+
+        'total_points',
+        'total_points_possible'
     )

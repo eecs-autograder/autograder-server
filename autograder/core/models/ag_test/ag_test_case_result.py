@@ -8,7 +8,7 @@ from .feedback_category import FeedbackCategory
 from .ag_test_command_result import AGTestCommandResult
 
 
-class AGTestCaseResult(AutograderModel):
+class AGTestCaseResult(models.Model):
     class Meta:
         unique_together = ('ag_test_case', 'ag_test_suite_result')
         ordering = ('ag_test_case___order',)
@@ -23,84 +23,7 @@ class AGTestCaseResult(AutograderModel):
         on_delete=models.CASCADE,
         help_text='The AGTestSuiteResult that this result belongs to.')
 
-    def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestCaseResult.FeedbackCalculator':
-        return AGTestCaseResult.FeedbackCalculator(self, fdbk_category)
-
-    class FeedbackCalculator(ToDictMixin):
-        def __init__(self, ag_test_case_result: 'AGTestCaseResult',
-                     fdbk_category: FeedbackCategory):
-            self._ag_test_case_result = ag_test_case_result
-            self._fdbk_category = fdbk_category
-            self._ag_test_case = self._ag_test_case_result.ag_test_case
-
-            if fdbk_category == FeedbackCategory.normal:
-                self._fdbk = self._ag_test_case.normal_fdbk_config
-            elif fdbk_category == FeedbackCategory.ultimate_submission:
-                self._fdbk = self._ag_test_case.ultimate_submission_fdbk_config
-            elif fdbk_category == FeedbackCategory.past_limit_submission:
-                self._fdbk = self._ag_test_case.past_limit_submission_fdbk_config
-            elif fdbk_category == FeedbackCategory.staff_viewer:
-                self._fdbk = self._ag_test_case.staff_viewer_fdbk_config
-            elif fdbk_category == FeedbackCategory.max:
-                self._fdbk = AGTestCaseFeedbackConfig(show_individual_commands=True)
-
-        @property
-        def fdbk_conf(self):
-            return self._fdbk
-
-        @property
-        def pk(self):
-            return self._ag_test_case_result.pk
-
-        @property
-        def ag_test_case_name(self) -> str:
-            return self._ag_test_case.name
-
-        @property
-        def ag_test_case_pk(self) -> int:
-            return self._ag_test_case.pk
-
-        @property
-        def fdbk_settings(self) -> dict:
-            return self._fdbk.to_dict()
-
-        @property
-        def total_points(self) -> int:
-            points = sum((cmd_res.get_fdbk(self._fdbk_category).total_points for cmd_res in
-                          self._visible_cmd_results))
-            return max(0, points)
-
-        @property
-        def total_points_possible(self) -> int:
-            return sum((cmd_res.get_fdbk(self._fdbk_category).total_points_possible for cmd_res in
-                        self._visible_cmd_results))
-
-        @property
-        def ag_test_command_results(self) -> List[AGTestCommandResult]:
-            if not self._fdbk.show_individual_commands:
-                return []
-
-            return list(self._visible_cmd_results)
-
-        @property
-        def _visible_cmd_results(self) -> Iterable[AGTestCommandResult]:
-            return filter(
-                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
-                self._ag_test_case_result.ag_test_command_results.all())
-
-        def to_dict(self):
-            result = super().to_dict()
-            result['ag_test_command_results'] = [
-                result.get_fdbk(self._fdbk_category).to_dict()
-                for result in self.ag_test_command_results
-            ]
-            return result
-
-        SERIALIZABLE_FIELDS = (
-            'pk',
-            'ag_test_case_name',
-            'ag_test_case_pk',
-            'fdbk_settings',
-            'total_points',
-            'total_points_possible',
-        )
+    # SERIALIZABLE_FIELDS = (
+    #     'ag_test_case_id',
+    #     'ag_test_suite_result_id',
+    # )
