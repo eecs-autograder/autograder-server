@@ -13,6 +13,7 @@ from django.utils import timezone
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
+from .project import Project
 from .ag_model_base import ToDictMixin
 from . import ag_model_base
 from .ag_test.ag_test_case_result import AGTestCaseResult
@@ -254,29 +255,13 @@ class Submission(ag_model_base.AutograderModel):
         blank=True,
         help_text='''If status is "error", an error message will be stored here.''')
 
-    # Note: Don't include basic_score in to_dict() serialization. If you
-    # want to expose it as part of the server api, do so with a
-    # dedicated endpoint and make sure permissions are handled properly
-    # based on the standing of the submission (ultimate, past limit,
-    # etc.).
-    @property
-    def basic_score(self):
-        """
-        The sum of the basic scores for each test case result belonging
-        to this submission.
-        """
-        key = self.basic_score_cache_key
-        score = cache.get(key)
-        if score is not None:
-            return score
+    def get_serialized_ag_test_results(self):
+        return self._denormalized_results
 
-        score = sum((result.basic_score for result in self.results.all()))
-        cache.set(key, score, timeout=None)
-        return score
-
-    @property
-    def basic_score_cache_key(self):
-        return 'submission_basic_score{}'.format(self.pk)
+    _denormalized_results = pg_fields.JSONField(
+        default=list,
+        help_text='FIXME data format'
+    )
 
     @property
     def position_in_queue(self) -> int:
@@ -325,80 +310,6 @@ class Submission(ag_model_base.AutograderModel):
         result_output_dir = core_ut.get_result_output_dir(self)
         if not os.path.isdir(result_output_dir):
             os.makedirs(result_output_dir, exist_ok=True)
-
-    def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'Submission.FeedbackCalculator':
-        return Submission.FeedbackCalculator(self, fdbk_category)
-
-    class FeedbackCalculator(ToDictMixin):
-        def __init__(self, submission: 'Submission', fdbk_category: FeedbackCategory):
-            self._submission = submission
-            self._fdbk_category = fdbk_category
-            self._project = self._submission.group.project
-
-        @property
-        def pk(self):
-            return self._submission.pk
-
-        @property
-        def total_points(self) -> int:
-            ag_suite_points = sum(
-                (ag_test_suite_result.get_fdbk(self._fdbk_category).total_points
-                 for ag_test_suite_result in self._visible_ag_test_suite_results))
-
-            student_suite_points = sum(
-                (student_test_suite_result.get_fdbk(self._fdbk_category).total_points
-                 for student_test_suite_result in self._visible_student_test_suite_results))
-
-            return ag_suite_points + student_suite_points
-
-        @property
-        def total_points_possible(self) -> int:
-            ag_suite_points = sum(
-                (ag_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible
-                 for ag_test_suite_result in self._visible_ag_test_suite_results))
-
-            student_suite_points = sum(
-                (student_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible
-                 for student_test_suite_result in self._visible_student_test_suite_results))
-
-            return ag_suite_points + student_suite_points
-
-        @property
-        def ag_test_suite_results(self) -> List['AGTestSuiteResult']:
-            return list(self._visible_ag_test_suite_results)
-
-        @property
-        def _visible_ag_test_suite_results(self) -> Iterable['AGTestSuiteResult']:
-            return filter(
-                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
-                self._submission.ag_test_suite_results.all())
-
-        @property
-        def student_test_suite_results(self) -> List['StudentTestSuiteResult']:
-            return list(self._visible_student_test_suite_results)
-
-        @property
-        def _visible_student_test_suite_results(self) -> Iterable['StudentTestSuiteResult']:
-            return filter(
-                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
-                self._submission.student_test_suite_results.all())
-
-        def to_dict(self):
-            result = super().to_dict()
-            result['ag_test_suite_results'] = [result.get_fdbk(self._fdbk_category).to_dict()
-                                               for result in result['ag_test_suite_results']]
-            result['student_test_suite_results'] = [
-                result.get_fdbk(self._fdbk_category).to_dict()
-                for result in result['student_test_suite_results']]
-            return result
-
-        SERIALIZABLE_FIELDS = (
-            'pk',
-            'total_points',
-            'total_points_possible',
-            'ag_test_suite_results',
-            'student_test_suite_results'
-        )
 
 
 # These functions return querysets that are optimized to return

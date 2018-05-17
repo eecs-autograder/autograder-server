@@ -1,17 +1,13 @@
 import os
-from io import FileIO
-from typing import List, Iterable
 
 from django.db import models
 
 import autograder.core.utils as core_ut
-from ..ag_model_base import AutograderModel, ToDictMixin
-from .ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
-from .feedback_category import FeedbackCategory
-from .ag_test_case_result import AGTestCaseResult
+from ..ag_model_base import ToDictMixin
+from .ag_test_suite import AGTestSuite
 
 
-class AGTestSuiteResult(AutograderModel):
+class AGTestSuiteResult(ToDictMixin, models.Model):
     class Meta:
         unique_together = ('ag_test_suite', 'submission')
         ordering = ('ag_test_suite___order',)
@@ -87,173 +83,13 @@ class AGTestSuiteResult(AutograderModel):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'suite_result_{}_teardown_stderr'.format(self.pk))
 
-    def get_fdbk(self, fdbk_category: FeedbackCategory) -> 'AGTestSuiteResult.FeedbackCalculator':
-        return AGTestSuiteResult.FeedbackCalculator(self, fdbk_category)
-
-    class FeedbackCalculator(ToDictMixin):
-        def __init__(self, ag_test_suite_result: 'AGTestSuiteResult',
-                     fdbk_category: FeedbackCategory):
-            self._ag_test_suite_result = ag_test_suite_result
-            self._fdbk_category = fdbk_category
-            self._ag_test_suite = self._ag_test_suite_result.ag_test_suite
-
-            if fdbk_category == FeedbackCategory.normal:
-                self._fdbk = self._ag_test_suite.normal_fdbk_config
-            elif fdbk_category == FeedbackCategory.ultimate_submission:
-                self._fdbk = self._ag_test_suite.ultimate_submission_fdbk_config
-            elif fdbk_category == FeedbackCategory.past_limit_submission:
-                self._fdbk = self._ag_test_suite.past_limit_submission_fdbk_config
-            elif fdbk_category == FeedbackCategory.staff_viewer:
-                self._fdbk = self._ag_test_suite.staff_viewer_fdbk_config
-            elif fdbk_category == FeedbackCategory.max:
-                self._fdbk = AGTestSuiteFeedbackConfig(
-                    show_individual_tests=True,
-                    show_setup_and_teardown_stdout=True,
-                    show_setup_and_teardown_stderr=True)
-
-        @property
-        def fdbk_conf(self):
-            return self._fdbk
-
-        @property
-        def pk(self):
-            return self._ag_test_suite_result.pk
-
-        @property
-        def ag_test_suite_name(self) -> str:
-            return self._ag_test_suite.name
-
-        @property
-        def ag_test_suite_pk(self) -> int:
-            return self._ag_test_suite.pk
-
-        @property
-        def fdbk_settings(self) -> dict:
-            return self._fdbk.to_dict()
-
-        @property
-        def setup_name(self) -> str:
-            if not self._show_setup_and_teardown_names:
-                return None
-
-            return self._ag_test_suite.setup_suite_cmd_name
-
-        @property
-        def setup_return_code(self) -> int:
-            if not self._fdbk.show_setup_and_teardown_return_code:
-                return None
-
-            return self._ag_test_suite_result.setup_return_code
-
-        @property
-        def setup_timed_out(self) -> bool:
-            if not self._fdbk.show_setup_and_teardown_timed_out:
-                return None
-
-            return self._ag_test_suite_result.setup_timed_out
-
-        @property
-        def setup_stdout(self) -> FileIO:
-            if not self._fdbk.show_setup_and_teardown_stdout:
-                return None
-
-            return self._ag_test_suite_result.open_setup_stdout()
-
-        @property
-        def setup_stderr(self) -> FileIO:
-            if not self._fdbk.show_setup_and_teardown_stderr:
-                return None
-
-            return self._ag_test_suite_result.open_setup_stderr()
-
-        @property
-        def teardown_name(self) -> str:
-            if not self._show_setup_and_teardown_names:
-                return None
-
-            return self._ag_test_suite.teardown_suite_cmd_name
-
-        @property
-        def teardown_return_code(self) -> int:
-            if not self._fdbk.show_setup_and_teardown_return_code:
-                return None
-
-            return self._ag_test_suite_result.teardown_return_code
-
-        @property
-        def teardown_timed_out(self) -> bool:
-            if not self._fdbk.show_setup_and_teardown_timed_out:
-                return None
-
-            return self._ag_test_suite_result.teardown_timed_out
-
-        @property
-        def teardown_stdout(self) -> FileIO:
-            if not self._fdbk.show_setup_and_teardown_stdout:
-                return None
-
-            return self._ag_test_suite_result.open_teardown_stdout()
-
-        @property
-        def teardown_stderr(self) -> FileIO:
-            if not self._fdbk.show_setup_and_teardown_stderr:
-                return None
-
-            return self._ag_test_suite_result.open_teardown_stderr()
-
-        @property
-        def _show_setup_and_teardown_names(self):
-            return (self._fdbk.show_setup_and_teardown_stdout
-                    or self._fdbk.show_setup_and_teardown_stderr
-                    or self._fdbk.show_setup_and_teardown_return_code
-                    or self._fdbk.show_setup_and_teardown_timed_out)
-
-        @property
-        def total_points(self) -> int:
-            return sum((ag_test_case_result.get_fdbk(self._fdbk_category).total_points
-                        for ag_test_case_result in
-                        self._visible_ag_test_case_results))
-
-        @property
-        def total_points_possible(self) -> int:
-            return sum((ag_test_case_result.get_fdbk(self._fdbk_category).total_points_possible
-                        for ag_test_case_result in
-                        self._visible_ag_test_case_results))
-
-        @property
-        def ag_test_case_results(self) -> List[AGTestCaseResult]:
-            if not self._fdbk.show_individual_tests:
-                return []
-
-            return list(self._visible_ag_test_case_results)
-
-        @property
-        def _visible_ag_test_case_results(self) -> Iterable[AGTestCaseResult]:
-            res = list(filter(
-                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
-                self._ag_test_suite_result.ag_test_case_results.all()))
-            return res
-
-        def to_dict(self):
-            result = super().to_dict()
-            ag_test_case_results = self.ag_test_case_results
-            result['ag_test_case_results'] = [
-                result.get_fdbk(self._fdbk_category).to_dict()
-                for result in ag_test_case_results
-            ]
-            return result
-
-        SERIALIZABLE_FIELDS = (
-            'pk',
-            'ag_test_suite_name',
-            'ag_test_suite_pk',
-            'fdbk_settings',
-            'total_points',
-            'total_points_possible',
-            'setup_name',
-            'setup_return_code',
-            'setup_timed_out',
-            'teardown_name',
-            'teardown_return_code',
-            'teardown_timed_out',
-        )
+    # Serializing AGTestSuiteResults should be used for DENORMALIZATION
+    # ONLY.
+    SERIALIZABLE_FIELDS = (
+        'ag_test_suite_id',
+        'submission_id',
+        'setup_return_code',
+        'setup_timed_out',
+        'setup_stdout_truncated',
+        'setup_stderr_truncated',
+    )
