@@ -8,7 +8,7 @@ from .feedback_category import FeedbackCategory
 from .ag_test_command_result import AGTestCommandResult
 
 
-class AGTestCaseResult(models.Model):
+class AGTestCaseResult(AutograderModel):
     class Meta:
         unique_together = ('ag_test_case', 'ag_test_suite_result')
         ordering = ('ag_test_case___order',)

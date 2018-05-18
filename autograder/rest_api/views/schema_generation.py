@@ -18,6 +18,9 @@ import autograder.core.models as ag_models
 import autograder.handgrading.models as hg_models
 from autograder.core.models import AutograderModel
 from autograder.core.models.ag_model_base import ToDictMixin
+from autograder.core.submission_feedback import (
+    SubmissionFeedbackCalculator, AGTestSuiteFeedback,
+    AGTestCaseFeedbackCalculator, AGTestCommandFeedbackCalculator)
 from autograder.rest_api.serializers.ag_model_serializer import AGModelSerializer
 
 AGModelType = Type[AutograderModel]
@@ -43,10 +46,10 @@ API_MODELS = OrderedDict([
     [ag_models.AGTestCommand, 'AGTestCommand'],
     [ag_models.AGTestCommandFeedbackConfig, 'AGTestCommandFeedbackConfig'],
 
-    [ag_models.Submission.FeedbackCalculator, 'SubmissionResult'],
-    [ag_models.AGTestSuiteResult.FeedbackCalculator, 'AGTestSuiteResult'],
-    [ag_models.AGTestCaseResult.FeedbackCalculator, 'AGTestCaseResult'],
-    [ag_models.AGTestCommandResult.FeedbackCalculator, 'AGTestCommandResult'],
+    [SubmissionFeedbackCalculator, 'SubmissionResult'],
+    [AGTestSuiteFeedback, 'AGTestSuiteResult'],
+    [AGTestCaseFeedbackCalculator, 'AGTestCaseResult'],
+    [AGTestCommandFeedbackCalculator, 'AGTestCommandResult'],
 
     [ag_models.StudentTestSuite, 'StudentTestSuite'],
     [ag_models.StudentTestSuiteFeedbackConfig, 'StudentTestSuiteFeedbackConfig'],
