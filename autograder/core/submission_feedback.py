@@ -515,7 +515,7 @@ class AGTestCaseFeedbackCalculator(ToDictMixin):
             AGTestCommandFeedbackCalculator(
                 result, self._fdbk_category, self._ag_test_preloader
             ).to_dict()
-            for result in result['ag_test_command_results']
+            for result in self._ag_test_command_results
         ]
         return result
 

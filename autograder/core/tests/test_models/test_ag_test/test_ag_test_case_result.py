@@ -1,5 +1,7 @@
 import autograder.core.models as ag_models
 from autograder.core.models.submission import get_ag_test_case_results_queryset
+from autograder.core.submission_feedback import DenormalizedAGTestCaseResult, \
+    AGTestCaseFeedbackCalculator, AGTestPreLoader, AGTestCommandFeedbackCalculator
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
@@ -24,6 +26,15 @@ class AGTestCaseResultTestCase(UnitTestBase):
         self.ag_test_cmd2 = obj_build.make_full_ag_test_command(
             self.ag_test_case, set_arbitrary_points=False)
 
+    def get_fdbk(self, result: ag_models.AGTestCaseResult,
+                 fdbk_category: ag_models.FeedbackCategory):
+        denormed_case_result = DenormalizedAGTestCaseResult(
+            result, result.ag_test_command_results.all())
+        return AGTestCaseFeedbackCalculator(
+            denormed_case_result, fdbk_category,
+            AGTestPreLoader(result.ag_test_case.ag_test_suite.project)
+        )
+
     def test_ag_test_cmd_result_ordering(self):
         cmd_result1 = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd1, ag_test_case_result=self.ag_test_case_result)
@@ -32,30 +43,32 @@ class AGTestCaseResultTestCase(UnitTestBase):
 
         for i in range(2):
             self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd2.pk, self.ag_test_cmd1.pk])
-            fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
+            fdbk = self.get_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max)
             self.assertSequenceEqual([cmd_result2, cmd_result1], fdbk.ag_test_command_results)
 
             self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd1.pk, self.ag_test_cmd2.pk])
-            fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
+            fdbk = self.get_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max)
             self.assertSequenceEqual([cmd_result1, cmd_result2], fdbk.ag_test_command_results)
 
     def test_feedback_calculator_ctor(self):
         self.assertEqual(
             self.ag_test_case.normal_fdbk_config,
-            self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.normal).fdbk_conf)
+            self.get_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.normal).fdbk_conf)
         self.assertEqual(
             self.ag_test_case.ultimate_submission_fdbk_config,
-            self.ag_test_case_result.get_fdbk(
-                ag_models.FeedbackCategory.ultimate_submission).fdbk_conf)
+            self.get_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.ultimate_submission).fdbk_conf)
         self.assertEqual(
             self.ag_test_case.past_limit_submission_fdbk_config,
-            self.ag_test_case_result.get_fdbk(
-                ag_models.FeedbackCategory.past_limit_submission).fdbk_conf)
+            self.get_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.past_limit_submission).fdbk_conf)
         self.assertEqual(
             self.ag_test_case.staff_viewer_fdbk_config,
-            self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.staff_viewer).fdbk_conf)
+            self.get_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.staff_viewer).fdbk_conf)
 
-        max_config = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max).fdbk_conf
+        max_config = self.get_fdbk(self.ag_test_case_result,
+                                   ag_models.FeedbackCategory.max).fdbk_conf
         self.assertTrue(max_config.show_individual_commands)
 
     def test_total_points_all_positive(self):
@@ -68,11 +81,11 @@ class AGTestCaseResultTestCase(UnitTestBase):
         obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2, self.ag_test_case_result)
 
         self.assertEqual(
-            8, self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+            8, self.get_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             8,
-            self.ag_test_case_result.get_fdbk(
-                ag_models.FeedbackCategory.max).total_points_possible)
+            self.get_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_total_points_some_positive_some_negative_positive_total(self):
         self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=5)
@@ -84,11 +97,11 @@ class AGTestCaseResultTestCase(UnitTestBase):
 
         self.assertEqual(
             3,
-            self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+            self.get_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             5,
-            self.ag_test_case_result.get_fdbk(
-                ag_models.FeedbackCategory.max).total_points_possible)
+            self.get_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_total_points_not_below_zero(self):
         self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=5)
@@ -99,11 +112,12 @@ class AGTestCaseResultTestCase(UnitTestBase):
 
         self.assertEqual(
             5,
-            self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+            self.get_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             5,
-            self.ag_test_case_result.get_fdbk(
-                ag_models.FeedbackCategory.max).total_points_possible)
+            self.get_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_total_points_minimum_ag_test_command_fdbk(self):
         self.ag_test_cmd1.validate_and_update(
@@ -119,11 +133,13 @@ class AGTestCaseResultTestCase(UnitTestBase):
         obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2, self.ag_test_case_result)
 
         self.assertEqual(
-            0, self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.normal).total_points)
+            0,
+            self.get_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.normal).total_points)
         self.assertEqual(
             0,
-            self.ag_test_case_result.get_fdbk(
-                ag_models.FeedbackCategory.normal).total_points_possible)
+            self.get_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.normal).total_points_possible)
 
     def test_show_individual_commands(self):
         total_cmd_points = 6
@@ -138,14 +154,14 @@ class AGTestCaseResultTestCase(UnitTestBase):
         result2 = obj_build.make_correct_ag_test_command_result(
             self.ag_test_cmd2, self.ag_test_case_result)
 
-        fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
+        fdbk = self.get_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max)
 
         self.assertEqual([result1, result2], fdbk.ag_test_command_results)
         self.assertEqual(total_cmd_points, fdbk.total_points)
         self.assertEqual(total_cmd_points, fdbk.total_points_possible)
 
         self.ag_test_case.normal_fdbk_config.validate_and_update(show_individual_commands=False)
-        fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.normal)
+        fdbk = self.get_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.normal)
 
         self.assertEqual([], fdbk.ag_test_command_results)
         self.assertEqual(total_cmd_points, fdbk.total_points)
@@ -160,7 +176,7 @@ class AGTestCaseResultTestCase(UnitTestBase):
         self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd2.pk, self.ag_test_cmd1.pk])
         self.ag_test_case_result = get_ag_test_case_results_queryset(
             ag_models.FeedbackCategory.max).get(pk=self.ag_test_case_result.pk)
-        fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max)
+        fdbk = self.get_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max)
         self.assertEqual([result2, result1], fdbk.ag_test_command_results)
 
     def test_some_commands_not_visible(self):
@@ -177,21 +193,25 @@ class AGTestCaseResultTestCase(UnitTestBase):
 
         self.assertEqual(
             cmd1_pts + cmd2_pts,
-            self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+            self.get_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             cmd1_pts + cmd2_pts,
-            self.ag_test_case_result.get_fdbk(
+            self.get_fdbk(
+                self.ag_test_case_result,
                 ag_models.FeedbackCategory.max).total_points_possible)
 
-        fdbk = self.ag_test_case_result.get_fdbk(ag_models.FeedbackCategory.ultimate_submission)
+        fdbk = self.get_fdbk(
+            self.ag_test_case_result, ag_models.FeedbackCategory.ultimate_submission)
         self.assertSequenceEqual([cmd_result2], fdbk.ag_test_command_results)
         self.assertEqual(
             cmd2_pts,
-            self.ag_test_case_result.get_fdbk(
+            self.get_fdbk(
+                self.ag_test_case_result,
                 ag_models.FeedbackCategory.ultimate_submission).total_points)
         self.assertEqual(
             cmd2_pts,
-            self.ag_test_case_result.get_fdbk(
+            self.get_fdbk(
+                self.ag_test_case_result,
                 ag_models.FeedbackCategory.ultimate_submission).total_points_possible)
 
     def test_fdbk_to_dict(self):
@@ -223,10 +243,16 @@ class AGTestCaseResultTestCase(UnitTestBase):
         ]
 
         for fdbk_category in ag_models.FeedbackCategory:
-            result_dict = self.ag_test_case_result.get_fdbk(fdbk_category).to_dict()
+            result_dict = self.get_fdbk(self.ag_test_case_result, fdbk_category).to_dict()
             self.assertCountEqual(expected_keys, result_dict.keys())
 
             self.assertCountEqual(
-                [result1.get_fdbk(fdbk_category).to_dict(),
-                 result2.get_fdbk(fdbk_category).to_dict()],
+                [self._get_cmd_fdbk(result1, fdbk_category).to_dict(),
+                 self._get_cmd_fdbk(result2, fdbk_category).to_dict()],
                 result_dict['ag_test_command_results'])
+
+    def _get_cmd_fdbk(self, result: ag_models.AGTestCommandResult,
+                      fdbk_category: ag_models.FeedbackCategory):
+        return AGTestCommandFeedbackCalculator(
+            result, fdbk_category,
+            AGTestPreLoader(result.ag_test_command.ag_test_case.ag_test_suite.project))
