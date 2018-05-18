@@ -248,10 +248,10 @@ class UserRole(core_ut.OrderedEnum):
     admin = 'admin'
 
 
-def make_group(members=None,
-               num_members: int=1,
+def make_group(num_members: int=1,
                members_role: UserRole=UserRole.student,
                project: ag_models.Project=None,
+               members=None,
                **group_kwargs) -> ag_models.Group:
     if project is None:
         project = make_project()

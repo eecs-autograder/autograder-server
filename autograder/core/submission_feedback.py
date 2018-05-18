@@ -84,7 +84,7 @@ def _deserialize_denormed_ag_test_results(
     submission: Submission
 ) -> List[DenormalizedAGTestSuiteResult]:
     result = []
-    for serialized_suite_result in submission.get_serialized_ag_test_results():
+    for serialized_suite_result in submission.get_denormalized_ag_test_results():
         deserialized_suite_result = AGTestSuiteResult(
             ag_test_suite_id=serialized_suite_result['ag_test_suite_id'],
             submission_id=serialized_suite_result['submission_id'],

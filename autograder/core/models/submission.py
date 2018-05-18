@@ -1,10 +1,9 @@
 import fnmatch
 import os
-from typing import Iterable, List
+from typing import Sequence
 
 import django.contrib.postgres.fields as pg_fields
 from django.core import exceptions
-from django.core.cache import cache
 from django.core.files import File
 from django.db import models, transaction
 from django.db.models import Prefetch
@@ -13,8 +12,6 @@ from django.utils import timezone
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
-from .project import Project
-from .ag_model_base import ToDictMixin
 from . import ag_model_base
 from .ag_test.ag_test_case_result import AGTestCaseResult
 from .ag_test.ag_test_command_result import AGTestCommandResult
@@ -255,7 +252,7 @@ class Submission(ag_model_base.AutograderModel):
         blank=True,
         help_text='''If status is "error", an error message will be stored here.''')
 
-    def get_serialized_ag_test_results(self):
+    def get_denormalized_ag_test_results(self) -> Sequence[dict]:
         return self._denormalized_results
 
     _denormalized_results = pg_fields.JSONField(

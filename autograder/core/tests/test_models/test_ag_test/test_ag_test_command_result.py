@@ -15,6 +15,27 @@ class AGTestCommandResultTestCase(UnitTestBase):
     def setUp(self):
         submission = obj_build.make_submission()
         self.project = submission.group.project
+        suite = obj_build.make_ag_test_suite(self.project)
+        suite = ag_models.AGTestSuite.objects.validate_and_create(
+            name='kajsdhf', project=self.project)
+        case = obj_build.make_ag_test_case(suite)
+        cmd = obj_build.make_full_ag_test_command(
+            case,
+            set_arbitrary_points=False,
+            set_arbitrary_expected_vals=False
+        )
+
+    def test_create_cmd_defaults(self):
+        self.fail()
+
+    def test_create_cmd_no_defaults(self):
+        self.fail()
+
+
+class AGTestCommandFeedbackTestCase(UnitTestBase):
+    def setUp(self):
+        submission = obj_build.make_submission()
+        self.project = submission.group.project
         suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='kajsdhf', project=self.project)
         self.ag_test_case = ag_models.AGTestCase.objects.validate_and_create(
