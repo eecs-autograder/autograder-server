@@ -3,6 +3,7 @@ import copy
 from django.core import exceptions
 
 import autograder.core.models as ag_models
+from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import get_suite_fdbk
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
@@ -142,9 +143,10 @@ class AGTestCaseTestCase(UnitTestBase):
         ag_test_result2.refresh_from_db()
         self.assertEqual(other_suite_result, ag_test_result2.ag_test_suite_result)
 
-        suite_result.get_fdbk(ag_models.FeedbackCategory.max).ag_test_case_results
-        suite_result2.get_fdbk(ag_models.FeedbackCategory.max).ag_test_case_results
-        new_other_suite_result.get_fdbk(ag_models.FeedbackCategory.max).ag_test_case_results
+        # Make sure no errors are thrown
+        get_suite_fdbk(suite_result, ag_models.FeedbackCategory.max).ag_test_case_results
+        get_suite_fdbk(suite_result2, ag_models.FeedbackCategory.max).ag_test_case_results
+        get_suite_fdbk(new_other_suite_result, ag_models.FeedbackCategory.max).ag_test_case_results
 
     def test_error_move_ag_test_to_suite_in_different_project(self):
         ag_test = ag_models.AGTestCase.objects.validate_and_create(

@@ -1,5 +1,5 @@
 import tempfile
-from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional
+from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional, NewType, Any
 
 from django.utils.functional import cached_property
 
@@ -379,11 +379,16 @@ class AGTestSuiteFeedback(ToDictMixin):
         ))
 
     @property
-    def ag_test_case_results(self) -> List[DenormalizedAGTestCaseResult]:
+    def ag_test_case_results(self) -> List[dict]:
         if not self._fdbk.show_individual_tests:
             return []
 
-        return list(self._visible_ag_test_case_results)
+        return [
+            AGTestCaseFeedbackCalculator(
+                denormed_case_result,
+                self._fdbk_category, self._ag_test_preloader).to_dict()
+            for denormed_case_result in self._visible_ag_test_case_results
+        ]
 
     @property
     def _visible_ag_test_case_results(self) -> Iterable[DenormalizedAGTestCaseResult]:
@@ -401,16 +406,6 @@ class AGTestSuiteFeedback(ToDictMixin):
 
         return sorted(visible, key=case_res_sort_key)
 
-    def to_dict(self):
-        result = super().to_dict()
-        result['ag_test_case_results'] = [
-            AGTestCaseFeedbackCalculator(
-                result, self._fdbk_category, self._ag_test_preloader
-            ).to_dict()
-            for result in result['ag_test_case_results']
-        ]
-        return result
-
     SERIALIZABLE_FIELDS = (
         'pk',
         'ag_test_suite_name',
@@ -424,6 +419,8 @@ class AGTestSuiteFeedback(ToDictMixin):
         'teardown_name',
         'teardown_return_code',
         'teardown_timed_out',
+
+        'ag_test_case_results'
     )
 
 
@@ -490,11 +487,16 @@ class AGTestCaseFeedbackCalculator(ToDictMixin):
         ))
 
     @property
-    def ag_test_command_results(self) -> List[AGTestCommandResult]:
+    def ag_test_command_results(self) -> List[dict]:
         if not self._fdbk.show_individual_commands:
             return []
 
-        return list(self._visible_cmd_results)
+        return [
+            AGTestCommandFeedbackCalculator(
+                result, self._fdbk_category, self._ag_test_preloader
+            ).to_dict()
+            for result in self._visible_cmd_results
+        ]
 
     @cached_property
     def _visible_cmd_results(self) -> Iterable[AGTestCommandResult]:
@@ -509,16 +511,6 @@ class AGTestCaseFeedbackCalculator(ToDictMixin):
 
         return sorted(visible, key=cmd_res_sort_key)
 
-    def to_dict(self):
-        result = super().to_dict()
-        result['ag_test_command_results'] = [
-            AGTestCommandFeedbackCalculator(
-                result, self._fdbk_category, self._ag_test_preloader
-            ).to_dict()
-            for result in self._ag_test_command_results
-        ]
-        return result
-
     SERIALIZABLE_FIELDS = (
         'pk',
         'ag_test_case_name',
@@ -526,6 +518,8 @@ class AGTestCaseFeedbackCalculator(ToDictMixin):
         'fdbk_settings',
         'total_points',
         'total_points_possible',
+
+        'ag_test_command_results',
     )
 
 
