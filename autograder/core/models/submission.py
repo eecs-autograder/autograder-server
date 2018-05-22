@@ -263,7 +263,24 @@ class Submission(ag_model_base.AutograderModel):
 
     denormalized_ag_test_results = pg_fields.JSONField(
         default=dict,
-        help_text='FIXME data format'
+        help_text="""Stores denormalized AG test results in order to avoid 
+                     expensive joins when getting submission result feedback.
+                     To update this field, use 
+                     autograder.core.submission_feedback.update_denormalized_ag_test_results
+                     
+                     Data format: 
+{
+    "<ag test suite pk>": {
+        <ag test suite result data>,
+        "ag_test_case_results": {
+            "<ag test case pk>": {
+                <ag test case result data>,
+                "ag_test_command_results": <ag test command result data>
+            }
+        }
+    }
+}
+        """
     )
 
     @property
