@@ -73,7 +73,7 @@ class SubmissionResultsViewBase(AGModelAPIView):
     ) -> SubmissionResultFeedback:
         return SubmissionResultFeedback(self.get_object(), fdbk_category)
 
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         raise NotImplementedError
 
@@ -101,18 +101,18 @@ class SubmissionResultsView(SubmissionResultsViewBase):
         submission = self.get_object(model_manager_override=model_manager)
         return SubmissionResultFeedback(submission, fdbk_category)
 
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         if (fdbk_category != ag_models.FeedbackCategory.normal
                 or self.request.query_params.get('use_cache', 'true') != 'true'):
-            return response.Response(self._get_submission_fdbk(fdbk_category).to_dict())
+            return response.Response(submission_fdbk.to_dict())
 
         submission = self.get_object()
         not_done_enough_to_cache = (
             submission.status != ag_models.Submission.GradingStatus.waiting_for_deferred
             and submission.status != ag_models.Submission.GradingStatus.finished_grading)
         if not_done_enough_to_cache:
-            return response.Response(self._get_submission_fdbk(fdbk_category).to_dict())
+            return response.Response(submission_fdbk.to_dict())
 
         cache_key = 'project_{}_submission_normal_results_{}'.format(
             submission.group.project.pk,
@@ -120,8 +120,7 @@ class SubmissionResultsView(SubmissionResultsViewBase):
 
         result = cache.get(cache_key)
         if result is None:
-            # Re-load the submission, with result data prefetched.
-            result = self._get_submission_fdbk(fdbk_category).to_dict()
+            result = submission_fdbk.to_dict()
             cache.set(cache_key, result, timeout=None)
 
         return response.Response(result)
@@ -132,10 +131,10 @@ class SubmissionResultsView(SubmissionResultsViewBase):
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         suite_result_pk = self.kwargs['result_pk']
-        return _get_setup_output(fdbk_calculator,
+        return _get_setup_output(submission_fdbk,
                                  suite_result_pk,
                                  lambda fdbk_calc: fdbk_calc.setup_stdout)
 
@@ -145,10 +144,10 @@ class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         suite_result_pk = self.kwargs['result_pk']
-        return _get_setup_output(fdbk_calculator,
+        return _get_setup_output(submission_fdbk,
                                  suite_result_pk,
                                  lambda fdbk_calc: fdbk_calc.setup_stderr)
 
@@ -182,11 +181,11 @@ def _find_ag_suite_result(submission_fdbk: SubmissionResultFeedback,
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         cmd_result_pk = self.kwargs['result_pk']
         return _get_cmd_result_output(
-            fdbk_calculator,
+            submission_fdbk,
             cmd_result_pk,
             lambda fdbk_calc: fdbk_calc.stdout)
 
@@ -196,11 +195,11 @@ class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class AGTestCommandResultStderrView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         cmd_result_pk = self.kwargs['result_pk']
         return _get_cmd_result_output(
-            fdbk_calculator,
+            submission_fdbk,
             cmd_result_pk,
             lambda fdbk_calc: fdbk_calc.stderr)
 
@@ -298,11 +297,11 @@ def _find_ag_test_cmd_result(submission_fdbk: SubmissionResultFeedback,
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         student_suite_result_pk = self.kwargs['result_pk']
         return _get_student_suite_result_output_field(
-            fdbk_calculator,
+            submission_fdbk,
             fdbk_category,
             student_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.setup_stdout)
@@ -313,11 +312,11 @@ class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         student_suite_result_pk = self.kwargs['result_pk']
         return _get_student_suite_result_output_field(
-            fdbk_calculator,
+            submission_fdbk,
             fdbk_category,
             student_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.setup_stderr)
@@ -328,11 +327,11 @@ class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         student_suite_result_pk = self.kwargs['result_pk']
         return _get_student_suite_result_output_field(
-            fdbk_calculator,
+            submission_fdbk,
             fdbk_category,
             student_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.get_student_test_names_stdout)
@@ -343,11 +342,11 @@ class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase)
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         student_suite_result_pk = self.kwargs['result_pk']
         return _get_student_suite_result_output_field(
-            fdbk_calculator,
+            submission_fdbk,
             fdbk_category,
             student_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.get_student_test_names_stderr)
@@ -358,11 +357,11 @@ class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase)
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         student_suite_result_pk = self.kwargs['result_pk']
         return _get_student_suite_result_output_field(
-            fdbk_calculator,
+            submission_fdbk,
             fdbk_category,
             student_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.validity_check_stdout)
@@ -373,11 +372,11 @@ class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         student_suite_result_pk = self.kwargs['result_pk']
         return _get_student_suite_result_output_field(
-            fdbk_calculator,
+            submission_fdbk,
             fdbk_category,
             student_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.validity_check_stderr)
@@ -388,11 +387,11 @@ class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         student_suite_result_pk = self.kwargs['result_pk']
         return _get_student_suite_result_output_field(
-            fdbk_calculator,
+            submission_fdbk,
             fdbk_category,
             student_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stdout)
@@ -403,11 +402,11 @@ class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase)
     decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
 )
 class StudentTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase):
-    def _make_response(self, fdbk_calculator: SubmissionResultFeedback,
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
         student_suite_result_pk = self.kwargs['result_pk']
         return _get_student_suite_result_output_field(
-            fdbk_calculator,
+            submission_fdbk,
             fdbk_category,
             student_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stderr)

@@ -13,7 +13,8 @@ from rest_framework import status
 import autograder.core.models as ag_models
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.submission_feedback import SubmissionResultFeedback
+from autograder.core.submission_feedback import SubmissionResultFeedback, \
+    update_denormalized_ag_test_results
 from autograder.utils.testing import UnitTestBase
 
 
@@ -208,10 +209,6 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        # This submission that belongs to another project shouldn't
-        # prevent us from downloading grades for our project.
-        obj_build.make_submission(status=ag_models.Submission.GradingStatus.being_graded)
-
         max_group_size = 3
         self.project = obj_build.make_project(
             visible_to_students=True,
@@ -263,6 +260,10 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             submission=self.group1_submission2,
             bugs_exposed=[])
 
+        self.group1_submission1_best = update_denormalized_ag_test_results(
+            self.group1_submission1_best.pk)
+        self.group1_submission2 = update_denormalized_ag_test_results(self.group1_submission2.pk)
+
         self.student_group2 = obj_build.make_group(num_members=max_group_size,
                                                    project=self.project)
         self.group2_only_submission = obj_build.make_finished_submission(
@@ -280,6 +281,9 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             submission=self.group2_only_submission,
             bugs_exposed=self.student_suite2_bugs[:-1])
 
+        self.group2_only_submission = update_denormalized_ag_test_results(
+            self.group2_only_submission.pk)
+
         self.staff_group = obj_build.make_group(project=self.project,
                                                 members_role=obj_build.UserRole.staff)
         self.staff_submission1 = obj_build.make_finished_submission(
@@ -296,6 +300,8 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             student_test_suite=self.student_suite2,
             submission=self.staff_submission1,
             bugs_exposed=self.student_suite2_bugs)
+
+        self.staff_submission1 = update_denormalized_ag_test_results(self.staff_submission1.pk)
 
         self.no_submissions_group = obj_build.make_group(project=self.project)
 
