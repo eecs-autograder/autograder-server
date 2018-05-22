@@ -37,9 +37,10 @@ def grade_submission(submission_pk):
 
         @retry_should_recover
         def mark_as_waiting_for_deferred():
-            submission.status = (
-                ag_models.Submission.GradingStatus.waiting_for_deferred)
-            submission.save()
+            # Make sure to not overwrite denormalized ag test results
+            ag_models.Submission.objects.filter(
+                pk=submission.pk
+            ).update(status=ag_models.Submission.GradingStatus.waiting_for_deferred)
 
         mark_as_waiting_for_deferred()
 

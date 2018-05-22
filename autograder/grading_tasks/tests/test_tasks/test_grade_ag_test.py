@@ -11,6 +11,7 @@ from django.test import tag
 import autograder.core.models as ag_models
 from autograder.core import constants
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core.submission_feedback import SubmissionResultFeedback
 from autograder.utils.testing import UnitTestBase
 
 from autograder.grading_tasks import tasks
@@ -37,14 +38,19 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             deduction_for_wrong_return_code=-1,
             points_for_correct_stdout=3)
         tasks.grade_submission(self.submission.pk)
+        self.submission.refresh_from_db()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.stdout_correct)
         self.assertFalse(res.return_code_correct)
 
-        self.assertEqual(2, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
-            3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
+            2,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            3,
+            SubmissionResultFeedback(
+                self.submission, ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_diff_ignore_case_whitespace_changes_and_blank_lines(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -61,12 +67,16 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             ignore_whitespace_changes=True,
             ignore_blank_lines=True)
         tasks.grade_submission(self.submission.pk)
+        self.submission.refresh_from_db()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.stdout_correct)
         self.assertTrue(res.stderr_correct)
 
-        self.assertEqual(6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            6,
+            SubmissionResultFeedback(
+                self.submission, ag_models.FeedbackCategory.max).total_points)
 
     def test_diff_ignore_whitespace(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -80,11 +90,14 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
             points_for_correct_stdout=2,
             ignore_whitespace=True)
         tasks.grade_submission(self.submission.pk)
+        self.submission.refresh_from_db()
 
         res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         self.assertTrue(res.stdout_correct)
 
-        self.assertEqual(2, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            2,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
 
     def test_correct_expected_return_code_zero(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -309,20 +322,25 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
         self.assertTrue(self.ag_suite.read_only_instructor_files)
         tasks.grade_submission(self.submission.pk)
         self.submission.refresh_from_db()
-        self.assertEqual(0, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            0,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             self.retcode_points,
-            self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
+            SubmissionResultFeedback(
+                self.submission, ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_project_files_not_read_only(self, *args):
         self.ag_suite.validate_and_update(read_only_instructor_files=False)
         tasks.grade_submission(self.submission.pk)
         self.submission.refresh_from_db()
-        self.assertEqual(self.retcode_points,
-                         self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             self.retcode_points,
-            self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            self.retcode_points,
+            SubmissionResultFeedback(
+                self.submission, ag_models.FeedbackCategory.max).total_points_possible)
 
 
 @tag('slow', 'sandbox')
@@ -585,6 +603,3 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
 
         not_rerun_result = self.ag_test_cmd_2.agtestcommandresult_set.first()
         self.assertFalse(not_rerun_result.return_code_correct)
-
-    def test_race_condition_(self):
-        self.fail()

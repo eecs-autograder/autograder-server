@@ -151,7 +151,6 @@ def update_denormalized_ag_test_results(submission_pk: int) -> Submission:
 
     Returns the updated submission.
     """
-
     submission_manager = Submission.objects.select_for_update().prefetch_related(
         Prefetch(
             'ag_test_suite_results',

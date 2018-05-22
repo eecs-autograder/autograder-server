@@ -7,6 +7,7 @@ from django.test import tag
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core import constants
+from autograder.core.submission_feedback import SubmissionResultFeedback
 from autograder.grading_tasks import tasks
 from autograder.utils.testing import UnitTestBase
 
@@ -54,6 +55,7 @@ class GradeSubmissionTestCase(UnitTestBase):
             expected_stderr_source=ag_models.ExpectedOutputSource.text,
             expected_stderr_text="whoops")
         tasks.grade_submission(self.submission.pk)
+        self.submission.refresh_from_db()
 
         cmd_result = ag_models.AGTestCommandResult.objects.get(
             ag_test_command=cmd,
@@ -68,9 +70,12 @@ class GradeSubmissionTestCase(UnitTestBase):
         self.assertTrue(cmd_result.stderr_correct)
 
         self.assertEqual(
-            6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
-        self.assertEqual(6, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
-        self.submission.refresh_from_db()
+            6,
+            SubmissionResultFeedback(
+                self.submission, ag_models.FeedbackCategory.max).total_points_possible)
+        self.assertEqual(
+            6,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
@@ -114,6 +119,7 @@ class GradeSubmissionTestCase(UnitTestBase):
             points_for_correct_return_code=3,
             expected_return_code=ag_models.ExpectedReturnCode.zero)
         tasks.grade_submission(self.submission.pk)
+        self.submission.refresh_from_db()
 
         cmd_result = ag_models.AGTestCommandResult.objects.get(
             ag_test_command=cmd,
@@ -121,9 +127,12 @@ class GradeSubmissionTestCase(UnitTestBase):
         self.assertEqual(0, cmd_result.return_code)
 
         self.assertEqual(
-            3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points_possible)
-        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
-        self.submission.refresh_from_db()
+            3,
+            SubmissionResultFeedback(
+                self.submission, ag_models.FeedbackCategory.max).total_points_possible)
+        self.assertEqual(
+            3,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
@@ -154,6 +163,7 @@ class GradeSubmissionTestCase(UnitTestBase):
                     expected_stderr_text="whoops")
 
         tasks.grade_submission(self.submission.pk)
+        self.submission.refresh_from_db()
 
         cmd_results = ag_models.AGTestCommandResult.objects.filter(
             ag_test_case_result__ag_test_suite_result__submission=self.submission)
@@ -165,8 +175,9 @@ class GradeSubmissionTestCase(UnitTestBase):
             self.assertTrue(res.stdout_correct)
             self.assertTrue(res.stderr_correct)
 
-        self.assertEqual(48, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
-        self.submission.refresh_from_db()
+        self.assertEqual(
+            48,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
@@ -315,7 +326,9 @@ void file2() {
         tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
-        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            3,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
@@ -343,7 +356,9 @@ void file2() {
         tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
-        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            3,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
 
@@ -375,7 +390,9 @@ void file2() {
         self.submission.refresh_from_db()
         self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
                          self.submission.status)
-        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            3,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
 
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test.grade_ag_test_command_impl',
                 new=_make_mock_grade_ag_test_cmd_fail_then_succeed(
@@ -421,7 +438,9 @@ void file2() {
         self.assertEqual(0, res.return_code)
         self.assertTrue(res.return_code_correct)
 
-        self.assertEqual(3, self.submission.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+        self.assertEqual(
+            3,
+            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
 
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test.retry_should_recover',
                 new=tasks.retry(max_num_retries=2))
