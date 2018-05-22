@@ -5,6 +5,7 @@ import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.models.get_ultimate_submissions import (
     get_ultimate_submissions, get_ultimate_submission)
+from autograder.core.submission_feedback import update_denormalized_ag_test_results
 from autograder.utils.testing import UnitTestBase
 
 
@@ -124,15 +125,18 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             best_sub = obj_build.make_finished_submission(group=group)
             for cmd in cmds:
                 obj_build.make_correct_ag_test_command_result(cmd, submission=best_sub)
+            update_denormalized_ag_test_results(best_sub.pk)
 
             for j in range(num_other_submissions):
                 sub = obj_build.make_finished_submission(group=group)
                 for cmd in cmds:
                     obj_build.make_incorrect_ag_test_command_result(cmd, submission=sub)
+                update_denormalized_ag_test_results(sub.pk)
 
             most_recent = obj_build.make_finished_submission(group=group)
             for cmd in cmds:
                 obj_build.make_incorrect_ag_test_command_result(cmd, submission=most_recent)
+            update_denormalized_ag_test_results(most_recent.pk)
 
             group_and_submission_data.append(
                 self.GroupAndSubmissionData(group, best_sub, most_recent))
