@@ -11,6 +11,21 @@ import autograder.core.utils as core_ut
 
 
 class AGTestSuiteResultTestCase(UnitTestBase):
+    def test_create_suite_defaults(self):
+        self.fail()
+
+    def test_create_suite_no_defaults(self):
+        self.fail()
+
+    def test_serialization_for_denormalzation(self):
+        self.fail()
+
+    def test_delete_suite_result_denormed_results_updated(self):
+        # Make sure the suite and result in this test have different pks
+        self.fail()
+
+
+class AGTestSuiteFeedbackTestCase(UnitTestBase):
     def setUp(self):
         self.maxDiff = None
         submission = obj_build.make_submission()
@@ -58,12 +73,12 @@ class AGTestSuiteResultTestCase(UnitTestBase):
             fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
             print(fdbk)
             self.assertSequenceEqual([self.ag_test_case_result2.pk, self.ag_test_case_result1.pk],
-                                     [res['pk'] for res in fdbk.ag_test_case_results])
+                                     [res.pk for res in fdbk.ag_test_case_results])
 
             self.ag_test_suite.set_agtestcase_order([self.ag_test_case1.pk, self.ag_test_case2.pk])
             fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
             self.assertSequenceEqual([self.ag_test_case_result1.pk, self.ag_test_case_result2.pk],
-                                     [res['pk'] for res in fdbk.ag_test_case_results])
+                                     [res.pk for res in fdbk.ag_test_case_results])
 
     def test_output_filenames(self):
         expected_setup_stdout_filename = os.path.join(
@@ -136,7 +151,7 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
         self.assertEqual(
             [self.ag_test_case_result1.pk, self.ag_test_case_result2.pk],
-            [res['pk'] for res in fdbk.ag_test_case_results])
+            [res.pk for res in fdbk.ag_test_case_results])
         self.assertEqual(self.total_points, fdbk.total_points)
         self.assertEqual(self.total_points, fdbk.total_points_possible)
 
@@ -152,7 +167,7 @@ class AGTestSuiteResultTestCase(UnitTestBase):
             ag_models.FeedbackCategory.max).get(pk=self.ag_test_suite_result.pk)
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
         self.assertEqual([self.ag_test_case_result2.pk, self.ag_test_case_result1.pk],
-                         [res['pk']for res in fdbk.ag_test_case_results])
+                         [res.pk for res in fdbk.ag_test_case_results])
 
     def test_show_setup_and_teardown_output_return_code_and_timed_out(self):
         setup_return_code = 3
@@ -216,7 +231,7 @@ class AGTestSuiteResultTestCase(UnitTestBase):
         fdbk = get_suite_fdbk(self.ag_test_suite_result,
                               ag_models.FeedbackCategory.ultimate_submission)
         self.assertSequenceEqual([self.ag_test_case_result1.pk],
-                                 [res['pk'] for res in fdbk.ag_test_case_results])
+                                 [res.pk for res in fdbk.ag_test_case_results])
         self.assertEqual(expected_points, fdbk.total_points)
         self.assertEqual(expected_points, fdbk.total_points_possible)
 

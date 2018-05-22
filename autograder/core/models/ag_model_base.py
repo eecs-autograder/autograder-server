@@ -206,7 +206,10 @@ class ToDictMixin:
                             or field_name in self.get_transparent_to_one_fields()):
                         result[field_name] = field_val.to_dict()
                     else:
-                        result[field_name] = field_val.pk
+                        if isinstance(field_val, int):  # serializing an '_id' field
+                            result[field_name] = field_val
+                        else:
+                            result[field_name] = field_val.pk
                 elif field.many_to_many or field.one_to_many:
                     if field_name in self.get_serialize_related_fields():
                         result[field_name] = [

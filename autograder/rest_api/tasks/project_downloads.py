@@ -12,6 +12,8 @@ import autograder.core.models as ag_models
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 import autograder.core.utils as core_ut
 from autograder import utils
+from autograder.core.submission_feedback import get_submission_fdbk, AGTestSuiteResultFeedback, \
+    AGTestCaseResultFeedback
 
 
 @shared_task(queue='project_downloads', acks_late=True)
@@ -176,22 +178,18 @@ def _make_scores_csv(
             for index, username in enumerate(submission.group.member_names):
                 row[user_tmpl.format(index + 1)] = username
 
-            fdbk = submission.get_fdbk(ag_models.FeedbackCategory.max)
+            fdbk = get_submission_fdbk(submission, ag_models.FeedbackCategory.max)
             row[total_header] = fdbk.total_points
             row[total_possible_header] = fdbk.total_points_possible
 
-            for suite_result in fdbk.ag_test_suite_results:
-                suite_fdbk = suite_result.get_fdbk(ag_models.FeedbackCategory.max)
-
+            for suite_fdbk in fdbk.ag_test_suite_results:
                 ag_suite_total_header = ag_suite_total_tmpl.format(suite_fdbk.ag_test_suite_name)
                 row[ag_suite_total_header] = suite_fdbk.total_points
                 ag_suite_total_possible_header = ag_suite_total_possible_tmpl.format(
                     suite_fdbk.ag_test_suite_name)
                 row[ag_suite_total_possible_header] = suite_fdbk.total_points_possible
 
-                for case_result in suite_fdbk.ag_test_case_results:
-                    case_fdbk = case_result.get_fdbk(ag_models.FeedbackCategory.max)
-
+                for case_fdbk in suite_fdbk.ag_test_case_results:
                     ag_test_total_header = ag_test_header_tmpl.format(
                         suite_fdbk.ag_test_suite_name, case_fdbk.ag_test_case_name)
                     row[ag_test_total_header] = case_fdbk.total_points

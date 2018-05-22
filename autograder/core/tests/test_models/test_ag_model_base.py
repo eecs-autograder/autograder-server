@@ -44,12 +44,16 @@ class AGModelBaseToDictTest(UnitTestBase):
             'enum_field': 'spam',
 
             'one_to_one': self.ag_model.one_to_one.pk,
+            'one_to_one_id': self.ag_model.one_to_one.pk,
             'nullable_one_to_one': None,
+            'nullable_one_to_one_id': None,
             'transparent_to_one': self.ag_model.transparent_to_one.to_dict(),
             'transparent_nullable_to_one': None,
 
             'foreign_key': self.ag_model.foreign_key.pk,
+            'foreign_key_id': self.ag_model.foreign_key.pk,
             'nullable_foreign_key': None,
+            'nullable_foreign_key_id': None,
             'transparent_foreign_key': self.ag_model.transparent_foreign_key.to_dict(),
             'transparent_nullable_foreign_key': None,
 
@@ -84,12 +88,16 @@ class AGModelBaseToDictTest(UnitTestBase):
                 'enum_field': 'spam',
 
                 'one_to_one': self.ag_model.one_to_one.to_dict(),
+                'one_to_one_id': self.ag_model.one_to_one.pk,
                 'nullable_one_to_one': None,
+                'nullable_one_to_one_id': None,
                 'transparent_to_one': self.ag_model.transparent_to_one.to_dict(),
                 'transparent_nullable_to_one': None,
 
                 'foreign_key': self.ag_model.foreign_key.to_dict(),
+                'foreign_key_id': self.ag_model.foreign_key.pk,
                 'nullable_foreign_key': None,
+                'nullable_foreign_key_id': None,
                 'transparent_foreign_key': self.ag_model.transparent_foreign_key.to_dict(),
                 'transparent_nullable_foreign_key': None,
 

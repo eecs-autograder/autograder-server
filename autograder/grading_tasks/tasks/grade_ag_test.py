@@ -13,6 +13,7 @@ from django.db import transaction
 import autograder.core.models as ag_models
 from autograder.core import constants
 import autograder.core.utils as core_ut
+from autograder.core.submission_feedback import update_denormalized_ag_test_results
 from .utils import (
     retry_should_recover, retry_ag_test_cmd, mark_submission_as_error, add_files_to_sandbox,
     FileCloser, run_ag_test_command, run_command_from_args)
@@ -69,6 +70,8 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
 
         _run_suite_teardown(sandbox, ag_test_suite, suite_result)
 
+        update_denormalized_ag_test_results(submission.pk)
+
 
 @retry_ag_test_cmd
 def _run_suite_setup(sandbox: AutograderSandbox,
@@ -77,8 +80,6 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     if not ag_test_suite.setup_suite_cmd:
         return
 
-    # TODO: Once Fall 2017 semester ends, refactor AGTestSuite to have setup
-    # and teardown be transparent one-to-one with AGCommand
     setup_result = run_command_from_args(
         cmd=ag_test_suite.setup_suite_cmd,
         sandbox=sandbox,
@@ -106,8 +107,6 @@ def _run_suite_teardown(sandbox: AutograderSandbox,
     if not ag_test_suite.teardown_suite_cmd:
         return
 
-    # TODO: Once Fall 2017 semester ends, refactor AGTestSuite to have setup
-    # and teardown be transparent one-to-one with AGCommand
     teardown_result = run_command_from_args(
         cmd=ag_test_suite.teardown_suite_cmd,
         sandbox=sandbox,

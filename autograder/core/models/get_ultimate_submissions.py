@@ -3,6 +3,7 @@ from typing import Iterator, Iterable, Optional
 
 from django.db.models import Prefetch
 
+from autograder.core.submission_feedback import get_submission_fdbk
 from .project import Project, UltimateSubmissionPolicy
 from .ag_test.feedback_category import FeedbackCategory
 from .group import Group
@@ -55,4 +56,5 @@ def _best_submissions_generator(groups: Iterable[Group],
             continue
 
         yield max(submissions,
-                  key=lambda submission: submission.get_fdbk(fdbk_category).total_points)
+                  key=lambda submission: get_submission_fdbk(submission,
+                                                             fdbk_category).total_points)

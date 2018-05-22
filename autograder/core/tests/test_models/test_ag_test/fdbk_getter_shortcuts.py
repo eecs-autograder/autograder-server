@@ -1,8 +1,8 @@
 import autograder.core.models as ag_models
 from autograder.core.submission_feedback import (
     DenormalizedAGTestCaseResult,
-    DenormalizedAGTestSuiteResult, AGTestSuiteFeedback, AGTestPreLoader,
-    AGTestCaseFeedbackCalculator, AGTestCommandFeedbackCalculator)
+    DenormalizedAGTestSuiteResult, AGTestSuiteResultFeedback, AGTestPreLoader,
+    AGTestCaseResultFeedback, AGTestCommandResultFeedback)
 
 
 def get_suite_fdbk(result: ag_models.AGTestSuiteResult,
@@ -14,7 +14,7 @@ def get_suite_fdbk(result: ag_models.AGTestSuiteResult,
                 case_result, case_result.ag_test_command_results.all()))
 
     denormed_suite_result = DenormalizedAGTestSuiteResult(result, denormed_case_results)
-    return AGTestSuiteFeedback(
+    return AGTestSuiteResultFeedback(
         denormed_suite_result, fdbk_category,
         AGTestPreLoader(result.ag_test_suite.project))
 
@@ -23,7 +23,7 @@ def get_case_fdbk(result: ag_models.AGTestCaseResult,
                   fdbk_category: ag_models.FeedbackCategory):
     denormed_case_result = DenormalizedAGTestCaseResult(
         result, result.ag_test_command_results.all())
-    return AGTestCaseFeedbackCalculator(
+    return AGTestCaseResultFeedback(
         denormed_case_result, fdbk_category,
         AGTestPreLoader(result.ag_test_case.ag_test_suite.project)
     )
@@ -31,6 +31,6 @@ def get_case_fdbk(result: ag_models.AGTestCaseResult,
 
 def get_cmd_fdbk(result: ag_models.AGTestCommandResult,
                  fdbk_category: ag_models.FeedbackCategory):
-    return AGTestCommandFeedbackCalculator(
+    return AGTestCommandResultFeedback(
         result, fdbk_category,
         AGTestPreLoader(result.ag_test_command.ag_test_case.ag_test_suite.project))

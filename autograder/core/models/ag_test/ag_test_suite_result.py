@@ -83,13 +83,24 @@ class AGTestSuiteResult(AutograderModel):
         return os.path.join(core_ut.get_result_output_dir(self.submission),
                             'suite_result_{}_teardown_stderr'.format(self.pk))
 
-    # # Serializing AGTestSuiteResults should be used for DENORMALIZATION
-    # # ONLY.
-    # SERIALIZABLE_FIELDS = (
-    #     'ag_test_suite_id',
-    #     'submission_id',
-    #     'setup_return_code',
-    #     'setup_timed_out',
-    #     'setup_stdout_truncated',
-    #     'setup_stderr_truncated',
-    # )
+    # Serializing AGTestSuiteResults should be used for DENORMALIZATION
+    # ONLY.
+    SERIALIZABLE_FIELDS = (
+        'pk',
+
+        'ag_test_suite_id',
+        'submission_id',
+        'setup_return_code',
+        'setup_timed_out',
+        'setup_stdout_truncated',
+        'setup_stderr_truncated',
+    )
+
+    def to_dict(self):
+        result = super().to_dict()
+        result['ag_test_case_results'] = {
+            case_res.ag_test_case_id: case_res.to_dict()
+            for case_res in self.ag_test_case_results.all()
+        }
+
+        return result

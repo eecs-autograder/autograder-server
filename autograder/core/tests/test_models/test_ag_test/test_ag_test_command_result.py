@@ -6,7 +6,7 @@ from unittest import mock
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.submission_feedback import AGTestCommandFeedbackCalculator
+from autograder.core.submission_feedback import AGTestCommandResultFeedback
 from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import get_cmd_fdbk
 from autograder.utils.testing import UnitTestBase
 
@@ -29,6 +29,13 @@ class AGTestCommandResultTestCase(UnitTestBase):
         self.fail()
 
     def test_create_cmd_no_defaults(self):
+        self.fail()
+
+    def test_serialization_for_denormalzation(self):
+        self.fail()
+
+    def test_delete_cmd_result_denormed_results_updated(self):
+        # Make sure the suite and result in this test have different pks
         self.fail()
 
 
@@ -787,20 +794,20 @@ class AGTestCommandFeedbackTestCase(UnitTestBase):
 
 
 def _stdout_text(result_or_fdbk: Union[ag_models.AGTestCommandResult,
-                                       AGTestCommandFeedbackCalculator]) -> str:
+                                       AGTestCommandResultFeedback]) -> str:
     if isinstance(result_or_fdbk, ag_models.AGTestCommandResult):
         with open(result_or_fdbk.stdout_filename) as f:
             return f.read()
-    elif isinstance(result_or_fdbk, AGTestCommandFeedbackCalculator):
+    elif isinstance(result_or_fdbk, AGTestCommandResultFeedback):
         return result_or_fdbk.stdout.read().decode()
 
 
 def _stderr_text(result_or_fdbk: Union[ag_models.AGTestCommandResult,
-                                       AGTestCommandFeedbackCalculator]) -> str:
+                                       AGTestCommandResultFeedback]) -> str:
     if isinstance(result_or_fdbk, ag_models.AGTestCommandResult):
         with open(result_or_fdbk.stdout_filename) as f:
             return f.read()
-    elif isinstance(result_or_fdbk, AGTestCommandFeedbackCalculator):
+    elif isinstance(result_or_fdbk, AGTestCommandResultFeedback):
         return result_or_fdbk.stdout.read().decode()
 
 

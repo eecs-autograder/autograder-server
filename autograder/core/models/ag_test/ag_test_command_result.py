@@ -50,3 +50,23 @@ class AGTestCommandResult(AGCommandResultBase):
         result_output_dir = core_ut.get_result_output_dir(
             self.ag_test_case_result.ag_test_suite_result.submission)
         return os.path.join(result_output_dir, 'cmd_result_{}_stderr'.format(self.pk))
+
+    # Serializing AGTestCommandResults should be used for DENORMALIZATION
+    # ONLY.
+    SERIALIZABLE_FIELDS = (
+        'pk',
+
+        'ag_test_command_id',
+        'ag_test_case_result_id',
+
+        'return_code',
+        'return_code_correct',
+
+        'timed_out',
+
+        'stdout_correct',
+        'stderr_correct',
+
+        'stdout_truncated',
+        'stderr_truncated',
+    )

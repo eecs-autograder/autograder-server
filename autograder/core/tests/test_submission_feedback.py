@@ -1,5 +1,8 @@
+import json
+
 from autograder.core.models import get_submissions_with_results_queryset
-from autograder.core.submission_feedback import get_submission_fdbk
+from autograder.core.submission_feedback import get_submission_fdbk, \
+    update_denormalized_ag_test_results
 from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import get_suite_fdbk
 from autograder.utils.testing import UnitTestBase
 import autograder.core.models as ag_models
@@ -96,13 +99,15 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertNotEqual(0, self.total_points_per_student_suite)
         self.assertNotEqual(0, self.total_points)
 
+        self.submission = update_denormalized_ag_test_results(self.submission.pk)
+
     def test_max_fdbk(self):
         fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
         self.assertEqual(self.total_points, fdbk.total_points)
         self.assertEqual(self.total_points, fdbk.total_points_possible)
 
-        self.assertSequenceEqual([self.ag_suite_result1, self.ag_suite_result2],
-                                 fdbk.ag_test_suite_results)
+        self.assertSequenceEqual([self.ag_suite_result1.pk, self.ag_suite_result2.pk],
+                                 [res.pk for res in fdbk.ag_test_suite_results])
 
         self.assertSequenceEqual([self.student_suite_result1, self.student_suite_result2],
                                  fdbk.student_test_suite_results)
@@ -111,13 +116,13 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         for i in range(2):
             self.project.set_agtestsuite_order([self.ag_test_suite2.pk, self.ag_test_suite1.pk])
             fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
-            self.assertSequenceEqual([self.ag_suite_result2, self.ag_suite_result1],
-                                     fdbk.ag_test_suite_results)
+            self.assertSequenceEqual([self.ag_suite_result2.pk, self.ag_suite_result1.pk],
+                                     [res.pk for res in fdbk.ag_test_suite_results])
 
             self.project.set_agtestsuite_order([self.ag_test_suite1.pk, self.ag_test_suite2.pk])
             fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
-            self.assertSequenceEqual([self.ag_suite_result1, self.ag_suite_result2],
-                                     fdbk.ag_test_suite_results)
+            self.assertSequenceEqual([self.ag_suite_result1.pk, self.ag_suite_result2.pk],
+                                     [res.pk for res in fdbk.ag_test_suite_results])
 
     def test_student_suite_result_ordering(self):
         for i in range(2):
@@ -140,6 +145,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.ag_cmd_result1.stdout_correct = False
         self.ag_cmd_result1.stderr_correct = False
         self.ag_cmd_result1.save()
+        self.submission = update_denormalized_ag_test_results(self.submission.pk)
 
         self.student_suite_result1.bugs_exposed = []
         self.student_suite_result1.save()
@@ -185,8 +191,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertEqual(expected_points, fdbk.total_points)
         self.assertEqual(expected_points, fdbk.total_points_possible)
 
-        self.assertSequenceEqual([self.ag_suite_result1, self.ag_suite_result2],
-                                 fdbk.ag_test_suite_results)
+        self.assertSequenceEqual([self.ag_suite_result1.pk, self.ag_suite_result2.pk],
+                                 [res.pk for res in fdbk.ag_test_suite_results])
         actual_cmd_results = fdbk.to_dict()[
             'ag_test_suite_results'][0]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
@@ -218,8 +224,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertEqual(expected_points, fdbk.total_points)
         self.assertEqual(expected_points, fdbk.total_points_possible)
 
-        self.assertSequenceEqual([self.ag_suite_result1, self.ag_suite_result2],
-                                 fdbk.ag_test_suite_results)
+        self.assertSequenceEqual([self.ag_suite_result1.pk, self.ag_suite_result2.pk],
+                                 [res.pk for res in fdbk.ag_test_suite_results])
         actual_cmd_results = fdbk.to_dict()[
             'ag_test_suite_results'][1]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
@@ -235,8 +241,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.total_points_per_ag_suite + self.total_points_per_student_suite,
                          fdbk.total_points_possible)
 
-        self.assertSequenceEqual([self.ag_suite_result1, self.ag_suite_result2],
-                                 fdbk.ag_test_suite_results)
+        self.assertSequenceEqual([self.ag_suite_result1.pk, self.ag_suite_result2.pk],
+                                 [res.pk for res in fdbk.ag_test_suite_results])
         actual_cmd_results = fdbk.to_dict()[
             'ag_test_suite_results'][0]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
@@ -251,8 +257,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             ag_models.FeedbackCategory.max).get(pk=self.submission.pk)
         fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
 
-        self.assertSequenceEqual([self.ag_suite_result2, self.ag_suite_result1],
-                                 fdbk.ag_test_suite_results)
+        self.assertSequenceEqual([self.ag_suite_result2.pk, self.ag_suite_result1.pk],
+                                 [res.pk for res in fdbk.ag_test_suite_results])
         self.assertSequenceEqual(
             [get_suite_fdbk(self.ag_suite_result2, ag_models.FeedbackCategory.max).to_dict(),
              get_suite_fdbk(self.ag_suite_result1, ag_models.FeedbackCategory.max).to_dict()],
@@ -275,7 +281,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.total_points_per_ag_suite + self.total_points_per_student_suite,
                          fdbk.total_points_possible)
 
-        self.assertSequenceEqual([self.ag_suite_result1], fdbk.ag_test_suite_results)
+        self.assertSequenceEqual([self.ag_suite_result1.pk],
+                                 [res.pk for res in fdbk.ag_test_suite_results])
         self.assertSequenceEqual(
             [get_suite_fdbk(self.ag_suite_result1,
                             ag_models.FeedbackCategory.ultimate_submission).to_dict()],

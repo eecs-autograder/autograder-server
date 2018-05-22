@@ -585,3 +585,6 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
 
         not_rerun_result = self.ag_test_cmd_2.agtestcommandresult_set.first()
         self.assertFalse(not_rerun_result.return_code_correct)
+
+    def test_race_condition_(self):
+        self.fail()

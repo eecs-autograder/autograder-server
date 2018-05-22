@@ -45,6 +45,7 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
 
         with transaction.atomic():
             submission = self.model(group=group,
+                                    project=group.project,
                                     timestamp=timestamp,
                                     submitter=submitter)
             submission.is_past_daily_limit = _new_submission_is_past_limit(submission)
@@ -203,6 +204,14 @@ class Submission(ag_model_base.AutograderModel):
             Project.
             This field is REQUIRED.''')
 
+    project = models.ForeignKey(
+        'core.Project', related_name='submissions',
+        # Project will cascade-delete groups, groups will cascade-delete
+        # submissions.
+        on_delete=models.DO_NOTHING,
+        help_text='A shortcut for submission.group.project.',
+    )
+
     timestamp = models.DateTimeField(default=timezone.now)
 
     submitter = ag_fields.ShortStringField(
@@ -252,19 +261,16 @@ class Submission(ag_model_base.AutograderModel):
         blank=True,
         help_text='''If status is "error", an error message will be stored here.''')
 
-    def get_denormalized_ag_test_results(self) -> Sequence[dict]:
-        return self._denormalized_results
-
-    _denormalized_results = pg_fields.JSONField(
-        default=list,
+    denormalized_ag_test_results = pg_fields.JSONField(
+        default=dict,
         help_text='FIXME data format'
     )
 
     @property
     def position_in_queue(self) -> int:
         """
-        Returns this submissions position in the queue of submissions to
-        be graded for the associated project.
+        Returns this submission's position in the queue of submissions
+        to be graded for the associated project.
         """
         if self.status != Submission.GradingStatus.queued:
             return 0

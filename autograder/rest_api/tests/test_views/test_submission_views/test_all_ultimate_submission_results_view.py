@@ -9,6 +9,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
+from autograder.core.submission_feedback import (
+    SubmissionResultFeedback, update_denormalized_ag_test_results)
 from autograder.utils import filter_dict
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -66,7 +68,7 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         # The first submission gets correct results so that it's the best.
         # The others get incorrect results.
         best_submission = obj_build.make_finished_submission(group=group)
-        self._add_results_to_submission(best_submission, results_correct=True)
+        best_submission = self._add_results_to_submission(best_submission, results_correct=True)
 
         for i in range(num_submissions - 1):
             submission = obj_build.make_finished_submission(group=group)
@@ -75,7 +77,7 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         return group, best_submission
 
     def _add_results_to_submission(self, submission: ag_models.Submission,
-                                   *, results_correct: bool):
+                                   *, results_correct: bool) -> ag_models.Submission:
         if results_correct:
             obj_build.make_correct_ag_test_command_result(self.ag_test_cmd, submission=submission)
         else:
@@ -85,13 +87,16 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         ag_models.StudentTestSuiteResult.objects.validate_and_create(
             submission=submission, student_test_suite=self.student_test_suite)
 
+        return update_denormalized_ag_test_results(submission.pk)
+
     def _make_result_content_for_user(self, username: str, group: ag_models.Group,
                                       ultimate_submission: Optional[ag_models.Submission],
                                       *, points_only: bool):
         submission_data = (
             ultimate_submission.to_dict() if ultimate_submission is not None else None)
         if submission_data is not None:
-            result_data = ultimate_submission.get_fdbk(ag_models.FeedbackCategory.max).to_dict()
+            result_data = SubmissionResultFeedback(
+                ultimate_submission, ag_models.FeedbackCategory.max).to_dict()
             if points_only:
                 result_data = filter_dict(result_data, ('total_points', 'total_points_possible'))
             submission_data['results'] = result_data

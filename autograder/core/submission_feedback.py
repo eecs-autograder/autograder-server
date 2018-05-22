@@ -1,7 +1,8 @@
 import tempfile
-from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional, NewType, Any
+from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional
 
-from django.utils.functional import cached_property
+from django.db import models, transaction
+from django.db.models import Prefetch
 
 from autograder.core.models import Submission, AGTestCommandResult, StudentTestSuiteResult
 from autograder.core.models.ag_test.ag_test_suite_result import AGTestSuiteResult
@@ -84,8 +85,10 @@ def _deserialize_denormed_ag_test_results(
     submission: Submission
 ) -> List[DenormalizedAGTestSuiteResult]:
     result = []
-    for serialized_suite_result in submission.get_denormalized_ag_test_results():
+    for serialized_suite_result in submission.denormalized_ag_test_results.values():
         deserialized_suite_result = AGTestSuiteResult(
+            pk=serialized_suite_result['pk'],
+
             ag_test_suite_id=serialized_suite_result['ag_test_suite_id'],
             submission_id=serialized_suite_result['submission_id'],
             setup_return_code=serialized_suite_result['setup_return_code'],
@@ -96,7 +99,7 @@ def _deserialize_denormed_ag_test_results(
 
         case_results = [
             _deserialize_denormed_ag_test_case_result(case_result)
-            for case_result in serialized_suite_result['ag_test_case_results']
+            for case_result in serialized_suite_result['ag_test_case_results'].values()
         ]
 
         result.append(DenormalizedAGTestSuiteResult(deserialized_suite_result, case_results))
@@ -106,19 +109,24 @@ def _deserialize_denormed_ag_test_results(
 
 def _deserialize_denormed_ag_test_case_result(case_result: dict) -> DenormalizedAGTestCaseResult:
     deserialized_case_result = AGTestCaseResult(
+        pk=case_result['pk'],
+
         ag_test_case_id=case_result['ag_test_case_id'],
         ag_test_suite_result_id=case_result['ag_test_suite_result_id'],
     )
 
     cmd_results = [
         _deserialize_denormed_ag_test_cmd_result(cmd_result)
-        for cmd_result in case_result['ag_test_command_results']]
+        for cmd_result in case_result['ag_test_command_results'].values()
+    ]
 
     return DenormalizedAGTestCaseResult(deserialized_case_result, cmd_results)
 
 
 def _deserialize_denormed_ag_test_cmd_result(cmd_result: dict) -> AGTestCommandResult:
     return AGTestCommandResult(
+        pk=cmd_result['pk'],
+
         ag_test_command_id=cmd_result['ag_test_command_id'],
         ag_test_case_result_id=cmd_result['ag_test_case_result_id'],
 
@@ -135,12 +143,44 @@ def _deserialize_denormed_ag_test_cmd_result(cmd_result: dict) -> AGTestCommandR
     )
 
 
+@transaction.atomic()
+def update_denormalized_ag_test_results(submission_pk: int) -> Submission:
+    """
+    Updates the denormalized_ag_test_results field for the submission
+    with the given primary key.
+
+    Returns the updated submission.
+    """
+
+    submission_manager = Submission.objects.select_for_update().prefetch_related(
+        Prefetch(
+            'ag_test_suite_results',
+            AGTestSuiteResult.objects.prefetch_related(
+                Prefetch(
+                    'ag_test_case_results',
+                    AGTestCaseResult.objects.prefetch_related(
+                        Prefetch('ag_test_command_results', AGTestCommandResult.objects.all())
+                    )
+                )
+            )
+        )
+    )
+
+    submission = submission_manager.get(pk=submission_pk)
+    submission.denormalized_ag_test_results = {
+        suite_res.pk: suite_res.to_dict() for suite_res in submission.ag_test_suite_results.all()
+    }
+
+    submission.save()
+    return submission
+
+
 def get_submission_fdbk(submission: Submission,
-                        fdbk_category: FeedbackCategory) -> 'SubmissionFeedbackCalculator':
-    return SubmissionFeedbackCalculator(submission, fdbk_category)
+                        fdbk_category: FeedbackCategory) -> 'SubmissionResultFeedback':
+    return SubmissionResultFeedback(submission, fdbk_category)
 
 
-class SubmissionFeedbackCalculator(ToDictMixin):
+class SubmissionResultFeedback(ToDictMixin):
     def __init__(self, submission: Submission, fdbk_category: FeedbackCategory):
         self._submission = submission
         self._fdbk_category = fdbk_category
@@ -157,10 +197,8 @@ class SubmissionFeedbackCalculator(ToDictMixin):
     @property
     def total_points(self) -> int:
         ag_suite_points = sum((
-            AGTestSuiteFeedback(
-                ag_test_suite_result, self._fdbk_category, self._ag_test_loader
-            ).total_points
-            for ag_test_suite_result in self._visible_ag_test_suite_results
+            ag_test_suite_result.total_points
+            for ag_test_suite_result in self.ag_test_suite_results
         ))
 
         student_suite_points = sum((
@@ -173,10 +211,8 @@ class SubmissionFeedbackCalculator(ToDictMixin):
     @property
     def total_points_possible(self) -> int:
         ag_suite_points = sum((
-            AGTestSuiteFeedback(
-                ag_test_suite_result, self._fdbk_category, self._ag_test_loader
-            ).total_points_possible
-            for ag_test_suite_result in self._visible_ag_test_suite_results
+            ag_test_suite_result.total_points_possible
+            for ag_test_suite_result in self.ag_test_suite_results
         ))
 
         student_suite_points = sum((
@@ -187,15 +223,11 @@ class SubmissionFeedbackCalculator(ToDictMixin):
         return ag_suite_points + student_suite_points
 
     @property
-    def ag_test_suite_results(self) -> List[DenormalizedAGTestSuiteResult]:
-        return list(self._visible_ag_test_suite_results)
-
-    @cached_property
-    def _visible_ag_test_suite_results(self) -> Iterable[DenormalizedAGTestSuiteResult]:
+    def ag_test_suite_results(self) -> List['AGTestSuiteResultFeedback']:
         visible = filter(
-            lambda result: AGTestSuiteFeedback(result,
-                                               self._fdbk_category,
-                                               self._ag_test_loader).fdbk_conf.visible,
+            lambda result: AGTestSuiteResultFeedback(result,
+                                                     self._fdbk_category,
+                                                     self._ag_test_loader).fdbk_conf.visible,
             self._ag_test_suite_results)
 
         def suite_result_sort_key(suite_res: DenormalizedAGTestSuiteResult):
@@ -203,28 +235,36 @@ class SubmissionFeedbackCalculator(ToDictMixin):
                 suite_res.ag_test_suite_result.ag_test_suite_id)
             return suite._order
 
-        return sorted(visible, key=suite_result_sort_key)
+        return [
+            AGTestSuiteResultFeedback(
+                ag_test_suite_result, self._fdbk_category, self._ag_test_loader)
+            for ag_test_suite_result in sorted(visible, key=suite_result_sort_key)
+        ]
 
     @property
     def student_test_suite_results(self) -> List['StudentTestSuiteResult']:
         return list(self._visible_student_test_suite_results)
 
-    @cached_property
-    def _visible_student_test_suite_results(self) -> Iterable['StudentTestSuiteResult']:
-        return filter(
-            lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
-            self._submission.student_test_suite_results.all())
+    @property
+    def _visible_student_test_suite_results(self) -> Sequence['StudentTestSuiteResult']:
+        return list(
+            filter(
+                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
+                self._submission.student_test_suite_results.all()
+            )
+        )
 
     def to_dict(self):
         result = super().to_dict()
+
         result['ag_test_suite_results'] = [
-            AGTestSuiteFeedback(
-                result, self._fdbk_category, self._ag_test_loader
-            ).to_dict()
-            for result in result['ag_test_suite_results']]
+            res_fdbk.to_dict() for res_fdbk in result['ag_test_suite_results']
+        ]
+
         result['student_test_suite_results'] = [
             result.get_fdbk(self._fdbk_category).to_dict()
             for result in result['student_test_suite_results']]
+
         return result
 
     SERIALIZABLE_FIELDS = (
@@ -236,7 +276,7 @@ class SubmissionFeedbackCalculator(ToDictMixin):
     )
 
 
-class AGTestSuiteFeedback(ToDictMixin):
+class AGTestSuiteResultFeedback(ToDictMixin):
     def __init__(self, ag_test_suite_result: DenormalizedAGTestSuiteResult,
                  fdbk_category: FeedbackCategory,
                  ag_test_preloader: AGTestPreLoader):
@@ -363,45 +403,35 @@ class AGTestSuiteFeedback(ToDictMixin):
     @property
     def total_points(self) -> int:
         return sum((
-            AGTestCaseFeedbackCalculator(
-                ag_test_case_result, self._fdbk_category, self._ag_test_preloader
-            ).total_points
+            ag_test_case_result.total_points
             for ag_test_case_result in self._visible_ag_test_case_results
         ))
 
     @property
     def total_points_possible(self) -> int:
         return sum((
-            AGTestCaseFeedbackCalculator(
-                ag_test_case_result, self._fdbk_category, self._ag_test_preloader
-            ).total_points_possible
-            for ag_test_case_result in self._visible_ag_test_case_results
+            ag_test_case_fdbk.total_points_possible
+            for ag_test_case_fdbk in self._visible_ag_test_case_results
         ))
 
     @property
-    def ag_test_case_results(self) -> List[dict]:
+    def ag_test_case_results(self) -> List['AGTestCaseResultFeedback']:
         if not self._fdbk.show_individual_tests:
             return []
 
-        return [
-            AGTestCaseFeedbackCalculator(
-                denormed_case_result,
-                self._fdbk_category, self._ag_test_preloader).to_dict()
-            for denormed_case_result in self._visible_ag_test_case_results
-        ]
+        return list(self._visible_ag_test_case_results)
 
     @property
-    def _visible_ag_test_case_results(self) -> Iterable[DenormalizedAGTestCaseResult]:
-        visible = filter(
-            lambda result: AGTestCaseFeedbackCalculator(result,
-                                                        self._fdbk_category,
-                                                        self._ag_test_preloader).fdbk_conf.visible,
-            self._ag_test_case_results
+    def _visible_ag_test_case_results(self) -> Iterable['AGTestCaseResultFeedback']:
+        result_fdbk = (
+            AGTestCaseResultFeedback(result, self._fdbk_category, self._ag_test_preloader)
+            for result in self._ag_test_case_results
         )
+        visible = filter(lambda result_fdbk: result_fdbk.fdbk_conf.visible, result_fdbk)
 
-        def case_res_sort_key(case_res: DenormalizedAGTestCaseResult):
+        def case_res_sort_key(case_res: AGTestCaseResultFeedback):
             case = self._ag_test_preloader.get_ag_test_case(
-                case_res.ag_test_case_result.ag_test_case_id)
+                case_res.ag_test_case_pk)
             return case._order
 
         return sorted(visible, key=case_res_sort_key)
@@ -423,8 +453,16 @@ class AGTestSuiteFeedback(ToDictMixin):
         'ag_test_case_results'
     )
 
+    def to_dict(self):
+        result = super().to_dict()
+        result['ag_test_case_results'] = [
+            res_fdbk.to_dict() for res_fdbk in result['ag_test_case_results']
+        ]
 
-class AGTestCaseFeedbackCalculator(ToDictMixin):
+        return result
+
+
+class AGTestCaseResultFeedback(ToDictMixin):
     def __init__(self, ag_test_case_result: DenormalizedAGTestCaseResult,
                  fdbk_category: FeedbackCategory,
                  ag_test_preloader: AGTestPreLoader):
@@ -469,44 +507,30 @@ class AGTestCaseFeedbackCalculator(ToDictMixin):
 
     @property
     def total_points(self) -> int:
-        points = sum((
-            AGTestCommandFeedbackCalculator(
-                cmd_res, self._fdbk_category, self._ag_test_preloader
-            ).total_points for cmd_res in
-            self._visible_cmd_results
-        ))
+        points = sum((cmd_res.total_points for cmd_res in self._visible_cmd_results))
         return max(0, points)
 
     @property
     def total_points_possible(self) -> int:
-        return sum((
-            AGTestCommandFeedbackCalculator(
-                cmd_res, self._fdbk_category, self._ag_test_preloader
-            ).total_points_possible for cmd_res in
-            self._visible_cmd_results
-        ))
+        return sum((cmd_res.total_points_possible for cmd_res in self._visible_cmd_results))
 
     @property
-    def ag_test_command_results(self) -> List[dict]:
+    def ag_test_command_results(self) -> List['AGTestCommandResultFeedback']:
         if not self._fdbk.show_individual_commands:
             return []
 
-        return [
-            AGTestCommandFeedbackCalculator(
-                result, self._fdbk_category, self._ag_test_preloader
-            ).to_dict()
-            for result in self._visible_cmd_results
-        ]
+        return list(self._visible_cmd_results)
 
-    @cached_property
-    def _visible_cmd_results(self) -> Iterable[AGTestCommandResult]:
-        visible = filter(
-            lambda result: AGTestCommandFeedbackCalculator(
-                result, self._fdbk_category, self._ag_test_preloader).fdbk_conf.visible,
-            self._ag_test_command_results)
+    @property
+    def _visible_cmd_results(self) -> Iterable['AGTestCommandResultFeedback']:
+        results_fdbk = (
+            AGTestCommandResultFeedback(result, self._fdbk_category, self._ag_test_preloader)
+            for result in self._ag_test_command_results
+        )
+        visible = filter(lambda result_fdbk: result_fdbk.fdbk_conf.visible, results_fdbk)
 
-        def cmd_res_sort_key(cmd_result: AGTestCommandResult):
-            cmd = self._ag_test_preloader.get_ag_test_cmd(cmd_result.ag_test_command_id)
+        def cmd_res_sort_key(cmd_result: AGTestCommandResultFeedback):
+            cmd = self._ag_test_preloader.get_ag_test_cmd(cmd_result.ag_test_command_pk)
             return cmd._order
 
         return sorted(visible, key=cmd_res_sort_key)
@@ -522,8 +546,16 @@ class AGTestCaseFeedbackCalculator(ToDictMixin):
         'ag_test_command_results',
     )
 
+    def to_dict(self):
+        result = super().to_dict()
+        result['ag_test_command_results'] = [
+            res_fdbk.to_dict() for res_fdbk in result['ag_test_command_results']
+        ]
 
-class AGTestCommandFeedbackCalculator(ToDictMixin):
+        return result
+
+
+class AGTestCommandResultFeedback(ToDictMixin):
     """
     Instances of this class dynamically calculate the appropriate
     feedback data to give for an AGTestCommandResult.

@@ -1,11 +1,7 @@
-from typing import List, Iterable
-
 from django.db import models
 
-from ..ag_model_base import AutograderModel, ToDictMixin
-from .ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
-from .feedback_category import FeedbackCategory
-from .ag_test_command_result import AGTestCommandResult
+from ..ag_model_base import AutograderModel
+from .ag_test_case import AGTestCase
 
 
 class AGTestCaseResult(AutograderModel):
@@ -23,7 +19,20 @@ class AGTestCaseResult(AutograderModel):
         on_delete=models.CASCADE,
         help_text='The AGTestSuiteResult that this result belongs to.')
 
-    # SERIALIZABLE_FIELDS = (
-    #     'ag_test_case_id',
-    #     'ag_test_suite_result_id',
-    # )
+    # Serializing AGTestCaseResults should be used for DENORMALIZATION
+    # ONLY.
+    SERIALIZABLE_FIELDS = (
+        'pk',
+
+        'ag_test_case_id',
+        'ag_test_suite_result_id',
+    )
+
+    def to_dict(self):
+        result = super().to_dict()
+        result['ag_test_command_results'] = {
+            cmd_res.ag_test_command_id: cmd_res.to_dict()
+            for cmd_res in self.ag_test_command_results.all()
+        }
+
+        return result

@@ -99,12 +99,16 @@ class DummyAutograderModel(AutograderModel):
         'enum_field',
 
         'one_to_one',
+        'one_to_one_id',
         'nullable_one_to_one',
+        'nullable_one_to_one_id',
         'transparent_to_one',
         'transparent_nullable_to_one',
 
         'foreign_key',
+        'foreign_key_id',
         'nullable_foreign_key',
+        'nullable_foreign_key_id',
         'transparent_foreign_key',
         'transparent_nullable_foreign_key',
 
