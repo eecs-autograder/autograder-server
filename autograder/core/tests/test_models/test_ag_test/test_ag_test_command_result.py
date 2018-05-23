@@ -8,15 +8,20 @@ class AGTestCommandResultTestCase(UnitTestBase):
     def setUp(self):
         self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
+
         self.ag_suite = obj_build.make_ag_test_suite(self.project)
-        self.ag_suite = ag_models.AGTestSuite.objects.validate_and_create(
-            name='kajsdhf', project=self.project)
         self.case = obj_build.make_ag_test_case(self.ag_suite)
         self.cmd = obj_build.make_full_ag_test_command(
             self.case,
             set_arbitrary_points=False,
             set_arbitrary_expected_vals=False
         )
+        # Make sure that ag tests and ag test results don't have
+        # overlapping pks.
+        for i in range(20):
+            self.cmd.delete()
+            self.cmd.pk = None
+            self.cmd.save()
 
         self.suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
             ag_test_suite=self.ag_suite, submission=self.submission
@@ -89,11 +94,13 @@ class AGTestCommandResultTestCase(UnitTestBase):
         cmd_res1 = ag_models.AGTestCommandResult.objects.validate_and_create(
             ag_test_command=self.cmd, ag_test_case_result=self.case_result
         )
+        self.assertNotEqual(cmd_res1.pk, self.cmd.pk)
 
         dont_delete_cmd = obj_build.make_full_ag_test_command(self.case)
         dont_delete_cmd_result = obj_build.make_incorrect_ag_test_command_result(
             ag_test_command=dont_delete_cmd, ag_test_case_result=self.case_result,
             submission=self.submission)
+        self.assertNotEqual(dont_delete_cmd.pk, dont_delete_cmd_result.pk)
 
         submission2 = obj_build.make_submission(group=obj_build.make_group(project=self.project))
         suite_result2 = ag_models.AGTestSuiteResult.objects.validate_and_create(
@@ -106,6 +113,7 @@ class AGTestCommandResultTestCase(UnitTestBase):
         cmd_res2 = ag_models.AGTestCommandResult.objects.validate_and_create(
             ag_test_command=self.cmd, ag_test_case_result=case_result2
         )
+        self.assertNotEqual(self.cmd.pk, cmd_res2.pk)
 
         self.submission = update_denormalized_ag_test_results(self.submission.pk)
         self.assertIn(

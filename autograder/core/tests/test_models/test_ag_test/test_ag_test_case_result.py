@@ -1,259 +1,102 @@
 import autograder.core.models as ag_models
-from autograder.core.models.submission import get_ag_test_case_results_queryset
-from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import (
-    get_case_fdbk, get_cmd_fdbk)
+from autograder.core.submission_feedback import update_denormalized_ag_test_results
+
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class AGTestCaseResultTestCase(UnitTestBase):
-    def test_serialization_for_denormalzation(self):
-        self.fail()
-
-    def test_delete_case_result_denormed_results_updated(self):
-        # Make sure the case and result in this test have different pks
-        self.fail()
-
-
-class AGTestCaseFeedbackTestCase(UnitTestBase):
     def setUp(self):
-        submission = obj_build.make_submission()
-        project = submission.group.project
-        suite = ag_models.AGTestSuite.objects.validate_and_create(
-            name='kajsdhf', project=project)
-        self.ag_test_case = ag_models.AGTestCase.objects.validate_and_create(
-            name='aksdbva', ag_test_suite=suite
-        )  # type: ag_models.AGTestCase
-        suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
-            submission=submission, ag_test_suite=suite)
-        self.ag_test_case_result = ag_models.AGTestCaseResult.objects.validate_and_create(
-            ag_test_case=self.ag_test_case, ag_test_suite_result=suite_result
-        )  # type: ag_models.AGTestCaseResult
+        self.submission = obj_build.make_submission()
+        self.project = self.submission.group.project
 
-        self.ag_test_cmd1 = obj_build.make_full_ag_test_command(
-            self.ag_test_case, set_arbitrary_points=False)
-        self.ag_test_cmd2 = obj_build.make_full_ag_test_command(
-            self.ag_test_case, set_arbitrary_points=False)
+        self.ag_suite = obj_build.make_ag_test_suite(self.project)
+        self.ag_suite = ag_models.AGTestSuite.objects.validate_and_create(
+            name='kajsdhf', project=self.project)
+        self.case = obj_build.make_ag_test_case(self.ag_suite)
+        # Make sure that ag tests and ag test results don't have
+        # overlapping pks.
+        for i in range(20):
+            self.case.delete()
+            self.case.pk = None
+            self.case.save()
 
-    def test_ag_test_cmd_result_ordering(self):
-        cmd_result1 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd1, ag_test_case_result=self.ag_test_case_result)
-        cmd_result2 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd2, ag_test_case_result=self.ag_test_case_result)
-
-        for i in range(2):
-            self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd2.pk, self.ag_test_cmd1.pk])
-            fdbk = get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max)
-            self.assertSequenceEqual([cmd_result2.pk, cmd_result1.pk],
-                                     [res.pk for res in fdbk.ag_test_command_results])
-
-            self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd1.pk, self.ag_test_cmd2.pk])
-            fdbk = get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max)
-            self.assertSequenceEqual([cmd_result1.pk, cmd_result2.pk],
-                                     [res.pk for res in fdbk.ag_test_command_results])
-
-    def test_feedback_calculator_ctor(self):
-        self.assertEqual(
-            self.ag_test_case.normal_fdbk_config,
-            get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.normal).fdbk_conf)
-        self.assertEqual(
-            self.ag_test_case.ultimate_submission_fdbk_config,
-            get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.ultimate_submission).fdbk_conf)
-        self.assertEqual(
-            self.ag_test_case.past_limit_submission_fdbk_config,
-            get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.past_limit_submission).fdbk_conf)
-        self.assertEqual(
-            self.ag_test_case.staff_viewer_fdbk_config,
-            get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.staff_viewer).fdbk_conf)
-
-        max_config = get_case_fdbk(self.ag_test_case_result,
-                                   ag_models.FeedbackCategory.max).fdbk_conf
-        self.assertTrue(max_config.show_individual_commands)
-
-    def test_total_points_all_positive(self):
-        # make sure sum is correct and takes into account deductions
-        # make sure sum doesn't go below zero
-        self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=5)
-        self.ag_test_cmd2.validate_and_update(points_for_correct_stdout=3)
-
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1, self.ag_test_case_result)
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2, self.ag_test_case_result)
-
-        self.assertEqual(
-            8, get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max).total_points)
-        self.assertEqual(
-            8,
-            get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.max).total_points_possible)
-
-    def test_total_points_some_positive_some_negative_positive_total(self):
-        self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=5)
-        self.ag_test_cmd2.validate_and_update(deduction_for_wrong_stdout=-2)
-
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1, self.ag_test_case_result)
-        obj_build.make_incorrect_ag_test_command_result(
-            self.ag_test_cmd2, self.ag_test_case_result)
-
-        self.assertEqual(
-            3,
-            get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max).total_points)
-        self.assertEqual(
-            5,
-            get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.max).total_points_possible)
-
-    def test_total_points_not_below_zero(self):
-        self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=5)
-        self.ag_test_cmd2.validate_and_update(deduction_for_wrong_stdout=-10)
-
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1, self.ag_test_case_result)
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2, self.ag_test_case_result)
-
-        self.assertEqual(
-            5,
-            get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.max).total_points)
-        self.assertEqual(
-            5,
-            get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.max).total_points_possible)
-
-    def test_total_points_minimum_ag_test_command_fdbk(self):
-        self.ag_test_cmd1.validate_and_update(
-            points_for_correct_return_code=1,
-            points_for_correct_stdout=2,
-            points_for_correct_stderr=3)
-        self.ag_test_cmd2.validate_and_update(
-            deduction_for_wrong_return_code=-4,
-            deduction_for_wrong_stdout=-2,
-            deduction_for_wrong_stderr=-1)
-
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd1, self.ag_test_case_result)
-        obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2, self.ag_test_case_result)
-
-        self.assertEqual(
-            0,
-            get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.normal).total_points)
-        self.assertEqual(
-            0,
-            get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.normal).total_points_possible)
-
-    def test_show_individual_commands(self):
-        total_cmd_points = 6
-        self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=total_cmd_points)
-        self.ag_test_cmd1.normal_fdbk_config.validate_and_update(
-            return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            show_points=True)
-
-        self.assertTrue(self.ag_test_case.normal_fdbk_config.show_individual_commands)
-        result1 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd1, self.ag_test_case_result)
-        result2 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd2, self.ag_test_case_result)
-
-        fdbk = get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max)
-
-        self.assertEqual([result1.pk, result2.pk],
-                         [res.pk for res in fdbk.ag_test_command_results])
-        self.assertEqual(total_cmd_points, fdbk.total_points)
-        self.assertEqual(total_cmd_points, fdbk.total_points_possible)
-
-        self.ag_test_case.normal_fdbk_config.validate_and_update(show_individual_commands=False)
-        fdbk = get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.normal)
-
-        self.assertEqual([], fdbk.ag_test_command_results)
-        self.assertEqual(total_cmd_points, fdbk.total_points)
-        self.assertEqual(total_cmd_points, fdbk.total_points_possible)
-
-    def test_cmd_result_query_order(self):
-        result1 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd1, self.ag_test_case_result)
-        result2 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd2, self.ag_test_case_result)
-
-        self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd2.pk, self.ag_test_cmd1.pk])
-        self.ag_test_case_result = get_ag_test_case_results_queryset(
-            ag_models.FeedbackCategory.max).get(pk=self.ag_test_case_result.pk)
-        fdbk = get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max)
-        self.assertEqual([result2.pk, result1.pk],
-                         [res.pk for res in fdbk.ag_test_command_results])
-
-    def test_some_commands_not_visible(self):
-        self.ag_test_cmd1.ultimate_submission_fdbk_config.validate_and_update(visible=False)
-        cmd1_pts = 5
-        cmd2_pts = 3
-        self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=cmd1_pts)
-        self.ag_test_cmd2.validate_and_update(points_for_correct_return_code=cmd2_pts)
-
-        cmd_result1 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd1, self.ag_test_case_result)
-        cmd_result2 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd2, self.ag_test_case_result)
-
-        self.assertEqual(
-            cmd1_pts + cmd2_pts,
-            get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max).total_points)
-        self.assertEqual(
-            cmd1_pts + cmd2_pts,
-            get_case_fdbk(
-                self.ag_test_case_result,
-                ag_models.FeedbackCategory.max).total_points_possible)
-
-        fdbk = get_case_fdbk(
-            self.ag_test_case_result, ag_models.FeedbackCategory.ultimate_submission)
-        self.assertSequenceEqual([cmd_result2.pk],
-                                 [res.pk for res in fdbk.ag_test_command_results])
-        self.assertEqual(
-            cmd2_pts,
-            get_case_fdbk(
-                self.ag_test_case_result,
-                ag_models.FeedbackCategory.ultimate_submission).total_points)
-        self.assertEqual(
-            cmd2_pts,
-            get_case_fdbk(
-                self.ag_test_case_result,
-                ag_models.FeedbackCategory.ultimate_submission).total_points_possible)
-
-    def test_fdbk_to_dict(self):
-        self.maxDiff = None
-
-        self.ag_test_cmd1.validate_and_update(
-            points_for_correct_return_code=2,
-            points_for_correct_stdout=3,
-            points_for_correct_stderr=8
+        self.suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            ag_test_suite=self.ag_suite, submission=self.submission
         )
 
-        self.ag_test_cmd2.validate_and_update(
-            points_for_correct_return_code=4,
-            points_for_correct_stdout=5,
-            points_for_correct_stderr=7
-        )
-
-        result1 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd1, self.ag_test_case_result)
-        result2 = obj_build.make_correct_ag_test_command_result(
-            self.ag_test_cmd2, self.ag_test_case_result)
-
+    def test_serialization_for_denormalzation(self):
         expected_keys = [
             'pk',
-            'ag_test_case_name',
-            'ag_test_case_pk',
-            'fdbk_settings',
-            'total_points',
-            'total_points_possible',
-            'ag_test_command_results',
+            'ag_test_case_id',
+            'ag_test_suite_result_id',
+            'ag_test_command_results'
         ]
 
-        for fdbk_category in ag_models.FeedbackCategory:
-            result_dict = get_case_fdbk(self.ag_test_case_result, fdbk_category).to_dict()
-            self.assertCountEqual(expected_keys, result_dict.keys())
+        case_result = ag_models.AGTestCaseResult.objects.validate_and_create(
+            ag_test_case=self.case, ag_test_suite_result=self.suite_result
+        )
 
-            self.assertCountEqual(
-                [get_cmd_fdbk(result1, fdbk_category).to_dict(),
-                 get_cmd_fdbk(result2, fdbk_category).to_dict()],
-                result_dict['ag_test_command_results'])
+        self.assertCountEqual(expected_keys, case_result.to_dict().keys())
+
+    def test_delete_case_result_denormed_results_updated(self):
+        case_result1 = ag_models.AGTestCaseResult.objects.validate_and_create(
+            ag_test_case=self.case, ag_test_suite_result=self.suite_result
+        )
+        self.assertNotEqual(self.case.pk, case_result1.pk)
+
+        dont_delete_case = obj_build.make_ag_test_case(self.ag_suite)
+        dont_delete_case_result = ag_models.AGTestCaseResult.objects.validate_and_create(
+            ag_test_case=dont_delete_case, ag_test_suite_result=self.suite_result
+        )
+        self.assertNotEqual(dont_delete_case.pk, dont_delete_case_result.pk)
+
+        submission2 = obj_build.make_submission(group=obj_build.make_group(project=self.project))
+        suite_result2 = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            ag_test_suite=self.ag_suite, submission=submission2
+        )
+
+        case_result2 = ag_models.AGTestCaseResult.objects.validate_and_create(
+            ag_test_case=self.case, ag_test_suite_result=suite_result2
+        )
+        self.assertNotEqual(self.case.pk, case_result2.pk)
+
+        self.submission = update_denormalized_ag_test_results(self.submission.pk)
+        self.assertIn(
+            str(dont_delete_case.pk),
+            self.submission.denormalized_ag_test_results[
+                str(dont_delete_case.ag_test_suite_id)
+            ]['ag_test_case_results']
+        )
+
+        submission2 = update_denormalized_ag_test_results(submission2.pk)
+
+        for submission, case_res in ((self.submission, case_result1), (submission2, case_result2)):
+            submission.refresh_from_db()
+
+            self.assertIn(
+                str(case_res.ag_test_case_id),
+                self.submission.denormalized_ag_test_results[
+                    str(self.ag_suite.pk)
+                ]['ag_test_case_results']
+            )
+
+        self.case.delete()
+
+        for submission, case_res in ((self.submission, case_result1), (submission2, case_result2)):
+            submission.refresh_from_db()
+
+            self.assertNotIn(
+                str(case_res.ag_test_case_id),
+                self.submission.denormalized_ag_test_results[
+                    str(self.ag_suite.pk)
+                ]['ag_test_case_results']
+            )
+
+        self.submission.refresh_from_db()
+        self.assertIn(
+            str(dont_delete_case.pk),
+            self.submission.denormalized_ag_test_results[
+                str(dont_delete_case.ag_test_suite_id)
+            ]['ag_test_case_results']
+        )

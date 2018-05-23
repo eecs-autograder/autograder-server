@@ -1,7 +1,6 @@
 import os
 
-
-from django.db import models, transaction, connection
+from django.db import models
 
 import autograder.core.utils as core_ut
 

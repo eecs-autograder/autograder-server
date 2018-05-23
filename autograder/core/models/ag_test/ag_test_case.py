@@ -1,7 +1,7 @@
 from typing import Union
 
 from django.core import exceptions
-from django.db import models, transaction
+from django.db import models, transaction, connection
 
 import autograder.core.fields as ag_fields
 from .ag_test_suite import AGTestSuite
@@ -113,6 +113,22 @@ class AGTestCase(AutograderModel):
         self.ag_test_suite = ag_test_suite
 
         super().validate_and_update(**kwargs)
+
+    @transaction.atomic()
+    def delete(self, *args, **kwargs):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                '''UPDATE core_submission
+                SET denormalized_ag_test_results = 
+                    denormalized_ag_test_results #- '{%s,ag_test_case_results,%s}'
+                WHERE core_submission.project_id = %s 
+                ''',
+                (self.ag_test_suite_id,
+                 self.pk,
+                 self.ag_test_suite.project_id)
+            )
+
+        return super().delete()
 
     SERIALIZABLE_FIELDS = (
         'pk',

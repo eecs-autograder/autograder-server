@@ -319,7 +319,8 @@ class AGTestCommand(AGCommandBase):
             cursor.execute(
                 '''UPDATE core_submission
                    SET denormalized_ag_test_results = 
-                        denormalized_ag_test_results #- '{%s,ag_test_case_results,%s,ag_test_command_results,%s}'
+                        denormalized_ag_test_results 
+                            #- '{%s,ag_test_case_results,%s,ag_test_command_results,%s}'
                    WHERE core_submission.project_id = %s
                 ''',
                 (self.ag_test_case.ag_test_suite_id,
