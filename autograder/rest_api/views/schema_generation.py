@@ -9,7 +9,6 @@ from django.db.models import fields
 from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.inspectors import SwaggerAutoSchema
 from drf_yasg.openapi import Schema, Parameter
-from drf_yasg.utils import is_list_view
 from sphinx.ext.autodoc import format_annotation
 from timezone_field.fields import TimeZoneField
 

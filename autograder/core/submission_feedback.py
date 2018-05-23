@@ -167,7 +167,8 @@ def update_denormalized_ag_test_results(submission_pk: int) -> Submission:
 
     submission = submission_manager.get(pk=submission_pk)
     submission.denormalized_ag_test_results = {
-        suite_res.pk: suite_res.to_dict() for suite_res in submission.ag_test_suite_results.all()
+        str(suite_res.ag_test_suite_id): suite_res.to_dict()
+        for suite_res in submission.ag_test_suite_results.all()
     }
 
     submission.save()

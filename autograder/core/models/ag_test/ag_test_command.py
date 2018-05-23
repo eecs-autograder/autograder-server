@@ -3,7 +3,7 @@ import enum
 from django.core import exceptions
 from django.core.validators import (
     MinValueValidator, MaxValueValidator, MaxLengthValidator)
-from django.db import models
+from django.db import models, transaction, connection
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
@@ -312,6 +312,23 @@ class AGTestCommand(AGCommandBase):
 
         if error_dict:
             raise exceptions.ValidationError(error_dict)
+
+    @transaction.atomic()
+    def delete(self, *args, **kwargs):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                '''UPDATE core_submission
+                   SET denormalized_ag_test_results = 
+                        denormalized_ag_test_results #- '{%s,ag_test_case_results,%s,ag_test_command_results,%s}'
+                   WHERE core_submission.project_id = %s
+                ''',
+                (self.ag_test_case.ag_test_suite_id,
+                 self.ag_test_case_id,
+                 self.pk,
+                 self.ag_test_case.ag_test_suite.project_id)
+            )
+
+        return super().delete()
 
     SERIALIZABLE_FIELDS = (
         'pk',

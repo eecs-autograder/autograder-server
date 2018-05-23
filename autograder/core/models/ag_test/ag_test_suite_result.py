@@ -99,7 +99,7 @@ class AGTestSuiteResult(AutograderModel):
     def to_dict(self):
         result = super().to_dict()
         result['ag_test_case_results'] = {
-            case_res.ag_test_case_id: case_res.to_dict()
+            str(case_res.ag_test_case_id): case_res.to_dict()
             for case_res in self.ag_test_case_results.all()
         }
 

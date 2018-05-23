@@ -1,17 +1,12 @@
 import os
-import tempfile
-from typing import Optional, BinaryIO
 
-from django.db import models
+
+from django.db import models, transaction, connection
 
 import autograder.core.utils as core_ut
 
-from ..ag_model_base import ToDictMixin
 from ..ag_command import AGCommandResultBase
-from .ag_test_command import (
-    AGTestCommand, AGTestCommandFeedbackConfig, ExpectedReturnCode, ValueFeedbackLevel,
-    ExpectedOutputSource, MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
-from .feedback_category import FeedbackCategory
+from .ag_test_command import AGTestCommand
 
 
 class AGTestCommandResult(AGCommandResultBase):

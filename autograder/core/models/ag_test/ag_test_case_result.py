@@ -31,7 +31,7 @@ class AGTestCaseResult(AutograderModel):
     def to_dict(self):
         result = super().to_dict()
         result['ag_test_command_results'] = {
-            cmd_res.ag_test_command_id: cmd_res.to_dict()
+            str(cmd_res.ag_test_command_id): cmd_res.to_dict()
             for cmd_res in self.ag_test_command_results.all()
         }
 
