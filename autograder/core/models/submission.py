@@ -262,7 +262,7 @@ class Submission(ag_model_base.AutograderModel):
         help_text='''If status is "error", an error message will be stored here.''')
 
     denormalized_ag_test_results = pg_fields.JSONField(
-        default=dict,
+        default=dict, blank=True,
         help_text="""Stores denormalized AG test results in order to avoid 
                      expensive joins when getting submission result feedback.
                      To update this field, use 

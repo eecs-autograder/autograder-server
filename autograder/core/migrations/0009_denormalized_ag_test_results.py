@@ -7,7 +7,7 @@ from django.db import migrations
 from autograder.core.submission_feedback import update_denormalized_ag_test_results
 
 
-def set_denormalized_results(app, apps, schema_editor):
+def set_denormalized_results(apps, schema_editor):
     Submission = apps.get_model('core', 'Submission')
     for submission in Submission.objects.all():
         update_denormalized_ag_test_results(submission.pk)
@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='submission',
             name='denormalized_ag_test_results',
-            field=django.contrib.postgres.fields.jsonb.JSONField(default=dict, help_text='Stores denormalized AG test results in order to avoid \n                     expensive joins when getting submission result feedback.\n                     To update this field, use \n                     autograder.core.submission_feedback.update_denormalized_ag_test_results\n                     \n                     Data format: \n{\n    "<ag test suite pk>": {\n        <ag test suite result data>,\n        "ag_test_case_results": {\n            "<ag test case pk>": {\n                <ag test case result data>,\n                "ag_test_command_results": <ag test command result data>\n            }\n        }\n    }\n}\n        '),
+            field=django.contrib.postgres.fields.jsonb.JSONField(default=dict, blank=True, help_text='Stores denormalized AG test results in order to avoid \n                     expensive joins when getting submission result feedback.\n                     To update this field, use \n                     autograder.core.submission_feedback.update_denormalized_ag_test_results\n                     \n                     Data format: \n{\n    "<ag test suite pk>": {\n        <ag test suite result data>,\n        "ag_test_case_results": {\n            "<ag test case pk>": {\n                <ag test case result data>,\n                "ag_test_command_results": <ag test command result data>\n            }\n        }\n    }\n}\n        '),
         ),
         migrations.AlterField(
             model_name='submission',

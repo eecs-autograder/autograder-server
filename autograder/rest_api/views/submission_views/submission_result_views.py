@@ -169,8 +169,17 @@ def _get_setup_output(submission_fdbk: SubmissionResultFeedback,
 
 def _find_ag_suite_result(submission_fdbk: SubmissionResultFeedback,
                           suite_result_pk: int) -> Optional[AGTestSuiteResultFeedback]:
+    """
+    :raises: Http404 exception if a suite result with the
+             given primary key doesn't exist in the database.
+    :return: The suite result with the given primary key
+             if it can be found in submission_fdbk, None otherwise.
+    """
+    suite_result = get_object_or_404(ag_models.AGTestSuiteResult.objects.all(),
+                                     pk=suite_result_pk)
+
     for suite_fdbk in submission_fdbk.ag_test_suite_results:
-        if suite_fdbk.pk == suite_result_pk:
+        if suite_fdbk.pk == suite_result.pk:
             return suite_fdbk
 
     return None
