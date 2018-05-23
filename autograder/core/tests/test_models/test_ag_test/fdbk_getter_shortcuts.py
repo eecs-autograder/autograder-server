@@ -1,8 +1,15 @@
 import autograder.core.models as ag_models
+from autograder.core.models import Submission, FeedbackCategory
 from autograder.core.submission_feedback import (
     DenormalizedAGTestCaseResult,
     DenormalizedAGTestSuiteResult, AGTestSuiteResultFeedback, AGTestPreLoader,
-    AGTestCaseResultFeedback, AGTestCommandResultFeedback)
+    AGTestCaseResultFeedback, AGTestCommandResultFeedback, SubmissionResultFeedback)
+
+
+def get_submission_fdbk(submission: Submission,
+                        fdbk_category: FeedbackCategory) -> 'SubmissionResultFeedback':
+    return SubmissionResultFeedback(
+        submission, fdbk_category, AGTestPreLoader(submission.group.project))
 
 
 def get_suite_fdbk(result: ag_models.AGTestSuiteResult,

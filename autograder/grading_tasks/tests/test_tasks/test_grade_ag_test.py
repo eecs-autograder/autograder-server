@@ -11,7 +11,8 @@ from django.test import tag
 import autograder.core.models as ag_models
 from autograder.core import constants
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.submission_feedback import SubmissionResultFeedback
+from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import (
+    get_submission_fdbk)
 from autograder.utils.testing import UnitTestBase
 
 from autograder.grading_tasks import tasks
@@ -46,10 +47,10 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
 
         self.assertEqual(
             2,
-            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
+            get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             3,
-            SubmissionResultFeedback(
+            get_submission_fdbk(
                 self.submission, ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_diff_ignore_case_whitespace_changes_and_blank_lines(self, *args):
@@ -75,7 +76,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
 
         self.assertEqual(
             6,
-            SubmissionResultFeedback(
+            get_submission_fdbk(
                 self.submission, ag_models.FeedbackCategory.max).total_points)
 
     def test_diff_ignore_whitespace(self, *args):
@@ -97,7 +98,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
 
         self.assertEqual(
             2,
-            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
+            get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
 
     def test_correct_expected_return_code_zero(self, *args):
         cmd = obj_build.make_full_ag_test_command(
@@ -324,10 +325,10 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
         self.submission.refresh_from_db()
         self.assertEqual(
             0,
-            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
+            get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             self.retcode_points,
-            SubmissionResultFeedback(
+            get_submission_fdbk(
                 self.submission, ag_models.FeedbackCategory.max).total_points_possible)
 
     def test_project_files_not_read_only(self, *args):
@@ -336,10 +337,10 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
         self.submission.refresh_from_db()
         self.assertEqual(
             self.retcode_points,
-            SubmissionResultFeedback(self.submission, ag_models.FeedbackCategory.max).total_points)
+            get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             self.retcode_points,
-            SubmissionResultFeedback(
+            get_submission_fdbk(
                 self.submission, ag_models.FeedbackCategory.max).total_points_possible)
 
 

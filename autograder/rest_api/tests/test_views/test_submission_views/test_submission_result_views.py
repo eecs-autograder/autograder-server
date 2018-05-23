@@ -11,10 +11,9 @@ import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.models.ag_test.ag_test_command import MAX_AG_TEST_COMMAND_FDBK_SETTINGS
-from autograder.core.submission_feedback import update_denormalized_ag_test_results, \
-    SubmissionResultFeedback
-from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import get_suite_fdbk, \
-    get_cmd_fdbk
+from autograder.core.submission_feedback import update_denormalized_ag_test_results
+from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import (
+    get_suite_fdbk, get_cmd_fdbk, get_submission_fdbk)
 from autograder.grading_tasks.tasks import mark_submission_as_finished
 from autograder.utils.testing import UnitTestBase
 
@@ -678,7 +677,7 @@ class SubmissionResultTestCase(UnitTestBase):
                + '?' + query_params.urlencode())
         response = client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual(SubmissionResultFeedback(submission, fdbk_category).to_dict(),
+        self.assertEqual(get_submission_fdbk(submission, fdbk_category).to_dict(),
                          response.data)
 
     def do_get_fdbk_permission_denied_test(self, client,
@@ -1039,7 +1038,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         # Request the results for submission1 so that they are cached.
         self.client.force_authenticate(admin_group.members.first())
         response = self.client.get(self._make_url(submission1))
-        old_submission1_results = SubmissionResultFeedback(
+        old_submission1_results = get_submission_fdbk(
             submission1, ag_models.FeedbackCategory.normal).to_dict()
         self.assertIsNotNone(old_submission1_results['total_points'])
         self.assertNotEqual(0, old_submission1_results['total_points_possible'])
@@ -1055,7 +1054,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
         # Request submission2 results, they should reflect the change we made.
         response = self.client.get(self._make_url(submission2))
-        self.assertEqual(SubmissionResultFeedback(submission2,
+        self.assertEqual(get_submission_fdbk(submission2,
                                                   ag_models.FeedbackCategory.normal).to_dict(),
                          response.data)
 
@@ -1082,7 +1081,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
             url = self._make_url(submission, fdbk_category=fdbk_category)
             old_response = self.client.get(url)
             self.assertEqual(
-                SubmissionResultFeedback(submission, fdbk_category).to_dict(),
+                get_submission_fdbk(submission, fdbk_category).to_dict(),
                 old_response.data)
 
             cmd.validate_and_update(
@@ -1091,7 +1090,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
             new_response = self.client.get(url)
             self.assertNotEqual(old_response.data, new_response.data)
 
-            self.assertEqual(SubmissionResultFeedback(submission, fdbk_category).to_dict(),
+            self.assertEqual(get_submission_fdbk(submission, fdbk_category).to_dict(),
                              new_response.data)
 
     # In autograder.grading_tasks.tasks.grade_submission.mark_submission_as_finished,
@@ -1146,8 +1145,8 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(SubmissionResultFeedback(submission,
-                                                  ag_models.FeedbackCategory.normal).to_dict(),
+        self.assertEqual(get_submission_fdbk(submission,
+                                             ag_models.FeedbackCategory.normal).to_dict(),
                          response.data)
         # Make a change to the command to make sure extra sure that being_graded
         # submission results aren't cached.
@@ -1155,8 +1154,8 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         # We should get fresh results here
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(SubmissionResultFeedback(submission,
-                                                  ag_models.FeedbackCategory.normal).to_dict(),
+        self.assertEqual(get_submission_fdbk(submission,
+                                             ag_models.FeedbackCategory.normal).to_dict(),
                          response.data)
 
         submission.status = ag_models.Submission.GradingStatus.waiting_for_deferred
@@ -1165,7 +1164,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         # Waiting for deferred should be cached by this request...
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        old_data = SubmissionResultFeedback(submission,
+        old_data = get_submission_fdbk(submission,
                                             ag_models.FeedbackCategory.normal).to_dict()
 
         # ...so we should get stale results here.
@@ -1179,7 +1178,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         # ...so we should get fresh results here.
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(SubmissionResultFeedback(submission,
+        self.assertEqual(get_submission_fdbk(submission,
                                                   ag_models.FeedbackCategory.normal).to_dict(),
                          response.data)
 
@@ -1207,7 +1206,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
 
         # Request the results for submission with use_cache=false
         response = self.client.get(self._make_url(submission, use_cache=False))
-        old_submission_results = SubmissionResultFeedback(
+        old_submission_results = get_submission_fdbk(
             submission,
             ag_models.FeedbackCategory.normal
         ).to_dict()
@@ -1224,7 +1223,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         # the updated results, and the updated results should be cached.
         response = self.client.get(self._make_url(submission))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        old_submission_results = SubmissionResultFeedback(
+        old_submission_results = get_submission_fdbk(
             submission, ag_models.FeedbackCategory.normal).to_dict()
         self.assertEqual(old_submission_results, response.data)
 
@@ -1240,8 +1239,8 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         # Requesting without cache should give us up-to-date results.
         response = self.client.get(self._make_url(submission, use_cache=False))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual(SubmissionResultFeedback(submission,
-                                                  ag_models.FeedbackCategory.normal).to_dict(),
+        self.assertEqual(get_submission_fdbk(submission,
+                                             ag_models.FeedbackCategory.normal).to_dict(),
                          response.data)
 
     def test_admin_can_clear_results_cache_for_project(self):
@@ -1281,20 +1280,20 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         # Request the results so they get cached
         self.client.force_authenticate(project1_group.members.first())
         response = self.client.get(self._make_url(project1_submission1))
-        project1_submission1_old_results = SubmissionResultFeedback(
+        project1_submission1_old_results = get_submission_fdbk(
             project1_submission1, ag_models.FeedbackCategory.normal).to_dict()
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(project1_submission1_old_results, response.data)
 
         response = self.client.get(self._make_url(project1_submission2))
-        project1_submission2_old_results = SubmissionResultFeedback(
+        project1_submission2_old_results = get_submission_fdbk(
             project1_submission2, ag_models.FeedbackCategory.normal).to_dict()
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(project1_submission2_old_results, response.data)
 
         self.client.force_authenticate(project2_group.members.first())
         response = self.client.get(self._make_url(project2_submission))
-        project2_submission_old_results = SubmissionResultFeedback(
+        project2_submission_old_results = get_submission_fdbk(
             project2_submission, ag_models.FeedbackCategory.normal).to_dict()
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(project2_submission_old_results, response.data)
@@ -1320,14 +1319,12 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         response = self.client.get(self._make_url(project1_submission1))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(
-            SubmissionResultFeedback(project1_submission1,
-                                     ag_models.FeedbackCategory.normal).to_dict(),
+            get_submission_fdbk(project1_submission1, ag_models.FeedbackCategory.normal).to_dict(),
             response.data)
         response = self.client.get(self._make_url(project1_submission2))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(
-            SubmissionResultFeedback(project1_submission2,
-                                     ag_models.FeedbackCategory.normal).to_dict(),
+            get_submission_fdbk(project1_submission2, ag_models.FeedbackCategory.normal).to_dict(),
             response.data)
 
         self.client.force_authenticate(project2_group.members.first())

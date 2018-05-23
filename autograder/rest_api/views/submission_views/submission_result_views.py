@@ -14,7 +14,8 @@ import autograder.core.utils as core_ut
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.submission import get_submissions_with_results_queryset
 from autograder.core.submission_feedback import (
-    SubmissionResultFeedback, AGTestSuiteResultFeedback, AGTestCommandResultFeedback)
+    SubmissionResultFeedback, AGTestSuiteResultFeedback, AGTestCommandResultFeedback,
+    AGTestPreLoader)
 from autograder.rest_api.views.ag_model_views import AGModelAPIView, require_query_params
 from autograder.rest_api.views.schema_generation import AGModelSchemaBuilder
 
@@ -99,7 +100,8 @@ class SubmissionResultsView(SubmissionResultsViewBase):
         model_manager = get_submissions_with_results_queryset(
             fdbk_category, base_manager=self.model_manager)
         submission = self.get_object(model_manager_override=model_manager)
-        return SubmissionResultFeedback(submission, fdbk_category)
+        return SubmissionResultFeedback(
+            submission, fdbk_category, AGTestPreLoader(submission.project))
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):

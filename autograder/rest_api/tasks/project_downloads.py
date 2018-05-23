@@ -12,8 +12,7 @@ import autograder.core.models as ag_models
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 import autograder.core.utils as core_ut
 from autograder import utils
-from autograder.core.submission_feedback import get_submission_fdbk, AGTestSuiteResultFeedback, \
-    AGTestCaseResultFeedback
+from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
 
 
 @shared_task(queue='project_downloads', acks_late=True)
@@ -64,7 +63,8 @@ def _get_all_submissions(project: ag_models.Project,
 
 def _get_ultimate_submissions(project: ag_models.Project,
                               groups: Sequence[ag_models.Group]):
-    return get_ultimate_submissions(project, *groups), len(groups)
+    return (get_ultimate_submissions(project, *groups, ag_test_preloader=AGTestPreLoader(project)),
+            len(groups))
 
 
 # Given a task, an iterator of submissions, the number of submissions
@@ -178,7 +178,8 @@ def _make_scores_csv(
             for index, username in enumerate(submission.group.member_names):
                 row[user_tmpl.format(index + 1)] = username
 
-            fdbk = get_submission_fdbk(submission, ag_models.FeedbackCategory.max)
+            fdbk = SubmissionResultFeedback(
+                submission, ag_models.FeedbackCategory.max, AGTestPreLoader(submission.project))
             row[total_header] = fdbk.total_points
             row[total_possible_header] = fdbk.total_points_possible
 

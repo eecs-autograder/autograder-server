@@ -9,7 +9,8 @@ from rest_framework.test import APIClient
 import autograder.core.models as ag_models
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.submission_feedback import SubmissionResultFeedback
+from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import \
+    get_submission_fdbk
 from autograder.grading_tasks import tasks
 from autograder.utils.testing import UnitTestBase
 
@@ -160,11 +161,11 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
                 'cmd': 'bash -c "echo ${student_test_name} ${buggy_impl_name}; false"'
             })
 
-        fdbk1 = SubmissionResultFeedback(self.submission1, ag_models.FeedbackCategory.max)
+        fdbk1 = get_submission_fdbk(self.submission1, ag_models.FeedbackCategory.max)
         self.assertEqual(0, fdbk1.total_points)
         self.assertEqual(self.total_points_possible, fdbk1.total_points_possible)
 
-        fdbk2 = SubmissionResultFeedback(self.submission2, ag_models.FeedbackCategory.max)
+        fdbk2 = get_submission_fdbk(self.submission2, ag_models.FeedbackCategory.max)
         self.assertEqual(0, fdbk2.total_points)
         self.assertEqual(self.total_points_possible, fdbk2.total_points_possible)
 
@@ -190,7 +191,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
         tasks.grade_submission(self.other_submission.pk)
         self.other_submission.refresh_from_db()
 
-        other_fdbk = SubmissionResultFeedback(self.other_submission,
+        other_fdbk = get_submission_fdbk(self.other_submission,
                                               ag_models.FeedbackCategory.max)
         self.assertEqual(0, other_fdbk.total_points)
         self.assertEqual(1, other_fdbk.total_points_possible)
@@ -316,13 +317,13 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
 
         for submission, expected_total_points in expected_submission_points:
             submission.refresh_from_db()
-            fdbk = SubmissionResultFeedback(submission, ag_models.FeedbackCategory.max)
+            fdbk = get_submission_fdbk(submission, ag_models.FeedbackCategory.max)
             self.assertEqual(expected_total_points, fdbk.total_points)
             self.assertEqual(self.total_points_possible, fdbk.total_points_possible)
 
         # Make sure this submission is never rerun.
         self.other_submission.refresh_from_db()
-        other_fdbk = SubmissionResultFeedback(self.other_submission,
+        other_fdbk = get_submission_fdbk(self.other_submission,
                                               ag_models.FeedbackCategory.max)
         self.assertEqual(0, other_fdbk.total_points)
         self.assertEqual(1, other_fdbk.total_points_possible)

@@ -1,9 +1,9 @@
 import json
 
 from autograder.core.models import get_submissions_with_results_queryset
-from autograder.core.submission_feedback import get_submission_fdbk, \
-    update_denormalized_ag_test_results
-from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import get_suite_fdbk
+from autograder.core.submission_feedback import update_denormalized_ag_test_results
+from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import get_suite_fdbk, \
+    get_submission_fdbk
 from autograder.utils.testing import UnitTestBase
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build

@@ -6,7 +6,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import BasePermission
 
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
-from autograder.core.submission_feedback import SubmissionResultFeedback
+from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
 from autograder.rest_api.views.ag_model_views import AGModelAPIView
 import autograder.rest_api.permissions as ag_permissions
 import autograder.core.models as ag_models
@@ -54,7 +54,9 @@ class AllUltimateSubmissionResults(AGModelAPIView):
         paginator = UltimateSubmissionPaginator()
         page = paginator.paginate_queryset(queryset=groups, request=self.request, view=self)
 
-        ultimate_submissions = get_ultimate_submissions(project, *page)
+        ag_test_preloader = AGTestPreLoader(project)
+        ultimate_submissions = get_ultimate_submissions(
+            project, *page, ag_test_preloader=ag_test_preloader)
 
         results = []
         for submission in ultimate_submissions:
@@ -64,7 +66,9 @@ class AllUltimateSubmissionResults(AGModelAPIView):
             else:
                 submission_data = submission.to_dict()
                 submission_results = SubmissionResultFeedback(
-                    submission, ag_models.FeedbackCategory.max).to_dict()
+                    submission, ag_models.FeedbackCategory.max,
+                    ag_test_preloader=ag_test_preloader
+                ).to_dict()
                 if not full_results:
                     submission_results = utils.filter_dict(
                         submission_results, ['total_points', 'total_points_possible'])

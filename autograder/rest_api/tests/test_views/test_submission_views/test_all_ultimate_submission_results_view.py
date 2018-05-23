@@ -10,7 +10,9 @@ from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 from autograder.core.submission_feedback import (
-    SubmissionResultFeedback, update_denormalized_ag_test_results)
+    update_denormalized_ag_test_results)
+from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import (
+    get_submission_fdbk)
 from autograder.utils import filter_dict
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -95,7 +97,7 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         submission_data = (
             ultimate_submission.to_dict() if ultimate_submission is not None else None)
         if submission_data is not None:
-            result_data = SubmissionResultFeedback(
+            result_data = get_submission_fdbk(
                 ultimate_submission, ag_models.FeedbackCategory.max).to_dict()
             if points_only:
                 result_data = filter_dict(result_data, ('total_points', 'total_points_possible'))

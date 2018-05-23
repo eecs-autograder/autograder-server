@@ -1,7 +1,7 @@
 import tempfile
 from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional
 
-from django.db import models, transaction
+from django.db import transaction
 from django.db.models import Prefetch
 
 from autograder.core.models import Submission, AGTestCommandResult, StudentTestSuiteResult
@@ -175,18 +175,14 @@ def update_denormalized_ag_test_results(submission_pk: int) -> Submission:
     return submission
 
 
-def get_submission_fdbk(submission: Submission,
-                        fdbk_category: FeedbackCategory) -> 'SubmissionResultFeedback':
-    return SubmissionResultFeedback(submission, fdbk_category)
-
-
 class SubmissionResultFeedback(ToDictMixin):
-    def __init__(self, submission: Submission, fdbk_category: FeedbackCategory):
+    def __init__(self, submission: Submission, fdbk_category: FeedbackCategory,
+                 ag_test_preloader: AGTestPreLoader):
         self._submission = submission
         self._fdbk_category = fdbk_category
         self._project = self._submission.group.project
 
-        self._ag_test_loader = AGTestPreLoader(self._project)
+        self._ag_test_loader = ag_test_preloader
 
         self._ag_test_suite_results = _deserialize_denormed_ag_test_results(self._submission)
 

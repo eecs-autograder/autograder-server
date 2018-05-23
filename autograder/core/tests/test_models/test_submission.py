@@ -11,8 +11,8 @@ import autograder.utils.testing.model_obj_builders as obj_build
 from autograder import utils
 from autograder.core import constants
 from autograder.core.models.submission import get_submissions_with_results_queryset
-from autograder.core.submission_feedback import get_submission_fdbk
-from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import get_suite_fdbk
+from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import get_suite_fdbk, \
+    get_submission_fdbk
 from autograder.utils.testing import UnitTestBase
 
 

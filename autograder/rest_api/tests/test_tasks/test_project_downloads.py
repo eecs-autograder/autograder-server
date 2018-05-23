@@ -13,8 +13,7 @@ from rest_framework import status
 import autograder.core.models as ag_models
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.submission_feedback import SubmissionResultFeedback, \
-    update_denormalized_ag_test_results
+from autograder.core.submission_feedback import update_denormalized_ag_test_results
 from autograder.utils.testing import UnitTestBase
 
 
@@ -460,7 +459,7 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             values += list(usernames)
             values.append(submission.timestamp.isoformat())
 
-            fdbk = SubmissionResultFeedback(submission, ag_models.FeedbackCategory.max)
+            fdbk = get_submission_fdbk(submission, ag_models.FeedbackCategory.max)
             values += [str(fdbk.total_points), str(fdbk.total_points_possible)]
             for suite_fdbk in fdbk.ag_test_suite_results:
                 values += [str(suite_fdbk.total_points), str(suite_fdbk.total_points_possible)]
