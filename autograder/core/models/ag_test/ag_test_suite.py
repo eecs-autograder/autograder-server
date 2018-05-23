@@ -1,5 +1,5 @@
 from django.core import exceptions
-from django.db import models
+from django.db import models, connection
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
@@ -169,6 +169,18 @@ class AGTestSuite(AutograderModel):
 
         if errors:
             raise exceptions.ValidationError(errors)
+
+    def delete(self, *args, **kwargs):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                '''UPDATE core_submission
+                SET denormalized_ag_test_results = denormalized_ag_test_results #- '{%s}'
+                WHERE core_submission.project_id = %s
+                ''',
+                (self.pk, self.project_id)
+            )
+
+        return super().delete()
 
     SERIALIZABLE_FIELDS = (
         'pk',
