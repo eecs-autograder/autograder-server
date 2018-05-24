@@ -30,9 +30,14 @@ def get_ultimate_submissions(project: Project, *groups: Group,
         base_group_queryset = base_group_queryset.filter(pk__in=[group.pk for group in groups])
 
     if project.ultimate_submission_policy == UltimateSubmissionPolicy.most_recent:
+        submissions_queryset = get_submissions_with_results_queryset(
+            FeedbackCategory.max, base_manager=finished_submissions_queryset)
         groups = base_group_queryset.prefetch_related(
-            Prefetch('submissions', finished_submissions_queryset))
-        return (group.submissions.first() for group in groups if group.submissions.count())
+            Prefetch('submissions', submissions_queryset))
+        return (SubmissionResultFeedback(group.submissions.first(),
+                                         FeedbackCategory.max,
+                                         ag_test_preloader)
+                for group in groups if group.submissions.count())
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best_with_normal_fdbk:
         warnings.warn('best_with_normal_fdbk is currently untested and may be deprecated soon.',
                       PendingDeprecationWarning)
@@ -58,7 +63,10 @@ def _best_submissions_generator(groups: Iterable[Group],
         if len(submissions) == 0:
             continue
 
+        submission_results_fdbk = (
+            SubmissionResultFeedback(submission, fdbk_category, ag_test_preloader)
+            for submission in submissions
+        )
         yield max(
-            submissions,
-            key=lambda submission: SubmissionResultFeedback(
-                submission, fdbk_category, ag_test_preloader).total_points)
+            submission_results_fdbk,
+            key=lambda submission_fdbk: submission_fdbk.total_points)

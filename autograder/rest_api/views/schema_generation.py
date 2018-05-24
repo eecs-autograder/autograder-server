@@ -6,6 +6,7 @@ from typing import Union, Type, get_type_hints
 import django.contrib.postgres.fields as pg_fields
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import fields
+from django.utils.functional import cached_property
 from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.inspectors import SwaggerAutoSchema
 from drf_yasg.openapi import Schema, Parameter
@@ -224,12 +225,14 @@ def _build_api_parameter(field, field_name: str) -> Parameter:
 
 
 @_build_api_parameter.register(property)
+@_build_api_parameter.register(cached_property)
 def _(property_: property, field_name: str) -> Parameter:
     if field_name == 'pk':
         type_ = 'integer'
     else:
-        type_ = get_type_hints(property_.fget).get('return', None)
-        type_ = 'FIXME PROPERTY' if type_ is None else format_annotation(type_)
+        type_ = 'fixme'
+        # type_ = get_type_hints(property_.fget).get('return', None)
+        # type_ = 'FIXME PROPERTY' if type_ is None else format_annotation(type_)
     description = property_.__doc__ if hasattr(property_, '__doc__') else ''
 
     return Parameter(

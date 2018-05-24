@@ -59,19 +59,24 @@ class AllUltimateSubmissionResults(AGModelAPIView):
             project, *page, ag_test_preloader=ag_test_preloader)
 
         results = []
-        for submission in ultimate_submissions:
+        for submission_fdbk in ultimate_submissions:
+            submission = submission_fdbk._submission
             group = submission.group
             if group.extended_due_date is not None and group.extended_due_date > timezone.now():
                 submission_data = None
             else:
                 submission_data = submission.to_dict()
-                submission_results = SubmissionResultFeedback(
-                    submission, ag_models.FeedbackCategory.max,
-                    ag_test_preloader=ag_test_preloader
-                ).to_dict()
+                # submission_fdbk = SubmissionResultFeedback(
+                #     submission, ag_models.FeedbackCategory.max,
+                #     ag_test_preloader=ag_test_preloader
+                # )
                 if not full_results:
-                    submission_results = utils.filter_dict(
-                        submission_results, ['total_points', 'total_points_possible'])
+                    submission_results = {
+                        'total_points': submission_fdbk.total_points,
+                        'total_points_possible': submission_fdbk.total_points_possible
+                    }
+                else:
+                    submission_results = submission_fdbk.to_dict()
 
                 submission_data['results'] = submission_results
 

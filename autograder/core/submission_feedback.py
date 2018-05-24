@@ -21,6 +21,14 @@ from autograder.core.models.ag_test.ag_test_command import (
 import autograder.core.utils as core_ut
 
 
+class DictObjectWrapper:
+    def __init__(self, data):
+        self._data = data
+
+    def __getattr__(self, name):
+        return self._data[name]
+
+
 class AGTestPreLoader:
     def __init__(self, project: Project):
         suites = AGTestSuite.objects.filter(
@@ -87,16 +95,17 @@ def _deserialize_denormed_ag_test_results(
 ) -> List[DenormalizedAGTestSuiteResult]:
     result = []
     for serialized_suite_result in submission.denormalized_ag_test_results.values():
-        deserialized_suite_result = AGTestSuiteResult(
-            pk=serialized_suite_result['pk'],
-
-            ag_test_suite_id=serialized_suite_result['ag_test_suite_id'],
-            submission_id=serialized_suite_result['submission_id'],
-            setup_return_code=serialized_suite_result['setup_return_code'],
-            setup_timed_out=serialized_suite_result['setup_timed_out'],
-            setup_stdout_truncated=serialized_suite_result['setup_stdout_truncated'],
-            setup_stderr_truncated=serialized_suite_result['setup_stderr_truncated'],
-        )
+        deserialized_suite_result = DictObjectWrapper(serialized_suite_result)
+        # deserialized_suite_result = AGTestSuiteResult(
+        #     pk=serialized_suite_result['pk'],
+        #
+        #     ag_test_suite_id=serialized_suite_result['ag_test_suite_id'],
+        #     submission_id=serialized_suite_result['submission_id'],
+        #     setup_return_code=serialized_suite_result['setup_return_code'],
+        #     setup_timed_out=serialized_suite_result['setup_timed_out'],
+        #     setup_stdout_truncated=serialized_suite_result['setup_stdout_truncated'],
+        #     setup_stderr_truncated=serialized_suite_result['setup_stderr_truncated'],
+        # )
 
         case_results = [
             _deserialize_denormed_ag_test_case_result(case_result)
@@ -109,12 +118,13 @@ def _deserialize_denormed_ag_test_results(
 
 
 def _deserialize_denormed_ag_test_case_result(case_result: dict) -> DenormalizedAGTestCaseResult:
-    deserialized_case_result = AGTestCaseResult(
-        pk=case_result['pk'],
-
-        ag_test_case_id=case_result['ag_test_case_id'],
-        ag_test_suite_result_id=case_result['ag_test_suite_result_id'],
-    )
+    deserialized_case_result = DictObjectWrapper(case_result)
+    # deserialized_case_result = AGTestCaseResult(
+    #     pk=case_result['pk'],
+    #
+    #     ag_test_case_id=case_result['ag_test_case_id'],
+    #     ag_test_suite_result_id=case_result['ag_test_suite_result_id'],
+    # )
 
     cmd_results = [
         _deserialize_denormed_ag_test_cmd_result(cmd_result)
@@ -125,23 +135,24 @@ def _deserialize_denormed_ag_test_case_result(case_result: dict) -> Denormalized
 
 
 def _deserialize_denormed_ag_test_cmd_result(cmd_result: dict) -> AGTestCommandResult:
-    return AGTestCommandResult(
-        pk=cmd_result['pk'],
-
-        ag_test_command_id=cmd_result['ag_test_command_id'],
-        ag_test_case_result_id=cmd_result['ag_test_case_result_id'],
-
-        return_code=cmd_result['return_code'],
-        return_code_correct=cmd_result['return_code_correct'],
-
-        stdout_correct=cmd_result['stdout_correct'],
-        stderr_correct=cmd_result['stderr_correct'],
-
-        timed_out=cmd_result['timed_out'],
-
-        stdout_truncated=cmd_result['stdout_truncated'],
-        stderr_truncated=cmd_result['stderr_truncated'],
-    )
+    return DictObjectWrapper(cmd_result)
+    # return AGTestCommandResult(
+    #     pk=cmd_result['pk'],
+    #
+    #     ag_test_command_id=cmd_result['ag_test_command_id'],
+    #     ag_test_case_result_id=cmd_result['ag_test_case_result_id'],
+    #
+    #     return_code=cmd_result['return_code'],
+    #     return_code_correct=cmd_result['return_code_correct'],
+    #
+    #     stdout_correct=cmd_result['stdout_correct'],
+    #     stderr_correct=cmd_result['stderr_correct'],
+    #
+    #     timed_out=cmd_result['timed_out'],
+    #
+    #     stdout_truncated=cmd_result['stdout_truncated'],
+    #     stderr_truncated=cmd_result['stderr_truncated'],
+    # )
 
 
 @transaction.atomic()
@@ -191,7 +202,7 @@ class SubmissionResultFeedback(ToDictMixin):
     def pk(self):
         return self._submission.pk
 
-    @property
+    @cached_property
     def total_points(self) -> int:
         ag_suite_points = sum((
             ag_test_suite_result.total_points
@@ -205,7 +216,7 @@ class SubmissionResultFeedback(ToDictMixin):
 
         return ag_suite_points + student_suite_points
 
-    @property
+    @cached_property
     def total_points_possible(self) -> int:
         ag_suite_points = sum((
             ag_test_suite_result.total_points_possible
@@ -219,7 +230,7 @@ class SubmissionResultFeedback(ToDictMixin):
 
         return ag_suite_points + student_suite_points
 
-    @property
+    @cached_property
     def ag_test_suite_results(self) -> List['AGTestSuiteResultFeedback']:
         visible = filter(
             lambda result: AGTestSuiteResultFeedback(result,
@@ -238,7 +249,7 @@ class SubmissionResultFeedback(ToDictMixin):
             for ag_test_suite_result in sorted(visible, key=suite_result_sort_key)
         ]
 
-    @property
+    @cached_property
     def student_test_suite_results(self) -> List['StudentTestSuiteResult']:
         return list(self._visible_student_test_suite_results)
 
@@ -443,9 +454,9 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         'setup_name',
         'setup_return_code',
         'setup_timed_out',
-        'teardown_name',
-        'teardown_return_code',
-        'teardown_timed_out',
+        # 'teardown_name',
+        # 'teardown_return_code',
+        # 'teardown_timed_out',
 
         'ag_test_case_results'
     )
