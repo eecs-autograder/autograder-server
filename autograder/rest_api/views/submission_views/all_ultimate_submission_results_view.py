@@ -12,8 +12,6 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.core.models as ag_models
 from autograder.rest_api.views.schema_generation import APITags
 
-from autograder import utils
-
 
 class _UltimateSubmissionsAvailable(BasePermission):
     def has_object_permission(self, request, view, project: ag_models.Project):

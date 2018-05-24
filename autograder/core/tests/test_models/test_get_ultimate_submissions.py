@@ -28,13 +28,13 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
                          self.project.ultimate_submission_policy)
         [ultimate_most_recent] = get_ultimate_submissions(
             self.project, group, ag_test_preloader=AGTestPreLoader(self.project))
-        self.assertEqual(most_recent, ultimate_most_recent)
+        self.assertEqual(most_recent, ultimate_most_recent.submission)
 
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
         [ultimate_best] = get_ultimate_submissions(
             self.project, group, ag_test_preloader=AGTestPreLoader(self.project))
-        self.assertEqual(best_sub, ultimate_best)
+        self.assertEqual(best_sub, ultimate_best.submission)
 
     def test_get_ultimate_for_many_groups(self):
         data = self.prepare_data(self.project, num_groups=3)
@@ -46,13 +46,14 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
                          self.project.ultimate_submission_policy)
         ultimate_most_recents = get_ultimate_submissions(
             self.project, *groups, ag_test_preloader=AGTestPreLoader(self.project))
-        self.assertCountEqual(expected_most_recents, ultimate_most_recents)
+        self.assertCountEqual(
+            expected_most_recents, [fdbk.submission for fdbk in ultimate_most_recents])
 
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
         ultimate_bests = get_ultimate_submissions(
             self.project, *groups, ag_test_preloader=AGTestPreLoader(self.project))
-        self.assertCountEqual(expected_bests, ultimate_bests)
+        self.assertCountEqual(expected_bests, [fdbk.submission for fdbk in ultimate_bests])
 
     def test_get_ultimate_only_finished_grading_status_considered(self):
         group = obj_build.make_group(project=self.project)
@@ -72,8 +73,9 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             self.project.validate_and_update(ultimate_submission_policy=ultimate_submission_policy)
             self.assertSequenceEqual(
                 [ultimate_submission],
-                list(get_ultimate_submissions(self.project,
-                                              ag_test_preloader=AGTestPreLoader(self.project))))
+                [fdbk.submission for fdbk in
+                 get_ultimate_submissions(self.project,
+                                          ag_test_preloader=AGTestPreLoader(self.project))])
 
     def test_get_ultimate_submission_group_has_no_submissions(self):
         for policy in ag_models.UltimateSubmissionPolicy:
@@ -134,18 +136,18 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
             best_sub = obj_build.make_finished_submission(group=group)
             for cmd in cmds:
                 obj_build.make_correct_ag_test_command_result(cmd, submission=best_sub)
-            update_denormalized_ag_test_results(best_sub.pk)
+            best_sub = update_denormalized_ag_test_results(best_sub.pk)
 
             for j in range(num_other_submissions):
                 sub = obj_build.make_finished_submission(group=group)
                 for cmd in cmds:
                     obj_build.make_incorrect_ag_test_command_result(cmd, submission=sub)
-                update_denormalized_ag_test_results(sub.pk)
+                sub = update_denormalized_ag_test_results(sub.pk)
 
             most_recent = obj_build.make_finished_submission(group=group)
             for cmd in cmds:
                 obj_build.make_incorrect_ag_test_command_result(cmd, submission=most_recent)
-            update_denormalized_ag_test_results(most_recent.pk)
+            most_recent = update_denormalized_ag_test_results(most_recent.pk)
 
             group_and_submission_data.append(
                 self.GroupAndSubmissionData(group, best_sub, most_recent))
