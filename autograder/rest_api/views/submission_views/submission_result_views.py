@@ -72,7 +72,9 @@ class SubmissionResultsViewBase(AGModelAPIView):
     def _get_submission_fdbk(
         self, fdbk_category: ag_models.FeedbackCategory
     ) -> SubmissionResultFeedback:
-        return SubmissionResultFeedback(self.get_object(), fdbk_category)
+        submission = self.get_object()
+        return SubmissionResultFeedback(
+            submission, fdbk_category, AGTestPreLoader(submission.project))
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
