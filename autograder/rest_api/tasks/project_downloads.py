@@ -3,7 +3,7 @@ import os
 import traceback
 import uuid
 import zipfile
-from typing import Sequence, Callable, Iterator, Tuple
+from typing import Sequence, Callable, Iterator, Tuple, List, Iterable
 
 from celery import shared_task
 from django.conf import settings
@@ -21,6 +21,18 @@ def all_submission_files_task(project_pk, task_pk, include_staff, *args, **kwarg
                                   _get_all_submissions, _make_submission_archive)
 
 
+def _get_all_submissions(
+        project: ag_models.Project,
+        groups: Sequence[ag_models.Group]) -> Tuple[List[SubmissionResultFeedback], int]:
+    ag_test_loader = AGTestPreLoader(project)
+    submissions = [
+        SubmissionResultFeedback(submission, ag_models.FeedbackCategory.max,
+                                 ag_test_loader)
+        for submission in ag_models.Submission.objects.filter(group__in=groups)
+    ]
+    return submissions, len(submissions)
+
+
 @shared_task(queue='project_downloads', acks_late=True)
 def ultimate_submission_files_task(project_pk, task_pk, include_staff, *args, **kwargs):
     _make_download_file_task_impl(project_pk, task_pk, include_staff,
@@ -29,15 +41,20 @@ def ultimate_submission_files_task(project_pk, task_pk, include_staff, *args, **
 
 @shared_task(queue='project_downloads', acks_late=True)
 def all_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwargs):
-    def _get_all_finished_grading_submissions(project: ag_models.Project,
-                                              groups: Sequence[ag_models.Group]):
-        submissions = list(
-            ag_models.get_submissions_with_results_queryset(
+    def _get_all_finished_grading_submissions(
+            project: ag_models.Project, groups: Sequence[ag_models.Group]
+    ) -> Tuple[List[SubmissionResultFeedback], int]:
+        submissions = ag_models.get_submissions_with_results_queryset(
                 ag_models.FeedbackCategory.max,
                 base_manager=ag_models.Submission.objects.filter(
                     group__in=groups,
-                    status=ag_models.Submission.GradingStatus.finished_grading)))
-        return submissions, len(submissions)
+                    status=ag_models.Submission.GradingStatus.finished_grading))
+        ag_test_loader = AGTestPreLoader(project)
+        fdbks = [
+            SubmissionResultFeedback(submission, ag_models.FeedbackCategory.max, ag_test_loader)
+            for submission in submissions
+        ]
+        return fdbks, len(submissions)
 
     _make_download_file_task_impl(project_pk, task_pk, include_staff,
                                   _get_all_finished_grading_submissions, _make_scores_csv)
@@ -52,27 +69,23 @@ def ultimate_submission_scores_task(project_pk, task_pk, include_staff, *args, *
 # Given a project and a sequence of submission groups, return a tuple of
 # (submissions, num_submissions).
 GetSubmissionsFnType = Callable[[ag_models.Project, Sequence[ag_models.Group]],
-                                Tuple[Iterator[ag_models.Submission], int]]
+                                Tuple[Iterator[SubmissionResultFeedback], int]]
 
 
-def _get_all_submissions(project: ag_models.Project,
-                         groups: Sequence[ag_models.Group]):
-    submissions = list(ag_models.Submission.objects.filter(group__in=groups))
-    return submissions, len(submissions)
-
-
-def _get_ultimate_submissions(project: ag_models.Project,
-                              groups: Sequence[ag_models.Group]):
+def _get_ultimate_submissions(
+        project: ag_models.Project,
+        groups: Sequence[ag_models.Group]) -> Tuple[Iterator[SubmissionResultFeedback], int]:
     return (get_ultimate_submissions(project, *groups, ag_test_preloader=AGTestPreLoader(project)),
             len(groups))
 
 
-# Given a task, an iterator of submissions, the number of submissions
-# that iterator will generate, and a destination filename, create
+# Given a task, an iterator of SubmissionResultFeedbacks,
+# the number of submissions that iterator will generate,
+# and a destination filename, create
 # a downloadable file with the given destination filename, updating
 # the task's progress field as the file is generated.
-MakeDownloadFnType = Callable[[ag_models.DownloadTask, Iterator[ag_models.Submission], int, str],
-                              None]
+MakeDownloadFnType = Callable[
+    [ag_models.DownloadTask, Iterator[SubmissionResultFeedback], int, str], None]
 
 
 def _make_download_file_task_impl(project_pk, task_pk, include_staff,
@@ -117,15 +130,16 @@ def _make_download_result_filename(project: ag_models.project,
 _PROGRESS_UPDATE_FREQUENCY = 50
 
 
-def _make_submission_archive(
-        task, submissions: Iterator[ag_models.Submission], num_submissions, dest_filename):
+def _make_submission_archive(task, submission_fdbks: Iterator[SubmissionResultFeedback],
+                             num_submissions, dest_filename):
     with open(dest_filename, 'wb') as archive:
         with zipfile.ZipFile(archive, 'w') as z:
-            for index, s in enumerate(submissions):
-                archive_dirname = ('_'.join(s.group.member_names)
-                                   + '-' + s.timestamp.isoformat())
-                with utils.ChangeDirectory(core_ut.get_submission_dir(s)):
-                    for filename in s.submitted_filenames:
+            for index, fdbk in enumerate(submission_fdbks):
+                submission = fdbk.submission
+                archive_dirname = ('_'.join(submission.group.member_names)
+                                   + '-' + submission.timestamp.isoformat())
+                with utils.ChangeDirectory(core_ut.get_submission_dir(submission)):
+                    for filename in submission.submitted_filenames:
                         target_name = os.path.join(
                             '{}_{}'.format(task.project.course.name, task.project.name),
                             archive_dirname, filename)
@@ -137,8 +151,8 @@ def _make_submission_archive(
                     print('Updated task {} progress: {}'.format(task.pk, task.progress))
 
 
-def _make_scores_csv(
-        task, submissions: Iterator[ag_models.Submission], num_submissions, dest_filename):
+def _make_scores_csv(task, submission_fdbks: Iterator[SubmissionResultFeedback],
+                     num_submissions: int, dest_filename: str):
     with open(dest_filename, 'w', newline='') as csv_file:
         project = task.project  # type: ag_models.Project
 
@@ -169,17 +183,16 @@ def _make_scores_csv(
         writer = csv.DictWriter(csv_file, row_headers)
         writer.writeheader()
 
-        sorted_submissions = sorted(
-            submissions, key=lambda s: min(s.group.member_names)
-        )  # type: Iterator[ag_models.Submission]
-        for progress_index, submission in enumerate(sorted_submissions):
+        sorted_fdbks = sorted(
+            submission_fdbks, key=lambda fdbk: min(fdbk.submission.group.member_names)
+        )
+        for progress_index, fdbk in enumerate(sorted_fdbks):
+            submission = fdbk.submission
             row = {timestamp_header: submission.timestamp.isoformat()}
 
             for index, username in enumerate(submission.group.member_names):
                 row[user_tmpl.format(index + 1)] = username
 
-            fdbk = SubmissionResultFeedback(
-                submission, ag_models.FeedbackCategory.max, AGTestPreLoader(submission.project))
             row[total_header] = fdbk.total_points
             row[total_possible_header] = fdbk.total_points_possible
 

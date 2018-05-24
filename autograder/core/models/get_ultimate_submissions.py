@@ -10,7 +10,7 @@ from .group import Group
 from .submission import Submission, get_submissions_with_results_queryset
 
 
-def get_ultimate_submission(group: Group) -> Optional[Submission]:
+def get_ultimate_submission(group: Group) -> Optional[SubmissionResultFeedback]:
     result = list(get_ultimate_submissions(group.project, group,
                                            ag_test_preloader=AGTestPreLoader(group.project)))
     if not result:
@@ -19,8 +19,9 @@ def get_ultimate_submission(group: Group) -> Optional[Submission]:
     return result[0]
 
 
-def get_ultimate_submissions(project: Project, *groups: Group,
-                             ag_test_preloader: AGTestPreLoader) -> Iterator[Submission]:
+def get_ultimate_submissions(
+    project: Project, *groups: Group, ag_test_preloader: AGTestPreLoader
+) -> Iterator[SubmissionResultFeedback]:
 
     finished_submissions_queryset = Submission.objects.filter(
         status=Submission.GradingStatus.finished_grading)
@@ -46,7 +47,12 @@ def get_ultimate_submissions(project: Project, *groups: Group,
             FeedbackCategory.normal, base_manager=finished_submissions_queryset)
         groups = base_group_queryset.prefetch_related(
             Prefetch('submissions', submissions_queryset))
-        return _best_submissions_generator(groups, FeedbackCategory.normal, ag_test_preloader)
+        # Workaround: We need to generate best submissions with normal feedback
+        # but return SubmissionResultFeedbacks with max feedback.
+        return (
+            SubmissionResultFeedback(fdbk.submission, FeedbackCategory.max, ag_test_preloader)
+            for fdbk in _best_submissions_generator(groups, FeedbackCategory.normal,
+                                                    ag_test_preloader))
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best:
         submissions_queryset = get_submissions_with_results_queryset(
             FeedbackCategory.max, base_manager=finished_submissions_queryset)

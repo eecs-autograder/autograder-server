@@ -226,13 +226,15 @@ def _build_api_parameter(field, field_name: str) -> Parameter:
 
 @_build_api_parameter.register(property)
 @_build_api_parameter.register(cached_property)
-def _(property_: property, field_name: str) -> Parameter:
+def _(property_: Union[property, cached_property], field_name: str) -> Parameter:
     if field_name == 'pk':
         type_ = 'integer'
     else:
-        type_ = 'fixme'
-        # type_ = get_type_hints(property_.fget).get('return', None)
-        # type_ = 'FIXME PROPERTY' if type_ is None else format_annotation(type_)
+        if isinstance(property_, property):
+            type_ = get_type_hints(property_.fget).get('return', None)
+        else:  # cached_property
+            type_ = get_type_hints(property_.func).get('return', None)
+        type_ = 'FIXME PROPERTY' if type_ is None else format_annotation(type_)
     description = property_.__doc__ if hasattr(property_, '__doc__') else ''
 
     return Parameter(

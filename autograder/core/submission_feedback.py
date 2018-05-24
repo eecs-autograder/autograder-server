@@ -202,6 +202,10 @@ class SubmissionResultFeedback(ToDictMixin):
     def pk(self):
         return self._submission.pk
 
+    @property
+    def submission(self):
+        return self._submission
+
     @cached_property
     def total_points(self) -> int:
         ag_suite_points = sum((
