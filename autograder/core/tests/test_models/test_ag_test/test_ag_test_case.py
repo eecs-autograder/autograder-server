@@ -3,7 +3,7 @@ import copy
 from django.core import exceptions
 
 import autograder.core.models as ag_models
-from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import get_suite_fdbk
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import get_suite_fdbk
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 

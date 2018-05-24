@@ -3,6 +3,7 @@ from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional
 
 from django.db import transaction
 from django.db.models import Prefetch
+from django.utils.functional import cached_property
 
 from autograder.core.models import Submission, AGTestCommandResult, StudentTestSuiteResult
 from autograder.core.models.ag_test.ag_test_suite_result import AGTestSuiteResult

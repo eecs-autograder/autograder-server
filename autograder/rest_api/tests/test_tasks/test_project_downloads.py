@@ -14,7 +14,7 @@ import autograder.core.models as ag_models
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.submission_feedback import update_denormalized_ag_test_results
-from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import \
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
     get_submission_fdbk
 from autograder.utils.testing import UnitTestBase
 

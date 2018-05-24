@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 import autograder.core.models as ag_models
 from autograder.core.submission_feedback import (
     update_denormalized_ag_test_results)
-from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import (
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_submission_fdbk)
 from autograder.utils import filter_dict
 from autograder.utils.testing import UnitTestBase

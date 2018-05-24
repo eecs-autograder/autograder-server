@@ -9,8 +9,8 @@ from rest_framework.test import APIClient
 import autograder.core.models as ag_models
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.tests.test_models.test_ag_test.fdbk_getter_shortcuts import \
-    get_submission_fdbk
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
+    get_submission_fdbk)
 from autograder.grading_tasks import tasks
 from autograder.utils.testing import UnitTestBase
 
@@ -191,8 +191,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
         tasks.grade_submission(self.other_submission.pk)
         self.other_submission.refresh_from_db()
 
-        other_fdbk = get_submission_fdbk(self.other_submission,
-                                              ag_models.FeedbackCategory.max)
+        other_fdbk = get_submission_fdbk(self.other_submission, ag_models.FeedbackCategory.max)
         self.assertEqual(0, other_fdbk.total_points)
         self.assertEqual(1, other_fdbk.total_points_possible)
         self.other_ag_test_cmd.validate_and_update(cmd='true')
@@ -323,8 +322,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
 
         # Make sure this submission is never rerun.
         self.other_submission.refresh_from_db()
-        other_fdbk = get_submission_fdbk(self.other_submission,
-                                              ag_models.FeedbackCategory.max)
+        other_fdbk = get_submission_fdbk(self.other_submission, ag_models.FeedbackCategory.max)
         self.assertEqual(0, other_fdbk.total_points)
         self.assertEqual(1, other_fdbk.total_points_possible)
 
