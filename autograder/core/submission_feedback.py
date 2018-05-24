@@ -1,5 +1,5 @@
 import tempfile
-from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional
+from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional, Union
 
 from django.db import transaction
 from django.db.models import Prefetch
@@ -19,14 +19,6 @@ from autograder.core.models.ag_test.ag_test_command import (
     MAX_AG_TEST_COMMAND_FDBK_SETTINGS)
 
 import autograder.core.utils as core_ut
-
-
-class DictObjectWrapper:
-    def __init__(self, data):
-        self._data = data
-
-    def __getattr__(self, name):
-        return self._data[name]
 
 
 class AGTestPreLoader:
@@ -76,18 +68,118 @@ class AGTestPreLoader:
         return self._cmds[cmd_pk]
 
 
+DenormedAGSuiteResType = Union[AGTestSuiteResult, 'SerializedAGTestSuiteResultWrapper']
+DenormedAGCaseResType = Union[AGTestCaseResult, 'SerializedAGTestCaseResultWrapper']
+DenormedAGCommandResType = Union[AGTestCommandResult, 'SerializedAGTestCommandResultWrapper']
+
+
+class DenormalizedAGTestSuiteResult:
+    def __init__(self, ag_test_suite_result: DenormedAGSuiteResType,
+                 ag_test_case_results: List['DenormalizedAGTestCaseResult']):
+        self.ag_test_suite_result = ag_test_suite_result
+        self.ag_test_case_results = ag_test_case_results
+
+
 class DenormalizedAGTestCaseResult:
-    def __init__(self, ag_test_case_result: AGTestCaseResult,
-                 ag_test_command_results: List[AGTestCommandResult]):
+    def __init__(self, ag_test_case_result: DenormedAGCaseResType,
+                 ag_test_command_results: List[DenormedAGCommandResType]):
         self.ag_test_case_result = ag_test_case_result
         self.ag_test_command_results = ag_test_command_results
 
 
-class DenormalizedAGTestSuiteResult:
-    def __init__(self, ag_test_suite_result: AGTestSuiteResult,
-                 ag_test_case_results: List[DenormalizedAGTestCaseResult]):
-        self.ag_test_suite_result = ag_test_suite_result
-        self.ag_test_case_results = ag_test_case_results
+class SerializedAGTestSuiteResultWrapper:
+    def __init__(self, suite_result_dict):
+        self._suite_result_dict = suite_result_dict
+
+    @property
+    def pk(self):
+        return self._suite_result_dict['pk']
+
+    @property
+    def ag_test_suite_id(self):
+        return self._suite_result_dict['ag_test_suite_id']
+
+    @property
+    def submission_id(self):
+        return self._suite_result_dict['submission_id']
+
+    @property
+    def setup_return_code(self):
+        return self._suite_result_dict['setup_return_code']
+
+    @property
+    def setup_timed_out(self):
+        return self._suite_result_dict['setup_timed_out']
+
+    @property
+    def setup_stdout_truncated(self):
+        return self._suite_result_dict['setup_stdout_truncated']
+
+    @property
+    def setup_stderr_truncated(self):
+        return self._suite_result_dict['setup_stderr_truncated']
+
+
+class SerializedAGTestCaseResultWrapper:
+    def __init__(self, case_result_dict):
+        self._case_result_dict = case_result_dict
+
+    @property
+    def pk(self):
+        return self._case_result_dict['pk']
+
+    @property
+    def ag_test_case_id(self):
+        return self._case_result_dict['ag_test_case_id']
+
+    @property
+    def ag_test_suite_result_id(self):
+        return self._case_result_dict['ag_test_suite_result_id']
+
+
+class SerializedAGTestCommandResultWrapper:
+    def __init__(self, cmd_result_dict):
+        self._cmd_result_dict = cmd_result_dict
+
+    @property
+    def pk(self):
+        return self._cmd_result_dict['pk']
+
+    @property
+    def ag_test_command_id(self):
+        return self._cmd_result_dict['ag_test_command_id']
+
+    @property
+    def ag_test_case_result_id(self):
+        return self._cmd_result_dict['ag_test_case_result_id']
+
+    @property
+    def return_code(self):
+        return self._cmd_result_dict['return_code']
+
+    @property
+    def return_code_correct(self):
+        return self._cmd_result_dict['return_code_correct']
+
+    @property
+    def stdout_correct(self):
+        return self._cmd_result_dict['stdout_correct']
+
+    @property
+    def stderr_correct(self):
+        return self._cmd_result_dict['stderr_correct']
+
+    @property
+    def timed_out(self):
+        return self._cmd_result_dict['timed_out']
+
+    @property
+    def stdout_truncated(self):
+        return self._cmd_result_dict['stdout_truncated']
+
+    @property
+    def stderr_truncated(self):
+        return self._cmd_result_dict['stderr_truncated']
 
 
 def _deserialize_denormed_ag_test_results(
@@ -95,17 +187,7 @@ def _deserialize_denormed_ag_test_results(
 ) -> List[DenormalizedAGTestSuiteResult]:
     result = []
     for serialized_suite_result in submission.denormalized_ag_test_results.values():
-        deserialized_suite_result = DictObjectWrapper(serialized_suite_result)
-        # deserialized_suite_result = AGTestSuiteResult(
-        #     pk=serialized_suite_result['pk'],
-        #
-        #     ag_test_suite_id=serialized_suite_result['ag_test_suite_id'],
-        #     submission_id=serialized_suite_result['submission_id'],
-        #     setup_return_code=serialized_suite_result['setup_return_code'],
-        #     setup_timed_out=serialized_suite_result['setup_timed_out'],
-        #     setup_stdout_truncated=serialized_suite_result['setup_stdout_truncated'],
-        #     setup_stderr_truncated=serialized_suite_result['setup_stderr_truncated'],
-        # )
+        deserialized_suite_result = SerializedAGTestSuiteResultWrapper(serialized_suite_result)
 
         case_results = [
             _deserialize_denormed_ag_test_case_result(case_result)
@@ -118,13 +200,7 @@ def _deserialize_denormed_ag_test_results(
 
 
 def _deserialize_denormed_ag_test_case_result(case_result: dict) -> DenormalizedAGTestCaseResult:
-    deserialized_case_result = DictObjectWrapper(case_result)
-    # deserialized_case_result = AGTestCaseResult(
-    #     pk=case_result['pk'],
-    #
-    #     ag_test_case_id=case_result['ag_test_case_id'],
-    #     ag_test_suite_result_id=case_result['ag_test_suite_result_id'],
-    # )
+    deserialized_case_result = SerializedAGTestCaseResultWrapper(case_result)
 
     cmd_results = [
         _deserialize_denormed_ag_test_cmd_result(cmd_result)
@@ -134,25 +210,9 @@ def _deserialize_denormed_ag_test_case_result(case_result: dict) -> Denormalized
     return DenormalizedAGTestCaseResult(deserialized_case_result, cmd_results)
 
 
-def _deserialize_denormed_ag_test_cmd_result(cmd_result: dict) -> AGTestCommandResult:
-    return DictObjectWrapper(cmd_result)
-    # return AGTestCommandResult(
-    #     pk=cmd_result['pk'],
-    #
-    #     ag_test_command_id=cmd_result['ag_test_command_id'],
-    #     ag_test_case_result_id=cmd_result['ag_test_case_result_id'],
-    #
-    #     return_code=cmd_result['return_code'],
-    #     return_code_correct=cmd_result['return_code_correct'],
-    #
-    #     stdout_correct=cmd_result['stdout_correct'],
-    #     stderr_correct=cmd_result['stderr_correct'],
-    #
-    #     timed_out=cmd_result['timed_out'],
-    #
-    #     stdout_truncated=cmd_result['stdout_truncated'],
-    #     stderr_truncated=cmd_result['stderr_truncated'],
-    # )
+def _deserialize_denormed_ag_test_cmd_result(
+        cmd_result: dict) -> SerializedAGTestCommandResultWrapper:
+    return SerializedAGTestCommandResultWrapper(cmd_result)
 
 
 @transaction.atomic()
