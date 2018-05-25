@@ -26,15 +26,13 @@ class GetUltimateSubmissionsTestCase(UnitTestBase):
 
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
-        [ultimate_most_recent] = get_ultimate_submissions(
-            self.project, group, ag_test_preloader=AGTestPreLoader(self.project))
-        self.assertEqual(most_recent, ultimate_most_recent.submission)
+        ultimate_most_recent = get_ultimate_submission(group)
+        self.assertEqual(most_recent, ultimate_most_recent)
 
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
-        [ultimate_best] = get_ultimate_submissions(
-            self.project, group, ag_test_preloader=AGTestPreLoader(self.project))
-        self.assertEqual(best_sub, ultimate_best.submission)
+        ultimate_best = get_ultimate_submission(group)
+        self.assertEqual(best_sub, ultimate_best)
 
     def test_get_ultimate_for_many_groups(self):
         data = self.prepare_data(self.project, num_groups=3)

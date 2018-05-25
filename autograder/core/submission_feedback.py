@@ -119,6 +119,26 @@ class SerializedAGTestSuiteResultWrapper:
     def setup_stderr_truncated(self):
         return self._suite_result_dict['setup_stderr_truncated']
 
+    # ------------------------------------------------------------------
+
+    def open_setup_stdout(self, mode='rb'):
+        return self._ag_test_suite_result.open_setup_stdout(mode=mode)
+
+    @property
+    def setup_stdout_filename(self):
+        return self._ag_test_suite_result.setup_stdout_filename
+
+    def open_setup_stderr(self, mode='rb'):
+        return self._ag_test_suite_result.open_setup_stderr(mode=mode)
+
+    @property
+    def setup_stderr_filename(self):
+        return self._ag_test_suite_result.setup_stderr_filename
+
+    @cached_property
+    def _ag_test_suite_result(self) -> AGTestSuiteResult:
+        return AGTestSuiteResult.objects.get(pk=self.pk)
+
 
 class SerializedAGTestCaseResultWrapper:
     def __init__(self, case_result_dict):
@@ -180,6 +200,20 @@ class SerializedAGTestCommandResultWrapper:
     @property
     def stderr_truncated(self):
         return self._cmd_result_dict['stderr_truncated']
+
+    # ------------------------------------------------------------------
+
+    @property
+    def stdout_filename(self):
+        return self._ag_test_command_result.stdout_filename
+
+    @property
+    def stderr_filename(self):
+        return self._ag_test_command_result.stderr_filename
+
+    @cached_property
+    def _ag_test_command_result(self) -> AGTestCommandResult:
+        return AGTestCommandResult.objects.get(pk=self.pk)
 
 
 def _deserialize_denormed_ag_test_results(

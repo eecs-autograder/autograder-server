@@ -6,8 +6,7 @@ from drf_composable_permissions.p import P
 from rest_framework import exceptions, permissions
 
 import autograder.core.models as ag_models
-from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
-from autograder.core.submission_feedback import AGTestPreLoader
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 
 GetCourseFnType = Callable[[ag_models.AutograderModel], ag_models.Course]
 GetProjectFnType = Callable[[ag_models.AutograderModel], ag_models.Project]
@@ -231,8 +230,6 @@ def can_request_feedback_category(
             course = project.course
             deadline_past = _deadline_is_past(submission)
 
-            ag_test_preloader = AGTestPreLoader(project)
-
             in_group = group.members.filter(pk=request.user.pk).exists()
             if course.is_staff(request.user):
                 # Staff can always request any feedback category for
@@ -253,8 +250,7 @@ def can_request_feedback_category(
                 # Staff can only request max feedback for other groups'
                 # ultimate submissions if the project deadline and group's
                 # extension have passed.
-                [group_ultimate_submission] = get_ultimate_submissions(
-                    project, group, ag_test_preloader=ag_test_preloader)
+                group_ultimate_submission = get_ultimate_submission(group)
                 return deadline_past and group_ultimate_submission == submission
 
             # Non-staff users cannot view other groups' submissions
@@ -268,8 +264,7 @@ def can_request_feedback_category(
                 return submission.is_past_daily_limit
 
             if fdbk_category == ag_models.FeedbackCategory.ultimate_submission:
-                [group_ultimate_submission] = get_ultimate_submissions(
-                    project, group, ag_test_preloader=ag_test_preloader)
+                group_ultimate_submission = get_ultimate_submission(group)
                 return (not project.hide_ultimate_submission_fdbk
                         and group_ultimate_submission == submission
                         and deadline_past)

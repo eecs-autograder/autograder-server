@@ -10,13 +10,13 @@ from .group import Group
 from .submission import Submission, get_submissions_with_results_queryset
 
 
-def get_ultimate_submission(group: Group) -> Optional[SubmissionResultFeedback]:
+def get_ultimate_submission(group: Group) -> Optional[Submission]:
     result = list(get_ultimate_submissions(group.project, group,
                                            ag_test_preloader=AGTestPreLoader(group.project)))
     if not result:
         return None
 
-    return result[0]
+    return result[0].submission
 
 
 def get_ultimate_submissions(
