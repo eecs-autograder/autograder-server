@@ -74,7 +74,7 @@ schema_view = get_schema_view(
         description="""
 <h3>Welcome to the Autograder API documentation!</h3>
 <div>
-  This API is in Beta. Most of the information here is stable, but some of it 
+  This API is in Beta. Most of the information here is stable, but some of it
   may change in future releases.
 </div>
 <div>

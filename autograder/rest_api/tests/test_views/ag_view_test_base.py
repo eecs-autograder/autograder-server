@@ -96,10 +96,10 @@ class AGViewTestBase(UnitTestBase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
-        self.assert_dict_contents_equal(expected_data,
-                                        utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
-        self.assert_dict_contents_equal(expected_data,
-                                        utils.exclude_dict(response.data, 'last_modified'))
+        self.assert_dict_contents_equal(
+            expected_data, utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
+        self.assert_dict_contents_equal(
+            expected_data, utils.exclude_dict(response.data, 'last_modified'))
 
         return response
 
@@ -127,10 +127,10 @@ class AGViewTestBase(UnitTestBase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
-        self.assert_dict_contents_equal(expected_data,
-                                        utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
-        self.assert_dict_contents_equal(expected_data,
-                                        utils.exclude_dict(response.data, 'last_modified'))
+        self.assert_dict_contents_equal(
+            expected_data, utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
+        self.assert_dict_contents_equal(
+            expected_data, utils.exclude_dict(response.data, 'last_modified'))
 
         return response
 

@@ -74,7 +74,8 @@ class AGTestCaseFeedbackTestCase(UnitTestBase):
         obj_build.make_correct_ag_test_command_result(self.ag_test_cmd2, self.ag_test_case_result)
 
         self.assertEqual(
-            8, get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max).total_points)
+            8,
+            get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max).total_points)
         self.assertEqual(
             8,
             get_case_fdbk(self.ag_test_case_result,

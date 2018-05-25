@@ -1054,7 +1054,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         # Request submission2 results, they should reflect the change we made.
         response = self.client.get(self._make_url(submission2))
         self.assertEqual(get_submission_fdbk(submission2,
-                                                  ag_models.FeedbackCategory.normal).to_dict(),
+                                             ag_models.FeedbackCategory.normal).to_dict(),
                          response.data)
 
     def test_non_normal_feedback_results_not_cached(self):
@@ -1163,8 +1163,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         # Waiting for deferred should be cached by this request...
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        old_data = get_submission_fdbk(submission,
-                                            ag_models.FeedbackCategory.normal).to_dict()
+        old_data = get_submission_fdbk(submission, ag_models.FeedbackCategory.normal).to_dict()
 
         # ...so we should get stale results here.
         cmd.validate_and_update(points_for_correct_stdout=cmd.points_for_correct_stdout + 1)
@@ -1178,7 +1177,7 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(get_submission_fdbk(submission,
-                                                  ag_models.FeedbackCategory.normal).to_dict(),
+                                             ag_models.FeedbackCategory.normal).to_dict(),
                          response.data)
 
         # Make sure that the results for are other submission are still stale.
