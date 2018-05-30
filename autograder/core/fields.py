@@ -7,6 +7,9 @@ from django.db import models
 
 from . import constants as const
 
+if typing.TYPE_CHECKING:
+    from .models.ag_model_base import DictSerializableMixin
+
 
 class ValidatedArrayField(pg_fields.ArrayField):
     """
@@ -171,3 +174,41 @@ class EnumField(models.TextField):
             return None
 
         return value.value
+
+
+class ValidatedJSONField(pg_fields.JSONField):
+    """
+    This field uses the Postgres JSON field, ToDictMixin, and
+    FromDictMixin to validate and store serializable Python objects
+    in the database.
+    """
+
+    def __init__(self, serializable_class: typing.Type['DictSerializableMixin'], **kwargs):
+        self.serializable_class = serializable_class
+        super().__init__(**kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs['serializable_class'] = self.serializable_class
+        return name, path, args, kwargs
+
+    def to_python(self, value):
+        if value is None:
+            return None
+
+        if isinstance(value, self.serializable_class):
+            return self.serializable_class.from_dict(value.to_dict())
+
+        return self.serializable_class.from_dict(value)
+
+    def validate(self, value, model_instance):
+        super().validate(value.to_dict(), model_instance)
+
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
+
+    def get_prep_value(self, value):
+        if value is None:
+            return None
+
+        return super().get_prep_value(value.to_dict())

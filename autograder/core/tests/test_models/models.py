@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 
 from autograder.core.models import AutograderModel
 import autograder.core.fields as ag_fields
+from autograder.core.models.ag_model_base import DictSerializableMixin
 
 # -----------------------------------------------------------------------------
 # DUMMY MODELS FOR TESTING AutograderModel BASE CLASS
@@ -146,3 +147,24 @@ class DummyAutograderModel(AutograderModel):
         'transparent_foreign_key',
         'transparent_nullable_foreign_key',
     )
+
+
+class DictSerializableClass(DictSerializableMixin):
+    def __init__(self, num: int, string: str, an_enum: AnEnum):
+        self.num = num
+        self.string = string
+        self.an_enum = an_enum
+
+    FIELD_TYPES = {
+        'num': int,
+        'string': str,
+        'an_enum': AnEnum
+    }
+
+    SERIALIZABLE_FIELDS = tuple(FIELD_TYPES.keys())
+
+
+class AGModelWithSerializableField(AutograderModel):
+    serializable = ag_fields.ValidatedJSONField(DictSerializableClass)
+
+    SERIALIZABLE_FIELDS = ('serializable',)

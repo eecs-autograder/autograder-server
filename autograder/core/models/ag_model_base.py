@@ -1,8 +1,11 @@
+import copy
 import enum
 import typing
 
 from django.db import models, transaction
 from django.core import exceptions
+
+from autograder.core.fields import ValidatedJSONField
 
 
 class AutograderModelManager(models.Manager):
@@ -194,8 +197,10 @@ class ToDictMixin:
                 continue
 
             try:
-                # noinspection PyUnresolvedReferences
                 field = self._meta.get_field(field_name)
+
+                if isinstance(field, ValidatedJSONField):
+                    result[field_name] = getattr(self, field_name).to_dict()
 
                 if field.many_to_one or field.one_to_one:
                     field_val = getattr(self, field_name)
@@ -220,6 +225,73 @@ class ToDictMixin:
                 pass
 
         return result
+
+
+class FromDictMixin:
+    """
+    Provides a way to validate data and use it to construct or update
+    objects from the validated data.
+
+    Note: This mixin should NOT be used with Django model classes.
+    """
+    @classmethod
+    def from_dict(cls, input_: dict):
+        """
+        Validates input_ and constructs an object from it.
+        """
+        return cls(**cls.prepare_input(input_))
+
+    def update(self, input_):
+        """
+        Validates input_ and updates the current object from it.
+        """
+        prapared_input = self.prepare_input(input_)
+        for field_name, value in input_.items():
+            setattr(self, field_name, value)
+
+    @classmethod
+    def prepare_input(cls, input_: dict) -> dict:
+        """
+        Prepares input_ for constructing an instance of cls. If a string
+        is given where an enum is expected, an object of the enum type
+        will be created and used instead.
+
+        Raises django.core.exceptions.ValidationError if input
+        contains any fields not in cls.FIELD_TYPES, or if any
+        input values have the wrong type.
+        """
+        processed_input = copy.deepcopy(input_)
+
+        extra_fields = set(input_.keys()) - set(cls.FIELD_TYPES.keys())
+        if extra_fields:
+            raise exceptions.ValidationError(f'extra_fields: {",".join(extra_fields)}')
+
+        for field_name, value in input_.items():
+            expected_type = cls.FIELD_TYPES[field_name]
+            if issubclass(expected_type, enum.Enum) and isinstance(value, str):
+                try:
+                    processed_input[field_name] = expected_type(value)
+                except ValueError as e:
+                    raise exceptions.ValidationError(f'{field_name}: {str(e)}')
+            elif not isinstance(value, expected_type):
+                raise exceptions.ValidationError(
+                    f'{field_name}: Incorrect type. '
+                    f'Expected {cls.FIELD_TYPES[field_name].__name__}, '
+                    f'but got {type(value).__name__}')
+            else:
+                processed_input[field_name] = value
+
+        return processed_input
+
+    # A dictionary of field names to types.
+    FIELD_TYPES: typing.Dict[str, typing.Type] = {}
+
+
+class DictSerializableMixin(ToDictMixin, FromDictMixin):
+    """
+    Shortcut mixin for ToDictMixin and FromDictMixin.
+    """
+    pass
 
 
 class AutograderModel(ToDictMixin, models.Model):

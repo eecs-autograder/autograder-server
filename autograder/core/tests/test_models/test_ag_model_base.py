@@ -1,3 +1,4 @@
+import copy
 from unittest import mock
 
 from django.contrib.auth.models import User
@@ -7,7 +8,8 @@ from autograder.core.models.ag_model_base import AutograderModel
 from autograder.utils.testing import UnitTestBase
 
 from .models import (
-    DummyAutograderModel, DummyForeignAutograderModel, DummyToManyModel, AnEnum)
+    DummyAutograderModel, DummyForeignAutograderModel, DummyToManyModel, AnEnum,
+    AGModelWithSerializableField, DictSerializableClass)
 
 
 class AGModelBaseToDictTest(UnitTestBase):
@@ -434,3 +436,102 @@ class AGModelValidateAndUpdateTestCase(UnitTestBase):
         self.assertIn('non_editable_fields', cm.exception.message_dict)
         self.assertIn('read_only_field',
                       cm.exception.message_dict['non_editable_fields'])
+
+
+class CreateAGModelWithSerializableFieldTest(UnitTestBase):
+    def test_to_dict(self):
+        data = {
+            'num': 42,
+            'string': 'nsroitenarositean',
+            'an_enum': AnEnum.spam
+        }
+
+        obj = AGModelWithSerializableField.objects.validate_and_create(
+            serializable=data
+        )
+
+        expected = {
+            'serializable': copy.copy(data)
+        }
+        expected['serializable']['an_enum'] = expected['serializable']['an_enum'].value
+
+        obj.refresh_from_db()
+        self.assertEqual(expected, obj.to_dict())
+
+    def test_create_with_dict_param(self):
+        data = {
+            'num': 24,
+            'string': 'nxcvn',
+            'an_enum': AnEnum.egg
+        }
+
+        obj = AGModelWithSerializableField.objects.validate_and_create(
+            serializable=data
+        )
+
+        obj.refresh_from_db()
+
+        self.assertEqual(data['num'], obj.serializable.num)
+        self.assertEqual(data['string'], obj.serializable.string)
+        self.assertEqual(data['an_enum'], obj.serializable.an_enum)
+
+    def test_create_with_class_param(self):
+        serializable = DictSerializableClass(
+            num=67,
+            string='qpfwp',
+            an_enum=AnEnum.egg
+        )
+
+        obj = AGModelWithSerializableField.objects.validate_and_create(
+            serializable=serializable
+        )
+
+        obj.refresh_from_db()
+
+        self.assertEqual(serializable.num, obj.serializable.num)
+        self.assertEqual(serializable.string, obj.serializable.string)
+        self.assertEqual(serializable.an_enum, obj.serializable.an_enum)
+
+    def test_create_error_extra_field(self):
+        data = {
+            'num': 19,
+            'string': 'jaeija',
+            'an_enum': AnEnum.spam,
+            'extra': 45
+        }
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            AGModelWithSerializableField.objects.validate_and_create(serializable=data)
+
+        self.assertIn('serializable', cm.exception.message_dict)
+        self.assertIn('extra_fields:', cm.exception.message_dict['serializable'][0])
+
+    def test_create_error_wrong_type(self):
+        data = {
+            'num': '34',
+            'string': 'aeiai',
+            'an_enum': AnEnum.egg,
+        }
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            AGModelWithSerializableField.objects.validate_and_create(serializable=data)
+
+        self.assertIn('serializable', cm.exception.message_dict)
+        self.assertIn('num:', cm.exception.message_dict['serializable'][0])
+
+
+class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+    def test_update_with_dict_param(self):
+        self.fail()
+
+    def test_update_with_class_param(self):
+        self.fail()
+
+    def test_update_error_extra_field(self):
+        self.fail()
+
+    def test_update_error_wrong_type(self):
+        self.fail()

@@ -57,5 +57,5 @@ class AGCommandResult(AGCommandResultBase):
                 self.save()
 
     # We won't define any serialization settings here because run results
-    # are typically processed through some sort of "feedback calculator"
+    # are typically processed through some sort of "result feedback" class
     # before being serialized.

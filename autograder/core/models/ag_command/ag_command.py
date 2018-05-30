@@ -24,7 +24,3 @@ class AGCommand(AGCommandBase):
         'virtual_memory_limit',
         'process_spawn_limit',
     ]
-
-    SERIALIZE_RELATED = [
-        'stdin_instructor_file',
-    ]
