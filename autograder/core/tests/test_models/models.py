@@ -168,3 +168,4 @@ class AGModelWithSerializableField(AutograderModel):
     serializable = ag_fields.ValidatedJSONField(DictSerializableClass)
 
     SERIALIZABLE_FIELDS = ('serializable',)
+    EDITABLE_FIELDS = ('serializable',)

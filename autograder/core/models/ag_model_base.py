@@ -264,7 +264,7 @@ class FromDictMixin:
 
         extra_fields = set(input_.keys()) - set(cls.FIELD_TYPES.keys())
         if extra_fields:
-            raise exceptions.ValidationError(f'extra_fields: {",".join(extra_fields)}')
+            raise exceptions.ValidationError(f'Extra fields: {",".join(extra_fields)}')
 
         for field_name, value in input_.items():
             expected_type = cls.FIELD_TYPES[field_name]
@@ -367,6 +367,17 @@ class AutograderModel(ToDictMixin, models.Model):
                     {'non_editable_fields': [field_name]})
 
             field = self._meta.get_field(field_name)
+
+            if isinstance(field, ValidatedJSONField):
+                if isinstance(val, dict):
+                    try:
+                        getattr(self, field_name).update(val)
+                    except exceptions.ValidationError as e:
+                        raise exceptions.ValidationError({field_name: str(e)})
+                else:
+                    setattr(self, field_name, val)
+
+                continue
 
             if field.many_to_many:
                 loaded_vals = _load_related_to_many_objs(field.related_model, val)

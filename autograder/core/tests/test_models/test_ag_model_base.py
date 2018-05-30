@@ -462,7 +462,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         data = {
             'num': 24,
             'string': 'nxcvn',
-            'an_enum': AnEnum.egg
+            'an_enum': AnEnum.egg.value
         }
 
         obj = AGModelWithSerializableField.objects.validate_and_create(
@@ -473,7 +473,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
 
         self.assertEqual(data['num'], obj.serializable.num)
         self.assertEqual(data['string'], obj.serializable.string)
-        self.assertEqual(data['an_enum'], obj.serializable.an_enum)
+        self.assertEqual(AnEnum.egg, obj.serializable.an_enum)
 
     def test_create_with_class_param(self):
         serializable = DictSerializableClass(
@@ -504,7 +504,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
             AGModelWithSerializableField.objects.validate_and_create(serializable=data)
 
         self.assertIn('serializable', cm.exception.message_dict)
-        self.assertIn('extra_fields:', cm.exception.message_dict['serializable'][0])
+        self.assertIn('Extra fields:', cm.exception.message_dict['serializable'][0])
 
     def test_create_error_wrong_type(self):
         data = {
@@ -519,19 +519,103 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertIn('serializable', cm.exception.message_dict)
         self.assertIn('num:', cm.exception.message_dict['serializable'][0])
 
+    def test_create_error_bad_enum_value(self):
+        data = {
+            'num': 23,
+            'string': 'sss',
+            'an_enum': 'not_a_value',
+        }
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            AGModelWithSerializableField.objects.validate_and_create(serializable=data)
+
+        self.assertIn('serializable', cm.exception.message_dict)
+        self.assertIn('an_enum:', cm.exception.message_dict['serializable'][0])
+
 
 class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-    def test_update_with_dict_param(self):
-        self.fail()
+        self.obj = AGModelWithSerializableField.objects.validate_and_create(
+            serializable={
+                'num': 90,
+                'string': 'wnifetasor',
+                'an_enum': AnEnum.egg
+            }
+        )
+
+    def test_full_update_with_dict_param(self):
+        new_data = {
+            'num': 76,
+            'string': 'waaaaluigi',
+            'an_enum': AnEnum.spam.value,
+        }
+
+        self.obj.validate_and_update(serializable=new_data)
+
+        self.obj.refresh_from_db()
+
+        self.assertEqual(new_data['num'], self.obj.serializable.num)
+        self.assertEqual(new_data['string'], self.obj.serializable.string)
+        self.assertEqual(AnEnum.spam, self.obj.serializable.an_enum)
+
+    def test_partial_update_with_dict_param(self):
+        original_num = self.obj.serializable.num
+        original_an_enum = self.obj.serializable.an_enum
+        new_data = {
+            'string': 'stove',
+        }
+
+        self.obj.validate_and_update(serializable=new_data)
+        self.obj.refresh_from_db()
+
+        self.assertEqual(new_data['string'], self.obj.serializable.string)
+
+        self.assertEqual(original_num, self.obj.serializable.num)
+        self.assertEqual(original_an_enum, self.obj.serializable.an_enum)
 
     def test_update_with_class_param(self):
-        self.fail()
+        new_data = copy.deepcopy(self.obj.serializable)
+        new_data.num = 892
+
+        self.obj.validate_and_update(serializable=new_data)
+        self.obj.refresh_from_db()
+
+        self.assertEqual(new_data.num, self.obj.serializable.num)
+        self.assertEqual(new_data.string, self.obj.serializable.string)
+        self.assertEqual(new_data.an_enum, self.obj.serializable.an_enum)
 
     def test_update_error_extra_field(self):
-        self.fail()
+        data = {
+            'extra': 45
+        }
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.obj.validate_and_update(serializable=data)
+
+        self.assertIn('serializable', cm.exception.message_dict)
+        self.assertIn('Extra fields:', cm.exception.message_dict['serializable'][0])
 
     def test_update_error_wrong_type(self):
-        self.fail()
+        data = {
+            'string': 42,
+        }
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.obj.validate_and_update(serializable=data)
+
+        self.assertIn('serializable', cm.exception.message_dict)
+        self.assertIn('string:', cm.exception.message_dict['serializable'][0])
+
+    def test_update_error_bad_enum_value(self):
+        data = {
+
+            'an_enum': 'not_a_value',
+        }
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.obj.validate_and_update(serializable=data)
+
+        self.assertIn('serializable', cm.exception.message_dict)
+        self.assertIn('an_enum:', cm.exception.message_dict['serializable'][0])
