@@ -1,9 +1,12 @@
 import copy
 import enum
+import inspect
 import typing
+from collections import OrderedDict
 
 from django.db import models, transaction
 from django.core import exceptions
+from drf_yasg.openapi import Schema, Parameter
 
 from autograder.core.fields import ValidatedJSONField
 
@@ -257,17 +260,17 @@ class FromDictMixin:
         will be created and used instead.
 
         Raises django.core.exceptions.ValidationError if input
-        contains any fields not in cls.FIELD_TYPES, or if any
+        contains any fields not in cls.get_field_types(), or if any
         input values have the wrong type.
         """
         processed_input = copy.deepcopy(input_)
 
-        extra_fields = set(input_.keys()) - set(cls.FIELD_TYPES.keys())
+        extra_fields = set(input_.keys()) - cls._allowed_fields()
         if extra_fields:
             raise exceptions.ValidationError(f'Extra fields: {",".join(extra_fields)}')
 
         for field_name, value in input_.items():
-            expected_type = cls.FIELD_TYPES[field_name]
+            expected_type = cls.get_field_type(field_name)
             if issubclass(expected_type, enum.Enum) and isinstance(value, str):
                 try:
                     processed_input[field_name] = expected_type(value)
@@ -275,23 +278,85 @@ class FromDictMixin:
                     raise exceptions.ValidationError(f'{field_name}: {str(e)}')
             elif not isinstance(value, expected_type):
                 raise exceptions.ValidationError(
-                    f'{field_name}: Incorrect type. '
-                    f'Expected {cls.FIELD_TYPES[field_name].__name__}, '
+                    f'{field_name}: Incorrect type. Expected {expected_type.__name__}, '
                     f'but got {type(value).__name__}')
             else:
                 processed_input[field_name] = value
 
         return processed_input
 
-    # A dictionary of field names to types.
-    FIELD_TYPES: typing.Dict[str, typing.Type] = {}
+    @classmethod
+    def _allowed_fields(cls) -> typing.Set[str]:
+        return set(inspect.signature(cls.__init__).parameters.keys())
+
+    @classmethod
+    def get_field_type(cls, field_name: str) -> typing.Type:
+        """
+        Attempts to determine the type of the field with the given
+        name by inspecting the type annotation of the parameter
+        with the same name in the __init__  method.
+
+        Raises ValueError if there is no type annotation for the
+        parameter.
+        """
+        param = inspect.signature(cls.__init__).parameters[field_name]
+        if param.annotation is inspect.Parameter.empty:
+            raise ValueError(f'Missing type annotation for {field_name} in {cls.__name__}')
+
+        return param.annotation
+
+    @classmethod
+    def field_is_required(cls, field_name: str) -> bool:
+        """
+        Returns True if the parameter to the __init__ method called
+        field_name has no default value (if it's a required parameter).
+        """
+        return cls.get_field_default(field_name) is inspect.Parameter.empty
+
+    @classmethod
+    def get_field_default(cls, field_name):
+        """
+        Returns the default value for the field with the given name.
+        The default value is introspected from the parameter of the
+        same name in the __init__ method.
+        """
+        return inspect.signature(cls.__init__).parameters[field_name].default
+
+    @classmethod
+    def get_field_descriptions(cls):
+        return cls.FIELD_DESCRIPTIONS
+
+    # A dictionary of field names to field descriptions.
+    FIELD_DESCRIPTIONS: typing.Dict[str, str] = {}
 
 
 class DictSerializableMixin(ToDictMixin, FromDictMixin):
     """
-    Shortcut mixin for ToDictMixin and FromDictMixin.
+    Shortcut mixin for ToDictMixin and FromDictMixin. Also provides a
+    way of generating a Schema from get_field_types() and
+    get_field_descriptions().
     """
-    pass
+
+    @classmethod
+    def get_schema(cls, title) -> Schema:
+        """
+        Returns a schema for this class to be used in generating API
+        documentation.
+        """
+        properties = OrderedDict()
+        for field_name in cls.get_serializable_fields():
+            properties[field_name] = Parameter(
+                field_name, 'body',
+                description=cls.get_field_descriptions().get(field_name, ''),
+                type=cls.get_field_type(field_name).__name__,
+                required=cls.field_is_required(field_name),
+                default=cls.get_field_default(field_name)
+            )
+        return Schema(
+            title=title,
+            type='object',
+            properties=properties
+        )
 
 
 class AutograderModel(ToDictMixin, models.Model):

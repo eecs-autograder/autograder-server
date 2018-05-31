@@ -1,5 +1,8 @@
+from collections import OrderedDict
+
 from django.core import exceptions
 from django.db import models, connection
+from drf_yasg.openapi import Schema
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
@@ -51,12 +54,12 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
 
 class NewAGTestSuiteFeedbackConfig(DictSerializableMixin):
     def __init__(self,
-                 visible=True,
-                 show_individual_tests=True,
-                 show_setup_return_code=True,
-                 show_setup_timed_out=True,
-                 show_setup_stdout=True,
-                 show_setup_stderr=True):
+                 visible: bool=True,
+                 show_individual_tests: bool=True,
+                 show_setup_return_code: bool=True,
+                 show_setup_timed_out: bool=True,
+                 show_setup_stdout: bool=True,
+                 show_setup_stderr: bool=True):
         self.visible = visible
         self.show_individual_tests = show_individual_tests
         self.show_setup_return_code = show_setup_return_code
@@ -64,16 +67,24 @@ class NewAGTestSuiteFeedbackConfig(DictSerializableMixin):
         self.show_setup_stdout = show_setup_stdout
         self.show_setup_stderr = show_setup_stderr
 
-    FIELD_TYPES = {
-        'visible': bool,
-        'show_individual_tests': bool,
-        'show_setup_return_code': bool,
-        'show_setup_timed_out': bool,
-        'show_setup_stdout': bool,
-        'show_setup_stderr': bool,
-    }
+    SERIALIZABLE_FIELDS = [
+        'visible',
+        'show_individual_tests',
+        'show_setup_return_code',
+        'show_setup_timed_out',
+        'show_setup_stdout',
+        'show_setup_stderr',
+    ]
 
-    SERIALIZABLE_FIELDS = tuple(FIELD_TYPES.keys())
+    FIELD_DESCRIPTIONS = {
+        'show_individual_tests': (
+            'Whether to show information about individual tests in a suite or just a '
+            'points summary (if available).'),
+        'show_setup_stdout': (
+            "Whether to show stdout content from a suite's setup and teardown commands."),
+        'show_setup_stderr': (
+            "Whether to show stderr content from a suite's setup and teardown commands."),
+    }
 
 
 def make_default_suite_fdbk() -> int:

@@ -26,7 +26,8 @@ from .student_test_suite import (
     StudentTestSuite, StudentTestSuiteFeedbackConfig, BugsExposedFeedbackLevel,
     StudentTestSuiteResult)
 
-from .ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
+from .ag_test.ag_test_suite import (
+    AGTestSuite, AGTestSuiteFeedbackConfig, NewAGTestSuiteFeedbackConfig)
 from .ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from .ag_test.ag_test_command import (
     AGTestCommand, AGTestCommandFeedbackConfig, ValueFeedbackLevel,

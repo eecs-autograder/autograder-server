@@ -17,7 +17,7 @@ import autograder.core.fields as ag_fields
 import autograder.core.models as ag_models
 import autograder.handgrading.models as hg_models
 from autograder.core.models import AutograderModel
-from autograder.core.models.ag_model_base import ToDictMixin
+from autograder.core.models.ag_model_base import ToDictMixin, DictSerializableMixin
 from autograder.core.submission_feedback import (
     SubmissionResultFeedback, AGTestSuiteResultFeedback,
     AGTestCaseResultFeedback, AGTestCommandResultFeedback)
@@ -25,7 +25,7 @@ from autograder.rest_api.serializers.ag_model_serializer import AGModelSerialize
 
 AGModelType = Type[AutograderModel]
 AGSerializableType = Type[ToDictMixin]
-APIType = Union[AGModelType, AGSerializableType]
+APIType = Union[AGModelType, AGSerializableType, Type[DictSerializableMixin]]
 
 API_MODELS = OrderedDict([
     [ag_models.Course, 'Course'],
@@ -40,7 +40,7 @@ API_MODELS = OrderedDict([
     [ag_models.AGCommand, 'AGCommand'],
 
     [ag_models.AGTestSuite, 'AGTestSuite'],
-    [ag_models.AGTestSuiteFeedbackConfig, 'AGTestSuiteFeedbackConfig'],
+    [ag_models.NewAGTestSuiteFeedbackConfig, 'AGTestSuiteFeedbackConfig'],
     [ag_models.AGTestCase, 'AGTestCase'],
     [ag_models.AGTestCaseFeedbackConfig, 'AGTestCaseFeedbackConfig'],
     [ag_models.AGTestCommand, 'AGTestCommand'],
@@ -185,6 +185,9 @@ class AGModelSchemaBuilder:
 
 def _build_schema(api_class: APIType):
     title = API_MODELS[api_class]
+    if issubclass(api_class, DictSerializableMixin):
+        return api_class.get_schema(API_MODELS[api_class])
+
     properties = OrderedDict()
     for field_name in api_class.get_serializable_fields():
         field = _get_field(field_name, api_class)
