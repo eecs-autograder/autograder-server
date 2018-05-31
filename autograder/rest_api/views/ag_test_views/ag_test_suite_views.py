@@ -24,10 +24,6 @@ class AGTestSuiteListCreateView(ListCreateNestedModelViewSet):
             'ag_test_suites',
             ag_models.AGTestSuite.objects.select_related(
                 'project__course',
-                'normal_fdbk_config',
-                'ultimate_submission_fdbk_config',
-                'past_limit_submission_fdbk_config',
-                'staff_viewer_fdbk_config',
             ).prefetch_related(
                 Prefetch('instructor_files_needed',
                          ag_models.InstructorFile.objects.select_related('project')),
@@ -99,8 +95,4 @@ class AGTestSuiteDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGene
     ]
     model_manager = ag_models.AGTestSuite.objects.select_related(
         'project__course',
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
     )

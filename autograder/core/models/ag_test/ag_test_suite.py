@@ -3,7 +3,7 @@ from django.db import models, connection
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import ExpectedStudentFile, Project, InstructorFile
 
 
@@ -47,6 +47,33 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
         'show_setup_and_teardown_stdout',
         'show_setup_and_teardown_stderr',
     )
+
+
+class NewAGTestSuiteFeedbackConfig(DictSerializableMixin):
+    def __init__(self,
+                 visible=True,
+                 show_individual_tests=True,
+                 show_setup_return_code=True,
+                 show_setup_timed_out=True,
+                 show_setup_stdout=True,
+                 show_setup_stderr=True):
+        self.visible = visible
+        self.show_individual_tests = show_individual_tests
+        self.show_setup_return_code = show_setup_return_code
+        self.show_setup_timed_out = show_setup_timed_out
+        self.show_setup_stdout = show_setup_stdout
+        self.show_setup_stderr = show_setup_stderr
+
+    FIELD_TYPES = {
+        'visible': bool,
+        'show_individual_tests': bool,
+        'show_setup_return_code': bool,
+        'show_setup_timed_out': bool,
+        'show_setup_stdout': bool,
+        'show_setup_stderr': bool,
+    }
+
+    SERIALIZABLE_FIELDS = tuple(FIELD_TYPES.keys())
 
 
 def make_default_suite_fdbk() -> int:
@@ -124,30 +151,39 @@ class AGTestSuite(AutograderModel):
                      have yet to be graded do not prevent members of a group from submitting
                      again.''')
 
-    normal_fdbk_config = models.OneToOneField(
+    old_normal_fdbk_config = models.OneToOneField(
         AGTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_suite_fdbk,
         related_name='+',
         help_text='Feedback settings for a normal submission.')
-    ultimate_submission_fdbk_config = models.OneToOneField(
+    old_ultimate_submission_fdbk_config = models.OneToOneField(
         AGTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_suite_fdbk,
         related_name='+',
         help_text='Feedback settings for an ultimate submission.')
-    past_limit_submission_fdbk_config = models.OneToOneField(
+    old_past_limit_submission_fdbk_config = models.OneToOneField(
         AGTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_suite_fdbk,
         related_name='+',
         help_text='Feedback settings for a submission that is past the daily limit.')
-    staff_viewer_fdbk_config = models.OneToOneField(
+    old_staff_viewer_fdbk_config = models.OneToOneField(
         AGTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_suite_fdbk,
         related_name='+',
         help_text='Feedback settings for a staff member viewing a submission from another group.')
+
+    normal_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestSuiteFeedbackConfig, default=NewAGTestSuiteFeedbackConfig)
+    ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestSuiteFeedbackConfig, default=NewAGTestSuiteFeedbackConfig)
+    past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestSuiteFeedbackConfig, default=NewAGTestSuiteFeedbackConfig)
+    staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestSuiteFeedbackConfig, default=NewAGTestSuiteFeedbackConfig)
 
     def clean(self):
         if self.pk is None:
@@ -217,12 +253,12 @@ class AGTestSuite(AutograderModel):
         'ag_test_cases',
     )
 
-    TRANSPARENT_TO_ONE_FIELDS = (
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
-    )
+    # TRANSPARENT_TO_ONE_FIELDS = (
+    #     'normal_fdbk_config',
+    #     'ultimate_submission_fdbk_config',
+    #     'past_limit_submission_fdbk_config',
+    #     'staff_viewer_fdbk_config',
+    # )
 
     EDITABLE_FIELDS = (
         'name',

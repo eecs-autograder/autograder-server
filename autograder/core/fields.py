@@ -211,4 +211,7 @@ class ValidatedJSONField(pg_fields.JSONField):
         if value is None:
             return None
 
+        if isinstance(value, dict):
+            return super().get_prep_value(value)
+
         return super().get_prep_value(value.to_dict())

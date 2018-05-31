@@ -272,8 +272,10 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             fdbk.to_dict()['student_test_suite_results'])
 
     def test_some_ag_and_student_test_suites_not_visible(self):
-        self.ag_test_suite2.ultimate_submission_fdbk_config.validate_and_update(visible=False)
-        self.student_suite2.ultimate_submission_fdbk_config.validate_and_update(visible=False)
+        self.ag_test_suite2.validate_and_update(
+            ultimate_submission_fdbk_config={'visible': False})
+        self.student_suite2.validate_and_update(
+            ultimate_submission_fdbk_config={'visible': False})
 
         fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.ultimate_submission)
         self.assertEqual(self.total_points_per_ag_suite + self.total_points_per_student_suite,

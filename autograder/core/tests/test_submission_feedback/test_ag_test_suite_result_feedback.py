@@ -92,26 +92,27 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
 
     def test_feedback_calculator_ctor(self):
         self.assertEqual(
-            self.ag_test_suite.normal_fdbk_config,
-            get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal).fdbk_conf)
-        self.assertEqual(
-            self.ag_test_suite.ultimate_submission_fdbk_config,
+            self.ag_test_suite.normal_fdbk_config.to_dict(),
             get_suite_fdbk(self.ag_test_suite_result,
-                           ag_models.FeedbackCategory.ultimate_submission).fdbk_conf)
+                           ag_models.FeedbackCategory.normal).fdbk_conf.to_dict())
         self.assertEqual(
-            self.ag_test_suite.past_limit_submission_fdbk_config,
+            self.ag_test_suite.ultimate_submission_fdbk_config.to_dict(),
             get_suite_fdbk(self.ag_test_suite_result,
-                           ag_models.FeedbackCategory.past_limit_submission).fdbk_conf)
+                           ag_models.FeedbackCategory.ultimate_submission).fdbk_conf.to_dict())
         self.assertEqual(
-            self.ag_test_suite.staff_viewer_fdbk_config,
+            self.ag_test_suite.past_limit_submission_fdbk_config.to_dict(),
             get_suite_fdbk(self.ag_test_suite_result,
-                           ag_models.FeedbackCategory.staff_viewer).fdbk_conf)
+                           ag_models.FeedbackCategory.past_limit_submission).fdbk_conf.to_dict())
+        self.assertEqual(
+            self.ag_test_suite.staff_viewer_fdbk_config.to_dict(),
+            get_suite_fdbk(self.ag_test_suite_result,
+                           ag_models.FeedbackCategory.staff_viewer).fdbk_conf.to_dict())
 
         max_config = get_suite_fdbk(
             self.ag_test_suite_result, ag_models.FeedbackCategory.max).fdbk_conf
         self.assertTrue(max_config.show_individual_tests)
-        self.assertTrue(max_config.show_setup_and_teardown_stdout)
-        self.assertTrue(max_config.show_setup_and_teardown_stderr)
+        self.assertTrue(max_config.show_setup_stdout)
+        self.assertTrue(max_config.show_setup_stderr)
 
     def test_points_max_fdbk(self):
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
@@ -140,7 +141,8 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.total_points, fdbk.total_points)
         self.assertEqual(self.total_points, fdbk.total_points_possible)
 
-        self.ag_test_suite.normal_fdbk_config.validate_and_update(show_individual_tests=False)
+        self.ag_test_suite.validate_and_update(
+            normal_fdbk_config={'show_individual_tests': False})
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
         self.assertEqual([], fdbk.ag_test_case_results)
         self.assertEqual(self.total_points, fdbk.total_points)
@@ -154,15 +156,11 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertEqual([self.ag_test_case_result2.pk, self.ag_test_case_result1.pk],
                          [res.pk for res in fdbk.ag_test_case_results])
 
-    def test_show_setup_and_teardown_output_return_code_and_timed_out(self):
+    def test_show_setup_output_return_code_and_timed_out(self):
         setup_return_code = 3
         setup_timed_out = True
         setup_stdout = 'adfjka;dskjf'
         setup_stderr = 'a,xcmvnaieo;sdf'
-        teardown_return_code = 0
-        teardown_timed_out = False
-        teardown_stdout = ',amcxnvawefj'
-        teardown_stderr = 'aldcvneailaksdjhf'
 
         self.ag_test_suite_result.setup_return_code = setup_return_code
         self.ag_test_suite_result.setup_timed_out = setup_timed_out
@@ -170,12 +168,6 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             f.write(setup_stdout)
         with self.ag_test_suite_result.open_setup_stderr('w') as f:
             f.write(setup_stderr)
-        self.ag_test_suite_result.teardown_return_code = teardown_return_code
-        self.ag_test_suite_result.teardown_timed_out = teardown_timed_out
-        with self.ag_test_suite_result.open_teardown_stdout('w') as f:
-            f.write(teardown_stdout)
-        with self.ag_test_suite_result.open_teardown_stderr('w') as f:
-            f.write(teardown_stderr)
         self.ag_test_suite_result.save()
 
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
@@ -185,16 +177,15 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertEqual(setup_timed_out, fdbk.setup_timed_out)
         self.assertEqual(setup_stdout, fdbk.setup_stdout.read().decode())
         self.assertEqual(setup_stderr, fdbk.setup_stderr.read().decode())
-        self.assertEqual(teardown_return_code, fdbk.teardown_return_code)
-        self.assertEqual(teardown_timed_out, fdbk.teardown_timed_out)
-        self.assertEqual(teardown_stdout, fdbk.teardown_stdout.read().decode())
-        self.assertEqual(teardown_stderr, fdbk.teardown_stderr.read().decode())
 
-        self.ag_test_suite.normal_fdbk_config.validate_and_update(
-            show_setup_and_teardown_return_code=False,
-            show_setup_and_teardown_timed_out=False,
-            show_setup_and_teardown_stdout=False,
-            show_setup_and_teardown_stderr=False)
+        self.ag_test_suite.validate_and_update(
+            normal_fdbk_config={
+                'show_setup_return_code': False,
+                'show_setup_timed_out': False,
+                'show_setup_stdout': False,
+                'show_setup_stderr': False
+            }
+        )
 
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_name)

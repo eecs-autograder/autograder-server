@@ -11,7 +11,8 @@ from autograder.core.models.ag_test.ag_test_case_result import AGTestCaseResult
 from autograder.core.models.ag_test.feedback_category import FeedbackCategory
 from autograder.core.models.ag_model_base import ToDictMixin
 from autograder.core.models.project import Project
-from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig
+from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig, \
+    NewAGTestSuiteFeedbackConfig
 from autograder.core.models.ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
 from autograder.core.models.ag_test.ag_test_command import (
     AGTestCommand, ExpectedOutputSource,
@@ -25,11 +26,6 @@ class AGTestPreLoader:
     def __init__(self, project: Project):
         suites = AGTestSuite.objects.filter(
             project=project
-        ).select_related(
-            'normal_fdbk_config',
-            'past_limit_submission_fdbk_config',
-            'ultimate_submission_fdbk_config',
-            'staff_viewer_fdbk_config'
         )
         self._suites: Dict[int, AGTestSuite] = {
             suite.pk: suite for suite in suites
@@ -404,10 +400,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         elif fdbk_category == FeedbackCategory.staff_viewer:
             self._fdbk = self._ag_test_suite.staff_viewer_fdbk_config
         elif fdbk_category == FeedbackCategory.max:
-            self._fdbk = AGTestSuiteFeedbackConfig(
-                show_individual_tests=True,
-                show_setup_and_teardown_stdout=True,
-                show_setup_and_teardown_stderr=True)
+            self._fdbk = NewAGTestSuiteFeedbackConfig()
 
     @property
     def fdbk_conf(self):
@@ -431,80 +424,80 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
     @property
     def setup_name(self) -> Optional[str]:
-        if not self._show_setup_and_teardown_names:
+        if not self._show_setup_names:
             return None
 
         return self._ag_test_suite.setup_suite_cmd_name
 
     @property
     def setup_return_code(self) -> Optional[int]:
-        if not self._fdbk.show_setup_and_teardown_return_code:
+        if not self._fdbk.show_setup_return_code:
             return None
 
         return self._ag_test_suite_result.setup_return_code
 
     @property
     def setup_timed_out(self) -> Optional[bool]:
-        if not self._fdbk.show_setup_and_teardown_timed_out:
+        if not self._fdbk.show_setup_timed_out:
             return None
 
         return self._ag_test_suite_result.setup_timed_out
 
     @property
     def setup_stdout(self) -> Optional[BinaryIO]:
-        if not self._fdbk.show_setup_and_teardown_stdout:
+        if not self._fdbk.show_setup_stdout:
             return None
 
         return self._ag_test_suite_result.open_setup_stdout()
 
     @property
     def setup_stderr(self) -> Optional[BinaryIO]:
-        if not self._fdbk.show_setup_and_teardown_stderr:
+        if not self._fdbk.show_setup_stderr:
             return None
 
         return self._ag_test_suite_result.open_setup_stderr()
 
     @property
     def teardown_name(self) -> Optional[str]:
-        if not self._show_setup_and_teardown_names:
+        if not self._show_setup_names:
             return None
 
         return self._ag_test_suite.teardown_suite_cmd_name
 
     @property
     def teardown_return_code(self) -> Optional[int]:
-        if not self._fdbk.show_setup_and_teardown_return_code:
+        if not self._fdbk.show_setup_return_code:
             return None
 
         return self._ag_test_suite_result.teardown_return_code
 
     @property
     def teardown_timed_out(self) -> Optional[bool]:
-        if not self._fdbk.show_setup_and_teardown_timed_out:
+        if not self._fdbk.show_setup_timed_out:
             return None
 
         return self._ag_test_suite_result.teardown_timed_out
 
     @property
     def teardown_stdout(self) -> Optional[BinaryIO]:
-        if not self._fdbk.show_setup_and_teardown_stdout:
+        if not self._fdbk.show_setup_stdout:
             return None
 
         return self._ag_test_suite_result.open_teardown_stdout()
 
     @property
     def teardown_stderr(self) -> Optional[BinaryIO]:
-        if not self._fdbk.show_setup_and_teardown_stderr:
+        if not self._fdbk.show_setup_stderr:
             return None
 
         return self._ag_test_suite_result.open_teardown_stderr()
 
     @property
-    def _show_setup_and_teardown_names(self):
-        return (self._fdbk.show_setup_and_teardown_stdout
-                or self._fdbk.show_setup_and_teardown_stderr
-                or self._fdbk.show_setup_and_teardown_return_code
-                or self._fdbk.show_setup_and_teardown_timed_out)
+    def _show_setup_names(self):
+        return (self._fdbk.show_setup_stdout
+                or self._fdbk.show_setup_stderr
+                or self._fdbk.show_setup_return_code
+                or self._fdbk.show_setup_timed_out)
 
     @property
     def total_points(self) -> int:

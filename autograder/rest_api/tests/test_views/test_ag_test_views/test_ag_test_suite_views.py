@@ -135,7 +135,7 @@ class GetUpdateDeleteAGTestSuiteTestCase(test_impls.GetObjectTest,
             'name': 'asdf;aliena,cskvnaksd;fasdkjfaklsd',
             'setup_suite_cmd': 'echo "weeeeeeeeee"',
             'ultimate_submission_fdbk_config': {
-                'show_setup_and_teardown_stderr': False
+                'show_setup_stderr': False
             },
             'deferred': True
         }

@@ -40,32 +40,32 @@ class AGTestSuiteTestCase(UnitTestBase):
 
         self.assertTrue(suite.normal_fdbk_config.visible)
         self.assertTrue(suite.normal_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_return_code)
-        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_timed_out)
-        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_stdout)
-        self.assertTrue(suite.normal_fdbk_config.show_setup_and_teardown_stderr)
+        self.assertTrue(suite.normal_fdbk_config.show_setup_return_code)
+        self.assertTrue(suite.normal_fdbk_config.show_setup_timed_out)
+        self.assertTrue(suite.normal_fdbk_config.show_setup_stdout)
+        self.assertTrue(suite.normal_fdbk_config.show_setup_stderr)
 
         self.assertTrue(suite.ultimate_submission_fdbk_config.visible)
         self.assertTrue(suite.ultimate_submission_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_return_code)
-        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_timed_out)
-        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_stdout)
-        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_and_teardown_stderr)
+        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_return_code)
+        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_timed_out)
+        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_stdout)
+        self.assertTrue(suite.ultimate_submission_fdbk_config.show_setup_stderr)
 
         self.assertTrue(suite.past_limit_submission_fdbk_config.visible)
         self.assertTrue(suite.past_limit_submission_fdbk_config.show_individual_tests)
         self.assertTrue(
-            suite.past_limit_submission_fdbk_config.show_setup_and_teardown_return_code)
-        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_timed_out)
-        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_stdout)
-        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_and_teardown_stderr)
+            suite.past_limit_submission_fdbk_config.show_setup_return_code)
+        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_timed_out)
+        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_stdout)
+        self.assertTrue(suite.past_limit_submission_fdbk_config.show_setup_stderr)
 
         self.assertTrue(suite.staff_viewer_fdbk_config.visible)
         self.assertTrue(suite.staff_viewer_fdbk_config.show_individual_tests)
-        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_return_code)
-        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_timed_out)
-        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_stdout)
-        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_and_teardown_stderr)
+        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_return_code)
+        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_timed_out)
+        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_stdout)
+        self.assertTrue(suite.staff_viewer_fdbk_config.show_setup_stderr)
 
     def test_valid_create_non_defaults(self):
         student_file = ag_models.ExpectedStudentFile.objects.validate_and_create(
@@ -97,10 +97,10 @@ class AGTestSuiteTestCase(UnitTestBase):
             normal_fdbk_config={
                 'visible': False,
                 'show_individual_tests': False,
-                'show_setup_and_teardown_return_code': False,
-                'show_setup_and_teardown_timed_out': False,
-                'show_setup_and_teardown_stdout': False,
-                'show_setup_and_teardown_stderr': False,
+                'show_setup_return_code': False,
+                'show_setup_timed_out': False,
+                'show_setup_stdout': False,
+                'show_setup_stderr': False,
             }
         )
 
