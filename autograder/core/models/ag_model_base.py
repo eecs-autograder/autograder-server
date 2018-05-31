@@ -333,10 +333,8 @@ class FromDictMixin:
 class DictSerializableMixin(ToDictMixin, FromDictMixin):
     """
     Shortcut mixin for ToDictMixin and FromDictMixin. Also provides a
-    way of generating a Schema from get_field_types() and
-    get_field_descriptions().
+    way of generating a Schema ffor the class.
     """
-
     @classmethod
     def get_schema(cls, title) -> Schema:
         """
