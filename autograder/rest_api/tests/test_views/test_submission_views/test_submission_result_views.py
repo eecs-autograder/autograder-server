@@ -466,7 +466,7 @@ class SubmissionResultTestCase(UnitTestBase):
     # -------------------------------------------------------------
 
     def test_cmd_result_output_or_diff_requested_on_cmd_in_not_visible_suite(self):
-        self.ag_test_suite.normal_fdbk_config.validate_and_update(visible=False)
+        self.ag_test_suite.validate_and_update(normal_fdbk_config={'visible': False})
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,
@@ -494,7 +494,7 @@ class SubmissionResultTestCase(UnitTestBase):
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
     def test_cmd_result_output_or_diff_requested_individual_cases_not_shown(self):
-        self.ag_test_suite.normal_fdbk_config.validate_and_update(show_individual_tests=False)
+        self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_individual_tests': False})
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,
@@ -548,8 +548,8 @@ class SubmissionResultTestCase(UnitTestBase):
     # -------------------------------------------------------------
 
     def test_get_suite_result_setup_and_teardown_output_visible(self):
-        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_and_teardown_stdout)
-        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_and_teardown_stderr)
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stdout)
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stderr)
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.visible)
 
         self.client.force_authenticate(self.student1)
@@ -559,10 +559,8 @@ class SubmissionResultTestCase(UnitTestBase):
                                           ag_models.FeedbackCategory.normal)
 
     def test_get_suite_result_setup_and_teardown_output_hidden(self):
-        self.ag_test_suite.normal_fdbk_config.validate_and_update(
-            show_setup_and_teardown_stdout=False)
-        self.ag_test_suite.normal_fdbk_config.validate_and_update(
-            show_setup_and_teardown_stderr=False)
+        self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': False})
+        self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': False})
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.visible)
 
         self.client.force_authenticate(self.student1)
@@ -572,9 +570,9 @@ class SubmissionResultTestCase(UnitTestBase):
                                           ag_models.FeedbackCategory.normal)
 
     def test_suite_result_output_requested_on_not_visible_suite(self):
-        self.ag_test_suite.normal_fdbk_config.validate_and_update(visible=False)
-        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_and_teardown_stdout)
-        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_and_teardown_stderr)
+        self.ag_test_suite.validate_and_update(normal_fdbk_config={'visible': False})
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stdout)
+        self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stderr)
 
         self.client.force_authenticate(self.student1)
 
