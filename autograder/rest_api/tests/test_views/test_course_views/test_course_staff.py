@@ -20,16 +20,17 @@ class _SetUp(UnitTestBase):
         [self.admin] = obj_build.make_admin_users(self.course, 1)
         [self.student] = obj_build.make_student_users(self.course, 1)
         [self.guest] = obj_build.make_users(1)
+        [self.handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
 
 class ListStaffTestCase(_SetUp):
-    def test_admin_or_staff_list_staff(self):
+    def test_admin_or_staff_or_handgrader_list_staff(self):
         staff = obj_build.create_dummy_users(3)
         self.course.staff.add(*staff)
 
         expected_content = ag_serializers.UserSerializer(staff, many=True).data
 
-        for user in self.admin, staff[0]:
+        for user in self.admin, staff[0], self.handgrader:
             self.client.force_authenticate(user)
 
             response = self.client.get(self.url)
@@ -69,7 +70,7 @@ class AddStaffTestCase(_SetUp):
         current_staff = obj_build.create_dummy_user()
         self.course.staff.add(current_staff)
 
-        for user in current_staff, self.student, self.guest:
+        for user in current_staff, self.student, self.guest, self.handgrader:
             self.client.force_authenticate(user)
             response = self.client.post(
                 self.url, {'new_staff': ['spam', 'steve']})
@@ -111,7 +112,7 @@ class RemoveStaffTestCase(_SetUp):
                               self.course.staff.all())
 
     def test_other_remove_staff_permission_denied(self):
-        for user in self.remaining_staff, self.student, self.guest:
+        for user in self.remaining_staff, self.student, self.guest, self.handgrader:
             self.assertEqual(self.total_num_staff,
                              self.course.staff.count())
 

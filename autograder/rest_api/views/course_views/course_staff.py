@@ -37,7 +37,7 @@ _remove_staff_params = [
 
 class CourseStaffViewSet(ListNestedModelViewSet):
     serializer_class = ag_serializers.UserSerializer
-    permission_classes = (ag_permissions.is_admin_or_read_only_staff(),)
+    permission_classes = (ag_permissions.is_admin_or_read_only_staff_or_handgrader(),)
 
     model_manager = ag_models.Course.objects
     reverse_to_one_field_name = 'staff'

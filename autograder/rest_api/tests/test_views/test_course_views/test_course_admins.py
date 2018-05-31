@@ -22,6 +22,7 @@ class _SetUp(UnitTestBase):
         [self.staff] = obj_build.make_staff_users(self.course, 1)
         [self.student] = obj_build.make_student_users(self.course, 1)
         [self.guest] = obj_build.make_users(1)
+        [self.handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
 
 class ListCourseAdminsTestCase(_SetUp):
@@ -32,7 +33,7 @@ class ListCourseAdminsTestCase(_SetUp):
         expected_content = ag_serializers.UserSerializer(admins,
                                                          many=True).data
 
-        for user in self.superuser, admins[0], self.staff:
+        for user in self.superuser, admins[0], self.staff, self.handgrader:
             self.client.force_authenticate(user)
 
             response = self.client.get(self.url)
@@ -62,7 +63,7 @@ class AddCourseAdminsTestCase(_SetUp):
             self.assertEqual(len(current_admins),
                              self.course.admins.count())
 
-            self.client.force_authenticate(self.superuser)
+            self.client.force_authenticate(user)
             response = self.client.post(
                 self.url,
                 {'new_admins': new_admin_names + [user.username for user in new_admins]})
@@ -81,7 +82,7 @@ class AddCourseAdminsTestCase(_SetUp):
             self.course.admins.set(current_admins, clear=True)
 
     def test_other_add_admins_permission_denied(self):
-        for user in self.staff, self.student, self.guest:
+        for user in self.staff, self.student, self.guest, self.handgrader:
             self.client.force_authenticate(user)
 
             new_admin_name = 'steve'
@@ -138,7 +139,7 @@ class RemoveCourseAdminsTestCase(_SetUp):
         self.assertTrue(self.course.is_admin(self.remaining_admin))
 
     def test_other_remove_admins_permission_denied(self):
-        for user in self.guest, self.student, self.staff:
+        for user in self.guest, self.student, self.staff, self.handgrader:
             self.client.force_authenticate(user)
             response = self.client.patch(self.url, self.request_body)
 
