@@ -15,7 +15,6 @@ from .group import Group, GroupInvitation
 from .submission import (
     Submission,
     get_submissions_with_results_queryset,
-    get_ag_test_suite_results_queryset,
     get_ag_test_case_results_queryset,
     get_ag_test_cmd_results_queryset,
     get_student_test_suite_results_queryset,
@@ -28,7 +27,8 @@ from .student_test_suite import (
 
 from .ag_test.ag_test_suite import (
     AGTestSuite, AGTestSuiteFeedbackConfig, NewAGTestSuiteFeedbackConfig)
-from .ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
+from .ag_test.ag_test_case import (
+    AGTestCase, AGTestCaseFeedbackConfig, NewAGTestCaseFeedbackConfig)
 from .ag_test.ag_test_command import (
     AGTestCommand, AGTestCommandFeedbackConfig, ValueFeedbackLevel,
     StdinSource, ExpectedOutputSource, ExpectedOutputSource, ExpectedReturnCode)

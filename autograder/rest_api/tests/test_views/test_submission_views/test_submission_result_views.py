@@ -473,7 +473,7 @@ class SubmissionResultTestCase(UnitTestBase):
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
     def test_cmd_result_output_or_diff_requested_on_cmd_in_not_visible_case(self):
-        self.ag_test_case.normal_fdbk_config.validate_and_update(visible=False)
+        self.ag_test_case.validate_and_update(normal_fdbk_config={'visible': False})
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,
@@ -487,7 +487,8 @@ class SubmissionResultTestCase(UnitTestBase):
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
     def test_cmd_result_output_or_diff_requested_individual_cmds_not_shown(self):
-        self.ag_test_case.normal_fdbk_config.validate_and_update(show_individual_commands=False)
+        self.ag_test_case.validate_and_update(
+            normal_fdbk_config={'show_individual_commands': False})
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,

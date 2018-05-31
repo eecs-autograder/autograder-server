@@ -11,9 +11,8 @@ from autograder.core.models.ag_test.ag_test_case_result import AGTestCaseResult
 from autograder.core.models.ag_test.feedback_category import FeedbackCategory
 from autograder.core.models.ag_model_base import ToDictMixin
 from autograder.core.models.project import Project
-from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, AGTestSuiteFeedbackConfig, \
-    NewAGTestSuiteFeedbackConfig
-from autograder.core.models.ag_test.ag_test_case import AGTestCase, AGTestCaseFeedbackConfig
+from autograder.core.models.ag_test.ag_test_suite import AGTestSuite, NewAGTestSuiteFeedbackConfig
+from autograder.core.models.ag_test.ag_test_case import AGTestCase, NewAGTestCaseFeedbackConfig
 from autograder.core.models.ag_test.ag_test_command import (
     AGTestCommand, ExpectedOutputSource,
     ValueFeedbackLevel, ExpectedReturnCode, AGTestCommandFeedbackConfig,
@@ -32,11 +31,6 @@ class AGTestPreLoader:
         }
         cases = AGTestCase.objects.filter(
             ag_test_suite__project=project
-        ).select_related(
-            'normal_fdbk_config',
-            'past_limit_submission_fdbk_config',
-            'ultimate_submission_fdbk_config',
-            'staff_viewer_fdbk_config'
         )
         self._cases: Dict[int, AGTestCase] = {
             case.pk: case for case in cases
@@ -582,7 +576,7 @@ class AGTestCaseResultFeedback(ToDictMixin):
         elif fdbk_category == FeedbackCategory.staff_viewer:
             self._fdbk = self._ag_test_case.staff_viewer_fdbk_config
         elif fdbk_category == FeedbackCategory.max:
-            self._fdbk = AGTestCaseFeedbackConfig(show_individual_commands=True)
+            self._fdbk = NewAGTestCaseFeedbackConfig()
 
     @property
     def fdbk_conf(self):

@@ -1,8 +1,5 @@
-from collections import OrderedDict
-
 from django.core import exceptions
 from django.db import models, connection
-from drf_yasg.openapi import Schema
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
@@ -12,6 +9,7 @@ from ..project import ExpectedStudentFile, Project, InstructorFile
 
 class AGTestSuiteFeedbackConfig(AutograderModel):
     """
+    DEPRECATED: Use NewAGTestSuiteFeedbackConfig instead.
     Contains feedback options for an AGTestSuite.
     """
 
@@ -53,6 +51,9 @@ class AGTestSuiteFeedbackConfig(AutograderModel):
 
 
 class NewAGTestSuiteFeedbackConfig(DictSerializableMixin):
+    """
+    Contains feedback options for an AGTestSuite.
+    """
     def __init__(self,
                  visible: bool=True,
                  show_individual_tests: bool=True,
@@ -263,13 +264,6 @@ class AGTestSuite(AutograderModel):
 
         'ag_test_cases',
     )
-
-    # TRANSPARENT_TO_ONE_FIELDS = (
-    #     'normal_fdbk_config',
-    #     'ultimate_submission_fdbk_config',
-    #     'past_limit_submission_fdbk_config',
-    #     'staff_viewer_fdbk_config',
-    # )
 
     EDITABLE_FIELDS = (
         'name',

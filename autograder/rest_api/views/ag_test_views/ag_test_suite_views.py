@@ -33,10 +33,6 @@ class AGTestSuiteListCreateView(ListCreateNestedModelViewSet):
                     'ag_test_cases',
                     ag_models.AGTestCase.objects.select_related(
                         'ag_test_suite',
-                        'normal_fdbk_config',
-                        'ultimate_submission_fdbk_config',
-                        'past_limit_submission_fdbk_config',
-                        'staff_viewer_fdbk_config',
                     ).prefetch_related(
                         Prefetch(
                             'ag_test_commands',

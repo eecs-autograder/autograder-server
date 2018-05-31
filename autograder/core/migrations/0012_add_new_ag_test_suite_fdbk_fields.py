@@ -29,6 +29,7 @@ def migrate_ag_test_suite_fdbk_configs(apps, schema_editor):
             }
             setattr(suite, field_name, fdbk)
 
+        suite.full_clean()
         suite.save()
 
 

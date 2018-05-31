@@ -1,11 +1,22 @@
-from typing import Union
+from typing import Union, Optional
 
 from django.core import exceptions
 from django.db import models, transaction, connection
 
 import autograder.core.fields as ag_fields
 from .ag_test_suite import AGTestSuite
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, DictSerializableMixin
+
+
+class NewAGTestCaseFeedbackConfig(DictSerializableMixin):
+    """
+    Contains feedback options for an AGTestCase.
+    """
+    def __init__(self, visible: bool=True, show_individual_commands: bool=True):
+        self.visible = visible
+        self.show_individual_commands = show_individual_commands
+
+    SERIALIZABLE_FIELDS = ('visible', 'show_individual_commands',)
 
 
 class AGTestCaseFeedbackConfig(AutograderModel):
@@ -49,33 +60,42 @@ class AGTestCase(AutograderModel):
         help_text='''The suite this autograder test belongs to.
                      This field is REQUIRED.''')
 
-    normal_fdbk_config = models.OneToOneField(
+    old_normal_fdbk_config = models.OneToOneField(
         AGTestCaseFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_test_fdbk,
         related_name='+',
         help_text='Feedback settings for a normal Submission.')
-    ultimate_submission_fdbk_config = models.OneToOneField(
+    old_ultimate_submission_fdbk_config = models.OneToOneField(
         AGTestCaseFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_test_fdbk,
         related_name='+',
         help_text='Feedback settings for an ultimate Submission.')
-    past_limit_submission_fdbk_config = models.OneToOneField(
+    old_past_limit_submission_fdbk_config = models.OneToOneField(
         AGTestCaseFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_test_fdbk,
         related_name='+',
         help_text='Feedback settings for a Submission that is past the daily limit.')
-    staff_viewer_fdbk_config = models.OneToOneField(
+    old_staff_viewer_fdbk_config = models.OneToOneField(
         AGTestCaseFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_test_fdbk,
         related_name='+',
         help_text='Feedback settings for a staff member viewing a Submission from another group.')
 
+    normal_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+    ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+    past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+    staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestCaseFeedbackConfig, default=NewAGTestCaseFeedbackConfig)
+
     @transaction.atomic
-    def validate_and_update(self, ag_test_suite: Union[int, AGTestSuite]=None, **kwargs):
+    def validate_and_update(self, ag_test_suite: Optional[Union[int, AGTestSuite]]=None, **kwargs):
         """
         :param ag_test_suite:
             An AGTestSuite (or its primary key) that this AGTestCase
@@ -84,7 +104,14 @@ class AGTestCase(AutograderModel):
             AGTestSuite as long as the old and new suites belong to
             the same Project.
         """
-        if ag_test_suite is None:
+        move_suite = False
+        if ag_test_suite is not None:
+            if isinstance(ag_test_suite, int):
+                move_suite = self.ag_test_suite.pk != ag_test_suite
+            else:
+                move_suite = self.ag_test_suite != ag_test_suite
+
+        if not move_suite:
             super().validate_and_update(**kwargs)
             return
 
@@ -148,13 +175,6 @@ class AGTestCase(AutograderModel):
         'name',
         'ag_test_suite',
 
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
-    )
-
-    TRANSPARENT_TO_ONE_FIELDS = (
         'normal_fdbk_config',
         'ultimate_submission_fdbk_config',
         'past_limit_submission_fdbk_config',

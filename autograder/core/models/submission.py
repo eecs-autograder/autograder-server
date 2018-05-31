@@ -341,22 +341,11 @@ class Submission(ag_model_base.AutograderModel):
 
 def get_submissions_with_results_queryset(fdbk_category: FeedbackCategory,
                                           base_manager=Submission.objects):
-    # ag_suite_result_queryset = get_ag_test_suite_results_queryset(fdbk_category)
-    # prefetch_ag_suite_results = Prefetch('ag_test_suite_results', ag_suite_result_queryset)
-
     student_suite_result_queryset = get_student_test_suite_results_queryset(fdbk_category)
     prefetch_student_suite_results = Prefetch('student_test_suite_results',
                                               student_suite_result_queryset)
 
     return base_manager.prefetch_related(prefetch_student_suite_results)
-
-
-def get_ag_test_suite_results_queryset(fdbk_category: FeedbackCategory):
-    case_result_queryset = get_ag_test_case_results_queryset(fdbk_category)
-    prefetch_case_results = Prefetch('ag_test_case_results', case_result_queryset)
-    return AGTestSuiteResult.objects.select_related(
-        _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_suite')
-    ).prefetch_related(prefetch_case_results)
 
 
 def get_ag_test_case_results_queryset(fdbk_category: FeedbackCategory):

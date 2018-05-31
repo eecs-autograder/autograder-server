@@ -45,20 +45,21 @@ class AGTestCaseFeedbackTestCase(UnitTestBase):
 
     def test_feedback_calculator_ctor(self):
         self.assertEqual(
-            self.ag_test_case.normal_fdbk_config,
-            get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.normal).fdbk_conf)
-        self.assertEqual(
-            self.ag_test_case.ultimate_submission_fdbk_config,
+            self.ag_test_case.normal_fdbk_config.to_dict(),
             get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.ultimate_submission).fdbk_conf)
+                          ag_models.FeedbackCategory.normal).fdbk_conf.to_dict())
         self.assertEqual(
-            self.ag_test_case.past_limit_submission_fdbk_config,
+            self.ag_test_case.ultimate_submission_fdbk_config.to_dict(),
             get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.past_limit_submission).fdbk_conf)
+                          ag_models.FeedbackCategory.ultimate_submission).fdbk_conf.to_dict())
         self.assertEqual(
-            self.ag_test_case.staff_viewer_fdbk_config,
+            self.ag_test_case.past_limit_submission_fdbk_config.to_dict(),
             get_case_fdbk(self.ag_test_case_result,
-                          ag_models.FeedbackCategory.staff_viewer).fdbk_conf)
+                          ag_models.FeedbackCategory.past_limit_submission).fdbk_conf.to_dict())
+        self.assertEqual(
+            self.ag_test_case.staff_viewer_fdbk_config.to_dict(),
+            get_case_fdbk(self.ag_test_case_result,
+                          ag_models.FeedbackCategory.staff_viewer).fdbk_conf.to_dict())
 
         max_config = get_case_fdbk(self.ag_test_case_result,
                                    ag_models.FeedbackCategory.max).fdbk_conf
@@ -155,7 +156,8 @@ class AGTestCaseFeedbackTestCase(UnitTestBase):
         self.assertEqual(total_cmd_points, fdbk.total_points)
         self.assertEqual(total_cmd_points, fdbk.total_points_possible)
 
-        self.ag_test_case.normal_fdbk_config.validate_and_update(show_individual_commands=False)
+        self.ag_test_case.validate_and_update(
+            normal_fdbk_config={'show_individual_commands': False})
         fdbk = get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.normal)
 
         self.assertEqual([], fdbk.ag_test_command_results)
