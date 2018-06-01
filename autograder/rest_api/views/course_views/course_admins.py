@@ -39,8 +39,8 @@ _remove_admins_params = [
 class CourseAdminViewSet(ListNestedModelViewSet):
     serializer_class = ag_serializers.UserSerializer
     permission_classes = (
-        P(ag_permissions.IsSuperuser) |
-        P(ag_permissions.is_admin_or_read_only_staff_or_handgrader()),)
+        P(ag_permissions.IsSuperuser)
+        | P(ag_permissions.is_admin_or_read_only_staff_or_handgrader()),)
 
     model_manager = ag_models.Course.objects
     reverse_to_one_field_name = 'admins'
