@@ -2,8 +2,8 @@ import json
 
 from autograder.core.models import get_submissions_with_results_queryset
 from autograder.core.submission_feedback import update_denormalized_ag_test_results
-from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import get_suite_fdbk, \
-    get_submission_fdbk
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
+    get_suite_fdbk, get_submission_fdbk)
 from autograder.utils.testing import UnitTestBase
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -168,16 +168,22 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             fdbk.total_points_possible)
 
     def test_normal_fdbk(self):
-        self.ag_test_cmd1.normal_fdbk_config.validate_and_update(
-            visible=False,
-            return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            stdout_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            stderr_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            show_points=True)
-        self.ag_test_cmd2.normal_fdbk_config.validate_and_update(
-            stdout_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            stderr_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            show_points=True)
+        self.ag_test_cmd1.validate_and_update(
+            normal_fdbk_config={
+                'visible': False,
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'show_points': True
+            }
+        )
+        self.ag_test_cmd2.validate_and_update(
+            normal_fdbk_config={
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'show_points': True
+            }
+        )
 
         self.student_suite1.normal_fdbk_config.validate_and_update(
             bugs_exposed_fdbk_level=ag_models.BugsExposedFeedbackLevel.num_bugs_exposed,
@@ -201,16 +207,21 @@ class SubmissionFeedbackTestCase(UnitTestBase):
                                  fdbk.student_test_suite_results)
 
     def test_past_limit_fdbk(self):
-        self.ag_test_cmd2.past_limit_submission_fdbk_config.validate_and_update(
-            visible=False,
-            return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            stdout_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            stderr_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            show_points=True)
-        self.ag_test_cmd1.past_limit_submission_fdbk_config.validate_and_update(
-            return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            stderr_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            show_points=True
+        self.ag_test_cmd2.validate_and_update(
+            past_limit_submission_fdbk_config={
+                'visible': False,
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'show_points': True
+            }
+        )
+        self.ag_test_cmd1.validate_and_update(
+            past_limit_submission_fdbk_config={
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'show_points': True
+            }
         )
 
         self.student_suite2.past_limit_submission_fdbk_config.validate_and_update(
@@ -233,7 +244,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertSequenceEqual([], fdbk.student_test_suite_results)
 
     def test_ultimate_fdbk(self):
-        self.ag_test_cmd1.ultimate_submission_fdbk_config.validate_and_update(visible=False)
+        self.ag_test_cmd1.validate_and_update(ultimate_submission_fdbk_config={'visible': False})
         self.student_suite1.ultimate_submission_fdbk_config.validate_and_update(visible=False)
         fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.ultimate_submission)
         self.assertEqual(self.total_points_per_ag_suite + self.total_points_per_student_suite,

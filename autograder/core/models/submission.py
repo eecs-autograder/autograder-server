@@ -349,17 +349,10 @@ def get_submissions_with_results_queryset(fdbk_category: FeedbackCategory,
 
 
 def get_ag_test_case_results_queryset(fdbk_category: FeedbackCategory):
-    cmd_result_queryset = get_ag_test_cmd_results_queryset(fdbk_category)
-    prefetch_cmd_results = Prefetch('ag_test_command_results', cmd_result_queryset)
+    prefetch_cmd_results = Prefetch('ag_test_command_results', AGTestCommandResult.objects.all())
     return AGTestCaseResult.objects.select_related(
         _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_case')
     ).prefetch_related(prefetch_cmd_results)
-
-
-def get_ag_test_cmd_results_queryset(fdbk_category: FeedbackCategory):
-    return AGTestCommandResult.objects.select_related(
-        _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_command')
-    )
 
 
 def get_student_test_suite_results_queryset(fdbk_category: FeedbackCategory):

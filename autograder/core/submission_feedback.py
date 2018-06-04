@@ -38,11 +38,6 @@ class AGTestPreLoader:
 
         cmds = AGTestCommand.objects.filter(
             ag_test_case__ag_test_suite__project=project
-        ).select_related(
-            'normal_fdbk_config',
-            'past_limit_submission_fdbk_config',
-            'ultimate_submission_fdbk_config',
-            'staff_viewer_fdbk_config'
         )
         self._cmds: Dict[int, AGTestCommand] = {
             cmd.pk: cmd for cmd in cmds

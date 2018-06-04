@@ -16,7 +16,6 @@ from .submission import (
     Submission,
     get_submissions_with_results_queryset,
     get_ag_test_case_results_queryset,
-    get_ag_test_cmd_results_queryset,
     get_student_test_suite_results_queryset,
 )
 

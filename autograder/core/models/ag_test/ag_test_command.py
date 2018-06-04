@@ -10,7 +10,7 @@ from autograder.core import constants
 import autograder.core.utils as core_ut
 from ..ag_command import AGCommandBase
 from .ag_test_case import AGTestCase
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import InstructorFile
 
 
@@ -18,6 +18,77 @@ class ValueFeedbackLevel(core_ut.OrderedEnum):
     no_feedback = 'no_feedback'
     correct_or_incorrect = 'correct_or_incorrect'
     expected_and_actual = 'expected_and_actual'
+
+
+class NewAGTestCommandFeedbackConfig(DictSerializableMixin):
+    """
+    Contains feedback options for an AGTestCommand
+    """
+    def __init__(self,
+                 visible: bool=True,
+                 return_code_fdbk_level: ValueFeedbackLevel=ValueFeedbackLevel.get_min(),
+                 stdout_fdbk_level: ValueFeedbackLevel=ValueFeedbackLevel.get_min(),
+                 stderr_fdbk_level: ValueFeedbackLevel=ValueFeedbackLevel.get_min(),
+                 show_points: bool=False,
+                 show_actual_return_code: bool=False,
+                 show_actual_stdout: bool=False,
+                 show_actual_stderr: bool=False,
+                 show_whether_timed_out: bool=False):
+        self.visible = visible
+
+        self.return_code_fdbk_level = return_code_fdbk_level
+        self.stdout_fdbk_level = stdout_fdbk_level
+        self.stderr_fdbk_level = stderr_fdbk_level
+
+        self.show_points = show_points
+
+        self.show_actual_return_code = show_actual_return_code
+        self.show_actual_stdout = show_actual_stdout
+        self.show_actual_stderr = show_actual_stderr
+
+        self.show_whether_timed_out = show_whether_timed_out
+
+    @classmethod
+    def default_ultimate_submission_fdbk_config(cls):
+        return NewAGTestCommandFeedbackConfig(
+            return_code_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
+            stdout_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
+            stderr_fdbk_level=ValueFeedbackLevel.correct_or_incorrect,
+            show_points=True,
+            show_actual_return_code=True,
+            show_actual_stdout=False,
+            show_actual_stderr=False,
+            show_whether_timed_out=True
+        )
+
+    @classmethod
+    def default_staff_viewer_fdbk_config(cls):
+        return cls.max_fdbk_config()
+
+    @classmethod
+    def max_fdbk_config(cls):
+        return NewAGTestCommandFeedbackConfig(
+            return_code_fdbk_level=ValueFeedbackLevel.get_max(),
+            stdout_fdbk_level=ValueFeedbackLevel.get_max(),
+            stderr_fdbk_level=ValueFeedbackLevel.get_max(),
+            show_points=True,
+            show_actual_return_code=True,
+            show_actual_stdout=True,
+            show_actual_stderr=True,
+            show_whether_timed_out=True
+        )
+
+    SERIALIZABLE_FIELDS = (
+        'visible',
+        'return_code_fdbk_level',
+        'stdout_fdbk_level',
+        'stderr_fdbk_level',
+        'show_points',
+        'show_actual_return_code',
+        'show_actual_stdout',
+        'show_actual_stderr',
+        'show_whether_timed_out',
+    )
 
 
 class AGTestCommandFeedbackConfig(AutograderModel):
@@ -240,30 +311,51 @@ class AGTestCommand(AGCommandBase):
                      Note: The total points given for a single command may be negative,
                      but the total points for an AGTestCase will be capped at zero.''')
 
-    normal_fdbk_config = models.OneToOneField(
+    old_normal_fdbk_config = models.OneToOneField(
         AGTestCommandFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_command_fdbk,
         related_name='+',
         help_text='Feedback settings for a normal Submission.')
-    ultimate_submission_fdbk_config = models.OneToOneField(
+    old_ultimate_submission_fdbk_config = models.OneToOneField(
         AGTestCommandFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_ultimate_submission_command_fdbk,
         related_name='+',
         help_text='Feedback settings for an ultimate Submission.')
-    past_limit_submission_fdbk_config = models.OneToOneField(
+    old_past_limit_submission_fdbk_config = models.OneToOneField(
         AGTestCommandFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_command_fdbk,
         related_name='+',
         help_text='Feedback settings for a Submission that is past the daily limit.')
-    staff_viewer_fdbk_config = models.OneToOneField(
+    old_staff_viewer_fdbk_config = models.OneToOneField(
         AGTestCommandFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_max_command_fdbk,
         related_name='+',
         help_text='Feedback settings for a staff member viewing a Submission from another group.')
+
+    normal_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestCommandFeedbackConfig,
+        default=NewAGTestCommandFeedbackConfig,
+        help_text='Feedback settings for a normal Submission.'
+    )
+    ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestCommandFeedbackConfig,
+        default=NewAGTestCommandFeedbackConfig.default_ultimate_submission_fdbk_config,
+        help_text='Feedback settings for an ultimate Submission.'
+    )
+    past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestCommandFeedbackConfig,
+        default=NewAGTestCommandFeedbackConfig,
+        help_text='Feedback settings for a Submission that is past the daily limit.'
+    )
+    staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestCommandFeedbackConfig,
+        default=NewAGTestCommandFeedbackConfig.default_staff_viewer_fdbk_config,
+        help_text='Feedback settings for a staff member viewing a Submission from another group.'
+    )
 
     def clean(self):
         error_dict = {}
@@ -423,11 +515,4 @@ class AGTestCommand(AGCommandBase):
         'stdin_instructor_file',
         'expected_stdout_instructor_file',
         'expected_stderr_instructor_file',
-    )
-
-    TRANSPARENT_TO_ONE_FIELDS = (
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
     )

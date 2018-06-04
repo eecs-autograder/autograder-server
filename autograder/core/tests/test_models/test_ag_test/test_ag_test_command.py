@@ -53,19 +53,6 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertEqual('', ag_cmd.expected_stderr_text)
         self.assertIsNone(ag_cmd.expected_stderr_instructor_file)
 
-        self.assertTrue(ag_cmd.normal_fdbk_config.visible)
-        self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
-                         ag_cmd.normal_fdbk_config.return_code_fdbk_level)
-        self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
-                         ag_cmd.normal_fdbk_config.stdout_fdbk_level)
-        self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
-                         ag_cmd.normal_fdbk_config.stderr_fdbk_level)
-        self.assertFalse(ag_cmd.normal_fdbk_config.show_points)
-        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_return_code)
-        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stdout)
-        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stderr)
-        self.assertFalse(ag_cmd.normal_fdbk_config.show_whether_timed_out)
-
         self.assertIsNotNone(ag_cmd.ultimate_submission_fdbk_config)
         self.assertIsNotNone(ag_cmd.past_limit_submission_fdbk_config)
         self.assertIsNotNone(ag_cmd.staff_viewer_fdbk_config)
@@ -86,6 +73,74 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertEqual(constants.DEFAULT_STACK_SIZE_LIMIT, ag_cmd.stack_size_limit)
         self.assertEqual(constants.DEFAULT_VIRTUAL_MEM_LIMIT, ag_cmd.virtual_memory_limit)
         self.assertEqual(constants.DEFAULT_PROCESS_LIMIT, ag_cmd.process_spawn_limit)
+
+    def test_normal_fdbk_default(self):
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
+
+        self.assertTrue(ag_cmd.normal_fdbk_config.visible)
+        self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
+                         ag_cmd.normal_fdbk_config.return_code_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
+                         ag_cmd.normal_fdbk_config.stdout_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
+                         ag_cmd.normal_fdbk_config.stderr_fdbk_level)
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_points)
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_return_code)
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stdout)
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_actual_stderr)
+        self.assertFalse(ag_cmd.normal_fdbk_config.show_whether_timed_out)
+
+    def test_ultimate_fdbk_default(self):
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
+
+        self.assertTrue(ag_cmd.ultimate_submission_fdbk_config.visible)
+        self.assertEqual(ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                         ag_cmd.ultimate_submission_fdbk_config.return_code_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                         ag_cmd.ultimate_submission_fdbk_config.stdout_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                         ag_cmd.ultimate_submission_fdbk_config.stderr_fdbk_level)
+        self.assertTrue(ag_cmd.ultimate_submission_fdbk_config.show_points)
+        self.assertTrue(ag_cmd.ultimate_submission_fdbk_config.show_actual_return_code)
+        self.assertFalse(ag_cmd.ultimate_submission_fdbk_config.show_actual_stdout)
+        self.assertFalse(ag_cmd.ultimate_submission_fdbk_config.show_actual_stderr)
+        self.assertTrue(ag_cmd.ultimate_submission_fdbk_config.show_whether_timed_out)
+
+    def test_past_limit_fdbk_default(self):
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
+
+        self.assertTrue(ag_cmd.past_limit_submission_fdbk_config.visible)
+        self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
+                         ag_cmd.past_limit_submission_fdbk_config.return_code_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
+                         ag_cmd.past_limit_submission_fdbk_config.stdout_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.no_feedback,
+                         ag_cmd.past_limit_submission_fdbk_config.stderr_fdbk_level)
+        self.assertFalse(ag_cmd.past_limit_submission_fdbk_config.show_points)
+        self.assertFalse(ag_cmd.past_limit_submission_fdbk_config.show_actual_return_code)
+        self.assertFalse(ag_cmd.past_limit_submission_fdbk_config.show_actual_stdout)
+        self.assertFalse(ag_cmd.past_limit_submission_fdbk_config.show_actual_stderr)
+        self.assertFalse(ag_cmd.past_limit_submission_fdbk_config.show_whether_timed_out)
+
+    def test_staff_viewer_fdbk_default(self):
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
+
+        self.assertTrue(ag_cmd.staff_viewer_fdbk_config.visible)
+        self.assertEqual(ag_models.ValueFeedbackLevel.expected_and_actual,
+                         ag_cmd.staff_viewer_fdbk_config.return_code_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.expected_and_actual,
+                         ag_cmd.staff_viewer_fdbk_config.stdout_fdbk_level)
+        self.assertEqual(ag_models.ValueFeedbackLevel.expected_and_actual,
+                         ag_cmd.staff_viewer_fdbk_config.stderr_fdbk_level)
+        self.assertTrue(ag_cmd.staff_viewer_fdbk_config.show_points)
+        self.assertTrue(ag_cmd.staff_viewer_fdbk_config.show_actual_return_code)
+        self.assertTrue(ag_cmd.staff_viewer_fdbk_config.show_actual_stdout)
+        self.assertTrue(ag_cmd.staff_viewer_fdbk_config.show_actual_stderr)
+        self.assertTrue(ag_cmd.staff_viewer_fdbk_config.show_whether_timed_out)
 
     def test_some_valid_non_defaults(self):
         points_for_correct_return_code = 1
@@ -114,6 +169,86 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertEqual(deduction_for_wrong_stdout, ag_cmd.deduction_for_wrong_stdout)
         self.assertEqual(deduction_for_wrong_stderr, ag_cmd.deduction_for_wrong_stderr)
         self.assertEqual(expected_return_code, ag_cmd.expected_return_code)
+
+    def test_normal_fdbk_non_default(self):
+        fdbk_settings = {
+            'return_code_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual,
+            'stdout_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+            'stderr_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual,
+            'show_points': False,
+            'show_actual_return_code': True,
+            'show_actual_stdout': False,
+            'show_actual_stderr': True,
+            'show_whether_timed_out': False
+        }
+
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            normal_fdbk_config=fdbk_settings
+        )
+
+        for field_name, value in fdbk_settings.items():
+            self.assertEqual(value, getattr(ag_cmd.normal_fdbk_config, field_name))
+
+    def test_ultimate_fdbk_non_default(self):
+        fdbk_settings = {
+            'return_code_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual,
+            'stdout_fdbk_level': ag_models.ValueFeedbackLevel.no_feedback,
+            'stderr_fdbk_level': ag_models.ValueFeedbackLevel.no_feedback,
+            'show_points': False,
+            'show_actual_return_code': True,
+            'show_actual_stdout': True,
+            'show_actual_stderr': False,
+            'show_whether_timed_out': True
+        }
+
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            ultimate_submission_fdbk_config=fdbk_settings
+        )
+
+        for field_name, value in fdbk_settings.items():
+            self.assertEqual(value, getattr(ag_cmd.ultimate_submission_fdbk_config, field_name))
+
+    def test_staff_viewer_fdbk_non_default(self):
+        fdbk_settings = {
+            'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+            'stdout_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual,
+            'stderr_fdbk_level': ag_models.ValueFeedbackLevel.no_feedback,
+            'show_points': True,
+            'show_actual_return_code': True,
+            'show_actual_stdout': True,
+            'show_actual_stderr': False,
+            'show_whether_timed_out': False
+        }
+
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            past_limit_submission_fdbk_config=fdbk_settings
+        )
+
+        for field_name, value in fdbk_settings.items():
+            self.assertEqual(value, getattr(ag_cmd.past_limit_submission_fdbk_config, field_name))
+
+    def test_past_limit_fdbk_non_default(self):
+        fdbk_settings = {
+            'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+            'stdout_fdbk_level': ag_models.ValueFeedbackLevel.no_feedback,
+            'stderr_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual,
+            'show_points': False,
+            'show_actual_return_code': True,
+            'show_actual_stdout': False,
+            'show_actual_stderr': True,
+            'show_whether_timed_out': False
+        }
+
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            past_limit_submission_fdbk_config=fdbk_settings
+        )
+
+        for field_name, value in fdbk_settings.items():
+            self.assertEqual(value, getattr(ag_cmd.past_limit_submission_fdbk_config, field_name))
 
     def test_ag_test_case_ag_test_commands_reverse_lookup_and_ordering(self):
         ag_cmd1 = ag_models.AGTestCommand.objects.validate_and_create(

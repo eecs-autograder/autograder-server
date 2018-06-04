@@ -65,8 +65,4 @@ class AGTestCommandDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGe
     ]
     model_manager = ag_models.AGTestCommand.objects.select_related(
         'ag_test_case__ag_test_suite__project__course',
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
     )

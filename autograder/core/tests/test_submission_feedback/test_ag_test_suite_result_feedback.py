@@ -124,13 +124,19 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertEqual(0, fdbk.total_points_possible)
 
     def test_show_individual_tests(self):
-        self.ag_test_cmd1.normal_fdbk_config.validate_and_update(
-            return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            show_points=True)
+        self.ag_test_cmd1.validate_and_update(
+            normal_fdbk_config={
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'show_points': True
+            }
+        )
 
-        self.ag_test_cmd2.normal_fdbk_config.validate_and_update(
-            return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            show_points=True)
+        self.ag_test_cmd2.validate_and_update(
+            normal_fdbk_config={
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'show_points': True
+            }
+        )
 
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_individual_tests)
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
@@ -197,7 +203,7 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.teardown_timed_out)
 
     def test_some_ag_test_cases_not_visible(self):
-        self.ag_test_case2.ultimate_submission_fdbk_config.validate_and_update(visible=False)
+        self.ag_test_case2.validate_and_update(ultimate_submission_fdbk_config={'visible': False})
         expected_points = get_cmd_fdbk(
             self.cmd_result1, ag_models.FeedbackCategory.max).total_points_possible
 
@@ -209,7 +215,8 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertEqual(expected_points, fdbk.total_points_possible)
 
     def test_fdbk_to_dict(self):
-        self.ag_test_case1.normal_fdbk_config.validate_and_update(show_individual_commands=False)
+        self.ag_test_case1.validate_and_update(
+            normal_fdbk_config={'show_individual_commands': False})
 
         expected_keys = [
             'pk',

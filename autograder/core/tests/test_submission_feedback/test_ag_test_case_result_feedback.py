@@ -139,9 +139,12 @@ class AGTestCaseFeedbackTestCase(UnitTestBase):
     def test_show_individual_commands(self):
         total_cmd_points = 6
         self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=total_cmd_points)
-        self.ag_test_cmd1.normal_fdbk_config.validate_and_update(
-            return_code_fdbk_level=ag_models.ValueFeedbackLevel.correct_or_incorrect,
-            show_points=True)
+        self.ag_test_cmd1.validate_and_update(
+            normal_fdbk_config={
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'show_points': True
+            }
+        )
 
         self.assertTrue(self.ag_test_case.normal_fdbk_config.show_individual_commands)
         result1 = obj_build.make_correct_ag_test_command_result(
@@ -178,7 +181,7 @@ class AGTestCaseFeedbackTestCase(UnitTestBase):
                          [res.pk for res in fdbk.ag_test_command_results])
 
     def test_some_commands_not_visible(self):
-        self.ag_test_cmd1.ultimate_submission_fdbk_config.validate_and_update(visible=False)
+        self.ag_test_cmd1.validate_and_update(ultimate_submission_fdbk_config={'visible': False})
         cmd1_pts = 5
         cmd2_pts = 3
         self.ag_test_cmd1.validate_and_update(points_for_correct_return_code=cmd1_pts)
