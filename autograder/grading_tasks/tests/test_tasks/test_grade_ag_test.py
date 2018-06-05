@@ -427,58 +427,43 @@ sys.stderr.flush()
         self.assertEqual(self.non_utf_bytes, open(res.stdout_filename, 'rb').read())
         self.assertEqual(self.non_utf_bytes, open(res.stderr_filename, 'rb').read())
 
-    def test_suite_setup_and_teardown_return_code_set(self, *args):
-        self.ag_test_suite.validate_and_update(setup_suite_cmd='bash -c "exit 2"',
-                                               teardown_suite_cmd='bash -c "exit 3"')
+    def test_suite_setup_return_code_set(self, *args):
+        self.ag_test_suite.validate_and_update(setup_suite_cmd='bash -c "exit 2"')
         tasks.grade_submission(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
         self.assertEqual(2, res.setup_return_code)
-        self.assertEqual(3, res.teardown_return_code)
 
-    def test_setup_and_teardown_time_out(self, *args):
-        self.ag_test_suite.validate_and_update(setup_suite_cmd=self.timeout_cmd,
-                                               teardown_suite_cmd=self.timeout_cmd)
+    def test_setup_time_out(self, *args):
+        self.ag_test_suite.validate_and_update(setup_suite_cmd=self.timeout_cmd)
         with mock.patch('autograder.core.constants.MAX_SUBPROCESS_TIMEOUT', new=1):
             tasks.grade_submission(self.submission.pk)
 
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
         self.assertTrue(res.setup_timed_out)
-        self.assertTrue(res.teardown_timed_out)
 
-    def test_setup_and_teardown_print_a_lot_of_output(self, *args):
+    def test_setup_print_a_lot_of_output(self, *args):
         self.ag_test_suite.validate_and_update(
-            setup_suite_cmd='python3 ' + self.too_much_output_file.name,
-            teardown_suite_cmd='python3 ' + self.too_much_output_file.name)
+            setup_suite_cmd='python3 ' + self.too_much_output_file.name)
         tasks.grade_submission(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
 
         self.assertTrue(res.setup_stdout_truncated)
         self.assertTrue(res.setup_stderr_truncated)
-        self.assertTrue(res.teardown_stdout_truncated)
-        self.assertTrue(res.teardown_stderr_truncated)
 
         self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.setup_stdout_filename))
         self.assertEqual(constants.MAX_OUTPUT_LENGTH, os.path.getsize(res.setup_stderr_filename))
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH,
-                         os.path.getsize(res.teardown_stdout_filename))
-        self.assertEqual(constants.MAX_OUTPUT_LENGTH,
-                         os.path.getsize(res.teardown_stderr_filename))
 
-    def test_setup_and_teardown_print_non_unicode_chars(self, *args):
+    def test_setup_print_non_unicode_chars(self, *args):
         self.ag_test_suite.validate_and_update(
-            setup_suite_cmd='python3 ' + self.non_utf_file.name,
-            teardown_suite_cmd='python3 ' + self.non_utf_file.name)
+            setup_suite_cmd='python3 ' + self.non_utf_file.name)
         tasks.grade_submission(self.submission.pk)
         res = ag_models.AGTestSuiteResult.objects.get(submission=self.submission)
 
         self.assertEqual(self.non_utf_bytes, res.open_setup_stdout().read())
         self.assertEqual(self.non_utf_bytes, res.open_setup_stderr().read())
-        self.assertEqual(self.non_utf_bytes, res.open_teardown_stdout().read())
-        self.assertEqual(self.non_utf_bytes, res.open_teardown_stderr().read())
 
     def test_time_process_stack_and_virtual_mem_limits_passed_to_run_command(self, *args):
-        self.ag_test_suite.validate_and_update(setup_suite_cmd='printf waluigi',
-                                               teardown_suite_cmd='printf wuluigio')
+        self.ag_test_suite.validate_and_update(setup_suite_cmd='printf waluigi')
 
         time_limit = random.randint(1, constants.MAX_SUBPROCESS_TIMEOUT)
         process_spawn_limit = random.randint(constants.DEFAULT_PROCESS_LIMIT + 1,
@@ -509,7 +494,7 @@ sys.stderr.flush()
                         return_value=sandbox):
             tasks.grade_submission(self.submission.pk)
 
-        expected_setup_and_teardown_resource_kwargs = {
+        expected_setup_resource_kwargs = {
             'timeout': constants.MAX_SUBPROCESS_TIMEOUT,
             'max_num_processes': constants.MAX_PROCESS_LIMIT,
             'max_stack_size': constants.MAX_STACK_SIZE_LIMIT,
@@ -528,11 +513,8 @@ sys.stderr.flush()
         run_command_mock.assert_has_calls([
             mock.call(['bash', '-c', self.ag_test_suite.setup_suite_cmd],
                       stdin=None,
-                      as_root=False, **expected_setup_and_teardown_resource_kwargs),
+                      as_root=False, **expected_setup_resource_kwargs),
             mock.call(['bash', '-c', cmd.cmd], stdin=None, as_root=False, **expected_cmd_args),
-            mock.call(['bash', '-c', self.ag_test_suite.teardown_suite_cmd],
-                      stdin=None,
-                      as_root=False, **expected_setup_and_teardown_resource_kwargs)
         ])
 
 

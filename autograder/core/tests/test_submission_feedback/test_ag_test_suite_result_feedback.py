@@ -16,8 +16,7 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         project = submission.group.project
         self.ag_test_suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='kajsdhf', project=project,
-            setup_suite_cmd_name='asdlkjfa;skldjf;aksdf',
-            teardown_suite_cmd_name='zxcmcnvm,xcn,z'
+            setup_suite_cmd_name='asdlkjfa;skldjf;aksdf'
         )  # type: ag_models.AGTestSuite
 
         self.ag_test_case1 = ag_models.AGTestCase.objects.validate_and_create(
@@ -76,18 +75,6 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             'suite_result_' + str(self.ag_test_suite_result.pk) + '_setup_stderr')
         self.assertEqual(expected_setup_stderr_filename,
                          self.ag_test_suite_result.setup_stderr_filename)
-
-        expected_teardown_stdout_filename = os.path.join(
-            core_ut.get_result_output_dir(self.ag_test_suite_result.submission),
-            'suite_result_' + str(self.ag_test_suite_result.pk) + '_teardown_stdout')
-        self.assertEqual(expected_teardown_stdout_filename,
-                         self.ag_test_suite_result.teardown_stdout_filename)
-
-        expected_teardown_stderr_filename = os.path.join(
-            core_ut.get_result_output_dir(self.ag_test_suite_result.submission),
-            'suite_result_' + str(self.ag_test_suite_result.pk) + '_teardown_stderr')
-        self.assertEqual(expected_teardown_stderr_filename,
-                         self.ag_test_suite_result.teardown_stderr_filename)
 
     def test_feedback_calculator_ctor(self):
         self.assertEqual(
@@ -175,7 +162,6 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
 
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
         self.assertEqual(self.ag_test_suite.setup_suite_cmd_name, fdbk.setup_name)
-        self.assertEqual(self.ag_test_suite.teardown_suite_cmd_name, fdbk.teardown_name)
         self.assertEqual(setup_return_code, fdbk.setup_return_code)
         self.assertEqual(setup_timed_out, fdbk.setup_timed_out)
         self.assertEqual(setup_stdout, fdbk.setup_stdout.read().decode())
@@ -192,15 +178,10 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
 
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_name)
-        self.assertIsNone(fdbk.teardown_name)
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
         self.assertIsNone(fdbk.setup_stdout)
         self.assertIsNone(fdbk.setup_stderr)
-        self.assertIsNone(fdbk.teardown_stdout)
-        self.assertIsNone(fdbk.teardown_stderr)
-        self.assertIsNone(fdbk.teardown_return_code)
-        self.assertIsNone(fdbk.teardown_timed_out)
 
     def test_some_ag_test_cases_not_visible(self):
         self.ag_test_case2.validate_and_update(ultimate_submission_fdbk_config={'visible': False})

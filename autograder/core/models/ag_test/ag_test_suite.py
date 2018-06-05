@@ -82,9 +82,9 @@ class NewAGTestSuiteFeedbackConfig(DictSerializableMixin):
             'Whether to show information about individual tests in a suite or just a '
             'points summary (if available).'),
         'show_setup_stdout': (
-            "Whether to show stdout content from a suite's setup and teardown commands."),
+            "Whether to show stdout content from a suite's setup command."),
         'show_setup_stderr': (
-            "Whether to show stderr content from a suite's setup and teardown commands."),
+            "Whether to show stderr content from a suite's setup command."),
     }
 
 
@@ -137,15 +137,8 @@ class AGTestSuite(AutograderModel):
                      This command will be run after the student and project files
                      have been added to the sandbox.""")
 
-    teardown_suite_cmd = models.CharField(
-        max_length=constants.MAX_COMMAND_LENGTH, blank=True,
-        help_text="""DEPRECATED. A command to be run after this suite's tests are run.
-                     This command is only run once at the end of the suite.""")
-
     setup_suite_cmd_name = ag_fields.ShortStringField(
         blank=True, help_text="""The name of this suite's setup command.""")
-    teardown_suite_cmd_name = ag_fields.ShortStringField(
-        blank=True, help_text="""DEPRECATED. The name of this suite's teardown command.""")
 
     docker_image_to_use = ag_fields.EnumField(
         constants.SupportedImages,
@@ -243,10 +236,7 @@ class AGTestSuite(AutograderModel):
         'ag_test_cases',
 
         'setup_suite_cmd',
-        'teardown_suite_cmd',
-
         'setup_suite_cmd_name',
-        'teardown_suite_cmd_name',
 
         'docker_image_to_use',
         'allow_network_access',
@@ -273,10 +263,7 @@ class AGTestSuite(AutograderModel):
         'student_files_needed',
 
         'setup_suite_cmd',
-        'teardown_suite_cmd',
-
         'setup_suite_cmd_name',
-        'teardown_suite_cmd_name',
 
         'allow_network_access',
         'deferred',

@@ -447,41 +447,6 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return self._ag_test_suite_result.open_setup_stderr()
 
     @property
-    def teardown_name(self) -> Optional[str]:
-        if not self._show_setup_names:
-            return None
-
-        return self._ag_test_suite.teardown_suite_cmd_name
-
-    @property
-    def teardown_return_code(self) -> Optional[int]:
-        if not self._fdbk.show_setup_return_code:
-            return None
-
-        return self._ag_test_suite_result.teardown_return_code
-
-    @property
-    def teardown_timed_out(self) -> Optional[bool]:
-        if not self._fdbk.show_setup_timed_out:
-            return None
-
-        return self._ag_test_suite_result.teardown_timed_out
-
-    @property
-    def teardown_stdout(self) -> Optional[BinaryIO]:
-        if not self._fdbk.show_setup_stdout:
-            return None
-
-        return self._ag_test_suite_result.open_teardown_stdout()
-
-    @property
-    def teardown_stderr(self) -> Optional[BinaryIO]:
-        if not self._fdbk.show_setup_stderr:
-            return None
-
-        return self._ag_test_suite_result.open_teardown_stderr()
-
-    @property
     def _show_setup_names(self):
         return (self._fdbk.show_setup_stdout
                 or self._fdbk.show_setup_stderr
@@ -534,9 +499,6 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         'setup_name',
         'setup_return_code',
         'setup_timed_out',
-        # 'teardown_name',
-        # 'teardown_return_code',
-        # 'teardown_timed_out',
 
         'ag_test_case_results'
     )

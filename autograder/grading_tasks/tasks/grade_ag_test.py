@@ -68,8 +68,6 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
             print('Grading test case', ag_test_case.name)
             grade_ag_test_case_impl(sandbox, ag_test_case, suite_result)
 
-        _run_suite_teardown(sandbox, ag_test_suite, suite_result)
-
         update_denormalized_ag_test_results(submission.pk)
 
 
@@ -96,33 +94,6 @@ def _run_suite_setup(sandbox: AutograderSandbox,
         shutil.copyfileobj(setup_result.stdout, f)
     with open(suite_result.setup_stderr_filename, 'wb') as f:
         shutil.copyfileobj(setup_result.stderr, f)
-
-    suite_result.save()
-
-
-@retry_ag_test_cmd
-def _run_suite_teardown(sandbox: AutograderSandbox,
-                        ag_test_suite: ag_models.AGTestSuite,
-                        suite_result: ag_models.AGTestSuiteResult):
-    if not ag_test_suite.teardown_suite_cmd:
-        return
-
-    teardown_result = run_command_from_args(
-        cmd=ag_test_suite.teardown_suite_cmd,
-        sandbox=sandbox,
-        max_num_processes=constants.MAX_PROCESS_LIMIT,
-        max_stack_size=constants.MAX_STACK_SIZE_LIMIT,
-        max_virtual_memory=constants.MAX_VIRTUAL_MEM_LIMIT,
-        timeout=constants.MAX_SUBPROCESS_TIMEOUT)
-    suite_result.teardown_return_code = teardown_result.return_code
-    suite_result.teardown_timed_out = teardown_result.timed_out
-    suite_result.teardown_stdout_truncated = teardown_result.stdout_truncated
-    suite_result.teardown_stderr_truncated = teardown_result.stderr_truncated
-
-    with open(suite_result.teardown_stdout_filename, 'wb') as f:
-        shutil.copyfileobj(teardown_result.stdout, f)
-    with open(suite_result.teardown_stderr_filename, 'wb') as f:
-        shutil.copyfileobj(teardown_result.stderr, f)
 
     suite_result.save()
 

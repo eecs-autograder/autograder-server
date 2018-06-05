@@ -25,10 +25,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertCountEqual([], suite.student_files_needed.all())
 
         self.assertEqual('', suite.setup_suite_cmd_name)
-        self.assertEqual('', suite.teardown_suite_cmd_name)
-
         self.assertEqual('', suite.setup_suite_cmd)
-        self.assertEqual('', suite.teardown_suite_cmd)
 
         self.assertFalse(suite.allow_network_access)
         self.assertFalse(suite.deferred)
@@ -77,7 +74,6 @@ class AGTestSuiteTestCase(UnitTestBase):
         instructor_files_needed = [obj_build.make_instructor_file(self.project)]
         student_files_needed = [student_file]
         setup_cmd = "echo 'hello world'"
-        teardown_cmd = "echo 'bye'"
         allow_network_access = True
         deferred = True
 
@@ -88,9 +84,7 @@ class AGTestSuiteTestCase(UnitTestBase):
             read_only_instructor_files=False,
             student_files_needed=student_files_needed,
             setup_suite_cmd=setup_cmd,
-            teardown_suite_cmd=teardown_cmd,
             setup_suite_cmd_name='steve',
-            teardown_suite_cmd_name='stove',
             allow_network_access=allow_network_access,
             deferred=deferred,
             docker_image_to_use=constants.SupportedImages.eecs490,
@@ -177,7 +171,6 @@ class AGTestSuiteTestCase(UnitTestBase):
             instructor_files_needed=[obj_build.make_instructor_file(self.project)],
             student_files_needed=[student_file],
             setup_suite_cmd="echo 'hello world'",
-            teardown_suite_cmd="echo 'bye'",
             allow_network_access=True,
             deferred=True
         )  # type: ag_models.AGTestSuite
@@ -202,10 +195,7 @@ class AGTestSuiteTestCase(UnitTestBase):
             'ag_test_cases',
 
             'setup_suite_cmd',
-            'teardown_suite_cmd',
-
             'setup_suite_cmd_name',
-            'teardown_suite_cmd_name',
 
             'docker_image_to_use',
             'allow_network_access',

@@ -548,7 +548,7 @@ class SubmissionResultTestCase(UnitTestBase):
 
     # -------------------------------------------------------------
 
-    def test_get_suite_result_setup_and_teardown_output_visible(self):
+    def test_get_suite_result_setup_output_visible(self):
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stdout)
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.show_setup_stderr)
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.visible)
@@ -559,7 +559,7 @@ class SubmissionResultTestCase(UnitTestBase):
         self._do_suite_result_output_test(self.client, suite_res.submission, suite_res,
                                           ag_models.FeedbackCategory.normal)
 
-    def test_get_suite_result_setup_and_teardown_output_hidden(self):
+    def test_get_suite_result_setup_output_hidden(self):
         self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': False})
         self.ag_test_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': False})
         self.assertTrue(self.ag_test_suite.normal_fdbk_config.visible)
@@ -614,11 +614,6 @@ class SubmissionResultTestCase(UnitTestBase):
         with suite_result.open_setup_stdout('w') as f:
             f.write('adkjfaksdjf;akjsdf;')
         with suite_result.open_setup_stderr('w') as f:
-            f.write('qewiruqpewpuir')
-
-        with suite_result.open_teardown_stdout('w') as f:
-            f.write('adkjfaksdjf;akjsdf;')
-        with suite_result.open_teardown_stderr('w') as f:
             f.write('qewiruqpewpuir')
 
         field_names = ['setup_stdout', 'setup_stderr']
