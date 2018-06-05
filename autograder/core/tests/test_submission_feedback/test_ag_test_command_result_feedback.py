@@ -694,7 +694,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
                          fdbk.stderr_points)
 
     def test_points_visibility(self):
-        self.ag_test_command.validate_and_update(normal_fdbk_config={'show_points':False})
+        self.ag_test_command.validate_and_update(normal_fdbk_config={'show_points': False})
 
         correct_result = self.make_correct_result()
         fdbk = get_cmd_fdbk(correct_result, ag_models.FeedbackCategory.normal)
