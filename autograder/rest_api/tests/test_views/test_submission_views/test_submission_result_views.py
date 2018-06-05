@@ -480,7 +480,7 @@ class SubmissionResultTestCase(UnitTestBase):
             self.student1_normal_res, ag_models.FeedbackCategory.normal)
 
     def test_cmd_result_output_or_diff_requested_on_not_visible_cmd(self):
-        self.ag_test_cmd.normal_fdbk_config.validate_and_update(visible=False)
+        self.ag_test_cmd.validate_and_update(normal_fdbk_config={'visible': False})
         self.client.force_authenticate(self.student1)
         self.do_get_output_and_diff_on_hidden_ag_test_test(
             self.client, self.student_group1_normal_submission,
