@@ -260,8 +260,7 @@ void file2() {
 
         cmd_res = ag_models.AGTestCommandResult.objects.get(ag_test_command=cmd)
         suite_res = cmd_res.ag_test_case_result.ag_test_suite_result
-        print(suite_res.setup_stdout)
-        print(suite_res.setup_stderr)
+
         self.assertEqual(0, suite_res.setup_return_code)
         self.assertTrue(cmd_res.stdout_correct)
 
