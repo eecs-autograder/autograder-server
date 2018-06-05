@@ -27,10 +27,7 @@ class AGTestSuiteResult(AutograderModel):
     setup_timed_out = models.BooleanField(
         blank=True, default=False,
         help_text="Whether this suite's setup command took too long to run.")
-    setup_stdout = models.TextField(
-        blank=True, help_text="The stdout content of this suite's setup command.")
-    setup_stderr = models.TextField(
-        blank=True, help_text="The stderr content of this suite's setup command.")
+
     setup_stdout_truncated = models.BooleanField(
         blank=True, default=False, help_text="Whether the setup command's stdout was truncated")
     setup_stderr_truncated = models.BooleanField(
