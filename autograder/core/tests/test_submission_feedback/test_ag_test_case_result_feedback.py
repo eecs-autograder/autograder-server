@@ -303,6 +303,16 @@ class IsFirstFailedTestFeedbackTestCase(UnitTestBase):
         self.case2_cmd_res = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_case2_cmd, ag_test_case_result=self.ag_test_case2_incorrect_result)
 
+        case1_max_fdbk = get_case_fdbk(
+            self.ag_test_case1_correct_result, ag_models.FeedbackCategory.max)
+        self.assertEqual(self.total_points_possible, case1_max_fdbk.total_points)
+        self.assertEqual(self.total_points_possible, case1_max_fdbk.total_points_possible)
+
+        case2_max_fdbk = get_case_fdbk(
+            self.ag_test_case2_incorrect_result, ag_models.FeedbackCategory.max)
+        self.assertEqual(0, case2_max_fdbk.total_points)
+        self.assertEqual(self.total_points_possible, case2_max_fdbk.total_points_possible)
+
     def test_ag_case_is_first_failure_override_normal_feedback(self):
         incorrect_res2_fdbk = get_case_fdbk(
             self.ag_test_case2_incorrect_result, ag_models.FeedbackCategory.normal,

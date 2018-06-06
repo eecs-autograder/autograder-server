@@ -472,10 +472,10 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         if not self._fdbk.show_individual_tests:
             return []
 
-        return list(self._visible_ag_test_case_results)
+        return self._visible_ag_test_case_results
 
-    @property
-    def _visible_ag_test_case_results(self) -> Iterable['AGTestCaseResultFeedback']:  # make this return a list
+    @cached_property
+    def _visible_ag_test_case_results(self) -> List['AGTestCaseResultFeedback']:
         result_fdbk = (
             AGTestCaseResultFeedback(result, self._fdbk_category, self._ag_test_preloader)
             for result in self._ag_test_case_results
@@ -488,7 +488,21 @@ class AGTestSuiteResultFeedback(ToDictMixin):
             return case._order
 
         # loop through, replace first failure with new ag test case result fdbk obj
-        return sorted(visible, key=case_res_sort_key)
+        result = []
+        first_failure_found = False
+        for case_fdbk in sorted(visible, key=case_res_sort_key):
+            if (not first_failure_found and
+                    case_fdbk.total_points < case_fdbk.total_points_possible):
+                result.append(
+                    AGTestCaseResultFeedback(case_fdbk.denormalized_ag_test_case_result,
+                                             self._fdbk_category,
+                                             self._ag_test_preloader,
+                                             is_first_failure=True))
+                first_failure_found = True
+            else:
+                result.append(case_fdbk)
+
+        return result
 
     SERIALIZABLE_FIELDS = (
         'pk',
@@ -518,6 +532,7 @@ class AGTestCaseResultFeedback(ToDictMixin):
                  fdbk_category: FeedbackCategory,
                  ag_test_preloader: AGTestPreLoader,
                  is_first_failure: bool=False):
+        self._denormalized_ag_test_case_result = ag_test_case_result
         self._ag_test_case_result = ag_test_case_result.ag_test_case_result
         self._ag_test_command_results = ag_test_case_result.ag_test_command_results
         self._fdbk_category = fdbk_category
@@ -554,6 +569,10 @@ class AGTestCaseResultFeedback(ToDictMixin):
     @property
     def ag_test_case_pk(self) -> int:
         return self._ag_test_case.pk
+
+    @property
+    def denormalized_ag_test_case_result(self) -> DenormalizedAGTestCaseResult:
+        return self._denormalized_ag_test_case_result
 
     @property
     def fdbk_settings(self) -> dict:
@@ -629,9 +648,11 @@ class AGTestCommandResultFeedback(ToDictMixin):
         self._is_in_first_failed_test = is_in_first_failed_test
 
         if fdbk_category == FeedbackCategory.normal:
-            self._fdbk = (
-                self._cmd.first_failed_test_normal_fdbk_config if is_in_first_failed_test
-                else self._cmd.normal_fdbk_config)
+            if (is_in_first_failed_test and
+                    self._cmd.first_failed_test_normal_fdbk_config is not None):
+                self._fdbk = self._cmd.first_failed_test_normal_fdbk_config
+            else:
+                self._fdbk = self._cmd.normal_fdbk_config
         elif fdbk_category == FeedbackCategory.ultimate_submission:
             self._fdbk = self._cmd.ultimate_submission_fdbk_config
         elif fdbk_category == FeedbackCategory.past_limit_submission:
