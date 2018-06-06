@@ -6,13 +6,15 @@ from unittest import mock
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.submission_feedback import AGTestCommandResultFeedback
+from autograder.core.submission_feedback import AGTestCommandResultFeedback, AGTestPreLoader
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import get_cmd_fdbk
 from autograder.utils.testing import UnitTestBase
 
 
 class AGTestCommandResultFeedbackTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
+
         submission = obj_build.make_submission()
         self.project = submission.group.project
         suite = ag_models.AGTestSuite.objects.validate_and_create(
@@ -859,3 +861,81 @@ def _get_expected_diff(expected_text: str, actual_output_filename: str):
         f.write(expected_text)
         f.flush()
         return core_ut.get_diff(f.name, actual_output_filename)
+
+
+class InFirstFailedTestFeedbackTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        submission = obj_build.make_submission()
+        self.project = submission.group.project
+        suite = ag_models.AGTestSuite.objects.validate_and_create(
+            name='kajsdhf', project=self.project)
+        self.ag_test_case = ag_models.AGTestCase.objects.validate_and_create(
+            name='aksdbva', ag_test_suite=suite)
+        suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            submission=submission, ag_test_suite=suite)
+        self.ag_test_case_result = ag_models.AGTestCaseResult.objects.validate_and_create(
+            ag_test_case=self.ag_test_case, ag_test_suite_result=suite_result)
+
+        self.ag_test_command = obj_build.make_full_ag_test_command(
+            self.ag_test_case,
+            first_failed_test_normal_fdbk_config={
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual,
+            }
+        )
+
+        self.ag_test_loader = AGTestPreLoader(self.project)
+
+    def test_cmd_in_first_failed_test_override_normal_feedback(self):
+        cmd_res = obj_build.make_correct_ag_test_command_result(
+            ag_test_command=self.ag_test_command,
+            ag_test_case_result=self.ag_test_case_result)
+
+        fdbk = AGTestCommandResultFeedback(
+            cmd_res, ag_models.FeedbackCategory.normal, self.ag_test_loader,
+            is_in_first_failed_test=True
+        )
+        self.assertNotEqual(self.ag_test_command.normal_fdbk_config.to_dict(),
+                            self.ag_test_command.first_failed_test_normal_fdbk_config.to_dict())
+
+        self.assertEqual(fdbk.fdbk_conf.return_code_fdbk_level,
+                         ag_models.ValueFeedbackLevel.correct_or_incorrect)
+        self.assertEqual(fdbk.fdbk_conf.stdout_fdbk_level,
+                         ag_models.ValueFeedbackLevel.expected_and_actual)
+
+        self.assertEqual(fdbk.fdbk_settings,
+                         self.ag_test_command.first_failed_test_normal_fdbk_config.to_dict())
+
+        self.assertTrue(fdbk.return_code_correct)
+        self.assertTrue(fdbk.stdout_correct)
+
+    def test_cmd_not_in_first_failed_test_gets_normal_feedback(self):
+        cmd_res = obj_build.make_correct_ag_test_command_result(
+            ag_test_command=self.ag_test_command,
+            ag_test_case_result=self.ag_test_case_result)
+
+        fdbk = AGTestCommandResultFeedback(
+            cmd_res, ag_models.FeedbackCategory.normal, self.ag_test_loader,
+            is_in_first_failed_test=False
+        )
+        self.assertNotEqual(self.ag_test_command.normal_fdbk_config.to_dict(),
+                            self.ag_test_command.first_failed_test_normal_fdbk_config.to_dict())
+
+        self.assertEqual(fdbk.fdbk_settings, self.ag_test_command.normal_fdbk_config.to_dict())
+
+    def test_non_normal_fdbk_no_override(self):
+        cmd_res = obj_build.make_correct_ag_test_command_result(
+            ag_test_command=self.ag_test_command,
+            ag_test_case_result=self.ag_test_case_result)
+
+        fdbk = AGTestCommandResultFeedback(
+            cmd_res, ag_models.FeedbackCategory.ultimate_submission, self.ag_test_loader,
+            is_in_first_failed_test=True
+        )
+        self.assertNotEqual(self.ag_test_command.normal_fdbk_config.to_dict(),
+                            self.ag_test_command.first_failed_test_normal_fdbk_config.to_dict())
+
+        self.assertEqual(fdbk.fdbk_settings,
+                         self.ag_test_command.ultimate_submission_fdbk_config.to_dict())

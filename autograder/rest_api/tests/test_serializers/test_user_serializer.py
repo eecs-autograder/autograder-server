@@ -22,6 +22,7 @@ def _user_to_expected_dict(user):
 
 class UserSerializerTestCase(test.TestCase):
     def setUp(self):
+        super().setUp()
         self.user = obj_build.create_dummy_user()
 
     def test_serialize_user(self):

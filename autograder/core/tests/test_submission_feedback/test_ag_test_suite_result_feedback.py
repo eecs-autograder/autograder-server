@@ -11,6 +11,8 @@ import autograder.core.utils as core_ut
 
 class AGTestSuiteFeedbackTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
+
         self.maxDiff = None
         submission = obj_build.make_submission()
         project = submission.group.project
@@ -220,3 +222,14 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
                 [get_case_fdbk(self.ag_test_case_result1, fdbk_category).to_dict(),
                  get_case_fdbk(self.ag_test_case_result2, fdbk_category).to_dict()],
                 result_dict['ag_test_case_results'])
+
+
+class FirstFailedTestFeedbackTestCase(UnitTestBase):
+    def test_first_failed_test_gets_overriden_normal_feedback(self):
+        self.fail()
+
+    def test_no_failed_tests_all_get_normal_fdbk(self):
+        self.fail()
+
+    def test_non_normal_fdbk_no_override(self):
+        self.fail()

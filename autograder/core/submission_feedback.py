@@ -475,7 +475,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return list(self._visible_ag_test_case_results)
 
     @property
-    def _visible_ag_test_case_results(self) -> Iterable['AGTestCaseResultFeedback']:
+    def _visible_ag_test_case_results(self) -> Iterable['AGTestCaseResultFeedback']:  # make this return a list
         result_fdbk = (
             AGTestCaseResultFeedback(result, self._fdbk_category, self._ag_test_preloader)
             for result in self._ag_test_case_results
@@ -487,6 +487,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
                 case_res.ag_test_case_pk)
             return case._order
 
+        # loop through, replace first failure with new ag test case result fdbk obj
         return sorted(visible, key=case_res_sort_key)
 
     SERIALIZABLE_FIELDS = (
@@ -515,7 +516,8 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 class AGTestCaseResultFeedback(ToDictMixin):
     def __init__(self, ag_test_case_result: DenormalizedAGTestCaseResult,
                  fdbk_category: FeedbackCategory,
-                 ag_test_preloader: AGTestPreLoader):
+                 ag_test_preloader: AGTestPreLoader,
+                 is_first_failure: bool=False):
         self._ag_test_case_result = ag_test_case_result.ag_test_case_result
         self._ag_test_command_results = ag_test_case_result.ag_test_command_results
         self._fdbk_category = fdbk_category
@@ -534,6 +536,8 @@ class AGTestCaseResultFeedback(ToDictMixin):
             self._fdbk = self._ag_test_case.staff_viewer_fdbk_config
         elif fdbk_category == FeedbackCategory.max:
             self._fdbk = NewAGTestCaseFeedbackConfig()
+
+        self._is_first_failure = is_first_failure
 
     @property
     def fdbk_conf(self):
@@ -574,7 +578,8 @@ class AGTestCaseResultFeedback(ToDictMixin):
     @property
     def _visible_cmd_results(self) -> Iterable['AGTestCommandResultFeedback']:
         results_fdbk = (
-            AGTestCommandResultFeedback(result, self._fdbk_category, self._ag_test_preloader)
+            AGTestCommandResultFeedback(result, self._fdbk_category, self._ag_test_preloader,
+                                        is_in_first_failed_test=self._is_first_failure)
             for result in self._ag_test_command_results
         )
         visible = filter(lambda result_fdbk: result_fdbk.fdbk_conf.visible, results_fdbk)
@@ -613,15 +618,20 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     def __init__(self, ag_test_command_result: AGTestCommandResult,
                  fdbk_category: FeedbackCategory,
-                 ag_test_preloader: AGTestPreLoader):
+                 ag_test_preloader: AGTestPreLoader,
+                 is_in_first_failed_test: bool=False):
         self._ag_test_command_result = ag_test_command_result
         self._ag_test_preloader = ag_test_preloader
 
         self._cmd = self._ag_test_preloader.get_ag_test_cmd(
             self._ag_test_command_result.ag_test_command_id)
 
+        self._is_in_first_failed_test = is_in_first_failed_test
+
         if fdbk_category == FeedbackCategory.normal:
-            self._fdbk = self._cmd.normal_fdbk_config
+            self._fdbk = (
+                self._cmd.first_failed_test_normal_fdbk_config if is_in_first_failed_test
+                else self._cmd.normal_fdbk_config)
         elif fdbk_category == FeedbackCategory.ultimate_submission:
             self._fdbk = self._cmd.ultimate_submission_fdbk_config
         elif fdbk_category == FeedbackCategory.past_limit_submission:

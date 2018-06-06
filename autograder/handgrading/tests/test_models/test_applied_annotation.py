@@ -13,6 +13,8 @@ class AppliedAnnotationTestCase(UnitTestBase):
     Test cases relating the Applied Annotation Model
     """
     def setUp(self):
+        super().setUp()
+
         rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,

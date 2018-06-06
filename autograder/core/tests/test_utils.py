@@ -160,6 +160,8 @@ class CheckFilenameTest(TestCase):
 
 class FileSystemUtilTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
+
         self.group = obj_build.build_group()
         self.project = self.group.project
         self.course = self.project.course

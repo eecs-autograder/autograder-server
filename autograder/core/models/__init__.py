@@ -29,7 +29,7 @@ from .ag_test.ag_test_suite import (
 from .ag_test.ag_test_case import (
     AGTestCase, AGTestCaseFeedbackConfig, NewAGTestCaseFeedbackConfig)
 from .ag_test.ag_test_command import (
-    AGTestCommand, AGTestCommandFeedbackConfig, ValueFeedbackLevel,
+    AGTestCommand, AGTestCommandFeedbackConfig, NewAGTestCommandFeedbackConfig, ValueFeedbackLevel,
     StdinSource, ExpectedOutputSource, ExpectedOutputSource, ExpectedReturnCode)
 from .ag_test.ag_test_suite_result import AGTestSuiteResult
 from .ag_test.ag_test_case_result import AGTestCaseResult

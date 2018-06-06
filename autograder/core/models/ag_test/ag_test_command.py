@@ -341,6 +341,13 @@ class AGTestCommand(AGCommandBase):
         default=NewAGTestCommandFeedbackConfig,
         help_text='Feedback settings for a normal Submission.'
     )
+    first_failed_test_normal_fdbk_config = ag_fields.ValidatedJSONField(
+        NewAGTestCommandFeedbackConfig,
+        blank=True, null=True, default=None,
+        help_text="""When non-null, specifies feedback to be given when
+                     this command is in the first test case that failed
+                     within a suite."""
+    )
     ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
         NewAGTestCommandFeedbackConfig,
         default=NewAGTestCommandFeedbackConfig.default_ultimate_submission_fdbk_config,

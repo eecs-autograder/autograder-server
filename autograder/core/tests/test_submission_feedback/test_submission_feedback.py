@@ -325,3 +325,14 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         actual = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).to_dict()
         print(json.dumps(actual, indent=4, sort_keys=True))
         self.assertEqual(expected, actual)
+
+
+class FirstFailedTestFeedbackTestCase(UnitTestBase):
+    def test_first_failed_test_of_each_suite_gets_overriden_normal_feedback(self):
+        self.fail()
+
+    def test_no_failed_tests_all_get_normal_fdbk(self):
+        self.fail()
+
+    def test_non_normal_fdbk_no_override(self):
+        self.fail()

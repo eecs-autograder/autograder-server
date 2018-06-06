@@ -11,6 +11,8 @@ class HandgradingResultTestCase(UnitTestBase):
     Test cases relating the Handgrading Result Model
     """
     def setUp(self):
+        super().setUp()
+
         self.rubric = handgrading_models.HandgradingRubric.objects.validate_and_create(
             project=obj_build.build_project())
 
