@@ -36,7 +36,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
                 name=self.name, cmd=self.cmd)
 
     def test_default_vals(self):
-        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+        ag_cmd: ag_models.AGTestCommand = ag_models.AGTestCommand.objects.validate_and_create(
             name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
 
         self.assertEqual(ag_models.StdinSource.none, ag_cmd.stdin_source)
@@ -53,9 +53,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertEqual('', ag_cmd.expected_stderr_text)
         self.assertIsNone(ag_cmd.expected_stderr_instructor_file)
 
-        self.assertIsNotNone(ag_cmd.ultimate_submission_fdbk_config)
-        self.assertIsNotNone(ag_cmd.past_limit_submission_fdbk_config)
-        self.assertIsNotNone(ag_cmd.staff_viewer_fdbk_config)
+        self.assertIsNone(ag_cmd.first_failed_test_normal_fdbk_config)
 
         self.assertFalse(ag_cmd.ignore_case)
         self.assertFalse(ag_cmd.ignore_whitespace)
@@ -189,6 +187,27 @@ class AGTestCommandMiscTestCase(UnitTestBase):
 
         for field_name, value in fdbk_settings.items():
             self.assertEqual(value, getattr(ag_cmd.normal_fdbk_config, field_name))
+
+    def test_first_failure_fdbk_non_default(self):
+        fdbk_settings = {
+            'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+            'stdout_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual,
+            'stderr_fdbk_level': ag_models.ValueFeedbackLevel.expected_and_actual,
+            'show_points': True,
+            'show_actual_return_code': True,
+            'show_actual_stdout': True,
+            'show_actual_stderr': False,
+            'show_whether_timed_out': False
+        }
+
+        ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            first_failed_test_normal_fdbk_config=fdbk_settings
+        )
+
+        for field_name, value in fdbk_settings.items():
+            self.assertEqual(value,
+                             getattr(ag_cmd.first_failed_test_normal_fdbk_config, field_name))
 
     def test_ultimate_fdbk_non_default(self):
         fdbk_settings = {
@@ -503,6 +522,7 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             'deduction_for_wrong_stderr',
 
             'normal_fdbk_config',
+            'first_failed_test_normal_fdbk_config',
             'ultimate_submission_fdbk_config',
             'past_limit_submission_fdbk_config',
             'staff_viewer_fdbk_config',
@@ -513,13 +533,16 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             'process_spawn_limit',
         ]
         ag_cmd = ag_models.AGTestCommand.objects.validate_and_create(
-            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd)
+            name=self.name, ag_test_case=self.ag_test, cmd=self.cmd,
+            first_failed_test_normal_fdbk_config={}
+        )
 
         cmd_dict = ag_cmd.to_dict()
 
         self.assertCountEqual(expected_keys, cmd_dict.keys())
 
         fdbk_config_keys = ['normal_fdbk_config',
+                            'first_failed_test_normal_fdbk_config',
                             'ultimate_submission_fdbk_config',
                             'past_limit_submission_fdbk_config',
                             'staff_viewer_fdbk_config']
@@ -540,6 +563,10 @@ class AGTestCommandMiscTestCase(UnitTestBase):
             editable_dict.pop(non_editable)
 
         ag_cmd.validate_and_update(**editable_dict)
+
+        # Serialize with first_failed_test_normal_fdbk_config = None
+        ag_cmd.validate_and_update(first_failed_test_normal_fdbk_config=None)
+        self.assertIsNone(ag_cmd.to_dict()['first_failed_test_normal_fdbk_config'])
 
     def test_file_io_sources_serialized(self):
         stdin = obj_build.make_instructor_file(self.project)

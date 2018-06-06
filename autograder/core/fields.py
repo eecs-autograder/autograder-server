@@ -202,7 +202,10 @@ class ValidatedJSONField(pg_fields.JSONField):
         return self.serializable_class.from_dict(value)
 
     def validate(self, value, model_instance):
-        super().validate(value.to_dict(), model_instance)
+        if value is None:
+            super().validate(value, model_instance)
+        else:
+            super().validate(value.to_dict(), model_instance)
 
     def from_db_value(self, value, expression, connection, context):
         return self.to_python(value)

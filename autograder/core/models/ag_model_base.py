@@ -63,7 +63,16 @@ class AutograderModelManager(models.Manager):
                 elif _field_is_to_one(instance, field_name):
                     _set_to_one_relationship(instance, field_name, value)
                 else:
-                    setattr(instance, field_name, value)
+                    field = instance._meta.get_field(field_name)
+                    if (value is not None and isinstance(field, ValidatedJSONField)
+                            and isinstance(value, dict)):
+                        try:
+                            setattr(instance, field_name,
+                                    field.serializable_class.from_dict(value))
+                        except exceptions.ValidationError as e:
+                            raise exceptions.ValidationError({field_name: str(e)})
+                    else:
+                        setattr(instance, field_name, value)
 
             instance.full_clean()
             instance.save()
@@ -203,7 +212,10 @@ class ToDictMixin:
                 field = self._meta.get_field(field_name)
 
                 if isinstance(field, ValidatedJSONField):
-                    result[field_name] = getattr(self, field_name).to_dict()
+                    value = getattr(self, field_name)
+
+                    result[field_name] = value.to_dict() if value is not None else None
+                    continue
 
                 if field.many_to_one or field.one_to_one:
                     field_val = getattr(self, field_name)

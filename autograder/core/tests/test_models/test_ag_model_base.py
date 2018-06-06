@@ -447,14 +447,20 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         }
 
         obj = AGModelWithSerializableField.objects.validate_and_create(
-            serializable=data
+            serializable=data,
+            # Make sure it handles explicitly passing in None
+            nullable_serializable=None
         )
 
         expected = {
-            'serializable': copy.copy(data)
+            'serializable': copy.copy(data),
+            'nullable_serializable': None
         }
         expected['serializable']['an_enum'] = expected['serializable']['an_enum'].value
+        expected['serializable']['has_default'] = DictSerializableClass.has_default_default_val
 
+        # Check serialization before and after refreshing.
+        self.assertEqual(expected, obj.to_dict())
         obj.refresh_from_db()
         self.assertEqual(expected, obj.to_dict())
 
@@ -531,6 +537,12 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
 
         self.assertIn('serializable', cm.exception.message_dict)
         self.assertIn('an_enum:', cm.exception.message_dict['serializable'][0])
+
+    def test_non_nullable_is_null(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            AGModelWithSerializableField.objects.validate_and_create(serializable=None)
+
+        self.assertIn('serializable', cm.exception.message_dict)
 
 
 class UpdateAGModelWithSerializableFieldTest(UnitTestBase):

@@ -491,8 +491,8 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         result = []
         first_failure_found = False
         for case_fdbk in sorted(visible, key=case_res_sort_key):
-            if (not first_failure_found and
-                    case_fdbk.total_points < case_fdbk.total_points_possible):
+            if (not first_failure_found
+                    and case_fdbk.total_points < case_fdbk.total_points_possible):
                 result.append(
                     AGTestCaseResultFeedback(case_fdbk.denormalized_ag_test_case_result,
                                              self._fdbk_category,
@@ -648,8 +648,8 @@ class AGTestCommandResultFeedback(ToDictMixin):
         self._is_in_first_failed_test = is_in_first_failed_test
 
         if fdbk_category == FeedbackCategory.normal:
-            if (is_in_first_failed_test and
-                    self._cmd.first_failed_test_normal_fdbk_config is not None):
+            if (is_in_first_failed_test
+                    and self._cmd.first_failed_test_normal_fdbk_config is not None):
                 self._fdbk = self._cmd.first_failed_test_normal_fdbk_config
             else:
                 self._fdbk = self._cmd.normal_fdbk_config

@@ -1,6 +1,5 @@
 import autograder.core.models as ag_models
 from autograder.core.models.submission import get_ag_test_case_results_queryset
-from autograder.core.submission_feedback import AGTestPreLoader
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_case_fdbk, get_cmd_fdbk)
 from autograder.utils.testing import UnitTestBase

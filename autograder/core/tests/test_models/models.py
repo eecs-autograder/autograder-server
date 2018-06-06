@@ -150,22 +150,27 @@ class DummyAutograderModel(AutograderModel):
 
 
 class DictSerializableClass(DictSerializableMixin):
-    def __init__(self, num: int, string: str, an_enum: AnEnum):
+    has_default_default_val = 8769
+
+    def __init__(self, num: int, string: str, an_enum: AnEnum,
+                 has_default: int=has_default_default_val):
         self.num = num
         self.string = string
         self.an_enum = an_enum
+        self.has_default = has_default
 
-    FIELD_TYPES = {
-        'num': int,
-        'string': str,
-        'an_enum': AnEnum
-    }
-
-    SERIALIZABLE_FIELDS = tuple(FIELD_TYPES.keys())
+    SERIALIZABLE_FIELDS = [
+        'num',
+        'string',
+        'an_enum',
+        'has_default'
+    ]
 
 
 class AGModelWithSerializableField(AutograderModel):
     serializable = ag_fields.ValidatedJSONField(DictSerializableClass)
+    nullable_serializable = ag_fields.ValidatedJSONField(
+        DictSerializableClass, blank=True, null=True, default=None)
 
-    SERIALIZABLE_FIELDS = ('serializable',)
-    EDITABLE_FIELDS = ('serializable',)
+    SERIALIZABLE_FIELDS = ('serializable', 'nullable_serializable',)
+    EDITABLE_FIELDS = ('serializable', 'nullable_serializable',)

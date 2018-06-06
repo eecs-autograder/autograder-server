@@ -465,6 +465,7 @@ class AGTestCommand(AGCommandBase):
         'deduction_for_wrong_stderr',
 
         'normal_fdbk_config',
+        'first_failed_test_normal_fdbk_config',
         'ultimate_submission_fdbk_config',
         'past_limit_submission_fdbk_config',
         'staff_viewer_fdbk_config',
@@ -508,6 +509,7 @@ class AGTestCommand(AGCommandBase):
         'deduction_for_wrong_stderr',
 
         'normal_fdbk_config',
+        'first_failed_test_normal_fdbk_config',
         'ultimate_submission_fdbk_config',
         'past_limit_submission_fdbk_config',
         'staff_viewer_fdbk_config',
