@@ -20,7 +20,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.project_name = 'my_project'
 
     def test_valid_create_with_defaults(self):
-        new_project = ag_models.Project.objects.validate_and_create(
+        new_project: ag_models.Project = ag_models.Project.objects.validate_and_create(
             name=self.project_name, course=self.course)
 
         new_project.refresh_from_db()
@@ -43,6 +43,8 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual(datetime.time(),
                          new_project.submission_limit_reset_time)
         self.assertEqual(timezone.pytz.UTC, new_project.submission_limit_reset_timezone)
+
+        self.assertIsNone(new_project.total_submission_limit)
 
         self.assertTrue(new_project.hide_ultimate_submission_fdbk)
         self.assertEqual(
@@ -74,6 +76,8 @@ class ProjectMiscTestCase(UnitTestBase):
             'submission_limit_per_day': sub_limit,
             'allow_submissions_past_limit': False,
             'submission_limit_reset_time': reset_time,
+
+            'total_submission_limit': 4,
 
             'hide_ultimate_submission_fdbk': False,
             'ultimate_submission_policy': selection_method,
@@ -121,6 +125,8 @@ class ProjectMiscTestCase(UnitTestBase):
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
             'submission_limit_reset_timezone',
+
+            'total_submission_limit',
 
             'ultimate_submission_policy',
             'hide_ultimate_submission_fdbk',
@@ -198,6 +204,20 @@ class ProjectMiscErrorTestCase(UnitTestBase):
 
         self.assertIn('ultimate_submission_policy',
                       cm.exception.message_dict)
+
+    def test_error_zero_total_submission_limit(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='stove', course=self.course, total_submission_limit=0)
+
+        self.assertIn('total_submission_limit', cm.exception.message_dict)
+
+    def test_error_negative_total_submission_limit(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='stove', course=self.course, total_submission_limit=-1)
+
+        self.assertIn('total_submission_limit', cm.exception.message_dict)
 
 
 class ProjectNameExceptionTestCase(UnitTestBase):

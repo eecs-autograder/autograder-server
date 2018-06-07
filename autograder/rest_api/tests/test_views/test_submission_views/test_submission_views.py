@@ -5,6 +5,7 @@ from django.http import QueryDict
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
@@ -360,6 +361,88 @@ class CreateSubmissionTestCase(test_data.Client,
             group.submissions, self.client, user,
             self.submissions_url(group),
             {'submitted_files': self.files_to_submit}, format='multipart')
+
+
+class CreateSubmissionTotalLimitTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.submission_limit = 2
+        self.project = obj_build.make_project(
+            total_submission_limit=self.submission_limit,
+            visible_to_students=True,
+            guests_can_submit=True
+        )
+
+        self.client = APIClient()
+
+    def test_staff_submit_no_limit(self):
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.staff)
+
+        for i in range(self.submission_limit + 1):
+            self._do_and_check_valid_create_submission(group)
+
+    def test_student_run_out_of_submissions(self):
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.student)
+
+        for i in range(self.submission_limit):
+            self._do_and_check_valid_create_submission(group)
+
+        self._do_and_check_invalid_create_submission(group)
+
+    def test_guest_run_out_of_submissions(self):
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.guest)
+
+        for i in range(self.submission_limit):
+            self._do_and_check_valid_create_submission(group)
+
+        self._do_and_check_invalid_create_submission(group)
+
+    def test_student_has_refunded_submission(self):
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.student)
+
+        for i in range(self.submission_limit):
+            self._do_and_check_valid_create_submission(group)
+
+        self._do_and_check_invalid_create_submission(group)
+
+        # Refund a submission
+        refunded_submission: ag_models.Submission = group.submissions.first()
+        refunded_submission.validate_and_update(count_towards_total_limit=False)
+
+        self._do_and_check_valid_create_submission(group)
+
+    def test_total_submission_limit_changed_late_new_submits_rejected(self):
+        # This should only ever happen if the user makes a mistake.
+
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.student)
+        self.project.validate_and_update(total_submission_limit=None)
+
+        self._do_and_check_valid_create_submission(group)
+        self._do_and_check_valid_create_submission(group)
+
+        self.project.validate_and_update(total_submission_limit=1)
+
+        self._do_and_check_invalid_create_submission(group)
+
+    def _do_and_check_valid_create_submission(self, group: ag_models.Group):
+        url = reverse('submissions', kwargs={'pk': group.pk})
+        self.client.force_authenticate(group.members.first())
+
+        response = self.client.post(url, {'submitted_files': []})
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code, msg=response.data)
+        self.assertTrue(response.data['count_towards_total_limit'])
+
+        ag_models.Submission.objects.filter(
+            pk=response.data['pk']
+        ).update(status=ag_models.Submission.GradingStatus.finished_grading)
+
+    def _do_and_check_invalid_create_submission(self, group: ag_models.Group):
+        url = reverse('submissions', kwargs={'pk': group.pk})
+        self.client.force_authenticate(group.members.first())
+
+        response = self.client.post(url, {'submitted_files': []})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('submission', response.data)
 
 
 class RetrieveSubmissionAndFileTestCase(test_data.Client,

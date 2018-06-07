@@ -131,26 +131,6 @@ class Submission(ag_model_base.AutograderModel):
     class Meta:
         ordering = ['-pk']
 
-    SERIALIZABLE_FIELDS = (
-        'pk',
-        "group",
-        "timestamp",
-        "submitter",
-        "submitted_filenames",
-        "discarded_files",
-        "missing_files",
-        "status",
-
-        'count_towards_daily_limit',
-        'is_past_daily_limit',
-
-        'position_in_queue',
-    )
-
-    EDITABLE_FIELDS = ('count_towards_daily_limit',)
-
-    # -------------------------------------------------------------------------
-
     class GradingStatus:
         # The submission has been accepted and saved to the database
         received = 'received'
@@ -198,11 +178,11 @@ class Submission(ag_model_base.AutograderModel):
     group = models.ForeignKey(
         'core.Group', related_name='submissions',
         on_delete=models.CASCADE,
-        help_text='''
+        help_text="""
             The SubmissionGroup that this submission belongs to. Note
             that this field indirectly links this Submission object to a
             Project.
-            This field is REQUIRED.''')
+            This field is REQUIRED.""")
 
     project = models.ForeignKey(
         'core.Project', related_name='submissions',
@@ -216,7 +196,7 @@ class Submission(ag_model_base.AutograderModel):
 
     submitter = ag_fields.ShortStringField(
         blank=True,
-        help_text='''The name of the user who made this submission''')
+        help_text="""The name of the user who made this submission""")
 
     @property
     def submitted_files(self):
@@ -227,39 +207,43 @@ class Submission(ag_model_base.AutograderModel):
 
     submitted_filenames = ag_fields.StringArrayField(
         blank=True, default=list,
-        help_text='''The names of files that were submitted,
-                     excluding those that were discarded.''')
+        help_text="""The names of files that were submitted,
+                     excluding those that were discarded.""")
 
     discarded_files = ag_fields.StringArrayField(
         default=list, blank=True,
-        help_text='''The names of files that were discarded when this Submission was created.''')
+        help_text="""The names of files that were discarded when this Submission was created.""")
 
     missing_files = pg_fields.JSONField(
         default=dict, blank=True,
-        help_text='''Stores missing filenames and the additional number
+        help_text="""Stores missing filenames and the additional number
             of files needed to satisfy a file pattern requirement.
             Stored as key-value pairs of the form:
-            {pattern: num_additional_needed}''')
+            {pattern: num_additional_needed}""")
 
     status = models.CharField(
         max_length=const.MAX_CHAR_FIELD_LEN, default=GradingStatus.received,
         choices=zip(GradingStatus.values, GradingStatus.values),
-        help_text='''The grading status of this submission see
-            Submission.GradingStatus for details on allowed values.''')
+        help_text="""The grading status of this submission see
+            Submission.GradingStatus for details on allowed values.""")
 
     count_towards_daily_limit = models.BooleanField(
         default=True,
-        help_text='''Indicates whether this submission should count
-            towards the daily submission limit.''')
+        help_text="""Indicates whether this submission should count
+            towards the daily submission limit.""")
 
-    is_past_daily_limit = models.NullBooleanField(
-        default=None, null=True, blank=True,
-        help_text="""Whether this submission is past the daily submission limit.
-                     This field is currently nullable for easier integration.""")
+    is_past_daily_limit = models.BooleanField(
+        default=False,
+        help_text="Whether this submission is past the daily submission limit.")
+
+    count_towards_total_limit = models.BooleanField(
+        default=True,
+        help_text="Whether this submission should count towards the total submission limit."
+    )
 
     error_msg = models.TextField(
         blank=True,
-        help_text='''If status is "error", an error message will be stored here.''')
+        help_text="""If status is "error", an error message will be stored here.""")
 
     denormalized_ag_test_results = pg_fields.JSONField(
         default=dict, blank=True,
@@ -330,6 +314,26 @@ class Submission(ag_model_base.AutograderModel):
         result_output_dir = core_ut.get_result_output_dir(self)
         if not os.path.isdir(result_output_dir):
             os.makedirs(result_output_dir, exist_ok=True)
+
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        "group",
+        "timestamp",
+        "submitter",
+        "submitted_filenames",
+        "discarded_files",
+        "missing_files",
+        "status",
+
+        'count_towards_daily_limit',
+        'is_past_daily_limit',
+
+        'count_towards_total_limit',
+
+        'position_in_queue',
+    )
+
+    EDITABLE_FIELDS = ('count_towards_daily_limit', 'count_towards_total_limit')
 
 
 # These functions return querysets that are optimized to return

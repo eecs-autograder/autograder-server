@@ -53,111 +53,117 @@ class Project(AutograderModel):
         unique_together = ('name', 'course')
 
     name = ag_fields.ShortStringField(
-        help_text='''The name used to identify this project.
+        help_text="""The name used to identify this project.
             Must be non-empty and non-null.
             Must be unique among Projects associated with
             a given course.
-            This field is REQUIRED.''')
+            This field is REQUIRED.""")
 
     course = models.ForeignKey(
         Course, related_name='projects',
         on_delete=models.CASCADE,
-        help_text='''The Course this project belongs to.
-            This field is REQUIRED.''')
+        help_text="""The Course this project belongs to.
+            This field is REQUIRED.""")
 
     visible_to_students = models.BooleanField(
         default=False,
-        help_text='''Whether information about this Project can
-            be viewed by students.''')
+        help_text="""Whether information about this Project can
+            be viewed by students.""")
 
     closing_time = models.DateTimeField(
         default=None, null=True, blank=True,
-        help_text='''The date and time that this project should stop
+        help_text="""The date and time that this project should stop
             accepting submissions.
             A value of None indicates that this project should
-            stay open.''')
+            stay open.""")
 
     soft_closing_time = models.DateTimeField(
         default=None, null=True, blank=True,
-        help_text='''The date and time that should be displayed as the
+        help_text="""The date and time that should be displayed as the
             due date for this project. Unlike closing_time,
             soft_closing_time does not affect whether submissions are
             actually accepted.
             If not None and closing_time is not None, this value must be
-            less than (before) closing_time.''')
+            less than (before) closing_time.""")
 
     disallow_student_submissions = models.BooleanField(
         default=False,
-        help_text='''A hard override that indicates that students should
+        help_text="""A hard override that indicates that students should
             be prevented from submitting even if visible_to_students is
-            True and it is before closing_time.''')
+            True and it is before closing_time.""")
 
     disallow_group_registration = models.BooleanField(
         default=False,
-        help_text='''A hard override that indicates that students should
+        help_text="""A hard override that indicates that students should
             not be able to send, accept, or reject group
-            invitations.''')
+            invitations.""")
 
     guests_can_submit = models.BooleanField(
         default=False,
-        help_text='''By default, only admins, staff, and students
+        help_text="""By default, only admins, staff, and students
             for a given Course can view and submit to its Projects.
             When True, submissions will be accepted from guests
             with the following caveats:
                 - Guests must be given a direct link to the project.
                 - When group work is allowed, guests can
-                only be in groups with other guests.''')
+                only be in groups with other guests.""")
 
     min_group_size = models.IntegerField(
         default=1, validators=[validators.MinValueValidator(1)],
-        help_text='''The minimum number of students that can work in a
+        help_text="""The minimum number of students that can work in a
             group on this project.
             Must be >= 1.
-            Must be <= max_group_size.''')
+            Must be <= max_group_size.""")
 
     max_group_size = models.IntegerField(
         default=1, validators=[validators.MinValueValidator(1)],
-        help_text='''The maximum number of students that can work in a
+        help_text="""The maximum number of students that can work in a
             group on this project.
             Must be >= 1.
-            Must be >= min_group_size.''')
+            Must be >= min_group_size.""")
 
     submission_limit_per_day = models.IntegerField(
         default=None, null=True, blank=True,
         validators=[validators.MinValueValidator(1)],
-        help_text='''The number of submissions each group is allowed per
+        help_text="""The number of submissions each group is allowed per
             day before either reducing feedback or preventing further
-            submissions. A value of None indicates no limit.''')
+            submissions. A value of None indicates no limit.""")
 
     allow_submissions_past_limit = models.BooleanField(
         default=True, blank=True,
-        help_text='''Whether to allow additional submissions after a
-            group has submitted submission_limit_per_day times.''')
+        help_text="""Whether to allow additional submissions after a
+            group has submitted submission_limit_per_day times.""")
 
     submission_limit_reset_time = models.TimeField(
         default=datetime.time,
-        help_text='''The time that marks the beginning and end of the 24
+        help_text="""The time that marks the beginning and end of the 24
             hour period during which submissions should be counted
-            towards the daily limit. Defaults to 0:0:0.''')
+            towards the daily limit. Defaults to 0:0:0.""")
 
     submission_limit_reset_timezone = TimeZoneField(
         default='UTC',
-        help_text='''The timezone to use when computing how many
-            submissions a group has made in a 24 hour period.''')
+        help_text="""The timezone to use when computing how many
+            submissions a group has made in a 24 hour period.""")
+
+    total_submission_limit = models.IntegerField(
+        default=None, blank=True, null=True,
+        validators=[validators.MinValueValidator(1)],
+        help_text="""The maximum number of times a Group can submit to
+            this Project EVER.""")
 
     ultimate_submission_policy = ag_fields.EnumField(
         UltimateSubmissionPolicy,
         default=UltimateSubmissionPolicy.most_recent,
         blank=True,
-        help_text='''The "ultimate" submission for a group is the one
+        help_text="""The "ultimate" submission for a group is the one
             that will be used for final grading. This field specifies
-            how the ultimate submission should be determined.''')
+            how the ultimate submission should be determined.""")
 
     hide_ultimate_submission_fdbk = models.BooleanField(
         default=True, blank=True,
-        help_text='''A hard override that indicates that ultimate
+        help_text="""A hard override that indicates that ultimate
             submission feedback should not be shown, even if the
-            appropriate criteria are met.''')
+            appropriate criteria are met.""")
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -217,6 +223,8 @@ class Project(AutograderModel):
         'submission_limit_reset_time',
         'submission_limit_reset_timezone',
 
+        'total_submission_limit',
+
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
 
@@ -244,6 +252,8 @@ class Project(AutograderModel):
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
         'submission_limit_reset_timezone',
+
+        'total_submission_limit',
 
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',

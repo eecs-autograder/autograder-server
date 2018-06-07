@@ -62,7 +62,7 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
                 raise exceptions.ValidationError({'invalid_fields': [key]})
 
         timestamp = timezone.now()
-        group = self.get_object()
+        group: ag_models.Group = self.get_object()
         # Keep this mocking hook just after we call get_object()
         test_ut.mocking_hook()
 
@@ -74,7 +74,7 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
         serializer.save(group=self.get_object(),
                         submitter=self.request.user.username)
 
-    def _validate_can_submit(self, request, group, timestamp):
+    def _validate_can_submit(self, request, group: ag_models.Group, timestamp):
         has_active_submission = group.submissions.filter(
             status__in=ag_models.Submission.GradingStatus.active_statuses
         ).exists()
@@ -101,14 +101,25 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
             raise exceptions.ValidationError(
                 {'submission': 'The closing time for this project has passed'})
 
-        if (group.project.submission_limit_per_day is None
-                or group.project.allow_submissions_past_limit):
-            return
-
-        if group.num_submits_towards_limit >= group.project.submission_limit_per_day:
+        has_hard_daily_limit = (group.project.submission_limit_per_day is not None
+                                and not group.project.allow_submissions_past_limit)
+        if (has_hard_daily_limit
+                and group.num_submits_towards_limit >= group.project.submission_limit_per_day):
             raise exceptions.ValidationError(
                 {'submission': 'Submissions past the daily limit are '
                                'not allowed for this project'})
+
+        if group.project.total_submission_limit is not None:
+            submits_toward_total_limit = group.submissions.filter(
+                count_towards_total_limit=True
+            ).count()
+            # Use >= in case of user error (if they forgot to set the submission
+            # limit and some users already used up their submissions.
+            if submits_toward_total_limit >= group.project.total_submission_limit:
+                raise exceptions.ValidationError(
+                    {'submission': 'This project does not allow more than '
+                                   f'{group.project.total_submission_limit} submissions'}
+                )
 
 
 class SubmissionDetailViewSet(mixins.RetrieveModelMixin,

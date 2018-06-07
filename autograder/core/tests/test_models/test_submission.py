@@ -52,11 +52,10 @@ class SubmissionTestCase(UnitTestBase):
         now = timezone.now()
 
         submitter = 'steve'
-        submission = ag_models.Submission.objects.validate_and_create(
+        submission: ag_models.Submission = ag_models.Submission.objects.validate_and_create(
             group=self.group,
-            submitted_files=[
-                SimpleUploadedFile(name, content) for
-                name, content in files_to_submit],
+            submitted_files=[SimpleUploadedFile(name, content)
+                             for name, content in files_to_submit],
             submitter=submitter)
 
         submission.refresh_from_db()
@@ -73,6 +72,8 @@ class SubmissionTestCase(UnitTestBase):
 
         self.assertTrue(submission.count_towards_daily_limit)
         self.assertFalse(submission.is_past_daily_limit)
+
+        self.assertTrue(submission.count_towards_total_limit)
 
         self.assertLess(submission.timestamp - now,
                         timezone.timedelta(seconds=2))
@@ -243,6 +244,8 @@ class SubmissionTestCase(UnitTestBase):
             'count_towards_daily_limit',
             'is_past_daily_limit',
 
+            'count_towards_total_limit',
+
             'position_in_queue',
         ]
         self.assertCountEqual(
@@ -253,7 +256,7 @@ class SubmissionTestCase(UnitTestBase):
         self.assertTrue(submission.to_dict())
 
     def test_editable_fields(self):
-        self.assertCountEqual(['count_towards_daily_limit'],
+        self.assertCountEqual(['count_towards_daily_limit', 'count_towards_total_limit'],
                               ag_models.Submission.get_editable_fields())
 
 
