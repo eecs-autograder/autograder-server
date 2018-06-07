@@ -314,11 +314,12 @@ class CreateSubmissionTestCase(test_data.Client,
             group.members.first(),
             self.submissions_url(group),
             {'submitted_files': self.files_to_submit,
-             'count_towards_daily_limit': False},
+             'count_towards_daily_limit': False,
+             'count_towards_total_limit': False},
             format='multipart')
         self.assertIn('invalid_fields', response.data)
-        self.assertIn('count_towards_daily_limit',
-                      response.data['invalid_fields'])
+        self.assertIn('count_towards_daily_limit', response.data['invalid_fields'])
+        self.assertIn('count_towards_total_limit', response.data['invalid_fields'])
 
     def do_normal_submit_test(self, group, user):
         self.add_expected_patterns(group.project)

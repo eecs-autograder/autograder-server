@@ -1,3 +1,5 @@
+import datetime
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.http.response import FileResponse
@@ -57,24 +59,23 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
         # sending no files (which is valid) will cause the key 'submitted_files'
         # to not show up in the request body. Therefore, we will NOT require
         # the presence of a 'submitted_files' key in the request.
+        invalid_fields = []
         for key in request.data:
             if key != 'submitted_files':
-                raise exceptions.ValidationError({'invalid_fields': [key]})
+                invalid_fields.append(key)
+
+        if invalid_fields:
+            raise exceptions.ValidationError({'invalid_fields': invalid_fields})
 
         timestamp = timezone.now()
         group: ag_models.Group = self.get_object()
         # Keep this mocking hook just after we call get_object()
         test_ut.mocking_hook()
 
-        self._validate_can_submit(request, group, timestamp)
-        return super().create(request, *args, **kwargs)
+        return self._create_submission_if_allowed(request, group, timestamp)
 
-    def perform_create(self, serializer):
-        serializer.is_valid()
-        serializer.save(group=self.get_object(),
-                        submitter=self.request.user.username)
-
-    def _validate_can_submit(self, request, group: ag_models.Group, timestamp):
+    def _create_submission_if_allowed(self, request, group: ag_models.Group,
+                                      timestamp: datetime.datetime):
         has_active_submission = group.submissions.filter(
             status__in=ag_models.Submission.GradingStatus.active_statuses
         ).exists()
@@ -82,11 +83,19 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
             raise exceptions.ValidationError(
                 {'submission': 'Unable to resubmit while current submission is being processed'})
 
+        # We still track this information for staff submissions even though
+        # staff can submit unlimited times with full feedback.
+        is_past_daily_limit = (
+            group.project.submission_limit_per_day is not None
+            and group.num_submits_towards_limit >= group.project.submission_limit_per_day
+        )
+
         # Provided they don't have a submission being processed, staff
         # should always be able to submit.
         if (group.project.course.is_staff(request.user)
                 and group.members.filter(pk=request.user.pk).exists()):
-            return
+            return self._create_submission(
+                group, timestamp, is_past_daily_limit=is_past_daily_limit)
 
         if group.project.disallow_student_submissions:
             raise exceptions.ValidationError(
@@ -101,10 +110,7 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
             raise exceptions.ValidationError(
                 {'submission': 'The closing time for this project has passed'})
 
-        has_hard_daily_limit = (group.project.submission_limit_per_day is not None
-                                and not group.project.allow_submissions_past_limit)
-        if (has_hard_daily_limit
-                and group.num_submits_towards_limit >= group.project.submission_limit_per_day):
+        if is_past_daily_limit and not group.project.allow_submissions_past_limit:
             raise exceptions.ValidationError(
                 {'submission': 'Submissions past the daily limit are '
                                'not allowed for this project'})
@@ -120,6 +126,24 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
                     {'submission': 'This project does not allow more than '
                                    f'{group.project.total_submission_limit} submissions'}
                 )
+
+        return self._create_submission(group, timestamp, is_past_daily_limit=is_past_daily_limit)
+
+    def _create_submission(self, group: ag_models.Group,
+                           timestamp: datetime.datetime,
+                           *, is_past_daily_limit: bool):
+        serializer = self.get_serializer(data=self.request.data)
+        serializer.is_valid()
+
+        submission: ag_models.Submission = serializer.save(
+            group=group, submitter=self.request.user.username, timestamp=timestamp)
+
+        # Some fields can't be set through Submission.objects.validate_and_create
+        # for security reasons. Instead, we set those fields now.
+        submission.is_past_daily_limit = is_past_daily_limit
+        submission.save()
+
+        return response.Response(data=submission.to_dict(), status=status.HTTP_201_CREATED)
 
 
 class SubmissionDetailViewSet(mixins.RetrieveModelMixin,

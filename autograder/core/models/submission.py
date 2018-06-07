@@ -1,6 +1,5 @@
 import fnmatch
 import os
-from typing import Sequence
 
 import django.contrib.postgres.fields as pg_fields
 from django.core import exceptions
@@ -15,7 +14,6 @@ import autograder.core.utils as core_ut
 from . import ag_model_base
 from .ag_test.ag_test_case_result import AGTestCaseResult
 from .ag_test.ag_test_command_result import AGTestCommandResult
-from .ag_test.ag_test_suite_result import AGTestSuiteResult
 from .ag_test.feedback_category import FeedbackCategory
 from .student_test_suite import StudentTestSuiteResult
 
@@ -48,7 +46,6 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
                                     project=group.project,
                                     timestamp=timestamp,
                                     submitter=submitter)
-            submission.is_past_daily_limit = _new_submission_is_past_limit(submission)
             # The submission needs to be saved so that a directory is
             # created for it.
             submission.save()
@@ -100,26 +97,6 @@ class _SubmissionManager(ag_model_base.AutograderModelManager):
             return False
 
         return True
-
-
-def _new_submission_is_past_limit(submission: 'Submission'):
-    project = submission.group.project
-    if project.submission_limit_per_day is None:
-        return False
-
-    start_datetime, end_datetime = core_ut.get_24_hour_period(
-        project.submission_limit_reset_time,
-        submission.timestamp.astimezone(project.submission_limit_reset_timezone))
-
-    num_submissions_before_self = submission.group.submissions.filter(
-        timestamp__gte=start_datetime,
-        timestamp__lt=end_datetime,
-        count_towards_daily_limit=True,
-        status__in=Submission.GradingStatus.count_towards_limit_statuses,
-        group=submission.group
-    ).count()
-
-    return num_submissions_before_self >= project.submission_limit_per_day
 
 
 class Submission(ag_model_base.AutograderModel):
