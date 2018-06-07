@@ -332,7 +332,8 @@ class FromDictMixin:
         The default value is introspected from the parameter of the
         same name in the __init__ method.
         """
-        return inspect.signature(cls.__init__).parameters[field_name].default
+        default = inspect.signature(cls.__init__).parameters[field_name].default
+        return default.value if isinstance(default, enum.Enum) else default
 
     @classmethod
     def get_field_descriptions(cls):

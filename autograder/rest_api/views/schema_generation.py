@@ -44,7 +44,7 @@ API_MODELS = OrderedDict([
     [ag_models.AGTestCase, 'AGTestCase'],
     [ag_models.NewAGTestCaseFeedbackConfig, 'AGTestCaseFeedbackConfig'],
     [ag_models.AGTestCommand, 'AGTestCommand'],
-    [ag_models.AGTestCommandFeedbackConfig, 'AGTestCommandFeedbackConfig'],
+    [ag_models.NewAGTestCommandFeedbackConfig, 'AGTestCommandFeedbackConfig'],
 
     [SubmissionResultFeedback, 'SubmissionResultFeedback'],
     [AGTestSuiteResultFeedback, 'AGTestSuiteResultFeedback'],
@@ -253,6 +253,9 @@ def _get_django_field_type(django_field) -> str:
 
     if type(django_field) == pg_fields.ArrayField:
         return 'List[{}]'.format(_get_django_field_type(django_field.base_field))
+
+    if type(django_field) == ag_fields.ValidatedJSONField:
+        return API_MODELS[django_field.serializable_class]
 
     model_class = django_field.model  # type: AGModelType
     field_name = django_field.name
