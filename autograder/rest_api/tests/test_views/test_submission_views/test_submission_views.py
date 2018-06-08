@@ -291,14 +291,32 @@ class CreateSubmissionTestCase(test_data.Client,
         for group in self.non_staff_groups(self.visible_public_project):
             for i in range(limit):
                 self.do_normal_submit_test(group, group.members.first())
+
             for i in range(3):
-                response = self.do_bad_request_submit_test(
-                    group, group.members.first())
+                response = self.do_bad_request_submit_test(group, group.members.first())
                 self.assertIn('submission', response.data)
             self.assertEqual(limit, group.submissions.count())
+
             for sub in group.submissions.all():
                 self.assertTrue(sub.count_towards_daily_limit)
                 self.assertFalse(sub.is_past_daily_limit)
+
+    def test_submission_past_limit_not_allowed_but_group_has_bonus_submission(self):
+        num_bonus_submissions = 2
+        limit = 3
+        project = obj_build.make_project(
+            visible_to_students=True,
+            submission_limit_per_day=limit,
+            allow_submissions_past_limit=False,
+            num_bonus_submissions=num_bonus_submissions
+        )
+        group = obj_build.make_group(project=project)
+        self.assertEqual(num_bonus_submissions, group.bonus_submissions_remaining)
+        for i in range(limit + num_bonus_submissions):
+            self.do_normal_submit_test(group, group.members.first())
+
+        response = self.do_bad_request_submit_test(group, group.members.first())
+        self.assertIn('submission', response.data)
 
     def test_admin_or_staff_submissions_never_count_towards_limit(self):
         limit = 1
@@ -580,8 +598,43 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         self.assertEqual(3, self.group.num_submits_towards_limit)
         self.assertTrue(third_sub.is_past_daily_limit)
 
-    def test_group_uses_bonus_submission(self):
-        self.fail()
+    def test_group_uses_bonus_submissions(self):
+        num_bonus_submissions = 3
+        limit = 5
+        project = obj_build.make_project(
+            visible_to_students=True,
+            submission_limit_per_day=limit,
+            num_bonus_submissions=num_bonus_submissions
+        )
+        group = obj_build.make_group(project=project)
+        self.assertEqual(num_bonus_submissions, group.bonus_submissions_remaining)
+
+        for i in range(limit):
+            submission = self._create_submission(group)
+            self.assertFalse(submission.is_bonus_submission)
+            self.assertFalse(submission.is_past_daily_limit)
+
+        self.assertEqual(limit, group.num_submits_towards_limit)
+
+        for i in range(num_bonus_submissions):
+            submission = self._create_submission(group)
+            self.assertTrue(submission.is_bonus_submission)
+            self.assertFalse(submission.is_past_daily_limit)
+
+            group.refresh_from_db()
+            self.assertEqual(num_bonus_submissions - (i + 1), group.bonus_submissions_remaining)
+
+        self.assertEqual(limit + num_bonus_submissions, group.num_submits_towards_limit)
+        self.assertEqual(0, group.bonus_submissions_remaining)
+
+        num_past_limit = 2
+        for i in range(num_past_limit):
+            submission = self._create_submission(group)
+            self.assertFalse(submission.is_bonus_submission)
+            self.assertTrue(submission.is_past_daily_limit)
+
+        self.assertEqual(limit + num_bonus_submissions + num_past_limit,
+                         group.num_submits_towards_limit)
 
     def _create_submission(self, group: ag_models.Group,
                            timestamp: Optional[datetime.datetime]=None) -> ag_models.Submission:

@@ -15,8 +15,7 @@ class _SetUp(test_ut.UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.project = obj_build.build_project(
-            project_kwargs={'max_group_size': 2})
+        self.project = obj_build.make_project(max_group_size=2)
         self.course = self.project.course
 
         self.student_users = unsorted_users(obj_build.make_student_users(self.course, 2))
@@ -64,10 +63,25 @@ class GroupTestCase(_SetUp):
 
         num_submissions = 4
         for i in range(num_submissions):
-            ag_models.Submission.objects.validate_and_create(submitted_files=[],
-                                                             group=group)
+            ag_models.Submission.objects.validate_and_create(submitted_files=[], group=group)
         group.refresh_from_db()
         self.assertEqual(num_submissions, group.num_submissions)
+
+    def test_bonus_submission_counts_towards_limit(self):
+        self.project.validate_and_update(
+            num_bonus_submissions=1,
+            submission_limit_per_day=1
+        )
+        group: ag_models.Group = ag_models.Group.objects.validate_and_create(
+            members=self.student_users, project=self.project)
+
+        regular_submission = obj_build.make_finished_submission(group=group)
+        bonus_submission = obj_build.make_finished_submission(
+            group=group, is_bonus_submission=True)
+        past_limit_submission = obj_build.make_finished_submission(
+            group=group, is_past_daily_limit=True)
+
+        self.assertEqual(3, group.num_submits_towards_limit)
 
     def test_valid_initialization_with_defaults(self):
         group = ag_models.Group.objects.validate_and_create(

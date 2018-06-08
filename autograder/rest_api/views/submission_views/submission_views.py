@@ -88,12 +88,22 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
             and group.num_submits_towards_limit >= group.project.submission_limit_per_day
         )
 
+        is_bonus_submission = False
+        if is_past_daily_limit and group.bonus_submissions_remaining > 0:
+            group.validate_and_update(
+                bonus_submissions_remaining=group.bonus_submissions_remaining - 1)
+            is_bonus_submission = True
+            is_past_daily_limit = False
+
         # Provided they don't have a submission being processed, staff
         # should always be able to submit.
         if (group.project.course.is_staff(request.user)
                 and group.members.filter(pk=request.user.pk).exists()):
             return self._create_submission(
-                group, timestamp, is_past_daily_limit=is_past_daily_limit)
+                group, timestamp,
+                is_past_daily_limit=is_past_daily_limit,
+                is_bonus_submission=is_bonus_submission
+            )
 
         if group.project.disallow_student_submissions:
             raise exceptions.ValidationError(
@@ -125,11 +135,14 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
                                    f'{group.project.total_submission_limit} submissions'}
                 )
 
-        return self._create_submission(group, timestamp, is_past_daily_limit=is_past_daily_limit)
+        return self._create_submission(group, timestamp,
+                                       is_past_daily_limit=is_past_daily_limit,
+                                       is_bonus_submission=is_bonus_submission)
 
     def _create_submission(self, group: ag_models.Group,
                            timestamp: datetime.datetime,
-                           *, is_past_daily_limit: bool):
+                           *, is_past_daily_limit: bool,
+                           is_bonus_submission: bool):
         serializer = self.get_serializer(data=self.request.data)
         serializer.is_valid()
 
@@ -139,6 +152,7 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
         # Some fields can't be set through Submission.objects.validate_and_create
         # for security reasons. Instead, we set those fields now.
         submission.is_past_daily_limit = is_past_daily_limit
+        submission.is_bonus_submission = is_bonus_submission
         submission.save()
 
         return response.Response(data=submission.to_dict(), status=status.HTTP_201_CREATED)
