@@ -1,8 +1,8 @@
 import os
 
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
-from django.http import Http404
 from django.utils import timezone
 
 import django.contrib.postgres.fields as pg_fields
@@ -13,7 +13,7 @@ from autograder import utils
 from autograder.core import constants
 
 from .. import ag_model_base
-from ..project import Project, UltimateSubmissionPolicy
+from ..project import Project
 
 from ..submission import Submission
 
@@ -90,6 +90,12 @@ class Group(ag_model_base.AutograderModel):
             date, overriding the project closing time.
             Default value: None""")
 
+    bonus_submissions_remaining = models.IntegerField(
+        validators=[MinValueValidator(0)],
+        help_text="""The number of bonus submissions this group has left. 
+            This field is automatically initialized to self.project.num_bonus_submissions"""
+    )
+
     @property
     def num_submissions(self) -> int:
         return self.submissions.count()
@@ -114,9 +120,12 @@ class Group(ag_model_base.AutograderModel):
         return utils.count_if(self.submissions.all(), _is_towards_limit)
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        group_dir = core_ut.get_student_group_dir(self)
+        if self.pk is None:
+            self.bonus_submissions_remaining = self.project.num_bonus_submissions
 
+        super().save(*args, **kwargs)
+
+        group_dir = core_ut.get_student_group_dir(self)
         if not os.path.isdir(group_dir):
             os.makedirs(group_dir)
 
@@ -153,8 +162,10 @@ class Group(ag_model_base.AutograderModel):
         'extended_due_date',
         'member_names',
 
+        'bonus_submissions_remaining',
+
         'num_submissions',
         'num_submits_towards_limit',
     )
 
-    EDITABLE_FIELDS = ('extended_due_date',)
+    EDITABLE_FIELDS = ('extended_due_date', 'bonus_submissions_remaining')

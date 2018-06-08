@@ -580,6 +580,9 @@ class CreateSubmissionDailyLimitBookkeepingTestCase(UnitTestBase):
         self.assertEqual(3, self.group.num_submits_towards_limit)
         self.assertTrue(third_sub.is_past_daily_limit)
 
+    def test_group_uses_bonus_submission(self):
+        self.fail()
+
     def _create_submission(self, group: ag_models.Group,
                            timestamp: Optional[datetime.datetime]=None) -> ag_models.Submission:
         client = APIClient()

@@ -43,6 +43,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual(datetime.time(),
                          new_project.submission_limit_reset_time)
         self.assertEqual(timezone.pytz.UTC, new_project.submission_limit_reset_timezone)
+        self.assertEqual(0, new_project.num_bonus_submissions)
 
         self.assertIsNone(new_project.total_submission_limit)
 
@@ -76,6 +77,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'submission_limit_per_day': sub_limit,
             'allow_submissions_past_limit': False,
             'submission_limit_reset_time': reset_time,
+            'num_bonus_submissions': 3,
 
             'total_submission_limit': 4,
 
@@ -125,6 +127,8 @@ class ProjectMiscTestCase(UnitTestBase):
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
             'submission_limit_reset_timezone',
+
+            'num_bonus_submissions',
 
             'total_submission_limit',
 
@@ -218,6 +222,13 @@ class ProjectMiscErrorTestCase(UnitTestBase):
                 name='stove', course=self.course, total_submission_limit=-1)
 
         self.assertIn('total_submission_limit', cm.exception.message_dict)
+
+    def test_error_negative_num_bonus_submissions(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.Project.objects.validate_and_create(
+                name='merp', course=self.course, num_bonus_submissions=-1)
+
+        self.assertIn('num_bonus_submissions', cm.exception.message_dict)
 
 
 class ProjectNameExceptionTestCase(UnitTestBase):

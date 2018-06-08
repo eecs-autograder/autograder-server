@@ -75,6 +75,8 @@ class SubmissionTestCase(UnitTestBase):
 
         self.assertTrue(submission.count_towards_total_limit)
 
+        self.assertFalse(submission.is_bonus_submission)
+
         self.assertLess(submission.timestamp - now,
                         timezone.timedelta(seconds=2))
 
@@ -227,10 +229,6 @@ class SubmissionTestCase(UnitTestBase):
             ag_models.Submission.GradingStatus.active_statuses)
 
     def test_serializable_fields(self):
-        # Note: Do NOT add basic_score to this list, as that will leak
-        # information in certain scenarios (such as when a student
-        # requests feedback on a submission that is past the daily
-        # limit).
         expected = [
             'pk',
             'group',
@@ -243,6 +241,7 @@ class SubmissionTestCase(UnitTestBase):
 
             'count_towards_daily_limit',
             'is_past_daily_limit',
+            'is_bonus_submission',
 
             'count_towards_total_limit',
 

@@ -145,6 +145,9 @@ class Project(AutograderModel):
         help_text="""The timezone to use when computing how many
             submissions a group has made in a 24 hour period.""")
 
+    num_bonus_submissions = models.IntegerField(
+        default=0, validators=[validators.MinValueValidator(0)])
+
     total_submission_limit = models.IntegerField(
         default=None, blank=True, null=True,
         validators=[validators.MinValueValidator(1)],
@@ -223,6 +226,8 @@ class Project(AutograderModel):
         'submission_limit_reset_time',
         'submission_limit_reset_timezone',
 
+        'num_bonus_submissions',
+
         'total_submission_limit',
 
         'ultimate_submission_policy',
@@ -252,6 +257,8 @@ class Project(AutograderModel):
         'allow_submissions_past_limit',
         'submission_limit_reset_time',
         'submission_limit_reset_timezone',
+
+        'num_bonus_submissions',
 
         'total_submission_limit',
 

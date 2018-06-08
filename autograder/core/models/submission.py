@@ -213,6 +213,15 @@ class Submission(ag_model_base.AutograderModel):
         default=False,
         help_text="Whether this submission is past the daily submission limit.")
 
+    is_bonus_submission = models.BooleanField(
+        default=False,
+        help_text="""When True, indicates that the group that made this 
+            submission should be able to request normal feedback for 
+            this submission's results.
+            Note: If this field is True, is_past_daily_limit should be 
+            False."""
+    )
+
     count_towards_total_limit = models.BooleanField(
         default=True,
         help_text="Whether this submission should count towards the total submission limit."
@@ -304,6 +313,7 @@ class Submission(ag_model_base.AutograderModel):
 
         'count_towards_daily_limit',
         'is_past_daily_limit',
+        'is_bonus_submission',
 
         'count_towards_total_limit',
 
