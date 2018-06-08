@@ -351,3 +351,106 @@ class DownloadTaskEndpointsTestCase(UnitTestBase):
         self.client.force_authenticate(staff)
         response = self.client.get(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+
+class EditBonusSubmissionsViewTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.initial_num_bonus_submissions = 10
+        self.project = obj_build.make_project(
+            num_bonus_submissions=self.initial_num_bonus_submissions)
+
+        self.groups = [obj_build.make_group(project=self.project) for i in range(5)]
+
+        # Make sure bonus submissions are only changed for self.project
+        self.other_project = obj_build.make_project(course=self.project.course,
+                                                    num_bonus_submissions=3)
+        self.other_groups = [obj_build.make_group(project=self.other_project) for i in range(5)]
+
+        self.admin = obj_build.make_admin_user(self.project.course)
+        self.url = reverse('edit-bonus-submissions', kwargs={'project_pk': self.project.pk})
+        self.client = APIClient()
+
+    def test_add_bonus_submissions(self):
+        to_add = 4
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(self.url, {'add': to_add})
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        self._check_bonus_submissions(self.initial_num_bonus_submissions + to_add)
+
+    def test_add_bonus_submissions_one_group_only(self):
+        to_add = 1
+
+        new_group = obj_build.make_group(project=self.project)
+        url = self.url + f'?group_pk={new_group.pk}'
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(url, {'add': to_add})
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        new_group.refresh_from_db()
+        self.assertEqual(self.initial_num_bonus_submissions + to_add,
+                         new_group.bonus_submissions_remaining)
+
+        self._check_bonus_submissions(self.initial_num_bonus_submissions)
+
+    def test_subtract_bonus_submissions(self):
+        to_subtract = 2
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(self.url, {'subtract': to_subtract})
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        self._check_bonus_submissions(self.initial_num_bonus_submissions - to_subtract)
+
+    def test_subtract_bonus_submissions_one_group_only(self):
+        to_subtract = 5
+
+        new_group = obj_build.make_group(project=self.project)
+        url = self.url + f'?group_pk={new_group.pk}'
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(url, {'subtract': to_subtract})
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        new_group.refresh_from_db()
+        self.assertEqual(self.initial_num_bonus_submissions - to_subtract,
+                         new_group.bonus_submissions_remaining)
+
+        self._check_bonus_submissions(self.initial_num_bonus_submissions)
+
+    def test_non_admin_permission_denied(self):
+        staff = obj_build.make_staff_user(course=self.project.course)
+        self.client.force_authenticate(staff)
+
+        response = self.client.patch(self.url, {'add': 42})
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+        response = self.client.patch(self.url, {'subtract': 42})
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        self._check_bonus_submissions(self.initial_num_bonus_submissions)
+
+    def test_too_many_options_chosen_bad_request(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(self.url, {'add': 2, 'subtract': 1})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self._check_bonus_submissions(self.initial_num_bonus_submissions)
+
+    def test_no_options_bad_request(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(self.url, {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self._check_bonus_submissions(self.initial_num_bonus_submissions)
+
+    def _check_bonus_submissions(self, expected_num_bonus_submissions: int):
+        for group in self.groups:
+            group.refresh_from_db()
+            self.assertEqual(expected_num_bonus_submissions, group.bonus_submissions_remaining)
+
+        for group in self.other_groups:
+            group.refresh_from_db()
+
+            self.assertEqual(self.other_project.num_bonus_submissions,
+                             group.bonus_submissions_remaining)

@@ -154,6 +154,10 @@ urlpatterns = [
 
     url(r'', include(group_router.urls)),
 
+    path('projects/<int:project_pk>/groups/bonus_submissions/',
+         views.EditBonusSubmissionsView.as_view(),
+         name='edit-bonus-submissions'),
+
     path('groups/<int:pk>/submissions/', views.ListCreateSubmissionViewSet.as_view(),
          name='submissions'),
     url(r'', include(submission_router.urls)),

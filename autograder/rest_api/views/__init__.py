@@ -21,8 +21,11 @@ from autograder.rest_api.views.project_views.expected_student_file_views import 
 
 from .project_views.instructor_file_views import (
     ListCreateInstructorFilesViewSet, InstructorFileDetailViewSet, InstructorFileContentView)
-from .project_views.project_views import DownloadTaskDetailViewSet
-from .project_views.project_views import ProjectDetailViewSet, ListCreateProjectView
+from .project_views.project_views import (
+    ProjectDetailViewSet, ListCreateProjectView,
+    DownloadTaskDetailViewSet,
+    EditBonusSubmissionsView
+)
 
 from .rerun_submissions_task_views import (
     RerunSubmissionsTaskListCreateView, RerunSubmissionsTaskDetailVewSet)

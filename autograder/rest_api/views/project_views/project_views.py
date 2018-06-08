@@ -1,5 +1,6 @@
 from django.core.cache import cache
 from django.db import transaction
+from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import FileResponse
@@ -217,3 +218,39 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
         if (download_type == ag_models.DownloadType.all_submission_files
                 or download_type == ag_models.DownloadType.final_graded_submission_files):
             return 'application/zip'
+
+
+class EditBonusSubmissionsView(AGModelGenericViewSet):
+    serializer_class = ag_serializers.ProjectSerializer
+    permission_classes = (ag_permissions.is_admin(),)
+
+    model_manager = ag_models.Project.objects.select_related('course')
+    pk_key = 'project_pk'
+
+    @transaction.atomic()
+    def partial_update(self, *args, **kwargs):
+        project: ag_models.Project = self.get_object()
+
+        if len(self.request.data) > 1 or len(self.request.data) == 0:
+            return response.Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data='Please provide exactly one of: "add", "subtract".')
+
+        queryset = project.groups
+        if 'group_pk' in self.request.query_params:
+            queryset = queryset.filter(pk=self.request.query_params.get('group_pk'))
+
+        if 'add' in self.request.data:
+            queryset.update(
+                bonus_submissions_remaining=(
+                    F('bonus_submissions_remaining') + self.request.data.get('add')))
+        if 'subtract' in self.request.data:
+            queryset.update(
+                bonus_submissions_remaining=(
+                    F('bonus_submissions_remaining') - self.request.data.get('subtract')))
+
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'patch': 'partial_update'}, **initkwargs)
