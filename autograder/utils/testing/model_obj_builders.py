@@ -186,6 +186,10 @@ def make_submission(group: Optional[ag_models.Group]=None,
     If the "group" argument is None, then a
     SubmissionGroup will be created with make_group() and
     used instead.
+    Any fields passed in as submission_kwargs will be set derectly on
+    the submission after it is created in order to bypass the
+    restricted set of fields that Submission.objects.validate_and_create
+    accepts.
     """
     if group is None:
         group = make_group()

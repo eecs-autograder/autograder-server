@@ -67,7 +67,7 @@ class SubmissionResultTestCase(UnitTestBase):
             self.student_group1_best_submission.pk)
 
         self.student_group1_past_limit_submission = obj_build.make_finished_submission(
-            group=self.student_group1)
+            group=self.student_group1, is_past_daily_limit=True)
         self.student1_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group1_past_limit_submission)
         self.student_group1_past_limit_submission = update_denormalized_ag_test_results(
@@ -100,7 +100,7 @@ class SubmissionResultTestCase(UnitTestBase):
             self.staff_best_submission.pk)
 
         self.staff_past_limit_submission = obj_build.make_finished_submission(
-            group=self.staff_group)
+            group=self.staff_group, is_past_daily_limit=True)
         self.staff_past_limit_res = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_cmd, submission=self.staff_past_limit_submission)
         self.staff_past_limit_submission = update_denormalized_ag_test_results(

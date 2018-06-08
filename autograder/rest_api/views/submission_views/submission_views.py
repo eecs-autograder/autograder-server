@@ -15,10 +15,8 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 import autograder.utils.testing as test_ut
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import (AGModelGenericViewSet,
-                                                      ListCreateNestedModelViewSet,
-                                                      require_body_params, require_query_params,
-                                                      ListNestedModelViewSet)
+from autograder.rest_api.views.ag_model_views import (
+    AGModelGenericViewSet, ListCreateNestedModelViewSet, require_query_params)
 
 can_view_group = (
     P(ag_permissions.IsReadOnly)
