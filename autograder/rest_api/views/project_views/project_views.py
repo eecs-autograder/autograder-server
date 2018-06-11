@@ -5,6 +5,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import FileResponse
 from drf_composable_permissions.p import P
+from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, mixins, response
 from rest_framework import permissions
@@ -227,6 +228,34 @@ class EditBonusSubmissionsView(AGModelGenericViewSet):
     model_manager = ag_models.Project.objects.select_related('course')
     pk_key = 'project_pk'
 
+    @swagger_auto_schema(
+        responses={'204': ''},
+        request_body_parameters=[
+            Parameter(
+                'add',
+                'body',
+                type='integer',
+                description="""How many bonus submissions to add to each group's total. 
+                               Mutually exclusive with "subtract"."""
+            ),
+            Parameter(
+                'subtract',
+                'body',
+                type='integer',
+                description="""How many bonus submissions to subtract from each group's total. 
+                       Mutually exclusive with "add"."""
+            )
+        ],
+        manual_parameters=[
+            Parameter(
+                'group_pk',
+                'query',
+                type='integer',
+                description="""Instead of modifying the bonus submission totals for every group,
+                               only modify the group with the specified primary key."""
+            )
+        ]
+    )
     @transaction.atomic()
     def partial_update(self, *args, **kwargs):
         project: ag_models.Project = self.get_object()
