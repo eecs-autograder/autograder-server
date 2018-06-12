@@ -235,14 +235,14 @@ class EditBonusSubmissionsView(AGModelGenericViewSet):
                 'add',
                 'body',
                 type='integer',
-                description="""How many bonus submissions to add to each group's total. 
+                description="""How many bonus submissions to add to each group's total.
                                Mutually exclusive with "subtract"."""
             ),
             Parameter(
                 'subtract',
                 'body',
                 type='integer',
-                description="""How many bonus submissions to subtract from each group's total. 
+                description="""How many bonus submissions to subtract from each group's total.
                        Mutually exclusive with "add"."""
             )
         ],

@@ -92,7 +92,7 @@ class Group(ag_model_base.AutograderModel):
 
     bonus_submissions_remaining = models.IntegerField(
         validators=[MinValueValidator(0)],
-        help_text="""The number of bonus submissions this group has left. 
+        help_text="""The number of bonus submissions this group has left.
             This field is automatically initialized to self.project.num_bonus_submissions"""
     )
 

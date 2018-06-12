@@ -215,10 +215,10 @@ class Submission(ag_model_base.AutograderModel):
 
     is_bonus_submission = models.BooleanField(
         default=False,
-        help_text="""When True, indicates that the group that made this 
-            submission should be able to request normal feedback for 
+        help_text="""When True, indicates that the group that made this
+            submission should be able to request normal feedback for
             this submission's results.
-            Note: If this field is True, is_past_daily_limit should be 
+            Note: If this field is True, is_past_daily_limit should be
             False."""
     )
 
