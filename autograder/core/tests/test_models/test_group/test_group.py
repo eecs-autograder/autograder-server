@@ -1,5 +1,6 @@
 import datetime
 import os
+import random
 
 from django.contrib.auth.models import User
 from django.core import exceptions
@@ -28,61 +29,11 @@ def sorted_users(users):
 
 
 def unsorted_users(users):
-    return list(sorted(users, key=lambda user: user.username, reverse=True))
+    random.shuffle(users)
+    return users
 
 
 class GroupTestCase(_SetUp):
-    def test_serializable_fields(self):
-        expected_fields = [
-            'pk',
-            'member_names',
-            'project',
-            'extended_due_date',
-
-            'bonus_submissions_remaining',
-
-            'num_submits_towards_limit',
-            'num_submissions',
-        ]
-
-        self.assertCountEqual(
-            expected_fields,
-            ag_models.Group.get_serializable_fields())
-
-        group = obj_build.build_group()
-        self.assertTrue(group.to_dict())
-
-    def test_editable_fields(self):
-        self.assertCountEqual(['extended_due_date', 'bonus_submissions_remaining'],
-                              ag_models.Group.get_editable_fields())
-
-    def test_num_submits_towards_limit(self):
-        group = ag_models.Group.objects.validate_and_create(
-            members=self.student_users,
-            project=self.project)
-
-        num_submissions = 4
-        for i in range(num_submissions):
-            ag_models.Submission.objects.validate_and_create(submitted_files=[], group=group)
-        group.refresh_from_db()
-        self.assertEqual(num_submissions, group.num_submissions)
-
-    def test_bonus_submission_counts_towards_limit(self):
-        self.project.validate_and_update(
-            num_bonus_submissions=1,
-            submission_limit_per_day=1
-        )
-        group: ag_models.Group = ag_models.Group.objects.validate_and_create(
-            members=self.student_users, project=self.project)
-
-        regular_submission = obj_build.make_finished_submission(group=group)
-        bonus_submission = obj_build.make_finished_submission(
-            group=group, is_bonus_submission=True)
-        past_limit_submission = obj_build.make_finished_submission(
-            group=group, is_past_daily_limit=True)
-
-        self.assertEqual(3, group.num_submits_towards_limit)
-
     def test_valid_initialization_with_defaults(self):
         group = ag_models.Group.objects.validate_and_create(
             members=self.student_users,
@@ -95,6 +46,7 @@ class GroupTestCase(_SetUp):
         self.assertSequenceEqual([user.username for user in sorted_users(self.student_users)],
                                  group.member_names)
         self.assertEqual(self.project, group.project)
+        self.assertEqual({}, group.late_days_used)
 
         self.assertTrue(os.path.isdir(core_ut.get_student_group_dir(group)))
 
@@ -169,6 +121,60 @@ class GroupTestCase(_SetUp):
         group.validate_and_update(bonus_submissions_remaining=bonus_submissions_remaining)
         group.save()
         self.assertEqual(bonus_submissions_remaining, group.bonus_submissions_remaining)
+
+    def test_num_submits_towards_limit(self):
+        group = ag_models.Group.objects.validate_and_create(
+            members=self.student_users,
+            project=self.project)
+
+        num_submissions = 4
+        for i in range(num_submissions):
+            ag_models.Submission.objects.validate_and_create(submitted_files=[], group=group)
+        group.refresh_from_db()
+        self.assertEqual(num_submissions, group.num_submissions)
+        self.assertEqual(num_submissions, group.num_submits_towards_limit)
+
+    def test_bonus_submission_counts_towards_limit(self):
+        self.project.validate_and_update(
+            num_bonus_submissions=1,
+            submission_limit_per_day=1
+        )
+        group: ag_models.Group = ag_models.Group.objects.validate_and_create(
+            members=self.student_users, project=self.project)
+
+        regular_submission = obj_build.make_finished_submission(group=group)
+        bonus_submission = obj_build.make_finished_submission(
+            group=group, is_bonus_submission=True)
+        past_limit_submission = obj_build.make_finished_submission(
+            group=group, is_past_daily_limit=True)
+
+        self.assertEqual(3, group.num_submits_towards_limit)
+
+    def test_serializable_fields(self):
+        expected_fields = [
+            'pk',
+            'member_names',
+            'project',
+            'extended_due_date',
+
+            'bonus_submissions_remaining',
+
+            'late_days_used',
+
+            'num_submits_towards_limit',
+            'num_submissions',
+        ]
+
+        self.assertCountEqual(
+            expected_fields,
+            ag_models.Group.get_serializable_fields())
+
+        group = obj_build.build_group()
+        self.assertTrue(group.to_dict())
+
+    def test_editable_fields(self):
+        self.assertCountEqual(['extended_due_date', 'bonus_submissions_remaining'],
+                              ag_models.Group.get_editable_fields())
 
 
 class GroupSizeTestCase(_SetUp):

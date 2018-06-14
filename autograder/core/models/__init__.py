@@ -5,7 +5,7 @@ from .ag_model_base import AutograderModel
 from .notification import Notification
 from .task import Task
 
-from .course import Course
+from .course import Course, LateDaysRemaining
 from .project import Project, UltimateSubmissionPolicy
 from .project.expected_student_file import ExpectedStudentFile
 from .project.instructor_file import InstructorFile

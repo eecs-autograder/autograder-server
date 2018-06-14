@@ -47,6 +47,8 @@ class ProjectMiscTestCase(UnitTestBase):
 
         self.assertIsNone(new_project.total_submission_limit)
 
+        self.assertFalse(new_project.allow_late_days)
+
         self.assertTrue(new_project.hide_ultimate_submission_fdbk)
         self.assertEqual(
             ag_models.UltimateSubmissionPolicy.most_recent,
@@ -78,6 +80,8 @@ class ProjectMiscTestCase(UnitTestBase):
             'allow_submissions_past_limit': False,
             'submission_limit_reset_time': reset_time,
             'num_bonus_submissions': 3,
+
+            'allow_late_days': True,
 
             'total_submission_limit': 4,
 
@@ -127,10 +131,11 @@ class ProjectMiscTestCase(UnitTestBase):
             'allow_submissions_past_limit',
             'submission_limit_reset_time',
             'submission_limit_reset_timezone',
-
             'num_bonus_submissions',
 
             'total_submission_limit',
+
+            'allow_late_days',
 
             'ultimate_submission_policy',
             'hide_ultimate_submission_fdbk',

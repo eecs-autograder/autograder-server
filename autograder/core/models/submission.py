@@ -11,6 +11,7 @@ from django.utils import timezone
 import autograder.core.constants as const
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
+from autograder.core import constants
 from . import ag_model_base
 from .ag_test.ag_test_case_result import AGTestCaseResult
 from .ag_test.ag_test_command_result import AGTestCommandResult
@@ -227,6 +228,15 @@ class Submission(ag_model_base.AutograderModel):
         help_text="Whether this submission should count towards the total submission limit."
     )
 
+    does_not_count_for = pg_fields.ArrayField(
+        models.CharField(max_length=constants.MAX_USERNAME_LEN),
+        default=list,
+        help_text="""A list of users for whom this submission will NOT 
+            count as their final graded submission. Users are added to
+            this list if they are out of late days and another group
+            member (who still has late days remaining) uses their own
+            late day to submit.""")
+
     error_msg = models.TextField(
         blank=True,
         help_text="""If status is "error", an error message will be stored here.""")
@@ -303,19 +313,21 @@ class Submission(ag_model_base.AutograderModel):
 
     SERIALIZABLE_FIELDS = (
         'pk',
-        "group",
-        "timestamp",
-        "submitter",
-        "submitted_filenames",
-        "discarded_files",
-        "missing_files",
-        "status",
+        'group',
+        'timestamp',
+        'submitter',
+        'submitted_filenames',
+        'discarded_files',
+        'missing_files',
+        'status',
 
         'count_towards_daily_limit',
         'is_past_daily_limit',
         'is_bonus_submission',
 
         'count_towards_total_limit',
+
+        'does_not_count_for',
 
         'position_in_queue',
     )
