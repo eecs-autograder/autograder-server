@@ -1,5 +1,4 @@
 import os
-from typing import Iterable, List
 
 from django.db import models
 from django.core import validators
@@ -22,33 +21,36 @@ class Course(AutograderModel):
     name = ag_fields.ShortStringField(
         unique=True,
         validators=[validators.MinLengthValidator(1)],
-        help_text='''The name of this course.
-                  Must be unique, non-empty and non-null.''')
+        help_text="The name of this course. Must be unique, non-empty and non-null.")
+
+    num_late_days = models.IntegerField(
+        default=0, validators=[validators.MinValueValidator(0)],
+        help_text="The number of late days to give to users submitting to this course's projects."
+    )
 
     admins = models.ManyToManyField(
         User, related_name='courses_is_admin_for',
-        help_text='''The Users that are admins for
-                  this Course. admins have edit access
-                  to this Course.''')
+        help_text="""The Users that are admins for this Course. 
+                     Admins have edit privileges for this Course.""")
 
     staff = models.ManyToManyField(
         User, related_name='courses_is_staff_for',
-        help_text='''Users that are staff members for this Course.
+        help_text="""Users that are staff members for this Course.
             Staff members receive full feedback on autograder test
-            cases and can view student submissions.''')
+            cases and can view student submissions.""")
 
     handgraders = models.ManyToManyField(
         User, related_name='courses_is_handgrader_for',
-        help_text='''Users that are handgraders for this Course.
+        help_text="""Users that are handgraders for this Course.
             Handgraders can view best submissions from students
-            and edit the Handgrading Result''')
+            and edit the Handgrading Result""")
 
     students = models.ManyToManyField(
         User, related_name='courses_is_enrolled_in',
-        help_text='''Users that are enrolled in this Course.
-                  Enrolled students can view all visible Projects
-                  associated with this Course and may be in
-                  SubmissionGroups together.''')
+        help_text="""Users that are enrolled in this Course.
+                     Enrolled students can view all visible Projects
+                     associated with this Course and may be in
+                     groups together.""")
 
     def is_admin(self, user: User) -> bool:
         """
@@ -93,5 +95,20 @@ class Course(AutograderModel):
 
             os.makedirs(course_root_dir)
 
-    SERIALIZABLE_FIELDS = ('pk', 'name', 'last_modified',)
-    EDITABLE_FIELDS = ('name',)
+    SERIALIZABLE_FIELDS = (
+        'pk',
+        'name',
+        'num_late_days',
+        'last_modified'
+    )
+    EDITABLE_FIELDS = ('name', 'num_late_days')
+
+
+class LateDaysRemaining(AutograderModel):
+    class Meta:
+        unique_together = ('course', 'user')
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    late_days_remaining = models.IntegerField(validators=[validators.MinValueValidator(0)])

@@ -77,6 +77,8 @@ class SubmissionTestCase(UnitTestBase):
 
         self.assertFalse(submission.is_bonus_submission)
 
+        self.assertEqual([], submission.does_not_count_for)
+
         self.assertLess(submission.timestamp - now,
                         timezone.timedelta(seconds=2))
 
@@ -244,6 +246,8 @@ class SubmissionTestCase(UnitTestBase):
             'is_bonus_submission',
 
             'count_towards_total_limit',
+
+            'does_not_count_for',
 
             'position_in_queue',
         ]

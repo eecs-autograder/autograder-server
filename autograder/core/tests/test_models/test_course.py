@@ -2,7 +2,7 @@ import os
 
 from django.core.exceptions import ValidationError
 
-from autograder.core.models import Course
+from autograder.core.models import Course, LateDaysRemaining
 
 import autograder.core.utils as core_ut
 from autograder.utils.testing import UnitTestBase
@@ -11,13 +11,25 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 
 class CourseTestCase(UnitTestBase):
-    def test_valid_create(self):
+    def test_valid_create_with_defaults(self):
         name = "eecs280"
         course = Course.objects.validate_and_create(name=name)
 
         course.refresh_from_db()
 
         self.assertEqual(name, course.name)
+        self.assertEqual(0, course.num_late_days)
+
+    def test_create_no_defaults(self):
+        name = 'Waaaaaluigi'
+        late_days = 2
+        course = Course.objects.validate_and_create(
+            name=name, num_late_days=late_days)
+
+        course.refresh_from_db()
+
+        self.assertEqual(name, course.name)
+        self.assertEqual(late_days, course.num_late_days)
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError) as cm:
@@ -35,10 +47,16 @@ class CourseTestCase(UnitTestBase):
             Course.objects.validate_and_create(name=course.name)
         self.assertTrue('name' in cm.exception.message_dict)
 
+    def test_error_negative_late_days(self):
+        with self.assertRaises(ValidationError) as cm:
+            Course.objects.validate_and_create(name='steve', num_late_days=-1)
+        self.assertIn('num_late_days', cm.exception.message_dict)
+
     def test_serializable_fields(self):
         expected_fields = [
             'pk',
             'name',
+            'num_late_days',
             'last_modified',
         ]
 
@@ -49,8 +67,49 @@ class CourseTestCase(UnitTestBase):
         self.assertTrue(course.to_dict())
 
     def test_editable_fields(self):
-        expected = ['name']
+        expected = ['name', 'num_late_days']
         self.assertCountEqual(expected, Course.get_editable_fields())
+
+
+class LateDaysRemainingTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.course = obj_build.make_course()
+        self.user = obj_build.make_user()
+
+    def test_valid_create(self):
+        late_days_remaining = 2
+        remaining = LateDaysRemaining.objects.validate_and_create(
+            course=self.course,
+            user=self.user,
+            late_days_remaining=late_days_remaining
+        )
+
+        self.assertEqual(self.course, remaining.course)
+        self.assertEqual(self.user, remaining.user)
+        self.assertEqual(late_days_remaining, remaining.late_days_remaining)
+
+    def test_error_already_exists_for_user_and_course(self):
+        LateDaysRemaining.objects.validate_and_create(
+            course=self.course,
+            user=self.user,
+            late_days_remaining=1
+        )
+
+        with self.assertRaises(ValidationError):
+            LateDaysRemaining.objects.validate_and_create(
+                course=self.course,
+                user=self.user,
+                late_days_remaining=3
+            )
+
+    def test_error_negative_late_days_remaining(self):
+        with self.assertRaises(ValidationError):
+            LateDaysRemaining.objects.validate_and_create(
+                course=self.course,
+                user=self.user,
+                late_days_remaining=-1
+            )
 
 
 class CourseFilesystemTestCase(UnitTestBase):

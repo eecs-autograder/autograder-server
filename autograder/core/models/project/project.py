@@ -154,6 +154,12 @@ class Project(AutograderModel):
         help_text="""The maximum number of times a Group can submit to
             this Project EVER.""")
 
+    allow_late_days = models.BooleanField(
+        default=False,
+        help_text="""Whether to allow the use of late days for submitting
+            past the deadline."""
+    )
+
     ultimate_submission_policy = ag_fields.EnumField(
         UltimateSubmissionPolicy,
         default=UltimateSubmissionPolicy.most_recent,
@@ -230,6 +236,8 @@ class Project(AutograderModel):
 
         'total_submission_limit',
 
+        'allow_late_days',
+
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',
 
@@ -261,6 +269,8 @@ class Project(AutograderModel):
         'num_bonus_submissions',
 
         'total_submission_limit',
+
+        'allow_late_days',
 
         'ultimate_submission_policy',
         'hide_ultimate_submission_fdbk',

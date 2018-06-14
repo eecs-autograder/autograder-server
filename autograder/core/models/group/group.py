@@ -96,6 +96,20 @@ class Group(ag_model_base.AutograderModel):
             This field is automatically initialized to self.project.num_bonus_submissions"""
     )
 
+    late_days_used = pg_fields.JSONField(
+        default=dict, blank=True,
+        help_text="""Keeps track of how many late days each user in this 
+            group has used.
+            Data format: {
+                "<username>": <num late days used>,
+                ...
+            }
+            NOTE: This field is updated only when a group member uses a 
+            late day. If a user is moved to another group or this group
+            is merged with another one, this field will NOT be updated. 
+        """
+    )
+
     @property
     def num_submissions(self) -> int:
         return self.submissions.count()
@@ -163,6 +177,8 @@ class Group(ag_model_base.AutograderModel):
         'member_names',
 
         'bonus_submissions_remaining',
+
+        'late_days_used',
 
         'num_submissions',
         'num_submits_towards_limit',
