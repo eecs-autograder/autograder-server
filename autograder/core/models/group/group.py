@@ -98,15 +98,15 @@ class Group(ag_model_base.AutograderModel):
 
     late_days_used = pg_fields.JSONField(
         default=dict, blank=True,
-        help_text="""Keeps track of how many late days each user in this 
+        help_text="""Keeps track of how many late days each user in this
             group has used.
             Data format: {
                 "<username>": <num late days used>,
                 ...
             }
-            NOTE: This field is updated only when a group member uses a 
+            NOTE: This field is updated only when a group member uses a
             late day. If a user is moved to another group or this group
-            is merged with another one, this field will NOT be updated. 
+            is merged with another one, this field will NOT be updated.
         """
     )
 

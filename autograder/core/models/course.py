@@ -30,7 +30,7 @@ class Course(AutograderModel):
 
     admins = models.ManyToManyField(
         User, related_name='courses_is_admin_for',
-        help_text="""The Users that are admins for this Course. 
+        help_text="""The Users that are admins for this Course.
                      Admins have edit privileges for this Course.""")
 
     staff = models.ManyToManyField(

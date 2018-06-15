@@ -16,6 +16,7 @@ class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
     exposed_bug_names = 'exposed_bug_names'
 
 
+# FIXME: Change to use ValidatedJSONField
 class StudentTestSuiteFeedbackConfig(AutograderModel):
     visible = models.BooleanField(default=True)
 
