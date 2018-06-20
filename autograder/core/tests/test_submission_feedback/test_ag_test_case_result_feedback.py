@@ -1,5 +1,4 @@
 import autograder.core.models as ag_models
-from autograder.core.models.submission import get_ag_test_case_results_queryset
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_case_fdbk, get_cmd_fdbk)
 from autograder.utils.testing import UnitTestBase
@@ -176,8 +175,8 @@ class AGTestCaseFeedbackTestCase(UnitTestBase):
             self.ag_test_cmd2, self.ag_test_case_result)
 
         self.ag_test_case.set_agtestcommand_order([self.ag_test_cmd2.pk, self.ag_test_cmd1.pk])
-        self.ag_test_case_result = get_ag_test_case_results_queryset(
-            ag_models.FeedbackCategory.max).get(pk=self.ag_test_case_result.pk)
+        self.ag_test_case_result = ag_models.AGTestCaseResult.objects.get(
+            pk=self.ag_test_case_result.pk)
         fdbk = get_case_fdbk(self.ag_test_case_result, ag_models.FeedbackCategory.max)
         self.assertEqual([result2.pk, result1.pk],
                          [res.pk for res in fdbk.ag_test_command_results])

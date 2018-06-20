@@ -7,8 +7,8 @@ from autograder.core.models.get_ultimate_submissions import (
     get_ultimate_submissions, get_ultimate_submission)
 from autograder.core.submission_feedback import (
     update_denormalized_ag_test_results, AGTestPreLoader)
-from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
-    get_submission_fdbk
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
+    get_submission_fdbk)
 from autograder.utils.testing import UnitTestBase
 
 
@@ -162,20 +162,20 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         self.course = self.project.course
 
         self.counts_for_user = obj_build.make_student_user(self.course)
-        self.doesnt_count_for_user = obj_build.make_student_user(self.course)
+        self.does_not_count_for_user = obj_build.make_student_user(self.course)
 
         self.group = obj_build.make_group(
-            members=[self.counts_for_user, self.doesnt_count_for_user],
+            members=[self.counts_for_user, self.does_not_count_for_user],
             project=self.project
         )
 
-    def test_most_recent_doesnt_count_for_user(self):
+    def test_most_recent_does_not_count_for_user(self):
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.most_recent)
 
         oldest_submission = obj_build.make_finished_submission(self.group)
         most_recent_submission = obj_build.make_finished_submission(
-            self.group, doesnt_count_for=[self.doesnt_count_for_user.username]
+            self.group, does_not_count_for=[self.does_not_count_for_user.username]
         )
 
         counts_for_user_ultimate_submission = get_ultimate_submission(
@@ -183,10 +183,10 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         )
         self.assertEqual(most_recent_submission, counts_for_user_ultimate_submission)
 
-        doesnt_count_for_user_ultimate_submission = get_ultimate_submission(
-            self.group, user=self.doesnt_count_for_user
+        does_not_count_for_user_ultimate_submission = get_ultimate_submission(
+            self.group, user=self.does_not_count_for_user
         )
-        self.assertEqual(oldest_submission, doesnt_count_for_user_ultimate_submission)
+        self.assertEqual(oldest_submission, does_not_count_for_user_ultimate_submission)
 
     def test_two_most_recent_dont_count_for_user(self):
         self.project.validate_and_update(
@@ -194,10 +194,10 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
 
         oldest_submission = obj_build.make_finished_submission(self.group)
         middle_submission = obj_build.make_finished_submission(
-            self.group, doesnt_count_for=[self.doesnt_count_for_user.username]
+            self.group, does_not_count_for=[self.does_not_count_for_user.username]
         )
         most_recent_submission = obj_build.make_finished_submission(
-            self.group, doesnt_count_for=[self.doesnt_count_for_user.username]
+            self.group, does_not_count_for=[self.does_not_count_for_user.username]
         )
 
         counts_for_user_ultimate_submission = get_ultimate_submission(
@@ -205,12 +205,12 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         )
         self.assertEqual(most_recent_submission, counts_for_user_ultimate_submission)
 
-        doesnt_count_for_user_ultimate_submission = get_ultimate_submission(
-            self.group, user=self.doesnt_count_for_user
+        does_not_count_for_user_ultimate_submission = get_ultimate_submission(
+            self.group, user=self.does_not_count_for_user
         )
-        self.assertEqual(oldest_submission, doesnt_count_for_user_ultimate_submission)
+        self.assertEqual(oldest_submission, does_not_count_for_user_ultimate_submission)
 
-    def test_best_doesnt_count_for_user(self):
+    def test_best_does_not_count_for_user(self):
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
 
@@ -220,7 +220,7 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         )
 
         best_submission = obj_build.make_finished_submission(
-            self.group, doesnt_count_for=[self.doesnt_count_for_user.username])
+            self.group, does_not_count_for=[self.does_not_count_for_user.username])
         ag_models.StudentTestSuiteResult.objects.validate_and_create(
             student_test_suite=suite,
             submission=best_submission, bugs_exposed=suite.buggy_impl_names
@@ -237,10 +237,10 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         )
         self.assertEqual(best_submission, counts_for_user_ultimate_submission)
 
-        doesnt_count_for_user_ultimate_submission = get_ultimate_submission(
-            self.group, user=self.doesnt_count_for_user
+        does_not_count_for_user_ultimate_submission = get_ultimate_submission(
+            self.group, user=self.does_not_count_for_user
         )
-        self.assertEqual(other_submission, doesnt_count_for_user_ultimate_submission)
+        self.assertEqual(other_submission, does_not_count_for_user_ultimate_submission)
 
     def test_two_best_dont_count_for_user(self):
         self.project.validate_and_update(
@@ -252,7 +252,7 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         )
 
         best_submission = obj_build.make_finished_submission(
-            self.group, doesnt_count_for=[self.doesnt_count_for_user.username])
+            self.group, does_not_count_for=[self.does_not_count_for_user.username])
         ag_models.StudentTestSuiteResult.objects.validate_and_create(
             student_test_suite=suite,
             submission=best_submission, bugs_exposed=suite.buggy_impl_names
@@ -261,7 +261,7 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
             3, get_submission_fdbk(best_submission, ag_models.FeedbackCategory.max).total_points)
 
         second_best_submission = obj_build.make_finished_submission(
-            self.group, doesnt_count_for=[self.doesnt_count_for_user.username])
+            self.group, does_not_count_for=[self.does_not_count_for_user.username])
         ag_models.StudentTestSuiteResult.objects.validate_and_create(
             student_test_suite=suite,
             submission=second_best_submission, bugs_exposed=suite.buggy_impl_names[:-1]
@@ -279,17 +279,17 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         )
         self.assertEqual(best_submission, counts_for_user_ultimate_submission)
 
-        doesnt_count_for_user_ultimate_submission = get_ultimate_submission(
-            self.group, user=self.doesnt_count_for_user
+        does_not_count_for_user_ultimate_submission = get_ultimate_submission(
+            self.group, user=self.does_not_count_for_user
         )
-        self.assertEqual(other_submission, doesnt_count_for_user_ultimate_submission)
+        self.assertEqual(other_submission, does_not_count_for_user_ultimate_submission)
 
     def test_no_submissions_count_for_user(self):
         oldest_submission = obj_build.make_finished_submission(
-            self.group, doesnt_count_for=[self.doesnt_count_for_user.username]
+            self.group, does_not_count_for=[self.does_not_count_for_user.username]
         )
         most_recent_submission = obj_build.make_finished_submission(
-            self.group, doesnt_count_for=[self.doesnt_count_for_user.username]
+            self.group, does_not_count_for=[self.does_not_count_for_user.username]
         )
 
         counts_for_user_ultimate_submission = get_ultimate_submission(
@@ -297,7 +297,7 @@ class GetUltimateSubmissionForUserTestCase(UnitTestBase):
         )
         self.assertEqual(most_recent_submission, counts_for_user_ultimate_submission)
 
-        doesnt_count_for_user_ultimate_submission = get_ultimate_submission(
-            self.group, user=self.doesnt_count_for_user
+        does_not_count_for_user_ultimate_submission = get_ultimate_submission(
+            self.group, user=self.does_not_count_for_user
         )
-        self.assertIsNone(doesnt_count_for_user_ultimate_submission)
+        self.assertIsNone(does_not_count_for_user_ultimate_submission)

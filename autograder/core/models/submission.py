@@ -342,28 +342,18 @@ class Submission(ag_model_base.AutograderModel):
 # that use order_with_respect_to.
 
 
-def get_submissions_with_results_queryset(fdbk_category: FeedbackCategory,
-                                          base_manager=Submission.objects):
-    student_suite_result_queryset = get_student_test_suite_results_queryset(fdbk_category)
+def get_submissions_with_results_queryset(base_manager=Submission.objects):
+    student_suite_result_queryset = get_student_test_suite_results_queryset()
     prefetch_student_suite_results = Prefetch('student_test_suite_results',
                                               student_suite_result_queryset)
 
     return base_manager.prefetch_related(prefetch_student_suite_results)
 
 
-def get_ag_test_case_results_queryset(fdbk_category: FeedbackCategory):
-    prefetch_cmd_results = Prefetch('ag_test_command_results', AGTestCommandResult.objects.all())
-    return AGTestCaseResult.objects.select_related(
-        _get_fdbk_category_join_field_tmpl(fdbk_category).format('ag_test_case')
-    ).prefetch_related(prefetch_cmd_results)
-
-
-def get_student_test_suite_results_queryset(fdbk_category: FeedbackCategory):
+def get_student_test_suite_results_queryset():
     return StudentTestSuiteResult.objects.select_related(
-        _get_fdbk_category_join_field_tmpl(fdbk_category).format('student_test_suite')
+        'student_test_suite__normal_fdbk_config',
+        'student_test_suite__ultimate_submission_fdbk_config',
+        'student_test_suite__past_limit_submission_fdbk_config',
+        'student_test_suite__staff_viewer_fdbk_config',
     )
-
-
-def _get_fdbk_category_join_field_tmpl(fdbk_category: FeedbackCategory):
-    return ('{}__' + str(fdbk_category.value) + '_fdbk_config' if
-            fdbk_category != FeedbackCategory.max else '{}')
