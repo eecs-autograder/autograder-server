@@ -231,6 +231,7 @@ class Submission(ag_model_base.AutograderModel):
     does_not_count_for = pg_fields.ArrayField(
         models.CharField(max_length=constants.MAX_USERNAME_LEN),
         default=list,
+        blank=True,
         help_text="""A list of users for whom this submission will NOT
             count as their final graded submission. Users are added to
             this list if they are out of late days and another group
