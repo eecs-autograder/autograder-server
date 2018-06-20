@@ -487,6 +487,15 @@ class AGTestSuiteResultFeedback(ToDictMixin):
                 case_res.ag_test_case_pk)
             return case._order
 
+        if self._fdbk_category != FeedbackCategory.normal:
+            return [
+                AGTestCaseResultFeedback(case_fdbk.denormalized_ag_test_case_result,
+                                         self._fdbk_category,
+                                         self._ag_test_preloader,
+                                         is_first_failure=False)
+                for case_fdbk in sorted(visible, key=case_res_sort_key)
+            ]
+
         # loop through, replace first failure with new ag test case result fdbk obj
         result = []
         first_failure_found = False
