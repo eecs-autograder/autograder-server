@@ -99,8 +99,7 @@ class SubmissionResultsView(SubmissionResultsViewBase):
         returns a SubmissionResultFeedback initialized with
         fdbk_category.
         """
-        model_manager = get_submissions_with_results_queryset(
-            fdbk_category, base_manager=self.model_manager)
+        model_manager = get_submissions_with_results_queryset(base_manager=self.model_manager)
         submission = self.get_object(model_manager_override=model_manager)
         return SubmissionResultFeedback(
             submission, fdbk_category, AGTestPreLoader(submission.project))

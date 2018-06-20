@@ -45,7 +45,6 @@ def all_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwar
             project: ag_models.Project, groups: Sequence[ag_models.Group]
     ) -> Tuple[List[SubmissionResultFeedback], int]:
         submissions = ag_models.get_submissions_with_results_queryset(
-            ag_models.FeedbackCategory.max,
             base_manager=ag_models.Submission.objects.filter(
                 group__in=groups,
                 status=ag_models.Submission.GradingStatus.finished_grading

@@ -264,8 +264,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.project.set_agtestsuite_order([self.ag_test_suite2.pk, self.ag_test_suite1.pk])
         self.project.set_studenttestsuite_order([self.student_suite2.pk, self.student_suite1.pk])
 
-        self.submission = get_submissions_with_results_queryset(
-            ag_models.FeedbackCategory.max).get(pk=self.submission.pk)
+        self.submission = get_submissions_with_results_queryset().get(pk=self.submission.pk)
         fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
 
         self.assertSequenceEqual([self.ag_suite_result2.pk, self.ag_suite_result1.pk],
