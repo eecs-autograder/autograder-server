@@ -320,3 +320,66 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         response = self.client.get(self.base_url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertSequenceEqual([], response.data['results'])
+
+    def test_group_has_user_most_recent_doesnt_count_for(self):
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+
+        group, _ = self._make_group_with_submissions(2, num_submissions=3)
+        # IMPORTANT: Keep the doesn't count for user as the first in the
+        # group. That way we can verify that special-casing an ultimate
+        # submission for a member of the group doesn't affect the
+        # other group members' scores.
+        doesnt_count_for_username = group.member_names[0]
+        counts_for_username = group.member_names[1]
+
+        most_recent_submission = group.submissions.all()[0]
+        most_recent_submission.does_not_count_for = [doesnt_count_for_username]
+        most_recent_submission.save()
+
+        second_most_recent_submission = group.submissions.all()[1]
+
+        expected = [
+            self._make_result_content_for_user(
+                doesnt_count_for_username, group, second_most_recent_submission, points_only=True),
+            self._make_result_content_for_user(
+                counts_for_username, group, most_recent_submission, points_only=True)
+        ]
+
+        admin = obj_build.make_admin_user(self.course)
+        self.client.force_authenticate(admin)
+
+        response = self.client.get(self.base_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual(expected, response.data['results'])
+
+    def test_group_has_user_best_doesnt_count_for(self):
+        self.project.validate_and_update(
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
+
+        group, best_submission = self._make_group_with_submissions(2, num_submissions=2)
+        # IMPORTANT: Keep the doesn't count for user as the first in the
+        # group. That way we can verify that special-casing an ultimate
+        # submission for a member of the group doesn't affect the
+        # other group members' scores.
+        doesnt_count_for_username = group.member_names[0]
+        counts_for_username = group.member_names[1]
+
+        best_submission.does_not_count_for = [doesnt_count_for_username]
+        best_submission.save()
+
+        not_best_submission = group.submissions.exclude(pk=best_submission.pk).get()
+
+        expected = [
+            self._make_result_content_for_user(
+                doesnt_count_for_username, group, not_best_submission, points_only=True),
+            self._make_result_content_for_user(
+                counts_for_username, group, best_submission, points_only=True)
+        ]
+
+        admin = obj_build.make_admin_user(self.course)
+        self.client.force_authenticate(admin)
+
+        response = self.client.get(self.base_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual(expected, response.data['results'])
