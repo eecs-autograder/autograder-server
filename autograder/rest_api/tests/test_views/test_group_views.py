@@ -712,7 +712,8 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             response = self.client.get(self.ultimate_submission_url(group))
             self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
-            mocked_get_ultimate_submission.assert_called_once_with(group, group.members.first())
+            mocked_get_ultimate_submission.assert_called_once_with(
+                group, user=group.members.first())
 
     def do_get_ultimate_submission_test(self, projects, group_funcs, users,
                                         closing_time, extension=None,
