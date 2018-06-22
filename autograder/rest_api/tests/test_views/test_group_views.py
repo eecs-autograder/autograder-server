@@ -1,5 +1,6 @@
 import datetime
 from typing import List
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -461,9 +462,6 @@ class UpdateGroupTestCase(test_data.Client,
                     group, self.client, user, self.group_url(group),
                     {'extended_due_date': self.new_due_date})
 
-    # def test_update_group_new_members_pending_invitations_deleted(self):
-    #     self.fail()
-
 
 class RetrieveUltimateSubmissionTestCase(test_data.Client,
                                          test_data.Project,
@@ -670,6 +668,51 @@ class RetrieveUltimateSubmissionTestCase(test_data.Client,
             closing_time=self.past_closing_time,
             extension=self.past_extension,
             hide_ultimates=True)
+
+    def test_get_ultimate_submission_most_recent_submission_doesnt_count_for_user(self):
+        project = obj_build.make_project(
+            visible_to_students=True, hide_ultimate_submission_fdbk=False,
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.most_recent
+        )
+        course = project.course
+
+        counts_for_user = obj_build.make_student_user(course)
+        does_not_count_for_user = obj_build.make_student_user(course)
+
+        group = obj_build.make_group(
+            members=[counts_for_user, does_not_count_for_user],
+            project=project
+        )
+
+        second_most_recent_submission = obj_build.make_finished_submission(group=group)
+        most_recent_submission = obj_build.make_finished_submission(
+            group=group, does_not_count_for=[does_not_count_for_user.username]
+        )
+
+        self.client.force_authenticate(counts_for_user)
+        response = self.client.get(self.ultimate_submission_url(group))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(most_recent_submission.to_dict(), response.data)
+
+        self.client.force_authenticate(does_not_count_for_user)
+        response = self.client.get(self.ultimate_submission_url(group))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(second_most_recent_submission.to_dict(), response.data)
+
+    def test_user_passed_to_get_ultimate_submission_func(self):
+        project = obj_build.make_project(
+            visible_to_students=True, hide_ultimate_submission_fdbk=False)
+        group = obj_build.make_group(project=project)
+
+        mocked_get_ultimate_submission = mock.Mock(return_value=None)
+
+        with mock.patch('autograder.rest_api.views.group_views.get_ultimate_submission',
+                        new=mocked_get_ultimate_submission):
+            self.client.force_authenticate(group.members.first())
+            response = self.client.get(self.ultimate_submission_url(group))
+            self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+            mocked_get_ultimate_submission.assert_called_once_with(group, group.members.first())
 
     def do_get_ultimate_submission_test(self, projects, group_funcs, users,
                                         closing_time, extension=None,
