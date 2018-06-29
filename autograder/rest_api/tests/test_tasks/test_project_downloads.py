@@ -112,6 +112,16 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
                          self.project.ultimate_submission_policy)
         self.do_download_submissions_test(url, [])
 
+    def test_download_ultimate_submission_files_only_one_staff_group_with_submission(self):
+        # This is a regression test to prevent a divide by zero error.
+        # See https://github.com/eecs-autograder/autograder-server/issues/273
+        ag_models.Group.objects.all().delete()
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.admin)
+        obj_build.make_finished_submission(group)
+
+        url = reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk})
+        self.do_download_submissions_test(url, [])
+
     def test_non_admin_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.project.course, 1)
         self.client.force_authenticate(staff)
@@ -363,18 +373,17 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             [self.group1_submission1_best, self.group2_only_submission])
 
     def test_download_ultimate_submission_scores_only_one_staff_group_with_submission(self):
+        # This is a regression test to prevent a divide by zero error.
+        # See https://github.com/eecs-autograder/autograder-server/issues/273
         ag_models.Group.objects.all().delete()
-        group = obj_build.make_group(members_role=obj_build.UserRole.staff)
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.admin)
         obj_build.make_finished_submission(group)
 
         url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
         self.do_download_scores_test(url, self.project, [])
-        self.fail()
 
     def test_download_ultimate_submission_scores_no_submissions(self):
         ag_models.Submission.objects.all().delete()
-        group = obj_build.make_group(members_role=obj_build.UserRole.staff)
-        obj_build.make_submission(group)
 
         url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
         self.do_download_scores_test(url, self.project, [])

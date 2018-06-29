@@ -76,7 +76,11 @@ GetSubmissionsFnType = Callable[[ag_models.Project, Sequence[ag_models.Group]],
 def _get_ultimate_submissions(
         project: ag_models.Project,
         groups: Sequence[ag_models.Group]) -> Tuple[Iterator[SubmissionResultFeedback], int]:
-    print(len(groups))
+    if len(groups) == 0:
+        # We don't want to pass an empty list of groups to get_ultimate_submissions.
+        # See https://github.com/eecs-autograder/autograder-server/issues/273
+        return [], 0
+
     return (get_ultimate_submissions(project, *groups, ag_test_preloader=AGTestPreLoader(project)),
             len(groups))
 
@@ -98,10 +102,6 @@ def _make_download_file_task_impl(project_pk, task_pk, include_staff,
         project = ag_models.Project.objects.get(pk=project_pk)
         groups = _get_groups(project, include_staff)
         submissions, num_submissions = get_submissions_fn(project, groups)
-        submissions = list(submissions)
-        print(submissions)
-        print(num_submissions)
-        print(submissions[0].submission.group.to_dict())
         result_filename = _make_download_result_filename(project, task)
         make_download_fn(task, submissions, num_submissions, result_filename)
         task.result_filename = result_filename
@@ -120,6 +120,7 @@ def _get_groups(project, include_staff) -> Sequence[ag_models.Group]:
         groups = filter(
             lambda group: not project.course.is_staff(group.members.first()), groups)
     groups = list(groups)
+
     return groups
 
 
