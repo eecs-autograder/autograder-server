@@ -3,7 +3,7 @@ import os
 import traceback
 import uuid
 import zipfile
-from typing import Sequence, Callable, Iterator, Tuple, List, Iterable
+from typing import Sequence, Callable, Iterator, Tuple, List
 
 from celery import shared_task
 from django.conf import settings
@@ -76,6 +76,7 @@ GetSubmissionsFnType = Callable[[ag_models.Project, Sequence[ag_models.Group]],
 def _get_ultimate_submissions(
         project: ag_models.Project,
         groups: Sequence[ag_models.Group]) -> Tuple[Iterator[SubmissionResultFeedback], int]:
+    print(len(groups))
     return (get_ultimate_submissions(project, *groups, ag_test_preloader=AGTestPreLoader(project)),
             len(groups))
 
@@ -97,6 +98,10 @@ def _make_download_file_task_impl(project_pk, task_pk, include_staff,
         project = ag_models.Project.objects.get(pk=project_pk)
         groups = _get_groups(project, include_staff)
         submissions, num_submissions = get_submissions_fn(project, groups)
+        submissions = list(submissions)
+        print(submissions)
+        print(num_submissions)
+        print(submissions[0].submission.group.to_dict())
         result_filename = _make_download_result_filename(project, task)
         make_download_fn(task, submissions, num_submissions, result_filename)
         task.result_filename = result_filename
@@ -184,10 +189,7 @@ def _make_scores_csv(task, submission_fdbks: Iterator[SubmissionResultFeedback],
         writer = csv.DictWriter(csv_file, row_headers)
         writer.writeheader()
 
-        sorted_fdbks = sorted(
-            submission_fdbks, key=lambda fdbk: min(fdbk.submission.group.member_names)
-        )
-        for progress_index, fdbk in enumerate(sorted_fdbks):
+        for progress_index, fdbk in enumerate(submission_fdbks):
             submission = fdbk.submission
             row = {timestamp_header: submission.timestamp.isoformat()}
 

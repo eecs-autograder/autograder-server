@@ -38,6 +38,7 @@ def get_ultimate_submissions(
     project: Project, *groups: Group, ag_test_preloader: AGTestPreLoader
 ) -> Iterator[SubmissionResultFeedback]:
     groups = _prefetch_submissions(project, *groups)
+
     if project.ultimate_submission_policy == UltimateSubmissionPolicy.most_recent:
         return (SubmissionResultFeedback(group.submissions.first(),
                                          FeedbackCategory.max,
