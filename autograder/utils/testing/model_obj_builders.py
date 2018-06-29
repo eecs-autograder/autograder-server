@@ -255,7 +255,7 @@ class UserRole(core_ut.OrderedEnum):
 def make_group(num_members: int=1,
                members_role: UserRole=UserRole.student,
                project: ag_models.Project=None,
-               members=None,
+               members: Optional[Sequence[User]]=None,
                **group_kwargs) -> ag_models.Group:
     if project is None:
         project = make_project()
