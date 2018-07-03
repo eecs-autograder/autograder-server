@@ -13,6 +13,8 @@ from autograder.core.models.get_ultimate_submissions import get_ultimate_submiss
 import autograder.core.utils as core_ut
 from autograder import utils
 from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
+from autograder.rest_api.views.submission_views.all_ultimate_submission_results_view import (
+    serialize_ultimate_submission_results)
 
 
 @shared_task(queue='project_downloads', acks_late=True)
@@ -64,7 +66,7 @@ def all_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwar
 @shared_task(queue='project_downloads', acks_late=True)
 def ultimate_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwargs):
     _make_download_file_task_impl(project_pk, task_pk, include_staff,
-                                  _get_ultimate_submissions, _make_scores_csv)
+                                  _get_ultimate_submissions, _make_ultimate_submission_scores_csv)
 
 
 # Given a project and a sequence of submission groups, return a tuple of
@@ -137,7 +139,8 @@ def _make_download_result_filename(project: ag_models.project,
 _PROGRESS_UPDATE_FREQUENCY = 50
 
 
-def _make_submission_archive(task, submission_fdbks: Iterator[SubmissionResultFeedback],
+def _make_submission_archive(task: ag_models.DownloadTask,
+                             submission_fdbks: Iterator[SubmissionResultFeedback],
                              num_submissions, dest_filename):
     with open(dest_filename, 'wb') as archive:
         with zipfile.ZipFile(archive, 'w') as z:
@@ -158,7 +161,8 @@ def _make_submission_archive(task, submission_fdbks: Iterator[SubmissionResultFe
                     print('Updated task {} progress: {}'.format(task.pk, task.progress))
 
 
-def _make_scores_csv(task, submission_fdbks: Iterator[SubmissionResultFeedback],
+def _make_scores_csv(task: ag_models.DownloadTask,
+                     submission_fdbks: Iterator[SubmissionResultFeedback],
                      num_submissions: int, dest_filename: str):
     with open(dest_filename, 'w', newline='') as csv_file:
         project = task.project  # type: ag_models.Project
@@ -222,6 +226,44 @@ def _make_scores_csv(task, submission_fdbks: Iterator[SubmissionResultFeedback],
                 student_suite_total_possible_header = student_suite_total_possible_tmpl.format(
                     suite_fdbk.student_test_suite_name)
                 row[student_suite_total_possible_header] = suite_fdbk.total_points_possible
+
+            writer.writerow(row)
+
+            if progress_index % _PROGRESS_UPDATE_FREQUENCY == 0:
+                task.progress = (progress_index / num_submissions) * 100
+                task.save()
+                print('Updated task {} progress: {}'.format(task.pk, task.progress))
+
+
+def _make_ultimate_submission_scores_csv(task: ag_models.DownloadTask,
+                                         submission_fdbks: Iterator[SubmissionResultFeedback],
+                                         num_submissions: int, dest_filename: str):
+    print(submission_fdbks)
+    results = serialize_ultimate_submission_results(
+        submission_fdbks, full_results=False, ag_test_preloader=AGTestPreLoader(task.project))
+
+    with open(dest_filename, 'w', newline='') as csv_file:
+        headers = [
+            'Username', 'Group Members', 'Timestamp', 'Extension',
+            'Total Points', 'Total Points Possible'
+        ]
+        writer = csv.DictWriter(csv_file, headers)
+
+        writer.writeheader()
+
+        for progress_index, result in enumerate(results):
+            if result['ultimate_submission'] is None:
+                continue
+
+            row = {
+                'Username': result['username'],
+                'Group Members': ','.join(result['group']['member_names']),
+                'Timestamp': result['ultimate_submission']['timestamp'],
+                'Extension': result['group']['extended_due_date'],
+                'Total Points': result['ultimate_submission']['results']['total_points'],
+                'Total Points Possible': (
+                    result['ultimate_submission']['results']['total_points_possible']),
+            }
 
             writer.writerow(row)
 

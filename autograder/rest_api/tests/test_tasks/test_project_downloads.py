@@ -1,28 +1,34 @@
 import csv
+import datetime
 import itertools
 import os
 import tempfile
 import zipfile
+from collections import OrderedDict
 from typing import Iterator, BinaryIO
 from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.submission_feedback import update_denormalized_ag_test_results
-from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
-    get_submission_fdbk
+from autograder.core.submission_feedback import (
+    update_denormalized_ag_test_results, SubmissionResultFeedback, AGTestPreLoader)
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
+    get_submission_fdbk)
 from autograder.utils.testing import UnitTestBase
 
 
 @mock.patch('autograder.rest_api.tasks.project_downloads._PROGRESS_UPDATE_FREQUENCY', new=1)
-class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
+class DownloadSubmissionFilesTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
+
+        self.client = APIClient()
 
         # This submission that belongs to another project shouldn't
         # prevent us from downloading files for our project.
@@ -119,6 +125,7 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
         group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.admin)
         obj_build.make_finished_submission(group)
 
+        # Exclude staff
         url = reverse('project-ultimate-submission-files', kwargs={'pk': self.project.pk})
         self.do_download_submissions_test(url, [])
 
@@ -234,9 +241,249 @@ class DownloadSubmissionFilesTestCase(test_data.Client, UnitTestBase):
 
 
 @mock.patch('autograder.rest_api.tasks.project_downloads._PROGRESS_UPDATE_FREQUENCY', new=1)
-class DownloadGradesTestCase(test_data.Client, UnitTestBase):
+class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
+
+        self.maxDiff = None
+
+        self.client = APIClient()
+
+        self.project = obj_build.make_project(
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.most_recent,
+        )
+
+        self.url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
+
+        self.admin = obj_build.make_admin_user(self.project.course)
+
+        self.ag_test_suite = obj_build.make_ag_test_suite(project=self.project)
+        self.ag_test_case = obj_build.make_ag_test_case(ag_test_suite=self.ag_test_suite)
+        self.ag_test_cmd = obj_build.make_full_ag_test_command(ag_test_case=self.ag_test_case)
+
+        self.student_group = obj_build.make_group(project=self.project, num_members=2)
+        self.student_submission = obj_build.make_finished_submission(self.student_group)
+        self.student_result = obj_build.make_incorrect_ag_test_command_result(
+            ag_test_command=self.ag_test_cmd, submission=self.student_submission)
+
+        self.student_submission = update_denormalized_ag_test_results(self.student_submission.pk)
+        self.student_result_fdbk = SubmissionResultFeedback(
+            self.student_submission, ag_models.FeedbackCategory.max,
+            AGTestPreLoader(self.project))
+
+        self.assertEqual(0, self.student_result_fdbk.total_points)
+        self.assertNotEqual(0, self.student_result_fdbk.total_points_possible)
+
+        self.staff_group = obj_build.make_group(
+            project=self.project,  members_role=obj_build.UserRole.admin)
+        self.staff_submission = obj_build.make_finished_submission(self.staff_group)
+        self.staff_result = obj_build.make_correct_ag_test_command_result(
+            ag_test_command=self.ag_test_cmd, submission=self.staff_submission)
+
+        self.staff_submission = update_denormalized_ag_test_results(self.staff_submission.pk)
+        self.staff_result_fdbk = SubmissionResultFeedback(
+            self.staff_submission, ag_models.FeedbackCategory.max,
+            AGTestPreLoader(self.project))
+
+        self.assertNotEqual(0, self.staff_result_fdbk.total_points)
+        self.assertNotEqual(0, self.staff_result_fdbk.total_points_possible)
+
+        # Make sure we use the right queryset
+        other_project = obj_build.make_project(course=self.project.course)
+        other_group = obj_build.make_group(project=other_project)
+        other_submission = obj_build.make_finished_submission(other_group)
+
+    def test_serialize_ultimate_submission_results_called(self):
+        mock_serialize_ultimate_submission_results = mock.Mock(return_value=[])
+
+        with mock.patch('autograder.rest_api.tasks.project_downloads'
+                        '.serialize_ultimate_submission_results',
+                        new=mock_serialize_ultimate_submission_results):
+            self.client.force_authenticate(self.admin)
+            self.client.post(self.url)
+
+            mock_serialize_ultimate_submission_results.assert_called_once()
+
+    def test_download_all_ultimate_submission_scores_no_staff(self):
+        expected = [
+            OrderedDict({
+                'Username': self.student_group.member_names[0],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+            }),
+            OrderedDict({
+                'Username': self.student_group.member_names[1],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+            })
+        ]
+
+        self.do_ultimate_submission_scores_csv_test(self.url, expected)
+
+    def test_group_has_past_extension(self):
+        student_extension = timezone.now() - datetime.timedelta(days=1)
+        self.student_group.validate_and_update(extended_due_date=student_extension)
+
+        self.student_submission.timestamp = student_extension - datetime.timedelta(days=2)
+        self.student_submission.save()
+
+        expected = [
+            OrderedDict({
+                'Username': self.student_group.member_names[0],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': str(student_extension),
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+            }),
+            OrderedDict({
+                'Username': self.student_group.member_names[1],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': str(student_extension),
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+            })
+        ]
+
+        self.do_ultimate_submission_scores_csv_test(self.url, expected)
+
+    def test_ultimate_submission_for_group_is_none_skip_group(self):
+        mock_serialize_ultimate_submission_results = mock.Mock(
+            return_value=[
+                {
+                    'username': 'waluigi',
+                    'group': {
+                        'member_names': ['waluigi'],
+                        'extended_due_date': '',
+                    },
+                    'ultimate_submission': None
+                }
+            ]
+        )
+
+        with mock.patch('autograder.rest_api.tasks.project_downloads'
+                        '.serialize_ultimate_submission_results',
+                        new=mock_serialize_ultimate_submission_results):
+            self.do_ultimate_submission_scores_csv_test(self.url, [])
+
+    def test_group_has_extension_not_past_ultimate_submission_is_none(self):
+        student_extension = timezone.now() + datetime.timedelta(days=2)
+        self.student_group.validate_and_update(extended_due_date=student_extension)
+
+        self.do_ultimate_submission_scores_csv_test(self.url, [])
+
+    def test_include_staff(self):
+        expected = [
+            OrderedDict({
+                'Username': self.student_group.member_names[0],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+            }),
+            OrderedDict({
+                'Username': self.student_group.member_names[1],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+            })
+        ]
+
+        staff_group_row = OrderedDict({
+            'Username': self.staff_group.member_names[0],
+            'Group Members': f'{self.staff_group.member_names[0]}',
+            'Timestamp': str(self.staff_submission.timestamp),
+            'Extension': '',
+            'Total Points': str(self.staff_result_fdbk.total_points),
+            'Total Points Possible': str(self.staff_result_fdbk.total_points_possible)
+        })
+
+        self.assertEqual(2, self.project.groups.count())
+        if self.staff_group == ag_models.Group.objects.first():
+            expected.insert(0, staff_group_row)
+        else:
+            expected.append(staff_group_row)
+
+        self.do_ultimate_submission_scores_csv_test(self.url + '?include_staff=true', expected)
+
+    def test_unfinished_and_error_submissions_ignored(self):
+        unfinished_statuses = filter(
+            lambda val: val != ag_models.Submission.GradingStatus.finished_grading,
+            ag_models.Submission.GradingStatus.values
+        )
+        for status in unfinished_statuses:
+            self.student_submission.status = status
+            self.student_submission.save()
+
+            self.do_ultimate_submission_scores_csv_test(self.url, [])
+
+    def test_download_ultimate_submission_scores_only_one_staff_group_with_submission(self):
+        # This is a regression test to prevent a divide by zero error.
+        # See https://github.com/eecs-autograder/autograder-server/issues/273
+        ag_models.Group.objects.all().delete()
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.admin)
+        obj_build.make_finished_submission(group)
+
+        # Exclude staff
+        self.do_ultimate_submission_scores_csv_test(self.url, [])
+
+    def test_download_ultimate_submission_scores_no_submissions(self):
+        ag_models.Submission.objects.all().delete()
+
+        url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
+        self.do_ultimate_submission_scores_csv_test(self.url, [])
+
+    def do_ultimate_submission_scores_csv_test(self, url, expected_rows):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.post(url)
+        self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
+
+        # Check the content directly from the filesystem
+        task = ag_models.DownloadTask.objects.get(pk=response.data['pk'])
+
+        self.assertEqual(100, task.progress)
+        self.assertEqual('', task.error_msg)
+
+        with open(task.result_filename) as f:
+            actual_result = list(csv.DictReader(f))
+        self.assertEqual(expected_rows, actual_result)
+
+        # Check the content returned by the result endpoint
+        result_content_url = reverse('download_tasks-result', kwargs={'pk': task.pk})
+        response = self.client.get(result_content_url)
+        _check_csv_response(self, response, expected_rows)
+
+        # Make sure that other admin users can request results for downloads
+        # they didn't start.
+        other_admin = obj_build.make_admin_user(self.project.course)
+        self.client.force_authenticate(other_admin)
+        response = self.client.get(result_content_url)
+        _check_csv_response(self, response, expected_rows)
+
+
+@mock.patch('autograder.rest_api.tasks.project_downloads._PROGRESS_UPDATE_FREQUENCY', new=1)
+class DownloadAllSubmissionGradesTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.client = APIClient()
 
         max_group_size = 3
         self.project = obj_build.make_project(
@@ -366,28 +613,6 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
         url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
         self.do_download_scores_test(url, self.project, [])
 
-    def test_download_ultimate_submission_scores(self):
-        url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
-        self.do_download_scores_test(
-            url, self.project,
-            [self.group1_submission1_best, self.group2_only_submission])
-
-    def test_download_ultimate_submission_scores_only_one_staff_group_with_submission(self):
-        # This is a regression test to prevent a divide by zero error.
-        # See https://github.com/eecs-autograder/autograder-server/issues/273
-        ag_models.Group.objects.all().delete()
-        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.admin)
-        obj_build.make_finished_submission(group)
-
-        url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
-        self.do_download_scores_test(url, self.project, [])
-
-    def test_download_ultimate_submission_scores_no_submissions(self):
-        ag_models.Submission.objects.all().delete()
-
-        url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
-        self.do_download_scores_test(url, self.project, [])
-
     def test_include_staff_all_scores(self):
         url = reverse('project-all-submission-scores', kwargs={'pk': self.project.pk})
         url += '?include_staff=true'
@@ -395,13 +620,6 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             url, self.project,
             [self.group1_submission1_best, self.group1_submission2,
              self.group2_only_submission, self.staff_submission1])
-
-    def test_include_staff_ultimate_submission_scores(self):
-        url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
-        url += '?include_staff=true'
-        self.do_download_scores_test(
-            url, self.project,
-            [self.group1_submission1_best, self.group2_only_submission, self.staff_submission1])
 
     def test_non_admin_permission_denied(self):
         [staff] = obj_build.make_staff_users(self.project.course, 1)
@@ -448,11 +666,6 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
             self.project,
             [self.group1_submission1_best, self.group1_submission2, self.group2_only_submission])
 
-        self.do_download_scores_test(
-            reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk}),
-            self.project,
-            [self.group1_submission2, self.group2_only_submission])
-
     def do_download_scores_test(self, url, project: ag_models.Project,
                                 expected_submissions: Iterator[ag_models.Submission]):
         # Intentionally reversing the ag and student test suite ordering as an
@@ -479,14 +692,14 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
         # Check the content returned by the result endpoint
         result_content_url = reverse('download_tasks-result', kwargs={'pk': task.pk})
         response = self.client.get(result_content_url)
-        self._check_csv_response(response, expected_result)
+        _check_csv_response(self, response, expected_result)
 
         # Make sure that other admin users can request results for downloads
         # they didn't start.
         [other_admin] = obj_build.make_admin_users(project.course, 1)
         self.client.force_authenticate(other_admin)
         response = self.client.get(result_content_url)
-        self._check_csv_response(response, expected_result)
+        _check_csv_response(self, response, expected_result)
 
     def _get_expected_csv(self, expected_submissions, project):
         expected_headers = ['Username {}'.format(i + 1) for i in range(project.max_group_size)]
@@ -527,11 +740,12 @@ class DownloadGradesTestCase(test_data.Client, UnitTestBase):
 
         return expected_result
 
-    def _check_csv_response(self, response, expected_result):
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual('text/csv', response['Content-Type'])
 
-        with tempfile.TemporaryFile('w+') as result:
-            result.write(''.join((chunk.decode() for chunk in response.streaming_content)))
-            result.seek(0)
-            self.assertCountEqual(expected_result, list(csv.DictReader(result)))
+def _check_csv_response(test_fixture: UnitTestBase, response, expected_rows):
+    test_fixture.assertEqual(status.HTTP_200_OK, response.status_code)
+    test_fixture.assertEqual('text/csv', response['Content-Type'])
+
+    with tempfile.TemporaryFile('w+') as result:
+        result.write(''.join((chunk.decode() for chunk in response.streaming_content)))
+        result.seek(0)
+        test_fixture.assertCountEqual(expected_rows, list(csv.DictReader(result)))

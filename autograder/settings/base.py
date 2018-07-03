@@ -100,6 +100,8 @@ MIDDLEWARE = (
     'django.middleware.security.SecurityMiddleware',
 )
 
+APPEND_SLASH = False
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
