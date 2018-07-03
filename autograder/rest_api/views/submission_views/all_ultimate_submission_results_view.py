@@ -139,6 +139,6 @@ class AllUltimateSubmissionResults(AGModelAPIView):
             project, *page, ag_test_preloader=ag_test_preloader)
 
         results = serialize_ultimate_submission_results(
-            ultimate_submissions, full_results, ag_test_preloader)
+            ultimate_submissions, full_results=full_results)
 
         return paginator.get_paginated_response(results)

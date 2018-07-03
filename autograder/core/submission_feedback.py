@@ -278,6 +278,10 @@ class SubmissionResultFeedback(ToDictMixin):
         self._ag_test_suite_results = _deserialize_denormed_ag_test_results(self._submission)
 
     @property
+    def ag_test_preloader(self):
+        return self._ag_test_loader
+
+    @property
     def pk(self):
         return self._submission.pk
 

@@ -8,8 +8,7 @@ from autograder.core.submission_feedback import SubmissionResultFeedback, AGTest
 
 
 def serialize_ultimate_submission_results(ultimate_submissions: Iterable[SubmissionResultFeedback],
-                                          full_results: bool,
-                                          ag_test_preloader: AGTestPreLoader) -> List[dict]:
+                                          *, full_results: bool) -> List[dict]:
     """
     Returns serialized ultimate submission data for each user in the
     groups linked to ultimate_submissions.
@@ -63,7 +62,7 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
                 user_submission_data = _get_submission_data_with_results(
                     SubmissionResultFeedback(
                         user_ultimate_submission, ag_models.FeedbackCategory.max,
-                        ag_test_preloader),
+                        submission_fdbk.ag_test_preloader),
                     full_results
                 )
                 user_data['ultimate_submission'] = user_submission_data
