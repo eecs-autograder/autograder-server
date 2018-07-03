@@ -239,8 +239,7 @@ def _make_ultimate_submission_scores_csv(task: ag_models.DownloadTask,
                                          submission_fdbks: Iterator[SubmissionResultFeedback],
                                          num_submissions: int, dest_filename: str):
     print(submission_fdbks)
-    results = serialize_ultimate_submission_results(
-        submission_fdbks, full_results=False, ag_test_preloader=AGTestPreLoader(task.project))
+    results = serialize_ultimate_submission_results(submission_fdbks, full_results=False)
 
     with open(dest_filename, 'w', newline='') as csv_file:
         headers = [
