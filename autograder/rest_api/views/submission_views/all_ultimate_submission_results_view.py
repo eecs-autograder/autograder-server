@@ -10,9 +10,10 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import BasePermission
 
-from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions, \
-    get_ultimate_submission
-from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
+from autograder.core.submission_feedback import AGTestPreLoader
+from autograder.rest_api.serialize_ultimate_submission_results import (
+    serialize_ultimate_submission_results)
 from autograder.rest_api.views.ag_model_views import AGModelAPIView
 import autograder.rest_api.permissions as ag_permissions
 import autograder.core.models as ag_models
@@ -37,14 +38,23 @@ def _build_ultimate_submission_result_schema():
     ultimate_submission_schema.properties['results'] = Schema(
         type='object',
         properties=OrderedDict([
-            ('total_points', Schema(
-                type='float',
-            )),
-            ('total_points_possible', Schema(
-                type='float',
-            )),
+            ('total_points', Schema(type='float')),
+            ('total_points_possible', Schema(type='float')),
+
+            (
+                'ag_test_suite_results',
+                Schema(type='AGTestSuiteResultFeedback',
+                       description='Only included if full_results is true.')
+            ),
+            (
+                'student_test_suite_results',
+                Schema(type='StudentTestSuiteResultFeedback',
+                       description='Only included if full_results is true.')
+            )
         ])
     )
+
+    ultimate_submission_schema.properties.move_to_end('results', last=False)
 
     return Schema(
         type='object',
@@ -95,7 +105,7 @@ class AllUltimateSubmissionResults(AGModelAPIView):
                           UltimateSubmissionPaginator.max_page_size)),
             Parameter(
                 name='full_results', type='string', enum=['true', 'false'], in_='query',
-                description='When true, includes additional SubmissionResultFeedback details. '
+                description='When true, includes all SubmissionResultFeedback fields. '
                             'Defaults to false.'
             ),
             Parameter(
@@ -128,54 +138,7 @@ class AllUltimateSubmissionResults(AGModelAPIView):
         ultimate_submissions = get_ultimate_submissions(
             project, *page, ag_test_preloader=ag_test_preloader)
 
-        results = []
-        for submission_fdbk in ultimate_submissions:
-            submission = submission_fdbk._submission
-            group = submission.group
-            if group.extended_due_date is not None and group.extended_due_date > timezone.now():
-                submission_data = None
-            else:
-                submission_data = self._get_submission_data_with_results(
-                    submission_fdbk, full_results)
-
-            group_data = group.to_dict()
-
-            for username in group.member_names:
-                user_data = {
-                    'username': username,
-                    'group': group_data,
-                }
-
-                if username in submission.does_not_count_for:
-                    user_ultimate_submission = get_ultimate_submission(
-                        group, group.members.get(username=username))
-                    # NOTE: Do NOT overwrite submission_data
-                    user_submission_data = self._get_submission_data_with_results(
-                        SubmissionResultFeedback(
-                            user_ultimate_submission, ag_models.FeedbackCategory.max,
-                            ag_test_preloader),
-                        full_results
-                    )
-                    user_data['ultimate_submission'] = user_submission_data
-                else:
-                    user_data['ultimate_submission'] = submission_data
-
-                results.append(user_data)
+        results = serialize_ultimate_submission_results(
+            ultimate_submissions, full_results, ag_test_preloader)
 
         return paginator.get_paginated_response(results)
-
-    def _get_submission_data_with_results(self, submission_fdbk: SubmissionResultFeedback,
-                                          full_results: bool):
-        submission_data = submission_fdbk.submission.to_dict()
-
-        if not full_results:
-            submission_results = {
-                'total_points': submission_fdbk.total_points,
-                'total_points_possible': submission_fdbk.total_points_possible
-            }
-        else:
-            submission_results = submission_fdbk.to_dict()
-
-        submission_data['results'] = submission_results
-
-        return submission_data
