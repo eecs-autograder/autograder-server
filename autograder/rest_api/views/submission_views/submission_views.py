@@ -1,5 +1,7 @@
 import datetime
+from typing import Optional, List
 
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.http.response import FileResponse
@@ -39,7 +41,7 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.SubmissionSerializer
     permission_classes = (list_create_submission_permissions,)
 
-    model_manager = ag_models.Group.objects
+    model_manager = ag_models.Group.objects.select_related('project__course')
 
     to_one_field_name = 'group'
     reverse_to_one_field_name = 'submissions'
@@ -102,21 +104,48 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
             return self._create_submission(
                 group, timestamp,
                 is_past_daily_limit=is_past_daily_limit,
-                is_bonus_submission=is_bonus_submission
+                is_bonus_submission=is_bonus_submission,
+                does_not_count_for=[]
             )
 
         if group.project.disallow_student_submissions:
             raise exceptions.ValidationError(
                 {'submission': 'Submitting has been temporarily disabled for this project'})
 
-        closing_time = group.extended_due_date
-        if closing_time is None:
-            closing_time = group.project.closing_time
-        deadline_past = closing_time is not None and timestamp > closing_time
+        group_deadline = self._get_deadline_for_group(group)
+        group_deadline_past = group_deadline is not None and timestamp > group_deadline
 
-        if deadline_past:
-            raise exceptions.ValidationError(
-                {'submission': 'The closing time for this project has passed'})
+        does_not_count_for = []
+        if group_deadline_past:
+            course = group.project.course
+            if course.num_late_days != 0 and group.project.allow_late_days:
+                for user in group.members.all():
+                    user_deadline = self._get_deadline_for_user(group, user)
+                    assert user_deadline >= group_deadline
+
+                    if user_deadline > timestamp:
+                        continue
+
+                    remaining = ag_models.LateDaysRemaining.objects.get_or_create(
+                        user=user, course=course)[0]
+                    late_days_needed = (timestamp - user_deadline).days + 1
+
+                    if remaining.late_days_remaining >= late_days_needed:
+                        remaining.late_days_remaining -= late_days_needed
+                        remaining.save()
+                        group.late_days_used.setdefault(user.username, 0)
+                        group.late_days_used[user.username] += late_days_needed
+                        group.save()
+                    else:
+                        does_not_count_for.append(user.username)
+
+                if request.user.username in does_not_count_for:
+                    raise exceptions.ValidationError(
+                        {'submission': 'The closing time for this project has passed, '
+                                       'and you are out of late days.'})
+            else:
+                raise exceptions.ValidationError(
+                    {'submission': 'The closing time for this project has passed'})
 
         if is_past_daily_limit and not group.project.allow_submissions_past_limit:
             raise exceptions.ValidationError(
@@ -137,14 +166,27 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
 
         return self._create_submission(group, timestamp,
                                        is_past_daily_limit=is_past_daily_limit,
-                                       is_bonus_submission=is_bonus_submission)
+                                       is_bonus_submission=is_bonus_submission,
+                                       does_not_count_for=does_not_count_for)
 
+    def _get_deadline_for_group(self, group: ag_models.Group):
+        project = group.project
+        if project.closing_time is None:
+            return None
 
+        return (group.extended_due_date if group.extended_due_date is not None
+                else project.closing_time)
+
+    def _get_deadline_for_user(self, group: ag_models.Group,
+                               user: User) -> Optional[datetime.datetime]:
+        deadline = self._get_deadline_for_group(group)
+        return deadline + datetime.timedelta(days=group.late_days_used.get(user.username, 0))
 
     def _create_submission(self, group: ag_models.Group,
                            timestamp: datetime.datetime,
                            *, is_past_daily_limit: bool,
-                           is_bonus_submission: bool):
+                           is_bonus_submission: bool,
+                           does_not_count_for: List[str]):
         serializer = self.get_serializer(data=self.request.data)
         serializer.is_valid()
 
@@ -155,6 +197,7 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
         # for security reasons. Instead, we set those fields now.
         submission.is_past_daily_limit = is_past_daily_limit
         submission.is_bonus_submission = is_bonus_submission
+        submission.does_not_count_for = does_not_count_for
         submission.save()
 
         return response.Response(data=submission.to_dict(), status=status.HTTP_201_CREATED)
