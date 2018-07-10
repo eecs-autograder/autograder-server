@@ -111,4 +111,11 @@ class LateDaysRemaining(AutograderModel):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    late_days_remaining = models.IntegerField(validators=[validators.MinValueValidator(0)])
+    late_days_remaining = models.IntegerField(validators=[validators.MinValueValidator(0)],
+                                              blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk is None and self.late_days_remaining is None:
+            self.late_days_remaining = self.course.num_late_days
+
+        return super().save(*args, **kwargs)

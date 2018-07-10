@@ -77,6 +77,18 @@ class LateDaysRemainingTestCase(UnitTestBase):
         self.course = obj_build.make_course()
         self.user = obj_build.make_user()
 
+    def test_valid_create_with_defaults(self):
+        num_late_days = 2
+        self.course.validate_and_update(num_late_days=num_late_days)
+        remaining = LateDaysRemaining.objects.validate_and_create(
+            course=self.course,
+            user=self.user,
+        )
+
+        self.assertEqual(self.course, remaining.course)
+        self.assertEqual(self.user, remaining.user)
+        self.assertEqual(num_late_days, remaining.late_days_remaining)
+
     def test_valid_create(self):
         late_days_remaining = 2
         remaining = LateDaysRemaining.objects.validate_and_create(
