@@ -589,7 +589,6 @@ class CreateSubmissionWithLateDaysTestCase(UnitTestBase):
             user=non_submitter, course=self.course)
         self.assertEqual(0, non_submitter_remaining.late_days_remaining)
 
-
     def test_non_submitting_member_has_too_few_late_days_submission_does_not_count_for_them(self):
         submitter = self.group.members.first()
         non_submitter = self.group.members.exclude(pk=submitter.pk).first()

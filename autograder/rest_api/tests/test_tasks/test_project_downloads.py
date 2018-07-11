@@ -275,7 +275,7 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
         self.assertNotEqual(0, self.student_result_fdbk.total_points_possible)
 
         self.staff_group = obj_build.make_group(
-            project=self.project,  members_role=obj_build.UserRole.admin)
+            project=self.project, members_role=obj_build.UserRole.admin)
         self.staff_submission = obj_build.make_finished_submission(self.staff_group)
         self.staff_result = obj_build.make_correct_ag_test_command_result(
             ag_test_command=self.ag_test_cmd, submission=self.staff_submission)
