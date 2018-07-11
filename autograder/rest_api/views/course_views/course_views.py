@@ -1,12 +1,17 @@
+from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import mixins, permissions, decorators, response
+from rest_framework import mixins, permissions, decorators, response, status
+from rest_framework.request import Request
+from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
-from autograder.rest_api.views.schema_generation import APITags
+from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet, \
+    AlwaysIsAuthenticatedMixin, require_query_params
+from autograder.rest_api.views.schema_generation import APITags, AGModelViewAutoSchema
 
 
 class CoursePermissions(permissions.BasePermission):
@@ -59,3 +64,33 @@ class CourseViewSet(mixins.ListModelMixin,
             'is_student': course.is_student(request.user),
             'is_handgrader': course.is_handgrader(request.user)
         })
+
+
+class CourseByNameSemesterYearView(AlwaysIsAuthenticatedMixin, APIView):
+    swagger_schema = AGModelViewAutoSchema
+    api_tags = [APITags.courses]
+
+    @swagger_auto_schema(
+        request_body_parameters=[
+            Parameter('name', in_='path', type='string', required=True),
+            Parameter(
+                'semester', in_='path', type='string', required=True,
+                description='Must be one of: '
+                            + f'{", ".join((semester.value for semester in ag_models.Semester))}'),
+            Parameter('year', in_='path', type='integer', required=True)
+        ]
+    )
+    def get(self, request: Request, *args, **kwargs):
+        name = kwargs.get('name')
+        semester = kwargs.get('semester')
+        try:
+            semester = ag_models.Semester(semester)
+        except ValueError:
+            return response.Response(
+                status=status.HTTP_400_BAD_REQUEST, data=f'Invalid semester: {semester}')
+        year = kwargs.get('year')
+
+        course = get_object_or_404(
+            ag_models.Course.objects, name=name, semester=semester, year=year)
+
+        return response.Response(course.to_dict())

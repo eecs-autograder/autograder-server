@@ -141,10 +141,19 @@ class Course(AutograderModel):
     SERIALIZABLE_FIELDS = (
         'pk',
         'name',
+        'semester',
+        'year',
+        'subtitle',
         'num_late_days',
         'last_modified'
     )
-    EDITABLE_FIELDS = ('name', 'num_late_days')
+    EDITABLE_FIELDS = (
+        'name',
+        'semester',
+        'year',
+        'subtitle',
+        'num_late_days'
+    )
 
 
 class LateDaysRemaining(AutograderModel):
