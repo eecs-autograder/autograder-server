@@ -1,13 +1,21 @@
 from django.contrib.auth.models import User
-from drf_yasg.openapi import Schema
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
+from drf_yasg.openapi import Schema, Parameter
 from drf_yasg.utils import swagger_auto_schema
 
-from rest_framework import viewsets, mixins, permissions, decorators, response
+from rest_framework import mixins, permissions, decorators, response
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.request import Request
+from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
-from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
+from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet, require_query_params, \
+    require_body_params, AGModelAPIView, AlwaysIsAuthenticatedMixin
+from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder, \
+    AGModelViewAutoSchema
 
 
 class _Permissions(permissions.BasePermission):
@@ -101,3 +109,68 @@ class UserViewSet(mixins.RetrieveModelMixin,
         return response.Response(
             ag_serializers.SubmissionGroupInvitationSerializer(
                 user.group_invitations_sent.all(), many=True).data)
+
+
+class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
+    swagger_schema = AGModelViewAutoSchema
+
+    api_tags = [APITags.courses]
+
+    @swagger_auto_schema(
+        manual_parameters=[Parameter('course_pk', in_='query', type='integer', required=True)],
+        responses={
+            '200': Schema(
+                type='object',
+                properties=[Parameter('late_days_remaining', in_='body', type='integer')])
+        }
+    )
+    @method_decorator(require_query_params('course_pk'))
+    def get(self, request: Request, *args, **kwargs):
+        user = get_object_or_404(User.objects, pk=kwargs['user_pk'])
+        course = get_object_or_404(ag_models.Course.objects, pk=request.query_params['course_pk'])
+        remaining = ag_models.LateDaysRemaining.objects.get_or_create(user=user, course=course)[0]
+
+        self._check_read_permissions(remaining)
+
+        return response.Response({'late_days_remaining': remaining.late_days_remaining})
+
+    @swagger_auto_schema(
+        manual_parameters=[Parameter('course_pk', in_='query', type='integer', required=True)],
+        request_body_parameters=[
+            Parameter('late_days_remaining', in_='body', type='integer', required=True)],
+        responses={
+            '200': Schema(
+                type='object',
+                properties=[Parameter('late_days_remaining', in_='body', type='integer')])
+        }
+    )
+    @method_decorator(require_body_params('late_days_remaining'))
+    def put(self, request: Request, *args, **kwargs):
+        user = get_object_or_404(User.objects, pk=kwargs['user_pk'])
+        course = get_object_or_404(ag_models.Course.objects, pk=request.query_params['course_pk'])
+
+        with transaction.atomic():
+            remaining = ag_models.LateDaysRemaining.objects.select_for_update().get_or_create(
+                user=user, course=course)[0]
+
+            self._check_read_permissions(remaining)
+            self._check_write_permissions(remaining)
+
+            remaining.late_days_remaining = request.data['late_days_remaining']
+            remaining.save()
+
+            return response.Response({'late_days_remaining': remaining.late_days_remaining})
+
+    def _check_read_permissions(self, remaining: ag_models.LateDaysRemaining):
+        user = self.request.user
+        if user == remaining.user:
+            return
+
+        if remaining.course.is_staff(user):
+            return
+
+        raise PermissionDenied
+
+    def _check_write_permissions(self, remaining: ag_models.LateDaysRemaining):
+        if not remaining.course.is_admin(self.request.user):
+            raise PermissionDenied

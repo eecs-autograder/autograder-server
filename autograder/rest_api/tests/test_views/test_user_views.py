@@ -1,7 +1,11 @@
 import itertools
 
+from django.contrib.auth.models import User
 from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIClient
 
+import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
@@ -9,11 +13,14 @@ import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase
 
 
-class RetrieveUserTestCase(test_data.Client,
-                           test_data.Project,
+class RetrieveUserTestCase(test_data.Project,
                            test_data.Group,
                            test_impls.GetObjectTest,
                            UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
     def test_self_get_currently_authenticated_user(self):
         for user in self.all_users:
             self.do_get_object_test(self.client, user, reverse('user-current'),
@@ -146,3 +153,150 @@ class RetrieveUserTestCase(test_data.Client,
 
 def user_url(user, lookup='user-detail'):
     return reverse(lookup, kwargs={'pk': user.pk})
+
+
+class UserLateDaysViewTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+        self.initial_num_late_days = 4
+        self.course = obj_build.make_course(num_late_days=self.initial_num_late_days)
+
+    def test_student_view_own_late_day_count(self):
+        student = obj_build.make_student_user(self.course)
+        self.do_get_late_days_test(student, student, self.course, self.initial_num_late_days)
+
+    def test_guest_view_own_late_day_count(self):
+        guest = obj_build.make_user()
+        self.do_get_late_days_test(guest, guest, self.course, self.initial_num_late_days)
+
+    def test_staff_view_other_late_day_count(self):
+        staff = obj_build.make_staff_user(self.course)
+        student = obj_build.make_student_user(self.course)
+        self.do_get_late_days_test(staff, student, self.course, self.initial_num_late_days)
+
+    def test_admin_change_late_day_count(self):
+        admin = obj_build.make_admin_user(self.course)
+        student = obj_build.make_student_user(self.course)
+
+        self.client.force_authenticate(admin)
+        response = self.client.put(self.get_url(student, self.course), {'late_days_remaining': 42})
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual({'late_days_remaining': 42}, response.data)
+
+        remaining = ag_models.LateDaysRemaining.objects.get(user=student, course=self.course)
+        self.assertEqual(42, remaining.late_days_remaining)
+
+    def test_admin_change_late_day_count_object_exists(self):
+        admin = obj_build.make_admin_user(self.course)
+        student = obj_build.make_student_user(self.course)
+
+        ag_models.LateDaysRemaining.objects.validate_and_create(user=student, course=self.course)
+        self.do_get_late_days_test(admin, student, self.course, self.initial_num_late_days)
+
+        self.client.force_authenticate(admin)
+        response = self.client.put(self.get_url(student, self.course), {'late_days_remaining': 27})
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual({'late_days_remaining': 27}, response.data)
+
+        remaining = ag_models.LateDaysRemaining.objects.get(user=student, course=self.course)
+        self.assertEqual(27, remaining.late_days_remaining)
+
+    def test_admin_change_late_day_count_for_other_course_permission_denied(self):
+        admin = obj_build.make_admin_user(self.course)
+
+        # Student for other course
+        other_course = obj_build.make_course()
+        other_course_student = obj_build.make_student_user(other_course)
+        self.assertFalse(other_course.is_admin(admin))
+
+        self.client.force_authenticate(admin)
+        response = self.client.put(self.get_url(other_course_student, other_course),
+                                   {'late_days_remaining': 10})
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        # Guest for other course
+        other_guest = obj_build.make_user()
+        response = self.client.put(self.get_url(other_guest, other_course),
+                                   {'late_days_remaining': 7})
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_staff_view_late_day_count_for_other_course_permission_denied(self):
+        staff = obj_build.make_staff_user(self.course)
+
+        # Student for other course
+        other_course = obj_build.make_course()
+        other_course_student = obj_build.make_student_user(other_course)
+        self.assertFalse(other_course.is_staff(staff))
+
+        self.client.force_authenticate(staff)
+        response = self.client.get(self.get_url(other_course_student, other_course))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        # Guest for other course
+        other_guest = obj_build.make_user()
+        response = self.client.get(self.get_url(other_guest, other_course))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_student_view_other_late_day_count_permission_denied(self):
+        student1 = obj_build.make_student_user(self.course)
+        student2 = obj_build.make_student_user(self.course)
+
+        self.client.force_authenticate(student1)
+        response = self.client.get(self.get_url(student2, self.course))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_guest_view_other_late_day_count_permission_denied(self):
+        guest1 = obj_build.make_user()
+        guest2 = obj_build.make_user()
+
+        self.client.force_authenticate(guest1)
+        response = self.client.get(self.get_url(guest2, self.course))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_get_late_day_count_object_exists(self):
+        student = obj_build.make_student_user(self.course)
+
+        remaining: ag_models.LateDaysRemaining = (
+            ag_models.LateDaysRemaining.objects.validate_and_create(
+                user=student, course=self.course))
+        remaining.late_days_remaining -= 1
+        remaining.save()
+
+        self.do_get_late_days_test(student, student, self.course, remaining.late_days_remaining)
+
+    def test_missing_course_pk_query_param(self):
+        student = obj_build.make_student_user(self.course)
+        self.client.force_authenticate(student)
+        url = reverse('user-late-days', kwargs={'user_pk': student.pk})
+
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        response = self.client.put(url, {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_put_missing_body_param(self):
+        admin = obj_build.make_admin_user(self.course)
+        self.client.force_authenticate(admin)
+
+        response = self.client.put(self.get_url(admin, self.course), {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_get_late_days_course_has_no_late_days(self):
+        self.course.validate_and_update(num_late_days=0)
+        student = obj_build.make_student_user(self.course)
+        self.do_get_late_days_test(student, student, self.course, 0)
+
+    def do_get_late_days_test(self, requestor: User, requestee: User, course: ag_models.Course,
+                              expected_num_late_days: int):
+        self.client.force_authenticate(requestor)
+        response = self.client.get(self.get_url(requestee, course))
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual({'late_days_remaining': expected_num_late_days}, response.data)
+
+    def get_url(self, requestee: User, course: ag_models.Course):
+        url = reverse('user-late-days', kwargs={'user_pk': requestee.pk})
+        return url + f'?course_pk={course.pk}'
