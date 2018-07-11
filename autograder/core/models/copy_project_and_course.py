@@ -2,7 +2,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 
 from autograder import utils
-from .course import Course
+from .course import Course, Semester
 from .project import Project, InstructorFile
 from .ag_test.ag_test_suite import AGTestSuite
 from .ag_test.ag_test_case import AGTestCase
@@ -129,11 +129,15 @@ def _copy_student_suites(project, new_project):
 
 
 @transaction.atomic()
-def copy_course(course: Course, new_course_name: str):
+def copy_course(course: Course, new_course_name: str,
+                new_course_semester: Semester, new_course_year: int):
     new_course = Course.objects.get(pk=course.pk)
     new_course.pk = None
     new_course.name = new_course_name
+    new_course.semester = new_course_semester
+    new_course.year = new_course_year
 
+    new_course.full_clean()
     new_course.save()
 
     for project in course.projects.all():

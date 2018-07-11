@@ -3,6 +3,7 @@ from typing import Sequence
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core.models import Semester
 from autograder.core.models.copy_project_and_course import copy_project, copy_course
 from autograder.utils.testing import UnitTestBase
 
@@ -180,9 +181,11 @@ class CopyCourseTestCase(UnitTestBase):
         proj2 = obj_build.make_project(course)
 
         name = 'stove'
-        new_course = copy_course(course, name)
+        new_course = copy_course(course, name, Semester.summer, 2019)
 
         self.assertEqual(name, new_course.name)
+        self.assertEqual(Semester.summer, new_course.semester)
+        self.assertEqual(2019, new_course.year)
 
         old_project_pks = {proj.pk for proj in course.projects.all()}
         new_project_pks = {proj.pk for proj in new_course.projects.all()}
