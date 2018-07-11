@@ -85,22 +85,26 @@ class CourseTestCase(UnitTestBase):
             Course.objects.validate_and_create(name='steve', num_late_days=-1)
         self.assertIn('num_late_days', cm.exception.message_dict)
 
-    def test_serializable_fields(self):
+    def test_serialization(self):
         expected_fields = [
             'pk',
             'name',
+            'semester',
+            'year',
+            'subtitle',
             'num_late_days',
             'last_modified',
         ]
 
-        self.assertCountEqual(expected_fields, Course.get_serializable_fields())
-
         course = obj_build.make_course()
-        self.assertTrue(course.to_dict())
+        serialized = course.to_dict()
 
-    def test_editable_fields(self):
-        expected = ['name', 'num_late_days']
-        self.assertCountEqual(expected, Course.get_editable_fields())
+        self.assertCountEqual(expected_fields, serialized.keys())
+
+        serialized.pop('pk')
+        serialized.pop('last_modified')
+
+        course.validate_and_update(**serialized)
 
 
 class LateDaysRemainingTestCase(UnitTestBase):

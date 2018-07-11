@@ -72,7 +72,7 @@ class RetrieveCourseTestCase(UnitTestBase):
         super().setUp()
         self.client = APIClient()
 
-    def test_get_course(self):
+    def test_get_course_by_pk(self):
         course = obj_build.make_course()
         [admin] = obj_build.make_admin_users(course, 1)
         [guest] = obj_build.make_users(1)
@@ -191,3 +191,36 @@ class UserRolesForCourseTestCase(test_impls.GetObjectTest, UnitTestBase):
         self.do_get_object_test(
             self.client, guest, self.url,
             self.expected_response_base())
+
+
+class CourseByNameSemesterYearViewTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+    def test_get_course_by_name_semester_and_year(self):
+        course = obj_build.make_course(semester=ag_models.Semester.winter, year=2019)
+        url = reverse('course-by-fields',
+                      kwargs={'name': course.name, 'semester': course.semester.value,
+                              'year': course.year})
+
+        guest = obj_build.make_user()
+
+        self.client.force_authenticate(guest)
+        response = self.client.get(url)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(course.to_dict(), response.data)
+
+    def test_invalid_semester(self):
+        course = obj_build.make_course(semester=ag_models.Semester.winter, year=2019)
+        url = reverse('course-by-fields',
+                      kwargs={'name': course.name, 'semester': 'bad',
+                              'year': course.year})
+
+        guest = obj_build.make_user()
+
+        self.client.force_authenticate(guest)
+        response = self.client.get(url)
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)

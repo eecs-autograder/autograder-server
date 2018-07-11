@@ -127,6 +127,9 @@ urlpatterns = [
          name='user-late-days'),
 
     url(r'', include(course_router.urls)),
+    path('course/<str:name>/<str:semester>/<int:year>/',
+         views.CourseByNameSemesterYearView.as_view(),
+         name='course-by-fields'),
     path('courses/<int:pk>/admins/', views.CourseAdminViewSet.as_view(), name='course-admins'),
     path('courses/<int:pk>/staff/', views.CourseStaffViewSet.as_view(), name='course-staff'),
     path('courses/<int:pk>/students/', views.CourseStudentsViewSet.as_view(),
