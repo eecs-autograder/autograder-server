@@ -2,7 +2,7 @@ import os
 
 from django.core.exceptions import ValidationError
 
-from autograder.core.models import Course, LateDaysRemaining
+from autograder.core.models import Course, LateDaysRemaining, Semester
 
 import autograder.core.utils as core_ut
 from autograder.utils.testing import UnitTestBase
@@ -18,18 +18,43 @@ class CourseTestCase(UnitTestBase):
         course.refresh_from_db()
 
         self.assertEqual(name, course.name)
+        self.assertIsNone(course.semester)
+        self.assertIsNone(course.year)
+        self.assertEqual('', course.subtitle)
         self.assertEqual(0, course.num_late_days)
 
     def test_create_no_defaults(self):
         name = 'Waaaaaluigi'
+        semester = Semester.winter
+        year = 2014
+        subtitle = 'Tiiime'
         late_days = 2
         course = Course.objects.validate_and_create(
-            name=name, num_late_days=late_days)
+            name=name, semester=semester, year=year, subtitle=subtitle, num_late_days=late_days)
 
         course.refresh_from_db()
 
         self.assertEqual(name, course.name)
+        self.assertEqual(semester, course.semester)
+        self.assertEqual(year, course.year)
+        self.assertEqual(subtitle, course.subtitle)
         self.assertEqual(late_days, course.num_late_days)
+
+    def test_course_ordering(self):
+        course4 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.fall, year=2018)
+        course5 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.winter, year=2018)
+        course1 = Course.objects.validate_and_create(
+            name='EECS 183', semester=Semester.spring, year=2016)
+        course3 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.fall, year=2017)
+        course2 = Course.objects.validate_and_create(
+            name='EECS 183', semester=Semester.summer, year=2016)
+
+        self.assertSequenceEqual(
+            [course1, course2, course3, course4, course5], Course.objects.all()
+        )
 
     def test_exception_on_empty_name(self):
         with self.assertRaises(ValidationError) as cm:
@@ -41,11 +66,19 @@ class CourseTestCase(UnitTestBase):
             Course.objects.validate_and_create(name=None)
         self.assertTrue('name' in cm.exception.message_dict)
 
-    def test_exception_on_non_unique_name(self):
-        course = obj_build.build_course()
+    def test_exception_on_non_unique_name_no_year_or_semester(self):
+        course = Course.objects.validate_and_create(name='Wuluigio')
         with self.assertRaises(ValidationError) as cm:
             Course.objects.validate_and_create(name=course.name)
-        self.assertTrue('name' in cm.exception.message_dict)
+
+    def test_error_non_unique_name_year_and_semester(self):
+        Course.objects.validate_and_create(name='Coursey', semester='Fall', year=2018)
+        with self.assertRaises(ValidationError) as cm:
+            Course.objects.validate_and_create(name='Coursey', semester='Fall', year=2018)
+
+    def test_error_invalid_year(self):
+        with self.assertRaises(ValidationError) as cm:
+            Course.objects.validate_and_create(name='Coursey', semester='Fall', year=1900)
 
     def test_error_negative_late_days(self):
         with self.assertRaises(ValidationError) as cm:
@@ -60,10 +93,9 @@ class CourseTestCase(UnitTestBase):
             'last_modified',
         ]
 
-        self.assertCountEqual(expected_fields,
-                              Course.get_serializable_fields())
+        self.assertCountEqual(expected_fields, Course.get_serializable_fields())
 
-        course = obj_build.build_course()
+        course = obj_build.make_course()
         self.assertTrue(course.to_dict())
 
     def test_editable_fields(self):
@@ -145,11 +177,11 @@ class CourseRolesTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.course = obj_build.build_course()
+        self.course = obj_build.make_course()
         self.user = obj_build.create_dummy_user()
 
     def test_is_admin(self):
-        self.course = obj_build.build_course()
+        self.course = obj_build.make_course()
         self.user = obj_build.create_dummy_user()
 
         self.assertFalse(self.course.is_admin(self.user))

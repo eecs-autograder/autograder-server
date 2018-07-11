@@ -1,13 +1,24 @@
+import enum
 import os
 
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.core import validators
 from django.contrib.auth.models import User
+from django.db.models import Case, When, Value
 
 from .ag_model_base import AutograderModel
 
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
+
+
+class Semester(enum.Enum):
+    fall = 'Fall'
+    winter = 'Winter'
+    spring = 'Spring'
+    summer = 'Summer'
 
 
 class Course(AutograderModel):
@@ -18,10 +29,31 @@ class Course(AutograderModel):
     Related object fields:
         projects -- The group of Projects that belong to this Course.
     """
+
+    class Meta:
+        unique_together = ('name', 'semester', 'year')
+        ordering = (
+            'name',
+            Case(
+                When(semester=Semester.fall, then=Value(1)),
+                When(semester=Semester.winter, then=Value(2)),
+                When(semester=Semester.spring, then=Value(3)),
+                When(semester=Semester.summer, then=Value(4))
+            ),
+            'year'
+        )
+
     name = ag_fields.ShortStringField(
-        unique=True,
         validators=[validators.MinLengthValidator(1)],
         help_text="The name of this course. Must be unique, non-empty and non-null.")
+
+    semester = ag_fields.EnumField(Semester, blank=True, null=True, default=None)
+
+    year = models.IntegerField(blank=True, null=True, default=None,
+                               validators=[MinValueValidator(1950)])
+
+    subtitle = ag_fields.ShortStringField(
+        blank=True, help_text='An optional descriptive name for the course.')
 
     num_late_days = models.IntegerField(
         default=0, validators=[validators.MinValueValidator(0)],
@@ -81,6 +113,17 @@ class Course(AutograderModel):
         this Course. Returns False otherwise.
         """
         return self.students.filter(pk=user.pk).exists()
+
+    def clean(self):
+        super().clean()
+
+        duplicate_exists = Course.objects.exclude(
+            pk=self.pk
+        ).filter(
+            name=self.name, semester=self.semester, year=self.year
+        ).exists()
+        if duplicate_exists:
+            raise ValidationError('A course with this name, semester, and year already exists.')
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
