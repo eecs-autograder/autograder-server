@@ -123,6 +123,7 @@ urlpatterns = [
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
 
     url(r'', include(user_router.urls)),
+    path('users/<int:user_pk>/late_days/', views.UserLateDaysView.as_view(), name='user-late-days'),
 
     url(r'', include(course_router.urls)),
     path('courses/<int:pk>/admins/', views.CourseAdminViewSet.as_view(), name='course-admins'),
