@@ -415,7 +415,7 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
         })
 
         self.assertEqual(2, self.project.groups.count())
-        if self.staff_group == ag_models.Group.objects.first():
+        if self.staff_group == self.project.groups.first():
             expected.insert(0, staff_group_row)
         else:
             expected.append(staff_group_row)
