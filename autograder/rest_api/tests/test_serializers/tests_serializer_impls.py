@@ -17,16 +17,13 @@ class CourseSerializerTestCase(SerializerTestCase):
         self.do_basic_serialize_test(course, ag_serializers.CourseSerializer)
 
 
-class ProjectSerializerTestCase(SerializerTestCase):
+class ProjectSerializerTestCase(gen_data.Project, SerializerTestCase):
     def test_serialize(self):
         project = obj_build.build_project()
         data = self.do_basic_serialize_test(project,
                                             ag_serializers.ProjectSerializer)
         self.assertIn('closing_time', data)
 
-
-class ClosingTimeShownTestCase(gen_data.Project,
-                               UnitTestBase):
     def test_admin_shown_closing_time(self):
         get_request = request.Request(APIRequestFactory().get('path'))
         get_request.user = self.admin
@@ -34,6 +31,12 @@ class ClosingTimeShownTestCase(gen_data.Project,
             self.visible_public_project, context={'request': get_request})
 
         self.assertIn('closing_time', serializer.data)
+
+        serializer = ag_serializers.ProjectSerializer(
+            self.all_projects, many=True, context={'request': get_request})
+
+        for item in serializer.data:
+            self.assertIn('closing_time', item)
 
     def test_non_admin_not_shown_closing_time(self):
         for user in self.staff, self.enrolled, self.nobody:
@@ -44,15 +47,40 @@ class ClosingTimeShownTestCase(gen_data.Project,
 
             self.assertNotIn('closing_time', serializer.data)
 
-    def test_serialize_many_closing_time_not_included(self):
-        for user in self.admin, self.staff, self.enrolled, self.nobody:
-            get_request = request.Request(APIRequestFactory().get('path'))
-            get_request.user = user
             serializer = ag_serializers.ProjectSerializer(
                 self.all_projects, many=True, context={'request': get_request})
 
             for item in serializer.data:
                 self.assertNotIn('closing_time', item)
+
+    def test_staff_shown_instructor_files(self):
+        get_request = request.Request(APIRequestFactory().get('path'))
+        get_request.user = self.staff
+        serializer = ag_serializers.ProjectSerializer(
+            self.visible_public_project, context={'request': get_request})
+
+        self.assertIn('instructor_files', serializer.data)
+
+        serializer = ag_serializers.ProjectSerializer(
+            self.all_projects, many=True, context={'request': get_request})
+
+        for item in serializer.data:
+            self.assertIn('instructor_files', item)
+
+    def test_non_staff_not_shown_instructor_files(self):
+        for user in self.enrolled, self.nobody:
+            get_request = request.Request(APIRequestFactory().get('path'))
+            get_request.user = user
+            serializer = ag_serializers.ProjectSerializer(
+                self.visible_public_project, context={'request': get_request})
+
+            self.assertNotIn('instructor_files', serializer.data)
+
+            serializer = ag_serializers.ProjectSerializer(
+                self.all_projects, many=True, context={'request': get_request})
+
+            for item in serializer.data:
+                self.assertNotIn('instructor_files', item)
 
 
 class ExpectedStudentFilePatternSerializerTestCase(SerializerTestCase):
