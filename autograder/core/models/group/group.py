@@ -110,6 +110,8 @@ class Group(ag_model_base.AutograderModel):
         """
     )
 
+    created_at = models.DateTimeField(auto_now_add=True)
+
     @property
     def num_submissions(self) -> int:
         return self.submissions.count()
@@ -182,6 +184,8 @@ class Group(ag_model_base.AutograderModel):
 
         'num_submissions',
         'num_submits_towards_limit',
+
+        'created_at',
     )
 
     EDITABLE_FIELDS = ('extended_due_date', 'bonus_submissions_remaining')
