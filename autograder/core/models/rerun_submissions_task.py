@@ -59,33 +59,38 @@ class RerunSubmissionsTask(Task):
                      student test suites should be rerun.""")
 
     num_completed_subtasks = models.IntegerField(default=0)
+    total_num_subtasks = models.IntegerField(default=0)
 
     celery_group_result_id = models.UUIDField(blank=True, null=True, default=None)
 
     @property
     def progress(self) -> int:
-        if self.rerun_all_submissions:
-            num_submissions = Submission.objects.filter(
-                group__project=self.project).count()
-        else:
-            num_submissions = len(self.submission_pks)
-
-        if self.rerun_all_ag_test_suites:
-            num_ag_test_suites = AGTestSuite.objects.filter(project=self.project).count()
-        else:
-            num_ag_test_suites = len(self.ag_test_suite_data)
-
-        if self.rerun_all_student_test_suites:
-            num_student_suites = StudentTestSuite.objects.filter(project=self.project).count()
-        else:
-            num_student_suites = len(self.student_suite_pks)
-
-        num_tasks = num_submissions * (num_ag_test_suites + num_student_suites)
-
-        if num_tasks == 0:
+        if self.total_num_subtasks == 0:
             return 100
 
-        return int(min((self.num_completed_subtasks / num_tasks) * 100, 100))
+        return int(min((self.num_completed_subtasks / self.total_num_subtasks) * 100, 100))
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            if self.rerun_all_submissions:
+                num_submissions = Submission.objects.filter(
+                    group__project=self.project).count()
+            else:
+                num_submissions = len(self.submission_pks)
+
+            if self.rerun_all_ag_test_suites:
+                num_ag_test_suites = AGTestSuite.objects.filter(project=self.project).count()
+            else:
+                num_ag_test_suites = len(self.ag_test_suite_data)
+
+            if self.rerun_all_student_test_suites:
+                num_student_suites = StudentTestSuite.objects.filter(project=self.project).count()
+            else:
+                num_student_suites = len(self.student_suite_pks)
+
+            self.total_num_subtasks = num_submissions * (num_ag_test_suites + num_student_suites)
+
+        return super().save(*args, **kwargs)
 
     def clean(self):
         super().clean()

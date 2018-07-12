@@ -70,6 +70,11 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
 
         self.assertAlmostEqual((completed_count / num_subtasks) * 100, rerun_task.progress)
 
+        # Make sure that the computed grogress doesn't change if we add
+        # submissions (https://github.com/eecs-autograder/autograder-server/issues/274)
+        other_submission = obj_build.make_finished_submission(group=self.submission.group)
+        self.assertAlmostEqual((completed_count / num_subtasks) * 100, rerun_task.progress)
+
     def test_progress_computation_with_specified_pks(self):
         completed_count = 1
         rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(

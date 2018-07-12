@@ -143,7 +143,7 @@ DATABASES = {
         'HOST': os.environ.get('AG_DB_HOST', 'localhost'),
         'PORT': os.environ.get('AG_DB_PORT', '5432'),
         'TEST': {
-            'NAME': 'test_db_{}'.format(uuid.uuid4().hex)
+            'NAME': os.environ.get('AG_TEST_DB_NAME', 'test_postgres')
         }
     },
 }
@@ -154,7 +154,7 @@ CACHES = {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': 'redis://{host}:{port}'.format(
             host=os.environ.get('AG_REDIS_HOST', 'localhost'),
-            port=os.environ.get('AG_REDIS_PORT', '6379')),
+            port=os.environ.get('AG_REDIS_PORT', '6000')),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
