@@ -132,7 +132,7 @@ class Project(AutograderModel):
     groups_combine_daily_submissions = models.BooleanField(
         default=False, blank=True,
         help_text="""If True, group members can "pool" their daily submissions.
-            For example, if submission_limit_per_day is 3, 
+            For example, if submission_limit_per_day is 3,
             a group with 2 members would get 6 submissions per day.""")
 
     allow_submissions_past_limit = models.BooleanField(
