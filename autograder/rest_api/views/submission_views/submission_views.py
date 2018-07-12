@@ -85,10 +85,13 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
 
         # We still track this information for staff submissions even though
         # staff can submit unlimited times with full feedback.
-        is_past_daily_limit = (
-            group.project.submission_limit_per_day is not None
-            and group.num_submits_towards_limit >= group.project.submission_limit_per_day
-        )
+        is_past_daily_limit = False
+        if group.project.submission_limit_per_day is not None:
+            submission_limit = group.project.submission_limit_per_day
+            if group.project.groups_combine_daily_submissions:
+                submission_limit *= len(group.member_names)
+
+            is_past_daily_limit = group.num_submits_towards_limit >= submission_limit
 
         is_bonus_submission = False
         if is_past_daily_limit and group.bonus_submissions_remaining > 0:
