@@ -113,8 +113,7 @@ class CreateSoloGroupView(mixins.CreateModelMixin, AGModelGenericViewSet):
         serializer.is_valid()
         serializer.save()
 
-        return response.Response(serializer.data,
-                                 status=status.HTTP_201_CREATED)
+        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 is_staff_or_member = ag_permissions.is_staff_or_group_member()
@@ -177,6 +176,10 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
             request.data['check_group_size_limits'] = False
         return super().partial_update(request, *args, **kwargs)
 
+    @swagger_auto_schema(
+        api_tags=[APITags.groups, APITags.submissions],
+        responses={'200': ag_serializers.SubmissionSerializer}
+    )
     @decorators.detail_route(
         permission_classes=(group_permissions, _UltimateSubmissionPermissions,))
     def ultimate_submission(self, request, *args, **kwargs):
