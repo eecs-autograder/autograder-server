@@ -163,6 +163,8 @@ class GroupTestCase(_SetUp):
 
             'num_submits_towards_limit',
             'num_submissions',
+
+            'created_at',
         ]
 
         self.assertCountEqual(

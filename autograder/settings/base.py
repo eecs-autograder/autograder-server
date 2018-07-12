@@ -154,7 +154,7 @@ CACHES = {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': 'redis://{host}:{port}'.format(
             host=os.environ.get('AG_REDIS_HOST', 'localhost'),
-            port=os.environ.get('AG_REDIS_PORT', '6000')),
+            port=os.environ.get('AG_REDIS_PORT', '6379')),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
