@@ -12,11 +12,11 @@ from autograder.core import constants
 from autograder.utils.testing import UnitTestBase
 
 
-class _UploadedFilesSetUp(test_data.Client, test_data.Project):
+class _InstructorFilesSetUp(test_data.Client, test_data.Project):
     pass
 
 
-class ListUploadedFilesTestCase(_UploadedFilesSetUp, UnitTestBase):
+class ListInstructorFilesTestCase(_InstructorFilesSetUp, UnitTestBase):
     def test_admin_list_files(self):
         for project in self.all_projects:
             self.do_list_instructor_files_test(self.admin, project)
@@ -61,8 +61,8 @@ class ListUploadedFilesTestCase(_UploadedFilesSetUp, UnitTestBase):
         return serialized_files
 
 
-class CreateUploadedFileTestCase(_UploadedFilesSetUp,
-                                 UnitTestBase):
+class CreateInstructorFileTestCase(_InstructorFilesSetUp,
+                                   UnitTestBase):
     def setUp(self):
         super().setUp()
         self.file_obj = SimpleUploadedFile('file' + str(uuid.uuid4().hex),

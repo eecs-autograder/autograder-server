@@ -66,7 +66,7 @@ class ExpectedStudentFilePatternSerializerTestCase(SerializerTestCase):
             pattern, ag_serializers.ExpectedStudentFileSerializer)
 
 
-class UploadedFileSerializerTestCase(SerializerTestCase):
+class InstructorFileSerializerTestCase(SerializerTestCase):
     def test_serialize(self):
         project = obj_build.build_project()
         uploaded_file = ag_models.InstructorFile.objects.validate_and_create(

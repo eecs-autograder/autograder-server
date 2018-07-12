@@ -10,22 +10,30 @@ class CourseSerializer(AGModelSerializer):
 class ProjectSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.show_closing_time = None
+        self.show_instructor_files = None
         if not self.context:
-            self.show_closing_time = None
             return
 
         request = self.context['request']
         try:
             self.show_closing_time = self.instance.course.is_admin(request.user)
+            self.show_instructor_files = self.instance.course.is_staff(request.user)
         except AttributeError:
-            # self.instance is a QuerySet, don't show closing time
-            # for any of the results.
-            self.show_closing_time = False
+            if self.instance:  # could be empty QuerySet or None
+                self.show_closing_time = self.instance[0].course.is_admin(request.user)
+                self.show_instructor_files = self.instance[0].course.is_staff(request.user)
+            else:
+                self.show_closing_time = False
+                self.show_instructor_files = False
 
     def to_representation(self, obj):
         result = super().to_representation(obj)
         if self.show_closing_time is not None and not self.show_closing_time:
             result.pop('closing_time', None)
+
+        if self.show_instructor_files is not None and not self.show_instructor_files:
+            result.pop('instructor_files', None)
 
         return result
 

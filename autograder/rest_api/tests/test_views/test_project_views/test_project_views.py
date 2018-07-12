@@ -26,11 +26,12 @@ class CourseListProjectsTestCase(AGViewTestBase):
 
     def test_admin_list_projects(self):
         admin = obj_build.make_admin_user(self.course)
-        self.do_valid_list_projects_test(admin, self.all_projects)
+        self.do_valid_list_projects_test(
+            admin, self.all_projects, show_closing_time=True, show_instructor_files=True)
 
     def test_staff_list_projects(self):
         staff = obj_build.make_staff_user(self.course)
-        self.do_valid_list_projects_test(staff, self.all_projects)
+        self.do_valid_list_projects_test(staff, self.all_projects, show_instructor_files=True)
 
     def test_student_list_projects_visible_only(self):
         student = obj_build.make_student_user(self.course)
@@ -44,11 +45,18 @@ class CourseListProjectsTestCase(AGViewTestBase):
         guest = obj_build.make_user()
         self.do_permission_denied_get_test(self.client, guest, self.url)
 
-    def do_valid_list_projects_test(self, user, expected_projects):
+    def do_valid_list_projects_test(self, user, expected_projects,
+                                    *, show_closing_time: bool=False,
+                                    show_instructor_files: bool=False):
         expected_data = []
         for project in expected_projects:
             proj_dict = project.to_dict()
-            proj_dict.pop('closing_time', None)
+            if not show_closing_time:
+                proj_dict.pop('closing_time', None)
+
+            if not show_instructor_files:
+                proj_dict.pop('instructor_files', None)
+
             expected_data.append(proj_dict)
 
         self.client.force_authenticate(user)
@@ -119,15 +127,17 @@ class RetrieveProjectTestCase(AGViewTestBase):
         self.assertFalse(self.project.visible_to_students)
         handgrader = obj_build.make_handgrader_user(self.course)
         # closing_time is only shown to admins.
-        self.do_get_object_test(self.client, handgrader, self.url,
-                                exclude_dict(self.project.to_dict(), ['closing_time']))
+        self.do_get_object_test(
+            self.client, handgrader, self.url,
+            exclude_dict(self.project.to_dict(), ['closing_time', 'instructor_files']))
 
     def test_student_get_visible_project(self):
         self.project.validate_and_update(visible_to_students=True)
         student = obj_build.make_student_user(self.course)
         # closing_time is only shown to admins.
-        self.do_get_object_test(self.client, student, self.url,
-                                exclude_dict(self.project.to_dict(), ['closing_time']))
+        self.do_get_object_test(
+            self.client, student, self.url,
+            exclude_dict(self.project.to_dict(), ['closing_time', 'instructor_files']))
 
     def test_student_get_hidden_project_permission_denied(self):
         student = obj_build.make_student_user(self.course)
@@ -136,8 +146,9 @@ class RetrieveProjectTestCase(AGViewTestBase):
     def test_guest_get_project(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
         guest = obj_build.make_user()
-        self.do_get_object_test(self.client, guest, self.url,
-                                exclude_dict(self.project.to_dict(), ['closing_time']))
+        self.do_get_object_test(
+            self.client, guest, self.url,
+            exclude_dict(self.project.to_dict(), ['closing_time', 'instructor_files']))
 
     def test_guest_get_visible_non_guest_allowed_project_permission_denied(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
