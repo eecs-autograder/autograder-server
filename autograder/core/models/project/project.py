@@ -38,7 +38,7 @@ class Project(AutograderModel):
 
     Related object fields:
         instructor_files -- Resource files to be used in project test
-            cases.
+            cases. In the API, this field is hidden from non-staff.
 
         expected_student_files -- Patterns that
             student-submitted files can or should match.
@@ -75,7 +75,8 @@ class Project(AutograderModel):
         help_text="""The date and time that this project should stop
             accepting submissions.
             A value of None indicates that this project should
-            stay open.""")
+            stay open.
+            In the API, this field is hidden from non-admins.""")
 
     soft_closing_time = models.DateTimeField(
         default=None, null=True, blank=True,

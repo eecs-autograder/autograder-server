@@ -193,7 +193,8 @@ def _build_schema(api_class: APIType):
         field = _get_field(field_name, api_class)
         properties[field_name] = _build_api_parameter(field, field_name)
 
-    return Schema(title=title, type='object', properties=properties)
+    return Schema(title=title, type='object', properties=properties,
+                  description=api_class.__doc__)
 
 
 def _get_field(field_name: str, api_class: APIType):
