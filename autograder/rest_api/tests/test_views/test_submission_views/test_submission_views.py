@@ -17,7 +17,6 @@ import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder import utils
 from autograder.core.models import Submission
 from autograder.utils.testing import UnitTestBase
 
@@ -275,12 +274,14 @@ class CreateSubmissionTestCase(test_data.Client,
             submission_limit_per_day=limit,
             allow_submissions_past_limit=True)
         for group in self.all_groups(self.visible_public_project):
-            for i in range(limit + 2):
-                self.do_normal_submit_test(group, group.members.last())
-            num_not_past_limit = utils.count_if(
-                group.submissions.all(),
-                lambda sub: not sub.is_past_daily_limit)
-            self.assertEqual(limit, num_not_past_limit)
+            for i in range(limit):
+                submission = self.do_normal_submit_test(group, group.members.last())
+                self.assertFalse(submission.is_past_daily_limit)
+
+            for i in range(2):
+                past_limit = self.do_normal_submit_test(group, group.members.last())
+                self.assertTrue(past_limit)
+
             for sub in group.submissions.all():
                 self.assertTrue(sub.count_towards_daily_limit)
 
@@ -330,6 +331,54 @@ class CreateSubmissionTestCase(test_data.Client,
 
             self.assertEqual(num_submissions, group.submissions.count())
 
+    def test_groups_combine_submissions(self):
+        self.visible_public_project.validate_and_update(groups_combine_daily_submissions=True,
+                                                        submission_limit_per_day=1,
+                                                        allow_submissions_past_limit=False)
+
+        alone = obj_build.make_group(num_members=1, project=self.visible_public_project)
+        partner = obj_build.make_group(num_members=2, project=self.visible_public_project)
+        trio = obj_build.make_group(num_members=3, project=self.visible_public_project)
+
+        self.do_normal_submit_test(alone, alone.members.first())
+        self.do_bad_request_submit_test(alone, alone.members.first())
+
+        for i in range(2):
+            self.do_normal_submit_test(partner, partner.members.first())
+        self.do_bad_request_submit_test(partner, partner.members.first())
+
+        for i in range(3):
+            self.do_normal_submit_test(trio, trio.members.first())
+        self.do_bad_request_submit_test(trio, trio.members.first())
+
+    def test_groups_combine_submissions_allow_past_limit(self):
+        self.visible_public_project.validate_and_update(groups_combine_daily_submissions=True,
+                                                        submission_limit_per_day=1,
+                                                        allow_submissions_past_limit=True)
+
+        alone = obj_build.make_group(num_members=1, project=self.visible_public_project)
+        partner = obj_build.make_group(num_members=2, project=self.visible_public_project)
+        trio = obj_build.make_group(num_members=3, project=self.visible_public_project)
+
+        submission = self.do_normal_submit_test(alone, alone.members.first())
+        self.assertFalse(submission.is_past_daily_limit)
+        past_limit = self.do_normal_submit_test(alone, alone.members.first())
+        self.assertTrue(past_limit.is_past_daily_limit)
+
+        for i in range(2):
+            submission = self.do_normal_submit_test(partner, partner.members.first())
+            self.assertFalse(submission.is_past_daily_limit)
+
+        past_limit = self.do_normal_submit_test(partner, partner.members.first())
+        self.assertTrue(past_limit.is_past_daily_limit)
+
+        for i in range(3):
+            submission = self.do_normal_submit_test(trio, trio.members.first())
+            self.assertFalse(submission.is_past_daily_limit)
+
+        past_limit = self.do_normal_submit_test(trio, trio.members.first())
+        self.assertTrue(past_limit.is_past_daily_limit)
+
     def test_invalid_fields_fields_other_than_submitted_files_in_request(self):
         group = self.admin_group(self.project)
         response = self.do_invalid_create_object_test(
@@ -344,7 +393,7 @@ class CreateSubmissionTestCase(test_data.Client,
         self.assertIn('count_towards_daily_limit', response.data['invalid_fields'])
         self.assertIn('count_towards_total_limit', response.data['invalid_fields'])
 
-    def do_normal_submit_test(self, group, user):
+    def do_normal_submit_test(self, group, user) -> ag_models.Submission:
         self.add_expected_patterns(group.project)
         response = self.do_create_object_test(
             ag_models.Submission.objects, self.client, user,
@@ -352,12 +401,12 @@ class CreateSubmissionTestCase(test_data.Client,
             {'submitted_files': self.files_to_submit},
             format='multipart', check_data=False)
 
-        loaded = ag_models.Submission.objects.get(pk=response.data['pk'])
-        self.assertEqual(loaded.to_dict(), response.data)
+        submission = ag_models.Submission.objects.get(pk=response.data['pk'])
+        self.assertEqual(submission.to_dict(), response.data)
 
         # We don't know the exact timestamp assigned by the server, so
         # make sure it's reasonably close to what it should be.
-        timestamp_difference = loaded.timestamp - timezone.now()
+        timestamp_difference = submission.timestamp - timezone.now()
         self.assertLess(timestamp_difference, timezone.timedelta(seconds=2))
 
         self.assertEqual(group.pk, response.data['group'])
@@ -369,8 +418,10 @@ class CreateSubmissionTestCase(test_data.Client,
         self.assertCountEqual([], response.data['discarded_files'])
         self.assertEqual(user.username, response.data['submitter'])
 
-        loaded.status = ag_models.Submission.GradingStatus.finished_grading
-        loaded.save()
+        submission.status = ag_models.Submission.GradingStatus.finished_grading
+        submission.save()
+
+        return submission
 
     def do_permission_denied_submit_test(self, group, user):
         self.add_expected_patterns(group.project)

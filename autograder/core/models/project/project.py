@@ -129,6 +129,12 @@ class Project(AutograderModel):
             day before either reducing feedback or preventing further
             submissions. A value of None indicates no limit.""")
 
+    groups_combine_daily_submissions = models.BooleanField(
+        default=False, blank=True,
+        help_text="""If True, group members can "pool" their daily submissions.
+            For example, if submission_limit_per_day is 3, 
+            a group with 2 members would get 6 submissions per day.""")
+
     allow_submissions_past_limit = models.BooleanField(
         default=True, blank=True,
         help_text="""Whether to allow additional submissions after a
@@ -157,8 +163,7 @@ class Project(AutograderModel):
     allow_late_days = models.BooleanField(
         default=False,
         help_text="""Whether to allow the use of late days for submitting
-            past the deadline."""
-    )
+            past the deadline.""")
 
     ultimate_submission_policy = ag_fields.EnumField(
         UltimateSubmissionPolicy,
@@ -229,6 +234,7 @@ class Project(AutograderModel):
 
         'submission_limit_per_day',
         'allow_submissions_past_limit',
+        'groups_combine_daily_submissions',
         'submission_limit_reset_time',
         'submission_limit_reset_timezone',
 
@@ -263,6 +269,7 @@ class Project(AutograderModel):
 
         'submission_limit_per_day',
         'allow_submissions_past_limit',
+        'groups_combine_daily_submissions',
         'submission_limit_reset_time',
         'submission_limit_reset_timezone',
 

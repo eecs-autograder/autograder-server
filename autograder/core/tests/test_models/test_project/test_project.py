@@ -39,6 +39,7 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual(new_project.max_group_size, 1)
 
         self.assertIsNone(new_project.submission_limit_per_day)
+        self.assertFalse(new_project.groups_combine_daily_submissions)
         self.assertEqual(True, new_project.allow_submissions_past_limit)
         self.assertEqual(datetime.time(),
                          new_project.submission_limit_reset_time)
@@ -77,6 +78,7 @@ class ProjectMiscTestCase(UnitTestBase):
             'max_group_size': max_group_size,
 
             'submission_limit_per_day': sub_limit,
+            'groups_combine_daily_submissions': True,
             'allow_submissions_past_limit': False,
             'submission_limit_reset_time': reset_time,
             'num_bonus_submissions': 3,
@@ -129,6 +131,7 @@ class ProjectMiscTestCase(UnitTestBase):
 
             'submission_limit_per_day',
             'allow_submissions_past_limit',
+            'groups_combine_daily_submissions',
             'submission_limit_reset_time',
             'submission_limit_reset_timezone',
             'num_bonus_submissions',
