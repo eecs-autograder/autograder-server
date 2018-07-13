@@ -13,6 +13,16 @@ from .student_test_suite import StudentTestSuite
 @transaction.atomic()
 def copy_project(project: Project, target_course: Course,
                  new_project_name: str=None):
+    """
+    Makes a copy of the given course along with all instructor file,
+     expected student file, test case, and handgrading data.
+    Note that groups, submissions, and results (test case, handgrading,
+    etc.) are NOT copied.
+    :param project: The project to copy.
+    :param target_course: The course the new project should belong to.
+    :param new_project_name: The name of the new project.
+    :return: The new project.
+    """
     new_project = Project.objects.get(pk=project.pk)
     new_project.pk = None
     new_project.course = target_course
@@ -131,6 +141,17 @@ def _copy_student_suites(project, new_project):
 @transaction.atomic()
 def copy_course(course: Course, new_course_name: str,
                 new_course_semester: Semester, new_course_year: int):
+    """
+    Makes a copy of the given course and all its projects. The projects
+    are copied using copy_project.
+    The admin list is copied to the new project, but other permissions
+    (staff, students, etc.) are not.
+    :param course: The course to copy.
+    :param new_course_name: The name for the new course.
+    :param new_course_semester: The semester for the new course.
+    :param new_course_year: The year for the new course.
+    :return: The new course.
+    """
     new_course = Course.objects.get(pk=course.pk)
     new_course.pk = None
     new_course.name = new_course_name
@@ -139,6 +160,8 @@ def copy_course(course: Course, new_course_name: str,
 
     new_course.full_clean()
     new_course.save()
+
+    new_course.admins.add(*course.admins.all())
 
     for project in course.projects.all():
         copy_project(project, new_course)

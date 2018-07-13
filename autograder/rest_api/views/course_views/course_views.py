@@ -1,23 +1,28 @@
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
+from drf_composable_permissions.p import P
 from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, permissions, decorators, response, status
+from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
+import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet, \
-    AlwaysIsAuthenticatedMixin, require_query_params
+from autograder.rest_api.views.ag_model_views import (
+    AGModelGenericViewSet, AlwaysIsAuthenticatedMixin, require_body_params)
 from autograder.rest_api.views.schema_generation import APITags, AGModelViewAutoSchema
 
 
 class CoursePermissions(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if view.action in ['list', 'create']:
+    def has_permission(self, request: Request, view):
+        if view.action == 'list':
             return request.user.is_superuser
+        if view.action == 'create':
+            return request.user.is_superuser or request.user.has_perm('core.create_course')
 
         return True
 
@@ -64,6 +69,55 @@ class CourseViewSet(mixins.ListModelMixin,
             'is_student': course.is_student(request.user),
             'is_handgrader': course.is_handgrader(request.user)
         })
+
+
+class CanCreateCourses(DjangoModelPermissions):
+    perms_map = {
+        'GET': [],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['core.create_course'],
+        'PUT': [],
+        'PATCH': [],
+        'DELETE': [],
+    }
+
+
+class CopyCourseView(AGModelGenericViewSet):
+    swagger_schema = AGModelViewAutoSchema
+    api_tags = [APITags.courses]
+
+    serializer_class = ag_serializers.CourseSerializer
+
+    permission_classes = (
+        (P(ag_permissions.IsSuperuser) | (P(ag_permissions.is_admin()) & P(CanCreateCourses))),
+    )
+
+    @swagger_auto_schema(
+        operation_description="""Makes a copy of the given course and all its projects. 
+            The projects and all of their  instructor file,
+            expected student file, test case, and handgrading data.
+            Note that groups, submissions, and results (test case, handgrading,
+            etc.) are NOT copied.
+            The admin list is copied to the new project, but other permissions
+            (staff, students, etc.) are not.
+        """,
+        request_body_parameters=[
+            Parameter('new_name', in_='body', type='string', required=True),
+            Parameter(
+                'new_semester', in_='body', type='string', required=True,
+                description='Must be one of: '
+                            + f'{", ".join((semester.value for semester in ag_models.Semester))}'),
+            Parameter('new_year', in_='body', type='integer', required=True)
+        ],
+    )
+    @method_decorator(require_body_params('new_name', 'new_semester', 'new_year'))
+    def copy_course(self, request: Request, *args, **kwargs):
+        pass
+
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'post': 'copy_course'}, **initkwargs)
 
 
 class CourseByNameSemesterYearView(AlwaysIsAuthenticatedMixin, APIView):

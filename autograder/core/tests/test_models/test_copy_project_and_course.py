@@ -180,12 +180,26 @@ class CopyCourseTestCase(UnitTestBase):
         course = proj1.course
         proj2 = obj_build.make_project(course)
 
+        admins = obj_build.make_admin_users(course, 4)
+        staff = obj_build.make_staff_users(course, 3)
+        students = obj_build.make_student_users(course, 5)
+        handgraders = obj_build.make_handgrader_users(course, 2)
+
+        self.assertNotEqual(0, course.staff.count())
+        self.assertNotEqual(0, course.students.count())
+        self.assertNotEqual(0, course.handgraders.count())
+
         name = 'stove'
         new_course = copy_course(course, name, Semester.summer, 2019)
 
         self.assertEqual(name, new_course.name)
         self.assertEqual(Semester.summer, new_course.semester)
         self.assertEqual(2019, new_course.year)
+
+        self.assertCountEqual(admins, new_course.admins.all())
+        self.assertSequenceEqual([], new_course.staff.all())
+        self.assertSequenceEqual([], new_course.students.all())
+        self.assertSequenceEqual([], new_course.handgraders.all())
 
         old_project_pks = {proj.pk for proj in course.projects.all()}
         new_project_pks = {proj.pk for proj in new_course.projects.all()}

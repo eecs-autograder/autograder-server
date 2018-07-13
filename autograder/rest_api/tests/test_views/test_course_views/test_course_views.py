@@ -1,3 +1,6 @@
+from unittest import mock
+
+from django.contrib.auth.models import User, Permission
 from django.urls import reverse
 from django.core import exceptions
 
@@ -56,8 +59,19 @@ class CreateCourseTestCase(UnitTestBase):
         loaded_course = ag_models.Course.objects.get(name=name)
         self.assertEqual(loaded_course.to_dict(), response.data)
 
+    def test_user_with_create_course_permission_create_course(self):
+        user = obj_build.make_user()
+        user.user_permissions.add(Permission.objects.get(codename='create_course'))
+        self.client.force_authenticate(user)
+
+        response = self.client.post(reverse('course-list'), {'name': 'waluigi'})
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        loaded_course = ag_models.Course.objects.get(name='waluigi')
+        self.assertEqual(loaded_course.to_dict(), response.data)
+
     def test_other_create_course_permission_denied(self):
-        [guest] = obj_build.make_users(1)
+        guest = obj_build.make_user()
 
         name = 'spam'
         self.client.force_authenticate(guest)
@@ -65,6 +79,155 @@ class CreateCourseTestCase(UnitTestBase):
 
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertEqual(0, ag_models.Course.objects.count())
+
+
+class CopyCourseViewTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.client = APIClient()
+        self.course = obj_build.make_course()
+
+    def test_superuser_copy_course_new_name_semester_year(self):
+        superuser = obj_build.make_user(superuser=True)
+
+        new_name = 'steve'
+        new_semester = ag_models.Semester.summer
+        new_year = 2019
+
+        self.client.force_authenticate(superuser)
+        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+                                    {'new_name': new_name,
+                                     'new_semester': new_semester.value,
+                                     'new_year': new_year})
+
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        new_course = ag_models.Course.objects.get(pk=response.data['pk'])
+        self.assertEqual(new_name, new_course.name)
+        self.assertEqual(new_semester, new_course.semester)
+        self.assertEqual(new_year, new_course.year)
+
+        self.assertEqual(new_course.to_dict(), response.data)
+
+    def test_superuser_view_calls_copy_course(self):
+        superuser = obj_build.make_user(superuser=True)
+
+        mock_copy_course = mock.Mock(return_value={})
+        with mock.patch('autograder.rest_api.views.course_views.course_views.copy_project',
+                        new=mock_copy_course):
+            self.client.force_authenticate(superuser)
+            response = self.client.post(
+                reverse('copy-course', kwargs={'course_pk': self.course}),
+                {'new_name': 'Clone',
+                 'new_semester': ag_models.Semester.winter,
+                 'new_year': 2020}
+            )
+
+            mock_copy_course.assert_called_once_with(
+                course=self.course, name='Clone', semester=ag_models.Semester.winter, year=2020)
+
+    def test_user_can_copy_course_and_is_admin_copy_course_new_name_semester_year(self):
+        user = obj_build.make_admin_user(self.course)
+        user.user_permissions.add(Permission.objects.get(codename='create_course'))
+
+        new_name = 'stave'
+        new_semester = ag_models.Semester.fall
+        new_year = 2017
+
+        self.client.force_authenticate(user)
+        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+                                    {'new_name': new_name,
+                                     'new_semester': new_semester.value,
+                                     'new_year': new_year})
+
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        new_course = ag_models.Course.objects.get(pk=response.data['pk'])
+        self.assertEqual(new_name, new_course.name)
+        self.assertEqual(new_semester, new_course.semester)
+        self.assertEqual(new_year, new_course.year)
+
+        self.assertEqual(new_course.to_dict(), response.data)
+
+    def test_user_can_copy_course_and_is_admin_view_calls_copy_course(self):
+        user = obj_build.make_admin_user(self.course)
+        user.user_permissions.add(Permission.objects.get(codename='create_course'))
+
+        mock_copy_course = mock.Mock(return_value={})
+        with mock.patch('autograder.rest_api.views.course_views.course_views.copy_project',
+                        new=mock_copy_course):
+            self.client.force_authenticate(user)
+            response = self.client.post(
+                reverse('copy-course', kwargs={'course_pk': self.course}),
+                {'new_name': 'Cloney',
+                 'new_semester': ag_models.Semester.spring,
+                 'new_year': 2020}
+            )
+
+            mock_copy_course.assert_called_once_with(
+                course=self.course, name='Cloney', semester=ag_models.Semester.spring, year=2020)
+
+    def test_user_can_copy_course_but_not_admin_permission_denied(self):
+        user = obj_build.make_user()
+        user.user_permissions.add(Permission.objects.get(codename='create_course'))
+
+        self.client.force_authenticate(user)
+        response = self.client.post(
+            reverse('copy-course', kwargs={'course_pk': self.course}),
+            {'new_name': 'New',
+             'new_semester': ag_models.Semester.summer,
+             'new_year': 2021}
+        )
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_user_cannot_copy_courses_permission_denied(self):
+        user = obj_build.make_admin_user(self.course)
+
+        self.client.force_authenticate(user)
+        response = self.client.post(
+            reverse('copy-course', kwargs={'course_pk': self.course}),
+            {'new_name': 'New',
+             'new_semester': ag_models.Semester.summer,
+             'new_year': 2021}
+        )
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_error_missing_body_params(self):
+        superuser = obj_build.make_user(superuser=True)
+
+        new_name = 'steve'
+        new_semester = ag_models.Semester.summer
+        new_year = 2019
+
+        self.client.force_authenticate(superuser)
+        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+                                    {'new_name': new_name,
+                                     'new_semester': new_semester.value})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+                                    {'new_name': new_name,
+                                     'new_year': new_year})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+                                    {'new_semester': new_semester.value,
+                                     'new_year': new_year})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_error_non_unique_course(self):
+        superuser = obj_build.make_user(superuser=True)
+        self.client.force_authenticate(superuser)
+
+        response = self.client.post(
+            reverse('copy-course', kwargs={'course_pk': self.course}),
+            {'new_name': self.course.name,
+             'new_semester': self.course.semester,
+             'new_year': self.course.year}
+        )
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
 
 class RetrieveCourseTestCase(UnitTestBase):

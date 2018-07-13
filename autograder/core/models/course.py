@@ -43,6 +43,10 @@ class Course(AutograderModel):
             'year'
         )
 
+        permissions = (
+            ('create_course', 'Can create new courses and clone courses they are an admin for.'),
+        )
+
     name = ag_fields.ShortStringField(
         validators=[validators.MinLengthValidator(1)],
         help_text="The name of this course. Must be unique, non-empty and non-null.")
