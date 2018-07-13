@@ -130,6 +130,7 @@ urlpatterns = [
     path('course/<str:name>/<str:semester>/<int:year>/',
          views.CourseByNameSemesterYearView.as_view(),
          name='course-by-fields'),
+    path('courses/<int:course_pk>/copy/', views.CopyCourseView.as_view(), name='copy-course'),
     path('courses/<int:pk>/admins/', views.CourseAdminViewSet.as_view(), name='course-admins'),
     path('courses/<int:pk>/staff/', views.CourseStaffViewSet.as_view(), name='course-staff'),
     path('courses/<int:pk>/students/', views.CourseStudentsViewSet.as_view(),
