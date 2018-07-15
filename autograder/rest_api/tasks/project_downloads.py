@@ -15,7 +15,7 @@ from autograder import utils
 from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
 from autograder.rest_api.views.submission_views.all_ultimate_submission_results_view import (
     serialize_ultimate_submission_results)
-
+from itertools import islice
 
 @shared_task(queue='project_downloads', acks_late=True)
 def all_submission_files_task(project_pk, task_pk, include_staff, *args, **kwargs):
@@ -239,13 +239,23 @@ def _make_ultimate_submission_scores_csv(task: ag_models.DownloadTask,
                                          submission_fdbks: Iterator[SubmissionResultFeedback],
                                          num_submissions: int, dest_filename: str):
     print(submission_fdbks)
-    results = serialize_ultimate_submission_results(submission_fdbks, full_results=False)
+
+    project_has_handgrading = False
+    if hasattr(task.project, 'handgrading_rubric'):
+        project_has_handgrading = True
+
+    results = serialize_ultimate_submission_results(submission_fdbks, full_results=False,
+                                                    include_handgrading=project_has_handgrading)
 
     with open(dest_filename, 'w', newline='') as csv_file:
         headers = [
             'Username', 'Group Members', 'Timestamp', 'Extension',
             'Total Points', 'Total Points Possible'
         ]
+
+        if project_has_handgrading:
+            headers += ['Handgrading Total Points', 'Handgrading Total Points Possible']
+
         writer = csv.DictWriter(csv_file, headers)
 
         writer.writeheader()
@@ -263,6 +273,12 @@ def _make_ultimate_submission_scores_csv(task: ag_models.DownloadTask,
                 'Total Points Possible': (
                     result['ultimate_submission']['results']['total_points_possible']),
             }
+
+            if project_has_handgrading:
+                row['Handgrading Total Points'] = (
+                    result['ultimate_submission']['results']['handgrading_total_points'])
+                row['Handgrading Total Points Possible'] = (
+                    result['ultimate_submission']['results']['handgrading_total_points_possible'])
 
             writer.writerow(row)
 

@@ -8,7 +8,8 @@ from autograder.core.submission_feedback import SubmissionResultFeedback, AGTest
 
 
 def serialize_ultimate_submission_results(ultimate_submissions: Iterable[SubmissionResultFeedback],
-                                          *, full_results: bool) -> List[dict]:
+                                          *, full_results: bool,
+                                          include_handgrading: bool = False) -> List[dict]:
     """
     Returns serialized ultimate submission data for each user in the
     groups linked to ultimate_submissions.
@@ -30,7 +31,11 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
 
                     // Only present if full_points is True
                     "ag_test_suite_results": [<ag test suite result details>],
-                    "student_test_suite_results": [<student test suite result details>]
+                    "student_test_suite_results": [<student test suite result details>],
+
+                    // Only present if Handgrading is enabled in project
+                    "handgrading_points": <int>,
+                    "handgrading_points_possible": <int>
                 },
                 <submission data>
             }
@@ -45,7 +50,8 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
         if group.extended_due_date is not None and group.extended_due_date > timezone.now():
             submission_data = None
         else:
-            submission_data = _get_submission_data_with_results(submission_fdbk, full_results)
+            submission_data = _get_submission_data_with_results(submission_fdbk, full_results,
+                                                                include_handgrading)
 
         group_data = group.to_dict()
 
@@ -63,7 +69,8 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
                     SubmissionResultFeedback(
                         user_ultimate_submission, ag_models.FeedbackCategory.max,
                         submission_fdbk.ag_test_preloader),
-                    full_results
+                    full_results,
+                    include_handgrading
                 )
                 user_data['ultimate_submission'] = user_submission_data
             else:
@@ -75,7 +82,8 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
 
 
 def _get_submission_data_with_results(submission_fdbk: SubmissionResultFeedback,
-                                      full_results: bool):
+                                      full_results: bool,
+                                      include_handgrading: bool = False):
     submission_data = submission_fdbk.submission.to_dict()
 
     if not full_results:
@@ -85,6 +93,21 @@ def _get_submission_data_with_results(submission_fdbk: SubmissionResultFeedback,
         }
     else:
         submission_results = submission_fdbk.to_dict()
+
+    if include_handgrading:
+        handgrading_result_available = (
+            hasattr(submission_fdbk.submission, 'handgrading_result') and (
+                submission_fdbk.submission.handgrading_result.finished_grading)
+        )
+
+        if handgrading_result_available:
+            handgrading_result = submission_fdbk.submission.handgrading_result
+            submission_results['handgrading_total_points'] = handgrading_result.total_points
+            submission_results['handgrading_total_points_possible'] = (
+                handgrading_result.total_points_possible)
+        else:
+            submission_results['handgrading_total_points'] = ''
+            submission_results['handgrading_total_points_possible'] = ''
 
     submission_data['results'] = submission_results
 
