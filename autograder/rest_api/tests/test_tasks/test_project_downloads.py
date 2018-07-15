@@ -15,6 +15,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
+import autograder.handgrading.models as hg_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.submission_feedback import (
     update_denormalized_ag_test_results, SubmissionResultFeedback, AGTestPreLoader)
@@ -448,6 +449,169 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
 
         url = reverse('project-ultimate-submission-scores', kwargs={'pk': self.project.pk})
         self.do_ultimate_submission_scores_csv_test(self.url, [])
+
+    def test_download_all_ultimate_submission_scores_with_handgrading(self):
+        handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project
+        )  # type: hg_models.HandgradingRubric
+
+        criterion = hg_models.Criterion.objects.validate_and_create(
+            points=2, handgrading_rubric=handgrading_rubric)
+
+        handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=self.student_submission,
+            group=self.student_group,
+            handgrading_rubric=handgrading_rubric,
+            finished_grading=True
+        )  # type: hg_models.HandgradingResult
+
+        hg_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=criterion,
+            handgrading_result=handgrading_result)
+
+        expected = [
+            OrderedDict({
+                'Username': self.student_group.member_names[0],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                'Handgrading Total Points': str(self.student_submission.handgrading_result.total_points),
+                'Handgrading Total Points Possible': (
+                    str(self.student_submission.handgrading_result.total_points_possible))
+            }),
+            OrderedDict({
+                'Username': self.student_group.member_names[1],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                'Handgrading Total Points': str(self.student_submission.handgrading_result.total_points),
+                'Handgrading Total Points Possible': (
+                    str(self.student_submission.handgrading_result.total_points_possible))
+            })
+        ]
+
+        self.do_ultimate_submission_scores_csv_test(self.url, expected)
+
+    def test_download_all_ultimate_submission_scores_student_without_handgrading_result(self):
+        handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project
+        )  # type: hg_models.HandgradingRubric
+
+        criterion = hg_models.Criterion.objects.validate_and_create(
+            points=2, handgrading_rubric=handgrading_rubric)
+
+        handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=self.staff_submission,
+            group=self.staff_group,
+            handgrading_rubric=handgrading_rubric,
+            finished_grading=True
+        )  # type: hg_models.HandgradingResult
+
+        hg_models.CriterionResult.objects.validate_and_create(
+            selected=False,
+            criterion=criterion,
+            handgrading_result=handgrading_result)
+
+        # Since student_group has no handgrading result, handgrading columns should be empty
+        expected = [
+            OrderedDict({
+                'Username': self.student_group.member_names[0],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                'Handgrading Total Points': '',
+                'Handgrading Total Points Possible': ''
+            }),
+            OrderedDict({
+                'Username': self.student_group.member_names[1],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                'Handgrading Total Points': '',
+                'Handgrading Total Points Possible': ''
+            })
+        ]
+
+        # Since staff_group has handgrading result, so handgrading columns are filled
+        staff_group_row = OrderedDict({
+            'Username': self.staff_group.member_names[0],
+            'Group Members': f'{self.staff_group.member_names[0]}',
+            'Timestamp': str(self.staff_submission.timestamp),
+            'Extension': '',
+            'Total Points': str(self.staff_result_fdbk.total_points),
+            'Total Points Possible': str(self.staff_result_fdbk.total_points_possible),
+            'Handgrading Total Points': (
+                str(self.staff_submission.handgrading_result.total_points)),
+            'Handgrading Total Points Possible': (
+                str(self.staff_submission.handgrading_result.total_points_possible))
+        })
+
+        if self.staff_group == self.project.groups.first():
+            expected.insert(0, staff_group_row)
+        else:
+            expected.append(staff_group_row)
+
+        self.do_ultimate_submission_scores_csv_test(self.url + '?include_staff=true', expected)
+
+    def test_download_all_ultimate_submission_scores_handgrading_in_progress_not_included(self):
+        handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project
+        )  # type: hg_models.HandgradingRubric
+
+        criterion = hg_models.Criterion.objects.validate_and_create(
+            points=2, handgrading_rubric=handgrading_rubric)
+
+        handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=self.student_submission,
+            group=self.student_group,
+            handgrading_rubric=handgrading_rubric,
+            finished_grading=False
+        )  # type: hg_models.HandgradingResult
+
+        hg_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=criterion,
+            handgrading_result=handgrading_result)
+
+        expected = [
+            OrderedDict({
+                'Username': self.student_group.member_names[0],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                'Handgrading Total Points': '',
+                'Handgrading Total Points Possible': ''
+            }),
+            OrderedDict({
+                'Username': self.student_group.member_names[1],
+                'Group Members': (
+                    f'{self.student_group.member_names[0]},{self.student_group.member_names[1]}'),
+                'Timestamp': str(self.student_submission.timestamp),
+                'Extension': '',
+                'Total Points': str(self.student_result_fdbk.total_points),
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                'Handgrading Total Points': '',
+                'Handgrading Total Points Possible': ''
+            })
+        ]
+
+        self.do_ultimate_submission_scores_csv_test(self.url, expected)
 
     def do_ultimate_submission_scores_csv_test(self, url, expected_rows):
         self.client.force_authenticate(self.admin)
