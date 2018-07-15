@@ -33,9 +33,9 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
                     "ag_test_suite_results": [<ag test suite result details>],
                     "student_test_suite_results": [<student test suite result details>],
 
-                    // Only present if Handgrading is enabled in project
-                    "handgrading_points": <int>,
-                    "handgrading_points_possible": <int>
+                    // Only present if include_handgrading is True
+                    "handgrading_total_points": <int>,
+                    "handgrading_total_points_possible": <int>
                 },
                 <submission data>
             }
