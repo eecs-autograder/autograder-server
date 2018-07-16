@@ -25,7 +25,7 @@ install:
     - pip install -r requirements-dev.txt
 
 before_script:
-    - psql -U postgres -h localhost -c "create database postgres"
+#    - psql -U postgres -h localhost -c "create database postgres"
     - echo $AG_DB_PASSWORD
 
 script:
