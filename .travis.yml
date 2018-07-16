@@ -25,9 +25,8 @@ install:
     - pip install -r requirements-dev.txt
 
 before_script:
-#    - psql -U postgres -h localhost -c "create database postgres"
     - echo $AG_DB_PASSWORD
 
 script:
     - python3 manage.py makemigrations --check
-    - pycodestyle autograder && pydocstyle augograder_sandbox
+    - pycodestyle autograder && pydocstyle augograder_sandbox && python3 manage.py test autograder.core.tests.test_course
