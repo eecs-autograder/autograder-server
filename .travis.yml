@@ -1,0 +1,33 @@
+sudo: required
+
+services:
+    - docker
+    - redis-server
+    - postgresql
+
+language: python
+python:
+    - "3.5"
+
+addons:
+    postgresql: "9.5"
+    apt:
+        packages:
+        - postgresql-9.5
+        - postgresql-client-9.5
+        - postgresql-contrib-9.5
+        - postgresql-server-dev-9.5
+env:
+    AG_DB_PASSWORD: ""
+
+install:
+    - pip install -r requirements.txt
+    - pip install -r requirements-dev.txt
+
+before_script:
+    - psql -U postgres -h localhost -c "create database postgres"
+    - echo $AG_DB_PASSWORD
+
+script:
+    - python3 manage.py makemigrations --check
+    - pycodestyle autograder && pydocstyle augograder_sandbox
