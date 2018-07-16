@@ -28,7 +28,7 @@ before_script:
     - echo $AG_DB_PASSWORD
 
 script:
-    python3 manage.py makemigrations --check &&
     pycodestyle autograder &&
     pydocstyle augograder &&
-    python3 manage.py test autograder.core.tests.test_models.test_course
+    python3 manage.py makemigrations --check &&
+    python3 manage.py test autograder
