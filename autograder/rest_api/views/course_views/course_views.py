@@ -1,16 +1,18 @@
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
 from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, permissions, decorators, response, status
-from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.permissions import DjangoModelPermissions, BasePermission
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core.models.copy_project_and_course import copy_course
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, AlwaysIsAuthenticatedMixin, require_body_params)
@@ -71,21 +73,20 @@ class CourseViewSet(mixins.ListModelMixin,
         })
 
 
-class CanCreateCourses(DjangoModelPermissions):
-    perms_map = {
-        'GET': [],
-        'OPTIONS': [],
-        'HEAD': [],
-        'POST': ['core.create_course'],
-        'PUT': [],
-        'PATCH': [],
-        'DELETE': [],
-    }
+class CanCreateCourses(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.has_perm('core.create_course')
+
+    def has_object_permission(self, request, view, obj):
+        return self.has_permission(request, view)
 
 
 class CopyCourseView(AGModelGenericViewSet):
     swagger_schema = AGModelViewAutoSchema
     api_tags = [APITags.courses]
+
+    pk_key = 'course_pk'
+    model_manager = ag_models.Course.objects
 
     serializer_class = ag_serializers.CourseSerializer
 
@@ -111,9 +112,25 @@ class CopyCourseView(AGModelGenericViewSet):
             Parameter('new_year', in_='body', type='integer', required=True)
         ],
     )
+    @transaction.atomic()
     @method_decorator(require_body_params('new_name', 'new_semester', 'new_year'))
     def copy_course(self, request: Request, *args, **kwargs):
-        pass
+        course: ag_models.Course = self.get_object()
+
+        new_semester = request.data['new_semester']
+        try:
+            new_semester = ag_models.Semester(new_semester)
+        except ValueError:
+            return response.Response(status=status.HTTP_400_BAD_REQUEST,
+                                     data=f'"{new_semester}" is not a valid semester.')
+
+        new_course = copy_course(
+            course=course,
+            new_course_name=request.data['new_name'],
+            new_course_semester=new_semester,
+            new_course_year=request.data['new_year'])
+
+        return response.Response(status=status.HTTP_201_CREATED, data=new_course.to_dict())
 
     @classmethod
     def as_view(cls, actions=None, **initkwargs):
