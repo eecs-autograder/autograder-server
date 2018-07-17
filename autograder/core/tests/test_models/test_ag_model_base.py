@@ -464,7 +464,7 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         obj.refresh_from_db()
         self.assertEqual(expected, obj.to_dict())
 
-    def test_create_with_dict_param(self):
+    def test_create_with_dict_param_nullable_is_null(self):
         data = {
             'num': 24,
             'string': 'nxcvn',
@@ -472,7 +472,8 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         }
 
         obj = AGModelWithSerializableField.objects.validate_and_create(
-            serializable=data
+            serializable=data,
+            nullable_serializable=None
         )
 
         obj.refresh_from_db()
@@ -481,7 +482,31 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(data['string'], obj.serializable.string)
         self.assertEqual(AnEnum.egg, obj.serializable.an_enum)
 
-    def test_create_with_class_param(self):
+        self.assertIsNone(obj.nullable_serializable)
+
+    def test_create_with_dict_param_nullable_is_non_null(self):
+        data = {
+            'num': 24,
+            'string': 'nxcvn',
+            'an_enum': AnEnum.egg.value
+        }
+
+        obj = AGModelWithSerializableField.objects.validate_and_create(
+            serializable=data,
+            nullable_serializable=data
+        )
+
+        obj.refresh_from_db()
+
+        self.assertEqual(data['num'], obj.serializable.num)
+        self.assertEqual(data['string'], obj.serializable.string)
+        self.assertEqual(AnEnum.egg, obj.serializable.an_enum)
+
+        self.assertEqual(data['num'], obj.nullable_serializable.num)
+        self.assertEqual(data['string'], obj.nullable_serializable.string)
+        self.assertEqual(AnEnum.egg, obj.nullable_serializable.an_enum)
+
+    def test_create_with_class_param_nullable_is_null(self):
         serializable = DictSerializableClass(
             num=67,
             string='qpfwp',
@@ -489,7 +514,8 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         )
 
         obj = AGModelWithSerializableField.objects.validate_and_create(
-            serializable=serializable
+            serializable=serializable,
+            nullable_serializable=None
         )
 
         obj.refresh_from_db()
@@ -497,6 +523,30 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(serializable.num, obj.serializable.num)
         self.assertEqual(serializable.string, obj.serializable.string)
         self.assertEqual(serializable.an_enum, obj.serializable.an_enum)
+
+        self.assertIsNone(obj.nullable_serializable)
+
+    def test_create_with_class_param_nullable_is_non_null(self):
+        serializable = DictSerializableClass(
+            num=67,
+            string='qpfwp',
+            an_enum=AnEnum.egg
+        )
+
+        obj = AGModelWithSerializableField.objects.validate_and_create(
+            serializable=serializable,
+            nullable_serializable=serializable
+        )
+
+        obj.refresh_from_db()
+
+        self.assertEqual(serializable.num, obj.serializable.num)
+        self.assertEqual(serializable.string, obj.serializable.string)
+        self.assertEqual(serializable.an_enum, obj.serializable.an_enum)
+
+        self.assertEqual(serializable.num, obj.nullable_serializable.num)
+        self.assertEqual(serializable.string, obj.nullable_serializable.string)
+        self.assertEqual(serializable.an_enum, obj.nullable_serializable.an_enum)
 
     def test_create_error_extra_field(self):
         data = {
@@ -511,6 +561,27 @@ class CreateAGModelWithSerializableFieldTest(UnitTestBase):
 
         self.assertIn('serializable', cm.exception.message_dict)
         self.assertIn('Extra fields:', cm.exception.message_dict['serializable'][0])
+
+    def test_error_missing_required_field(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            AGModelWithSerializableField.objects.validate_and_create(
+                serializable={
+                    'num': 42,
+                    'an_enum': AnEnum.spam
+                }
+            )
+
+        self.assertIn('string', cm.exception.message_dict['serializable'][0])
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            AGModelWithSerializableField.objects.validate_and_create(
+                nullable_serializable={
+                    'num': 42,
+                    'string': 'spam'
+                }
+            )
+
+        self.assertIn('an_enum', cm.exception.message_dict['nullable_serializable'][0])
 
     def test_create_error_wrong_type(self):
         data = {
@@ -549,22 +620,26 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
     def setUp(self):
         super().setUp()
 
-        self.obj = AGModelWithSerializableField.objects.validate_and_create(
-            serializable={
-                'num': 90,
-                'string': 'wnifetasor',
-                'an_enum': AnEnum.egg
-            }
+        self.obj: AGModelWithSerializableField = (
+            AGModelWithSerializableField.objects.validate_and_create(
+                serializable={
+                    'num': 90,
+                    'string': 'wnifetasor',
+                    'an_enum': AnEnum.egg
+                }
+            )
         )
 
-    def test_full_update_with_dict_param(self):
+    def test_full_update_with_dict_param_nullable_is_null(self):
+        self.assertIsNone(self.obj.nullable_serializable)
+
         new_data = {
             'num': 76,
             'string': 'waaaaluigi',
             'an_enum': AnEnum.spam.value,
         }
 
-        self.obj.validate_and_update(serializable=new_data)
+        self.obj.validate_and_update(serializable=new_data, nullable_serializable=new_data)
 
         self.obj.refresh_from_db()
 
@@ -572,20 +647,94 @@ class UpdateAGModelWithSerializableFieldTest(UnitTestBase):
         self.assertEqual(new_data['string'], self.obj.serializable.string)
         self.assertEqual(AnEnum.spam, self.obj.serializable.an_enum)
 
-    def test_partial_update_with_dict_param(self):
+        self.assertEqual(new_data['num'], self.obj.nullable_serializable.num)
+        self.assertEqual(new_data['string'], self.obj.nullable_serializable.string)
+        self.assertEqual(AnEnum.spam, self.obj.nullable_serializable.an_enum)
+
+    def test_full_update_with_dict_param_nullable_is_non_null(self):
+        self.obj.nullable_serializable = self.obj.serializable
+        self.obj.save()
+
+        new_data = {
+            'num': 76,
+            'string': 'waaaaluigi',
+            'an_enum': AnEnum.spam.value,
+        }
+
+        self.obj.validate_and_update(serializable=new_data, nullable_serializable=new_data)
+
+        self.obj.refresh_from_db()
+
+        self.assertEqual(new_data['num'], self.obj.serializable.num)
+        self.assertEqual(new_data['string'], self.obj.serializable.string)
+        self.assertEqual(AnEnum.spam, self.obj.serializable.an_enum)
+
+        self.assertEqual(new_data['num'], self.obj.nullable_serializable.num)
+        self.assertEqual(new_data['string'], self.obj.nullable_serializable.string)
+        self.assertEqual(AnEnum.spam, self.obj.nullable_serializable.an_enum)
+
+    def test_partial_update_with_dict_param_nullable_is_null(self):
+        self.assertIsNone(self.obj.nullable_serializable)
+
         original_num = self.obj.serializable.num
         original_an_enum = self.obj.serializable.an_enum
+        original_string = self.obj.serializable.string
         new_data = {
             'string': 'stove',
         }
 
-        self.obj.validate_and_update(serializable=new_data)
+        self.obj.validate_and_update(serializable=new_data,
+                                     nullable_serializable=self.obj.serializable.to_dict())
         self.obj.refresh_from_db()
 
         self.assertEqual(new_data['string'], self.obj.serializable.string)
 
         self.assertEqual(original_num, self.obj.serializable.num)
         self.assertEqual(original_an_enum, self.obj.serializable.an_enum)
+
+        self.assertEqual(original_num, self.obj.nullable_serializable.num)
+        self.assertEqual(original_an_enum, self.obj.nullable_serializable.an_enum)
+        self.assertEqual(original_string, self.obj.nullable_serializable.string)
+        self.assertEqual(DictSerializableClass.has_default_default_val,
+                         self.obj.nullable_serializable.has_default)
+
+    def test_error_nullable_is_null_partial_update_with_dict_missing_required_field(self):
+        self.assertIsNone(self.obj.nullable_serializable)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            self.obj.validate_and_update(
+                nullable_serializable={
+                    'num': 42,
+                    'string': 'spam'
+                }
+            )
+
+        self.assertIn('an_enum', cm.exception.message_dict['nullable_serializable'][0])
+
+    def test_partial_update_with_dict_param_nullable_is_non_null(self):
+        self.obj.nullable_serializable = self.obj.serializable.to_dict()
+        self.obj.save()
+
+        original_num = self.obj.serializable.num
+        original_an_enum = self.obj.serializable.an_enum
+        new_data = {
+            'string': 'stove',
+        }
+
+        new_nullable_string = 'cheese'
+
+        self.obj.validate_and_update(serializable=new_data,
+                                     nullable_serializable={'string': new_nullable_string})
+        self.obj.refresh_from_db()
+
+        self.assertEqual(new_data['string'], self.obj.serializable.string)
+
+        self.assertEqual(original_num, self.obj.serializable.num)
+        self.assertEqual(original_an_enum, self.obj.serializable.an_enum)
+
+        self.assertEqual(new_nullable_string, self.obj.nullable_serializable.string)
+        self.assertEqual(original_num, self.obj.nullable_serializable.num)
+        self.assertEqual(original_an_enum, self.obj.nullable_serializable.an_enum)
 
     def test_update_with_class_param(self):
         new_data = copy.deepcopy(self.obj.serializable)
