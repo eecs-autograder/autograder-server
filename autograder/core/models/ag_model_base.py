@@ -242,18 +242,23 @@ class ToDictMixin:
         return result
 
 
-class FromDictMixin:
+class DictSerializableMixin(ToDictMixin):
     """
-    Provides a way to validate data and use it to construct or update
+    In addition to the functionality provided by ToDictMixin,
+    provides a way to validate data and construct or update
     objects from the validated data.
+
+    Also provides a way of generating a Schema for the class.
 
     Note: This mixin should NOT be used with Django model classes.
     """
+
     @classmethod
     def from_dict(cls, input_: dict):
         """
         Validates input_ and constructs an object from it.
         """
+        cls._check_for_missing_fields(input_)
         return cls(**cls.prepare_input(input_))
 
     def update(self, input_):
@@ -296,6 +301,16 @@ class FromDictMixin:
                 processed_input[field_name] = value
 
         return processed_input
+
+    @classmethod
+    def _check_for_missing_fields(cls, input_: dict):
+        # Skip "self"
+        ctor_fields = list(inspect.signature(cls.__init__).parameters.keys())[1:]
+        for field_name in ctor_fields:
+            if cls.field_is_required(field_name) and field_name not in input_:
+                raise exceptions.ValidationError(
+                    f'Missing required field: "{field_name}"'
+                )
 
     @classmethod
     def _allowed_fields(cls) -> typing.Set[str]:
@@ -342,12 +357,6 @@ class FromDictMixin:
     # A dictionary of field names to field descriptions.
     FIELD_DESCRIPTIONS: typing.Dict[str, str] = {}
 
-
-class DictSerializableMixin(ToDictMixin, FromDictMixin):
-    """
-    Shortcut mixin for ToDictMixin and FromDictMixin. Also provides a
-    way of generating a Schema ffor the class.
-    """
     @classmethod
     def get_schema(cls, title) -> Schema:
         """
@@ -447,7 +456,10 @@ class AutograderModel(ToDictMixin, models.Model):
             if isinstance(field, ValidatedJSONField):
                 if isinstance(val, dict):
                     try:
-                        getattr(self, field_name).update(val)
+                        if getattr(self, field_name) is None:
+                            setattr(self, field_name, field.serializable_class.from_dict(val))
+                        else:
+                            getattr(self, field_name).update(val)
                     except exceptions.ValidationError as e:
                         raise exceptions.ValidationError({field_name: str(e)})
                 else:
