@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 
@@ -12,7 +14,7 @@ from .student_test_suite import StudentTestSuite
 
 @transaction.atomic()
 def copy_project(project: Project, target_course: Course,
-                 new_project_name: str=None):
+                 new_project_name: Optional[str]=None):
     """
     Makes a copy of the given course along with all instructor file,
      expected student file, test case, and handgrading data.
@@ -31,6 +33,7 @@ def copy_project(project: Project, target_course: Course,
     if new_project_name is not None:
         new_project.name = new_project_name
 
+    new_project.full_clean()
     new_project.save()
 
     for instructor_file in project.instructor_files.all():
@@ -139,8 +142,10 @@ def _copy_student_suites(project, new_project):
 
 
 @transaction.atomic()
-def copy_course(course: Course, new_course_name: str,
-                new_course_semester: Semester, new_course_year: int):
+def copy_course(course: Course,
+                new_course_name: str,
+                new_course_semester: Optional[Semester],
+                new_course_year: Optional[int]):
     """
     Makes a copy of the given course and all its projects. The projects
     are copied using copy_project.

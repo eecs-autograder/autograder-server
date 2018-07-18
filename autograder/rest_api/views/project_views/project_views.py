@@ -4,19 +4,24 @@ from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import FileResponse
+from django.shortcuts import get_object_or_404
 from drf_composable_permissions.p import P
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, mixins, response
 from rest_framework import permissions
 from rest_framework import status
+from rest_framework.request import Request
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core.models.copy_project_and_course import copy_project
 from autograder.rest_api import tasks as api_tasks, transaction_mixins
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
+from autograder.rest_api.views.ag_model_views import (
+    AGModelGenericViewSet, convert_django_validation_error)
 from autograder.rest_api.views.ag_model_views import ListCreateNestedModelViewSet
+from autograder.rest_api.views.schema_generation import APITags
 
 can_list_projects = (
     P(ag_permissions.IsReadOnly)
@@ -45,6 +50,46 @@ class ListCreateProjectView(ListCreateNestedModelViewSet):
             return queryset.filter(visible_to_students=True)
 
         return queryset
+
+
+class CopyProjectView(AGModelGenericViewSet):
+    api_tags = [APITags.projects]
+
+    pk_key = 'project_pk'
+    model_manager = ag_models.Project.objects
+
+    serializer_class = ag_serializers.ProjectSerializer
+    permission_classes = (ag_permissions.is_admin(),)
+
+    @swagger_auto_schema(
+        operation_description="""Makes a copy of the specified project and
+            all of its instructor file, expected student file, test case,
+            and handgrading data.
+            Note that groups, submissions, and results (test case, handgrading,
+            etc.) are NOT copied.
+        """,
+        request_body_parameters=[
+            Parameter('new_project_name', in_='query', type='string', required=False),
+        ]
+    )
+    @convert_django_validation_error
+    @transaction.atomic()
+    def copy_project(self, request: Request, *args, **kwargs):
+        project: ag_models.Project = self.get_object()
+
+        target_course = get_object_or_404(ag_models.Course.objects, pk=kwargs['target_course_pk'])
+        if not target_course.is_admin(request.user):
+            return response.Response(status=status.HTTP_403_FORBIDDEN)
+
+        new_name = request.query_params.get('new_name', None)
+        new_project = copy_project(
+            project=project, target_course=target_course, new_project_name=new_name)
+
+        return response.Response(status=status.HTTP_201_CREATED, data=new_project.to_dict())
+
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'post': 'copy_project'}, **initkwargs)
 
 
 @receiver(post_save, sender=ag_models.Project)

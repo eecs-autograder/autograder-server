@@ -238,14 +238,19 @@ class CopyCourseViewTestCase(UnitTestBase):
         superuser = obj_build.make_user(superuser=True)
         self.client.force_authenticate(superuser)
 
+        self.course.semester = ag_models.Semester.fall
+        self.course.year = 2017
+        self.course.save()
+
         response = self.client.post(
             reverse('copy-course', kwargs={'course_pk': self.course.pk}),
             {'new_name': self.course.name,
-             'new_semester': self.course.semester,
+             'new_semester': self.course.semester.value,
              'new_year': self.course.year}
         )
 
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertIn('exists', response.data['__all__'][0])
 
 
 class RetrieveCourseTestCase(UnitTestBase):

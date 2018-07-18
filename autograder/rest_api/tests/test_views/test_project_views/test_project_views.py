@@ -1,4 +1,6 @@
 import tempfile
+from typing import Optional
+from unittest import mock
 
 from django.core import exceptions
 from django.urls import reverse
@@ -83,9 +85,9 @@ class CourseAddProjectTestCase(AGViewTestBase):
 
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
-        loaded = self.course.projects.get(name=args['name'])
+        new_project = self.course.projects.get(name=args['name'])
         for arg_name, value in args.items():
-            self.assertEqual(value, getattr(loaded, arg_name), msg=arg_name)
+            self.assertEqual(value, getattr(new_project, arg_name), msg=arg_name)
 
     def test_other_add_project_permission_denied(self):
         staff = obj_build.make_staff_user(self.course)
@@ -101,6 +103,90 @@ class CourseAddProjectTestCase(AGViewTestBase):
 
             with self.assertRaises(exceptions.ObjectDoesNotExist):
                 ag_models.Project.objects.get(name=project_name)
+
+
+class CopyProjectViewTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.client = APIClient()
+        self.project = obj_build.make_project()
+        self.admin = obj_build.make_admin_user(self.project.course)
+
+        self.other_course = obj_build.make_course()
+        self.other_course.admins.add(self.admin)
+
+    def test_admin_copy_project_to_same_course_with_new_name(self):
+        self.client.force_authenticate(self.admin)
+        new_name = 'New Project'
+        response = self.client.post(self.get_url(self.project, self.project.course, new_name))
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        new_project = ag_models.Project.objects.get(pk=response.data['pk'])
+        self.assertEqual(new_name, new_project.name)
+        self.assertEqual(self.project.course, new_project.course)
+
+    def test_admin_copy_project_to_different_course_they_are_admin_for(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.get_url(self.project, self.other_course))
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        new_project = ag_models.Project.objects.get(pk=response.data['pk'])
+        self.assertEqual(self.project.name, new_project.name)
+        self.assertEqual(self.other_course, new_project.course)
+
+    def test_admin_copy_project_to_different_course_with_different_name(self):
+        self.client.force_authenticate(self.admin)
+        new_name = 'New Project'
+        response = self.client.post(self.get_url(self.project, self.other_course, new_name))
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        new_project = ag_models.Project.objects.get(pk=response.data['pk'])
+        self.assertEqual(new_name, new_project.name)
+        self.assertEqual(self.other_course, new_project.course)
+
+    def test_view_calls_copy_project(self):
+        dummy_project = obj_build.make_project(self.other_course)
+        mock_copy_project = mock.Mock(return_value=dummy_project)
+        with mock.patch('autograder.rest_api.views.project_views.project_views.copy_project',
+                        new=mock_copy_project):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(self.get_url(self.project, self.other_course))
+
+            mock_copy_project.assert_called_once_with(
+                project=self.project, target_course=self.other_course, new_project_name=None)
+
+    def test_non_admin_copy_project_permission_denied(self):
+        staff = obj_build.make_staff_user(self.project.course)
+        self.client.force_authenticate(staff)
+        response = self.client.post(self.get_url(self.project, self.project.course, 'New project'))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_admin_copy_project_to_course_they_arent_admin_for_permission_denied(self):
+        self.other_course.admins.remove(self.admin)
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.get_url(self.project, self.other_course))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_error_same_course_same_project_name(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.get_url(self.project, self.project.course))
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_error_new_project_name_empty(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.get_url(self.project, self.project.course, ''))
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def get_url(self, project: ag_models.Project,
+                target_course: ag_models.Course, new_name: Optional[str]=None):
+        url = reverse('copy-project',
+                      kwargs={'project_pk': project.pk, 'target_course_pk': target_course.pk})
+        if new_name is not None:
+            url += f'?new_name={new_name}'
+
+        return url
 
 
 class RetrieveProjectTestCase(AGViewTestBase):

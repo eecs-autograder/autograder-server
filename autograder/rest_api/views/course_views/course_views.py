@@ -15,7 +15,8 @@ import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.copy_project_and_course import copy_course
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, AlwaysIsAuthenticatedMixin, require_body_params)
+    AGModelGenericViewSet, AlwaysIsAuthenticatedMixin, require_body_params,
+    convert_django_validation_error)
 from autograder.rest_api.views.schema_generation import APITags, AGModelViewAutoSchema
 
 
@@ -82,7 +83,6 @@ class CanCreateCourses(BasePermission):
 
 
 class CopyCourseView(AGModelGenericViewSet):
-    swagger_schema = AGModelViewAutoSchema
     api_tags = [APITags.courses]
 
     pk_key = 'course_pk'
@@ -95,7 +95,7 @@ class CopyCourseView(AGModelGenericViewSet):
     )
 
     @swagger_auto_schema(
-        operation_description="""Makes a copy of the given course and all its projects. 
+        operation_description="""Makes a copy of the given course and all its projects.
             The projects and all of their  instructor file,
             expected student file, test case, and handgrading data.
             Note that groups, submissions, and results (test case, handgrading,
@@ -113,6 +113,7 @@ class CopyCourseView(AGModelGenericViewSet):
         ],
     )
     @transaction.atomic()
+    @convert_django_validation_error
     @method_decorator(require_body_params('new_name', 'new_semester', 'new_year'))
     def copy_course(self, request: Request, *args, **kwargs):
         course: ag_models.Course = self.get_object()
