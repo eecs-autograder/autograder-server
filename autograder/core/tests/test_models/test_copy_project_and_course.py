@@ -1,6 +1,8 @@
 import itertools
 from typing import Sequence
 
+from django.core import exceptions
+
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.models import Semester
@@ -154,6 +156,11 @@ class CopyProjectTestCase(UnitTestBase):
         self.assertNotEqual(project, new_project)
         self.assertEqual(name, new_project.name)
 
+    def test_error_non_unique_name(self):
+        project = obj_build.make_project()
+        with self.assertRaises(exceptions.ValidationError):
+            copy_project(project, project.course, project.name)
+
 
 def _pop_many(dict_: dict, keys: Sequence[str]):
     for key in keys:
@@ -207,3 +214,9 @@ class CopyCourseTestCase(UnitTestBase):
 
         self.assertSetEqual({proj.name for proj in course.projects.all()},
                             {proj.name for proj in new_course.projects.all()})
+
+    def test_error_non_unique_name(self):
+        course = obj_build.make_course()
+        with self.assertRaises(exceptions.ValidationError):
+            copy_course(course, new_course_name=course.name,
+                        new_course_semester=None, new_course_year=None)

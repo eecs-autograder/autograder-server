@@ -1,9 +1,11 @@
 from typing import Optional, List
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, permissions, mixins, generics, response, status
+from rest_framework import viewsets, permissions, mixins, response, status
+from rest_framework.exceptions import ValidationError as RestFrameworkValidationError
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -237,6 +239,21 @@ def handle_object_does_not_exist_404(func):
             return func(*args, **kwargs)
         except ObjectDoesNotExist:
             raise Http404
+
+    return decorated_func
+
+
+def convert_django_validation_error(func):
+    """
+    If the decorated function raises django.core.exceptions.ValidationError,
+    catches the error and raises rest_framework.exceptions.ValidationError
+    with the same content.
+    """
+    def decorated_func(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except DjangoValidationError as e:
+            raise RestFrameworkValidationError(e.message_dict)
 
     return decorated_func
 
