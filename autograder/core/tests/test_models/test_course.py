@@ -41,6 +41,8 @@ class CourseTestCase(UnitTestBase):
         self.assertEqual(late_days, course.num_late_days)
 
     def test_course_ordering(self):
+        course6 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.fall, year=2019)
         course4 = Course.objects.validate_and_create(
             name='EECS 280', semester=Semester.fall, year=2018)
         course5 = Course.objects.validate_and_create(
@@ -53,7 +55,7 @@ class CourseTestCase(UnitTestBase):
             name='EECS 183', semester=Semester.summer, year=2016)
 
         self.assertSequenceEqual(
-            [course1, course2, course3, course4, course5], Course.objects.all()
+            [course1, course2, course3, course4, course5, course6], Course.objects.all()
         )
 
     def test_exception_on_empty_name(self):

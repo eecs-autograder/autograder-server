@@ -34,13 +34,13 @@ class Course(AutograderModel):
         unique_together = ('name', 'semester', 'year')
         ordering = (
             'name',
+            'year',
             Case(
                 When(semester=Semester.fall, then=Value(1)),
                 When(semester=Semester.winter, then=Value(2)),
                 When(semester=Semester.spring, then=Value(3)),
                 When(semester=Semester.summer, then=Value(4))
             ),
-            'year'
         )
 
         permissions = (
