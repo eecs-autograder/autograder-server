@@ -7,7 +7,6 @@ from django.http import FileResponse
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from drf_yasg import openapi
-from drf_yasg.inspectors import DjangoRestResponsePagination
 from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
 

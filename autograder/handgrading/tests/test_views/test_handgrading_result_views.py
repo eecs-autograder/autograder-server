@@ -1,4 +1,5 @@
 import random
+from unittest import mock
 from urllib.parse import urlencode
 
 from django.contrib.auth.models import User
@@ -208,6 +209,24 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
 
             handgrading_result.delete()
             self.group = ag_models.Group.objects.get(pk=self.group.pk)
+
+    def test_ultimate_submission_to_grade_does_not_consider_submission_not_counting_for_user(self):
+        """
+        The field Submission.does_not_count_for is not considered when
+        determining which submission to handgrade.
+        """
+        with self.assertRaises(exceptions.ObjectDoesNotExist):
+            print(self.group.handgrading_result)
+
+        mock_get_ultimate_submission = mock.Mock(return_value=self.submission)
+
+        with mock.patch(
+                'autograder.handgrading.views.handgrading_result_views.get_ultimate_submission',
+                new=mock_get_ultimate_submission):
+            self.client.force_authenticate(self.admin)
+            response = self.client.post(self.url, {})
+
+            mock_get_ultimate_submission.assert_called_once_with(self.group)
 
     def test_no_handgrading_rubric(self):
         self.handgrading_rubric.delete()
