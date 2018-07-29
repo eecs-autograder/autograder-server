@@ -479,7 +479,8 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Extension': '',
                 'Total Points': str(self.student_result_fdbk.total_points),
                 'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
-                'Handgrading Total Points': str(self.student_submission.handgrading_result.total_points),
+                'Handgrading Total Points': str(
+                    self.student_submission.handgrading_result.total_points),
                 'Handgrading Total Points Possible': (
                     str(self.student_submission.handgrading_result.total_points_possible))
             }),
@@ -491,7 +492,8 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Extension': '',
                 'Total Points': str(self.student_result_fdbk.total_points),
                 'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
-                'Handgrading Total Points': str(self.student_submission.handgrading_result.total_points),
+                'Handgrading Total Points': str(
+                    self.student_submission.handgrading_result.total_points),
                 'Handgrading Total Points Possible': (
                     str(self.student_submission.handgrading_result.total_points_possible))
             })

@@ -272,8 +272,8 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
         self.assertEqual(0, submission1_fdbk.total_points)
         self.assertNotEqual(0, submission1_fdbk.total_points_possible)
 
-        group_2_members_with_handgrading = obj_build.make_group(project=self.project, num_members=2)
-        submission2 = obj_build.make_finished_submission(group_2_members_with_handgrading)
+        group_2_members = obj_build.make_group(project=self.project, num_members=2)
+        submission2 = obj_build.make_finished_submission(group_2_members)
         submission2 = self._add_results_to_submission(submission2, results_correct=True)
         submission2_fdbk = SubmissionResultFeedback(
             submission2, ag_models.FeedbackCategory.max, self.ag_test_preloader)
@@ -281,7 +281,7 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
         self.assertNotEqual(0, submission2_fdbk.total_points_possible)
         group_2_handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
             submission=submission2,
-            group=group_2_members_with_handgrading,
+            group=group_2_members,
             handgrading_rubric=handgrading_rubric,
             finished_grading=True
         )  # type: hg_models.HandgradingResult
@@ -324,8 +324,8 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
             },
 
             {
-                'username': group_2_members_with_handgrading.member_names[0],
-                'group': group_2_members_with_handgrading.to_dict(),
+                'username': group_2_members.member_names[0],
+                'group': group_2_members.to_dict(),
                 'ultimate_submission': {
                     'results': {
                         'total_points': submission2_fdbk.total_points,
@@ -339,8 +339,8 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 }
             },
             {
-                'username': group_2_members_with_handgrading.member_names[1],
-                'group': group_2_members_with_handgrading.to_dict(),
+                'username': group_2_members.member_names[1],
+                'group': group_2_members.to_dict(),
                 'ultimate_submission': {
                     'results': {
                         'total_points': submission2_fdbk.total_points,
