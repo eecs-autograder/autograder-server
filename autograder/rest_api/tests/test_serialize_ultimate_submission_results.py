@@ -12,6 +12,7 @@ from autograder.rest_api.serialize_ultimate_submission_results import (
 from autograder.utils import two_decimal_place_string
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
+import autograder.handgrading.models as hg_models
 
 
 class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
@@ -254,6 +255,230 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 [most_recent_submission_fdbk], full_results=False)
 
             mock_get_ultimate_submission.assert_called_once_with(group, doesnt_count_for_user)
+
+    def test_group_has_finished_handgrading_result(self):
+        handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project
+        )  # type: hg_models.HandgradingRubric
+
+        criterion = hg_models.Criterion.objects.validate_and_create(
+            points=2, handgrading_rubric=handgrading_rubric)
+
+        group_no_handgrading = obj_build.make_group(project=self.project)
+        submission1 = obj_build.make_finished_submission(group_no_handgrading)
+        submission1 = self._add_results_to_submission(submission1, results_correct=False)
+        submission1_fdbk = SubmissionResultFeedback(
+            submission1, ag_models.FeedbackCategory.max, self.ag_test_preloader)
+        self.assertEqual(0, submission1_fdbk.total_points)
+        self.assertNotEqual(0, submission1_fdbk.total_points_possible)
+
+        group_2_members_with_handgrading = obj_build.make_group(project=self.project, num_members=2)
+        submission2 = obj_build.make_finished_submission(group_2_members_with_handgrading)
+        submission2 = self._add_results_to_submission(submission2, results_correct=True)
+        submission2_fdbk = SubmissionResultFeedback(
+            submission2, ag_models.FeedbackCategory.max, self.ag_test_preloader)
+        self.assertNotEqual(0, submission2_fdbk.total_points)
+        self.assertNotEqual(0, submission2_fdbk.total_points_possible)
+        group_2_handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=submission2,
+            group=group_2_members_with_handgrading,
+            handgrading_rubric=handgrading_rubric,
+            finished_grading=True
+        )  # type: hg_models.HandgradingResult
+        hg_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=criterion,
+            handgrading_result=group_2_handgrading_result)
+
+        group_with_handgrading = obj_build.make_group(project=self.project)
+        submission3 = obj_build.make_finished_submission(group_with_handgrading)
+        submission3 = self._add_results_to_submission(submission3, results_correct=False)
+        submission3_fdbk = SubmissionResultFeedback(
+            submission3, ag_models.FeedbackCategory.max, self.ag_test_preloader)
+        self.assertEqual(0, submission3_fdbk.total_points)
+        self.assertNotEqual(0, submission3_fdbk.total_points_possible)
+        group_3_handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=submission3,
+            group=group_with_handgrading,
+            handgrading_rubric=handgrading_rubric,
+            finished_grading=True
+        )  # type: hg_models.HandgradingResult
+        hg_models.CriterionResult.objects.validate_and_create(
+            selected=False,
+            criterion=criterion,
+            handgrading_result=group_3_handgrading_result)
+
+        expected = [
+            {
+                'username': group_no_handgrading.member_names[0],
+                'group': group_no_handgrading.to_dict(),
+                'ultimate_submission': {
+                    'results': {
+                        'total_points': submission1_fdbk.total_points,
+                        'total_points_possible': submission1_fdbk.total_points_possible,
+                        'handgrading_total_points': '',
+                        'handgrading_total_points_possible': ''
+                    },
+                    **submission1.to_dict()
+                }
+            },
+
+            {
+                'username': group_2_members_with_handgrading.member_names[0],
+                'group': group_2_members_with_handgrading.to_dict(),
+                'ultimate_submission': {
+                    'results': {
+                        'total_points': submission2_fdbk.total_points,
+                        'total_points_possible': submission2_fdbk.total_points_possible,
+                        'handgrading_total_points': (
+                            submission2_fdbk.submission.handgrading_result.total_points),
+                        'handgrading_total_points_possible': (
+                            submission2_fdbk.submission.handgrading_result.total_points_possible)
+                    },
+                    **submission2.to_dict()
+                }
+            },
+            {
+                'username': group_2_members_with_handgrading.member_names[1],
+                'group': group_2_members_with_handgrading.to_dict(),
+                'ultimate_submission': {
+                    'results': {
+                        'total_points': submission2_fdbk.total_points,
+                        'total_points_possible': submission2_fdbk.total_points_possible,
+                        'handgrading_total_points': (
+                            submission2_fdbk.submission.handgrading_result.total_points),
+                        'handgrading_total_points_possible': (
+                            submission2_fdbk.submission.handgrading_result.total_points_possible)
+                    },
+                    **submission2.to_dict()
+                }
+            },
+
+            {
+                'username': group_with_handgrading.member_names[0],
+                'group': group_with_handgrading.to_dict(),
+                'ultimate_submission': {
+                    'results': {
+                        'total_points': submission3_fdbk.total_points,
+                        'total_points_possible': submission3_fdbk.total_points_possible,
+                        'handgrading_total_points': (
+                            submission3_fdbk.submission.handgrading_result.total_points),
+                        'handgrading_total_points_possible': (
+                            submission3_fdbk.submission.handgrading_result.total_points_possible)
+                    },
+                    **submission3.to_dict()
+                }
+            }
+        ]
+
+        actual = serialize_ultimate_submission_results(
+            [SubmissionResultFeedback(submission1, ag_models.FeedbackCategory.max,
+                                      self.ag_test_preloader),
+             SubmissionResultFeedback(submission2, ag_models.FeedbackCategory.max,
+                                      self.ag_test_preloader),
+             SubmissionResultFeedback(submission3, ag_models.FeedbackCategory.max,
+                                      self.ag_test_preloader)],
+            full_results=False,
+            include_handgrading=True
+        )
+        self.assertEqual(expected, actual)
+
+    def test_group_has_unfinished_handgrading_result_(self):
+        handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project
+        )  # type: hg_models.HandgradingRubric
+
+        criterion = hg_models.Criterion.objects.validate_and_create(
+            points=2, handgrading_rubric=handgrading_rubric)
+
+        group_unfinished_handgrading = obj_build.make_group(project=self.project)
+        submission = obj_build.make_finished_submission(group_unfinished_handgrading)
+        submission = self._add_results_to_submission(submission, results_correct=False)
+        submission_fdbk = SubmissionResultFeedback(
+            submission, ag_models.FeedbackCategory.max, self.ag_test_preloader)
+        handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            group=group_unfinished_handgrading,
+            handgrading_rubric=handgrading_rubric,
+            finished_grading=False
+        )  # type: hg_models.HandgradingResult
+        hg_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=criterion,
+            handgrading_result=handgrading_result)
+
+        expected = [
+            {
+                'username': group_unfinished_handgrading.member_names[0],
+                'group': group_unfinished_handgrading.to_dict(),
+                'ultimate_submission': {
+                    'results': {
+                        'total_points': submission_fdbk.total_points,
+                        'total_points_possible': submission_fdbk.total_points_possible,
+                        'handgrading_total_points': '',
+                        'handgrading_total_points_possible': ''
+                    },
+                    **submission.to_dict()
+                }
+            }
+        ]
+
+        actual = serialize_ultimate_submission_results(
+            [SubmissionResultFeedback(submission, ag_models.FeedbackCategory.max,
+                                      self.ag_test_preloader)],
+            full_results=False,
+            include_handgrading=True
+        )
+        self.assertEqual(expected, actual)
+
+    def test_group_has_handgrading_result_with_full_results(self):
+        handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=self.project
+        )  # type: hg_models.HandgradingRubric
+
+        criterion = hg_models.Criterion.objects.validate_and_create(
+            points=2, handgrading_rubric=handgrading_rubric)
+
+        group = obj_build.make_group(project=self.project)
+        submission = obj_build.make_finished_submission(group)
+        submission = self._add_results_to_submission(submission, results_correct=False)
+        submission_fdbk = SubmissionResultFeedback(
+            submission, ag_models.FeedbackCategory.max, self.ag_test_preloader)
+        handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=submission,
+            group=group,
+            handgrading_rubric=handgrading_rubric,
+            finished_grading=True
+        )  # type: hg_models.HandgradingResult
+        hg_models.CriterionResult.objects.validate_and_create(
+            selected=True,
+            criterion=criterion,
+            handgrading_result=handgrading_result)
+
+        results = submission_fdbk.to_dict()
+        results['handgrading_total_points'] = (
+            submission_fdbk.submission.handgrading_result.total_points)
+        results['handgrading_total_points_possible'] = (
+            submission_fdbk.submission.handgrading_result.total_points_possible)
+
+        expected = [
+            {
+                'username': group.member_names[0],
+                'group': group.to_dict(),
+                'ultimate_submission': {
+                    'results': results,
+                    **submission.to_dict()
+                }
+            }
+        ]
+
+        actual = serialize_ultimate_submission_results(
+            [SubmissionResultFeedback(submission, ag_models.FeedbackCategory.max,
+                                      self.ag_test_preloader)],
+            full_results=True,
+            include_handgrading=True
+        )
+        self.assertEqual(expected, actual)
 
     def _add_results_to_submission(self, submission: ag_models.Submission,
                                    *, results_correct: bool) -> ag_models.Submission:
