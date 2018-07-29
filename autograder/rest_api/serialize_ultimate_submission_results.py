@@ -4,7 +4,7 @@ from django.utils import timezone
 
 import autograder.core.models as ag_models
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
-from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
+from autograder.core.submission_feedback import SubmissionResultFeedback
 
 
 def serialize_ultimate_submission_results(ultimate_submissions: Iterable[SubmissionResultFeedback],
@@ -19,7 +19,7 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
     :param ultimate_submissions:
     :param full_results: Whether to include information about individual
         test cases.
-    :param ag_test_preloader:
+    :param include_handgrading:
     :return: [
         {
             "username": <username>,

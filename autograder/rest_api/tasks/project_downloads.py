@@ -15,7 +15,7 @@ from autograder import utils
 from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
 from autograder.rest_api.views.submission_views.all_ultimate_submission_results_view import (
     serialize_ultimate_submission_results)
-from itertools import islice
+
 
 @shared_task(queue='project_downloads', acks_late=True)
 def all_submission_files_task(project_pk, task_pk, include_staff, *args, **kwargs):
