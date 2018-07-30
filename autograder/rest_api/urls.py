@@ -118,7 +118,7 @@ schema_view = get_schema_view(
 
 
 urlpatterns = [
-    url(r'^docs/$', schema_view.with_ui('swagger'), name='schema-swagger-ui'),
+    url(r'^docs/?$', schema_view.with_ui('swagger'), name='schema-swagger-ui'),
 
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
 
