@@ -9,6 +9,7 @@ from autograder.core.submission_feedback import (
     update_denormalized_ag_test_results, AGTestPreLoader, SubmissionResultFeedback)
 from autograder.rest_api.serialize_ultimate_submission_results import (
     serialize_ultimate_submission_results)
+from autograder.utils import two_decimal_place_string
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
@@ -56,8 +57,9 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group1.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': submission1_fdbk.total_points,
-                        'total_points_possible': submission1_fdbk.total_points_possible
+                        'total_points': two_decimal_place_string(submission1_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission1_fdbk.total_points_possible)
                     },
                     **submission1.to_dict()
                 }
@@ -68,8 +70,9 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group2.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': submission2_fdbk.total_points,
-                        'total_points_possible': submission2_fdbk.total_points_possible
+                        'total_points': two_decimal_place_string(submission2_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission2_fdbk.total_points_possible)
                     },
                     **submission2.to_dict()
                 }
@@ -79,8 +82,9 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group2.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': submission2_fdbk.total_points,
-                        'total_points_possible': submission2_fdbk.total_points_possible
+                        'total_points': two_decimal_place_string(submission2_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission2_fdbk.total_points_possible)
                     },
                     **submission2.to_dict()
                 }
@@ -156,8 +160,9 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': submission_fdbk.total_points,
-                        'total_points_possible': submission_fdbk.total_points_possible
+                        'total_points': two_decimal_place_string(submission_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission_fdbk.total_points_possible)
                     },
                     **submission.to_dict()
                 }
@@ -213,8 +218,9 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': second_most_recent_submission_fdbk.total_points,
-                        'total_points_possible': (
+                        'total_points': two_decimal_place_string(
+                            second_most_recent_submission_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
                             second_most_recent_submission_fdbk.total_points_possible)
                     },
                     **second_most_recent_submission.to_dict()
@@ -225,8 +231,10 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': most_recent_submission_fdbk.total_points,
-                        'total_points_possible': most_recent_submission_fdbk.total_points_possible
+                        'total_points': two_decimal_place_string(
+                            most_recent_submission_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            most_recent_submission_fdbk.total_points_possible)
                     },
                     **most_recent_submission.to_dict()
                 }

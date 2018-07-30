@@ -145,7 +145,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
         student_suite.refresh_from_db()
 
         self.assertEqual(decimal.Decimal('.75'), student_suite.points_per_exposed_bug)
-        self.assertEqual(decimal.Decimal('.75'), student_suite.to_dict()['points_per_exposed_bug'])
+        self.assertEqual('0.75', student_suite.to_dict()['points_per_exposed_bug'])
 
     def test_float_points_per_exposed_bug_too_many_decimal_places(self):
         with self.assertRaises(exceptions.ValidationError) as cm:

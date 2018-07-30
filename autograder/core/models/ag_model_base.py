@@ -206,6 +206,8 @@ class ToDictMixin:
                 continue
 
             if isinstance(result[field_name], decimal.Decimal):
+                # Note: We may want to make the precision customizable
+                # in the future.
                 quantized = result[field_name].quantize(decimal.Decimal('.01'))
                 result[field_name] = str(quantized)
                 continue

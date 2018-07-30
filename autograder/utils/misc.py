@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 from typing import Sequence
 
 from django.contrib import auth
@@ -53,3 +54,7 @@ class ChangeDirectory:
 
     def __exit__(self, *args):
         os.chdir(self._original_dir)
+
+
+def two_decimal_place_string(dec: Decimal) -> str:
+    return str(dec.quantize(Decimal('.01')))
