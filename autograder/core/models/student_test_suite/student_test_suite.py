@@ -298,10 +298,12 @@ class StudentTestSuite(AutograderModel):
                      NOTE: This AGCommand's 'cmd' field must not be blank.
                      """.format(STUDENT_TEST_NAME_PLACEHOLDER, BUGGY_IMPL_NAME_PLACEHOLDER))
 
-    points_per_exposed_bug = models.IntegerField(
+    points_per_exposed_bug = models.DecimalField(
+        decimal_places=2, max_digits=4,
         default=0, validators=[MinValueValidator(0)],
         help_text="""The number of points to be awarded per buggy implementation exposed by
-                     the student test cases.""")
+                     the student test cases. This field is limited to 4 digits total and a maximum
+                     of 2 decimal places.""")
     max_points = models.IntegerField(
         null=True, default=None, blank=True,
         validators=[MinValueValidator(0)],

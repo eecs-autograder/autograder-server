@@ -1,6 +1,7 @@
 import enum
 import functools
 from collections import OrderedDict
+from decimal import Decimal
 from typing import Union, Type, get_type_hints
 
 import django.contrib.postgres.fields as pg_fields
@@ -238,7 +239,13 @@ def _(property_: Union[property, cached_property], field_name: str) -> Parameter
             type_ = get_type_hints(property_.fget).get('return', None)
         else:  # cached_property
             type_ = get_type_hints(property_.func).get('return', None)
-        type_ = 'FIXME PROPERTY' if type_ is None else format_annotation(type_)
+
+        if type_ == Decimal:
+            type_ = 'string($float)'
+        elif type_ is None:
+            type_ = 'FIXME PROPERTY'
+        else:
+            type_ = format_annotation(type_)
     description = property_.__doc__ if hasattr(property_, '__doc__') else ''
 
     return Parameter(
@@ -281,6 +288,7 @@ _FIELD_TYPES = {
     fields.IntegerField: 'integer',
     fields.BigIntegerField: 'integer',
     fields.FloatField: 'float',
+    fields.DecimalField: 'string($float)',
     fields.BooleanField: 'boolean',
     fields.NullBooleanField: 'Optional[bool]',
     fields.CharField: 'string',

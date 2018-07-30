@@ -9,7 +9,7 @@ from autograder.utils.testing import UnitTestBase
 
 from .models import (
     DummyAutograderModel, DummyForeignAutograderModel, DummyToManyModel, AnEnum,
-    AGModelWithSerializableField, DictSerializableClass)
+    AGModelWithSerializableField, DictSerializableClass, AGModelWithDecimalField)
 
 
 class AGModelBaseToDictTest(UnitTestBase):
@@ -124,10 +124,6 @@ class AGModelBaseToDictTest(UnitTestBase):
                 'rev_foreign_key': [self.ag_model.to_dict()]
             }
             self.assertEqual(expected_one_to_many, self.ag_model.foreign_key.to_dict())
-
-    def test_empty_to_many_serialized_correctly(self):
-        self.ag_model.many_to_many.clear()
-        self.assertSequenceEqual([], self.ag_model.to_dict()['many_to_many'])
 
 
 class AGModelValidateAndCreateTestCase(UnitTestBase):
