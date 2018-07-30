@@ -1,4 +1,5 @@
 import copy
+import decimal
 import enum
 import inspect
 import typing
@@ -202,6 +203,11 @@ class ToDictMixin:
 
             if isinstance(result[field_name], enum.Enum):
                 result[field_name] = result[field_name].value
+                continue
+
+            if isinstance(result[field_name], decimal.Decimal):
+                quantized = result[field_name].quantize(decimal.Decimal('.01'))
+                result[field_name] = str(quantized)
                 continue
 
             # If this isn't a Django Model (or if it's None), skip the field logic

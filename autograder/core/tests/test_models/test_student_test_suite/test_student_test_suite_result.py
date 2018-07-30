@@ -450,8 +450,8 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.assertEqual(decimal.Decimal('3.3'), fdbk.total_points)
         self.assertEqual(decimal.Decimal('5.5'), fdbk.total_points_possible)
 
-        self.assertEqual('3.3', fdbk.to_dict()['total_points'])
-        self.assertEqual('5.5', fdbk.to_dict()['total_points_possible'])
+        self.assertEqual('3.30', fdbk.to_dict()['total_points'])
+        self.assertEqual('5.50', fdbk.to_dict()['total_points_possible'])
 
     def test_serialization(self):
         expected_fields = [

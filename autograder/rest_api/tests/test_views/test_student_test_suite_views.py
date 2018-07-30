@@ -145,7 +145,11 @@ class GetUpdateDeleteStudentTestSuiteTestCase(test_impls.GetObjectTest,
             'buggy_impl_names': ['bug_spam', 'bug_egg']
         }
         [admin] = obj_build.make_admin_users(self.course, 1)
-        self.do_patch_object_test(self.student_suite, self.client, admin, self.url, patch_data)
+        response = self.do_patch_object_test(
+            self.student_suite, self.client, admin, self.url, patch_data)
+
+        # Make sure the DecimalField is encoded correctly.
+        self.assertIsInstance(response.data['points_per_exposed_bug'], str)
 
     def test_admin_update_bad_values(self):
         patch_data = {
