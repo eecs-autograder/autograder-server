@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 from typing import Optional, BinaryIO, List
 
 from django.db import models
@@ -283,7 +284,7 @@ class StudentTestSuiteResult(AutograderModel):
             return open(self._student_test_suite_result.grade_buggy_impls_stderr_filename, 'rb')
 
         @property
-        def total_points(self) -> int:
+        def total_points(self) -> Decimal:
             if self.num_bugs_exposed is None:
                 return 0
 
@@ -291,12 +292,12 @@ class StudentTestSuiteResult(AutograderModel):
                        self.num_bugs_exposed * self._student_test_suite.points_per_exposed_bug)
 
         @property
-        def total_points_possible(self) -> int:
+        def total_points_possible(self) -> Decimal:
             if not self._fdbk.show_points or self.num_bugs_exposed is None:
                 return 0
 
             if self._student_test_suite.max_points is not None:
-                return self._student_test_suite.max_points
+                return Decimal(self._student_test_suite.max_points)
 
             return (len(self._student_test_suite.buggy_impl_names)
                     * self._student_test_suite.points_per_exposed_bug)

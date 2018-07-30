@@ -1,4 +1,5 @@
 import tempfile
+from decimal import Decimal
 from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional, Union
 
 from django.db import transaction
@@ -290,7 +291,7 @@ class SubmissionResultFeedback(ToDictMixin):
         return self._submission
 
     @cached_property
-    def total_points(self) -> int:
+    def total_points(self) -> Decimal:
         ag_suite_points = sum((
             ag_test_suite_result.total_points
             for ag_test_suite_result in self.ag_test_suite_results
@@ -304,7 +305,7 @@ class SubmissionResultFeedback(ToDictMixin):
         return ag_suite_points + student_suite_points
 
     @cached_property
-    def total_points_possible(self) -> int:
+    def total_points_possible(self) -> Decimal:
         ag_suite_points = sum((
             ag_test_suite_result.total_points_possible
             for ag_test_suite_result in self.ag_test_suite_results

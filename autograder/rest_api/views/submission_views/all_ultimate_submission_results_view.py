@@ -38,8 +38,8 @@ def _build_ultimate_submission_result_schema():
     ultimate_submission_schema.properties['results'] = Schema(
         type='object',
         properties=OrderedDict([
-            ('total_points', Schema(type='float')),
-            ('total_points_possible', Schema(type='float')),
+            ('total_points', Schema(type='string(float)')),
+            ('total_points_possible', Schema(type='string(float)')),
 
             (
                 'ag_test_suite_results',

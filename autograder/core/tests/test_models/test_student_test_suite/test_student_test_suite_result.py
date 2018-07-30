@@ -1,3 +1,4 @@
+import decimal
 import os
 
 import autograder.core.models as ag_models
@@ -58,7 +59,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.project = self.submission.group.project
 
         self.bug_names = ['bug{}'.format(i) for i in range(5)]
-        self.points_per_exposed_bug = 2
+        self.points_per_exposed_bug = decimal.Decimal('2.5')
         self.points_possible = len(self.bug_names) * self.points_per_exposed_bug
 
         self.student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
@@ -434,6 +435,23 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.max)
         self.assertEqual(max_points, fdbk.total_points)
         self.assertEqual(max_points, fdbk.total_points_possible)
+
+    def test_points_per_exposed_bug_float(self):
+        self.student_suite.validate_and_update(points_per_exposed_bug='1.1')
+        self.result.bugs_exposed = self.bug_names[:3]
+        self.result.save()
+
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.max)
+        # Keep these magic numbers up to date with setUp.
+        # Do NOT compute the expected result with multiplication.
+        # These numbers have been specifically chosen to test
+        # floating point issues.
+        # Keep the use of assertEqual. Do NOT use assertAlmostEqual
+        self.assertEqual(decimal.Decimal('3.3'), fdbk.total_points)
+        self.assertEqual(decimal.Decimal('5.5'), fdbk.total_points_possible)
+
+        self.assertEqual('3.3', fdbk.to_dict()['total_points'])
+        self.assertEqual('5.5', fdbk.to_dict()['total_points_possible'])
 
     def test_serialization(self):
         expected_fields = [

@@ -80,8 +80,8 @@ def _get_submission_data_with_results(submission_fdbk: SubmissionResultFeedback,
 
     if not full_results:
         submission_results = {
-            'total_points': submission_fdbk.total_points,
-            'total_points_possible': submission_fdbk.total_points_possible
+            'total_points': str(submission_fdbk.total_points),
+            'total_points_possible': str(submission_fdbk.total_points_possible)
         }
     else:
         submission_results = submission_fdbk.to_dict()

@@ -1,4 +1,7 @@
 import json
+from decimal import Decimal
+
+from django.core.serializers.json import DjangoJSONEncoder
 
 from autograder.core.models import get_submissions_with_results_queryset
 from autograder.core.submission_feedback import update_denormalized_ag_test_results
@@ -28,7 +31,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.ag_test_cmd2 = obj_build.make_full_ag_test_command(
             self.ag_test_case2, set_arbitrary_points=True)
 
-        self.points_per_bug_exposed = 3
+        self.points_per_bug_exposed = Decimal('3.5')
         self.num_buggy_impls = 4
         self.student_suite1 = ag_models.StudentTestSuite.objects.validate_and_create(
             name='suite1', project=self.project,
@@ -157,7 +160,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertEqual(self.total_points_possible, fdbk.total_points_possible)
 
         # Make sure that adjusting max_points for a student test suite propagates
-        max_points = self.points_per_bug_exposed
+        max_points = self.points_per_bug_exposed.to_integral_value()
         self.student_suite2.validate_and_update(max_points=max_points)
 
         fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
@@ -322,5 +325,5 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         }
 
         actual = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).to_dict()
-        print(json.dumps(actual, indent=4, sort_keys=True))
+        print(json.dumps(actual, indent=4, sort_keys=True, cls=DjangoJSONEncoder))
         self.assertEqual(expected, actual)

@@ -174,3 +174,9 @@ class AGModelWithSerializableField(AutograderModel):
 
     SERIALIZABLE_FIELDS = ('serializable', 'nullable_serializable',)
     EDITABLE_FIELDS = ('serializable', 'nullable_serializable',)
+
+
+class AGModelWithDecimalField(AutograderModel):
+    decimal_field = models.DecimalField(max_digits=3, decimal_places=2)
+
+    SERIALIZABLE_FIELDS = ['decimal_field']

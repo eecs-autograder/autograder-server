@@ -1,3 +1,5 @@
+import decimal
+
 from django.core import exceptions
 
 from autograder.core import constants
@@ -133,6 +135,35 @@ class StudentTestSuiteTestCase(UnitTestBase):
                 self.assertSequenceEqual(value, getattr(student_suite, key))
             else:
                 self.assertEqual(value, getattr(student_suite, key))
+
+    def test_valid_float_points_per_exposed_bug(self):
+        student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
+            name=self.name, project=self.project,
+            points_per_exposed_bug='.75'
+        )  # type: ag_models.StudentTestSuite
+
+        student_suite.refresh_from_db()
+
+        self.assertEqual(decimal.Decimal('.75'), student_suite.points_per_exposed_bug)
+        self.assertEqual(decimal.Decimal('.75'), student_suite.to_dict()['points_per_exposed_bug'])
+
+    def test_float_points_per_exposed_bug_too_many_decimal_places(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.StudentTestSuite.objects.validate_and_create(
+                name=self.name, project=self.project,
+                points_per_exposed_bug='1.123'
+            )  # type: ag_models.StudentTestSuite
+
+        self.assertIn('points_per_exposed_bug', cm.exception.message_dict)
+
+    def test_points_per_exposed_bug_too_many_digits(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.StudentTestSuite.objects.validate_and_create(
+                name=self.name, project=self.project,
+                points_per_exposed_bug='1000.123'
+            )  # type: ag_models.StudentTestSuite
+
+        self.assertIn('points_per_exposed_bug', cm.exception.message_dict)
 
     def test_suite_ordering(self):
         suite1 = ag_models.StudentTestSuite.objects.validate_and_create(
