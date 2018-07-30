@@ -312,8 +312,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
     def test_fdbk_to_dict(self):
         expected = {
             'pk': self.submission.pk,
-            'total_points': self.total_points,
-            'total_points_possible': self.total_points,
+            'total_points': str(self.total_points.quantize(Decimal('.01'))),
+            'total_points_possible': str(self.total_points.quantize(Decimal('.01'))),
             'ag_test_suite_results': [
                 get_suite_fdbk(self.ag_suite_result1, ag_models.FeedbackCategory.max).to_dict(),
                 get_suite_fdbk(self.ag_suite_result2, ag_models.FeedbackCategory.max).to_dict()
@@ -325,5 +325,5 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         }
 
         actual = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).to_dict()
-        print(json.dumps(actual, indent=4, sort_keys=True, cls=DjangoJSONEncoder))
+        print(json.dumps(actual, indent=4, sort_keys=True))
         self.assertEqual(expected, actual)

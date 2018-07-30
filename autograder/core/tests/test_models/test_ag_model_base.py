@@ -125,6 +125,17 @@ class AGModelBaseToDictTest(UnitTestBase):
             }
             self.assertEqual(expected_one_to_many, self.ag_model.foreign_key.to_dict())
 
+    def test_empty_to_many_serialized_correctly(self):
+        self.ag_model.many_to_many.clear()
+        self.assertSequenceEqual([], self.ag_model.to_dict()['many_to_many'])
+
+    def test_decimal_field_serialized_as_string(self):
+        obj = AGModelWithDecimalField.objects.validate_and_create(decimal_field=.5)
+        self.assertEqual('0.50', obj.to_dict()['decimal_field'])
+
+        obj = AGModelWithDecimalField.objects.validate_and_create(decimal_field='.5')
+        self.assertEqual('0.50', obj.to_dict()['decimal_field'])
+
 
 class AGModelValidateAndCreateTestCase(UnitTestBase):
     def setUp(self):
