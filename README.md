@@ -36,7 +36,12 @@ If you choose a different password, you'll need to set the AG_DB_PASSWORD
 environment variable with your chosen password:
 ```
 export AG_DB_PASSWORD=<password>
-``` 
+```
+
+## Install Redis Server
+```
+sudo apt-get install redis-server
+```
 
 ## Install Python 3.6
 ```
