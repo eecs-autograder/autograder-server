@@ -49,7 +49,7 @@ class CreateCourseTestCase(UnitTestBase):
         self.client = APIClient()
 
     def test_superuser_create_course(self):
-        [superuser] = obj_build.make_users(1, superuser=True)
+        superuser = obj_build.make_user(superuser=True)
         self.client.force_authenticate(superuser)
 
         name = 'new_course'
@@ -58,6 +58,7 @@ class CreateCourseTestCase(UnitTestBase):
 
         loaded_course = ag_models.Course.objects.get(name=name)
         self.assertEqual(loaded_course.to_dict(), response.data)
+        self.assertTrue(loaded_course.is_admin(superuser))
 
     def test_user_with_create_course_permission_create_course(self):
         user = obj_build.make_user()
@@ -69,6 +70,7 @@ class CreateCourseTestCase(UnitTestBase):
 
         loaded_course = ag_models.Course.objects.get(name='waluigi')
         self.assertEqual(loaded_course.to_dict(), response.data)
+        self.assertTrue(loaded_course.is_admin(user))
 
     def test_other_create_course_permission_denied(self):
         guest = obj_build.make_user()

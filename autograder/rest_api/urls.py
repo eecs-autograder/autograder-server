@@ -74,12 +74,7 @@ schema_view = get_schema_view(
         description="""
 <h3>Welcome to the Autograder API documentation!</h3>
 <div>
-  This API is in Beta. Most of the information here is stable, but some of it
-  may change in future releases.
-</div>
-<div>
-  You can look around as much as you like, but if you want to send real requests,
-  you'll need to authenticate. Here's how:
+  To authenticate:
 </div>
 <ol>
   <li>

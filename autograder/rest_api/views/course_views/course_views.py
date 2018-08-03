@@ -62,6 +62,10 @@ class CourseViewSet(mixins.ListModelMixin,
     def get_queryset(self):
         return ag_models.Course.objects.all()
 
+    def perform_create(self, serializer):
+        course = serializer.save()
+        course.admins.add(self.request.user)
+
     @swagger_auto_schema(responses={'200': _my_roles_schema}, api_tags=[APITags.permissions])
     @decorators.detail_route()
     def my_roles(self, request, *args, **kwargs):
