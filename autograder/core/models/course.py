@@ -36,10 +36,10 @@ class Course(AutograderModel):
             'name',
             'year',
             Case(
-                When(semester=Semester.fall, then=Value(1)),
-                When(semester=Semester.winter, then=Value(2)),
-                When(semester=Semester.spring, then=Value(3)),
-                When(semester=Semester.summer, then=Value(4))
+                When(semester=Semester.winter, then=Value(1)),
+                When(semester=Semester.spring, then=Value(2)),
+                When(semester=Semester.summer, then=Value(3)),
+                When(semester=Semester.fall, then=Value(4))
             ),
         )
 
