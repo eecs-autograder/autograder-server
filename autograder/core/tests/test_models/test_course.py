@@ -41,21 +41,52 @@ class CourseTestCase(UnitTestBase):
         self.assertEqual(late_days, course.num_late_days)
 
     def test_course_ordering(self):
-        course6 = Course.objects.validate_and_create(
-            name='EECS 280', semester=Semester.fall, year=2019)
-        course4 = Course.objects.validate_and_create(
-            name='EECS 280', semester=Semester.fall, year=2018)
-        course5 = Course.objects.validate_and_create(
+        eecs280su18 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.summer, year=2018)
+        eecs183w17 = Course.objects.validate_and_create(
+            name='EECS 183', semester=Semester.winter, year=2017)
+        eecs280w18 = Course.objects.validate_and_create(
             name='EECS 280', semester=Semester.winter, year=2018)
-        course1 = Course.objects.validate_and_create(
-            name='EECS 183', semester=Semester.spring, year=2016)
-        course3 = Course.objects.validate_and_create(
+        eecs280f18 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.fall, year=2018)
+        eecs280sp18 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.spring, year=2018)
+        eecs280su17 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.summer, year=2017)
+        eecs280sp17 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.spring, year=2017)
+        eecs183su17 = Course.objects.validate_and_create(
+            name='EECS 183', semester=Semester.summer, year=2017)
+        eecs183sp17 = Course.objects.validate_and_create(
+            name='EECS 183', semester=Semester.spring, year=2017)
+        eecs183f17 = Course.objects.validate_and_create(
+            name='EECS 183', semester=Semester.fall, year=2017)
+        eecs280w17 = Course.objects.validate_and_create(
+            name='EECS 280', semester=Semester.winter, year=2017)
+        eecs280f17 = Course.objects.validate_and_create(
             name='EECS 280', semester=Semester.fall, year=2017)
-        course2 = Course.objects.validate_and_create(
-            name='EECS 183', semester=Semester.summer, year=2016)
+        eecs183f16 = Course.objects.validate_and_create(
+            name='EECS 183', semester=Semester.fall, year=2016)
 
         self.assertSequenceEqual(
-            [course1, course2, course3, course4, course5, course6], Course.objects.all()
+            [
+                eecs183f16,
+                eecs183w17,
+                eecs183sp17,
+                eecs183su17,
+                eecs183f17,
+
+                eecs280w17,
+                eecs280sp17,
+                eecs280su17,
+                eecs280f17,
+
+                eecs280w18,
+                eecs280sp18,
+                eecs280su18,
+                eecs280f18,
+            ],
+            Course.objects.all()
         )
 
     def test_exception_on_empty_name(self):
