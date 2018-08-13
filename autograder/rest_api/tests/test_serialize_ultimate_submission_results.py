@@ -314,10 +314,11 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group_no_handgrading.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': submission1_fdbk.total_points,
-                        'total_points_possible': submission1_fdbk.total_points_possible,
-                        'handgrading_total_points': '',
-                        'handgrading_total_points_possible': ''
+                        'total_points': two_decimal_place_string(submission1_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission1_fdbk.total_points_possible),
+                        'handgrading_total_points': None,
+                        'handgrading_total_points_possible': None
                     },
                     **submission1.to_dict()
                 }
@@ -328,8 +329,9 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group_2_members.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': submission2_fdbk.total_points,
-                        'total_points_possible': submission2_fdbk.total_points_possible,
+                        'total_points': two_decimal_place_string(submission2_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission2_fdbk.total_points_possible),
                         'handgrading_total_points': (
                             submission2_fdbk.submission.handgrading_result.total_points),
                         'handgrading_total_points_possible': (
@@ -343,8 +345,9 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group_2_members.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': submission2_fdbk.total_points,
-                        'total_points_possible': submission2_fdbk.total_points_possible,
+                        'total_points': two_decimal_place_string(submission2_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission2_fdbk.total_points_possible),
                         'handgrading_total_points': (
                             submission2_fdbk.submission.handgrading_result.total_points),
                         'handgrading_total_points_possible': (
@@ -359,8 +362,9 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group_with_handgrading.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': submission3_fdbk.total_points,
-                        'total_points_possible': submission3_fdbk.total_points_possible,
+                        'total_points': two_decimal_place_string(submission3_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission3_fdbk.total_points_possible),
                         'handgrading_total_points': (
                             submission3_fdbk.submission.handgrading_result.total_points),
                         'handgrading_total_points_possible': (
@@ -383,7 +387,7 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
         )
         self.assertEqual(expected, actual)
 
-    def test_group_has_unfinished_handgrading_result_(self):
+    def test_group_has_unfinished_handgrading_result(self):
         handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
             project=self.project
         )  # type: hg_models.HandgradingRubric
@@ -413,10 +417,11 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
                 'group': group_unfinished_handgrading.to_dict(),
                 'ultimate_submission': {
                     'results': {
-                        'total_points': submission_fdbk.total_points,
-                        'total_points_possible': submission_fdbk.total_points_possible,
-                        'handgrading_total_points': '',
-                        'handgrading_total_points_possible': ''
+                        'total_points': two_decimal_place_string(submission_fdbk.total_points),
+                        'total_points_possible': two_decimal_place_string(
+                            submission_fdbk.total_points_possible),
+                        'handgrading_total_points': None,
+                        'handgrading_total_points_possible': None
                     },
                     **submission.to_dict()
                 }

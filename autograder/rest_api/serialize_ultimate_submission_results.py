@@ -106,8 +106,8 @@ def _get_submission_data_with_results(submission_fdbk: SubmissionResultFeedback,
             submission_results['handgrading_total_points_possible'] = (
                 handgrading_result.total_points_possible)
         else:
-            submission_results['handgrading_total_points'] = ''
-            submission_results['handgrading_total_points_possible'] = ''
+            submission_results['handgrading_total_points'] = None
+            submission_results['handgrading_total_points_possible'] = None
 
     submission_data['results'] = submission_results
 
