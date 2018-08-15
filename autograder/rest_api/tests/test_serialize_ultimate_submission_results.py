@@ -256,7 +256,7 @@ class SerializeUltimateSubmissionResultsTestCase(UnitTestBase):
 
             mock_get_ultimate_submission.assert_called_once_with(group, doesnt_count_for_user)
 
-    def test_group_has_finished_handgrading_result(self):
+    def test_some_groups_have_finished_handgrading_result_others_have_no_handgrading_result(self):
         handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
             project=self.project
         )  # type: hg_models.HandgradingRubric
