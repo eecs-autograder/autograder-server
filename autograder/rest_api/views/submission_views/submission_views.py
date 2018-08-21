@@ -4,6 +4,7 @@ from typing import Optional, List
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.db.models import F
 from django.http.response import FileResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -247,15 +248,22 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
         """
         Remove this submission from the grading queue.
         """
-        submission = self.get_object()
+        submission: ag_models.Submission = self.get_object()
         removeable_statuses = [ag_models.Submission.GradingStatus.received,
                                ag_models.Submission.GradingStatus.queued]
         if submission.status not in removeable_statuses:
             return response.Response('This submission is not currently queued',
                                      status=status.HTTP_400_BAD_REQUEST)
 
+        refund_bonus_submission = submission.is_bonus_submission
+        if refund_bonus_submission:
+            ag_models.Group.objects.select_for_update().filter(
+                pk=submission.group_id
+            ).update(bonus_submissions_remaining=F('bonus_submissions_remaining') + 1)
+
         submission.status = (
             ag_models.Submission.GradingStatus.removed_from_queue)
+        submission.is_bonus_submission = False
         submission.save()
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
