@@ -1312,6 +1312,78 @@ class RemoveFromQueueTestCase(test_data.Client,
         submission = self.non_enrolled_submission(self.visible_public_project)
         self.do_valid_remove_from_queue_test(submission)
 
+    def test_remove_bonus_submission_from_queue_refund_bonus_submission(self):
+        project = obj_build.make_project(submission_limit_per_day=1,
+                                         num_bonus_submissions=1, visible_to_students=True)
+        group = obj_build.make_group(project=project)
+
+        # Make sure other groups' bonus submission counts don't change.
+        other_group = obj_build.make_group(project=project)
+
+        self.assertEqual(1, group.bonus_submissions_remaining)
+        self.assertEqual(1, other_group.bonus_submissions_remaining)
+
+        self.client.force_authenticate(group.members.first())
+        response = self.client.post(reverse('submissions', kwargs={'pk': group.pk}),
+                                    {'submitted_files': []}, format='multipart')
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code, msg=response.data)
+
+        group.refresh_from_db()
+        self.assertEqual(1, group.bonus_submissions_remaining)
+        self.assertEqual(1, other_group.bonus_submissions_remaining)
+
+        submission = ag_models.Submission.objects.get(pk=response.data['pk'])
+        self.assertFalse(submission.is_bonus_submission)
+
+        submission.status = ag_models.Submission.GradingStatus.finished_grading
+        submission.save()
+
+        response = self.client.post(reverse('submissions', kwargs={'pk': group.pk}),
+                                    {'submitted_files': []}, format='multipart')
+        group.refresh_from_db()
+        self.assertEqual(0, group.bonus_submissions_remaining)
+        self.assertEqual(1, other_group.bonus_submissions_remaining)
+
+        bonus_submission = ag_models.Submission.objects.get(pk=response.data['pk'])
+        self.assertTrue(bonus_submission.is_bonus_submission)
+
+        response = self.client.post(submission_remove_from_queue_url(bonus_submission))
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code, msg=response.data)
+
+        group.refresh_from_db()
+        self.assertEqual(1, group.bonus_submissions_remaining)
+        self.assertEqual(1, other_group.bonus_submissions_remaining)
+
+        bonus_submission.refresh_from_db()
+        self.assertFalse(bonus_submission.is_bonus_submission)
+
+    def test_remove_non_bonus_submission_from_queue_no_refund(self):
+        project = obj_build.make_project(submission_limit_per_day=1,
+                                         num_bonus_submissions=1, visible_to_students=True)
+        group = obj_build.make_group(project=project)
+
+        self.assertEqual(1, group.bonus_submissions_remaining)
+
+        self.client.force_authenticate(group.members.first())
+        response = self.client.post(reverse('submissions', kwargs={'pk': group.pk}),
+                                    {'submitted_files': []}, format='multipart')
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code, msg=response.data)
+
+        group.refresh_from_db()
+        self.assertEqual(1, group.bonus_submissions_remaining)
+
+        submission = ag_models.Submission.objects.get(pk=response.data['pk'])
+        self.assertFalse(submission.is_bonus_submission)
+
+        response = self.client.post(submission_remove_from_queue_url(submission))
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code, msg=response.data)
+
+        group.refresh_from_db()
+        self.assertEqual(1, group.bonus_submissions_remaining)
+
+        submission.refresh_from_db()
+        self.assertFalse(submission.is_bonus_submission)
+
     def test_enrolled_remove_from_queue_project_hidden_permission_denied(self):
         for project in self.hidden_projects:
             submission = self.enrolled_submission(project)
