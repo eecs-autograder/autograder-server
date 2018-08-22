@@ -278,9 +278,9 @@ def can_request_feedback_category(
                 return submission.is_past_daily_limit
 
             if fdbk_category == ag_models.FeedbackCategory.ultimate_submission:
-                group_ultimate_submission = get_ultimate_submission(group)
+                user_ultimate_submission = get_ultimate_submission(group, request.user)
                 return (not project.hide_ultimate_submission_fdbk
-                        and group_ultimate_submission == submission
+                        and user_ultimate_submission == submission
                         and deadline_past)
 
             return False
