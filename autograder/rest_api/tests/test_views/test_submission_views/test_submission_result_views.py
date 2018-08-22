@@ -10,6 +10,7 @@ import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.models.ag_test.ag_test_command import MAX_AG_TEST_COMMAND_FDBK_SETTINGS
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 from autograder.core.submission_feedback import update_denormalized_ag_test_results
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_suite_fdbk, get_cmd_fdbk, get_submission_fdbk)
@@ -1334,9 +1335,62 @@ class SubmissionResultsCachingTestCase(UnitTestBase):
     def _make_url(self, submission: ag_models.Submission,
                   fdbk_category: ag_models.FeedbackCategory=ag_models.FeedbackCategory.normal,
                   use_cache=True):
-        url = reverse('submission-results', kwargs={'pk': submission.pk})
-        url += '?feedback_category={}'.format(fdbk_category.value)
-        if not use_cache:
-            url += '&use_cache=false'
+        return _make_submission_result_url(submission, fdbk_category, use_cache)
 
-        return url
+
+class UltimateSubmissionWithLateDaysTestCase(UnitTestBase):
+    def test_group_member_with_different_ultimate_submission(self):
+        """
+        When a group member has a different ultimate submission than the
+        rest of the group due to running out of late days,
+        we need to make sure that the student can request ultimate
+        submission feedback on their ultimate submission.
+        """
+        project = obj_build.make_project(
+            visible_to_students=True, hide_ultimate_submission_fdbk=False,
+            ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.most_recent)
+        group = obj_build.make_group(num_members=2, project=project)
+
+        doesnt_count_for_user, counts_for_user = group.members.all()
+
+        first_submission = obj_build.make_finished_submission(group=group)
+        most_recent_submission = obj_build.make_finished_submission(
+            group=group, does_not_count_for=[doesnt_count_for_user.username])
+
+        self.assertEqual(first_submission,
+                         get_ultimate_submission(group, user=doesnt_count_for_user))
+        self.assertEqual(most_recent_submission,
+                         get_ultimate_submission(group, user=counts_for_user))
+
+        client = APIClient()
+
+        client.force_authenticate(counts_for_user)
+        response = client.get(
+            _make_submission_result_url(most_recent_submission,
+                                        ag_models.FeedbackCategory.ultimate_submission))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        client.force_authenticate(doesnt_count_for_user)
+        # Shouldn't be able to get ultimate submission fdbk on
+        # the most recent submission (that doesn't count for this user)
+        response = client.get(
+            _make_submission_result_url(most_recent_submission,
+                                        ag_models.FeedbackCategory.ultimate_submission))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        response = client.get(
+            _make_submission_result_url(first_submission,
+                                        ag_models.FeedbackCategory.ultimate_submission))
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+
+def _make_submission_result_url(
+        submission: ag_models.Submission,
+        fdbk_category: ag_models.FeedbackCategory=ag_models.FeedbackCategory.normal,
+        use_cache=True):
+    url = reverse('submission-results', kwargs={'pk': submission.pk})
+    url += '?feedback_category={}'.format(fdbk_category.value)
+    if not use_cache:
+        url += '&use_cache=false'
+
+    return url
