@@ -176,19 +176,33 @@ class UserLateDaysViewTestCase(UnitTestBase):
         student = obj_build.make_student_user(self.course)
         self.do_get_late_days_test(staff, student, self.course, self.initial_num_late_days)
 
-    def test_admin_change_late_day_count(self):
+    def test_admin_change_late_day_count_by_pk(self):
         admin = obj_build.make_admin_user(self.course)
         student = obj_build.make_student_user(self.course)
 
         self.client.force_authenticate(admin)
-        response = self.client.put(self.get_url(student, self.course), {'late_days_remaining': 42})
+        response = self.client.put(self.get_pk_url(student, self.course),
+                                   {'late_days_remaining': 42})
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual({'late_days_remaining': 42}, response.data)
 
         remaining = ag_models.LateDaysRemaining.objects.get(user=student, course=self.course)
         self.assertEqual(42, remaining.late_days_remaining)
 
-    def test_admin_change_late_day_count_object_exists(self):
+    def test_admin_change_late_day_count_by_username(self):
+        admin = obj_build.make_admin_user(self.course)
+        student = obj_build.make_student_user(self.course)
+
+        self.client.force_authenticate(admin)
+        response = self.client.put(self.get_username_url(student, self.course),
+                                   {'late_days_remaining': 42})
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual({'late_days_remaining': 42}, response.data)
+
+        remaining = ag_models.LateDaysRemaining.objects.get(user=student, course=self.course)
+        self.assertEqual(42, remaining.late_days_remaining)
+
+    def test_admin_change_late_day_count_by_pk_object_exists(self):
         admin = obj_build.make_admin_user(self.course)
         student = obj_build.make_student_user(self.course)
 
@@ -196,7 +210,24 @@ class UserLateDaysViewTestCase(UnitTestBase):
         self.do_get_late_days_test(admin, student, self.course, self.initial_num_late_days)
 
         self.client.force_authenticate(admin)
-        response = self.client.put(self.get_url(student, self.course), {'late_days_remaining': 27})
+        response = self.client.put(self.get_pk_url(student, self.course),
+                                   {'late_days_remaining': 27})
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual({'late_days_remaining': 27}, response.data)
+
+        remaining = ag_models.LateDaysRemaining.objects.get(user=student, course=self.course)
+        self.assertEqual(27, remaining.late_days_remaining)
+
+    def test_admin_change_late_day_count_by_username_object_exists(self):
+        admin = obj_build.make_admin_user(self.course)
+        student = obj_build.make_student_user(self.course)
+
+        ag_models.LateDaysRemaining.objects.validate_and_create(user=student, course=self.course)
+        self.do_get_late_days_test(admin, student, self.course, self.initial_num_late_days)
+
+        self.client.force_authenticate(admin)
+        response = self.client.put(self.get_username_url(student, self.course),
+                                   {'late_days_remaining': 27})
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual({'late_days_remaining': 27}, response.data)
 
@@ -212,13 +243,22 @@ class UserLateDaysViewTestCase(UnitTestBase):
         self.assertFalse(other_course.is_admin(admin))
 
         self.client.force_authenticate(admin)
-        response = self.client.put(self.get_url(other_course_student, other_course),
+        response = self.client.put(self.get_pk_url(other_course_student, other_course),
+                                   {'late_days_remaining': 10})
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        response = self.client.put(self.get_username_url(other_course_student, other_course),
                                    {'late_days_remaining': 10})
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
         # Guest for other course
         other_guest = obj_build.make_user()
-        response = self.client.put(self.get_url(other_guest, other_course),
+        response = self.client.put(self.get_pk_url(other_guest, other_course),
+                                   {'late_days_remaining': 7})
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        other_guest = obj_build.make_user()
+        response = self.client.put(self.get_username_url(other_guest, other_course),
                                    {'late_days_remaining': 7})
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
@@ -231,12 +271,18 @@ class UserLateDaysViewTestCase(UnitTestBase):
         self.assertFalse(other_course.is_staff(staff))
 
         self.client.force_authenticate(staff)
-        response = self.client.get(self.get_url(other_course_student, other_course))
+        response = self.client.get(self.get_pk_url(other_course_student, other_course))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        response = self.client.get(self.get_username_url(other_course_student, other_course))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
         # Guest for other course
         other_guest = obj_build.make_user()
-        response = self.client.get(self.get_url(other_guest, other_course))
+        response = self.client.get(self.get_pk_url(other_guest, other_course))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        response = self.client.get(self.get_username_url(other_guest, other_course))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_student_view_other_late_day_count_permission_denied(self):
@@ -244,7 +290,10 @@ class UserLateDaysViewTestCase(UnitTestBase):
         student2 = obj_build.make_student_user(self.course)
 
         self.client.force_authenticate(student1)
-        response = self.client.get(self.get_url(student2, self.course))
+        response = self.client.get(self.get_pk_url(student2, self.course))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        response = self.client.get(self.get_username_url(student2, self.course))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_guest_view_other_late_day_count_permission_denied(self):
@@ -252,7 +301,10 @@ class UserLateDaysViewTestCase(UnitTestBase):
         guest2 = obj_build.make_user()
 
         self.client.force_authenticate(guest1)
-        response = self.client.get(self.get_url(guest2, self.course))
+        response = self.client.get(self.get_pk_url(guest2, self.course))
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        response = self.client.get(self.get_username_url(guest2, self.course))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_get_late_day_count_object_exists(self):
@@ -269,7 +321,7 @@ class UserLateDaysViewTestCase(UnitTestBase):
     def test_missing_course_pk_query_param(self):
         student = obj_build.make_student_user(self.course)
         self.client.force_authenticate(student)
-        url = reverse('user-late-days', kwargs={'user_pk': student.pk})
+        url = reverse('user-late-days', kwargs={'username_or_pk': student.pk})
 
         response = self.client.get(url)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -281,7 +333,10 @@ class UserLateDaysViewTestCase(UnitTestBase):
         admin = obj_build.make_admin_user(self.course)
         self.client.force_authenticate(admin)
 
-        response = self.client.put(self.get_url(admin, self.course), {})
+        response = self.client.put(self.get_pk_url(admin, self.course), {})
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        response = self.client.put(self.get_username_url(admin, self.course), {})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
     def test_get_late_days_course_has_no_late_days(self):
@@ -292,11 +347,17 @@ class UserLateDaysViewTestCase(UnitTestBase):
     def do_get_late_days_test(self, requestor: User, requestee: User, course: ag_models.Course,
                               expected_num_late_days: int):
         self.client.force_authenticate(requestor)
-        response = self.client.get(self.get_url(requestee, course))
 
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual({'late_days_remaining': expected_num_late_days}, response.data)
+        for url in self.get_pk_url(requestee, course), self.get_username_url(requestee, course):
+            response = self.client.get(url)
 
-    def get_url(self, requestee: User, course: ag_models.Course):
-        url = reverse('user-late-days', kwargs={'user_pk': requestee.pk})
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual({'late_days_remaining': expected_num_late_days}, response.data)
+
+    def get_pk_url(self, requestee: User, course: ag_models.Course):
+        url = reverse('user-late-days', kwargs={'username_or_pk': requestee.pk})
+        return url + f'?course_pk={course.pk}'
+
+    def get_username_url(self, requestee: User, course: ag_models.Course):
+        url = reverse('user-late-days', kwargs={'username_or_pk': requestee.username})
         return url + f'?course_pk={course.pk}'
