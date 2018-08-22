@@ -126,7 +126,11 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
     )
     @method_decorator(require_query_params('course_pk'))
     def get(self, request: Request, *args, **kwargs):
-        user = get_object_or_404(User.objects, pk=kwargs['user_pk'])
+        try:
+            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_pk']))
+        except ValueError:
+            user = get_object_or_404(User.objects, username=kwargs['username_or_pk'])
+
         course = get_object_or_404(ag_models.Course.objects, pk=request.query_params['course_pk'])
         remaining = ag_models.LateDaysRemaining.objects.get_or_create(user=user, course=course)[0]
 
@@ -146,7 +150,11 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
     )
     @method_decorator(require_body_params('late_days_remaining'))
     def put(self, request: Request, *args, **kwargs):
-        user = get_object_or_404(User.objects, pk=kwargs['user_pk'])
+        try:
+            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_pk']))
+        except ValueError:
+            user = get_object_or_404(User.objects, username=kwargs['username_or_pk'])
+
         course = get_object_or_404(ag_models.Course.objects, pk=request.query_params['course_pk'])
 
         with transaction.atomic():
