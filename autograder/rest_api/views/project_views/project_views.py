@@ -81,9 +81,9 @@ class CopyProjectView(AGModelGenericViewSet):
         if not target_course.is_admin(request.user):
             return response.Response(status=status.HTTP_403_FORBIDDEN)
 
-        new_name = request.query_params.get('new_name', None)
+        new_project_name = request.query_params.get('new_project_name', None)
         new_project = copy_project(
-            project=project, target_course=target_course, new_project_name=new_name)
+            project=project, target_course=target_course, new_project_name=new_project_name)
 
         return response.Response(status=status.HTTP_201_CREATED, data=new_project.to_dict())
 

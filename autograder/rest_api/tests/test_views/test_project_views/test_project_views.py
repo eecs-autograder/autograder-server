@@ -184,7 +184,7 @@ class CopyProjectViewTestCase(UnitTestBase):
         url = reverse('copy-project',
                       kwargs={'project_pk': project.pk, 'target_course_pk': target_course.pk})
         if new_name is not None:
-            url += f'?new_name={new_name}'
+            url += f'?new_project_name={new_name}'
 
         return url
 
