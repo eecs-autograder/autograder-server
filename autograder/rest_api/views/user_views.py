@@ -45,7 +45,8 @@ class UserViewSet(mixins.RetrieveModelMixin,
         return response.Response(
             ag_serializers.UserSerializer(request.user).data)
 
-    @swagger_auto_schema(responses={'200': _course_list_schema})
+    @swagger_auto_schema(responses={'200': _course_list_schema},
+                         api_tags=[APITags.permissions])
     @decorators.detail_route()
     def courses_is_admin_for(self, request, *args, **kwargs):
         user = self.get_object()
@@ -53,7 +54,8 @@ class UserViewSet(mixins.RetrieveModelMixin,
             ag_serializers.CourseSerializer(user.courses_is_admin_for.all(),
                                             many=True).data)
 
-    @swagger_auto_schema(responses={'200': _course_list_schema})
+    @swagger_auto_schema(responses={'200': _course_list_schema},
+                         api_tags=[APITags.permissions])
     @decorators.detail_route()
     def courses_is_staff_for(self, request, *args, **kwargs):
         user = self.get_object()
@@ -61,7 +63,8 @@ class UserViewSet(mixins.RetrieveModelMixin,
             ag_serializers.CourseSerializer(user.courses_is_staff_for.all(),
                                             many=True).data)
 
-    @swagger_auto_schema(responses={'200': _course_list_schema})
+    @swagger_auto_schema(responses={'200': _course_list_schema},
+                         api_tags=[APITags.permissions])
     @decorators.detail_route()
     def courses_is_handgrader_for(self, request, *args, **kwargs):
         user = self.get_object()
@@ -69,7 +72,8 @@ class UserViewSet(mixins.RetrieveModelMixin,
             ag_serializers.CourseSerializer(user.courses_is_handgrader_for.all(),
                                             many=True).data)
 
-    @swagger_auto_schema(responses={'200': _course_list_schema})
+    @swagger_auto_schema(responses={'200': _course_list_schema},
+                         api_tags=[APITags.permissions])
     @decorators.detail_route()
     def courses_is_enrolled_in(self, request, *args, **kwargs):
         user = self.get_object()

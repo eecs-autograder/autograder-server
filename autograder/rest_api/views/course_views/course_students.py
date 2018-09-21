@@ -58,7 +58,7 @@ class CourseStudentsViewSet(ListNestedModelViewSet):
     @method_decorator(require_body_params('new_students'))
     def put(self, request, *args, **kwargs):
         """
-        Completely replaces the student roster with the one included in
+        Completely REPLACES the student roster with the one included in
         the request.
         """
         new_roster = [
@@ -88,3 +88,8 @@ class CourseStudentsViewSet(ListNestedModelViewSet):
         students_to_remove = User.objects.filter(
             pk__in=[user['pk'] for user in users_json])
         course.students.remove(*students_to_remove)
+
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(
+            actions={'get': 'list', 'post': 'post', 'patch': 'patch', 'put': 'put'}, **initkwargs)

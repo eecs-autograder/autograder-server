@@ -200,7 +200,9 @@ class ListNestedModelViewSet(ListNestedModelMixin, NestedModelViewSet):
     """
     @classmethod
     def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'get': 'list'}, **initkwargs)
+        if actions is None:
+            actions = {'get': 'list'}
+        return super().as_view(actions=actions, **initkwargs)
 
 
 class ListCreateNestedModelViewSet(ListNestedModelMixin,

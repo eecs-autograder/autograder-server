@@ -79,3 +79,8 @@ class CourseAdminViewSet(ListNestedModelViewSet):
                 {'remove_admins': ["You cannot remove your own admin privileges."]})
 
         course.admins.remove(*users_to_remove)
+
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(
+            actions={'get': 'list', 'post': 'post', 'patch': 'patch'}, **initkwargs)
