@@ -72,3 +72,8 @@ class CourseHandgradersViewSet(ListNestedModelViewSet):
         handgraders_to_remove = User.objects.filter(
             pk__in=[user['pk'] for user in users_json])
         course.handgraders.remove(*handgraders_to_remove)
+
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(
+            actions={'get': 'list', 'post': 'post', 'patch': 'patch'}, **initkwargs)
