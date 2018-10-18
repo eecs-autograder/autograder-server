@@ -242,7 +242,7 @@ class GetUpdateDeleteAppliedAnnotationTestCase(test_impls.GetObjectTest,
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
         self.do_delete_object_test(self.applied_annotation, self.client, handgrader, self.url)
 
-    def test_staff_or_student_delete_permission_denied(self):
+    def test_student_delete_permission_denied(self):
         [student] = obj_build.make_student_users(self.course, 1)
 
         self.do_delete_object_permission_denied_test(self.applied_annotation, self.client,
