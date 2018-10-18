@@ -135,17 +135,15 @@ def is_student(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassTyp
     return IsStudent
 
 
-def is_admin_or_handgrader_or_read_only_staff(
+def is_admin_or_staff_or_handgrader(
         get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:
-    class IsAdminOrHandgraderOrReadOnlyStaff(permissions.BasePermission):
+    class IsAdminOrStaffOrHandgrader(permissions.BasePermission):
         def has_object_permission(self, request, view, obj):
             course = get_course_fn(obj)
-            is_read_only_staff = (request.method in permissions.SAFE_METHODS
-                                  and course.is_staff(request.user))
-            return (course.is_admin(request.user) or course.is_handgrader(request.user)
-                    or is_read_only_staff)
+            return (course.is_admin(request.user) or course.is_staff(request.user)
+                    or course.is_handgrader(request.user))
 
-    return IsAdminOrHandgraderOrReadOnlyStaff
+    return IsAdminOrStaffOrHandgrader
 
 
 def is_admin_or_read_only_staff_or_handgrader(

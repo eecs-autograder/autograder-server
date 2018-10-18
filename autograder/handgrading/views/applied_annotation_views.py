@@ -10,7 +10,7 @@ from autograder.rest_api.views.ag_model_views import (
 class AppliedAnnotationListCreateView(ListCreateNestedModelViewSet):
     serializer_class = handgrading_serializers.AppliedAnnotationSerializer
     permission_classes = [
-        ag_permissions.is_admin_or_handgrader_or_read_only_staff(
+        ag_permissions.is_admin_or_staff_or_handgrader(
             lambda handgrading_result: handgrading_result.handgrading_rubric.project.course)]
 
     pk_key = 'handgrading_result_pk'
@@ -23,7 +23,7 @@ class AppliedAnnotationListCreateView(ListCreateNestedModelViewSet):
 class AppliedAnnotationDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGenericViewSet):
     serializer_class = handgrading_serializers.AppliedAnnotationSerializer
     permission_classes = [
-        ag_permissions.is_admin_or_handgrader_or_read_only_staff(
+        ag_permissions.is_admin_or_staff_or_handgrader(
             lambda applied_annotation: (
                 applied_annotation.handgrading_result.handgrading_rubric.project.course)
         )

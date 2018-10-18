@@ -26,8 +26,8 @@ from autograder.rest_api.views.ag_model_views import (
 from autograder import utils
 from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
 
-is_admin_or_read_only_staff = ag_permissions.is_admin_or_read_only_staff(
-    lambda group: group.project.course)
+is_admin = ag_permissions.is_admin(lambda group: group.project.course)
+is_staff = ag_permissions.is_staff(lambda group: group.project.course)
 is_handgrader = ag_permissions.is_handgrader(lambda group: group.project.course)
 can_view_project = ag_permissions.can_view_project(lambda group: group.project)
 
@@ -48,7 +48,7 @@ student_permission = (
 class HandgradingResultView(AGModelGenericViewSet):
     serializer_class = handgrading_serializers.HandgradingResultSerializer
     permission_classes = [
-        (P(is_admin_or_read_only_staff) | P(is_handgrader) | student_permission)
+        (P(is_admin) | P(is_staff) | P(is_handgrader) | student_permission)
     ]
 
     pk_key = 'group_pk'
@@ -120,9 +120,10 @@ class HandgradingResultView(AGModelGenericViewSet):
     def partial_update(self, request, *args, **kwargs):
         group = self.get_object()  # type: ag_models.Group
         is_admin = group.project.course.is_admin(request.user)
+        is_staff = group.project.course.is_staff(request.user)
         can_adjust_points = (
             is_admin
-            or group.project.course.is_handgrader(request.user)
+            or (is_staff or group.project.course.is_handgrader(request.user))
             and group.project.handgrading_rubric.handgraders_can_adjust_points)
 
         if 'points_adjustment' in self.request.data and not can_adjust_points:

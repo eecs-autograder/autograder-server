@@ -21,10 +21,9 @@ def comment_permissions(get_course_fn: GetRubricFnType=lambda rubric: rubric):
             is_admin = course.is_admin(request.user)
             is_staff = course.is_staff(request.user)
             is_handgrader = course.is_handgrader(request.user)
-            read_only = request.method in permissions.SAFE_METHODS
 
-            return is_admin or (is_handgrader and can_edit) or (read_only and (is_staff
-                                                                               or is_handgrader))
+            return is_admin or (can_edit and (is_staff or is_handgrader))
+
     return CommentPermissions
 
 

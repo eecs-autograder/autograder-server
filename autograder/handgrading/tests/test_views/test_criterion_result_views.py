@@ -108,11 +108,12 @@ class CreateCriterionResultTestCase(test_impls.CreateObjectTest, UnitTestBase):
             "criterion": self.criterion.pk,
         }
 
-    def test_admin_or_handgrader_valid_create(self):
+    def test_admin_or_staff_or_handgrader_valid_create(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
         [handgrader] = obj_build.make_admin_users(self.course, 1)
+        [staff] = obj_build.make_staff_users(self.course, 1)
 
-        for user in admin, handgrader:
+        for user in admin, handgrader, staff:
             response = self.do_create_object_test(handgrading_models.CriterionResult.objects,
                                                   self.client, user, self.url, self.data,
                                                   check_data=False)
@@ -174,57 +175,47 @@ class GetUpdateDeleteCriterionResultTestCase(test_impls.GetObjectTest,
         self.client = APIClient()
         self.url = reverse('criterion-result-detail', kwargs={'pk': self.criterion_result.pk})
 
-    def test_admin_or_staff_or_handgrader_valid_get(self):
-        [admin] = obj_build.make_staff_users(self.course, 1)
-        [staff] = obj_build.make_staff_users(self.course, 1)
-        [handgrader] = obj_build.make_staff_users(self.course, 1)
+        [self.admin] = obj_build.make_admin_users(self.course, 1)
+        [self.handgrader] = obj_build.make_handgrader_users(self.course, 1)
+        [self.staff] = obj_build.make_staff_users(self.course, 1)
+        [self.enrolled] = obj_build.make_student_users(self.course, 1)
 
-        for user in admin, staff, handgrader:
+    def test_admin_or_staff_or_handgrader_valid_get(self):
+        for user in self.admin, self.staff, self.handgrader:
             self.do_get_object_test(self.client, user, self.url, self.criterion_result.to_dict())
 
     def test_student_get_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.do_permission_denied_get_test(self.client, enrolled, self.url)
+        self.do_permission_denied_get_test(self.client, self.enrolled, self.url)
 
-    def test_admin_or_handgradre_valid_update(self):
+    def test_admin_or_staff_or_handgrader_valid_update(self):
         patch_data = {"selected": False}
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in admin, handgrader:
+        for user in self.admin, self.staff, self.handgrader:
             self.do_patch_object_test(
                 self.criterion_result, self.client, user, self.url, patch_data)
 
-    def test_admin_or_handgrader_update_bad_values(self):
+    def test_admin_or_staff_or_handgrader_update_bad_values(self):
         bad_data = {"selected": "not a boolean"}
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in admin, handgrader:
+        for user in self.admin, self.staff, self.handgrader:
             self.do_patch_object_invalid_args_test(self.criterion_result, self.client, user,
                                                    self.url, bad_data)
 
-    def test_staff_or_student_update_permission_denied(self):
+    def test_student_update_permission_denied(self):
         patch_data = {"selected": False}
-        [staff] = obj_build.make_staff_users(self.course, 1)
-        [student] = obj_build.make_student_users(self.course, 1)
 
-        for user in staff, student:
-            self.do_patch_object_permission_denied_test(self.criterion_result, self.client, user,
-                                                        self.url, patch_data)
+        self.do_patch_object_permission_denied_test(self.criterion_result, self.client,
+                                                    self.enrolled, self.url, patch_data)
 
     def test_admin_valid_delete(self):
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        self.do_delete_object_test(self.criterion_result, self.client, admin, self.url)
+        self.do_delete_object_test(self.criterion_result, self.client, self.admin, self.url)
+
+    def test_staff_valid_delete(self):
+        self.do_delete_object_test(self.criterion_result, self.client, self.staff, self.url)
 
     def test_handgrader_valid_delete(self):
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
-        self.do_delete_object_test(self.criterion_result, self.client, handgrader, self.url)
+        self.do_delete_object_test(self.criterion_result, self.client, self.handgrader, self.url)
 
-    def test_staff_or_student_delete_permission_denied(self):
-        [staff] = obj_build.make_staff_users(self.course, 1)
-        [student] = obj_build.make_student_users(self.course, 1)
-
-        for user in staff, student:
-            self.do_delete_object_permission_denied_test(
-                self.criterion_result, self.client, user, self.url)
+    def test_student_delete_permission_denied(self):
+        self.do_delete_object_permission_denied_test(self.criterion_result, self.client,
+                                                     self.enrolled, self.url)
