@@ -104,11 +104,12 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
             "text": "Sample comment text.",
         }
 
-    def test_admin_or_handgrader_valid_create_with_location(self):
+    def test_admin_or_staff_or_handgrader_valid_create_with_location(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
+        [staff] = obj_build.make_staff_users(self.course, 1)
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in admin, handgrader:
+        for user in admin, staff, handgrader:
             response = self.do_create_object_test(handgrading_models.Comment.objects, self.client,
                                                   user, self.url, self.data, check_data=False)
 
@@ -123,28 +124,30 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
 
             self.assertEqual(self.data["location"], response_location_dict)
 
-    def test_admin_or_handgrader_valid_create_without_location(self):
+    def test_admin_or_staff_or_handgrader_valid_create_without_location(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
+        [staff] = obj_build.make_staff_users(self.course, 1)
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
         data = {"text": "Sample comment text."}
 
-        for user in admin, handgrader:
+        for user in admin, staff, handgrader:
             self.do_create_object_test(handgrading_models.Comment.objects, self.client, user,
                                        self.url, data)
 
-    def test_enrolled_or_staff_create_permission_denied(self):
+    def test_enrolled_create_permission_denied(self):
         [enrolled] = obj_build.make_student_users(self.course, 1)
-        [staff] = obj_build.make_staff_users(self.course, 1)
 
-        for user in enrolled, staff:
+        self.do_permission_denied_create_test(handgrading_models.Comment.objects, self.client,
+                                              enrolled, self.url, self.data)
+
+    def test_staff_or_handgrader_comments_not_allowed_permission_denied(self):
+        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=False)
+        [staff] = obj_build.make_staff_users(self.course, 1)
+        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
+
+        for user in staff, handgrader:
             self.do_permission_denied_create_test(handgrading_models.Comment.objects, self.client,
                                                   user, self.url, self.data)
-
-    def test_handgrader_comments_not_allowed_permission_denied(self):
-        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=False)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
-        self.do_permission_denied_create_test(handgrading_models.Comment.objects, self.client,
-                                              handgrader, self.url, self.data)
 
 
 class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
@@ -188,68 +191,60 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
         self.client = APIClient()
         self.url = reverse('comment-detail', kwargs={'pk': self.comment.pk})
 
-    def test_admin_or_staff_or_handgrader_valid_get(self):
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        [staff] = obj_build.make_staff_users(self.course, 1)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
+        [self.admin] = obj_build.make_admin_users(self.course, 1)
+        [self.staff] = obj_build.make_staff_users(self.course, 1)
+        [self.handgrader] = obj_build.make_handgrader_users(self.course, 1)
+        [self.student] = obj_build.make_student_users(self.course, 1)
 
-        for user in admin, staff, handgrader:
+    def test_admin_or_staff_or_handgrader_valid_get(self):
+        for user in self.admin, self.staff, self.handgrader:
             self.do_get_object_test(self.client, user, self.url, self.comment.to_dict())
 
-    def test_enrolled_get_permission_denied(self):
-        [enrolled] = obj_build.make_student_users(self.course, 1)
-        self.do_permission_denied_get_test(self.client, enrolled, self.url)
+    def test_student_get_permission_denied(self):
+        self.do_permission_denied_get_test(self.client, self.student, self.url)
 
-    def test_admin_or_handgrader_valid_update(self):
+    def test_admin_or_staff_or_handgrader_valid_update(self):
         patch_data = {"text": "Changing comment text."}
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in admin, handgrader:
+        for user in self.admin, self.staff, self.handgrader:
             self.do_patch_object_test(self.comment, self.client, user, self.url, patch_data)
 
-    def test_admin_or_handgrader_update_bad_values(self):
+    def test_admin_or_staff_or_handgrader_update_bad_values(self):
         bad_data = {"location": "Location isn't editable!"}
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in admin, handgrader:
+        for user in self.admin, self.staff, self.handgrader:
             self.do_patch_object_invalid_args_test(self.comment, self.client, user, self.url,
                                                    bad_data)
 
-    def test_staff_or_student_update_permission_denied(self):
+    def test_student_update_permission_denied(self):
         patch_data = {"text": "Changing comment text."}
-        [staff] = obj_build.make_staff_users(self.course, 1)
-        [student] = obj_build.make_student_users(self.course, 1)
+        self.do_patch_object_permission_denied_test(self.comment, self.client, self.student,
+                                                    self.url, patch_data)
 
-        for user in staff, student:
+    def test_admin_valid_delete(self):
+        self.do_delete_object_test(self.comment, self.client, self.admin, self.url)
+
+    def test_staff_valid_delete(self):
+        self.do_delete_object_test(self.comment, self.client, self.staff, self.url)
+
+    def test_handgrader_valid_delete(self):
+        self.do_delete_object_test(self.comment, self.client, self.handgrader, self.url)
+
+    def test_student_delete_permission_denied(self):
+        self.do_delete_object_permission_denied_test(self.comment, self.client, self.student,
+                                                     self.url)
+
+    def test_staff_or_handgrader_update_permission_denied(self):
+        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=False)
+        patch_data = {"text": "Changing comment text."}
+
+        for user in self.staff, self.handgrader:
             self.do_patch_object_permission_denied_test(self.comment, self.client, user, self.url,
                                                         patch_data)
 
-    def test_admin_valid_delete(self):
-        [admin] = obj_build.make_admin_users(self.course, 1)
-        self.do_delete_object_test(self.comment, self.client, admin, self.url)
-
-    def test_handgrader_valid_delete(self):
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
-        self.do_delete_object_test(self.comment, self.client, handgrader, self.url)
-
-    def test_student_or_staff_delete_permission_denied(self):
-        [staff] = obj_build.make_staff_users(self.course, 1)
-        [student] = obj_build.make_student_users(self.course, 1)
-
-        for user in staff, student:
-            self.do_delete_object_permission_denied_test(self.comment, self.client, user, self.url)
-
-    def test_handgrader_update_permission_denied(self):
-        patch_data = {"text": "Changing comment text."}
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
+    def test_staff_or_handgrader_delete_permission_denied(self):
         self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=False)
-        self.do_patch_object_permission_denied_test(self.comment, self.client, handgrader,
-                                                    self.url, patch_data)
 
-    def test_handgrader_delete_permission_denied(self):
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
-        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=False)
-        self.do_delete_object_permission_denied_test(self.comment, self.client, handgrader,
-                                                     self.url)
+        for user in self.staff, self.handgrader:
+            self.do_delete_object_permission_denied_test(self.comment, self.client, user,
+                                                         self.url)

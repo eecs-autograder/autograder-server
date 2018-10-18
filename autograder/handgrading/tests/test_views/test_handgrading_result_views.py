@@ -184,8 +184,8 @@ class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
             for i in range(3)
         ]
 
-    def test_admin_or_grader_post_creates_if_does_not_exist_and_gets_if_does_exist(self):
-        for user in self.admin, self.handgrader:
+    def test_admin_or_staff_or_grader_post_creates_if_does_not_exist_and_gets_if_does_exist(self):
+        for user in self.admin, self.staff, self.handgrader:
             with self.assertRaises(exceptions.ObjectDoesNotExist):
                 print(self.group.handgrading_result)
 
@@ -270,22 +270,25 @@ class UpdateHandgradingResultPointsAdjustmentTestCase(test_impls.UpdateObjectTes
         self.do_patch_object_test(
             self.handgrading_result, self.client, self.admin, self.url, request_data)
 
-    def test_handgrader_always_update_finished_grading(self):
-        request_data = {'finished_grading': True}
-        self.do_patch_object_test(
-            self.handgrading_result, self.client, self.handgrader, self.url, request_data)
+    def test_staff_or_handgrader_always_update_finished_grading(self):
+        for user in self.staff, self.handgrader:
+            request_data = {'finished_grading': True}
+            self.do_patch_object_test(
+                self.handgrading_result, self.client, user, self.url, request_data)
 
-    def test_handgrader_update_points_adjustment_allowed(self):
-        self.handgrading_rubric.validate_and_update(handgraders_can_adjust_points=True)
-        request_data = {'points_adjustment': -3}
-        self.do_patch_object_test(
-            self.handgrading_result, self.client, self.handgrader, self.url, request_data)
+    def test_staff_or_handgrader_update_points_adjustment_allowed(self):
+        for user in self.staff, self.handgrader:
+            self.handgrading_rubric.validate_and_update(handgraders_can_adjust_points=True)
+            request_data = {'points_adjustment': -3}
+            self.do_patch_object_test(
+                self.handgrading_result, self.client, user, self.url, request_data)
 
-    def test_handgrader_update_points_adjustment_not_allowed_permission_denied(self):
-        self.handgrading_rubric.validate_and_update(handgraders_can_adjust_points=False)
-        request_data = {'points_adjustment': -3}
-        self.do_patch_object_permission_denied_test(
-            self.handgrading_result, self.client, self.handgrader, self.url, request_data)
+    def test_staff_or_handgrader_update_points_adjustment_not_allowed_permission_denied(self):
+        for user in self.staff, self.handgrader:
+            self.handgrading_rubric.validate_and_update(handgraders_can_adjust_points=False)
+            request_data = {'points_adjustment': -3}
+            self.do_patch_object_permission_denied_test(self.handgrading_result, self.client, user,
+                                                        self.url, request_data)
 
     def test_other_update_points_adjustment_permission_denied(self):
         self.handgrading_rubric.validate_and_update(handgraders_can_adjust_points=True)
