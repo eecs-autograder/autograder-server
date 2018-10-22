@@ -122,8 +122,8 @@ class HandgradingResultView(AGModelGenericViewSet):
         is_admin = group.project.course.is_admin(request.user)
         is_staff = group.project.course.is_staff(request.user)
         can_adjust_points = (
-            is_admin
-            or (is_staff or group.project.course.is_handgrader(request.user))
+            is_admin or is_staff
+            or group.project.course.is_handgrader(request.user)
             and group.project.handgrading_rubric.handgraders_can_adjust_points)
 
         if 'points_adjustment' in self.request.data and not can_adjust_points:
