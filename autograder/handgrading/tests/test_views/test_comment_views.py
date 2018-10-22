@@ -19,7 +19,7 @@ class ListCommentsTestCase(UnitTestBase):
             points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
             max_points=0,
             show_grades_and_rubric_to_students=False,
-            handgraders_can_leave_comments=True,
+            handgraders_can_leave_comments=False,
             handgraders_can_adjust_points=True,
             project=obj_build.build_project()
         )
@@ -77,7 +77,7 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
             points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
             max_points=0,
             show_grades_and_rubric_to_students=False,
-            handgraders_can_leave_comments=True,
+            handgraders_can_leave_comments=False,
             handgraders_can_adjust_points=True,
             project=obj_build.build_project()
         )
@@ -104,50 +104,60 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
             "text": "Sample comment text.",
         }
 
-    def test_admin_or_staff_or_handgrader_valid_create_with_location(self):
+    def test_admin_or_staff_valid_create_with_location(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
 
-        for user in admin, staff, handgrader:
+        for user in admin, staff:
             response = self.do_create_object_test(handgrading_models.Comment.objects, self.client,
                                                   user, self.url, self.data, check_data=False)
+            self._check_valid_comment_with_location_created(response)
 
-            loaded = handgrading_models.Comment.objects.get(pk=response.data['pk'])
-            self.assert_dict_contents_equal(loaded.to_dict(), response.data)
+    def test_handgrader_valid_create_with_location(self):
+        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=True)
+        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
+        response = self.do_create_object_test(handgrading_models.Comment.objects, self.client,
+                                              handgrader, self.url, self.data, check_data=False)
+        self._check_valid_comment_with_location_created(response)
 
-            self.assertEqual(self.data["text"], loaded.text)
-            response_location_dict = loaded.location.to_dict()
-
-            for non_modifiable in ["pk", "last_modified"]:
-                response_location_dict.pop(non_modifiable)
-
-            self.assertEqual(self.data["location"], response_location_dict)
-
-    def test_admin_or_staff_or_handgrader_valid_create_without_location(self):
+    def test_admin_or_staff_valid_create_without_location(self):
         [admin] = obj_build.make_admin_users(self.course, 1)
         [staff] = obj_build.make_staff_users(self.course, 1)
-        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
         data = {"text": "Sample comment text."}
 
-        for user in admin, staff, handgrader:
+        for user in admin, staff:
             self.do_create_object_test(handgrading_models.Comment.objects, self.client, user,
                                        self.url, data)
 
+    def test_handgrader_valid_create_can_leave_comments_without_location(self):
+        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=True)
+        [handgrader] = obj_build.make_handgrader_users(self.course, 1)
+        data = {"text": "Sample comment text."}
+
+        self.do_create_object_test(handgrading_models.Comment.objects, self.client, handgrader,
+                                   self.url, data)
+
     def test_enrolled_create_permission_denied(self):
         [enrolled] = obj_build.make_student_users(self.course, 1)
-
         self.do_permission_denied_create_test(handgrading_models.Comment.objects, self.client,
                                               enrolled, self.url, self.data)
 
-    def test_staff_or_handgrader_comments_not_allowed_permission_denied(self):
-        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=False)
-        [staff] = obj_build.make_staff_users(self.course, 1)
+    def test_handgrader_comments_not_allowed_permission_denied(self):
         [handgrader] = obj_build.make_handgrader_users(self.course, 1)
+        self.do_permission_denied_create_test(handgrading_models.Comment.objects, self.client,
+                                              handgrader, self.url, self.data)
 
-        for user in staff, handgrader:
-            self.do_permission_denied_create_test(handgrading_models.Comment.objects, self.client,
-                                                  user, self.url, self.data)
+    def _check_valid_comment_with_location_created(self, response):
+        loaded = handgrading_models.Comment.objects.get(pk=response.data['pk'])
+        self.assert_dict_contents_equal(loaded.to_dict(), response.data)
+
+        self.assertEqual(self.data["text"], loaded.text)
+        response_location_dict = loaded.location.to_dict()
+
+        for non_modifiable in ["pk", "last_modified"]:
+            response_location_dict.pop(non_modifiable)
+
+        self.assertEqual(self.data["location"], response_location_dict)
 
 
 class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
@@ -162,7 +172,7 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
             points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,
             max_points=0,
             show_grades_and_rubric_to_students=False,
-            handgraders_can_leave_comments=True,
+            handgraders_can_leave_comments=False,
             handgraders_can_adjust_points=True,
             project=obj_build.build_project()
         )
@@ -206,15 +216,28 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
     def test_admin_or_staff_or_handgrader_valid_update(self):
         patch_data = {"text": "Changing comment text."}
 
-        for user in self.admin, self.staff, self.handgrader:
+        for user in self.admin, self.staff:
             self.do_patch_object_test(self.comment, self.client, user, self.url, patch_data)
 
-    def test_admin_or_staff_or_handgrader_update_bad_values(self):
+    def test_handgrader_valid_update_when_can_leave_comment(self):
+        patch_data = {"text": "Changing comment text."}
+        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=True)
+
+        self.do_patch_object_test(self.comment, self.client, self.handgrader, self.url, patch_data)
+
+    def test_admin_or_staff_update_bad_values(self):
         bad_data = {"location": "Location isn't editable!"}
 
-        for user in self.admin, self.staff, self.handgrader:
+        for user in self.admin, self.staff:
             self.do_patch_object_invalid_args_test(self.comment, self.client, user, self.url,
                                                    bad_data)
+
+    def test_handgrader_update_bad_values_when_can_leave_comment(self):
+        bad_data = {"location": "Location isn't editable!"}
+        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=True)
+
+        self.do_patch_object_invalid_args_test(self.comment, self.client, self.handgrader,
+                                               self.url, bad_data)
 
     def test_student_update_permission_denied(self):
         patch_data = {"text": "Changing comment text."}
@@ -228,23 +251,18 @@ class GetUpdateDeleteCommentTestCase(test_impls.GetObjectTest,
         self.do_delete_object_test(self.comment, self.client, self.staff, self.url)
 
     def test_handgrader_valid_delete(self):
+        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=True)
         self.do_delete_object_test(self.comment, self.client, self.handgrader, self.url)
 
     def test_student_delete_permission_denied(self):
         self.do_delete_object_permission_denied_test(self.comment, self.client, self.student,
                                                      self.url)
 
-    def test_staff_or_handgrader_update_permission_denied(self):
-        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=False)
+    def test_handgrader_update_permission_denied(self):
         patch_data = {"text": "Changing comment text."}
+        self.do_patch_object_permission_denied_test(self.comment, self.client, self.handgrader,
+                                                    self.url, patch_data)
 
-        for user in self.staff, self.handgrader:
-            self.do_patch_object_permission_denied_test(self.comment, self.client, user, self.url,
-                                                        patch_data)
-
-    def test_staff_or_handgrader_delete_permission_denied(self):
-        self.handgrading_rubric.validate_and_update(handgraders_can_leave_comments=False)
-
-        for user in self.staff, self.handgrader:
-            self.do_delete_object_permission_denied_test(self.comment, self.client, user,
-                                                         self.url)
+    def test_handgrader_delete_permission_denied(self):
+        self.do_delete_object_permission_denied_test(self.comment, self.client, self.handgrader,
+                                                     self.url)
