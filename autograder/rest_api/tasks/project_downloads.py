@@ -78,13 +78,9 @@ GetSubmissionsFnType = Callable[[ag_models.Project, Sequence[ag_models.Group]],
 def _get_ultimate_submissions(
         project: ag_models.Project,
         groups: Sequence[ag_models.Group]) -> Tuple[Iterator[SubmissionResultFeedback], int]:
-    if len(groups) == 0:
-        # We don't want to pass an empty list of groups to get_ultimate_submissions.
-        # See https://github.com/eecs-autograder/autograder-server/issues/273
-        return [], 0
-
-    return (get_ultimate_submissions(project, *groups, ag_test_preloader=AGTestPreLoader(project)),
-            len(groups))
+    submissions = get_ultimate_submissions(
+        project, filter_groups=groups, ag_test_preloader=AGTestPreLoader(project))
+    return submissions, len(groups)
 
 
 # Given a task, an iterator of SubmissionResultFeedbacks,

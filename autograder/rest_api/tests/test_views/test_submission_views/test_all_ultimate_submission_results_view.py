@@ -217,6 +217,23 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertSequenceEqual(expected, response.data['results'])
 
+    def test_get_results_exclude_staff_no_non_staff_groups_exist(self):
+        # Staff and admin will be excluded
+        staff_group, staff_submission = self._make_group_with_submissions(
+            1, members_role=obj_build.UserRole.staff)
+        admin_group, admin_submission = self._make_group_with_submissions(
+            1, members_role=obj_build.UserRole.admin)
+
+        query_params = {
+            'include_staff': 'false'
+        }
+        url = f'{self.base_url}?{urlencode(query_params)}'
+
+        self.client.force_authenticate(admin_group.members.first())
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual([], response.data['results'])
+
     def test_get_results_custom_page_size(self):
         student_group1, student_submission1 = self._make_group_with_submissions(2)
         # This will be on_page 2
@@ -316,6 +333,14 @@ class AllUltimateSubmissionResultsViewTestCase(UnitTestBase):
         group = obj_build.make_group(num_members=2, project=self.project)
         self.assertEqual(0, group.submissions.count())
 
+        admin = obj_build.make_admin_user(self.course)
+        self.client.force_authenticate(admin)
+
+        response = self.client.get(self.base_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual([], response.data['results'])
+
+    def test_get_results_no_groups_exist(self):
         admin = obj_build.make_admin_user(self.course)
         self.client.force_authenticate(admin)
 
