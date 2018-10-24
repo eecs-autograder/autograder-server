@@ -317,6 +317,38 @@ class ListHandgradingResultsViewTestCase(UnitTestBase):
     def test_staff_get_handgrading_results_no_results(self):
         self.do_handgrading_results_test(self.staff, num_results=0)
 
+    def test_get_handgrading_results_exclude_staff(self):
+        staff_group = obj_build.make_group(members_role=obj_build.UserRole.staff,
+                                           project=self.project)
+        admin_group = obj_build.make_group(members_role=obj_build.UserRole.admin,
+                                           project=self.project)
+
+        staff_submission = obj_build.make_finished_submission(group=staff_group)
+        admin_submission = obj_build.make_finished_submission(group=admin_group)
+
+        staff_hg_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=staff_submission, group=staff_group, handgrading_rubric=self.rubric)
+        admin_hg_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=admin_submission, group=admin_group, handgrading_rubric=self.rubric)
+
+        self.client.force_authenticate(self.staff)
+        url = reverse('handgrading_results', kwargs={'pk': self.project.pk})
+        url += '?' + urlencode({'include_staff': 'false'})
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertSequenceEqual([], response.data['results'])
+
+        student_group = obj_build.make_group(members_role=obj_build.UserRole.student,
+                                             project=self.project)
+        student_submission = obj_build.make_finished_submission(group=student_group)
+        student_hg_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=student_submission, group=student_group, handgrading_rubric=self.rubric)
+
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(1, len(response.data['results']))
+        self.assertEqual(student_group.member_names, response.data['results'][0]['member_names'])
+
     def test_handgrader_get_handgrading_results_no_results(self):
         self.do_handgrading_results_test(self.handgrader, num_results=0)
 

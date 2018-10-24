@@ -1,4 +1,5 @@
 import copy
+import itertools
 from collections import OrderedDict
 
 from django.contrib.auth.models import User
@@ -148,6 +149,8 @@ def _buid_minimal_handgrading_resuit_schema():
     group_with_handgrading_result_schema.properties['handgrading_result'] = Schema(
         title='MinimalHandgradingResult',
         type='object',
+        description=('When this value is null, indicates that '
+                     'handgrading has not started for this group.'),
         properties=OrderedDict([
             ('finished_grading', Schema(
                 type='boolean',
@@ -174,8 +177,7 @@ _handgrading_results_schema = Schema(
         ('previous', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
         ('results', Schema(
             type='array',
-            items=_buid_minimal_handgrading_resuit_schema()
-
+            items=_buid_minimal_handgrading_resuit_schema(),
         )),
     ])
 )
@@ -196,6 +198,11 @@ class ListHandgradingResultsView(AGModelAPIView):
 
     @swagger_auto_schema(
         manual_parameters=[
+            Parameter(
+                name='include_staff', type='string', enum=['true', 'false'], in_='query',
+                description='When false, excludes staff and admin users '
+                            'from the results. Defaults to true.'
+            ),
             Parameter(name='page', type='integer', in_='query'),
             Parameter(name='page_size', type='integer', in_='query',
                       default=HandgradingResultPaginator.page_size,
@@ -226,6 +233,14 @@ class ListHandgradingResultsView(AGModelAPIView):
             Prefetch('handgrading_result', hg_result_queryset),
             Prefetch('members', User.objects.order_by('username')),
         ).all()
+
+        include_staff = self.request.query_params.get('include_staff', 'true') == 'true'
+        if not include_staff:
+            staff = list(
+                itertools.chain(project.course.staff.all(),
+                                project.course.admins.all())
+            )
+            groups = groups.exclude(members__in=staff)
 
         paginator = HandgradingResultPaginator()
         page = paginator.paginate_queryset(queryset=groups, request=self.request, view=self)
