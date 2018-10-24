@@ -193,7 +193,7 @@ class Annotation(AutograderModel):
 
 class HandgradingResult(AutograderModel):
     """
-    Contains general information about a group's handgrading result
+    Contains general information about a group's handgrading result.
     Represents the handgrading result of a group's best submission.
     """
     group = models.OneToOneField(
