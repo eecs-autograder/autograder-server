@@ -136,7 +136,7 @@ class AllUltimateSubmissionResults(AGModelAPIView):
 
         ag_test_preloader = AGTestPreLoader(project)
         ultimate_submissions = get_ultimate_submissions(
-            project, *page, ag_test_preloader=ag_test_preloader)
+            project, filter_groups=page, ag_test_preloader=ag_test_preloader)
 
         results = serialize_ultimate_submission_results(
             ultimate_submissions, full_results=full_results)

@@ -1,5 +1,5 @@
 import warnings
-from typing import Iterator, Optional, List
+from typing import Iterator, Optional, List, Sequence
 
 from django.contrib.auth.models import User
 from django.db.models import Prefetch
@@ -13,7 +13,7 @@ from .submission import Submission, get_submissions_with_results_queryset
 
 def get_ultimate_submission(group: Group, user: Optional[User]=None) -> Optional[Submission]:
     project = group.project
-    [group] = _prefetch_submissions(project, group)
+    [group] = _prefetch_submissions(project, [group])
     if project.ultimate_submission_policy == UltimateSubmissionPolicy.most_recent:
         return _get_most_recent_submission(group, user)
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best_with_normal_fdbk:
@@ -35,15 +35,26 @@ def get_ultimate_submission(group: Group, user: Optional[User]=None) -> Optional
 
 
 def get_ultimate_submissions(
-    project: Project, *groups: Group, ag_test_preloader: AGTestPreLoader
+    project: Project,
+    *, filter_groups: Optional[Sequence[Group]], ag_test_preloader: AGTestPreLoader
 ) -> Iterator[SubmissionResultFeedback]:
-    groups = _prefetch_submissions(project, *groups)
+    """
+    :param project: The Project to load final graded submissions from.
+    :param filter_groups: If not None, load only ultimate submissions
+        for the specified groups. Otherwise, load ultimate submissions
+        for all groups belonging to project.
+    :param ag_test_preloader: An instance of AGTestPreloader that can be
+        used to efficiently fetch test case data for project.
+    :return: An iterator of feedback results for ultimate submissions
+        belonging to project.
+    """
+    filter_groups = _prefetch_submissions(project, filter_groups)
 
     if project.ultimate_submission_policy == UltimateSubmissionPolicy.most_recent:
         return (SubmissionResultFeedback(group.submissions.first(),
                                          FeedbackCategory.max,
                                          ag_test_preloader)
-                for group in groups if group.submissions.count())
+                for group in filter_groups if group.submissions.count())
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best_with_normal_fdbk:
         warnings.warn('best_with_normal_fdbk is currently untested and may be deprecated soon.',
                       PendingDeprecationWarning)
@@ -52,7 +63,7 @@ def get_ultimate_submissions(
         # but return SubmissionResultFeedbacks with max feedback.
         best_submissions_fdbks = (
             _get_best_submission(group, FeedbackCategory.normal, ag_test_preloader)
-            for group in groups
+            for group in filter_groups
         )
         best_submissions = (fdbk.submission for fdbk in best_submissions_fdbks
                             if fdbk is not None)
@@ -62,17 +73,17 @@ def get_ultimate_submissions(
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best:
         best_submissions_fdbks = (
             _get_best_submission(group, FeedbackCategory.max, ag_test_preloader)
-            for group in groups
+            for group in filter_groups
         )
         return (fdbk for fdbk in best_submissions_fdbks if fdbk is not None)
 
 
-def _prefetch_submissions(project: Project, *groups: Group) -> List[Group]:
+def _prefetch_submissions(project: Project, groups: Optional[Sequence[Group]]) -> List[Group]:
     finished_submissions_queryset = Submission.objects.filter(
         status=Submission.GradingStatus.finished_grading)
 
     base_group_queryset = project.groups
-    if groups:
+    if groups is not None:
         base_group_queryset = base_group_queryset.filter(pk__in=[group.pk for group in groups])
 
     submissions_queryset = get_submissions_with_results_queryset(
