@@ -8,7 +8,7 @@ import uuid
 
 from django.utils.crypto import get_random_string
 
-VERSION = '3.0.5'
+VERSION = '3.0.6'
 
 # This is the autograder-server directory
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

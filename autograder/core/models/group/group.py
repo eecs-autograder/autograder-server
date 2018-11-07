@@ -102,7 +102,7 @@ class Group(ag_model_base.AutograderModel):
         help_text="""Keeps track of how many late days each user in this
             group has used.
             Data format: {
-                "<username>": <num late days used>,
+                "\<username\>": \<num late days used\>,
                 ...
             }
             NOTE: This field is updated only when a group member uses a
