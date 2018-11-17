@@ -8,6 +8,8 @@ import autograder.core.models as ag_models
 from autograder.utils.testing import UnitTestBase
 from autograder.grading_tasks import tasks
 
+import autograder.utils.testing.model_obj_builders as obj_build
+
 
 class RetryDecoratorTestCase(UnitTestBase):
     def test_retry_and_succeed(self):
@@ -177,3 +179,54 @@ class RunCommandTestCase(UnitTestBase):
             result = sandbox.run_command(['cat', 'file'], check=True)
             self.assertEqual(0, result.return_code)
             self.assertEqual('spam', result.stdout.read().decode())
+
+    def test_no_stdin_specified_redirects_devnull(self):
+        # If no stdin is redirected, this command will time out.
+        # If /dev/null is redirected it should terminate normally.
+        # This behavior is handled by the autograder_sandbox library.
+        cmd = 'python3 -c "import sys; sys.stdin.read(); print(\'done\')"'
+
+        # Run command from args
+        with AutograderSandbox() as sandbox:
+            result = tasks.run_command_from_args(
+                cmd,
+                sandbox,
+                max_num_processes=10,
+                max_stack_size=10000000,
+                max_virtual_memory=500000000,
+                timeout=2
+            )
+            self.assertFalse(result.timed_out)
+            self.assertEqual(0, result.return_code)
+            self.assertEqual('done\n', result.stdout.read().decode())
+
+        # Run ag command
+        with AutograderSandbox() as sandbox:
+            ag_command = ag_models.AGCommand.objects.validate_and_create(
+                cmd=cmd,
+                process_spawn_limit=10,
+                time_limit=2)
+            result = tasks.run_ag_command(ag_command, sandbox)
+            self.assertFalse(result.timed_out)
+            self.assertEqual(0, result.return_code)
+            self.assertEqual('done\n', result.stdout.read().decode())
+
+        project = obj_build.make_project()
+        ag_test_suite = ag_models.AGTestSuite.objects.validate_and_create(
+            name='Suite', project=project)
+        ag_test_case = ag_models.AGTestCase.objects.validate_and_create(
+            name='Case', ag_test_suite=ag_test_suite)
+        # Run ag test command
+        with AutograderSandbox() as sandbox:
+            ag_test_command = ag_models.AGTestCommand.objects.validate_and_create(
+                ag_test_case=ag_test_case,
+                name='Read stdin',
+                cmd=cmd,
+                stdin_source=ag_models.StdinSource.none,
+                time_limit=2,
+                process_spawn_limit=10
+            )
+            result = tasks.run_ag_test_command(ag_test_command, sandbox, ag_test_suite)
+            self.assertFalse(result.timed_out)
+            self.assertEqual(0, result.return_code)
+            self.assertEqual('done\n', result.stdout.read().decode())
