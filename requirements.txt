@@ -1,4 +1,4 @@
-autograder-sandbox==3.1.0
+autograder-sandbox==3.1.1
 celery==4.1.1
 Django==2.0.1
 django-extensions==1.9.8

@@ -174,7 +174,7 @@ def run_command_from_args(cmd: str,
                           max_stack_size: int,
                           max_virtual_memory: int,
                           timeout: int,
-                          stdin=None) -> CompletedCommand:
+                          stdin: Optional[FileIO]=None) -> CompletedCommand:
     run_result = sandbox.run_command(['bash', '-c', cmd],
                                      stdin=stdin,
                                      as_root=False,
@@ -222,7 +222,7 @@ class FileCloser:
         for file_ in self._files_to_close:
             file_.close()
 
-    def register_file(self, file_: FileIO):
+    def register_file(self, file_: Optional[FileIO]):
         if file_ is None:
             return
         self._files_to_close.append(file_)
