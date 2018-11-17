@@ -236,6 +236,21 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
 
+    def test_show_setup_return_code_return_code_is_none_timed_out_is_true(self):
+        """
+        This is a regression test for:
+            https://github.com/eecs-autograder/autograder-server/issues/385
+        """
+        self.student_suite.normal_fdbk_config.validate_and_update(show_setup_return_code=True)
+
+        self.result.setup_result.return_code = None
+        self.result.setup_result.timed_out = True
+        self.setup_result.save()
+        fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
+        self.assertIsNone(fdbk.setup_return_code)
+        self.assertIsNotNone(fdbk.setup_timed_out)
+        self.assertTrue(fdbk.setup_timed_out)
+
     def test_show_setup_return_code_with_setup_result_but_no_setup_cmd(self):
         self.student_suite.validate_and_update(use_setup_command=False)
         self.student_suite.normal_fdbk_config.validate_and_update(show_setup_return_code=True)
@@ -243,6 +258,9 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNotNone(self.result.setup_result.return_code)
         self.assertEqual(self.result.setup_result.return_code, fdbk.setup_return_code)
+
+        self.assertIsNotNone(self.result.setup_result.timed_out)
+        self.assertEqual(self.result.setup_result.timed_out, fdbk.setup_timed_out)
 
     def test_show_setup_return_code_with_setup_cmd_but_no_setup_result(self):
         self.assertIsNotNone(self.student_suite.setup_command)
@@ -252,6 +270,7 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.result.save()
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_return_code)
+        self.assertIsNone(fdbk.setup_timed_out)
 
     def test_show_and_hide_setup_stdout(self):
         self.student_suite.normal_fdbk_config.validate_and_update(show_setup_stdout=True)
