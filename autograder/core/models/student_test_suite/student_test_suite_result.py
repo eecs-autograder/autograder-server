@@ -164,7 +164,10 @@ class StudentTestSuiteResult(AutograderModel):
 
         @property
         def setup_timed_out(self) -> Optional[bool]:
-            if self.setup_return_code is None:
+            if not self._fdbk.show_setup_return_code:
+                return None
+
+            if self._student_test_suite_result.setup_result is None:
                 return None
 
             return self._student_test_suite_result.setup_result.timed_out
