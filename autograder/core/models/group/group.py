@@ -99,7 +99,7 @@ class Group(ag_model_base.AutograderModel):
 
     late_days_used = pg_fields.JSONField(
         default=dict, blank=True,
-        help_text="""Keeps track of how many late days each user in this
+        help_text=r"""Keeps track of how many late days each user in this
             group has used.
             Data format: {
                 "\<username\>": \<num late days used\>,
