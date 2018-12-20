@@ -13,9 +13,6 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from . import ag_model_base
-from .ag_test.ag_test_case_result import AGTestCaseResult
-from .ag_test.ag_test_command_result import AGTestCommandResult
-from .ag_test.feedback_category import FeedbackCategory
 from .student_test_suite import StudentTestSuiteResult
 
 
