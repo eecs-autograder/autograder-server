@@ -13,8 +13,6 @@ class ProjectSerializer(AGModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._course = None
-        if not self.context:
-            return
 
         if isinstance(self.instance, ag_models.Project):
             self._course = self.instance.course
@@ -23,6 +21,8 @@ class ProjectSerializer(AGModelSerializer):
 
     def to_representation(self, obj):
         result = super().to_representation(obj)
+        if not self.context:
+            return result
 
         if self._course is None and isinstance(obj, ag_models.Project):
             self._course = obj.course
