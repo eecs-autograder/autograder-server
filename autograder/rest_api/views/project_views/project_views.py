@@ -6,7 +6,7 @@ from django.dispatch import receiver
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter
+from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, mixins, response
 from rest_framework import permissions
@@ -123,6 +123,10 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
     serializer_class = ag_serializers.ProjectSerializer
     permission_classes = (project_detail_permissions,)
 
+    @swagger_auto_schema(responses={
+        '200': Schema(type='integer',
+                      description='The number of submissions for this '
+                                  'project with grading status "queued"')})
     @decorators.detail_route()
     def num_queued_submissions(self, *args, **kwargs):
         project = self.get_object()
