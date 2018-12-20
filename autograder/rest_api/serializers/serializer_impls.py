@@ -8,36 +8,32 @@ class CourseSerializer(AGModelSerializer):
 
 
 class ProjectSerializer(AGModelSerializer):
+    ag_model_class = ag_models.Project
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.show_closing_time = None
-        self.show_instructor_files = None
+        self._course = None
         if not self.context:
             return
 
-        request = self.context['request']
-        try:
-            self.show_closing_time = self.instance.course.is_admin(request.user)
-            self.show_instructor_files = self.instance.course.is_staff(request.user)
-        except AttributeError:
-            if self.instance:  # could be empty QuerySet or None
-                self.show_closing_time = self.instance[0].course.is_admin(request.user)
-                self.show_instructor_files = self.instance[0].course.is_staff(request.user)
-            else:
-                self.show_closing_time = False
-                self.show_instructor_files = False
+        if isinstance(self.instance, ag_models.Project):
+            self._course = self.instance.course
+        elif self.instance:  # could be empty QuerySet, None, or empty list
+            self._course = self.instance[0].course
 
     def to_representation(self, obj):
         result = super().to_representation(obj)
-        if self.show_closing_time is not None and not self.show_closing_time:
+
+        if self._course is None and isinstance(obj, ag_models.Project):
+            self._course = obj.course
+
+        if self._course is not None and not self._course.is_admin(self.context['request'].user):
             result.pop('closing_time', None)
 
-        if self.show_instructor_files is not None and not self.show_instructor_files:
+        if self._course is not None and not self._course.is_staff(self.context['request'].user):
             result.pop('instructor_files', None)
 
         return result
-
-    ag_model_class = ag_models.Project
 
 
 class InstructorFileSerializer(AGModelSerializer):
