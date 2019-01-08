@@ -53,6 +53,6 @@ from .submission_views.submission_result_views import (
     StudentTestSuiteResultGradeBuggyImplsStderrView,
 )
 
-from .user_views import UserViewSet, UserLateDaysView
+from .user_views import UserViewSet, CurrentUserCanCreateCoursesView, UserLateDaysView
 
 from .submission_views.all_ultimate_submission_results_view import AllUltimateSubmissionResults

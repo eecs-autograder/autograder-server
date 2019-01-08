@@ -1,6 +1,6 @@
 import itertools
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Permission
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -153,6 +153,23 @@ class RetrieveUserTestCase(test_data.Project,
 
 def user_url(user, lookup='user-detail'):
     return reverse(lookup, kwargs={'pk': user.pk})
+
+
+class CurrentUserCanCreateCoursesViewTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.user = obj_build.make_user()
+        self.client.force_authenticate(self.user)
+
+    def test_current_user_can_create_courses(self):
+        self.user.user_permissions.add(Permission.objects.get(codename='create_course'))
+        response = self.client.get(reverse('user-can-create-courses'))
+        self.assertTrue(response.data)
+
+    def test_current_user_cannot_create_courses(self):
+        response = self.client.get(reverse('user-can-create-courses'))
+        self.assertFalse(response.data)
 
 
 class UserLateDaysViewTestCase(UnitTestBase):
