@@ -116,13 +116,18 @@ class UserViewSet(mixins.RetrieveModelMixin,
 
 
 class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
-    swagger_schema = Schema(
-        type='boolean',
-        description='Whether or not the current user can create empty courses.'
-    )
+    swagger_schema = AGModelViewAutoSchema
 
     api_tags = [APITags.permissions]
 
+    @swagger_auto_schema(
+        responses={
+            '200': Schema(
+                type='boolean',
+                description='Whether or not the current user can create empty courses.'
+            )
+        }
+    )
     def get(self, request: Request, *args, **kwargs):
         return response.Response(request.user.has_perm('core.create_course'))
 
