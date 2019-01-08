@@ -132,9 +132,8 @@ class CopyCourseViewTestCase(UnitTestBase):
                 new_course_semester=ag_models.Semester.winter,
                 new_course_year=2020)
 
-    def test_user_can_copy_course_and_is_admin_copy_course_new_name_semester_year(self):
+    def test_admin_copy_course_new_name_semester_and_year(self):
         user = obj_build.make_admin_user(self.course)
-        user.user_permissions.add(Permission.objects.get(codename='create_course'))
 
         new_name = 'stave'
         new_semester = ag_models.Semester.fall
@@ -155,9 +154,8 @@ class CopyCourseViewTestCase(UnitTestBase):
 
         self.assertEqual(new_course.to_dict(), response.data)
 
-    def test_user_can_copy_course_and_is_admin_view_calls_copy_course(self):
+    def test_copy_course_view_calls_copy_course_function(self):
         user = obj_build.make_admin_user(self.course)
-        user.user_permissions.add(Permission.objects.get(codename='create_course'))
 
         dummy_course = obj_build.make_course()
         mock_copy_course = mock.Mock(return_value=dummy_course)
@@ -176,33 +174,24 @@ class CopyCourseViewTestCase(UnitTestBase):
                 new_course_semester=ag_models.Semester.spring,
                 new_course_year=2021)
 
-    def test_user_can_copy_course_but_not_admin_permission_denied(self):
+    def test_user_not_admin_permission_denied(self):
+        other_course = obj_build.make_course()
+        user = obj_build.make_admin_user(other_course)
+
+        self.client.force_authenticate(user)
+        response = self.client.post(
+            reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+            {
+                'new_name': 'New',
+                'new_semester': ag_models.Semester.summer.value,
+                'new_year': 2021
+            }
+        )
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_user_can_create_courses_but_not_admin_permission_denied(self):
         user = obj_build.make_user()
         user.user_permissions.add(Permission.objects.get(codename='create_course'))
-
-        self.client.force_authenticate(user)
-        response = self.client.post(
-            reverse('copy-course', kwargs={'course_pk': self.course.pk}),
-            {'new_name': 'New',
-             'new_semester': ag_models.Semester.summer.value,
-             'new_year': 2021}
-        )
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-
-    def test_admin_cannot_copy_courses_permission_denied(self):
-        user = obj_build.make_admin_user(self.course)
-
-        self.client.force_authenticate(user)
-        response = self.client.post(
-            reverse('copy-course', kwargs={'course_pk': self.course.pk}),
-            {'new_name': 'New',
-             'new_semester': ag_models.Semester.summer.value,
-             'new_year': 2021}
-        )
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-
-    def test_user_cannot_copy_courses_permission_denied(self):
-        user = obj_build.make_user(superuser=False)
 
         self.client.force_authenticate(user)
         response = self.client.post(
