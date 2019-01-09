@@ -84,8 +84,8 @@ schema_view = get_schema_view(
   </li>
   <li>
     Otherwise, you can snag the token from your user account.
-    Head over to <a href="https://autograder.io">autograder.io</a>, log in,
-    and open up the developer console in your browser.</li>
+    Head over to <a href="autograder.io">autograder.io</a>, log in,
+    and open up the developer console.</li>
   <li>
     Under the "Network" tab, select any of the requests to the
     "/users/current/my_roles/" endpoint. Find the "Authorization" header and copy the value

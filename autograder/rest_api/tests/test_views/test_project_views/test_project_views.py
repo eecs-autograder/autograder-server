@@ -14,7 +14,7 @@ from autograder.utils import exclude_dict
 from autograder.utils.testing import UnitTestBase
 
 
-class ListProjectsTestCase(AGViewTestBase):
+class CourseListProjectsTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
 
@@ -68,7 +68,7 @@ class ListProjectsTestCase(AGViewTestBase):
         self.assertCountEqual(expected_data, response.data)
 
 
-class CreateProjectTestCase(AGViewTestBase):
+class CourseAddProjectTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
