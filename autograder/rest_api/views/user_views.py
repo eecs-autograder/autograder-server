@@ -115,18 +115,6 @@ class UserViewSet(mixins.RetrieveModelMixin,
                 user.group_invitations_sent.all(), many=True).data)
 
 
-class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
-    swagger_schema = Schema(
-        type='boolean',
-        description='Whether or not the current user can create empty courses.'
-    )
-
-    api_tags = [APITags.permissions]
-
-    def get(self, request: Request, *args, **kwargs):
-        return response.Response(request.user.has_perm('core.create_course'))
-
-
 class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
     swagger_schema = AGModelViewAutoSchema
 
