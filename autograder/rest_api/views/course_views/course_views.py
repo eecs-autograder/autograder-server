@@ -94,7 +94,9 @@ class CopyCourseView(AGModelGenericViewSet):
 
     serializer_class = ag_serializers.CourseSerializer
 
-    permission_classes = P(ag_permissions.IsSuperuser) | P(ag_permissions.is_admin()),
+    permission_classes = (
+        (P(ag_permissions.IsSuperuser) | (P(ag_permissions.is_admin()) & P(CanCreateCourses))),
+    )
 
     @swagger_auto_schema(
         operation_description="""Makes a copy of the given course and all its projects.
