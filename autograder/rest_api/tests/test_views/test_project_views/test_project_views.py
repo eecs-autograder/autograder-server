@@ -83,11 +83,6 @@ class CreateProjectTestCase(AGViewTestBase):
         self.client.force_authenticate(admin)
         response = self.client.post(self.url, args)
 
-        # Regression check: closing_time and instructor_files should be present
-        # https://github.com/eecs-autograder/autograder-server/issues/390
-        self.assertIn('closing_time', response.data)
-        self.assertIn('instructor_files', response.data)
-
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         new_project = self.course.projects.get(name=args['name'])
@@ -126,11 +121,6 @@ class CopyProjectViewTestCase(UnitTestBase):
         new_name = 'New Project'
         response = self.client.post(self.get_url(self.project, self.project.course, new_name))
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
-
-        # Regression check: closing_time and instructor_files should be present
-        # https://github.com/eecs-autograder/autograder-server/issues/390
-        self.assertIn('closing_time', response.data)
-        self.assertIn('instructor_files', response.data)
 
         new_project = ag_models.Project.objects.get(pk=response.data['pk'])
         self.assertEqual(new_name, new_project.name)
