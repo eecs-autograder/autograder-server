@@ -9,7 +9,7 @@ import autograder.core.models as ag_models
 from .grade_student_test_suite import (
     grade_student_test_suite_impl, grade_deferred_student_test_suite)
 from .grade_ag_test import grade_ag_test_suite_impl, grade_deferred_ag_test_suite
-from .utils import retry_should_recover, mark_submission_as_error
+from .utils import retry_should_recover, mark_submission_as_error, load_queryset_with_retry
 
 
 @celery.shared_task(acks_late=True)
@@ -19,20 +19,14 @@ def grade_submission(submission_pk):
         if submission is None:
             return
 
+        # _mark_submission_as_being_graded pre-selects group and
+        # project, so this doesn't need retry logic.
         project = submission.group.project  # type: ag_models.Project
 
-        @retry_should_recover
-        def load_non_deferred_ag_suites():
-            return list(project.ag_test_suites.filter(deferred=False))
-
-        for suite in load_non_deferred_ag_suites():
+        for suite in load_queryset_with_retry(project.ag_test_suites.filter(deferred=False)):
             grade_ag_test_suite_impl(suite, submission)
 
-        @retry_should_recover
-        def load_non_deferred_student_suites():
-            return list(project.student_test_suites.filter(deferred=False))
-
-        for suite in load_non_deferred_student_suites():
+        for suite in load_queryset_with_retry(project.student_test_suites.filter(deferred=False)):
             grade_student_test_suite_impl(suite, submission)
 
         @retry_should_recover
@@ -44,19 +38,17 @@ def grade_submission(submission_pk):
 
         mark_as_waiting_for_deferred()
 
-        @retry_should_recover
-        def load_deferred_ag_suites():
-            return list(project.ag_test_suites.filter(deferred=True))
+        deferred_ag_test_suites = load_queryset_with_retry(
+            project.ag_test_suites.filter(deferred=True))
 
         ag_suite_signatures = [grade_deferred_ag_test_suite.s(ag_test_suite.pk, submission_pk)
-                               for ag_test_suite in load_deferred_ag_suites()]
+                               for ag_test_suite in deferred_ag_test_suites]
 
-        @retry_should_recover
-        def load_deferred_student_suites():
-            return list(project.student_test_suites.filter(deferred=True))
+        deferred_student_test_suites = load_queryset_with_retry(
+            project.student_test_suites.filter(deferred=True))
 
         student_suite_signatures = [grade_deferred_student_test_suite.s(suite.pk, submission.pk)
-                                    for suite in load_deferred_student_suites()]
+                                    for suite in deferred_student_test_suites]
 
         signatures = ag_suite_signatures + student_suite_signatures
         if not signatures:
