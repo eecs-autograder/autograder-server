@@ -239,14 +239,28 @@ class RetrieveProjectTestCase(AGViewTestBase):
         student = obj_build.make_student_user(self.course)
         self.do_permission_denied_get_test(self.client, student, self.url)
 
-    def test_guest_get_project(self):
+    def test_guest_get_project_any_domain(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
         guest = obj_build.make_user()
         self.do_get_object_test(
             self.client, guest, self.url,
             exclude_dict(self.project.to_dict(), ['closing_time', 'instructor_files']))
 
-    def test_guest_get_visible_non_guest_allowed_project_permission_denied(self):
+    def test_guest_get_project_right_domain(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        guest = obj_build.make_allowed_domain_guest_user(self.course)
+        self.do_get_object_test(
+            self.client, guest, self.url,
+            exclude_dict(self.project.to_dict(), ['closing_time', 'instructor_files']))
+
+    def test_guest_wrong_domain_get_project_permission_denied(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        guest = obj_build.make_user()
+        self.do_permission_denied_get_test(self.client, guest, self.url)
+
+    def test_guest_get_visible_no_guests_allowed_project_permission_denied(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=False)
         guest = obj_build.make_user()
         self.do_permission_denied_get_test(self.client, guest, self.url)

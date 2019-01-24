@@ -10,6 +10,7 @@ import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.utils.testing as test_ut
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.utils.testing import UnitTestBase
 
 
 class _SetUp(test_ut.UnitTestBase):
@@ -323,6 +324,60 @@ class UpdateGroupTestCase(_SetUp):
                                       check_group_size_limits=False)
 
 
+class UpdateGroupMemberRolesTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.course = obj_build.make_course()
+        self.project = obj_build.make_project(
+            course=self.course, max_group_size=2, guests_can_submit=True)
+
+        self.group = obj_build.make_group(
+            project=self.project, num_members=2, members_role=obj_build.UserRole.student)
+
+    def test_valid_all_guests_any_domain(self):
+        self.group.validate_and_update(
+            members=[User.objects.create(username='llama@llama.edu'),
+                     obj_build.make_user()])
+
+    def test_exception_guests_not_allowed(self):
+        self.project.validate_and_update(guests_can_submit=False)
+
+        with self.assertRaises(exceptions.ValidationError):
+            self.group.validate_and_update(members=[obj_build.make_user()])
+
+    def test_all_members_allowed_domain(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.group.validate_and_update(
+            members=[obj_build.make_allowed_domain_guest_user(self.course),
+                     obj_build.make_allowed_domain_guest_user(self.course)])
+
+    def test_exception_some_members_not_allowed_domain(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        with self.assertRaises(exceptions.ValidationError):
+            self.group.validate_and_update(
+                members=[obj_build.make_allowed_domain_guest_user(self.course),
+                         obj_build.make_user()])
+
+    def test_exception_no_members_allowed_domain(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        with self.assertRaises(exceptions.ValidationError):
+            self.group.validate_and_update(
+                members=[obj_build.make_user(), obj_build.make_user()])
+
+    def test_exception_group_mix_of_enrolled_and_staff(self):
+        with self.assertRaises(exceptions.ValidationError):
+            self.group.validate_and_update(
+                members=[obj_build.make_student_user(self.course),
+                         obj_build.make_staff_user(self.course)])
+
+    def test_exception_some_students_some_guests(self):
+        with self.assertRaises(exceptions.ValidationError):
+            self.group.validate_and_update(
+                members=[obj_build.make_student_user(self.course),
+                         obj_build.make_user()])
+
+
 class GroupMembershipTestCase(_SetUp):
     def test_exception_on_group_member_already_in_another_group(self):
         ag_models.Group.objects.validate_and_create(
@@ -358,6 +413,34 @@ class GroupMembershipTestCase(_SetUp):
         with self.assertRaises(exceptions.ValidationError):
             ag_models.Group.objects.validate_and_create(
                 members=self.guest_group, project=self.project)
+
+    def test_all_members_allowed_domain(self):
+        self.project.validate_and_update(guests_can_submit=True)
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
+        ag_models.Group.objects.validate_and_create(
+            project=self.project,
+            members=[obj_build.make_allowed_domain_guest_user(self.course),
+                     obj_build.make_allowed_domain_guest_user(self.course)])
+
+    def test_exception_some_members_not_allowed_domain(self):
+        self.project.validate_and_update(guests_can_submit=True)
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
+        with self.assertRaises(exceptions.ValidationError):
+            ag_models.Group.objects.validate_and_create(
+                members=[obj_build.make_user(),
+                         obj_build.make_allowed_domain_guest_user(self.course)],
+                project=self.project)
+
+    def test_exception_no_members_allowed_domain(self):
+        self.project.validate_and_update(guests_can_submit=True)
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
+        with self.assertRaises(exceptions.ValidationError):
+            ag_models.Group.objects.validate_and_create(
+                members=[obj_build.make_user(), obj_build.make_user()],
+                project=self.project)
 
     def test_no_exception_on_all_members_not_enrolled_and_unenrolled_allowed(self):
         self.project.guests_can_submit = True

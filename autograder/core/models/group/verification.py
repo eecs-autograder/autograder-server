@@ -1,10 +1,14 @@
+from django.contrib.auth.models import User
 from django.core import exceptions
+from typing import Iterable
 
 from autograder import utils
 
+from ..project import Project
 
-def verify_users_have_same_enrollment_status(users, project,
-                                             error_dict_field_name):
+
+def verify_users_have_same_enrollment_status(users: Iterable[User], project: Project,
+                                             error_dict_field_name: str):
     """
     Parameters:
         users -- An iterable of User objects that will potentially be
@@ -20,8 +24,8 @@ def verify_users_have_same_enrollment_status(users, project,
     - All users must either be:
         - staff members/course admins
         - enrolled students
-        - non-enrolled students AND the project must allow submissions
-            from non-enrolled students
+        - non-enrolled students with allowed domain usernames
+            AND the project must allow submissions from guests
 
     If these conditions are not met, then ValidationError will be raised.
     """
@@ -32,27 +36,36 @@ def verify_users_have_same_enrollment_status(users, project,
     num_staff = utils.count_if(
         users, lambda member: project.course.is_staff(member))
 
+    # Note: yes, the nested ifs are necessary
     if num_staff:
         if num_staff != len(users):
             raise exceptions.ValidationError({
                 error_dict_field_name: (
                     "Groups with any staff users "
                     "must consist of only staff users")})
-        return
-
-    if not project.guests_can_submit:
-        if not num_enrolled or num_enrolled != len(users):
+    elif num_enrolled:
+        if num_enrolled != len(users):
             raise exceptions.ValidationError({
                 error_dict_field_name: (
-                    "This project only accepts submissions "
-                    "from enrolled students.")})
-        return
-
-    if num_enrolled and num_enrolled != len(users):
+                    "Non-enrolled students can only be in "
+                    "groups with other non-enrolled students.")})
+    elif not project.guests_can_submit:
+        # At this point, there are only guests in the group
         raise exceptions.ValidationError({
             error_dict_field_name: (
-                "Non-enrolled students can only be in "
-                "groups with other non-enrolled students.")})
+                "This project only accepts submissions "
+                "from enrolled students.")})
+    else:
+        # At this point, there are only guests in the group
+        # and guests can submit
+        num_allowed_guests = utils.count_if(
+            users, lambda member: project.course.is_allowed_guest(member))
+        if num_allowed_guests != len(users):
+            raise exceptions.ValidationError({
+                error_dict_field_name: (
+                    f"Guest users must be in the '{project.course.allowed_guest_domain}' domain."
+                )
+            })
 
 
 def verify_group_size_allowed_by_project(users, project,

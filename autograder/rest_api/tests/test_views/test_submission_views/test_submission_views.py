@@ -21,6 +21,10 @@ from autograder.core.models import Submission
 from autograder.utils.testing import UnitTestBase
 
 
+# TODO: When removing common_generic_data module, consider adding tests for
+# guests and allowed domain.
+
+
 class ListSubmissionsTestCase(test_data.Client,
                               test_data.Project,
                               test_data.Group,

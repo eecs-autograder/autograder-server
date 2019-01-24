@@ -20,6 +20,10 @@ class _GroupsSetUp(test_data.Client, test_data.Project):
     pass
 
 
+# TODO: When removing common_generic_data module, consider adding more tests for
+# guests and allowed domain.
+
+
 class SortedListGroupsTestCase(test_data.Client, UnitTestBase):
     def test_groups_sorted_by_least_alphabetical_username(self):
         self.maxDiff = None
@@ -167,6 +171,15 @@ class CreateGroupTestCase(_GroupsSetUp,
         self.do_invalid_create_object_test(
             self.project.groups, self.client, self.admin, self.url,
             args)
+
+    def test_admin_create_group_error_non_allowed_domain_guest(self):
+        self.project.validate_and_update(guests_can_submit=True)
+        allowed_guest = obj_build.make_allowed_domain_guest_user(self.course)
+        non_allowed_guest = obj_build.make_user()
+
+        args = {'member_names': [allowed_guest.username, non_allowed_guest.username]}
+        self.do_invalid_create_object_test(
+            self.project.groups, self.client, self.admin, self.url, args)
 
     def test_admin_create_group_missing_member_names(self):
         self.do_invalid_create_object_test(
@@ -445,6 +458,21 @@ class UpdateGroupTestCase(test_data.Client,
                 group, self.client, self.admin, self.group_url(group),
                 {'member_names': new_members})
             self.assertIn('members', response.data)
+
+    def test_admin_update_group_error_non_allowed_domain_guest(self):
+        self.project.validate_and_update(guests_can_submit=True)
+        allowed_guest = obj_build.make_allowed_domain_guest_user(self.course)
+
+        group = ag_models.Group.objects.validate_and_create(
+            members=[allowed_guest], project=self.project, check_group_size_limits=False
+        )
+
+        non_allowed_guest = obj_build.make_user()
+
+        response = self.do_patch_object_invalid_args_test(
+            group, self.client, self.admin, self.group_url(group),
+            {'member_names': [allowed_guest.username, non_allowed_guest.username]})
+        self.assertIn('members', response.data)
 
     def test_admin_update_group_bad_date(self):
         group = self.enrolled_group(self.visible_public_project)

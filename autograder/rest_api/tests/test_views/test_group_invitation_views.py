@@ -13,6 +13,10 @@ class _InvitationsSetUp(test_data.Client, test_data.Project, test_data.Group):
     pass
 
 
+# TODO: When removing common_generic_data module, consider adding more tests for
+# guests and allowed domain.
+
+
 class ListGroupInvitationsTestCase(_InvitationsSetUp,
                                    test_impls.ListObjectsTest,
                                    test_impls.PermissionDeniedGetTest,
@@ -160,6 +164,42 @@ class CreateInvitationTestCase(_InvitationsSetUp,
                 project.group_invitations, self.client,
                 self.enrolled, self.get_invitations_url(project), args)
 
+    def test_guest_create_invitation_wrong_domain_permission_denied(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.visible_public_project.validate_and_update(max_group_size=2)
+
+        inviter = obj_build.make_user()
+        invitee = obj_build.make_allowed_domain_guest_user(self.course)
+
+        args = {'invited_usernames': [invitee.username]}
+        self.do_permission_denied_create_test(
+            self.visible_public_project.group_invitations, self.client,
+            inviter, self.get_invitations_url(self.visible_public_project), args)
+
+    def test_invalid_non_allowed_domain_guest_invited_by_allowed_domain_guest(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.visible_public_project.validate_and_update(max_group_size=2)
+
+        inviter = obj_build.make_allowed_domain_guest_user(self.course)
+        invitee = obj_build.make_user()
+
+        self.do_invalid_create_object_test(
+            self.visible_public_project.group_invitations, self.client, inviter,
+            self.get_invitations_url(self.visible_public_project),
+            {'invited_usernames': [invitee.username]})
+
+    def test_guest_create_invitation_right_domain(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.visible_public_project.validate_and_update(max_group_size=2)
+
+        inviter = obj_build.make_allowed_domain_guest_user(self.course)
+        invitee = obj_build.make_allowed_domain_guest_user(self.course)
+        args = {'invited_usernames': [invitee.username]}
+        self.do_create_object_test(
+            self.visible_public_project.group_invitations,
+            self.client, inviter,
+            self.get_invitations_url(self.visible_public_project), args)
+
     def test_nobody_create_invitation_private_or_hidden_project_permission_denied(self):
         other_nobody = obj_build.create_dummy_user()
         args = {'invited_usernames': [other_nobody.username]}
@@ -276,6 +316,30 @@ class GetGroupInvitationTestCase(test_data.Client,
         self.do_permission_denied_get_test(
             self.client, self.nobody, self.invitation_url(invitation))
 
+    def test_guest_get_invitation_allowed_domain(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.visible_public_project.validate_and_update(max_group_size=2)
+
+        invitor = obj_build.make_allowed_domain_guest_user(self.course)
+        invitee = obj_build.make_allowed_domain_guest_user(self.course)
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
+            invitor, [invitee], project=self.visible_public_project)
+
+        self.do_get_object_test(
+            self.client, invitor, self.invitation_url(invitation), invitation.to_dict())
+
+    def test_guest_get_invitation_wrong_domain_permission_denied(self):
+        self.visible_public_project.validate_and_update(max_group_size=2)
+
+        invitor = obj_build.make_user()
+        invitee = obj_build.make_user()
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
+            invitor, [invitee], project=self.visible_public_project)
+
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.do_permission_denied_get_test(
+            self.client, invitor, self.invitation_url(invitation))
+
     def test_handgrader_view_student_invitation_permission_denied(self):
         for project in self.all_projects:
             invite = self.enrolled_group_invitation(project)
@@ -321,6 +385,28 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         self.do_accept_permission_denied_test(
             self.non_enrolled_group_invitation(self.hidden_public_project),
             self.nobody)
+
+    def test_allowed_domain_guest_accept(self):
+        self.visible_public_project.validate_and_update(max_group_size=2)
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
+        invitor = obj_build.make_allowed_domain_guest_user(self.course)
+        invitee = obj_build.make_allowed_domain_guest_user(self.course)
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
+            invitor, [invitee], project=self.visible_public_project)
+
+        self.do_all_accept_test(invitation)
+
+    def test_wrong_domain_guest_accept_permission_denied(self):
+        self.visible_public_project.validate_and_update(max_group_size=2)
+        invitor = obj_build.make_user()
+        invitee = obj_build.make_user()
+        invitation = ag_models.GroupInvitation.objects.validate_and_create(
+            invitor, [invitee], project=self.visible_public_project)
+
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
+        self.do_accept_permission_denied_test(invitation, invitee)
 
     def test_non_enrolled_accept_invitation_project_private_permission_denied(self):
         invitation = self.non_enrolled_group_invitation(

@@ -36,7 +36,7 @@ def create_dummy_users(num_users: int, is_superuser: bool=False):
     for i in range(num_users):
         user_id = get_unique_id()
         user = User.objects.create_user(
-            first_name='steve'.format(user_id),  # Username length limit is 30 chars
+            first_name='steve',  # first_name length limit is 30 chars
             last_name='ln{}'.format(user_id),
             username='usr{}'.format(user_id),
             email='jameslp@umich.edu',
@@ -119,7 +119,17 @@ def make_users(num_users: int, superuser=False) -> Sequence[User]:
 
 
 def make_user(superuser=False) -> User:
+    """
+    Creates a user a random username and no domain in that username.
+    """
     return make_users(num_users=1, superuser=superuser)[0]
+
+
+def make_allowed_domain_guest_user(course: ag_models.Course) -> User:
+    user = make_user()
+    user.username += course.allowed_guest_domain
+    user.save()
+    return user
 
 
 def build_project(project_kwargs: dict=None, course_kwargs: dict=None) -> ag_models.Project:
@@ -215,7 +225,7 @@ def make_finished_submission(group: Optional[ag_models.Group]=None,
                            **submission_kwargs)
 
 
-def make_course(**kwargs):
+def make_course(**kwargs) -> ag_models.Course:
     if 'name' not in kwargs:
         kwargs['name'] = 'course{}'.format(get_unique_id())
 

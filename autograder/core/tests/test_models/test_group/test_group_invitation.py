@@ -175,7 +175,74 @@ class GroupInvitationMembersTestCase(_SetUp, UnitTestBase):
 
         self.assertTrue('invited_users' in cm.exception.message_dict)
 
+    def test_valid_creator_and_invitee_allowed_domain(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
+        self.project.guests_can_submit = True
+        self.project.save()
+
+        invitor = obj_build.make_allowed_domain_guest_user(self.project.course)
+        invitee = obj_build.make_allowed_domain_guest_user(self.project.course)
+
+        ag_models.GroupInvitation.objects.validate_and_create(
+            invited_users=[invitee],
+            invitation_creator=invitor,
+            project=self.project)
+
+    def test_exception_invitation_creator_allowed_guest_invitee_wrong_domain(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
+        self.project.guests_can_submit = True
+        self.project.save()
+
+        invitor = obj_build.make_allowed_domain_guest_user(self.project.course)
+        invitee = obj_build.make_user()
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.GroupInvitation.objects.validate_and_create(
+                invited_users=[invitee],
+                invitation_creator=invitor,
+                project=self.project)
+
+        self.assertTrue('invited_users' in cm.exception.message_dict)
+
+    def test_exception_invitation_creator_wrong_domain_invitee_allowed_guest(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
+        self.project.guests_can_submit = True
+        self.project.save()
+
+        invitor = obj_build.make_user()
+        invitee = obj_build.make_allowed_domain_guest_user(self.project.course)
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.GroupInvitation.objects.validate_and_create(
+                invited_users=[invitee],
+                invitation_creator=invitor,
+                project=self.project)
+
+        self.assertTrue('invited_users' in cm.exception.message_dict)
+
+    def test_exception_invitation_creator_and_invitee_wrong_domain(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
+        self.project.guests_can_submit = True
+        self.project.save()
+
+        invitor = obj_build.make_user()
+        invitee = obj_build.make_user()
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.GroupInvitation.objects.validate_and_create(
+                invited_users=[invitee],
+                invitation_creator=invitor,
+                project=self.project)
+
+        self.assertTrue('invited_users' in cm.exception.message_dict)
+
     def test_exception_on_invitation_creator_not_enrolled_but_invitees_are(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+
         self.invitation_creator.courses_is_enrolled_in.remove(
             self.project.course)
 
