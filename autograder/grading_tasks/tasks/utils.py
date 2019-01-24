@@ -13,6 +13,7 @@ from autograder_sandbox.autograder_sandbox import CompletedCommand
 from django.conf import settings
 from django import db
 from django.db import transaction
+from django.db.models import QuerySet
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
@@ -120,7 +121,7 @@ def add_files_to_sandbox(sandbox: AutograderSandbox,
                          suite: Union[ag_models.AGTestSuite, ag_models.StudentTestSuite],
                          submission: ag_models.Submission):
     student_files_to_add = []
-    for student_file in suite.student_files_needed.all():
+    for student_file in load_queryset_with_retry(suite.student_files_needed.all()):
         matching_files = fnmatch.filter(submission.submitted_filenames,
                                         student_file.pattern)
         student_files_to_add += [
@@ -130,7 +131,10 @@ def add_files_to_sandbox(sandbox: AutograderSandbox,
     if student_files_to_add:
         sandbox.add_files(*student_files_to_add)
 
-    project_files_to_add = [file_.abspath for file_ in suite.instructor_files_needed.all()]
+    project_files_to_add = [
+        file_.abspath for file_
+        in load_queryset_with_retry(suite.instructor_files_needed.all())
+    ]
     if project_files_to_add:
         owner_and_read_only = {
             'owner': 'root' if suite.read_only_instructor_files else SANDBOX_USERNAME,
@@ -226,3 +230,15 @@ class FileCloser:
         if file_ is None:
             return
         self._files_to_close.append(file_)
+
+
+@retry_should_recover
+def load_queryset_with_retry(queryset) -> List:
+    """
+    Given a Django QuerySet, evaluates the queryset and returns
+    a list of the queried items.
+    If an error occurs, retries the QuerySet evaluation according
+    to the retry_should_recover decorator.
+    """
+    assert isinstance(queryset, QuerySet)
+    return list(queryset)

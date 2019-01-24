@@ -95,7 +95,11 @@ def _run_suite_setup(sandbox: AutograderSandbox,
     with open(suite_result.setup_stderr_filename, 'wb') as f:
         shutil.copyfileobj(setup_result.stderr, f)
 
-    suite_result.save()
+    @retry_should_recover
+    def _save_suite_result():
+        suite_result.save()
+
+    _save_suite_result()
 
 
 def grade_ag_test_case_impl(sandbox: AutograderSandbox,

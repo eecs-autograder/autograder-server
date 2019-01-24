@@ -48,6 +48,7 @@ class SupportedImages(enum.Enum):
     eecs280 = 'eecs280'
     eecs285 = 'eecs285'
     eecs481 = 'eecs481'
+    eecs483 = 'eecs483'
     eecs485 = 'eecs485'
     eecs490 = 'eecs490'
     eecs498_data_mining = 'eecs498_data_mining'
@@ -59,6 +60,7 @@ DOCKER_IMAGE_IDS_TO_URLS = {
     SupportedImages.eecs280: 'jameslp/eecs280',
     SupportedImages.eecs285: 'jameslp/eecs285',
     SupportedImages.eecs481: 'jameslp/eecs481',
+    SupportedImages.eecs483: 'jameslp/eecs483',
     SupportedImages.eecs485: 'jameslp/eecs485',
     SupportedImages.eecs490: 'jameslp/eecs490',
     SupportedImages.eecs498_data_mining: 'jameslp/eecs498_data_mining',
