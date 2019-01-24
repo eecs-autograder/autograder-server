@@ -124,8 +124,13 @@ def add_files_to_sandbox(sandbox: AutograderSandbox,
     for student_file in load_queryset_with_retry(suite.student_files_needed.all()):
         matching_files = fnmatch.filter(submission.submitted_filenames,
                                         student_file.pattern)
+
+        @retry_should_recover
+        def _get_submission_dir():
+            return core_ut.get_submission_dir(submission)
+
         student_files_to_add += [
-            os.path.join(core_ut.get_submission_dir(submission), filename)
+            os.path.join(_get_submission_dir(), filename)
             for filename in matching_files]
 
     if student_files_to_add:
