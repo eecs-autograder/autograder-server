@@ -3,7 +3,6 @@ import json
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect
 
 from oauth2client import client
 from apiclient import discovery
@@ -27,21 +26,23 @@ def oauth2_callback(request):
         redirect_uri=state['redirect_uri'])
 
     http = credentials.authorize(httplib2.Http())
-    google_plus_service = discovery.build('plus', 'v1', http=http)
-    user_info = google_plus_service.people().get(userId='me').execute()
 
-    # Restrict login to umich.edu
-    if user_info.get('domain', None) != 'umich.edu':
-        return redirect(state['http_referer'])
+    url = 'https://content-people.googleapis.com/v1/people/me?personFields=names,emailAddresses'
+    response, content = http.request(url, 'GET')
+    user_info = json.loads(content)
 
-    email = utils.find_if(user_info['emails'], lambda data: data['type'] == 'account')
+    email = utils.find_if(user_info['emailAddresses'], lambda data: data['metadata']['primary'])
     if email is None:
-        raise RuntimeError('Email was None in user info')
+        raise RuntimeError('Primary email not found in user info')
 
     email = email['value']
 
-    first_name = user_info['name']['givenName'][:_DJANGO_FIRST_NAME_MAX_LEN]
-    last_name = user_info['name']['familyName'][:_DJANGO_LAST_NAME_MAX_LEN]
+    name = utils.find_if(user_info['names'], lambda data: data['metadata']['primary'])
+    if name is None:
+        raise RuntimeError('Primary name not found in user info')
+
+    first_name = name['givenName'][:_DJANGO_FIRST_NAME_MAX_LEN]
+    last_name = name['familyName'][:_DJANGO_LAST_NAME_MAX_LEN]
     user = User.objects.get_or_create(
         username=email, defaults={'first_name': first_name, 'last_name': last_name})[0]
     if user.first_name != first_name or user.last_name != last_name:

@@ -10,9 +10,9 @@ from oauth2client import client
 
 
 GOOGLE_API_SCOPES = [
-    'https://www.googleapis.com/auth/plus.me',
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile',
+    'openid',
+    'email',
+    'profile',
 ]
 
 
@@ -30,8 +30,7 @@ class GoogleOAuth2(TokenAuthentication):
             'redirect_uri': redirect_uri
         }
 
-        return 'Redirect_to: ' + flow.step1_get_authorize_url(
-            state=json.dumps(state))
+        return 'Redirect_to: ' + flow.step1_get_authorize_url(state=json.dumps(state))
 
 
 # DO NOT USE IN PRODUCTION
