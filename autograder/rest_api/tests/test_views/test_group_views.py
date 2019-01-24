@@ -173,6 +173,7 @@ class CreateGroupTestCase(_GroupsSetUp,
             args)
 
     def test_admin_create_group_error_non_allowed_domain_guest(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
         self.project.validate_and_update(guests_can_submit=True)
         allowed_guest = obj_build.make_allowed_domain_guest_user(self.course)
         non_allowed_guest = obj_build.make_user()
@@ -460,6 +461,7 @@ class UpdateGroupTestCase(test_data.Client,
             self.assertIn('members', response.data)
 
     def test_admin_update_group_error_non_allowed_domain_guest(self):
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
         self.project.validate_and_update(guests_can_submit=True)
         allowed_guest = obj_build.make_allowed_domain_guest_user(self.course)
 
