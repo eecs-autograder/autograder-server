@@ -28,6 +28,8 @@ SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'autograder.io').strip()
 OAUTH2_SECRETS_FILENAME = os.environ.get('OAUTH2_SECRETS_FILENAME', 'dev_oauth2_secrets.json')
 OAUTH2_SECRETS_PATH = os.path.join(SETTINGS_DIR, OAUTH2_SECRETS_FILENAME)
 
+PREFERRED_DOMAIN = os.environ.get('PREFERRED_DOMAIN', '')
+
 
 def generate_secrets(overwrite_prompt=True):
     """

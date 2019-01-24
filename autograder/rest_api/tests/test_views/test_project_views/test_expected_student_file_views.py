@@ -1,54 +1,78 @@
-import itertools
 import random
 
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 from autograder.utils.testing import UnitTestBase
+import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class _PatternSetUp(test_data.Client, test_data.Project):
-    pass
+class ListPatternsTestCase(test_impls.GetObjectTest, UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.project = obj_build.make_project()
+        self.url = reverse('expected-student-files', kwargs={'pk': self.project.pk})
 
-
-class ListPatternsTestCase(_PatternSetUp, UnitTestBase):
     def test_admin_list_patterns(self):
-        for project in self.all_projects:
-            self.do_list_patterns_test(self.admin, project)
+        admin = obj_build.make_admin_user(self.project.course)
+        self.do_list_patterns_test(admin, self.project)
 
     def test_staff_list_patterns(self):
-        for project in self.all_projects:
-            self.do_list_patterns_test(self.staff, project)
+        staff = obj_build.make_staff_user(self.project.course)
+        self.do_list_patterns_test(staff, self.project)
 
-    def test_enrolled_list_patterns(self):
-        for project in self.visible_projects:
-            self.do_list_patterns_test(self.enrolled, project)
+    def test_student_list_patterns(self):
+        self.project.validate_and_update(visible_to_students=True)
 
-        for project in self.hidden_projects:
-            self.do_permission_denied_test(self.enrolled, project)
+        student = obj_build.make_student_user(self.project.course)
+        self.do_list_patterns_test(student, self.project)
 
-    def test_other_list_patterns(self):
-        self.do_list_patterns_test(self.nobody, self.visible_public_project)
+    def test_student_list_patterns_project_hidden_permission_denied(self):
+        student = obj_build.make_student_user(self.project.course)
+        self.do_permission_denied_get_test(self.client, student, self.url)
 
-        for project in [self.visible_private_project] + self.hidden_projects:
-            self.do_permission_denied_test(self.nobody, project)
+    def test_guest_list_patterns_any_domain(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        guest = obj_build.make_user()
+        self.do_list_patterns_test(guest, self.project)
+
+    def test_guest_list_patterns_right_domain(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+
+        guest = obj_build.make_allowed_domain_guest_user(self.project.course)
+        self.do_list_patterns_test(guest, self.project)
+
+    def test_guest_wrong_domain_list_patterns_permission_denied(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        guest = obj_build.make_user()
+        self.do_permission_denied_get_test(self.client, guest, self.url)
+
+    def test_guest_list_patterns_project_hidden_permission_denied(self):
+        self.project.validate_and_update(guests_can_submit=True)
+
+        guest = obj_build.make_user()
+        self.do_permission_denied_get_test(self.client, guest, self.url)
+
+    def test_guest_list_patterns_project_private_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=True)
+
+        guest = obj_build.make_user()
+        self.do_permission_denied_get_test(self.client, guest, self.url)
 
     def do_list_patterns_test(self, user, project):
         serialized_patterns = self.build_patterns(project)
         self.client.force_authenticate(user)
-        response = self.client.get(self.get_patterns_url(project))
+        response = self.client.get(self.url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertCountEqual(serialized_patterns, response.data)
-
-    def do_permission_denied_test(self, user, project):
-        self.build_patterns(project)
-        self.client.force_authenticate(user)
-        response = self.client.get(self.get_patterns_url(project))
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def build_patterns(self, project):
         num_patterns = 4
@@ -70,7 +94,7 @@ class ListPatternsTestCase(_PatternSetUp, UnitTestBase):
         return serialized_patterns
 
 
-class CreatePatternTestCase(_PatternSetUp, UnitTestBase):
+class CreatePatternTestCase(test_data.Client, test_data.Project, UnitTestBase):
     def test_admin_create_pattern(self):
         self.assertEqual(
             0, self.project.expected_student_files.count())
@@ -139,44 +163,72 @@ def pattern_url(pattern_obj):
     return reverse('expected-student-file-detail', kwargs={'pk': pattern_obj.pk})
 
 
-class RetrieveExpectedPatternTestCase(test_data.Client,
-                                      test_data.Project,
-                                      test_impls.GetObjectTest,
-                                      UnitTestBase):
-    def test_admin_get_pattern(self):
-        for project in self.all_projects:
-            pattern = build_pattern(project)
-            self.do_get_object_test(self.client, self.admin,
-                                    pattern_url(pattern), pattern.to_dict())
+class RetrieveExpectedPatternTestCase(test_impls.GetObjectTest, UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.project = obj_build.make_project()
+        self.course = self.project.course
+        self.client = APIClient()
 
-    def test_staff_get_pattern(self):
-        for project in self.all_projects:
-            pattern = build_pattern(project)
-            self.do_get_object_test(self.client, self.staff,
-                                    pattern_url(pattern), pattern.to_dict())
+    def test_admin_get_expected_student_file(self):
+        admin = obj_build.make_admin_user(self.course)
+        pattern = build_pattern(self.project)
+        self.do_get_object_test(self.client, admin,
+                                pattern_url(pattern), pattern.to_dict())
 
-    def test_enrolled_get_pattern(self):
-        for project in self.visible_projects:
-            pattern = build_pattern(project)
-            self.do_get_object_test(self.client, self.enrolled,
-                                    pattern_url(pattern), pattern.to_dict())
+    def test_staff_get_expected_student_file(self):
+        staff = obj_build.make_staff_user(self.course)
+        pattern = build_pattern(self.project)
+        self.do_get_object_test(self.client, staff,
+                                pattern_url(pattern), pattern.to_dict())
 
-        for project in self.hidden_projects:
-            pattern = build_pattern(project)
-            self.do_permission_denied_get_test(self.client, self.enrolled,
-                                               pattern_url(pattern))
+    def test_student_get_expected_student_file(self):
+        self.project.validate_and_update(visible_to_students=True)
+        student = obj_build.make_student_user(self.course)
+        pattern = build_pattern(self.project)
+        self.do_get_object_test(self.client, student,
+                                pattern_url(pattern), pattern.to_dict())
 
-    def test_other_get_pattern(self):
-        visible_pattern = build_pattern(self.visible_public_project)
-        self.do_get_object_test(self.client, self.nobody,
-                                pattern_url(visible_pattern),
-                                visible_pattern.to_dict())
+    def test_student_get_expected_student_file_project_hidden_permission_denied(self):
+        student = obj_build.make_student_user(self.course)
+        pattern = build_pattern(self.project)
+        self.do_permission_denied_get_test(self.client, student, pattern_url(pattern))
 
-        for project in itertools.chain([self.visible_private_project],
-                                       self.hidden_projects):
-            hidden_pattern = build_pattern(project)
-            self.do_permission_denied_get_test(self.client, self.nobody,
-                                               pattern_url(hidden_pattern))
+    def test_guest_get_expected_student_file_any_domain(self):
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+        guest = obj_build.make_user()
+        pattern = build_pattern(self.project)
+        self.do_get_object_test(self.client, guest, pattern_url(pattern), pattern.to_dict())
+
+    def test_guest_get_expected_student_file_right_domain(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+
+        guest = obj_build.make_allowed_domain_guest_user(self.project.course)
+        pattern = build_pattern(self.project)
+        self.do_get_object_test(self.client, guest, pattern_url(pattern), pattern.to_dict())
+
+    def test_guest_wrong_domain_get_expected_student_file_permission_denied(self):
+        self.project.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
+
+        guest = obj_build.make_user()
+        pattern = build_pattern(self.project)
+        self.do_permission_denied_get_test(self.client, guest, pattern_url(pattern))
+
+    def test_guest_list_patterns_project_hidden_permission_denied(self):
+        self.project.validate_and_update(guests_can_submit=True)
+
+        guest = obj_build.make_user()
+        pattern = build_pattern(self.project)
+        self.do_permission_denied_get_test(self.client, guest, pattern_url(pattern))
+
+    def test_guest_list_patterns_project_private_permission_denied(self):
+        self.project.validate_and_update(visible_to_students=True)
+
+        guest = obj_build.make_user()
+        pattern = build_pattern(self.project)
+        self.do_permission_denied_get_test(self.client, guest, pattern_url(pattern))
 
 
 class UpdateExpectedPatternTestCase(test_data.Client,

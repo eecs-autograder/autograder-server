@@ -88,6 +88,14 @@ class Course(AutograderModel):
                      associated with this Course and may be in
                      groups together.""")
 
+    allowed_guest_domain = ag_fields.ShortStringField(
+        blank=True,
+        help_text="""When non-empty, indicates that guest users' usernames
+                     must end with this string for them to be allowed access
+                     to projects that allow guests.
+                     When empty, indicates that all guests can access projects
+                     in this course where guests are allowed access.""")
+
     def is_admin(self, user: User) -> bool:
         """
         Convenience method for determining if the given user
@@ -111,12 +119,23 @@ class Course(AutograderModel):
         """
         return self.handgraders.filter(pk=user.pk).exists()
 
-    def is_student(self, user):
+    def is_student(self, user: User) -> bool:
         """
         Returns True if the given user is an enrolled student for
         this Course. Returns False otherwise.
         """
         return self.students.filter(pk=user.pk).exists()
+
+    def is_allowed_guest(self, user: User) -> bool:
+        """
+        If self.allowed_guest_domain is empty, returns True.
+        If self.allowed_guest_domain is non-empty returns True if
+        the given user's username ends with self.allowed_guest_domain.
+        """
+        if not self.allowed_guest_domain:
+            return True
+
+        return user.username.endswith(self.allowed_guest_domain)
 
     def clean(self):
         super().clean()
@@ -149,14 +168,16 @@ class Course(AutograderModel):
         'year',
         'subtitle',
         'num_late_days',
-        'last_modified'
+        'allowed_guest_domain',
+        'last_modified',
     )
     EDITABLE_FIELDS = (
         'name',
         'semester',
         'year',
         'subtitle',
-        'num_late_days'
+        'num_late_days',
+        'allowed_guest_domain',
     )
 
 

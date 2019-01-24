@@ -185,7 +185,8 @@ def can_view_project(
             if not project.visible_to_students:
                 return False
 
-            return project.course.is_student(request.user) or project.guests_can_submit
+            return (project.course.is_student(request.user) or
+                    (project.guests_can_submit and project.course.is_allowed_guest(request.user)))
 
     return CanViewProject
 

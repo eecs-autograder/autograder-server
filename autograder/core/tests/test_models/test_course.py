@@ -126,6 +126,7 @@ class CourseTestCase(UnitTestBase):
             'year',
             'subtitle',
             'num_late_days',
+            'allowed_guest_domain',
             'last_modified',
         ]
 
@@ -215,11 +216,11 @@ class CourseRolesTestCase(UnitTestBase):
         super().setUp()
 
         self.course = obj_build.make_course()
-        self.user = obj_build.create_dummy_user()
+        self.user = obj_build.make_user()
 
     def test_is_admin(self):
         self.course = obj_build.make_course()
-        self.user = obj_build.create_dummy_user()
+        self.user = obj_build.make_user()
 
         self.assertFalse(self.course.is_admin(self.user))
 
@@ -249,3 +250,18 @@ class CourseRolesTestCase(UnitTestBase):
 
         self.course.handgraders.add(self.user)
         self.assertTrue(self.course.is_handgrader(self.user))
+
+    def test_is_allowed_guest(self):
+        self.course.validate_and_update(allowed_guest_domain='')
+        self.assertTrue(self.course.is_allowed_guest(self.user))
+
+        self.course.validate_and_update(allowed_guest_domain='@llama.edu')
+        self.assertFalse(self.course.is_allowed_guest(self.user))
+
+        self.user.username += '@llama.edu'
+        self.user.save()
+
+        self.assertTrue(self.course.is_allowed_guest(self.user))
+
+        self.course.validate_and_update(allowed_guest_domain='')
+        self.assertTrue(self.course.is_allowed_guest(self.user))
