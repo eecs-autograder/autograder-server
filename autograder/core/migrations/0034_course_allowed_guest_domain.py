@@ -24,5 +24,5 @@ class Migration(migrations.Migration):
             name='allowed_guest_domain',
             field=autograder.core.fields.ShortStringField(blank=True, help_text="When non-empty, indicates that guest users' usernames\n                     must end with this string for them to be allowed access\n                     to projects that allow guests.\n                     When empty, indicates that all guests can access projects\n                     in this course where guests are allowed access.", max_length=255, strip=False),
         ),
-        migrations.RunPython(set_preferred_domain)
+        migrations.RunPython(set_preferred_domain, reverse_code=lambda apps, schema_editor: None)
     ]
