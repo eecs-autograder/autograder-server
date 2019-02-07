@@ -22,7 +22,9 @@ class GoogleOAuth2(TokenAuthentication):
         flow = client.flow_from_clientsecrets(
             settings.OAUTH2_SECRETS_PATH,
             scope=GOOGLE_API_SCOPES,
-            redirect_uri=redirect_uri)
+            redirect_uri=redirect_uri,
+            prompt='select_account'
+        )
 
         state = {
             'http_referer': request.META.get('HTTP_REFERER',
