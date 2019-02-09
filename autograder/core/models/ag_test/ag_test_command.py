@@ -225,7 +225,7 @@ class AGTestCommand(AGCommandBase):
                      otherwise.''')
     stdin_instructor_file = models.ForeignKey(
         InstructorFile, blank=True, null=True, default=None, related_name='+',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         help_text='''An InstructorFile whose contents should be redirected to the stdin of this
                      command. This value is used when stdin_source is StdinSource.instructor_file
                      and is ignored otherwise.''')
@@ -245,7 +245,7 @@ class AGTestCommand(AGCommandBase):
                      and is ignored otherwise.''')
     expected_stdout_instructor_file = models.ForeignKey(
         InstructorFile, blank=True, null=True, default=None, related_name='+',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         help_text='''An InstructorFile whose contents should be compared against this command's
                      stdout. This value is used (and may not be null) when expected_stdout_source
                      is ExpectedOutputSource.instructor_file and is ignored otherwise.''')
@@ -261,7 +261,7 @@ class AGTestCommand(AGCommandBase):
                      and is ignored otherwise.''')
     expected_stderr_instructor_file = models.ForeignKey(
         InstructorFile, blank=True, null=True, default=None, related_name='+',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         help_text='''An InstructorFile whose contents should be compared against this command's
                      stderr. This value is used (and may not be null) when expected_stderr_source
                      is ExpectedOutputSource.instructor_file and is ignored otherwise.''')

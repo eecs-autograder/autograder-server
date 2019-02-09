@@ -647,3 +647,68 @@ class AGTestCommandMiscTestCase(UnitTestBase):
         self.assertEqual(stdin, ag_cmd.stdin_instructor_file)
         self.assertEqual(stdout, ag_cmd.expected_stdout_instructor_file)
         self.assertEqual(stderr, ag_cmd.expected_stderr_instructor_file)
+
+
+class InstructorFileDeleteBehaviorTestCase(UnitTestBase):
+    """
+    Regression tests for https://github.com/eecs-autograder/autograder-server/issues/403
+    """
+
+    def test_deleting_instructor_file_does_not_delete_commands_that_use_it_as_stdin(self):
+
+        ag_test_command = obj_build.make_full_ag_test_command(
+            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
+        project = ag_test_command.ag_test_case.ag_test_suite.project
+
+        instructor_file = obj_build.make_instructor_file(project)
+
+        ag_test_command.validate_and_update(
+            stdin_instructor_file=instructor_file,
+        )
+
+        instructor_file.delete()
+
+        ag_test_command.refresh_from_db()
+
+        self.assertIsNone(ag_test_command.stdin_instructor_file)
+        self.assertIsNone(ag_test_command.expected_stdout_instructor_file)
+        self.assertIsNone(ag_test_command.expected_stderr_instructor_file)
+
+    def test_deleting_instructor_file_does_not_delete_commands_that_use_it_as_stdout(self):
+
+        ag_test_command = obj_build.make_full_ag_test_command(
+            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
+        project = ag_test_command.ag_test_case.ag_test_suite.project
+
+        instructor_file = obj_build.make_instructor_file(project)
+
+        ag_test_command.validate_and_update(
+            expected_stdout_instructor_file=instructor_file,
+        )
+
+        instructor_file.delete()
+
+        ag_test_command.refresh_from_db()
+
+        self.assertIsNone(ag_test_command.stdin_instructor_file)
+        self.assertIsNone(ag_test_command.expected_stdout_instructor_file)
+        self.assertIsNone(ag_test_command.expected_stderr_instructor_file)
+
+    def test_deleting_instructor_file_does_not_delete_commands_that_use_it_as_stderr(self):
+        ag_test_command = obj_build.make_full_ag_test_command(
+            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
+        project = ag_test_command.ag_test_case.ag_test_suite.project
+
+        instructor_file = obj_build.make_instructor_file(project)
+
+        ag_test_command.validate_and_update(
+            expected_stderr_instructor_file=instructor_file
+        )
+
+        instructor_file.delete()
+
+        ag_test_command.refresh_from_db()
+
+        self.assertIsNone(ag_test_command.stdin_instructor_file)
+        self.assertIsNone(ag_test_command.expected_stdout_instructor_file)
+        self.assertIsNone(ag_test_command.expected_stderr_instructor_file)
