@@ -7,7 +7,6 @@ from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 
 from oauth2client import client
-from apiclient import discovery
 
 import httplib2
 from rest_framework.authtoken.models import Token
@@ -32,20 +31,27 @@ def oauth2_callback(request):
 
         http = credentials.authorize(httplib2.Http())
 
-        url = 'https://content-people.googleapis.com/v1/people/me?personFields=names,emailAddresses'
+        url = (
+            'https://content-people.googleapis.com/v1/people/me?personFields=names,emailAddresses')
         response, content = http.request(url, 'GET')
         user_info = json.loads(content)
 
-        email = utils.find_if(user_info['emailAddresses'], lambda data: data['metadata']['primary'])
+        email = utils.find_if(
+            user_info['emailAddresses'], lambda data: data['metadata']['primary'])
         if email is None:
             raise RuntimeError('Primary email not found in user info')
 
         email = email['value']
 
-        name = utils.find_if(user_info['names'], lambda data: data['metadata']['primary'])
-        if name is None:
-            raise RuntimeError('Primary name not found in user info')
+        # It is possible for 'names' to be absent in some rare cases.
+        if 'names' not in user_info:
+            name = {}
+        else:
+            name = utils.find_if(user_info['names'], lambda data: data['metadata']['primary'])
 
+        # The documentation says that 'familyName' can be absent.
+        # I added a similar check for 'givenName' to be safe because
+        # this is difficult to test.
         first_name = ('' if 'givenName' not in name
                       else name['givenName'][:_DJANGO_FIRST_NAME_MAX_LEN])
         last_name = ('' if 'familyName' not in name
