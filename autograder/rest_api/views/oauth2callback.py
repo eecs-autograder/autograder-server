@@ -46,8 +46,10 @@ def oauth2_callback(request):
         if name is None:
             raise RuntimeError('Primary name not found in user info')
 
-        first_name = name['givenName'][:_DJANGO_FIRST_NAME_MAX_LEN]
-        last_name = name['familyName'][:_DJANGO_LAST_NAME_MAX_LEN]
+        first_name = ('' if 'givenName' not in name
+                      else name['givenName'][:_DJANGO_FIRST_NAME_MAX_LEN])
+        last_name = ('' if 'familyName' not in name
+                     else name['familyName'][:_DJANGO_LAST_NAME_MAX_LEN])
         user = User.objects.get_or_create(
             username=email, defaults={'first_name': first_name, 'last_name': last_name})[0]
         if user.first_name != first_name or user.last_name != last_name:
