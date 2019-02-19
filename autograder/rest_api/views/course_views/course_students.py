@@ -8,6 +8,7 @@ from rest_framework import response, status
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core.models.course import clear_cached_user_roles
 from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet, require_body_params
 from autograder.rest_api.views.schema_generation import APITags
 
@@ -51,6 +52,7 @@ class CourseStudentsViewSet(ListNestedModelViewSet):
         course = self.get_object()
         self.add_students(course, request.data['new_students'])
 
+        clear_cached_user_roles(course.pk)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_add_students_params)
@@ -65,8 +67,10 @@ class CourseStudentsViewSet(ListNestedModelViewSet):
             User.objects.get_or_create(username=username)[0]
             for username in request.data['new_students']
         ]
-        self.get_object().students.set(new_roster, clear=True)
+        course = self.get_object()
+        course.students.set(new_roster, clear=True)
 
+        clear_cached_user_roles(course.pk)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_remove_students_params)
@@ -76,6 +80,7 @@ class CourseStudentsViewSet(ListNestedModelViewSet):
         course = self.get_object()
         self.remove_students(course, request.data['remove_students'])
 
+        clear_cached_user_roles(course.pk)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     def add_students(self, course: ag_models.Course, usernames):

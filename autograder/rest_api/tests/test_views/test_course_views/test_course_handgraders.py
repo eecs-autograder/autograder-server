@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.test import APIClient
 
+import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
 from autograder.utils.testing import UnitTestBase
@@ -50,8 +51,12 @@ class AddCourseHandgradersTestCase(_SetUp, UnitTestBase):
 
     def test_admin_add_handgraders(self):
         self.client.force_authenticate(self.admin)
+        new_handgrader_users = obj_build.make_users(3)
         new_handgrader_names = (
-            ['name1', 'name2'] + [user.username for user in obj_build.create_dummy_users(3)])
+            ['name1', 'name2'] + [user.username for user in new_handgrader_users])
+
+        # Make sure that cache invalidation happens
+        self.assertFalse(self.course.is_handgrader(new_handgrader_users[0]))
 
         self.assertEqual(len(self.current_handgraders), self.course.handgraders.count())
 
@@ -61,6 +66,11 @@ class AddCourseHandgradersTestCase(_SetUp, UnitTestBase):
 
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertCountEqual(new_users + self.current_handgraders, self.course.handgraders.all())
+
+        # Reload to clear cached attribute
+        self.course = ag_models.Course.objects.get(pk=self.course.pk)
+        # Make sure that cache invalidation happens
+        self.assertTrue(self.course.is_handgrader(new_handgrader_users[0]))
 
     def test_add_handgraders_permission_denied(self):
         for user in self.staff, self.current_handgraders[0], self.guest:
@@ -93,11 +103,19 @@ class RemoveCourseHandgraderTestCase(_SetUp, UnitTestBase):
         }
 
     def test_admin_remove_handgraders(self):
+        # Make sure cache invalidation happens
+        self.assertTrue(self.course.is_handgrader(self.handgraders_to_remove[0]))
+
         self.client.force_authenticate(self.admin)
         response = self.client.patch(self.url, self.request_body)
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
         self.assertCountEqual(self.remaining_handgraders, self.course.handgraders.all())
+
+        # Reload to clear cached attribute
+        self.course = ag_models.Course.objects.get(pk=self.course.pk)
+        # Make sure cache invalidation happens
+        self.assertFalse(self.course.is_handgrader(self.handgraders_to_remove[0]))
 
     def test_remove_handgraders_permission_denied(self):
         for user in self.staff, self.remaining_handgraders[0], self.guest:
