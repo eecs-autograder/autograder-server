@@ -24,34 +24,50 @@ import autograder.core.utils as core_ut
 
 class AGTestPreLoader:
     def __init__(self, project: Project):
-        suites = AGTestSuite.objects.filter(
-            project=project
-        )
-        self._suites: Dict[int, AGTestSuite] = {
-            suite.pk: suite for suite in suites
-        }
-        cases = AGTestCase.objects.filter(
-            ag_test_suite__project=project
-        )
-        self._cases: Dict[int, AGTestCase] = {
-            case.pk: case for case in cases
-        }
+        self._project = project
 
-        cmds = AGTestCommand.objects.filter(
-            ag_test_case__ag_test_suite__project=project
-        )
-        self._cmds: Dict[int, AGTestCommand] = {
-            cmd.pk: cmd for cmd in cmds
-        }
+        self._suites_by_pk: Optional[Dict[int, AGTestSuite]] = None
+        self._cases_by_pk: Optional[Dict[int, AGTestCase]] = None
+        self._cmds_by_pk: Optional[Dict[int, AGTestCommand]] = None
 
     def get_ag_test_suite(self, suite_pk: int) -> AGTestSuite:
         return self._suites[suite_pk]
 
+    @property
+    def _suites(self) -> Dict[int, AGTestSuite]:
+        if self._suites_by_pk is None:
+            suites = AGTestSuite.objects.filter(project=self._project)
+            self._suites_by_pk = {
+                suite.pk: suite for suite in suites
+            }
+
+        return self._suites_by_pk
+
     def get_ag_test_case(self, case_pk: int) -> AGTestCase:
         return self._cases[case_pk]
 
+    @property
+    def _cases(self) -> Dict[int, AGTestCase]:
+        if self._cases_by_pk is None:
+            cases = AGTestCase.objects.filter(ag_test_suite__project=self._project)
+            self._cases_by_pk = {
+                case.pk: case for case in cases
+            }
+
+        return self._cases_by_pk
+
     def get_ag_test_cmd(self, cmd_pk: int) -> AGTestCommand:
         return self._cmds[cmd_pk]
+
+    @property
+    def _cmds(self) -> Dict[int, AGTestCommand]:
+        if self._cmds_by_pk is None:
+            cmds = AGTestCommand.objects.filter(ag_test_case__ag_test_suite__project=self._project)
+            self._cmds_by_pk = {
+                cmd.pk: cmd for cmd in cmds
+            }
+
+        return self._cmds_by_pk
 
 
 DenormedAGSuiteResType = Union[AGTestSuiteResult, 'SerializedAGTestSuiteResultWrapper']
