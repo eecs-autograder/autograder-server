@@ -653,62 +653,128 @@ class InstructorFileDeleteBehaviorTestCase(UnitTestBase):
     """
     Regression tests for https://github.com/eecs-autograder/autograder-server/issues/403
     """
+    def setUp(self):
+        super().setUp()
+
+        self.ag_test_command = obj_build.make_full_ag_test_command(
+            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
+        self.project = self.ag_test_command.ag_test_case.ag_test_suite.project
+
+        self.instructor_file_to_delete = obj_build.make_instructor_file(self.project)
+
+        self.instructor_file_to_keep = obj_build.make_instructor_file(self.project)
 
     def test_deleting_instructor_file_does_not_delete_commands_that_use_it_as_stdin(self):
+        self.ag_test_command.validate_and_update(
+            stdin_source=ag_models.StdinSource.instructor_file,
+            stdin_instructor_file=self.instructor_file_to_delete,
 
-        ag_test_command = obj_build.make_full_ag_test_command(
-            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
-        project = ag_test_command.ag_test_case.ag_test_suite.project
+            expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
+            expected_stdout_instructor_file=self.instructor_file_to_keep,
 
-        instructor_file = obj_build.make_instructor_file(project)
-
-        ag_test_command.validate_and_update(
-            stdin_instructor_file=instructor_file,
+            expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
+            expected_stderr_instructor_file=self.instructor_file_to_keep
         )
 
-        instructor_file.delete()
+        self.instructor_file_to_delete.delete()
 
-        ag_test_command.refresh_from_db()
+        self.ag_test_command.refresh_from_db()
 
-        self.assertIsNone(ag_test_command.stdin_instructor_file)
-        self.assertIsNone(ag_test_command.expected_stdout_instructor_file)
-        self.assertIsNone(ag_test_command.expected_stderr_instructor_file)
+        self.assertEqual(ag_models.StdinSource.none, self.ag_test_command.stdin_source)
+        self.assertIsNone(self.ag_test_command.stdin_instructor_file)
+
+        self.assertEqual(ag_models.ExpectedOutputSource.instructor_file,
+                         self.ag_test_command.expected_stdout_source)
+        self.assertIsNotNone(self.ag_test_command.expected_stdout_instructor_file)
+
+        self.assertEqual(ag_models.ExpectedOutputSource.instructor_file,
+                         self.ag_test_command.expected_stderr_source)
+        self.assertIsNotNone(self.ag_test_command.expected_stderr_instructor_file)
 
     def test_deleting_instructor_file_does_not_delete_commands_that_use_it_as_stdout(self):
+        self.ag_test_command.validate_and_update(
+            stdin_source=ag_models.StdinSource.instructor_file,
+            stdin_instructor_file=self.instructor_file_to_keep,
 
-        ag_test_command = obj_build.make_full_ag_test_command(
-            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
-        project = ag_test_command.ag_test_case.ag_test_suite.project
+            expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
+            expected_stdout_instructor_file=self.instructor_file_to_delete,
 
-        instructor_file = obj_build.make_instructor_file(project)
-
-        ag_test_command.validate_and_update(
-            expected_stdout_instructor_file=instructor_file,
+            expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
+            expected_stderr_instructor_file=self.instructor_file_to_keep
         )
 
-        instructor_file.delete()
+        self.instructor_file_to_delete.delete()
 
-        ag_test_command.refresh_from_db()
+        self.ag_test_command.refresh_from_db()
 
-        self.assertIsNone(ag_test_command.stdin_instructor_file)
-        self.assertIsNone(ag_test_command.expected_stdout_instructor_file)
-        self.assertIsNone(ag_test_command.expected_stderr_instructor_file)
+        self.assertEqual(ag_models.StdinSource.instructor_file, self.ag_test_command.stdin_source)
+        self.assertIsNotNone(self.ag_test_command.stdin_instructor_file)
+
+        self.assertEqual(ag_models.ExpectedOutputSource.none,
+                         self.ag_test_command.expected_stdout_source)
+        self.assertIsNone(self.ag_test_command.expected_stdout_instructor_file)
+
+        self.assertEqual(ag_models.ExpectedOutputSource.instructor_file,
+                         self.ag_test_command.expected_stderr_source)
+        self.assertIsNotNone(self.ag_test_command.expected_stderr_instructor_file)
 
     def test_deleting_instructor_file_does_not_delete_commands_that_use_it_as_stderr(self):
-        ag_test_command = obj_build.make_full_ag_test_command(
-            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
-        project = ag_test_command.ag_test_case.ag_test_suite.project
+        self.ag_test_command.validate_and_update(
+            stdin_source=ag_models.StdinSource.instructor_file,
+            stdin_instructor_file=self.instructor_file_to_keep,
 
-        instructor_file = obj_build.make_instructor_file(project)
+            expected_stdout_source=ag_models.ExpectedOutputSource.instructor_file,
+            expected_stdout_instructor_file=self.instructor_file_to_keep,
 
-        ag_test_command.validate_and_update(
-            expected_stderr_instructor_file=instructor_file
+            expected_stderr_source=ag_models.ExpectedOutputSource.instructor_file,
+            expected_stderr_instructor_file=self.instructor_file_to_delete
         )
 
-        instructor_file.delete()
+        self.instructor_file_to_delete.delete()
 
-        ag_test_command.refresh_from_db()
+        self.ag_test_command.refresh_from_db()
 
-        self.assertIsNone(ag_test_command.stdin_instructor_file)
-        self.assertIsNone(ag_test_command.expected_stdout_instructor_file)
-        self.assertIsNone(ag_test_command.expected_stderr_instructor_file)
+        self.assertEqual(ag_models.StdinSource.instructor_file, self.ag_test_command.stdin_source)
+        self.assertIsNotNone(self.ag_test_command.stdin_instructor_file)
+
+        self.assertEqual(ag_models.ExpectedOutputSource.instructor_file,
+                         self.ag_test_command.expected_stdout_source)
+        self.assertIsNotNone(self.ag_test_command.expected_stdout_instructor_file)
+
+        self.assertEqual(ag_models.ExpectedOutputSource.none,
+                         self.ag_test_command.expected_stderr_source)
+        self.assertIsNone(self.ag_test_command.expected_stderr_instructor_file)
+
+    def test_stdin_stdout_stderr_source_only_set_to_none_if_source_is_instructor_file(self):
+        """
+        It's possible for users to set a stdin instructor file even
+        if the source is set to something else (like text). This
+        test makes sure that the delete() behavior for InstructorFile
+        only sets the stdin/stdout/stderr source setting to none
+        if it is currently set to instructor_file.
+        """
+        self.ag_test_command.validate_and_update(
+            stdin_source=ag_models.StdinSource.text,
+            stdin_instructor_file=self.instructor_file_to_delete,
+
+            expected_stdout_source=ag_models.ExpectedOutputSource.text,
+            expected_stdout_instructor_file=self.instructor_file_to_delete,
+
+            expected_stderr_source=ag_models.ExpectedOutputSource.text,
+            expected_stderr_instructor_file=self.instructor_file_to_delete
+        )
+
+        self.instructor_file_to_delete.delete()
+
+        self.ag_test_command.refresh_from_db()
+
+        self.assertEqual(ag_models.StdinSource.text, self.ag_test_command.stdin_source)
+        self.assertIsNone(self.ag_test_command.stdin_instructor_file)
+
+        self.assertEqual(ag_models.ExpectedOutputSource.text,
+                         self.ag_test_command.expected_stdout_source)
+        self.assertIsNone(self.ag_test_command.expected_stdout_instructor_file)
+
+        self.assertEqual(ag_models.ExpectedOutputSource.text,
+                         self.ag_test_command.expected_stderr_source)
+        self.assertIsNone(self.ag_test_command.expected_stderr_instructor_file)

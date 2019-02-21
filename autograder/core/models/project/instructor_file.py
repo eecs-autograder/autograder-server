@@ -100,13 +100,30 @@ class InstructorFile(AutograderModel):
     def size(self) -> int:
         return self.file_obj.size
 
+    @transaction.atomic()
     def delete(self, **kwargs):
-        with transaction.atomic():
-            file_path = self.abspath
-            return_val = super().delete()
-            os.remove(file_path)
+        from ..ag_test.ag_test_command import AGTestCommand, StdinSource, ExpectedOutputSource
 
-            return return_val
+        AGTestCommand.objects.filter(
+            stdin_source=StdinSource.instructor_file,
+            stdin_instructor_file=self,
+        ).update(stdin_source=StdinSource.none)
+
+        AGTestCommand.objects.filter(
+            expected_stdout_source=ExpectedOutputSource.instructor_file,
+            expected_stdout_instructor_file=self,
+        ).update(expected_stdout_source=ExpectedOutputSource.none)
+
+        AGTestCommand.objects.filter(
+            expected_stderr_source=ExpectedOutputSource.instructor_file,
+            expected_stderr_instructor_file=self,
+        ).update(expected_stderr_source=ExpectedOutputSource.none)
+
+        file_path = self.abspath
+        return_val = super().delete()
+        os.remove(file_path)
+
+        return return_val
 
     def open(self, mode='r'):
         return open(self.abspath, mode)
