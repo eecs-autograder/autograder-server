@@ -1,8 +1,8 @@
-# Source: https://gist.github.com/Benoss/9592229
+# Adapted from: https://gist.github.com/Benoss/9592229
 # Accessed Dec. 1, 2017
 
 from django.utils.deprecation import MiddlewareMixin
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse, StreamingHttpResponse
 import json
 
 
@@ -12,7 +12,13 @@ class NonHtmlDebugToolbarMiddleware(MiddlewareMixin):
         debug = request.GET.get('debug', 'UNSET')
 
         if debug != 'UNSET':
-            if response['Content-Type'] == 'application/octet-stream':
+            if isinstance(response, StreamingHttpResponse):
+                new_content = f'''
+                    <html><body>
+                        <pre>{b"".join(response.streaming_content).decode("utf-8")}</pre>
+                    </body></html>'''
+                response = HttpResponse(new_content)
+            elif response['Content-Type'] == 'application/octet-stream':
                 new_content = '<html><body>Binary Data, ' \
                     'Length: {}</body></html>'.format(len(response.content))
                 response = HttpResponse(new_content)

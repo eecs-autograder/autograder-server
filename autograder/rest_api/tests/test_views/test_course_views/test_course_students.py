@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.test import APIClient
 
+import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
 from autograder.utils.testing import UnitTestBase
@@ -58,10 +59,12 @@ class AddStudentsTestCase(_SetUp):
 
     def test_admin_add_students(self):
         self.client.force_authenticate(self.admin)
-        new_student_names = (
-            ['steve', 'bill'] + [user.username for user in obj_build.create_dummy_users(3)])
+        new_student_users = obj_build.make_users(3)
+        new_student_names = ['steve', 'bill'] + [user.username for user in new_student_users]
 
         self.assertEqual(len(self.current_students), self.course.students.count())
+        # Make sure cache invalidation happens.
+        self.assertFalse(self.course.is_student(new_student_users[0]))
 
         response = self.client.post(self.url, {'new_students': new_student_names})
 
@@ -71,6 +74,11 @@ class AddStudentsTestCase(_SetUp):
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertCountEqual(new_students + self.current_students,
                               self.course.students.all())
+
+        # Reload to clear cached attribute
+        self.course = ag_models.Course.objects.get(pk=self.course.pk)
+        # Make sure that cache invalidation happens.
+        self.assertTrue(self.course.is_student(new_student_users[0]))
 
     def test_other_add_students_permission_denied(self):
         for user in self.staff, self.current_students[0], self.guest:
@@ -98,12 +106,22 @@ class UpdateStudentsTestCase(_SetUp):
         new_roster = obj_build.create_dummy_users(3)
         self.client.force_authenticate(self.admin)
 
+        # Make sure cache invalidation happens
+        self.assertTrue(self.course.is_student(self.current_students[0]))
+        self.assertFalse(self.course.is_student(new_roster[0]))
+
         response = self.client.put(
             self.url,
             {'new_students':
                 [user.username for user in new_roster]})
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertCountEqual(new_roster, self.course.students.all())
+
+        # Reload to clear cached attribute
+        self.course = ag_models.Course.objects.get(pk=self.course.pk)
+        # Make sure cache invalidation happens
+        self.assertFalse(self.course.is_student(self.current_students[0]))
+        self.assertTrue(self.course.is_student(new_roster[0]))
 
     def test_other_update_students_permission_denied(self):
         for user in self.staff, self.current_students[0], self.guest:
@@ -139,12 +157,20 @@ class RemoveStudentsTestCase(_SetUp):
         }
 
     def test_admin_remove_students(self):
+        # Make sure cache invalidation happens
+        self.assertTrue(self.course.is_student(self.students_to_remove[0]))
+
         self.client.force_authenticate(self.admin)
         response = self.client.patch(self.url, self.request_body)
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
 
         self.assertCountEqual(self.remaining_students,
                               self.course.students.all())
+
+        # Reload to clear cached attribute
+        self.course = ag_models.Course.objects.get(pk=self.course.pk)
+        # Make sure cache invalidation happens
+        self.assertFalse(self.course.is_student(self.students_to_remove[0]))
 
     def test_other_remove_students_permission_denied(self):
         for user in self.staff, self.remaining_students[0], self.guest:

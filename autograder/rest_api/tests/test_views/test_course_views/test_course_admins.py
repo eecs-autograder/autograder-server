@@ -5,6 +5,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
+import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 
 from autograder.utils.testing import UnitTestBase
@@ -59,6 +60,9 @@ class AddCourseAdminsTestCase(_SetUp):
         new_admin_names = ['steve', 'stave', 'stove', 'stive']
         new_admins = obj_build.create_dummy_users(2)
 
+        # Make sure that cache invalidation happens.
+        self.assertFalse(self.course.is_admin(new_admins[0]))
+
         for user in (self.superuser, current_admins[0]):
             self.assertEqual(len(current_admins),
                              self.course.admins.count())
@@ -78,6 +82,11 @@ class AddCourseAdminsTestCase(_SetUp):
 
             self.assertCountEqual(expected_usernames,
                                   [admin.username for admin in self.course.admins.all()])
+
+            # Reload to clear cached attribute
+            self.course = ag_models.Course.objects.get(pk=self.course.pk)
+            # Make sure that cache invalidation happens.
+            self.assertTrue(self.course.is_admin(new_admins[0]))
 
             self.course.admins.set(current_admins, clear=True)
 
@@ -114,6 +123,9 @@ class RemoveCourseAdminsTestCase(_SetUp):
         }
 
     def test_superuser_or_admin_remove_admins(self):
+        # Make sure cache invalidation happens.
+        self.assertTrue(self.course.is_admin(self.current_admins[0]))
+
         for user in self.superuser, self.remaining_admin:
             self.assertEqual(self.total_num_admins,
                              self.course.admins.count())
@@ -124,6 +136,11 @@ class RemoveCourseAdminsTestCase(_SetUp):
 
             self.assertCountEqual([self.remaining_admin],
                                   self.course.admins.all())
+
+            # Reload to clear cached attribute
+            self.course = ag_models.Course.objects.get(pk=self.course.pk)
+            # Make sure that cache invalidation happens.
+            self.assertFalse(self.course.is_admin(self.current_admins[0]))
 
             self.course.admins.add(*self.current_admins)
 

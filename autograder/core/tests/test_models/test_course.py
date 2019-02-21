@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from autograder.core.models import Course, LateDaysRemaining, Semester
 
 import autograder.core.utils as core_ut
+from autograder.core.models.course import clear_cached_user_roles
 from autograder.utils.testing import UnitTestBase
 
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -225,30 +226,50 @@ class CourseRolesTestCase(UnitTestBase):
         self.assertFalse(self.course.is_admin(self.user))
 
         self.course.admins.add(self.user)
+        clear_cached_user_roles(self.course.pk)
+        # Because of attribute caching, we need to load a fresh
+        # object from the DB.
+        self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_admin(self.user))
 
     def test_is_staff(self):
         self.assertFalse(self.course.is_staff(self.user))
 
         self.course.staff.add(self.user)
+        clear_cached_user_roles(self.course.pk)
+        # Because of attribute caching, we need to load a fresh
+        # object from the DB.
+        self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_staff(self.user))
 
     def test_admin_counts_as_staff(self):
         self.assertFalse(self.course.is_staff(self.user))
 
         self.course.admins.add(self.user)
+        clear_cached_user_roles(self.course.pk)
+        # Because of attribute caching, we need to load a fresh
+        # object from the DB.
+        self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_staff(self.user))
 
     def test_is_student(self):
         self.assertFalse(self.course.is_student(self.user))
 
         self.course.students.add(self.user)
+        clear_cached_user_roles(self.course.pk)
+        # Because of attribute caching, we need to load a fresh
+        # object from the DB.
+        self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_student(self.user))
 
     def test_is_handgrader(self):
         self.assertFalse(self.course.is_handgrader(self.user))
 
         self.course.handgraders.add(self.user)
+        clear_cached_user_roles(self.course.pk)
+        # Because of attribute caching, we need to load a fresh
+        # object from the DB.
+        self.course = Course.objects.get(pk=self.course.pk)
         self.assertTrue(self.course.is_handgrader(self.user))
 
     def test_is_allowed_guest(self):

@@ -8,6 +8,7 @@ from rest_framework import response, status
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core.models.course import clear_cached_user_roles
 from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet, require_body_params
 from autograder.rest_api.views.schema_generation import APITags
 
@@ -51,6 +52,7 @@ class CourseStaffViewSet(ListNestedModelViewSet):
         course = self.get_object()
         self.add_staff(course, request.data['new_staff'])
 
+        clear_cached_user_roles(course.pk)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_remove_staff_params)
@@ -60,6 +62,7 @@ class CourseStaffViewSet(ListNestedModelViewSet):
         course = self.get_object()
         self.remove_staff(course, request.data['remove_staff'])
 
+        clear_cached_user_roles(course.pk)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     def add_staff(self, course, usernames):

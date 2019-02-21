@@ -1,12 +1,14 @@
 import enum
 import os
 
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.core import validators
 from django.contrib.auth.models import User
 from django.db.models import Case, When, Value
+from typing import Dict
 
 from .ag_model_base import AutograderModel
 
@@ -101,7 +103,7 @@ class Course(AutograderModel):
         Convenience method for determining if the given user
         is an admin.
         """
-        return self.admins.filter(pk=user.pk).exists()
+        return self.get_user_roles(user)['is_admin']
 
     def is_staff(self, user: User) -> bool:
         """
@@ -109,22 +111,45 @@ class Course(AutograderModel):
         Course. Note that admins are also considered staff members.
         Returns False otherwise.
         """
-        return (self.staff.filter(pk=user.pk).exists()
-                or self.admins.filter(pk=user.pk).exists())
+        return self.get_user_roles(user)['is_staff']
 
     def is_handgrader(self, user: User) -> bool:
         """
         Returns True if the given user is a handgrader for this Course.
         Returns False otherwise.
         """
-        return self.handgraders.filter(pk=user.pk).exists()
+        return self.get_user_roles(user)['is_handgrader']
 
     def is_student(self, user: User) -> bool:
         """
         Returns True if the given user is an enrolled student for
         this Course. Returns False otherwise.
         """
-        return self.students.filter(pk=user.pk).exists()
+        return self.get_user_roles(user)['is_student']
+
+    def get_user_roles(self, user: User) -> Dict:
+        # To prevent different permissions checks from causing redundant
+        # cache hits, we'll store the user roles in self.
+        user_roles_attr = f'_user_roles_{user.pk}'
+        if hasattr(self, user_roles_attr):
+            return getattr(self, user_roles_attr)
+
+        cache_key = f'course_{self.pk}_user_{user.pk}'
+        user_roles = cache.get(cache_key)
+
+        if user_roles is None:
+            is_admin = self.admins.filter(pk=user.pk).exists()
+            user_roles = {
+                'is_admin': is_admin,
+                'is_staff': is_admin or self.staff.filter(pk=user.pk).exists(),
+                'is_handgrader': self.handgraders.filter(pk=user.pk).exists(),
+                'is_student': self.students.filter(pk=user.pk).exists(),
+            }
+            cache.set(cache_key, user_roles, timeout=None)
+
+        setattr(self, user_roles_attr, user_roles)
+
+        return user_roles
 
     def is_allowed_guest(self, user: User) -> bool:
         """
@@ -196,3 +221,7 @@ class LateDaysRemaining(AutograderModel):
             self.late_days_remaining = self.course.num_late_days
 
         return super().save(*args, **kwargs)
+
+
+def clear_cached_user_roles(course_pk: int) -> None:
+    cache.delete_pattern(f'course_{course_pk}_user_*')
