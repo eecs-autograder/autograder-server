@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='agcommand',
             name='time_limit',
-            field=models.IntegerField(default=10, help_text='The time limit in seconds to be placed on the\n            command.\n            Must be > 0\n            Must be <= autograder.shared.global_constants\n                                 .MAX_SUBPROCESS_TIMEOUT', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(90)]),
+            field=models.IntegerField(default=10, help_text='The time limit in seconds to be placed on the\n            command.\n            Must be > 0\n            Must be <= autograder.shared.global_constants\n                                 .MAX_SUBPROCESS_TIMEOUT', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(260)]),
         ),
         migrations.AlterField(
             model_name='agtestcommand',
@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='agtestcommand',
             name='time_limit',
-            field=models.IntegerField(default=10, help_text='The time limit in seconds to be placed on the\n            command.\n            Must be > 0\n            Must be <= autograder.shared.global_constants\n                                 .MAX_SUBPROCESS_TIMEOUT', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(90)]),
+            field=models.IntegerField(default=10, help_text='The time limit in seconds to be placed on the\n            command.\n            Must be > 0\n            Must be <= autograder.shared.global_constants\n                                 .MAX_SUBPROCESS_TIMEOUT', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(260)]),
         ),
         migrations.AlterField(
             model_name='downloadtask',
