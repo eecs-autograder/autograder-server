@@ -55,6 +55,10 @@ class SupportedImages(enum.Enum):
     eecs598w19_data_mining = 'eecs598w19_data_mining'
     engr101 = 'engr101'
 
+    engr110 = 'engr110'
+    engr210 = 'engr220'
+    csci343 = 'csci343'
+
 
 DOCKER_IMAGE_IDS_TO_URLS = {
     SupportedImages.eecs280: 'jameslp/eecs280',
@@ -66,6 +70,10 @@ DOCKER_IMAGE_IDS_TO_URLS = {
     SupportedImages.eecs498_data_mining: 'jameslp/eecs498_data_mining',
     SupportedImages.eecs598w19_data_mining: 'jameslp/eecs598w19_data_mining',
     SupportedImages.engr101: 'jameslp/engr101',
+
+    SupportedImages.engr110: 'engr110_19',
+    SupportedImages.engr210: 'engr210_19',
+    SupportedImages.csci343: 'csci343_19',
 
     SupportedImages.default: 'jameslp/autograder-sandbox:{}'.format(autograder_sandbox.VERSION)
 }
