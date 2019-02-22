@@ -28,11 +28,11 @@ FILESYSTEM_RESULT_OUTPUT_DIRNAME = 'output'
 MAX_COMMAND_LENGTH = 1000
 
 # Sandbox resource limit settings
-DEFAULT_SUBPROCESS_TIMEOUT = 10
-MAX_SUBPROCESS_TIMEOUT = 90
+DEFAULT_SUBPROCESS_TIMEOUT = 20
+MAX_SUBPROCESS_TIMEOUT = 240
 
-DEFAULT_STACK_SIZE_LIMIT = 10000000  # 10 MB
-MAX_STACK_SIZE_LIMIT = 100000000  # 100 MB
+DEFAULT_STACK_SIZE_LIMIT = 100000000  # 100 MB
+MAX_STACK_SIZE_LIMIT = 500000000  # 500 MB
 
 DEFAULT_VIRTUAL_MEM_LIMIT = 500000000  # 500 MB
 MAX_VIRTUAL_MEM_LIMIT = 4000000000  # 4 GB
@@ -54,9 +54,13 @@ class SupportedImages(enum.Enum):
     eecs498_data_mining = 'eecs498_data_mining'
     eecs598w19_data_mining = 'eecs598w19_data_mining'
     engr101 = 'engr101'
+    
+    xilinx  = 'xilinx'
+    java    = 'java'
+    ai      = 'ai'
 
     engr110 = 'engr110'
-    engr210 = 'engr220'
+    engr210 = 'engr210'
     csci343 = 'csci343'
 
 
@@ -71,6 +75,11 @@ DOCKER_IMAGE_IDS_TO_URLS = {
     SupportedImages.eecs598w19_data_mining: 'jameslp/eecs598w19_data_mining',
     SupportedImages.engr101: 'jameslp/engr101',
 
+    SupportedImages.xilinx:  'engr210_19',
+    SupportedImages.java:    'csci343',
+    SupportedImages.ai:      'default',
+
+    SupportedImages.engr110: 'engr110_19',
     SupportedImages.engr110: 'engr110_19',
     SupportedImages.engr210: 'engr210_19',
     SupportedImages.csci343: 'csci343_19',
