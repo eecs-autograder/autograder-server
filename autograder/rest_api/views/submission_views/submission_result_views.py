@@ -52,7 +52,7 @@ class SubmissionResultsViewBase(AGModelAPIView):
     permission_classes = (ag_permissions.can_view_project(),
                           ag_permissions.is_staff_or_group_member(),
                           ag_permissions.can_request_feedback_category())
-    model_manager = ag_models.Submission.objects
+    model_manager = ag_models.Submission.objects.select_related('project')
 
     @method_decorator(require_query_params(_FDBK_CATEGORY_PARAM))
     def get(self, *args, **kwargs):
