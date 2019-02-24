@@ -36,12 +36,19 @@ def oauth2_callback(request):
         response, content = http.request(url, 'GET')
         user_info = json.loads(content)
 
-        email = utils.find_if(
-            user_info['emailAddresses'], lambda data: data['metadata']['primary'])
+        try:
+            email = utils.find_if(
+                    user_info['emailAddresses'], lambda data: data['metadata']['primary'])
+            email = email['value']
+        except KeyError:
+            print ('WARNING: emailAddress not found. Using alternate API')
+            em_url = ( 'https://www.googleapis.com/userinfo/v2/me?fields=email' )
+            em_response, em_content = http.request(em_url, 'GET')
+            em_user_info = json.loads(em_content)
+            email = em_user_info['email']
+
         if email is None:
             raise RuntimeError('Primary email not found in user info')
-
-        email = email['value']
 
         # It is possible for 'names' to be absent in some rare cases.
         if 'names' not in user_info:
