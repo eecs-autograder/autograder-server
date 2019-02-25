@@ -38,11 +38,11 @@ def oauth2_callback(request):
 
         try:
             email = utils.find_if(
-                    user_info['emailAddresses'], lambda data: data['metadata']['primary'])
+                user_info['emailAddresses'], lambda data: data['metadata']['primary'])
             email = email['value']
         except KeyError:
-            print ('WARNING: emailAddress not found. Using alternate API')
-            em_url = ( 'https://www.googleapis.com/userinfo/v2/me?fields=email' )
+            print('WARNING: emailAddress not found. Using alternate API')
+            em_url = ('https://www.googleapis.com/userinfo/v2/me?fields=email')
             em_response, em_content = http.request(em_url, 'GET')
             em_user_info = json.loads(em_content)
             email = em_user_info['email']
