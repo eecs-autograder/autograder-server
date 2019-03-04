@@ -20,9 +20,9 @@ MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(PROJECT_ROOT, 'media_root
 
 SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# UPDATE THESE TWO FIELDS IN _prod.env and _dev.env
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split()
-
-SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'autograder.io').strip()
+SITE_DOMAIN = os.environ.get('SITE_DOMAIN', '').strip()  # This is used for authentication
 
 OAUTH2_SECRETS_FILENAME = os.environ.get('OAUTH2_SECRETS_FILENAME', 'dev_oauth2_secrets.json')
 OAUTH2_SECRETS_PATH = os.path.join(SETTINGS_DIR, OAUTH2_SECRETS_FILENAME)
