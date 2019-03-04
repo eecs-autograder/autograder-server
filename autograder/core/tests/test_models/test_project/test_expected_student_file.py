@@ -21,7 +21,8 @@ class ExpectedStudentFileTestCase(UnitTestBase):
             'project',
             'pattern',
             'min_num_matches',
-            'max_num_matches'
+            'max_num_matches',
+            'last_modified',
         ]
 
         self.assertCountEqual(
