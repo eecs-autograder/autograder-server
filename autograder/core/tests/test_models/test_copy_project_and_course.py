@@ -97,8 +97,9 @@ class CopyProjectTestCase(UnitTestBase):
                 new_project.expected_student_files.order_by('pattern')):
             self.assertNotEqual(old_expected_file.pk, new_expected_file.pk)
 
-            self.assertEqual(_pop_many(old_expected_file.to_dict(), ['pk', 'project', 'last_modified']),
-                             _pop_many(new_expected_file.to_dict(), ['pk', 'project', 'last_modified']))
+            expected_file_ignore_fields = ['pk', 'project', 'last_modified']
+            self.assertEqual(_pop_many(old_expected_file.to_dict(), expected_file_ignore_fields),
+                             _pop_many(new_expected_file.to_dict(), expected_file_ignore_fields))
 
         old_suite_pks = {suite.pk for suite in project.ag_test_suites.all()}
         new_suite_pks = {suite.pk for suite in new_project.ag_test_suites.all()}
