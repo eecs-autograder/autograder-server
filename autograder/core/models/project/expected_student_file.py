@@ -21,6 +21,7 @@ class ExpectedStudentFile(AutograderModel):
         'pattern',
         'min_num_matches',
         'max_num_matches',
+        'last_modified',
     )
 
     EDITABLE_FIELDS = (
