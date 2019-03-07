@@ -109,8 +109,10 @@ class GradeSubmissionTestCase(UnitTestBase):
             student_test_suite=deferred_student_suite)
 
     def test_non_default_docker_image(self, *args):
-        suite = obj_build.make_ag_test_suite(
-            self.project, docker_image_to_use=constants.SupportedImages.eecs490)
+        eecs490_image = ag_models.SandboxDockerImage.objects.get_or_create(
+            name='eecs490_image', display_name='EECS 490', tag='jameslp/eecs490')[0]
+
+        suite = obj_build.make_ag_test_suite(self.project, sandbox_docker_image=eecs490_image)
         case = obj_build.make_ag_test_case(suite)
         cmd = obj_build.make_full_ag_test_command(
             case,

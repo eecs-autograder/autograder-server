@@ -348,10 +348,13 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
             self.assertEqual('', f.read())
 
     def test_non_default_docker_image(self, *args):
+        eecs490_image = ag_models.SandboxDockerImage.objects.get_or_create(
+            name='eecs490_image', display_name='EECS 490', tag='jameslp/eecs490')[0]
+
         student_suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name='suito',
             project=self.project,
-            docker_image_to_use=constants.SupportedImages.eecs490,
+            sandbox_docker_image=eecs490_image,
             use_setup_command=True,
             setup_command={
                 'cmd': 'racket --version'
