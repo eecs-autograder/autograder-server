@@ -2,7 +2,32 @@
 
 import autograder.core.fields
 import autograder.core.models.ag_model_base
+from autograder.core.constants import SupportedImages, DOCKER_IMAGE_IDS_TO_URLS
 from django.db import migrations, models
+
+import autograder_sandbox
+
+
+def create_default_image(apps, schema_editor):
+    SandboxDockerImage = apps.get_model('core', 'SandboxDockerImage')
+
+    # Use the current version of the default sandbox image.
+    # Note that if the version of autograder_sandbox changes, this
+    # DB row will have to be updated manually.
+    SandboxDockerImage.objects.validate_and_create(
+        name='default', tag=f'jameslp/autograder-sandbox:{autograder_sandbox.VERSION}'
+    )
+
+
+def migrate_legacy_images(apps, schema_editor):
+    """
+    Create a DB row for all images listed in constants.SupportedImages
+    """
+    SandboxDockerImage = apps.get_model('core', 'SandboxDockerImage')
+
+    for image_name, image_tag in DOCKER_IMAGE_IDS_TO_URLS:
+        if image_name != SupportedImages.default:
+            SandboxDockerImage.objects.validate_and_create(name=image_name, tag=image_tag)
 
 
 class Migration(migrations.Migration):
@@ -25,4 +50,7 @@ class Migration(migrations.Migration):
             },
             bases=(autograder.core.models.ag_model_base.ToDictMixin, models.Model),
         ),
+
+        migrations.RunPython(create_default_image, reverse_code=lambda apps, schema_editor: None),
+        migrations.RunPython(migrate_legacy_images, reverse_code=lambda apps, schema_editor: None),
     ]
