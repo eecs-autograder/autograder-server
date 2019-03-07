@@ -42,6 +42,8 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertIsNone(student_suite.max_points)
         self.assertFalse(student_suite.deferred)
         self.assertEqual(constants.SupportedImages.default, student_suite.docker_image_to_use)
+        self.assertEqual(ag_models.SandboxDockerImage.objects.get(name='default'),
+                         student_suite.sandbox_docker_image)
         self.assertFalse(student_suite.allow_network_access)
 
         self.assertIsInstance(student_suite.normal_fdbk_config,
@@ -74,6 +76,10 @@ class StudentTestSuiteTestCase(UnitTestBase):
         instructor_file1 = obj_build.make_instructor_file(self.project)
         instructor_file2 = obj_build.make_instructor_file(self.project)
         student_file = obj_build.make_expected_student_file(self.project)
+
+        sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            name='An Image', tag='jameslp/imagey:2')
+
         values = {
             'name': 'adnlakshfdklajhsdlf',
             'project': self.project,
@@ -94,6 +100,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'max_points': 462,
             'deferred': True,
             'docker_image_to_use': constants.SupportedImages.eecs280,
+            'sandbox_docker_image': sandbox_image.to_dict(),
             'allow_network_access': True,
             'normal_fdbk_config': {
                 'bugs_exposed_fdbk_level': (
@@ -178,6 +185,12 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
         self.project.set_studenttestsuite_order([suite1.pk, suite2.pk])
         self.assertSequenceEqual([suite1.pk, suite2.pk], self.project.get_studenttestsuite_order())
+
+    def test_sandbox_docker_image_cannot_be_deleted(self):
+        self.fail()
+
+    def test_sandbox_docker_image_renamed(self):
+        self.fail()
 
     def test_error_name_not_unique(self):
         name = 'spam'

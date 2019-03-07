@@ -5,6 +5,7 @@ import autograder.core.fields as ag_fields
 from autograder.core import constants
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import ExpectedStudentFile, Project, InstructorFile
+from ..sandbox_docker_image import SandboxDockerImage
 
 
 class AGTestSuiteFeedbackConfig(AutograderModel):
@@ -143,7 +144,16 @@ class AGTestSuite(AutograderModel):
     docker_image_to_use = ag_fields.EnumField(
         constants.SupportedImages,
         default=constants.SupportedImages.default,
-        help_text="An identifier for the Docker image that the sandbox should be created from.")
+        help_text="""An identifier for the Docker image that the sandbox should be created from.
+                     This field is DEPRECATED in favor of sandbox_docker_image""")
+
+    sandbox_docker_image = models.ForeignKey(
+        SandboxDockerImage,
+        on_delete=models.PROTECT,
+        to_field='name',
+        default='default',
+        help_text="""The sandbox docker image to use for running this suite."""
+    )
 
     allow_network_access = models.BooleanField(
         default=False,
@@ -239,6 +249,7 @@ class AGTestSuite(AutograderModel):
         'setup_suite_cmd_name',
 
         'docker_image_to_use',
+        'sandbox_docker_image',
         'allow_network_access',
         'deferred',
 
@@ -251,6 +262,8 @@ class AGTestSuite(AutograderModel):
     SERIALIZE_RELATED = (
         'instructor_files_needed',
         'student_files_needed',
+
+        'sandbox_docker_image',
 
         'ag_test_cases',
     )
@@ -268,6 +281,7 @@ class AGTestSuite(AutograderModel):
         'allow_network_access',
         'deferred',
         'docker_image_to_use',
+        'sandbox_docker_image',
 
         'normal_fdbk_config',
         'ultimate_submission_fdbk_config',

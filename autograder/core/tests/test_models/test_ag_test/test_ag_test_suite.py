@@ -28,6 +28,9 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertEqual('', suite.setup_suite_cmd)
 
         self.assertFalse(suite.allow_network_access)
+        self.assertEqual(constants.SupportedImages.default, suite.docker_image_to_use)
+        self.assertEqual(ag_models.SandboxDockerImage.objects.get(name='default'),
+                         suite.sandbox_docker_image)
         self.assertFalse(suite.deferred)
 
         self.assertIsNotNone(suite.normal_fdbk_config)
@@ -77,6 +80,9 @@ class AGTestSuiteTestCase(UnitTestBase):
         allow_network_access = True
         deferred = True
 
+        sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            name='Imagey', tag='jameslp/imagey:1')
+
         suite = ag_models.AGTestSuite.objects.validate_and_create(
             name=name,
             project=project,
@@ -88,6 +94,7 @@ class AGTestSuiteTestCase(UnitTestBase):
             allow_network_access=allow_network_access,
             deferred=deferred,
             docker_image_to_use=constants.SupportedImages.eecs490,
+            sandbox_docker_image=sandbox_image.to_dict(),
             normal_fdbk_config={
                 'visible': False,
                 'show_individual_tests': False,
@@ -107,6 +114,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertEqual(allow_network_access, suite.allow_network_access)
         self.assertEqual(deferred, suite.deferred)
         self.assertEqual(constants.SupportedImages.eecs490, suite.docker_image_to_use)
+        self.assertEqual(sandbox_image, suite.sandbox_docker_image)
         self.assertFalse(suite.normal_fdbk_config.visible)
 
     def test_error_suite_name_not_unique(self):
@@ -159,6 +167,12 @@ class AGTestSuiteTestCase(UnitTestBase):
             name='suite2', project=self.project)
 
         self.assertCountEqual([suite1, suite2], self.project.ag_test_suites.all())
+
+    def test_sandbox_docker_image_cannot_be_deleted(self):
+        self.fail()
+
+    def test_sandbox_docker_image_renamed(self):
+        self.fail()
 
     def test_serialization(self):
         student_file = ag_models.ExpectedStudentFile.objects.validate_and_create(
