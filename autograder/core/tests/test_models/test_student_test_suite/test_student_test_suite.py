@@ -79,7 +79,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
         student_file = obj_build.make_expected_student_file(self.project)
 
         sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
-            name='An Image', tag='jameslp/imagey:2')
+            name='such_image', display_name='An Image', tag='jameslp/imagey:2')
 
         values = {
             'name': 'adnlakshfdklajhsdlf',
