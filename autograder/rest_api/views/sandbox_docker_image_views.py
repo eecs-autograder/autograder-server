@@ -1,6 +1,5 @@
 from drf_composable_permissions.p import P
 from rest_framework import mixins, permissions
-from rest_framework.permissions import BasePermission
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
@@ -10,17 +9,18 @@ from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
 from autograder.rest_api.views.schema_generation import APITags
 
 
-class IsAdminForAnyCourse(BasePermission):
+class SandboxDockerImagePermissions:
     def has_permission(self, request, view):
-        return request.user.courses_is_admin_for.count() > 0
+        if request.user.is_superuser:
+            return True
+
+        if request.method.lower() == 'get':
+            return request.user.courses_is_admin_for.count() > 0
+
+        return False
 
     def has_object_permission(self, request, view, obj):
         return self.has_permission(request, view)
-
-
-is_superuser_or_readonly_admin_for_any_course = (
-    P(ag_permissions.IsSuperuser) | (P(ag_permissions.IsReadOnly) & P(IsAdminForAnyCourse))
-)
 
 
 class SandboxDockerImageViewSet(mixins.ListModelMixin,
@@ -30,7 +30,7 @@ class SandboxDockerImageViewSet(mixins.ListModelMixin,
                                 AGModelGenericViewSet):
     serializer_class = ag_serializers.SandboxDockerImageSerializer
     permission_classes = (
-        permissions.IsAuthenticated, is_superuser_or_readonly_admin_for_any_course
+        permissions.IsAuthenticated, SandboxDockerImagePermissions
     )
 
     model_manager = ag_models.SandboxDockerImage.objects
