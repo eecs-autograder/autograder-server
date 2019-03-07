@@ -82,7 +82,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         deferred = True
 
         sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
-            name='Imagey', tag='jameslp/imagey:1')
+            name='image', display_name='An Image', tag='jameslp/imagey:1')
 
         suite = ag_models.AGTestSuite.objects.validate_and_create(
             name=name,

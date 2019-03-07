@@ -4,6 +4,12 @@ import autograder.core.fields as ag_fields
 from autograder.core.models import AutograderModel
 
 
+# !!IMPORTANT!!: Use the loaddata command to create the 'default' image
+# in your database after applying migrations (see autograder-full-stack
+# README for more info).
+#
+# IMPORTANT: If the version of the default image changes, be sure to update
+# the tag field in autograder/core/fixture/default_sandbox_image.json
 class SandboxDockerImage(AutograderModel):
     name = ag_fields.ShortStringField(
         blank=False,
