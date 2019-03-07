@@ -172,6 +172,11 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.fail()
 
     def test_sandbox_docker_image_renamed(self):
+        """
+        This test verifies that if the the SandboxDockerImage referenced by
+        AGTestSuite.sandbox_docker_image is renamed that the foreign key
+        reference retains its integrity.
+        """
         self.fail()
 
     def test_serialization(self):
