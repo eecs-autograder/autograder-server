@@ -9,14 +9,21 @@ import django.db.models.deletion
 def set_suite_sandbox_images(apps, schema_editor):
     AGTestSuite = apps.get_model('core', 'AGTestSuite')
     StudentTestSuite = apps.get_model('core', 'StudentTestSuite')
+    SandboxDockerImage = apps.get_model('core', 'SandboxDockerImage')
 
     # In migration 0036, we created a table entry for each SupportedImage,
     # using those values as the names of the new objects.
     for ag_test_suite in AGTestSuite.objects.all():
-        ag_test_suite.validate_and_update(sandbox_docker_image=ag_test_suite.docker_image_to_use)
+        ag_test_suite.sandbox_docker_image = SandboxDockerImage.objects.get(
+            name=ag_test_suite.docker_image_to_use.value
+        )
+        ag_test_suite.save()
 
     for student_suite in StudentTestSuite.objects.all():
-        student_suite.validate_and_update(sandbox_docker_image=student_suite.docker_image_to_use)
+        student_suite.sandbox_docker_image = SandboxDockerImage.objects.get(
+            name=student_suite.docker_image_to_use.value
+        )
+        student_suite.save()
 
 
 class Migration(migrations.Migration):
