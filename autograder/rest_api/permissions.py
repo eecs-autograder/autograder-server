@@ -90,13 +90,19 @@ def _(group: ag_models.Group) -> ag_models.Group:
 
 
 class IsReadOnly(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
+    def has_permission(self, request, view):
         return request.method in permissions.SAFE_METHODS
+
+    def has_object_permission(self, request, view, obj):
+        return self.has_permission(request, view)
 
 
 class IsSuperuser(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
+    def has_permission(self, request, view):
         return request.user.is_superuser
+
+    def has_object_permission(self, request, view, obj):
+        return self.has_permission(request, view)
 
 
 def is_admin(get_course_fn: GetCourseFnType=_get_course) -> PermissionClassType:

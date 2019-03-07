@@ -11,6 +11,14 @@ from autograder.core.models import AutograderModel
 # IMPORTANT: If the version of the default image changes, be sure to update
 # the tag field in autograder/core/fixture/default_sandbox_image.json
 class SandboxDockerImage(AutograderModel):
+    """
+    Contains the information required to identify and load sandbox
+    Docker images when running test suites.
+    """
+
+    class Meta:
+        ordering = ('display_name',)
+
     name = ag_fields.ShortStringField(
         blank=False,
         unique=True,
