@@ -6,30 +6,10 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
-def set_suite_sandbox_images(apps, schema_editor):
-    AGTestSuite = apps.get_model('core', 'AGTestSuite')
-    StudentTestSuite = apps.get_model('core', 'StudentTestSuite')
-    SandboxDockerImage = apps.get_model('core', 'SandboxDockerImage')
-
-    # In migration 0036, we created a table entry for each SupportedImage,
-    # using those values as the names of the new objects.
-    for ag_test_suite in AGTestSuite.objects.all():
-        ag_test_suite.sandbox_docker_image = SandboxDockerImage.objects.get(
-            name=ag_test_suite.docker_image_to_use.value
-        )
-        ag_test_suite.save()
-
-    for student_suite in StudentTestSuite.objects.all():
-        student_suite.sandbox_docker_image = SandboxDockerImage.objects.get(
-            name=student_suite.docker_image_to_use.value
-        )
-        student_suite.save()
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0036_sandboxdockerimage'),
+        ('core', '0037_create_sandbox_images'),
     ]
 
     operations = [
@@ -53,7 +33,4 @@ class Migration(migrations.Migration):
             name='docker_image_to_use',
             field=autograder.core.fields.EnumField(default=autograder.core.constants.SupportedImages('default'), enum_type=autograder.core.constants.SupportedImages, help_text='An identifier for the Docker image that the sandbox should be created from.\n                     This field is DEPRECATED in favor of sandbox_docker_image'),
         ),
-
-        migrations.RunPython(set_suite_sandbox_images, reverse_code=lambda apps, schema_editor: None),
-
     ]
