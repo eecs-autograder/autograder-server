@@ -1,6 +1,7 @@
 import copy
 
 from django.core import exceptions
+from django.db import IntegrityError
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -168,16 +169,24 @@ class AGTestSuiteTestCase(UnitTestBase):
 
         self.assertCountEqual([suite1, suite2], self.project.ag_test_suites.all())
 
-    def test_sandbox_docker_image_cannot_be_deleted(self):
-        self.fail()
+    def test_sandbox_docker_image_cannot_be_deleted_and_name_cannot_be_changed_when_in_use(self):
+        """
+        Verifies that on_delete for AGTestSuite.sandbox_docker_image is set to PROTECT
+        and that the name of an image can't be changed if any foreign key references to it exist.
+        """
+        sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            name='waaaa', display_name='luigi', tag='taggy')
 
-    def test_sandbox_docker_image_renamed(self):
-        """
-        This test verifies that if the the SandboxDockerImage referenced by
-        AGTestSuite.sandbox_docker_image is renamed that the foreign key
-        reference retains its integrity.
-        """
-        self.fail()
+        ag_models.AGTestSuite.objects.validate_and_create(
+            name='suiteo', project=self.project, sandbox_docker_image=sandbox_image
+        )
+
+        with self.assertRaises(IntegrityError):
+            sandbox_image.delete()
+
+        with self.assertRaises(IntegrityError):
+            sandbox_image.name = 'bad'
+            sandbox_image.save()
 
     def test_serialization(self):
         student_file = ag_models.ExpectedStudentFile.objects.validate_and_create(
@@ -217,6 +226,7 @@ class AGTestSuiteTestCase(UnitTestBase):
             'setup_suite_cmd_name',
 
             'docker_image_to_use',
+            'sandbox_docker_image',
             'allow_network_access',
             'deferred',
 
@@ -230,6 +240,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertIsInstance(suite_dict['instructor_files_needed'][0], dict)
         self.assertIsInstance(suite_dict['student_files_needed'][0], dict)
         self.assertSequenceEqual([ag_test.to_dict()], suite_dict['ag_test_cases'])
+        self.assertIsInstance(suite_dict['sandbox_docker_image'], dict)
 
         self.assertIsInstance(suite_dict['normal_fdbk_config'], dict)
         self.assertIsInstance(suite_dict['ultimate_submission_fdbk_config'], dict)

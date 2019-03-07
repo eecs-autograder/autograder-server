@@ -6,15 +6,23 @@ from autograder.core.models import AutograderModel
 
 class SandboxDockerImage(AutograderModel):
     name = ag_fields.ShortStringField(
-        blank=False, unique=True,
-        help_text="""A human-readable name used to identify this sandbox image.
+        blank=False,
+        unique=True,
+        help_text="""A string uniquely identifying this sandbox image.
+                     This field is required and cannot be edited after
+                     creation.""")
+
+    display_name = ag_fields.ShortStringField(
+        blank=False,
+        unique=True,
+        help_text="""A human-readable name for this sandbox image.
                      This field is required.""")
 
     tag = models.TextField(
         blank=False,
-        help_text="""The full tag that can be used to fetch the image with 
-                     the 'docker pull' command. This should include a specific 
-                     version for the image, and the version number should be 
+        help_text="""The full tag that can be used to fetch the image with
+                     the 'docker pull' command. This should include a specific
+                     version for the image, and the version number should be
                      incremented every time the image is updated, otherwise
                      the new version of the image may not be fetched."""
     )
@@ -22,10 +30,11 @@ class SandboxDockerImage(AutograderModel):
     SERIALIZABLE_FIELDS = [
         'pk',
         'name',
+        'display_name',
         'tag',
     ]
 
     EDITABLE_FIELDS = [
-        'name',
+        'display_name',
         'tag',
     ]

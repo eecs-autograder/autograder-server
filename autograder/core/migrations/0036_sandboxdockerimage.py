@@ -14,8 +14,9 @@ def create_default_image(apps, schema_editor):
     # Use the current version of the default sandbox image.
     # Note that if the version of autograder_sandbox changes, this
     # DB row will have to be updated manually.
-    SandboxDockerImage.objects.validate_and_create(
-        name='default', tag=f'jameslp/autograder-sandbox:{autograder_sandbox.VERSION}'
+    SandboxDockerImage.objects.create(
+        name='default', display_name='Default',
+        tag=f'jameslp/autograder-sandbox:{autograder_sandbox.VERSION}'
     )
 
 
@@ -25,9 +26,10 @@ def migrate_legacy_images(apps, schema_editor):
     """
     SandboxDockerImage = apps.get_model('core', 'SandboxDockerImage')
 
-    for image_name, image_tag in DOCKER_IMAGE_IDS_TO_URLS:
+    for image_name, image_tag in DOCKER_IMAGE_IDS_TO_URLS.items():
         if image_name != SupportedImages.default:
-            SandboxDockerImage.objects.validate_and_create(name=image_name, tag=image_tag)
+            SandboxDockerImage.objects.create(
+                name=image_name.value, display_name=image_name.value, tag=image_tag)
 
 
 class Migration(migrations.Migration):
@@ -42,8 +44,9 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('last_modified', models.DateTimeField(auto_now=True)),
-                ('name', autograder.core.fields.ShortStringField(help_text='A human-readable name used to identify this sandbox image.\n                     This field is required.', max_length=255, strip=False, unique=True)),
-                ('tag', models.TextField(help_text="The full tag that can be used to fetch the image with \n                     the 'docker pull' command. This should include a specific \n                     version for the image, and the version number should be \n                     incremented every time the image is updated, otherwise\n                     the new version of the image may not be fetched.")),
+                ('name', autograder.core.fields.ShortStringField(help_text='A string uniquely identifying this sandbox image.\n                     This field is required and cannot be edited after\n                     creation.', max_length=255, strip=False, unique=True)),
+                ('display_name', autograder.core.fields.ShortStringField(help_text='A human-readable name for this sandbox image.\n                     This field is required.', max_length=255, strip=False, unique=True)),
+                ('tag', models.TextField(help_text="The full tag that can be used to fetch the image with\n                     the 'docker pull' command. This should include a specific\n                     version for the image, and the version number should be\n                     incremented every time the image is updated, otherwise\n                     the new version of the image may not be fetched.")),
             ],
             options={
                 'abstract': False,

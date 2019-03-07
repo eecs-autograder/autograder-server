@@ -325,8 +325,8 @@ class StudentTestSuite(AutograderModel):
     sandbox_docker_image = models.ForeignKey(
         SandboxDockerImage,
         on_delete=models.PROTECT,
-        to_field='name',
         default='default',
+        to_field='name',
         help_text="""The sandbox docker image to use for running this suite."""
     )
 
