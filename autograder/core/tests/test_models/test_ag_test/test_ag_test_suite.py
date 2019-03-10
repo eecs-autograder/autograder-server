@@ -1,6 +1,7 @@
 import copy
 
 from django.core import exceptions
+from django.db import IntegrityError
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
@@ -28,6 +29,9 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertEqual('', suite.setup_suite_cmd)
 
         self.assertFalse(suite.allow_network_access)
+        self.assertEqual(constants.SupportedImages.default, suite.docker_image_to_use)
+        self.assertEqual(ag_models.SandboxDockerImage.objects.get(name='default'),
+                         suite.sandbox_docker_image)
         self.assertFalse(suite.deferred)
 
         self.assertIsNotNone(suite.normal_fdbk_config)
@@ -77,6 +81,9 @@ class AGTestSuiteTestCase(UnitTestBase):
         allow_network_access = True
         deferred = True
 
+        sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            name='image', display_name='An Image', tag='jameslp/imagey:1')
+
         suite = ag_models.AGTestSuite.objects.validate_and_create(
             name=name,
             project=project,
@@ -88,6 +95,7 @@ class AGTestSuiteTestCase(UnitTestBase):
             allow_network_access=allow_network_access,
             deferred=deferred,
             docker_image_to_use=constants.SupportedImages.eecs490,
+            sandbox_docker_image=sandbox_image.to_dict(),
             normal_fdbk_config={
                 'visible': False,
                 'show_individual_tests': False,
@@ -107,6 +115,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertEqual(allow_network_access, suite.allow_network_access)
         self.assertEqual(deferred, suite.deferred)
         self.assertEqual(constants.SupportedImages.eecs490, suite.docker_image_to_use)
+        self.assertEqual(sandbox_image, suite.sandbox_docker_image)
         self.assertFalse(suite.normal_fdbk_config.visible)
 
     def test_error_suite_name_not_unique(self):
@@ -160,6 +169,25 @@ class AGTestSuiteTestCase(UnitTestBase):
 
         self.assertCountEqual([suite1, suite2], self.project.ag_test_suites.all())
 
+    def test_sandbox_docker_image_cannot_be_deleted_and_name_cannot_be_changed_when_in_use(self):
+        """
+        Verifies that on_delete for AGTestSuite.sandbox_docker_image is set to PROTECT
+        and that the name of an image can't be changed if any foreign key references to it exist.
+        """
+        sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            name='waaaa', display_name='luigi', tag='taggy')
+
+        ag_models.AGTestSuite.objects.validate_and_create(
+            name='suiteo', project=self.project, sandbox_docker_image=sandbox_image
+        )
+
+        with self.assertRaises(IntegrityError):
+            sandbox_image.delete()
+
+        with self.assertRaises(IntegrityError):
+            sandbox_image.name = 'bad'
+            sandbox_image.save()
+
     def test_serialization(self):
         student_file = ag_models.ExpectedStudentFile.objects.validate_and_create(
             pattern='filey',
@@ -198,6 +226,7 @@ class AGTestSuiteTestCase(UnitTestBase):
             'setup_suite_cmd_name',
 
             'docker_image_to_use',
+            'sandbox_docker_image',
             'allow_network_access',
             'deferred',
 
@@ -211,6 +240,7 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertIsInstance(suite_dict['instructor_files_needed'][0], dict)
         self.assertIsInstance(suite_dict['student_files_needed'][0], dict)
         self.assertSequenceEqual([ag_test.to_dict()], suite_dict['ag_test_cases'])
+        self.assertIsInstance(suite_dict['sandbox_docker_image'], dict)
 
         self.assertIsInstance(suite_dict['normal_fdbk_config'], dict)
         self.assertIsInstance(suite_dict['ultimate_submission_fdbk_config'], dict)

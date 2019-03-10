@@ -52,8 +52,8 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
             'usernames': ' '.join(submission.group.member_names)
         },
         allow_network_access=ag_test_suite.allow_network_access,
-        docker_image=constants.DOCKER_IMAGE_IDS_TO_URLS[ag_test_suite.docker_image_to_use])
-    print(ag_test_suite.docker_image_to_use)
+        docker_image=ag_test_suite.sandbox_docker_image.tag)
+    print(ag_test_suite.sandbox_docker_image.to_dict())
     print(sandbox.docker_image)
     with sandbox:
         add_files_to_sandbox(sandbox, ag_test_suite, submission)

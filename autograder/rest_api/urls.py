@@ -43,6 +43,9 @@ submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            base_name='submission')
 
+sandbox_docker_image_router = routers.SimpleRouter()
+sandbox_docker_image_router.register(r'sandbox_docker_images', views.SandboxDockerImageViewSet,
+                                     base_name='sandbox-docker-image')
 
 ag_test_suite_detail_router = routers.SimpleRouter()
 ag_test_suite_detail_router.register(r'ag_test_suites', views.AGTestSuiteDetailViewSet,
@@ -172,6 +175,8 @@ urlpatterns = [
     url(r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/order/$',
         views.AGTestSuiteOrderView.as_view(), name='ag_test_suite_order'),
     url(r'', include(ag_test_suite_detail_router.urls)),
+
+    url(r'', include(sandbox_docker_image_router.urls)),
 
     url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/$',
         views.AGTestCaseListCreateView.as_view(), name='ag_test_cases'),

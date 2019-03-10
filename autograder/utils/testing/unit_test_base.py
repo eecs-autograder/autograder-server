@@ -29,6 +29,8 @@ class UnitTestBase(TransactionTestCase):
     the order of any items in sub-containers.
     """
 
+    fixtures = ['default_sandbox_image.json']
+
     def setUp(self):
         super().setUp()
 

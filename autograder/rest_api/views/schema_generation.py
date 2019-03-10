@@ -40,6 +40,7 @@ API_MODELS = OrderedDict([
 
     [ag_models.AGCommand, 'AGCommand'],
 
+    [ag_models.SandboxDockerImage, 'SandboxDockerImage'],
     [ag_models.AGTestSuite, 'AGTestSuite'],
     [ag_models.NewAGTestSuiteFeedbackConfig, 'AGTestSuiteFeedbackConfig'],
     [ag_models.AGTestCase, 'AGTestCase'],

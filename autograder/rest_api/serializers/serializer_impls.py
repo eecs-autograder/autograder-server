@@ -75,6 +75,10 @@ class SubmissionSerializer(AGModelSerializer):
     ag_model_class = ag_models.Submission
 
 
+class SandboxDockerImageSerializer(AGModelSerializer):
+    ag_model_class = ag_models.SandboxDockerImage
+
+
 class AGTestSuiteSerializer(AGModelSerializer):
     ag_model_class = ag_models.AGTestSuite
 

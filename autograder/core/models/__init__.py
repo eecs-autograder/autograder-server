@@ -18,6 +18,8 @@ from .submission import (
     get_student_test_suite_results_queryset,
 )
 
+from .sandbox_docker_image import SandboxDockerImage
+
 from .ag_command import AGCommandBase, AGCommand, AGCommandResultBase, AGCommandResult
 from .student_test_suite import (
     StudentTestSuite, StudentTestSuiteFeedbackConfig, BugsExposedFeedbackLevel,

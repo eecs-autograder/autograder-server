@@ -1,6 +1,7 @@
 import decimal
 
 from django.core import exceptions
+from django.db import IntegrityError
 
 from autograder.core import constants
 from autograder.utils.testing import UnitTestBase
@@ -42,6 +43,8 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertIsNone(student_suite.max_points)
         self.assertFalse(student_suite.deferred)
         self.assertEqual(constants.SupportedImages.default, student_suite.docker_image_to_use)
+        self.assertEqual(ag_models.SandboxDockerImage.objects.get(name='default'),
+                         student_suite.sandbox_docker_image)
         self.assertFalse(student_suite.allow_network_access)
 
         self.assertIsInstance(student_suite.normal_fdbk_config,
@@ -74,6 +77,10 @@ class StudentTestSuiteTestCase(UnitTestBase):
         instructor_file1 = obj_build.make_instructor_file(self.project)
         instructor_file2 = obj_build.make_instructor_file(self.project)
         student_file = obj_build.make_expected_student_file(self.project)
+
+        sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            name='such_image', display_name='An Image', tag='jameslp/imagey:2')
+
         values = {
             'name': 'adnlakshfdklajhsdlf',
             'project': self.project,
@@ -94,6 +101,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'max_points': 462,
             'deferred': True,
             'docker_image_to_use': constants.SupportedImages.eecs280,
+            'sandbox_docker_image': sandbox_image.to_dict(),
             'allow_network_access': True,
             'normal_fdbk_config': {
                 'bugs_exposed_fdbk_level': (
@@ -178,6 +186,26 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
         self.project.set_studenttestsuite_order([suite1.pk, suite2.pk])
         self.assertSequenceEqual([suite1.pk, suite2.pk], self.project.get_studenttestsuite_order())
+
+    def test_sandbox_docker_image_cannot_be_deleted_and_name_cannot_be_changed_when_in_use(self):
+        """
+        Verifies that on_delete for StudentTestSuite.sandbox_docker_image is set to PROTECT
+        and that the name of an image can't be changed if any foreign key references to
+        it exist.
+        """
+        sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            name='waluigi', display_name='time', tag='taggy')
+
+        ag_models.StudentTestSuite.objects.validate_and_create(
+            name='suiteo', project=self.project, sandbox_docker_image=sandbox_image
+        )
+
+        with self.assertRaises(IntegrityError):
+            sandbox_image.delete()
+
+        with self.assertRaises(IntegrityError):
+            sandbox_image.name = 'bad'
+            sandbox_image.save()
 
     def test_error_name_not_unique(self):
         name = 'spam'
@@ -287,6 +315,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'max_points',
             'deferred',
             'docker_image_to_use',
+            'sandbox_docker_image',
             'allow_network_access',
             'normal_fdbk_config',
             'ultimate_submission_fdbk_config',
@@ -319,6 +348,8 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertIsInstance(serialized['ultimate_submission_fdbk_config'], dict)
         self.assertIsInstance(serialized['past_limit_submission_fdbk_config'], dict)
         self.assertIsInstance(serialized['staff_viewer_fdbk_config'], dict)
+
+        self.assertIsInstance(serialized['sandbox_docker_image'], dict)
 
         update_dict = student_suite.to_dict()
         non_editable = ['pk', 'project', 'last_modified']
