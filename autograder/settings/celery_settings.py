@@ -7,6 +7,7 @@ import os
 BROKER_URL = os.environ.get('AG_CELERY_BROKER_URL', 'amqp://guest@localhost:5672//')
 
 CELERYD_PREFETCH_MULTIPLIER = 1
+# Set this using the -c flag for the worker
 CELERYD_CONCURRENCY = 1
 
 CELERY_TASK_SERIALIZER = 'json'
@@ -19,11 +20,7 @@ CELERY_RESULT_BACKEND = os.environ.get('AG_CELERY_RESULTS_BACKEND_URL',
                                        'redis://localhost:6379/0')
 CELERY_RESULT_PERSISTENT = True
 
-# Probably want to set some high max for this?
-# CELERYD_TASK_TIME_LIMIT =
-
-# Set this using the -c flag for the worker
-# CELERYD_CONCURRENCY
+BROKER_POOL_LIMIT = None
 
 CELERYBEAT_SCHEDULE = {
     'queue-submissions': {

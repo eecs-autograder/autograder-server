@@ -23,7 +23,7 @@ def queue_submissions():
         print('queued {} submissions'.format(to_queue))
 
 
-@celery.shared_task(acks_late=True, autoretry_for=(Exception,))
+@celery.shared_task(acks_late=True, autoretry_for=(Exception,), default_retry_delay=5)
 def register_project_queues(worker_names=None, project_pks=None):
     from autograder.celery import app
 
@@ -31,14 +31,14 @@ def register_project_queues(worker_names=None, project_pks=None):
         worker_names = [worker_name for worker_name in app.control.inspect().active()
                         if worker_name.startswith(settings.SUBMISSION_WORKER_PREFIX)]
 
-    print('worker names', worker_names)
+    print('worker names', worker_names, flush=True)
     if not worker_names:
         return
 
     if not project_pks:
         project_pks = [project.pk for project in ag_models.Project.objects.all()]
 
-    print('project pks:', project_pks)
+    print('project pks:', project_pks, flush=True)
     for pk in project_pks:
         res = app.control.add_consumer('project{}'.format(pk), destination=worker_names)
         print(res)
