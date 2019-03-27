@@ -166,6 +166,7 @@ class GroupTestCase(_SetUp):
             'num_submissions',
 
             'created_at',
+            'last_modified',
         ]
 
         self.assertCountEqual(
