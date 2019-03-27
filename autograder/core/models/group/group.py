@@ -187,6 +187,7 @@ class Group(ag_model_base.AutograderModel):
         'num_submits_towards_limit',
 
         'created_at',
+        'last_modified',
     )
 
     EDITABLE_FIELDS = ('extended_due_date', 'bonus_submissions_remaining')
