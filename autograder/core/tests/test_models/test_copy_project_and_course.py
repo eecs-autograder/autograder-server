@@ -11,6 +11,11 @@ from autograder.utils.testing import UnitTestBase
 
 
 class CopyProjectTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self._custom_image = ag_models.SandboxDockerImage.objects.get_or_create(
+            name='custom_image', display_name='Custom Image', tag='custom_image')[0]
+
     def test_copy_project(self):
         # In new project, hide_ultimate_submission_fdbk should be set to True,
         # visible_to_students should be set to False,
@@ -23,7 +28,8 @@ class CopyProjectTestCase(UnitTestBase):
         student_file2 = obj_build.make_expected_student_file(project)
 
         suite1 = obj_build.make_ag_test_suite(project, instructor_files_needed=[instructor_file1],
-                                              student_files_needed=[student_file1])
+                                              student_files_needed=[student_file1],
+                                              sandbox_docker_image={'pk': self._custom_image.pk})
         case1 = obj_build.make_ag_test_case(suite1)
         cmd1 = obj_build.make_full_ag_test_command(
             case1,
@@ -49,6 +55,7 @@ class CopyProjectTestCase(UnitTestBase):
 
         student_suite1 = obj_build.make_student_test_suite(
             project,
+            sandbox_docker_image={'pk': self._custom_image.pk},
             instructor_files_needed=[instructor_file1, instructor_file2],
             student_files_needed=[student_file1],
             setup_command={
