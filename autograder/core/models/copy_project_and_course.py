@@ -69,6 +69,7 @@ def _copy_ag_tests(project, new_project):
             project=new_project,
             instructor_files_needed=instructor_files_needed,
             student_files_needed=student_files_needed,
+            sandbox_docker_image=suite.sandbox_docker_image,
             **utils.exclude_dict(
                 suite.to_dict(),
                 ('pk', 'project') + AGTestSuite.get_serialize_related_fields())
@@ -135,6 +136,7 @@ def _copy_student_suites(project, new_project):
             project=new_project,
             instructor_files_needed=instructor_files_needed,
             student_files_needed=student_files_needed,
+            sandbox_docker_image=student_suite.sandbox_docker_image,
             **utils.exclude_dict(
                 student_suite.to_dict(),
                 ('pk', 'project') + StudentTestSuite.get_serialize_related_fields())
