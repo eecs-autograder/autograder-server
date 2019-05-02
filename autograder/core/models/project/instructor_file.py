@@ -81,6 +81,15 @@ class InstructorFile(AutograderModel):
         except exceptions.ValidationError as e:
             raise exceptions.ValidationError({'name': e.message})
 
+        new_filename_exists = utils.find_if(
+            self.project.instructor_files.exclude(pk=self.pk),
+            lambda file_: file_.name == new_name
+        )
+
+        if new_filename_exists:
+            raise exceptions.ValidationError(
+                {'filename': 'File {} already exists'.format(new_name)})
+
         old_abspath = self.abspath
         self.file_obj.name = _get_project_file_upload_to_path(self, new_name)
         new_abspath = self.abspath

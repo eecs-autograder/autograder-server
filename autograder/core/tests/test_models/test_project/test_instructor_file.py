@@ -45,22 +45,6 @@ class CreateInstuctorFileTestCase(_SetUp):
         with utils.ChangeDirectory(core_ut.get_project_files_dir(self.project)):
             self.assertTrue(os.path.isfile(self.file_obj.name))
 
-    def test_create_file_exception_file_already_exists(self):
-        self.file_obj.seek(0)
-        instructor_file = InstructorFile.objects.validate_and_create(
-            project=self.project,
-            file_obj=self.file_obj)
-
-        duplicate_file = SimpleUploadedFile(
-            self.file_obj.name, b'some content that should not be here')
-        with self.assertRaises(exceptions.ValidationError) as cm:
-            InstructorFile.objects.validate_and_create(
-                project=self.project, file_obj=duplicate_file)
-
-        self.assertIn('filename', cm.exception.message_dict)
-        self.file_obj.seek(0)
-        self.assertEqual(instructor_file.file_obj.read(), self.file_obj.read())
-
     # Note: Django's uploaded file objects strip path information from
     # uploaded files
     def test_path_info_stripped_from_instructor_filenames(self):
@@ -93,6 +77,27 @@ class CreateInstuctorFileTestCase(_SetUp):
             InstructorFile.objects.validate_and_create(project=self.project, file_obj=too_big)
 
         self.assertIn('content', cm.exception.message_dict)
+
+    def test_error_filename_already_exists(self):
+        self.file_obj.seek(0)
+        instructor_file = InstructorFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=self.file_obj)
+
+        duplicate_file = SimpleUploadedFile(
+            self.file_obj.name, b'some content that should not be here')
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            InstructorFile.objects.validate_and_create(
+                project=self.project, file_obj=duplicate_file)
+
+        self.assertIn('filename', cm.exception.message_dict)
+        self.file_obj.seek(0)
+        self.assertEqual(instructor_file.file_obj.read(), self.file_obj.read())
+
+    def test_different_projects_same_name_no_error(self):
+        other_project = obj_build.make_project(course=self.project.course)
+        InstructorFile.objects.validate_and_create(project=self.project, file_obj=self.file_obj)
+        InstructorFile.objects.validate_and_create(project=other_project, file_obj=self.file_obj)
 
 
 class RenameInstructorFileTestCase(_SetUp):
@@ -133,6 +138,22 @@ class RenameInstructorFileTestCase(_SetUp):
                 self.instructor_file.rename(filename)
 
             self.assertIn('name', cm.exception.message_dict)
+
+    def test_error_new_name_already_exists(self):
+        other_file: InstructorFile = InstructorFile.objects.validate_and_create(
+            project=self.project,
+            file_obj=SimpleUploadedFile(
+                'other_file.txt',
+                b'contents more contents.'
+            )
+        )
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            other_file.rename(self.file_obj.name)
+
+        self.assertIn('filename', cm.exception.message_dict)
+        other_file.refresh_from_db()
+        self.assertEqual('other_file.txt', other_file.name)
 
 
 class DeleteInstructorFileTestCase(_SetUp):
