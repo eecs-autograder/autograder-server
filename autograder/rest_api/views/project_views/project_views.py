@@ -235,7 +235,8 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
         with transaction.atomic():
             project = self.get_object()
 
-        cache.delete_pattern('project_{}_submission_normal_results_*'.format(project.pk))
+        keys = cache.scan_iter('project_{}_submission_normal_results_*'.format(project.pk), 5000)
+        cache.delete_many(list(keys))
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
