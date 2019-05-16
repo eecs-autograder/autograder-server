@@ -29,44 +29,54 @@ AGSerializableType = Type[ToDictMixin]
 APIType = Union[AGModelType, AGSerializableType, Type[DictSerializableMixin]]
 
 API_MODELS = OrderedDict([
-    [ag_models.Course, 'Course'],
-    [ag_models.Project, 'Project'],
-    [ag_models.ExpectedStudentFile, 'ExpectedStudentFile'],
-    [ag_models.InstructorFile, 'InstructorFile'],
-    [ag_models.DownloadTask, 'DownloadTask'],
-    [ag_models.Group, 'Group'],
-    [ag_models.GroupInvitation, 'GroupInvitation'],
-    [ag_models.Submission, 'Submission'],
+    [ag_models.Course, ag_models.Course.__name__],
+    [ag_models.Semester, ag_models.Semester.__name__],
+    [ag_models.Project, ag_models.Project.__name__],
+    [ag_models.UltimateSubmissionPolicy, ag_models.UltimateSubmissionPolicy.__name__],
+    [ag_models.ExpectedStudentFile, ag_models.ExpectedStudentFile.__name__],
+    [ag_models.InstructorFile, ag_models.InstructorFile.__name__],
+    [ag_models.DownloadTask, ag_models.DownloadTask.__name__],
+    [ag_models.DownloadType, ag_models.DownloadType.__name__],
+    [ag_models.Group, ag_models.Group.__name__],
+    [ag_models.GroupInvitation, ag_models.GroupInvitation.__name__],
+    [ag_models.Submission, ag_models.Submission.__name__],
 
-    [ag_models.AGCommand, 'AGCommand'],
+    [ag_models.AGCommand, ag_models.AGCommand.__name__],
 
-    [ag_models.SandboxDockerImage, 'SandboxDockerImage'],
-    [ag_models.AGTestSuite, 'AGTestSuite'],
+    [ag_models.SandboxDockerImage, ag_models.SandboxDockerImage.__name__],
+    [ag_models.AGTestSuite, ag_models.AGTestSuite.__name__],
     [ag_models.NewAGTestSuiteFeedbackConfig, 'AGTestSuiteFeedbackConfig'],
-    [ag_models.AGTestCase, 'AGTestCase'],
+    [ag_models.AGTestCase, ag_models.AGTestCase.__name__],
     [ag_models.NewAGTestCaseFeedbackConfig, 'AGTestCaseFeedbackConfig'],
-    [ag_models.AGTestCommand, 'AGTestCommand'],
+    [ag_models.AGTestCommand, ag_models.AGTestCommand.__name__],
     [ag_models.NewAGTestCommandFeedbackConfig, 'AGTestCommandFeedbackConfig'],
 
-    [SubmissionResultFeedback, 'SubmissionResultFeedback'],
-    [AGTestSuiteResultFeedback, 'AGTestSuiteResultFeedback'],
-    [AGTestCaseResultFeedback, 'AGTestCaseResultFeedback'],
-    [AGTestCommandResultFeedback, 'AGTestCommandResultFeedback'],
+    [ag_models.StdinSource, ag_models.StdinSource.__name__],
+    [ag_models.ExpectedOutputSource, ag_models.ExpectedOutputSource.__name__],
+    [ag_models.ExpectedReturnCode, ag_models.ExpectedReturnCode.__name__],
+    [ag_models.ValueFeedbackLevel, ag_models.ValueFeedbackLevel.__name__],
 
-    [ag_models.StudentTestSuite, 'StudentTestSuite'],
-    [ag_models.StudentTestSuiteFeedbackConfig, 'StudentTestSuiteFeedbackConfig'],
+    [SubmissionResultFeedback, SubmissionResultFeedback.__name__],
+    [AGTestSuiteResultFeedback, AGTestSuiteResultFeedback.__name__],
+    [AGTestCaseResultFeedback, AGTestCaseResultFeedback.__name__],
+    [AGTestCommandResultFeedback, AGTestCommandResultFeedback.__name__],
+    [ag_models.FeedbackCategory, ag_models.FeedbackCategory.__name__],
+
+    [ag_models.StudentTestSuite, ag_models.StudentTestSuite.__name__],
+    [ag_models.StudentTestSuiteFeedbackConfig, ag_models.StudentTestSuiteFeedbackConfig.__name__],
     [ag_models.StudentTestSuiteResult.FeedbackCalculator, 'StudentTestSuiteResult'],
+    [ag_models.BugsExposedFeedbackLevel, ag_models.BugsExposedFeedbackLevel.__name__],
 
-    [ag_models.RerunSubmissionsTask, 'RerunSubmissionsTask'],
+    [ag_models.RerunSubmissionsTask, ag_models.RerunSubmissionsTask.__name__],
 
-    [hg_models.HandgradingRubric, 'HandgradingRubric'],
-    [hg_models.Criterion, 'Criterion'],
-    [hg_models.Annotation, 'Annotation'],
-    [hg_models.HandgradingResult, 'HandgradingResult'],
-    [hg_models.CriterionResult, 'CriterionResult'],
-    [hg_models.AppliedAnnotation, 'AppliedAnnotation'],
-    [hg_models.Comment, 'Comment'],
-    [hg_models.Location, 'Location'],
+    [hg_models.HandgradingRubric, hg_models.HandgradingRubric.__name__],
+    [hg_models.Criterion, hg_models.Criterion.__name__],
+    [hg_models.Annotation, hg_models.Annotation.__name__],
+    [hg_models.HandgradingResult, hg_models.HandgradingResult.__name__],
+    [hg_models.CriterionResult, hg_models.CriterionResult.__name__],
+    [hg_models.AppliedAnnotation, hg_models.AppliedAnnotation.__name__],
+    [hg_models.Comment, hg_models.Comment.__name__],
+    [hg_models.Location, hg_models.Location.__name__],
 ])  # type: OrderedDict[APIType, str]
 
 
@@ -190,6 +200,10 @@ def _build_schema(api_class: APIType):
     if issubclass(api_class, DictSerializableMixin):
         return api_class.get_schema(API_MODELS[api_class])
 
+    if issubclass(api_class, enum.Enum):
+        description = '\n'.join((f'{item.value}: "{item.value}"' for item in api_class))
+        return Schema(type='enum', description=description)
+
     properties = OrderedDict()
     for field_name in api_class.get_serializable_fields():
         field = _get_field(field_name, api_class)
@@ -258,13 +272,19 @@ def _(property_: Union[property, cached_property], field_name: str) -> Parameter
 
 def _get_django_field_type(django_field) -> str:
     if type(django_field) in _FIELD_TYPES:
-        return _FIELD_TYPES[type(django_field)]
+        type_str = _FIELD_TYPES[type(django_field)]
+        if django_field.null:
+            type_str += ' | null'
+        return type_str
 
-    if type(django_field) == pg_fields.ArrayField:
+    if isinstance(django_field, pg_fields.ArrayField):
         return 'List[{}]'.format(_get_django_field_type(django_field.base_field))
 
-    if type(django_field) == ag_fields.ValidatedJSONField:
+    if isinstance(django_field, ag_fields.ValidatedJSONField):
         return API_MODELS[django_field.serializable_class]
+
+    if isinstance(django_field, ag_fields.EnumField):
+        return django_field.enum_type.__name__
 
     model_class = django_field.model  # type: AGModelType
     field_name = django_field.name
@@ -291,7 +311,7 @@ _FIELD_TYPES = {
     fields.FloatField: 'float',
     fields.DecimalField: 'string($float)',
     fields.BooleanField: 'boolean',
-    fields.NullBooleanField: 'Optional[bool]',
+    fields.NullBooleanField: 'bool | null',
     fields.CharField: 'string',
     fields.TextField: 'string',
     fields.DateTimeField: 'datetime',
@@ -303,5 +323,4 @@ _FIELD_TYPES = {
 
     ag_fields.ShortStringField: 'string',
     ag_fields.StringArrayField: 'List[string]',
-    ag_fields.EnumField: 'string'
 }

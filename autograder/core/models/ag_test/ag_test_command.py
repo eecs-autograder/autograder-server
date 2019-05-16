@@ -195,8 +195,7 @@ class ExpectedReturnCode(enum.Enum):
 
 class AGTestCommand(AGCommandBase):
     """
-    An AGTestCommand represents a single command to either evaluate student code or set up
-    an AGTestSuite.
+    An AGTestCommand represents a single command to evaluate student code.
     """
 
     class Meta:

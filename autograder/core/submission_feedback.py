@@ -701,7 +701,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._cmd.name
 
     @property
-    def ag_test_command_pk(self) -> pk:
+    def ag_test_command_pk(self) -> int:
         return self._cmd.pk
 
     @property
