@@ -328,6 +328,8 @@ class Submission(ag_model_base.AutograderModel):
         'does_not_count_for',
 
         'position_in_queue',
+
+        'last_modified'
     )
 
     EDITABLE_FIELDS = ('count_towards_daily_limit', 'count_towards_total_limit')
