@@ -250,6 +250,8 @@ class SubmissionTestCase(UnitTestBase):
             'does_not_count_for',
 
             'position_in_queue',
+
+            'last_modified'
         ]
         self.assertCountEqual(
             expected,
