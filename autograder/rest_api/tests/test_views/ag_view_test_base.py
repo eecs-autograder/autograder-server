@@ -34,6 +34,11 @@ class AGViewTestBase(UnitTestBase):
     def do_get_object_test(self, client, user, url, expected_data):
         return self.do_list_objects_test(client, user, url, expected_data)
 
+    def do_get_request_404_test(self, client, user, url):
+        client.force_authenticate(user)
+        response = client.get(url)
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
     def do_invalid_create_object_test(self, model_manager, client,
                                       user, url, request_data, format='json'):
         original_num = model_manager.count()

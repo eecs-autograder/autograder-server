@@ -244,7 +244,7 @@ def can_request_feedback_category(
             group = submission.group
             project = group.project
             course = project.course
-            deadline_past = _deadline_is_past(submission, request.user)
+            deadline_past = deadline_is_past(group, request.user)
 
             in_group = group.members.filter(pk=request.user.pk).exists()
             if course.is_staff(request.user):
@@ -290,9 +290,8 @@ def can_request_feedback_category(
     return CanRequestFeedbackCategory
 
 
-def _deadline_is_past(submission: ag_models.Submission, user: User):
+def deadline_is_past(group: ag_models.Group, user: User):
     now = timezone.now()
-    group = submission.group
     project = group.project
 
     deadline = None
@@ -319,21 +318,3 @@ def _deadline_is_past(submission: ag_models.Submission, user: User):
         deadline += datetime.timedelta(days=group.late_days_used[user.username])
 
     return deadline < now
-
-
-def can_request_ultimate_submission(user: User,
-                                    submission: ag_models.Submission):
-    group = submission.group
-    project = group.project
-    course = project.course
-
-    in_group = group.members.filter(pk=user.pk).exists()
-    if course.is_staff(user) and in_group:
-        return True
-
-    deadline_past = _deadline_is_past(submission, user)
-    group_ultimate_submission = get_ultimate_submission(group)
-
-    return (deadline_past
-            and group_ultimate_submission == submission
-            and not group.project.hide_ultimate_submission_fdbk)

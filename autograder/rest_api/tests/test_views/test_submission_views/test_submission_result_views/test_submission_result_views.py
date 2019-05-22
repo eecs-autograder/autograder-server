@@ -216,6 +216,17 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.normal)
 
+        self.course.students.clear()
+        self.project.validate_and_update(guests_can_submit=True)
+
+        self.do_get_fdbk_permission_denied_test(
+            self.client, self.student_group_normal_submission,
+            ag_models.FeedbackCategory.normal)
+
+        self.do_get_output_and_diff_permission_denied_test(
+            self.client, self.student_group_normal_submission,
+            self.normal_submission_result, ag_models.FeedbackCategory.normal)
+
     def test_staff_get_student_normal_submission_normal_fdbk_permission_denied(self):
         staff = obj_build.make_staff_user(self.course)
         self.client.force_authenticate(staff)
@@ -721,9 +732,10 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
 
-class AdminLookupStudentSubmissionTestCase(UnitTestBase):
-    def test_admin_get_student_submission_any_fdbk(self):
-        self.fail()
+# This will be implemented soon.
+# class AdminLookupStudentSubmissionTestCase(UnitTestBase):
+#     def test_admin_get_student_submission_any_fdbk(self):
+#         self.fail()
 
 
 class MiscSubmissionFeedbackTestCase(UnitTestBase):

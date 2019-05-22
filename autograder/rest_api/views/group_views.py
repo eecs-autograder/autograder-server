@@ -132,17 +132,8 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
         if is_staff and group.members.filter(pk=request.user.pk).exists():
             return True
 
-        closing_time = (project.closing_time if group.extended_due_date is None
-                        else group.extended_due_date)
-        closing_time_passed = closing_time is None or timezone.now() > closing_time
-        if not closing_time_passed:
-            return False
-
-        # If closing time has passed, staff can view anyone's ultimate
-        if is_staff:
-            return True
-
-        return not project.hide_ultimate_submission_fdbk
+        return (ag_permissions.deadline_is_past(group, request.user)
+                and not project.hide_ultimate_submission_fdbk)
 
 
 class GroupDetailViewSet(mixins.RetrieveModelMixin,
