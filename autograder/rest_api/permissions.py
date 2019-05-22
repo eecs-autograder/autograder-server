@@ -244,6 +244,10 @@ def can_request_feedback_category(
             group = submission.group
             project = group.project
             course = project.course
+
+            if course.is_admin(request.user):
+                return True
+
             deadline_past = deadline_is_past(group, request.user)
 
             in_group = group.members.filter(pk=request.user.pk).exists()
