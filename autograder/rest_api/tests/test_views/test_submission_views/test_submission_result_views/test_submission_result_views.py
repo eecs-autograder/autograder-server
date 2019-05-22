@@ -16,6 +16,8 @@ from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import
     get_cmd_fdbk, get_submission_fdbk)
 from autograder.utils.testing import UnitTestBase
 
+from .get_output_and_diff_test_urls import get_output_and_diff_test_urls
+
 
 class _FeedbackTestsBase(UnitTestBase):
     def setUp(self):
@@ -83,7 +85,7 @@ class _FeedbackTestsBase(UnitTestBase):
                                     submission: ag_models.Submission,
                                     cmd_result: ag_models.AGTestCommandResult,
                                     fdbk_category: ag_models.FeedbackCategory):
-        urls_and_field_names = self.get_output_and_diff_test_urls(
+        urls_and_field_names = get_output_and_diff_test_urls(
             submission, cmd_result, fdbk_category)
         for url, field_name in urls_and_field_names:
             response = client.get(url)
@@ -104,34 +106,11 @@ class _FeedbackTestsBase(UnitTestBase):
                                                       submission: ag_models.Submission,
                                                       cmd_result: ag_models.AGTestCommandResult,
                                                       fdbk_category: ag_models.FeedbackCategory):
-        urls_and_field_names = self.get_output_and_diff_test_urls(
+        urls_and_field_names = get_output_and_diff_test_urls(
             submission, cmd_result, fdbk_category)
         for url, field_name in urls_and_field_names:
             response = client.get(url)
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
-
-    def get_output_and_diff_test_urls(self, submission: ag_models.Submission,
-                                      cmd_result: ag_models.AGTestCommandResult,
-                                      fdbk_category: ag_models.FeedbackCategory):
-        result = []
-        for field_name, url_lookup in self.OUTPUT_AND_DIFF_FIELDS_TO_URL_LOOKUPS.items():
-            query_params = QueryDict(mutable=True)
-            query_params.update({
-                'feedback_category': fdbk_category.value
-            })
-            url = (reverse(url_lookup,
-                           kwargs={'pk': submission.pk, 'result_pk': cmd_result.pk})
-                   + '?' + query_params.urlencode())
-            result.append((url, field_name))
-
-        return result
-
-    OUTPUT_AND_DIFF_FIELDS_TO_URL_LOOKUPS = {
-        'stdout': 'ag-test-cmd-result-stdout',
-        'stderr': 'ag-test-cmd-result-stderr',
-        'stdout_diff': 'ag-test-cmd-result-stdout-diff',
-        'stderr_diff': 'ag-test-cmd-result-stderr-diff',
-    }
 
 
 class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
