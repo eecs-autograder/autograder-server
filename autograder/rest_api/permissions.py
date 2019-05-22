@@ -1,6 +1,8 @@
+import datetime
 from functools import singledispatch
 from typing import Any, Callable, Type
 
+from django.contrib.auth.models import User
 from django.utils import timezone
 from drf_composable_permissions.p import P
 from rest_framework import exceptions, permissions
@@ -242,7 +244,7 @@ def can_request_feedback_category(
             group = submission.group
             project = group.project
             course = project.course
-            deadline_past = _deadline_is_past(submission)
+            deadline_past = _deadline_is_past(submission, request.user)
 
             in_group = group.members.filter(pk=request.user.pk).exists()
             if course.is_staff(request.user):
@@ -256,16 +258,16 @@ def can_request_feedback_category(
                 if fdbk_category == ag_models.FeedbackCategory.staff_viewer:
                     return True
 
-                # Staff can only request staff_viewer or max feedback
+                # Staff can only request staff_viewer or ultimate_submission feedback
                 # for other groups' submissions.
-                if fdbk_category != ag_models.FeedbackCategory.max:
+                if fdbk_category != ag_models.FeedbackCategory.ultimate_submission:
                     return False
 
-                # Staff can only request max feedback for other groups'
-                # ultimate submissions if the project deadline and group's
-                # extension have passed.
+                # Staff can only request ultimate_submission feedback for other groups'
+                # ultimate submissions ultimate submission feedback is available to that group.
                 group_ultimate_submission = get_ultimate_submission(group)
-                return deadline_past and group_ultimate_submission == submission
+                return (deadline_past and group_ultimate_submission == submission
+                        and not project.hide_ultimate_submission_fdbk)
 
             # Non-staff users cannot view other groups' submissions
             if not group.members.filter(pk=request.user.pk).exists():
@@ -288,14 +290,50 @@ def can_request_feedback_category(
     return CanRequestFeedbackCategory
 
 
-def _deadline_is_past(submission):
+def _deadline_is_past(submission: ag_models.Submission, user: User):
     now = timezone.now()
     group = submission.group
     project = group.project
-    if project.closing_time is None:
+
+    deadline = None
+    if project.closing_time is not None:
+        deadline = project.closing_time
+
+    if group.extended_due_date is not None:
+        deadline = group.extended_due_date
+
+    if deadline is None:
         return True
 
-    if group.extended_due_date is None:
-        return project.closing_time < now
+    # This check has the effect of letting staff request ultimate submission
+    # feedback for a student's submission even if they have a pending late
+    # day. While not entirely desirable, this is much simpler than coming
+    # up with and testing rules for how to handle the case where different
+    # group members used different amounts of late days.
+    # Furthermore, it's generally considered best practice for instructors
+    # to wait until potential late days have been used before releasing
+    # final scores, and we've updated ultimate submission permissions
+    # to not let staff request ultimate submission feedback on student
+    # submissions until scores have been released.
+    if user.username in group.late_days_used:
+        deadline += datetime.timedelta(days=group.late_days_used[user.username])
 
-    return group.extended_due_date < now
+    return deadline < now
+
+
+def can_request_ultimate_submission(user: User,
+                                    submission: ag_models.Submission):
+    group = submission.group
+    project = group.project
+    course = project.course
+
+    in_group = group.members.filter(pk=user.pk).exists()
+    if course.is_staff(user) and in_group:
+        return True
+
+    deadline_past = _deadline_is_past(submission, user)
+    group_ultimate_submission = get_ultimate_submission(group)
+
+    return (deadline_past
+            and group_ultimate_submission == submission
+            and not group.project.hide_ultimate_submission_fdbk)

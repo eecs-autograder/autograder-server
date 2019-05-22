@@ -386,7 +386,7 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         # Extension and late day finished
         self.project.validate_and_update(closing_time=past_deadline)
         self.student_group1.validate_and_update(
-            extended_due_date=now - datetime.timedelta(hours=12))
+            extended_due_date=past_deadline + datetime.timedelta(hours=12))
         self.student_group1.late_days_used = {self.student1.username: 1}
         self.student_group1.save()
 
@@ -478,8 +478,6 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
-
-        self.fail('code needs fixing')
 
     def test_student_ultimate_submission_get_max_or_staff_viewer_fdbk_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -662,6 +660,23 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
                 self.client, self.student_group1_best_submission,
                 self.student1_best_res, ag_models.FeedbackCategory.ultimate_submission)
 
+    def test_staff_get_student_ultimate_submision_fdbk_pending_late_day(self):
+        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
+                         self.project.ultimate_submission_policy)
+
+        self.project.validate_and_update(
+            closing_time=timezone.now() - timezone.timedelta(minutes=2))
+        self.assertIsNone(self.student_group1.extended_due_date)
+
+        self.student_group1.late_days_used = {self.student1.username: 1}
+        self.student_group1.save()
+
+        self.do_get_fdbk_test(self.client, self.student_group1_most_recent_submission,
+                              ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_test(
+            self.client, self.student_group1_most_recent_submission,
+            self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+
     def test_staff_get_student_ultimate_submission_ultimate_fdbk_hidden_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
@@ -705,24 +720,6 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
-    def test_staff_get_student_ultimate_submision_fdbk_pending_late_day_permission_denied(self):
-        self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
-                         self.project.ultimate_submission_policy)
-
-        self.project.validate_and_update(
-            closing_time=timezone.now() - timezone.timedelta(minutes=2))
-        self.assertIsNone(self.student_group1.extended_due_date)
-
-        self.student_group1.late_days_used = {self.student1.username: 1}
-        self.student_group1.save()
-
-        self.do_get_fdbk_permission_denied_test(
-            self.client, self.student_group1_most_recent_submission,
-            ag_models.FeedbackCategory.ultimate_submission)
-        self.do_get_output_and_diff_permission_denied_test(
-            self.client, self.student_group1_most_recent_submission,
-            self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
-
 
 class AdminLookupStudentSubmissionTestCase(UnitTestBase):
     def test_admin_get_student_submission_any_fdbk(self):
@@ -732,6 +729,8 @@ class AdminLookupStudentSubmissionTestCase(UnitTestBase):
 class MiscSubmissionFeedbackTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
+
+        self.client = APIClient()
 
         project = obj_build.make_project()
         self.course = project.course
@@ -789,7 +788,7 @@ class UltimateSubmissionWithLateDaysTestCase(UnitTestBase):
         client.force_authenticate(counts_for_user)
         response = client.get(
             self._make_submission_result_url(most_recent_submission,
-                                        ag_models.FeedbackCategory.ultimate_submission))
+                                             ag_models.FeedbackCategory.ultimate_submission))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         client.force_authenticate(doesnt_count_for_user)
@@ -797,12 +796,12 @@ class UltimateSubmissionWithLateDaysTestCase(UnitTestBase):
         # the most recent submission (that doesn't count for this user)
         response = client.get(
             self._make_submission_result_url(most_recent_submission,
-                                        ag_models.FeedbackCategory.ultimate_submission))
+                                             ag_models.FeedbackCategory.ultimate_submission))
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
         response = client.get(
             self._make_submission_result_url(first_submission,
-                                        ag_models.FeedbackCategory.ultimate_submission))
+                                             ag_models.FeedbackCategory.ultimate_submission))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
     def _make_submission_result_url(
