@@ -541,6 +541,10 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
 
 class StaffOwnSubmissionFeedbackTestCase(_FeedbackTestsBase):
     def test_staff_get_own_submission_any_fdbk(self):
+        self.project.validate_and_update(
+            visible_to_students=False,
+            hide_ultimate_submission_fdbk=True)
+
         staff_group = obj_build.make_group(
             project=self.project, members_role=obj_build.UserRole.staff)
         staff = staff_group.members.first()
@@ -732,10 +736,44 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
 
-# This will be implemented soon.
-# class AdminLookupStudentSubmissionTestCase(UnitTestBase):
-#     def test_admin_get_student_submission_any_fdbk(self):
-#         self.fail()
+class AdminLookupStudentSubmissionTestCase(_FeedbackTestsBase):
+    def test_admin_get_student_submission_any_fdbk(self):
+        self.project.validate_and_update(
+            visible_to_students=False,
+            hide_ultimate_submission_fdbk=True)
+
+        student_group = obj_build.make_group(project=self.project)
+
+        student_submission = obj_build.make_finished_submission(group=student_group)
+        result = obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=student_submission)
+        student_submission = update_denormalized_ag_test_results(student_submission.pk)
+
+        admin = obj_build.make_admin_user(self.course)
+        self.client.force_authenticate(admin)
+
+        self.do_get_fdbk_test(self.client, student_submission, ag_models.FeedbackCategory.normal)
+        self.do_get_output_and_diff_test(self.client, student_submission, result,
+                                         ag_models.FeedbackCategory.normal)
+
+        self.do_get_fdbk_test(self.client, student_submission,
+                              ag_models.FeedbackCategory.past_limit_submission)
+        self.do_get_output_and_diff_test(self.client, student_submission, result,
+                                         ag_models.FeedbackCategory.past_limit_submission)
+
+        self.do_get_fdbk_test(self.client, student_submission,
+                              ag_models.FeedbackCategory.staff_viewer)
+        self.do_get_output_and_diff_test(self.client, student_submission, result,
+                                         ag_models.FeedbackCategory.staff_viewer)
+
+        self.do_get_fdbk_test(self.client, student_submission,
+                              ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_test(self.client, student_submission, result,
+                                         ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_fdbk_test(self.client, student_submission, ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_test(self.client, student_submission, result,
+                                         ag_models.FeedbackCategory.max)
 
 
 class MiscSubmissionFeedbackTestCase(UnitTestBase):
