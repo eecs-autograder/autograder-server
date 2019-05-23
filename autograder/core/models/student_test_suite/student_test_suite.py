@@ -6,7 +6,7 @@ import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
 from ..ag_command import AGCommand
-from ..ag_model_base import AutograderModel
+from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import Project, InstructorFile, ExpectedStudentFile
 from ..sandbox_docker_image import SandboxDockerImage
 
@@ -17,7 +17,104 @@ class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
     exposed_bug_names = 'exposed_bug_names'
 
 
+class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
+    """
+    Contains feedback options for a StudentTestSuite
+    """
+    def __init__(
+            self,
+            visible: bool=True,
+            show_setup_return_code: bool=False,
+            show_setup_stdout: bool=False,
+            show_setup_stderr: bool=False,
+            show_get_test_names_return_code: bool=False,
+            show_get_test_names_stdout: bool=False,
+            show_get_test_names_stderr: bool = False,
+            show_validity_check_stdout: bool=False,
+            show_validity_check_stderr: bool=False,
+            show_grade_buggy_impls_stdout: bool=False,
+            show_grade_buggy_impls_stderr: bool=False,
+            show_invalid_test_names: bool=True,
+            show_points: bool=False,
+            bugs_exposed_fdbk_level: BugsExposedFeedbackLevel=BugsExposedFeedbackLevel.get_min()):
+        self.visible = visible
+
+        self.show_setup_return_code = show_setup_return_code
+        self.show_setup_stdout = show_setup_stdout
+        self.show_setup_stderr = show_setup_stderr
+
+        self.show_get_test_names_return_code = show_get_test_names_return_code
+        self.show_get_test_names_stdout = show_get_test_names_stdout
+        self.show_get_test_names_stderr = show_get_test_names_stderr
+
+        self.show_validity_check_stdout = show_validity_check_stdout
+        self.show_validity_check_stderr = show_validity_check_stderr
+
+        self.show_grade_buggy_impls_stdout = show_grade_buggy_impls_stdout
+        self.show_grade_buggy_impls_stderr = show_grade_buggy_impls_stderr
+
+        self.show_invalid_test_names = show_invalid_test_names
+        self.show_points = show_points
+        self.bugs_exposed_fdbk_level = bugs_exposed_fdbk_level
+
+    @classmethod
+    def default_ultimate_submission_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
+        return NewStudentTestSuiteFeedbackConfig(
+            show_invalid_test_names=True,
+            show_points=True,
+            bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.num_bugs_exposed,
+        )
+
+    @classmethod
+    def default_past_limit_submission_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
+        return NewStudentTestSuiteFeedbackConfig(
+            visible=False,
+            show_setup_return_code=False,
+            show_setup_stdout=False,
+            show_setup_stderr=False,
+            show_get_test_names_return_code=False,
+            show_get_test_names_stdout=False,
+            show_get_test_names_stderr=False,
+            show_validity_check_stdout=False,
+            show_validity_check_stderr=False,
+            show_grade_buggy_impls_stdout=False,
+            show_grade_buggy_impls_stderr=False,
+            show_invalid_test_names=False,
+            show_points=False,
+            bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.get_min()
+        )
+
+    @classmethod
+    def max_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
+        return NewStudentTestSuiteFeedbackConfig(**MAX_STUDENT_SUITE_FDBK_SETTINGS)
+
+    SERIALIZABLE_FIELDS = (
+        'visible',
+
+        'show_setup_return_code',
+        'show_setup_stdout',
+        'show_setup_stderr',
+
+        'show_get_test_names_return_code',
+        'show_get_test_names_stdout',
+        'show_get_test_names_stderr',
+
+        'show_validity_check_stdout',
+        'show_validity_check_stderr',
+
+        'show_grade_buggy_impls_stdout',
+        'show_grade_buggy_impls_stderr',
+
+        'show_invalid_test_names',
+        'show_points',
+
+        'bugs_exposed_fdbk_level',
+    )
+
+
 # FIXME: Change to use ValidatedJSONField
+# FIXME: Replace show_get_test_names_xx, show_validity_check_xx, show_grade_buggy_impls_xx?
+# with "show_debug_info"
 class StudentTestSuiteFeedbackConfig(AutograderModel):
     visible = models.BooleanField(default=True)
 
@@ -335,30 +432,51 @@ class StudentTestSuite(AutograderModel):
         help_text='''Specifies whether the sandbox should allow commands run inside of it to
                      make network calls outside of the sandbox.''')
 
-    normal_fdbk_config = models.OneToOneField(
+    old_normal_fdbk_config = models.OneToOneField(
         StudentTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_command_fdbk,
         related_name='+',
         help_text='Feedback settings for a normal Submission.')
-    ultimate_submission_fdbk_config = models.OneToOneField(
+    old_ultimate_submission_fdbk_config = models.OneToOneField(
         StudentTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_ultimate_submission_command_fdbk,
         related_name='+',
         help_text='Feedback settings for an ultimate Submission.')
-    past_limit_submission_fdbk_config = models.OneToOneField(
+    old_past_limit_submission_fdbk_config = models.OneToOneField(
         StudentTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_default_past_limit_student_suite_fdbk,
         related_name='+',
         help_text='Feedback settings for a Submission that is past the daily limit.')
-    staff_viewer_fdbk_config = models.OneToOneField(
+    old_staff_viewer_fdbk_config = models.OneToOneField(
         StudentTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
         default=make_max_student_suite_fdbk,
         related_name='+',
         help_text='Feedback settings for a staff member viewing a Submission from another group.')
+
+    normal_fdbk_config = ag_fields.ValidatedJSONField(
+        NewStudentTestSuiteFeedbackConfig,
+        default=NewStudentTestSuiteFeedbackConfig,
+        help_text='Feedback settings for a normal Submission.'
+    )
+    ultimate_submission_fdbk_config = ag_fields.ValidatedJSONField(
+        NewStudentTestSuiteFeedbackConfig,
+        default=NewStudentTestSuiteFeedbackConfig.default_ultimate_submission_fdbk_config,
+        help_text='Feedback settings for an ultimate Submission.'
+    )
+    past_limit_submission_fdbk_config = ag_fields.ValidatedJSONField(
+        NewStudentTestSuiteFeedbackConfig,
+        default=NewStudentTestSuiteFeedbackConfig.default_past_limit_submission_fdbk_config,
+        help_text='Feedback settings for a Submission that is past the daily limit.'
+    )
+    staff_viewer_fdbk_config = ag_fields.ValidatedJSONField(
+        NewStudentTestSuiteFeedbackConfig,
+        default=NewStudentTestSuiteFeedbackConfig.max_fdbk_config,
+        help_text='Feedback settings for a staff member viewing a Submission from another group.'
+    )
 
     def clean(self):
         if self.pk is None:

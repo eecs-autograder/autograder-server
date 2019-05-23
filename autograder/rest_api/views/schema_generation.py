@@ -63,7 +63,7 @@ API_MODELS = OrderedDict([
     [ag_models.FeedbackCategory, ag_models.FeedbackCategory.__name__],
 
     [ag_models.StudentTestSuite, ag_models.StudentTestSuite.__name__],
-    [ag_models.StudentTestSuiteFeedbackConfig, ag_models.StudentTestSuiteFeedbackConfig.__name__],
+    [ag_models.NewStudentTestSuiteFeedbackConfig, 'StudentTestSuiteFeedbackConfig'],
     [ag_models.StudentTestSuiteResult.FeedbackCalculator, 'StudentTestSuiteResult'],
     [ag_models.BugsExposedFeedbackLevel, ag_models.BugsExposedFeedbackLevel.__name__],
 

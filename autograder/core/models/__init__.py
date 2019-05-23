@@ -22,7 +22,8 @@ from .sandbox_docker_image import SandboxDockerImage
 
 from .ag_command import AGCommandBase, AGCommand, AGCommandResultBase, AGCommandResult
 from .student_test_suite import (
-    StudentTestSuite, StudentTestSuiteFeedbackConfig, BugsExposedFeedbackLevel,
+    StudentTestSuite, StudentTestSuiteFeedbackConfig, NewStudentTestSuiteFeedbackConfig,
+    BugsExposedFeedbackLevel,
     StudentTestSuiteResult)
 
 from .ag_test.ag_test_suite import (

@@ -34,5 +34,5 @@ class Migration(migrations.Migration):
             field=models.BooleanField(default=False, help_text='If True, group members can "pool" their daily submissions.\n            For example, if submission_limit_per_day is 3,\n            a group with 2 members would get 6 submissions per day.'),
         ),
 
-        migrations.RunPython(populate_total_num_subtasks),
+        migrations.RunPython(populate_total_num_subtasks, reverse_code=lambda apps, schema_editor: None),
     ]
