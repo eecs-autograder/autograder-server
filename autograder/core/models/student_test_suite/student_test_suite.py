@@ -598,9 +598,4 @@ class StudentTestSuite(AutograderModel):
         'get_student_test_names_command',
         'student_test_validity_check_command',
         'grade_buggy_impl_command',
-
-        'normal_fdbk_config',
-        'ultimate_submission_fdbk_config',
-        'past_limit_submission_fdbk_config',
-        'staff_viewer_fdbk_config',
     )
