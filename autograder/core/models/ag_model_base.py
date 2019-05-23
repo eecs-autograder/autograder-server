@@ -265,6 +265,7 @@ class DictSerializableMixin(ToDictMixin):
     def from_dict(cls, input_: dict):
         """
         Validates input_ and constructs an object from it.
+        To add custom validation, override the validate() method.
         """
         cls._check_for_missing_fields(input_)
         return cls(**cls.prepare_input(input_))
@@ -272,9 +273,10 @@ class DictSerializableMixin(ToDictMixin):
     def update(self, input_):
         """
         Validates input_ and updates the current object from it.
+        To add custom validation, override the validate() method.
         """
-        prapared_input = self.prepare_input(input_)
-        for field_name, value in input_.items():
+        prepared_input = self.prepare_input(input_)
+        for field_name, value in prepared_input.items():
             setattr(self, field_name, value)
 
     @classmethod
@@ -307,6 +309,8 @@ class DictSerializableMixin(ToDictMixin):
                     f'but got {type(value).__name__}')
             else:
                 processed_input[field_name] = value
+
+        cls.run_field_validators(processed_input)
 
         return processed_input
 
@@ -364,6 +368,27 @@ class DictSerializableMixin(ToDictMixin):
 
     # A dictionary of field names to field descriptions.
     FIELD_DESCRIPTIONS: typing.Dict[str, str] = {}
+
+    @classmethod
+    def run_field_validators(cls, input_: dict):
+        """
+        Runs the validators defined in cls.FIELD_VALIDATORS on input_.
+        Re-raises the first caught ValidationError with the field name
+        added to the error message.
+
+        This function is run at the end of prepare_input.
+        """
+        for field_name, value in input_.items():
+            for validator in cls.FIELD_VALIDATORS.get(field_name, []):
+                try:
+                    validator(input_[field_name])
+                except exceptions.ValidationError as e:
+                    raise exceptions.ValidationError(f'Error in "{field_name}": ' + e.message)
+
+    # Validator functions should take in one argument and raise
+    # django.core.exceptions.ValidationError constructed with a
+    # string if the argument is invalid.
+    FIELD_VALIDATORS: typing.Dict[str, typing.List[typing.Callable[[object], None]]] = {}
 
     @classmethod
     def get_schema(cls, title) -> Schema:
