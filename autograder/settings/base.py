@@ -68,10 +68,8 @@ with open(_secrets_filename) as f:
 DEBUG = False
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    # 'django.contrib.sessions',
 
     'rest_framework',
     'rest_framework.authtoken',

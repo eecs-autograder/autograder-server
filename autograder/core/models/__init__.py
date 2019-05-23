@@ -20,7 +20,8 @@ from .submission import (
 
 from .sandbox_docker_image import SandboxDockerImage
 
-from .ag_command import AGCommandBase, AGCommand, AGCommandResultBase, AGCommandResult
+from .ag_command import (
+    Command, AGCommandBase, AGCommand, AGCommandResultBase, AGCommandResult)
 from .student_test_suite import (
     StudentTestSuite, StudentTestSuiteFeedbackConfig, NewStudentTestSuiteFeedbackConfig,
     BugsExposedFeedbackLevel,

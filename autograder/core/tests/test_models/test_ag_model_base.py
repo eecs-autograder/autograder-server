@@ -815,7 +815,7 @@ def _make_max_value_validator(max_value: int):
 class _SerializableClass(DictSerializableMixin):
     def __init__(self, required_int: int,
                  optional_bool: bool=True,
-                 my_enum: _MyEnum=_MyEnum.one) -> None:
+                 my_enum: _MyEnum=_MyEnum.one):
         self.required_int = required_int
         self.optional_bool = optional_bool
         self.my_enum = my_enum

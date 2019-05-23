@@ -5,7 +5,7 @@ from django.db import models
 import autograder.core.fields as ag_fields
 import autograder.core.utils as core_ut
 from autograder.core import constants
-from ..ag_command import AGCommand
+from ..ag_command import AGCommand, Command
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import Project, InstructorFile, ExpectedStudentFile
 from ..sandbox_docker_image import SandboxDockerImage
@@ -17,6 +17,7 @@ class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
     exposed_bug_names = 'exposed_bug_names'
 
 
+# FIXME: add field descriptions
 class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
     """
     Contains feedback options for a StudentTestSuite
@@ -111,9 +112,10 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
         'bugs_exposed_fdbk_level',
     )
 
+    FIELD_DESCRIPTIONS = {}
+
 
 # FIXME: Change to use ValidatedJSONField
-# FIXME: Replace show_get_test_names_xx, show_validity_check_xx, show_grade_buggy_impls_xx?
 # with "show_debug_info"
 class StudentTestSuiteFeedbackConfig(AutograderModel):
     visible = models.BooleanField(default=True)
@@ -269,9 +271,19 @@ def make_default_setup_cmd() -> int:
         cmd='true', process_spawn_limit=constants.MEDIUM_PROCESS_LIMIT).pk
 
 
+def new_make_default_setup_cmd() -> Command:
+    return Command.from_dict(
+        {'cmd': 'true', 'process_spawn_limit': constants.MEDIUM_PROCESS_LIMIT})
+
+
 def make_default_get_student_test_names_cmd() -> int:
     return AGCommand.objects.validate_and_create(
         cmd='true', process_spawn_limit=constants.MEDIUM_PROCESS_LIMIT).pk
+
+
+def new_make_default_get_student_test_names_cmd() -> Command:
+    return Command.from_dict(
+        {'cmd': 'true', 'process_spawn_limit': constants.MEDIUM_PROCESS_LIMIT})
 
 
 def make_default_validity_check_command() -> int:
@@ -280,11 +292,23 @@ def make_default_validity_check_command() -> int:
     ).pk
 
 
+def new_make_default_validity_check_command() -> Command:
+    return Command.from_dict(
+        {'cmd': f'echo {StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER}'})
+
+
 def make_default_grade_buggy_impl_command() -> int:
     return AGCommand.objects.validate_and_create(
         cmd='echo {} {}'.format(StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER,
                                 StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER)
     ).pk
+
+
+def new_make_default_grade_buggy_impl_command() -> Command:
+    return Command.from_dict(
+        {'cmd': 'echo {} {}'.format(StudentTestSuite.BUGGY_IMPL_NAME_PLACEHOLDER,
+                                    StudentTestSuite.STUDENT_TEST_NAME_PLACEHOLDER)}
+    )
 
 
 class StudentTestSuite(AutograderModel):
@@ -331,7 +355,15 @@ class StudentTestSuite(AutograderModel):
         help_text="The names of buggy implementations that student tests should be run against.")
 
     use_setup_command = models.BooleanField(default=False)
-    setup_command = models.OneToOneField(
+    setup_command = ag_fields.ValidatedJSONField(
+        Command,
+        default=new_make_default_setup_cmd,
+        help_text="""A command to be run after student and project files have
+                     been added to the sandbox but before any other commands are run.
+                     To indicate that no setup command should be run, 
+                     set use_setup_command to False."""
+    )
+    old_setup_command = models.OneToOneField(
         AGCommand,
         on_delete=models.PROTECT,
         related_name='+',
@@ -340,7 +372,15 @@ class StudentTestSuite(AutograderModel):
                      been added to the sandbox but before any other commands are run.
                      The AGCommand's 'cmd' field must not be blank. To indicate that no
                      setup command should be run, set use_setup_command to False.""")
-    get_student_test_names_command = models.OneToOneField(
+
+    get_student_test_names_command = ag_fields.ValidatedJSONField(
+        Command,
+        default=new_make_default_get_student_test_names_cmd,
+        help_text="""This required command should print out a whitespace-separated
+                     list of detected student names. The output of this command will
+                     be parsed using Python's str.split()."""
+    )
+    old_get_student_test_names_command = models.OneToOneField(
         AGCommand,
         on_delete=models.PROTECT,
         related_name='+',
@@ -362,7 +402,20 @@ class StudentTestSuite(AutograderModel):
                      get_student_test_names_command, test names will be discarded
                      from the end of that list.""")
 
-    student_test_validity_check_command = models.OneToOneField(
+    student_test_validity_check_command = ag_fields.ValidatedJSONField(
+        Command,
+        default=new_make_default_validity_check_command,
+        help_text="""This command will be run once for each detected student test case.
+                     An exit status of zero indicates that a student test case is valid,
+                     whereas a nonzero exit status indicates that a student test case
+                     is invalid.
+                     This command must contain the placeholder {} at least once. That
+                     placeholder will be replaced with the name of the student test case
+                     that is to be checked for validity.
+                     NOTE: This AGCommand's 'cmd' field must not be blank.
+                     """.format(STUDENT_TEST_NAME_PLACEHOLDER)
+    )
+    old_student_test_validity_check_command = models.OneToOneField(
         AGCommand,
         on_delete=models.PROTECT,
         related_name='+',
@@ -378,7 +431,22 @@ class StudentTestSuite(AutograderModel):
                      NOTE: This AGCommand's 'cmd' field must not be blank.
                      """.format(STUDENT_TEST_NAME_PLACEHOLDER))
 
-    grade_buggy_impl_command = models.OneToOneField(
+    grade_buggy_impl_command = ag_fields.ValidatedJSONField(
+        Command,
+        default=new_make_default_grade_buggy_impl_command,
+        help_text="""
+            This command will be run once for every (buggy implementation, valid test) pair.
+            A nonzero exit status indicates that the valid student tests exposed the
+            buggy impl, whereas an exit status of zero indicates that the student
+            tests did not expose the buggy impl.
+            This command must contain the placeholders {0} and {1}. The placeholder
+            {0} will be replaced with the name of a valid student test case.
+            The placeholder {1} will be replaced with the name of
+            the buggy impl that the student test is being run against.
+            NOTE: This AGCommand's 'cmd' field must not be blank.
+        """.format(STUDENT_TEST_NAME_PLACEHOLDER, BUGGY_IMPL_NAME_PLACEHOLDER)
+    )
+    old_grade_buggy_impl_command = models.OneToOneField(
         AGCommand,
         on_delete=models.PROTECT,
         related_name='+',
@@ -591,11 +659,4 @@ class StudentTestSuite(AutograderModel):
         'student_files_needed',
 
         'sandbox_docker_image',
-    )
-
-    TRANSPARENT_TO_ONE_FIELDS = (
-        'setup_command',
-        'get_student_test_names_command',
-        'student_test_validity_check_command',
-        'grade_buggy_impl_command',
     )
