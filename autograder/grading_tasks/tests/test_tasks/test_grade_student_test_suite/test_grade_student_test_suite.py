@@ -146,7 +146,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
         self.assertCountEqual(self.bugs_exposed, result.bugs_exposed)
 
     def test_setup_command_fails_no_tests_discovered(self, *args):
-        self.student_suite.setup_command.validate_and_update(cmd='false')
+        self.student_suite.validate_and_update(setup_command={'cmd': 'false'})
 
         tasks.grade_submission(self.submission.pk)
         result = ag_models.StudentTestSuiteResult.objects.get(
@@ -175,7 +175,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
             self.assertEqual('', f.read())
 
     def test_setup_command_times_out_no_tests_discovered(self, *args):
-        self.student_suite.setup_command.validate_and_update(cmd='sleep 10')
+        self.student_suite.validate_and_update(setup_command={'cmd': 'sleep 10'})
         with mock.patch('autograder.core.constants.MAX_SUBPROCESS_TIMEOUT', new=1):
             tasks.grade_submission(self.submission.pk)
 

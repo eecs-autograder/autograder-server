@@ -28,16 +28,16 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
         self.assertFalse(student_suite.use_setup_command)
         self.assertIsInstance(student_suite.setup_command,
-                              ag_models.AGCommand)
+                              ag_models.Command)
         self.assertIsInstance(student_suite.get_student_test_names_command,
-                              ag_models.AGCommand)
+                              ag_models.Command)
         self.assertEqual(ag_models.StudentTestSuite.DEFAULT_STUDENT_TEST_MAX,
                          student_suite.max_num_student_tests)
 
         self.assertIsInstance(student_suite.student_test_validity_check_command,
-                              ag_models.AGCommand)
+                              ag_models.Command)
         self.assertIsInstance(student_suite.grade_buggy_impl_command,
-                              ag_models.AGCommand)
+                              ag_models.Command)
 
         self.assertEqual(0, student_suite.points_per_exposed_bug)
         self.assertIsNone(student_suite.max_points)
@@ -48,23 +48,24 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertFalse(student_suite.allow_network_access)
 
         self.assertIsInstance(student_suite.normal_fdbk_config,
-                              ag_models.StudentTestSuiteFeedbackConfig)
+                              ag_models.NewStudentTestSuiteFeedbackConfig)
         self.assertIsInstance(student_suite.ultimate_submission_fdbk_config,
-                              ag_models.StudentTestSuiteFeedbackConfig)
+                              ag_models.NewStudentTestSuiteFeedbackConfig)
         self.assertIsInstance(student_suite.past_limit_submission_fdbk_config,
-                              ag_models.StudentTestSuiteFeedbackConfig)
+                              ag_models.NewStudentTestSuiteFeedbackConfig)
         self.assertIsInstance(student_suite.staff_viewer_fdbk_config,
-                              ag_models.StudentTestSuiteFeedbackConfig)
+                              ag_models.NewStudentTestSuiteFeedbackConfig)
 
         self.maxDiff = None
-        ultimate_fdbk = ag_models.StudentTestSuiteFeedbackConfig.objects.validate_and_create(
-            show_invalid_test_names=True,
-            show_points=True,
-            bugs_exposed_fdbk_level=ag_models.BugsExposedFeedbackLevel.num_bugs_exposed)
+        ultimate_fdbk = ag_models.NewStudentTestSuiteFeedbackConfig.from_dict({
+            'show_invalid_test_names': True,
+            'show_points': True,
+            'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.num_bugs_exposed
+        })
         self.assertEqual(ultimate_fdbk.to_dict(),
                          student_suite.ultimate_submission_fdbk_config.to_dict())
 
-        low_fdbk = ag_models.StudentTestSuiteFeedbackConfig.objects.validate_and_create()
+        low_fdbk = ag_models.NewStudentTestSuiteFeedbackConfig.from_dict({})
         self.assertEqual(low_fdbk.to_dict(),
                          student_suite.normal_fdbk_config.to_dict())
 

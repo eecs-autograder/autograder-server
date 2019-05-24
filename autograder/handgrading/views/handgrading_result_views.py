@@ -224,8 +224,8 @@ class ListHandgradingResultsView(AGModelAPIView):
             'handgrading_rubric__criteria',
             'criterion_results__criterion__handgrading_rubric',
             'applied_annotations__annotation__handgrading_rubric',
-            'applied_annotations__location',
-            'comments__location'
+            'applied_annotations',
+            'comments'
         )
 
         groups = project.groups.prefetch_related(

@@ -3,12 +3,15 @@ from typing import List
 from django.core.validators import MaxValueValidator
 from django.db import models
 
+import autograder.core.fields as ag_fields
 from autograder.core.fields import EnumField
 from django.core import validators
 from django.core.exceptions import ValidationError
 from enum import Enum
 
 from autograder.core.models import AutograderModel, Project, Submission, Group
+from autograder.core.models.ag_model_base import (
+    DictSerializableMixin, non_empty_str_validator, make_min_value_validator)
 
 
 class PointsStyle(Enum):
@@ -333,6 +336,32 @@ class CriterionResult(AutograderModel):
     SERIALIZE_RELATED = ('criterion',)
 
 
+class NewLocation(DictSerializableMixin):
+    """
+    A region of source code in a specific file with a starting and ending line.
+    """
+    def __init__(self, filename: str, first_line: int, last_line: int):
+        self.filename = filename
+        self.first_line = first_line
+        self.last_line = last_line
+
+    def validate(self):
+        if self.last_line < self.first_line:
+            raise ValidationError('first_line should be before or the same as last_line')
+
+    FIELD_VALIDATORS = {
+        'filename': [non_empty_str_validator],
+        'first_line': [make_min_value_validator(0)],
+        'last_line': [make_min_value_validator(0)],
+    }
+
+    FIELD_DESCRIPTIONS = {
+        'filename': 'The file that contains the source code region.',
+        'first_line': 'The first line in the source code region. Must be non-negative.',
+        'last_line': 'The last line in the source code region (inclusive). Must be non-negative.',
+    }
+
+
 class AppliedAnnotation(AutograderModel):
     """
     Represents a single instance of adding an annotation to student source code.
@@ -345,8 +374,11 @@ class AppliedAnnotation(AutograderModel):
         HandgradingResult, related_name='applied_annotations', on_delete=models.CASCADE,
         help_text='''The HandgradingResult the applied annotation belongs to.''')
 
-    location = models.OneToOneField(
+    location = ag_fields.ValidatedJSONField(
+        NewLocation, help_text='The source code location where the Annotation was applied.')
+    old_location = models.OneToOneField(
         'Location', related_name='+', on_delete=models.PROTECT,
+        blank=True, null=True, default=None,
         help_text='''The source code location where the Annotation was applied.''')
 
     def clean(self):
@@ -364,8 +396,6 @@ class AppliedAnnotation(AutograderModel):
                            'annotation',
                            'handgrading_result',)
 
-    TRANSPARENT_TO_ONE_FIELDS = ('location',)
-
     SERIALIZE_RELATED = ('annotation',)
 
 
@@ -377,7 +407,12 @@ class Comment(AutograderModel):
     class Meta:
         ordering = ('pk',)
 
-    location = models.OneToOneField(
+    location = ag_fields.ValidatedJSONField(
+        NewLocation, null=True, blank=True, default=None,
+        help_text='''When not None, specifies the source code location this comment
+                     applies to.'''
+    )
+    old_location = models.OneToOneField(
         'Location', related_name='+', null=True, blank=True, on_delete=models.PROTECT,
         help_text='''When not None, specifies the source code location this comment
                      applies to.''')
@@ -409,8 +444,6 @@ class Comment(AutograderModel):
                            'location',
                            'text',
                            'handgrading_result',)
-
-    TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
     EDITABLE_FIELDS = ('text',)
 

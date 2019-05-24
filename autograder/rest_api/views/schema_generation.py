@@ -41,7 +41,7 @@ API_MODELS = OrderedDict([
     [ag_models.GroupInvitation, ag_models.GroupInvitation.__name__],
     [ag_models.Submission, ag_models.Submission.__name__],
 
-    [ag_models.AGCommand, ag_models.AGCommand.__name__],
+    [ag_models.Command, ag_models.Command.__name__],
 
     [ag_models.SandboxDockerImage, ag_models.SandboxDockerImage.__name__],
     [ag_models.AGTestSuite, ag_models.AGTestSuite.__name__],
@@ -63,7 +63,7 @@ API_MODELS = OrderedDict([
     [ag_models.FeedbackCategory, ag_models.FeedbackCategory.__name__],
 
     [ag_models.StudentTestSuite, ag_models.StudentTestSuite.__name__],
-    [ag_models.StudentTestSuiteFeedbackConfig, ag_models.StudentTestSuiteFeedbackConfig.__name__],
+    [ag_models.NewStudentTestSuiteFeedbackConfig, 'StudentTestSuiteFeedbackConfig'],
     [ag_models.StudentTestSuiteResult.FeedbackCalculator, 'StudentTestSuiteResult'],
     [ag_models.BugsExposedFeedbackLevel, ag_models.BugsExposedFeedbackLevel.__name__],
 
@@ -76,7 +76,7 @@ API_MODELS = OrderedDict([
     [hg_models.CriterionResult, hg_models.CriterionResult.__name__],
     [hg_models.AppliedAnnotation, hg_models.AppliedAnnotation.__name__],
     [hg_models.Comment, hg_models.Comment.__name__],
-    [hg_models.Location, hg_models.Location.__name__],
+    [hg_models.NewLocation, 'Location'],
 ])  # type: OrderedDict[APIType, str]
 
 

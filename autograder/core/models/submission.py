@@ -352,13 +352,6 @@ def get_submissions_with_results_queryset(base_manager=Submission.objects):
 
 def get_student_test_suite_results_queryset():
     return StudentTestSuiteResult.objects.select_related(
-        'student_test_suite__setup_command',
-
         'setup_result',
         'get_test_names_result',
-
-        'student_test_suite__normal_fdbk_config',
-        'student_test_suite__ultimate_submission_fdbk_config',
-        'student_test_suite__past_limit_submission_fdbk_config',
-        'student_test_suite__staff_viewer_fdbk_config',
     )

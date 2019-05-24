@@ -256,26 +256,73 @@ class DictSerializableMixin(ToDictMixin):
     provides a way to validate data and construct or update
     objects from the validated data.
 
-    Also provides a way of generating a Schema for the class.
+    To use, derive from this class and provide a constructor with type
+    annotations and, where applicable, default values for the arguments.
+    Input data will be automatically validated to check for input type
+    correctness, extra fields, and missing required fields.
+
+    This mixin also provides schema generation.
 
     Note: This mixin should NOT be used with Django model classes.
     """
-
     @classmethod
     def from_dict(cls, input_: dict):
         """
         Validates input_ and constructs an object from it.
+        To add custom validation, override the validate() method.
+
+        Note that calling DictSerializableMixin.from_dict(obj.to_dict())
+        should return an equivalent object.
         """
         cls._check_for_missing_fields(input_)
-        return cls(**cls.prepare_input(input_))
+        result = cls(**cls.prepare_input(input_))
+        result.validate()
+        return result
+
+    @classmethod
+    def get_serializable_fields(cls) -> typing.Tuple[str]:
+        """
+        This override automatically detects fields to be serialized
+        by taking their names from the constructor arguments.
+        Override this method if you want to manually specify
+        serializable fields. When doing so, make sure that
+        DictSerializableMixin.from_dict(obj.to_dict()) still produces a
+        valid result.
+        """
+        return tuple(cls._allowed_fields())
 
     def update(self, input_):
         """
         Validates input_ and updates the current object from it.
+        To add custom validation, override the validate() method.
         """
-        prapared_input = self.prepare_input(input_)
-        for field_name, value in input_.items():
+        prepared_input = self.prepare_input(input_)
+
+        original = self.to_dict()
+
+        for field_name, value in prepared_input.items():
             setattr(self, field_name, value)
+
+        try:
+            self.validate()
+        except Exception:
+            self.update(original)
+            raise
+
+    def validate(self):
+        """
+        Override this method to perform validation that requires more
+        than one field (e.g. if one field is supposed to be greater
+        that another).
+
+        Raises django.core.exceptions.ValidationError constructed with
+        a string if any invalid data is detected.
+
+        This method is called in DictSerializableMixin.from_dict()
+        before the new object is returned and in self.update() after
+        updated fields are assigned. Note that this is done in a way
+        that the updates will be undone if an exception is thrown.
+        """
 
     @classmethod
     def prepare_input(cls, input_: dict) -> dict:
@@ -290,7 +337,7 @@ class DictSerializableMixin(ToDictMixin):
         """
         processed_input = copy.deepcopy(input_)
 
-        extra_fields = set(input_.keys()) - cls._allowed_fields()
+        extra_fields = set(input_.keys()) - set(cls._allowed_fields())
         if extra_fields:
             raise exceptions.ValidationError(f'Extra fields: {",".join(extra_fields)}')
 
@@ -308,12 +355,13 @@ class DictSerializableMixin(ToDictMixin):
             else:
                 processed_input[field_name] = value
 
+        cls.run_field_validators(processed_input)
+
         return processed_input
 
     @classmethod
     def _check_for_missing_fields(cls, input_: dict):
-        # Skip "self"
-        ctor_fields = list(inspect.signature(cls.__init__).parameters.keys())[1:]
+        ctor_fields = cls._allowed_fields()
         for field_name in ctor_fields:
             if cls.field_is_required(field_name) and field_name not in input_:
                 raise exceptions.ValidationError(
@@ -321,8 +369,9 @@ class DictSerializableMixin(ToDictMixin):
                 )
 
     @classmethod
-    def _allowed_fields(cls) -> typing.Set[str]:
-        return set(inspect.signature(cls.__init__).parameters.keys())
+    def _allowed_fields(cls) -> typing.List[str]:
+        # Skip "self"
+        return list(inspect.signature(cls.__init__).parameters.keys())[1:]
 
     @classmethod
     def get_field_type(cls, field_name: str) -> typing.Type:
@@ -366,6 +415,27 @@ class DictSerializableMixin(ToDictMixin):
     FIELD_DESCRIPTIONS: typing.Dict[str, str] = {}
 
     @classmethod
+    def run_field_validators(cls, input_: dict):
+        """
+        Runs the validators defined in cls.FIELD_VALIDATORS on input_.
+        Re-raises the first caught ValidationError with the field name
+        added to the error message.
+
+        This function is run at the end of prepare_input.
+        """
+        for field_name, value in input_.items():
+            for validator in cls.FIELD_VALIDATORS.get(field_name, []):
+                try:
+                    validator(input_[field_name])
+                except exceptions.ValidationError as e:
+                    raise exceptions.ValidationError(f'Error in "{field_name}": ' + e.message)
+
+    # Validator functions should take in one argument and raise
+    # django.core.exceptions.ValidationError constructed with a
+    # string if the argument is invalid.
+    FIELD_VALIDATORS: typing.Dict[str, typing.List[typing.Callable[[object], None]]] = {}
+
+    @classmethod
     def get_schema(cls, title) -> Schema:
         """
         Returns a schema for this class to be used in generating API
@@ -378,13 +448,35 @@ class DictSerializableMixin(ToDictMixin):
                 description=cls.get_field_descriptions().get(field_name, ''),
                 type=cls.get_field_type(field_name).__name__,
                 required=cls.field_is_required(field_name),
-                default=cls.get_field_default(field_name)
+                default=(None if cls.field_is_required(field_name)
+                         else cls.get_field_default(field_name))
             )
         return Schema(
             title=title,
             type='object',
             properties=properties
         )
+
+
+def make_min_value_validator(min_value: int):
+    def validator(value: int):
+        if value < min_value:
+            raise exceptions.ValidationError(f'Must be >= {min_value}')
+
+    return validator
+
+
+def make_max_value_validator(max_value: int):
+    def validator(value: int):
+        if value > max_value:
+            raise exceptions.ValidationError(f'Must be <= {max_value}')
+
+    return validator
+
+
+def non_empty_str_validator(string: str):
+    if len(string) == 0:
+        raise exceptions.ValidationError(f'Must not be empty')
 
 
 class AutograderModel(ToDictMixin, models.Model):

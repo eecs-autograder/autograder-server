@@ -186,9 +186,12 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             }
         )
 
-        self.student_suite1.normal_fdbk_config.validate_and_update(
-            bugs_exposed_fdbk_level=ag_models.BugsExposedFeedbackLevel.num_bugs_exposed,
-            show_points=True)
+        self.student_suite1.validate_and_update(
+            normal_fdbk_config={
+                'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.num_bugs_exposed,
+                'show_points': True
+            }
+        )
 
         expected_points = (
             self.total_points_per_ag_suite - self.ag_test_cmd2.points_for_correct_return_code
@@ -225,9 +228,12 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             }
         )
 
-        self.student_suite2.past_limit_submission_fdbk_config.validate_and_update(
-            bugs_exposed_fdbk_level=ag_models.BugsExposedFeedbackLevel.num_bugs_exposed,
-            show_points=True)
+        self.student_suite2.validate_and_update(
+            past_limit_submission_fdbk_config={
+                'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.num_bugs_exposed,
+                'show_points': True
+            }
+        )
 
         expected_points = (
             self.total_points_per_ag_suite - self.ag_test_cmd1.points_for_correct_stdout)
@@ -246,7 +252,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
     def test_ultimate_fdbk(self):
         self.ag_test_cmd1.validate_and_update(ultimate_submission_fdbk_config={'visible': False})
-        self.student_suite1.ultimate_submission_fdbk_config.validate_and_update(visible=False)
+        self.student_suite1.validate_and_update(
+            ultimate_submission_fdbk_config={'visible': False})
         fdbk = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.ultimate_submission)
         self.assertEqual(self.total_points_per_ag_suite + self.total_points_per_student_suite,
                          fdbk.total_points)
