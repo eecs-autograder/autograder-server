@@ -23,11 +23,11 @@ def migrate_location_fields(apps, schema_editor):
         if comm.old_location is None:
             continue
 
-        comm.location.update({
+        comm.location = {
             'filename': comm.old_location.filename,
             'first_line': comm.old_location.first_line,
             'last_line': comm.old_location.last_line,
-        })
+        }
 
         comm.full_clean()
         comm.save()
