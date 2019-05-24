@@ -815,14 +815,23 @@ def _make_max_value_validator(max_value: int):
 class _SerializableClass(DictSerializableMixin):
     def __init__(self, required_int: int,
                  optional_bool: bool=True,
-                 my_enum: _MyEnum=_MyEnum.one):
+                 my_enum: _MyEnum=_MyEnum.one,
+                 less_than: int=0,
+                 greater_than: int=5):
         self.required_int = required_int
         self.optional_bool = optional_bool
         self.my_enum = my_enum
+        self.less_than = less_than
+        self.greater_than = greater_than
 
     FIELD_VALIDATORS = {
         'required_int': [_make_min_value_validator(0), _make_max_value_validator(10)]
     }
+
+    def validate(self):
+        if self.less_than >= self.greater_than:
+            raise exceptions.ValidationError(
+                '"less_than" must be greater than "greater_than"')
 
 
 class DictSerializableMixinTestCase(TestCase):
@@ -835,11 +844,15 @@ class DictSerializableMixinTestCase(TestCase):
         obj = _SerializableClass.from_dict({
             'required_int': 6,
             'optional_bool': False,
-            'my_enum': _MyEnum.two
+            'my_enum': _MyEnum.two,
+            'less_than': 2,
+            'greater_than': 4
         })
         self.assertEqual(6, obj.required_int)
         self.assertFalse(obj.optional_bool)
         self.assertEqual(_MyEnum.two, obj.my_enum)
+        self.assertEqual(obj.less_than, 2)
+        self.assertEqual(obj.greater_than, 4)
 
     def test_valid_update(self):
         obj = _SerializableClass.from_dict({'required_int': 5})
@@ -853,11 +866,15 @@ class DictSerializableMixinTestCase(TestCase):
         obj.update({
             'required_int': 6,
             'optional_bool': False,
-            'my_enum': _MyEnum.two
+            'my_enum': _MyEnum.two,
+            'less_than': 2,
+            'greater_than': 4
         })
         self.assertEqual(6, obj.required_int)
         self.assertFalse(obj.optional_bool)
         self.assertEqual(_MyEnum.two, obj.my_enum)
+        self.assertEqual(obj.less_than, 2)
+        self.assertEqual(obj.greater_than, 4)
 
     def test_error_missing_required_field(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
@@ -902,7 +919,7 @@ class DictSerializableMixinTestCase(TestCase):
 
         self.assertIn('my_enum', cm.exception.message)
 
-    def test_error_custom_validation_failure(self):
+    def test_error_custom_field_validation_failure(self):
         with self.assertRaises(exceptions.ValidationError) as cm:
             _SerializableClass.from_dict({'required_int': -1})
 
@@ -925,3 +942,51 @@ class DictSerializableMixinTestCase(TestCase):
 
         self.assertIn('required_int', cm.exception.message)
         self.assertEqual(5, obj.required_int)
+
+    def test_error_custom_object_validation_failure(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            _SerializableClass.from_dict({
+                'required_int': 4,
+                'less_than': 5,
+                'greater_than': 4
+            })
+
+        self.assertIn('less_than', cm.exception.message)
+        self.assertIn('greater_than', cm.exception.message)
+
+        obj = _SerializableClass.from_dict({'required_int': 2})
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            obj.update({'required_int': 3, 'less_than': 5, 'greater_than': 4})
+
+        self.assertIn('less_than', cm.exception.message)
+        self.assertIn('greater_than', cm.exception.message)
+
+        self.assertEqual(0, obj.less_than)
+        self.assertEqual(5, obj.greater_than)
+        self.assertEqual(2, obj.required_int)
+
+    def test_allowed_fields_excludes_self(self):
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            _SerializableClass.from_dict({'required_int': 2, 'self': None})
+
+        self.assertIn('self', cm.exception.message)
+        self.assertIn('extra', cm.exception.message.lower())
+
+    def test_serialize(self):
+        data = {
+            'required_int': 3,
+            'optional_bool': True,
+            'my_enum': _MyEnum.two,
+            'less_than': 2,
+            'greater_than': 4
+        }
+
+        serialized = copy.deepcopy(data)
+        serialized['my_enum'] = _MyEnum.two.value
+
+        obj = _SerializableClass.from_dict(data)
+        self.assertEqual(serialized, obj.to_dict())
+
+        cloned = _SerializableClass.from_dict(obj.to_dict())
+        for key, value in data.items():
+            self.assertEqual(value, getattr(cloned, key))
