@@ -448,7 +448,8 @@ class DictSerializableMixin(ToDictMixin):
                 description=cls.get_field_descriptions().get(field_name, ''),
                 type=cls.get_field_type(field_name).__name__,
                 required=cls.field_is_required(field_name),
-                default=cls.get_field_default(field_name)
+                default=(None if cls.field_is_required(field_name)
+                         else cls.get_field_default(field_name))
             )
         return Schema(
             title=title,

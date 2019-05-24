@@ -76,7 +76,7 @@ API_MODELS = OrderedDict([
     [hg_models.CriterionResult, hg_models.CriterionResult.__name__],
     [hg_models.AppliedAnnotation, hg_models.AppliedAnnotation.__name__],
     [hg_models.Comment, hg_models.Comment.__name__],
-    [hg_models.Location, hg_models.Location.__name__],
+    [hg_models.NewLocation, 'Location'],
 ])  # type: OrderedDict[APIType, str]
 
 
