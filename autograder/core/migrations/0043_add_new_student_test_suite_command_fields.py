@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studenttestsuite',
             name='setup_command',
-            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.new_make_default_setup_cmd, help_text='A command to be run after student and project files have\n                     been added to the sandbox but before any other commands are run.\n                     To indicate that no setup command should be run, \n                     set use_setup_command to False.', serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
+            field=autograder.core.fields.ValidatedJSONField(default=autograder.core.models.student_test_suite.student_test_suite.new_make_default_setup_cmd, help_text='A command to be run after student and project files have\n                     been added to the sandbox but before any other commands are run.\n                     To indicate that no setup command should be run,\n                     set use_setup_command to False.', serializable_class=autograder.core.models.ag_command.ag_command_base.Command),
         ),
         migrations.AddField(
             model_name='studenttestsuite',
