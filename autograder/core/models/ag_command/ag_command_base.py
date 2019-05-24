@@ -4,29 +4,13 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from autograder.core import constants
-from ..ag_model_base import AutograderModel, DictSerializableMixin
+from ..ag_model_base import (
+    AutograderModel,
+    DictSerializableMixin,
+    non_empty_str_validator,
+    make_min_value_validator,
+    make_max_value_validator)
 import autograder.core.fields as ag_fields
-
-
-def _make_min_value_validator(min_value: int):
-    def validator(value: int):
-        if value < min_value:
-            raise exceptions.ValidationError(f'Must be >= {min_value}')
-
-    return validator
-
-
-def _make_max_value_validator(max_value: int):
-    def validator(value: int):
-        if value > max_value:
-            raise exceptions.ValidationError(f'Must be <= {max_value}')
-
-    return validator
-
-
-def _non_empty_str_validator(string: str):
-    if len(string) == 0:
-        raise exceptions.ValidationError(f'Must not be empty')
 
 
 class Command(DictSerializableMixin):
@@ -48,15 +32,15 @@ class Command(DictSerializableMixin):
         self.process_spawn_limit = process_spawn_limit
 
     FIELD_VALIDATORS = {
-        'cmd': [_non_empty_str_validator],
-        'time_limit': [_make_min_value_validator(1),
-                       _make_max_value_validator(constants.MAX_SUBPROCESS_TIMEOUT)],
-        'stack_size_limit': [_make_min_value_validator(1),
-                             _make_max_value_validator(constants.MAX_STACK_SIZE_LIMIT)],
-        'virtual_memory_limit': [_make_min_value_validator(1),
-                                 _make_max_value_validator(constants.MAX_VIRTUAL_MEM_LIMIT)],
-        'process_spawn_limit': [_make_min_value_validator(0),
-                                _make_max_value_validator(constants.MAX_PROCESS_LIMIT)],
+        'cmd': [non_empty_str_validator],
+        'time_limit': [make_min_value_validator(1),
+                       make_max_value_validator(constants.MAX_SUBPROCESS_TIMEOUT)],
+        'stack_size_limit': [make_min_value_validator(1),
+                             make_max_value_validator(constants.MAX_STACK_SIZE_LIMIT)],
+        'virtual_memory_limit': [make_min_value_validator(1),
+                                 make_max_value_validator(constants.MAX_VIRTUAL_MEM_LIMIT)],
+        'process_spawn_limit': [make_min_value_validator(0),
+                                make_max_value_validator(constants.MAX_PROCESS_LIMIT)],
     }
 
     FIELD_DESCRIPTIONS = {
@@ -84,15 +68,6 @@ class Command(DictSerializableMixin):
                   of those processes will count towards the main
                   program's process limit.""",
     }
-
-    SERIALIZABLE_FIELDS = [
-        'name',
-        'cmd',
-        'time_limit',
-        'stack_size_limit',
-        'virtual_memory_limit',
-        'process_spawn_limit',
-    ]
 
 
 class AGCommandBase(AutograderModel):

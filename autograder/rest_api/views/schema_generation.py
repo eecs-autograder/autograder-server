@@ -41,7 +41,7 @@ API_MODELS = OrderedDict([
     [ag_models.GroupInvitation, ag_models.GroupInvitation.__name__],
     [ag_models.Submission, ag_models.Submission.__name__],
 
-    [ag_models.AGCommand, ag_models.AGCommand.__name__],
+    [ag_models.Command, ag_models.Command.__name__],
 
     [ag_models.SandboxDockerImage, ag_models.SandboxDockerImage.__name__],
     [ag_models.AGTestSuite, ag_models.AGTestSuite.__name__],

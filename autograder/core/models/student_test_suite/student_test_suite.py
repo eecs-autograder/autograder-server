@@ -89,29 +89,6 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
     def max_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
         return NewStudentTestSuiteFeedbackConfig(**MAX_STUDENT_SUITE_FDBK_SETTINGS)
 
-    SERIALIZABLE_FIELDS = (
-        'visible',
-
-        'show_setup_return_code',
-        'show_setup_stdout',
-        'show_setup_stderr',
-
-        'show_get_test_names_return_code',
-        'show_get_test_names_stdout',
-        'show_get_test_names_stderr',
-
-        'show_validity_check_stdout',
-        'show_validity_check_stderr',
-
-        'show_grade_buggy_impls_stdout',
-        'show_grade_buggy_impls_stderr',
-
-        'show_invalid_test_names',
-        'show_points',
-
-        'bugs_exposed_fdbk_level',
-    )
-
     FIELD_DESCRIPTIONS = {}
 
 

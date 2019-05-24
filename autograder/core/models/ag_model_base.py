@@ -457,6 +457,27 @@ class DictSerializableMixin(ToDictMixin):
         )
 
 
+def make_min_value_validator(min_value: int):
+    def validator(value: int):
+        if value < min_value:
+            raise exceptions.ValidationError(f'Must be >= {min_value}')
+
+    return validator
+
+
+def make_max_value_validator(max_value: int):
+    def validator(value: int):
+        if value > max_value:
+            raise exceptions.ValidationError(f'Must be <= {max_value}')
+
+    return validator
+
+
+def non_empty_str_validator(string: str):
+    if len(string) == 0:
+        raise exceptions.ValidationError(f'Must not be empty')
+
+
 class AutograderModel(ToDictMixin, models.Model):
     """
     The base class for non-polymorphic autograder model classes. This
