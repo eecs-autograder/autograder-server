@@ -142,9 +142,6 @@ class CreateAppliedAnnotationTestCase(test_impls.CreateObjectTest, UnitTestBase)
 
             response_location_dict = loaded.location.to_dict()
 
-            for non_modifiable in ["pk", "last_modified"]:
-                response_location_dict.pop(non_modifiable)
-
             self.assertEqual(self.data["location"], response_location_dict)
 
     def test_student_create_permission_denied(self):

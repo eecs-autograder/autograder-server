@@ -378,6 +378,7 @@ class AppliedAnnotation(AutograderModel):
         NewLocation, help_text='The source code location where the Annotation was applied.')
     old_location = models.OneToOneField(
         'Location', related_name='+', on_delete=models.PROTECT,
+        blank=True, null=True, default=None,
         help_text='''The source code location where the Annotation was applied.''')
 
     def clean(self):
@@ -394,8 +395,6 @@ class AppliedAnnotation(AutograderModel):
                            'location',
                            'annotation',
                            'handgrading_result',)
-
-    TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
     SERIALIZE_RELATED = ('annotation',)
 
@@ -445,8 +444,6 @@ class Comment(AutograderModel):
                            'location',
                            'text',
                            'handgrading_result',)
-
-    TRANSPARENT_TO_ONE_FIELDS = ('location',)
 
     EDITABLE_FIELDS = ('text',)
 

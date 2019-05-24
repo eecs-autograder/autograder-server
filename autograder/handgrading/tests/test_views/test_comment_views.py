@@ -154,9 +154,6 @@ class CreateCommentTestCase(test_impls.CreateObjectTest, UnitTestBase):
         self.assertEqual(self.data["text"], loaded.text)
         response_location_dict = loaded.location.to_dict()
 
-        for non_modifiable in ["pk", "last_modified"]:
-            response_location_dict.pop(non_modifiable)
-
         self.assertEqual(self.data["location"], response_location_dict)
 
 
