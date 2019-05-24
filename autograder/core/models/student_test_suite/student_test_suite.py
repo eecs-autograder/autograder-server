@@ -337,7 +337,7 @@ class StudentTestSuite(AutograderModel):
         default=new_make_default_setup_cmd,
         help_text="""A command to be run after student and project files have
                      been added to the sandbox but before any other commands are run.
-                     To indicate that no setup command should be run, 
+                     To indicate that no setup command should be run,
                      set use_setup_command to False."""
     )
     old_setup_command = models.OneToOneField(
