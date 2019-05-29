@@ -1,4 +1,3 @@
-from django.core.cache import cache
 from django.db import transaction
 from django.db.models import F
 from django.db.models.signals import post_save
@@ -16,6 +15,7 @@ from rest_framework.request import Request
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core.caching import clear_submission_results_cache
 from autograder.core.models.copy_project_and_course import copy_project
 from autograder.rest_api import tasks as api_tasks, transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
@@ -235,9 +235,7 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
         with transaction.atomic():
             project = self.get_object()
 
-        keys = cache.client.iter_keys('project_{}_submission_normal_results_*'.format(project.pk),
-                                      itersize=5000)
-        cache.delete_many(list(keys))
+        clear_submission_results_cache(project.pk)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 

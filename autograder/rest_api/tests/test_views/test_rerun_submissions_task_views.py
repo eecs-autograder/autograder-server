@@ -1,6 +1,7 @@
 from typing import Tuple
 from unittest import mock
 
+from django.core.cache import cache
 from django.test import tag
 from django.urls import reverse
 from rest_framework import status
@@ -9,6 +10,8 @@ from rest_framework.test import APIClient
 import autograder.core.models as ag_models
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.core.caching import get_cached_submission_feedback
+from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_submission_fdbk)
 from autograder.grading_tasks import tasks
@@ -289,6 +292,19 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
         }
         self.do_rerun_submissions_test_case(
             request_body, (self.submission1, 0), (self.submission2, 0))
+
+    def test_rerun_clears_cache(self, *args):
+        fdbk = SubmissionResultFeedback(
+            self.submission1, ag_models.FeedbackCategory.normal, AGTestPreLoader(self.project))
+        get_cached_submission_feedback(self.submission1, fdbk)
+
+        key = f'project_{self.project.pk}_submission_normal_results_{self.submission1.pk}'
+
+        self.assertIsNotNone(cache.get(key))
+
+        self.do_rerun_submissions_test_case({}, (self.submission1, self.total_points_possible))
+
+        self.assertIsNone(cache.get(key))
 
     def do_rerun_submissions_test_case(
             self, request_body: dict,
