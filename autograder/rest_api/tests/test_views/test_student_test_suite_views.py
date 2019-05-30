@@ -1,8 +1,11 @@
+from django.core.cache import cache
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
+from autograder.core.caching import submission_fdbk_cache_key, get_cached_submission_feedback
+from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
 from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
@@ -173,3 +176,50 @@ class GetUpdateDeleteStudentTestSuiteTestCase(test_impls.GetObjectTest,
         [staff] = obj_build.make_staff_users(self.course, 1)
         self.do_delete_object_permission_denied_test(
             self.student_suite, self.client, staff, self.url)
+
+
+class CachedSubmissionResultInvalidationTestCase(UnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.submission = obj_build.make_finished_submission()
+        self.project = self.submission.group.project
+        self.student_test_suite = obj_build.make_student_test_suite(self.project)
+
+        self.key = submission_fdbk_cache_key(
+            project_pk=self.project.pk, submission_pk=self.submission.pk)
+
+        get_cached_submission_feedback(
+            self.submission,
+            SubmissionResultFeedback(self.submission,
+                                     ag_models.FeedbackCategory.normal,
+                                     AGTestPreLoader(self.project))
+        )
+
+        self.client = APIClient()
+        self.client.force_authenticate(obj_build.make_admin_user(self.project.course))
+
+    def test_set_order_invalidates_cached_submission_result_fdbk(self):
+        url = reverse('student_test_suite_order', kwargs={'project_pk': self.project.pk})
+        with self.assert_cache_key_invalidated(self.key):
+            response = self.client.put(url, [self.student_test_suite.pk])
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+    def test_update_invalidates_cached_submission_result_fdbk(self):
+        url = reverse('student-test-suite-detail', kwargs={'pk': self.student_test_suite.pk})
+        with self.assert_cache_key_invalidated(self.key):
+            response = self.client.patch(url, {'name': 'WAAAA'})
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+    def test_delete_invalidates_cached_submission_result_fdbk(self):
+        url = reverse('student-test-suite-detail', kwargs={'pk': self.student_test_suite.pk})
+        with self.assert_cache_key_invalidated(self.key):
+            response = self.client.delete(url)
+            self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+    def test_create_does_not_invalidate_cache(self):
+        url = reverse('student_test_suites', kwargs={'project_pk': self.project.pk})
+        self.assertIsNotNone(cache.get(self.key))
+        response = self.client.post(url, {'name': 'Wee'})
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertIsNotNone(cache.get(self.key))

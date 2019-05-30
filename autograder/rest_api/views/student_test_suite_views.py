@@ -1,4 +1,6 @@
 from django.db import transaction
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
@@ -7,6 +9,7 @@ from rest_framework.views import APIView
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core.caching import clear_submission_results_cache
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrievePatchDestroyMixin,
     GetObjectLockOnUnsafeMixin, AGModelAPIView)
@@ -49,6 +52,7 @@ class StudentTestSuiteOrderView(AGModelAPIView):
         with transaction.atomic():
             project = self.get_object()
             project.set_studenttestsuite_order(request.data)
+            clear_submission_results_cache(project.pk)
             return response.Response(list(project.get_studenttestsuite_order()))
 
 
@@ -59,3 +63,14 @@ class StudentTestSuiteDetailViewSet(TransactionRetrievePatchDestroyMixin, AGMode
             lambda student_suite: student_suite.project.course)]
 
     model_manager = ag_models.StudentTestSuite.objects
+
+
+@receiver(post_save, sender=ag_models.StudentTestSuite)
+def on_suite_save(sender, instance: ag_models.StudentTestSuite, created, **kwargs):
+    if not created:
+        clear_submission_results_cache(instance.project_id)
+
+
+@receiver(post_delete, sender=ag_models.StudentTestSuite)
+def on_suite_delete(sender, instance: ag_models.StudentTestSuite, *args, **kwargs):
+    clear_submission_results_cache(instance.project_id)
