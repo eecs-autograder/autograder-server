@@ -216,4 +216,5 @@ class CachedSubmissionResultInvalidationTestCase(UnitTestBase):
         url = reverse('ag_test_suites', kwargs={'project_pk': self.project.pk})
         self.assertIsNotNone(cache.get(self.key))
         response = self.client.post(url, {'name': 'Wee'})
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         self.assertIsNotNone(cache.get(self.key))
