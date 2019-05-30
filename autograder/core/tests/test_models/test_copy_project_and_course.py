@@ -9,6 +9,8 @@ from autograder.core.models import Semester
 from autograder.core.models.copy_project_and_course import copy_project, copy_course
 from autograder.utils.testing import UnitTestBase
 
+import autograder.handgrading.models as hg_models
+
 
 class CopyProjectTestCase(UnitTestBase):
     def setUp(self):
@@ -70,8 +72,48 @@ class CopyProjectTestCase(UnitTestBase):
 
         student_suite3 = obj_build.make_student_test_suite(project)
 
+        handgrading_rubric = hg_models.HandgradingRubric.objects.validate_and_create(
+            project=project,
+            points_style=hg_models.PointsStyle.start_at_max_and_subtract,
+            max_points=42,
+            show_grades_and_rubric_to_students=True,
+            handgraders_can_leave_comments=True,
+            handgraders_can_adjust_points=True
+        )
+
+        criterion1 = hg_models.Criterion.objects.validate_and_create(
+            handgrading_rubric=handgrading_rubric,
+            short_description='nisoeta noiresta ',
+            long_description=';qywuflp~QYWFPLu',
+            points=-4
+        )
+        criterion2 = hg_models.Criterion.objects.validate_and_create(
+            handgrading_rubric=handgrading_rubric,
+            short_description='uwfvmc,n',
+            long_description='qy;unmcrvcoe',
+            points=-2
+        )
+
+        annotation1 = hg_models.Annotation.objects.validate_and_create(
+            handgrading_rubric=handgrading_rubric,
+            short_description='steve',
+            long_description='steveluigi',
+            deduction=-3,
+            max_deduction=-9
+        )
+        annotation2 = hg_models.Annotation.objects.validate_and_create(
+            handgrading_rubric=handgrading_rubric,
+            short_description='stove',
+            long_description='stovio',
+            deduction=-5,
+            max_deduction=-10
+        )
+
+        # --------------------------------------------------------------
+
         other_course = obj_build.make_course()
         new_project = copy_project(project, other_course)
+
         self.assertTrue(new_project.hide_ultimate_submission_fdbk)
         self.assertFalse(new_project.visible_to_students)
 
@@ -155,6 +197,33 @@ class CopyProjectTestCase(UnitTestBase):
             dict_['instructor_files_needed'].sort(key=lambda obj: obj['name'])
             dict_['student_files_needed'].sort(key=lambda obj: obj['pattern'])
         self.assertEqual(expected_student_suites, actual_student_suites)
+
+        new_rubric = new_project.handgrading_rubric
+        self.assertNotEqual(handgrading_rubric.pk, new_rubric.pk)
+
+        self.assertFalse(new_rubric.show_grades_and_rubric_to_students)
+
+        old_criterion_pks = {criterion.pk for criterion in handgrading_rubric.criteria.all()}
+        new_criterion_pks = {criterion.pk for criterion in new_rubric.criteria.all()}
+        self.assertTrue(old_criterion_pks.isdisjoint(new_criterion_pks))
+
+        old_annotation_pks = {annotation.pk for annotation in handgrading_rubric.annotations.all()}
+        new_annotation_pks = {annotation.pk for annotation in new_rubric.annotations.all()}
+        self.assertTrue(old_annotation_pks.isdisjoint(new_annotation_pks))
+
+        handgrading_exclude_fields = [
+            'pk', 'last_modified', 'project',
+            'show_grades_and_rubric_to_students', 'handgrading_rubric'
+        ]
+        expected_handgrading_rubric = _recursive_pop(handgrading_rubric.to_dict(),
+                                                     handgrading_exclude_fields)
+        actual_handgrading_rubric = _recursive_pop(new_rubric.to_dict(),
+                                                   handgrading_exclude_fields)
+        self.assertEqual(2, new_rubric.criteria.count())
+        self.assertEqual(2, new_rubric.annotations.count())
+
+        self.maxDiff = None
+        self.assertEqual(expected_handgrading_rubric, actual_handgrading_rubric)
 
     def test_copy_project_new_name_same_course(self):
         project = obj_build.make_project()

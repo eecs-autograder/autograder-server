@@ -4,6 +4,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 
 from autograder import utils
+from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
 from .course import Course, Semester
 from .project import Project, InstructorFile
 from .ag_test.ag_test_suite import AGTestSuite
@@ -49,6 +50,8 @@ def copy_project(project: Project, target_course: Course,
 
     _copy_ag_tests(project, new_project)
     _copy_student_suites(project, new_project)
+
+    import_handgrading_rubric(import_to=new_project, import_from=project)
 
     return new_project
 
