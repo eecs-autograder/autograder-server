@@ -72,11 +72,11 @@ class AGTestCaseDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGener
 
 
 @receiver(post_save, sender=ag_models.AGTestCase)
-def on_suite_save(sender, instance: ag_models.AGTestCase, created, **kwargs):
+def on_case_save(sender, instance: ag_models.AGTestCase, created, **kwargs):
     if not created:
         clear_submission_results_cache(instance.ag_test_suite.project_id)
 
 
 @receiver(post_delete, sender=ag_models.AGTestCase)
-def on_suite_delete(sender, instance: ag_models.AGTestCase, *args, **kwargs):
+def on_case_delete(sender, instance: ag_models.AGTestCase, *args, **kwargs):
     clear_submission_results_cache(instance.ag_test_suite.project_id)
