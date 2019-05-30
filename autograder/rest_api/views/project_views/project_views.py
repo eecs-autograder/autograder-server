@@ -136,10 +136,6 @@ class ImportHandgradingRubricView(AGModelAPIView):
         import_handgrading_rubric(import_to=project, import_from=import_from_project)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    # @classmethod
-    # def as_view(cls, actions=None, **initkwargs):
-    #     return super().as_view(actions={'post': 'import_handgrading_rubric'}, **initkwargs)
-
 
 project_detail_permissions = (
     P(ag_permissions.is_admin())
