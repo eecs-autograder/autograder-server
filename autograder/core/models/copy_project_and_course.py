@@ -51,7 +51,8 @@ def copy_project(project: Project, target_course: Course,
     _copy_ag_tests(project, new_project)
     _copy_student_suites(project, new_project)
 
-    import_handgrading_rubric(import_to=new_project, import_from=project)
+    if hasattr(project, 'handgrading_rubric'):
+        import_handgrading_rubric(import_to=new_project, import_from=project)
 
     return new_project
 

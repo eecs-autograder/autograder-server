@@ -238,6 +238,12 @@ class CopyProjectTestCase(UnitTestBase):
         with self.assertRaises(exceptions.ValidationError):
             copy_project(project, project.course, project.name)
 
+    def test_copy_project_no_handgrading_rubric(self):
+        project = obj_build.make_project()
+        self.assertFalse(hasattr(project, 'handgrading_rubric'))
+        new_project = copy_project(project, project.course, new_project_name='Projy')
+        self.assertFalse(hasattr(new_project, 'handgrading_rubric'))
+
 
 def _pop_many(dict_: dict, keys: Sequence[str]):
     for key in keys:
