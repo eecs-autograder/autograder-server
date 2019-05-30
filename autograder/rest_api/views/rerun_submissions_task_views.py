@@ -11,6 +11,7 @@ from rest_framework import response
 from rest_framework import status
 from rest_framework.request import Request
 
+from autograder.core.caching import clear_submission_results_cache
 from autograder.grading_tasks import tasks
 from autograder.grading_tasks.tasks.utils import retry_should_recover
 from autograder.rest_api.views.ag_model_views import (
@@ -69,11 +70,9 @@ class RerunSubmissionsTaskListCreateView(ListCreateNestedModelViewSet):
 
         from autograder.celery import app
         if signatures:
-            group_result = celery.group(signatures).apply_async(connection=app.connection())
-
-            # Save the group result in the Celery results backend,
-            # and save the group result ID in the database.
-            group_result.save(backend=app.backend)
+            clear_cache_sig = clear_cached_submission_results.s(project.pk)
+            group_result = celery.chord(signatures,
+                                        clear_cache_sig).apply_async(connection=app.connection())
 
             # In case any of the subtasks finish before we reach this line
             # (definitely happens in testing), make sure we don't
@@ -157,3 +156,12 @@ def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk
         _rerun_student_test_suite_impl()
     except Exception as e:
         _handle_rerun_error()
+
+
+@celery.shared_task(queue='small_tasks', max_retries=1, acks_late=True)
+def clear_cached_submission_results(result, project_pk: int):
+    @retry_should_recover
+    def _clear_cached_submission_results_impl():
+        clear_submission_results_cache(project_pk)
+
+    _clear_cached_submission_results_impl()

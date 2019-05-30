@@ -1,4 +1,6 @@
 from django.db import transaction
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
@@ -6,6 +8,7 @@ from rest_framework import response
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder.core.caching import clear_submission_results_cache
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelGenericViewSet,
                                                       ListCreateNestedModelViewSet,
                                                       TransactionRetrievePatchDestroyMixin)
@@ -52,6 +55,7 @@ class AGTestCaseOrderView(AGModelAPIView):
         with transaction.atomic():
             ag_test_suite = self.get_object()
             ag_test_suite.set_agtestcase_order(request.data)
+            clear_submission_results_cache(ag_test_suite.project_id)
             return response.Response(list(ag_test_suite.get_agtestcase_order()))
 
 
@@ -65,3 +69,14 @@ class AGTestCaseDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGener
     model_manager = ag_models.AGTestCase.objects.select_related(
         'ag_test_suite__project__course',
     )
+
+
+@receiver(post_save, sender=ag_models.AGTestCase)
+def on_case_save(sender, instance: ag_models.AGTestCase, created, **kwargs):
+    if not created:
+        clear_submission_results_cache(instance.ag_test_suite.project_id)
+
+
+@receiver(post_delete, sender=ag_models.AGTestCase)
+def on_case_delete(sender, instance: ag_models.AGTestCase, *args, **kwargs):
+    clear_submission_results_cache(instance.ag_test_suite.project_id)

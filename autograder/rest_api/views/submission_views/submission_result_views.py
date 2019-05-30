@@ -12,6 +12,7 @@ from rest_framework.exceptions import ValidationError
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
 import autograder.rest_api.permissions as ag_permissions
+from autograder.core.caching import get_cached_submission_feedback
 from autograder.core.models.submission import get_submissions_with_results_queryset
 from autograder.core.submission_feedback import (
     SubmissionResultFeedback, AGTestSuiteResultFeedback, AGTestCommandResultFeedback,
@@ -117,16 +118,7 @@ class SubmissionResultsView(SubmissionResultsViewBase):
         if not_done_enough_to_cache:
             return response.Response(submission_fdbk.to_dict())
 
-        cache_key = 'project_{}_submission_normal_results_{}'.format(
-            submission.group.project.pk,
-            submission.pk)
-
-        result = cache.get(cache_key)
-        if result is None:
-            result = submission_fdbk.to_dict()
-            cache.set(cache_key, result, timeout=None)
-
-        return response.Response(result)
+        return response.Response(get_cached_submission_feedback(submission, submission_fdbk))
 
 
 @method_decorator(

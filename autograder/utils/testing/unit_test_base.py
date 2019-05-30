@@ -1,5 +1,6 @@
 import os
 import shutil
+from contextlib import contextmanager
 
 from django.core.cache import cache
 from django.conf import settings
@@ -71,6 +72,20 @@ class UnitTestBase(TransactionTestCase):
 
         def __exit__(self, *args):
             self.test_case_object.assertEqual(self.original_count, self.queryset.count())
+
+    def assert_cache_key_invalidated(self, cache_key: str):
+        return _assert_cache_key_invalidated(cache_key)
+
+
+@contextmanager
+def _assert_cache_key_invalidated(cache_key: str):
+    if cache.get(cache_key) is None:
+        raise AssertionError(f'Cache key "{cache_key}" not present before expected invalidation.')
+
+    yield
+
+    if cache.get(cache_key) is not None:
+        raise AssertionError(f'Cache key "{cache_key}" unexpectedly present.')
 
 
 # Adapted from: http://stackoverflow.com/questions/25851183/
