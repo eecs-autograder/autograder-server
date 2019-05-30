@@ -17,9 +17,11 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core.caching import clear_submission_results_cache
 from autograder.core.models.copy_project_and_course import copy_project
+from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
 from autograder.rest_api import tasks as api_tasks, transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, convert_django_validation_error)
+    AGModelGenericViewSet, convert_django_validation_error, handle_object_does_not_exist_404,
+    AGModelAPIView)
 from autograder.rest_api.views.ag_model_views import ListCreateNestedModelViewSet
 from autograder.rest_api.views.schema_generation import APITags
 
@@ -107,6 +109,32 @@ def on_project_created(sender, instance, created, **kwargs):
     register_project_queues.apply_async(
         kwargs={'project_pks': [instance.pk]}, queue='small_tasks',
         connection=app.connection())
+
+
+class ImportHandgradingRubricView(AGModelAPIView):
+    api_tags = [APITags.projects, APITags.handgrading_rubrics]
+
+    pk_key = 'project_pk'
+    model_manager = ag_models.Project.objects
+
+    permission_classes = (ag_permissions.is_admin(),)
+
+    @swagger_auto_schema(responses={'204': ''})
+    @handle_object_does_not_exist_404
+    @transaction.atomic()
+    def post(self, *args, **kwargs):
+        project: ag_models.Project = self.get_object()
+
+        import_from_project = get_object_or_404(
+            ag_models.Project.objects, pk=kwargs['import_from_project_pk'])
+
+        if project.course != import_from_project.course:
+            return response.Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data='Cannot import a handgrading rubric from another course.')
+
+        import_handgrading_rubric(import_to=project, import_from=import_from_project)
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 project_detail_permissions = (

@@ -141,6 +141,8 @@ urlpatterns = [
     path('courses/<int:pk>/projects/', views.ListCreateProjectView.as_view(), name='projects'),
     path('projects/<int:project_pk>/copy_to_course/<int:target_course_pk>/',
          views.CopyProjectView.as_view(), name='copy-project'),
+    path('projects/<int:project_pk>/import_handgrading_rubric_from/<int:import_from_project_pk>/',
+         views.ImportHandgradingRubricView.as_view(), name='import-handgrading-rubric'),
     url(r'', include(project_router.urls)),
 
     path('projects/<int:pk>/instructor_files/', views.ListCreateInstructorFilesViewSet.as_view(),

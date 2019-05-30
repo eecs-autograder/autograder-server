@@ -24,7 +24,10 @@ from autograder.rest_api.views.project_views.expected_student_file_views import 
 from .project_views.instructor_file_views import (
     ListCreateInstructorFilesViewSet, InstructorFileDetailViewSet, InstructorFileContentView)
 from .project_views.project_views import (
-    ProjectDetailViewSet, ListCreateProjectView, CopyProjectView,
+    ProjectDetailViewSet,
+    ListCreateProjectView,
+    CopyProjectView,
+    ImportHandgradingRubricView,
     DownloadTaskDetailViewSet,
     EditBonusSubmissionsView
 )
