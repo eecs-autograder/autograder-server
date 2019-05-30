@@ -11,8 +11,8 @@ def clear_submission_results_cache(project_pk: int) -> None:
 
 
 def delete_cached_submission_result(submission: ag_models.Submission) -> None:
-    cache_key = 'project_{}_submission_normal_results_{}'.format(
-        submission.group.project.pk, submission.pk)
+    cache_key = submission_fdbk_cache_key(
+        project_pk=submission.group.project.pk, submission_pk=submission.pk)
     cache.delete(cache_key)
 
 
@@ -24,9 +24,9 @@ def get_cached_submission_feedback(submission: ag_models.Submission,
     If the serialized feedback is not cached, adds it to the cache
     before returning it.
     """
-    cache_key = 'project_{}_submission_normal_results_{}'.format(
-        submission.group.project.pk,
-        submission.pk)
+    cache_key = submission_fdbk_cache_key(
+        project_pk=submission.group.project.pk,
+        submission_pk=submission.pk)
 
     result = cache.get(cache_key)
     if result is None:
@@ -34,3 +34,7 @@ def get_cached_submission_feedback(submission: ag_models.Submission,
         cache.set(cache_key, result, timeout=None)
 
     return result
+
+
+def submission_fdbk_cache_key(*, project_pk: int, submission_pk: int) -> str:
+    return f'project_{project_pk}_submission_normal_results_{submission_pk}'

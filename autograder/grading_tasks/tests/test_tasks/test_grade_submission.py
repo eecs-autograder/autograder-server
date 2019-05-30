@@ -6,7 +6,6 @@ from django.test import tag
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core import constants
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
     get_submission_fdbk
 from autograder.grading_tasks import tasks
