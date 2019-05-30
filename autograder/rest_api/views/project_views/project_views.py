@@ -20,7 +20,8 @@ from autograder.core.models.copy_project_and_course import copy_project
 from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
 from autograder.rest_api import tasks as api_tasks, transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, convert_django_validation_error, handle_object_does_not_exist_404)
+    AGModelGenericViewSet, convert_django_validation_error, handle_object_does_not_exist_404,
+    AGModelAPIView)
 from autograder.rest_api.views.ag_model_views import ListCreateNestedModelViewSet
 from autograder.rest_api.views.schema_generation import APITags
 
@@ -110,7 +111,7 @@ def on_project_created(sender, instance, created, **kwargs):
         connection=app.connection())
 
 
-class ImportHandgradingRubricView(AGModelGenericViewSet):
+class ImportHandgradingRubricView(AGModelAPIView):
     api_tags = [APITags.projects, APITags.handgrading_rubrics]
 
     pk_key = 'project_pk'
@@ -118,9 +119,10 @@ class ImportHandgradingRubricView(AGModelGenericViewSet):
 
     permission_classes = (ag_permissions.is_admin(),)
 
+    @swagger_auto_schema(responses={'204': ''})
     @handle_object_does_not_exist_404
     @transaction.atomic()
-    def import_handgrading_rubric(self, *args, **kwargs):
+    def post(self, *args, **kwargs):
         project: ag_models.Project = self.get_object()
 
         import_from_project = get_object_or_404(
@@ -134,9 +136,9 @@ class ImportHandgradingRubricView(AGModelGenericViewSet):
         import_handgrading_rubric(import_to=project, import_from=import_from_project)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @classmethod
-    def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'post': 'import_handgrading_rubric'}, **initkwargs)
+    # @classmethod
+    # def as_view(cls, actions=None, **initkwargs):
+    #     return super().as_view(actions={'post': 'import_handgrading_rubric'}, **initkwargs)
 
 
 project_detail_permissions = (

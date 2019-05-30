@@ -49,7 +49,7 @@ class ImportHandgradingRubricTestCase(UnitTestBase):
             deduction=-5,
             max_deduction=-10
         )
-    
+
     def test_import_handgrading_rubric(self):
         new_project = obj_build.make_project(course=self.project.course)
         import_handgrading_rubric(import_to=new_project, import_from=self.project)
