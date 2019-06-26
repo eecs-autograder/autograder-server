@@ -374,7 +374,7 @@ class AGTestCommand(AGCommandBase):
         if self.stdin_source == StdinSource.instructor_file:
             if self.stdin_instructor_file is None:
                 error_dict['stdin_instructor_file'] = (
-                    'This field may not be None when stdin source is project file.')
+                    'This field may not be None when stdin source is instructor file.')
             elif self.stdin_instructor_file.project != self.ag_test_case.ag_test_suite.project:
                 error_dict['stdin_instructor_file'] = (
                     'Instructor file {} does not belong to project {}'.format(
@@ -385,7 +385,7 @@ class AGTestCommand(AGCommandBase):
         if self.expected_stdout_source == ExpectedOutputSource.instructor_file:
             if self.expected_stdout_instructor_file is None:
                 error_dict['expected_stdout_instructor_file'] = (
-                    'This field may not be None when expected stdout source is project file.')
+                    'This field may not be None when expected stdout source is instructor file.')
             elif (self.expected_stdout_instructor_file.project
                     != self.ag_test_case.ag_test_suite.project):
                 error_dict['expected_stdout_instructor_file'] = (
@@ -398,7 +398,7 @@ class AGTestCommand(AGCommandBase):
         if self.expected_stderr_source == ExpectedOutputSource.instructor_file:
             if self.expected_stderr_instructor_file is None:
                 error_dict['expected_stderr_instructor_file'] = (
-                    'This field may not be None when expected stderr source is project file.')
+                    'This field may not be None when expected stderr source is instructor file.')
             elif (self.expected_stderr_instructor_file.project
                     != self.ag_test_case.ag_test_suite.project):
                 error_dict['expected_stderr_instructor_file'] = (
