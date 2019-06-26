@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import IO, AnyStr
 
 from django.db import models, transaction
 from django.conf import settings
@@ -41,6 +42,8 @@ class InstructorFileManager(AutograderModelManager):
                 raise exceptions.ValidationError(
                     {'filename': 'File {} already exists'.format(file_obj.name)})
 
+            kwargs['name'] = file_obj.name
+
         return super().validate_and_create(**kwargs)
 
 
@@ -49,6 +52,9 @@ class InstructorFile(AutograderModel):
     These objects provide a means for storing uploaded files
     to be used in project test cases.
     """
+    class Meta:
+        ordering = ('name',)
+
     objects = InstructorFileManager()
 
     SERIALIZABLE_FIELDS = (
@@ -64,10 +70,11 @@ class InstructorFile(AutograderModel):
         upload_to=_get_project_file_upload_to_path,
         validators=[_validate_filename],
         max_length=const.MAX_CHAR_FIELD_LEN * 2)
+    name = models.TextField()
 
-    @property
-    def name(self) -> str:
-        return self.basename
+    # @property
+    # def name(self) -> str:
+    #     return self.basename
 
     def rename(self, new_name):
         """

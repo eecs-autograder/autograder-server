@@ -168,6 +168,16 @@ class DeleteInstructorFileTestCase(_SetUp):
 
 
 class InstructorFileMiscTestCase(_SetUp):
+    def test_order_by_name(self):
+        file1 = InstructorFile.objects.validate_and_create(
+            project=self.project, file_obj=SimpleUploadedFile('file1', b''))
+        file3 = InstructorFile.objects.validate_and_create(
+            project=self.project, file_obj=SimpleUploadedFile('file3', b''))
+        file2 = InstructorFile.objects.validate_and_create(
+            project=self.project, file_obj=SimpleUploadedFile('file2', b''))
+
+        self.assertSequenceEqual([file1, file2, file3], InstructorFile.objects.all())
+
     def test_serializable_fields(self):
         expected = [
             'pk',

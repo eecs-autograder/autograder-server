@@ -13,6 +13,7 @@ class ExpectedStudentFile(AutograderModel):
     submitted by students can or should match.
     """
     class Meta:
+        ordering = ('pattern',)
         unique_together = ('pattern', 'project')
 
     SERIALIZABLE_FIELDS = (
