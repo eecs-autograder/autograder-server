@@ -627,8 +627,6 @@ class StudentTestSuite(AutograderModel):
         'ultimate_submission_fdbk_config',
         'past_limit_submission_fdbk_config',
         'staff_viewer_fdbk_config',
-
-        'last_modified',
     )
 
     SERIALIZE_RELATED = (

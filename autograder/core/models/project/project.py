@@ -145,7 +145,7 @@ class Project(AutograderModel):
         default=datetime.time,
         help_text="""The time that marks the beginning and end of the 24
             hour period during which submissions should be counted
-            towards the daily limit. Defaults to 0:0:0.""")
+            towards the daily limit. Defaults to 00:00:00.""")
 
     submission_limit_reset_timezone = TimeZoneField(
         default='UTC',
