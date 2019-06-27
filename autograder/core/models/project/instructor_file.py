@@ -1,6 +1,5 @@
 import os
 import shutil
-from typing import IO, AnyStr
 
 from django.db import models, transaction
 from django.conf import settings
@@ -54,6 +53,7 @@ class InstructorFile(AutograderModel):
     """
     class Meta:
         ordering = ('name',)
+        unique_together = ('name', 'project')
 
     objects = InstructorFileManager()
 
@@ -71,10 +71,6 @@ class InstructorFile(AutograderModel):
         validators=[_validate_filename],
         max_length=const.MAX_CHAR_FIELD_LEN * 2)
     name = models.TextField()
-
-    # @property
-    # def name(self) -> str:
-    #     return self.basename
 
     def rename(self, new_name):
         """
@@ -102,15 +98,12 @@ class InstructorFile(AutograderModel):
         new_abspath = self.abspath
 
         shutil.move(old_abspath, new_abspath)
+        self.name = new_name
         self.save()
 
     @property
     def abspath(self):
         return os.path.join(settings.MEDIA_ROOT, self.file_obj.name)
-
-    @property
-    def basename(self):
-        return os.path.basename(self.file_obj.name)
 
     @property
     def size(self) -> int:
