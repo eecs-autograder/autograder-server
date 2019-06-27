@@ -461,9 +461,11 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
         return self._ag_test_suite_result.open_setup_stdout()
 
-    @property
-    def setup_stdout_size(self) -> Optional[int]:
-        return 0
+    def get_setup_stdout_size(self) -> Optional[int]:
+        if not self._fdbk.show_setup_stderr:
+            return None
+
+        return os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
 
     @property
     def setup_stderr(self) -> Optional[BinaryIO]:
@@ -472,9 +474,11 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
         return self._ag_test_suite_result.open_setup_stderr()
 
-    @property
-    def setup_stderr_size(self) -> Optional[int]:
-        return 0
+    def get_setup_stderr_size(self) -> Optional[int]:
+        if not self._fdbk.show_setup_stderr:
+            return None
+
+        return os.path.getsize(self._ag_test_suite_result.setup_stderr_filename)
 
     @property
     def _show_setup_names(self):

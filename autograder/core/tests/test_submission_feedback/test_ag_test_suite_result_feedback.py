@@ -167,7 +167,9 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertEqual(setup_return_code, fdbk.setup_return_code)
         self.assertEqual(setup_timed_out, fdbk.setup_timed_out)
         self.assertEqual(setup_stdout, fdbk.setup_stdout.read().decode())
+        self.assertEqual(len(setup_stdout), fdbk.get_setup_stdout_size())
         self.assertEqual(setup_stderr, fdbk.setup_stderr.read().decode())
+        self.assertEqual(len(setup_stderr), fdbk.get_setup_stderr_size())
 
         self.ag_test_suite.validate_and_update(
             normal_fdbk_config={
@@ -183,7 +185,9 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_return_code)
         self.assertIsNone(fdbk.setup_timed_out)
         self.assertIsNone(fdbk.setup_stdout)
+        self.assertIsNone(fdbk.get_setup_stdout_size())
         self.assertIsNone(fdbk.setup_stderr)
+        self.assertIsNone(fdbk.get_setup_stderr_size())
 
     def test_some_ag_test_cases_not_visible(self):
         self.ag_test_case2.validate_and_update(ultimate_submission_fdbk_config={'visible': False})
