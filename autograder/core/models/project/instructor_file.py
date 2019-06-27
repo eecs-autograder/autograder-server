@@ -41,6 +41,8 @@ class InstructorFileManager(AutograderModelManager):
                 raise exceptions.ValidationError(
                     {'filename': 'File {} already exists'.format(file_obj.name)})
 
+            kwargs['name'] = file_obj.name
+
         return super().validate_and_create(**kwargs)
 
 
@@ -49,6 +51,10 @@ class InstructorFile(AutograderModel):
     These objects provide a means for storing uploaded files
     to be used in project test cases.
     """
+    class Meta:
+        ordering = ('name',)
+        unique_together = ('name', 'project')
+
     objects = InstructorFileManager()
 
     SERIALIZABLE_FIELDS = (
@@ -64,10 +70,7 @@ class InstructorFile(AutograderModel):
         upload_to=_get_project_file_upload_to_path,
         validators=[_validate_filename],
         max_length=const.MAX_CHAR_FIELD_LEN * 2)
-
-    @property
-    def name(self) -> str:
-        return self.basename
+    name = models.TextField()
 
     def rename(self, new_name):
         """
@@ -95,15 +98,12 @@ class InstructorFile(AutograderModel):
         new_abspath = self.abspath
 
         shutil.move(old_abspath, new_abspath)
+        self.name = new_name
         self.save()
 
     @property
     def abspath(self):
         return os.path.join(settings.MEDIA_ROOT, self.file_obj.name)
-
-    @property
-    def basename(self):
-        return os.path.basename(self.file_obj.name)
 
     @property
     def size(self) -> int:

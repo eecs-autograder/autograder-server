@@ -73,6 +73,16 @@ class ExpectedStudentFileTestCase(UnitTestBase):
         self.assertEqual(min_matches, student_file.min_num_matches)
         self.assertEqual(max_matches, student_file.max_num_matches)
 
+    def test_order_by_pattern(self):
+        file1 = ExpectedStudentFile.objects.validate_and_create(
+            project=self.project, pattern='file1')
+        file3 = ExpectedStudentFile.objects.validate_and_create(
+            project=self.project, pattern='file3')
+        file2 = ExpectedStudentFile.objects.validate_and_create(
+            project=self.project, pattern='file2')
+
+        self.assertSequenceEqual([file1, file2, file3], ExpectedStudentFile.objects.all())
+
     def test_exception_pattern_exists(self):
         ExpectedStudentFile.objects.validate_and_create(
             project=self.project,
