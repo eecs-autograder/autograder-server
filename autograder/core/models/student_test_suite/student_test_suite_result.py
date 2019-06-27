@@ -174,23 +174,39 @@ class StudentTestSuiteResult(AutograderModel):
 
         @property
         def setup_stdout(self) -> Optional[BinaryIO]:
-            if not self._fdbk.show_setup_stdout:
-                return None
-
-            if self._student_test_suite_result.setup_result is None:
+            if not self._show_setup_stdout:
                 return None
 
             return open(self._student_test_suite_result.setup_result.stdout_filename, 'rb')
 
-        @property
-        def setup_stderr(self) -> Optional[BinaryIO]:
-            if not self._fdbk.show_setup_stderr:
+        def get_setup_stdout_size(self) -> Optional[int]:
+            if not self._show_setup_stdout:
                 return None
 
-            if self._student_test_suite_result.setup_result is None:
+            return os.path.getsize(self._student_test_suite_result.setup_result.stdout_filename)
+
+        @property
+        def _show_setup_stdout(self):
+            return (self._fdbk.show_setup_stdout
+                    and self._student_test_suite_result.setup_result is not None)
+
+        @property
+        def setup_stderr(self) -> Optional[BinaryIO]:
+            if not self._show_setup_stderr:
                 return None
 
             return open(self._student_test_suite_result.setup_result.stderr_filename, 'rb')
+
+        def get_setup_stderr_size(self) -> Optional[int]:
+            if not self._show_setup_stderr:
+                return None
+
+            return os.path.getsize(self._student_test_suite_result.setup_result.stderr_filename)
+
+        @property
+        def _show_setup_stderr(self):
+            return (self._fdbk.show_setup_stderr
+                    and self._student_test_suite_result.setup_result is not None)
 
         @property
         def student_tests(self) -> List[str]:
@@ -236,6 +252,13 @@ class StudentTestSuiteResult(AutograderModel):
             return open(
                 self._student_test_suite_result.get_test_names_result.stdout_filename, 'rb')
 
+        def get_student_test_names_stdout_size(self) -> Optional[int]:
+            if not self._fdbk.show_get_test_names_stdout:
+                return None
+
+            return os.path.getsize(
+                self._student_test_suite_result.get_test_names_result.stdout_filename)
+
         @property
         def get_student_test_names_stderr(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_get_test_names_stderr:
@@ -243,6 +266,13 @@ class StudentTestSuiteResult(AutograderModel):
 
             return open(
                 self._student_test_suite_result.get_test_names_result.stderr_filename, 'rb')
+
+        def get_student_test_names_stderr_size(self) -> Optional[int]:
+            if not self._fdbk.show_get_test_names_stderr:
+                return None
+
+            return os.path.getsize(
+                self._student_test_suite_result.get_test_names_result.stderr_filename)
 
         @property
         def num_bugs_exposed(self) -> Optional[int]:
@@ -265,12 +295,25 @@ class StudentTestSuiteResult(AutograderModel):
 
             return open(self._student_test_suite_result.validity_check_stdout_filename, 'rb')
 
+        def get_validity_check_stdout_size(self) -> Optional[int]:
+            if not self._fdbk.show_validity_check_stdout:
+                return None
+
+            return os.path.getsize(self._student_test_suite_result.validity_check_stdout_filename)
+
         @property
         def validity_check_stderr(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_validity_check_stderr:
                 return None
 
             return open(self._student_test_suite_result.validity_check_stderr_filename, 'rb')
+
+        def get_validity_check_stderr_size(self) -> Optional[int]:
+            if not self._fdbk.show_validity_check_stderr:
+                return None
+
+            return os.path.getsize(
+                self._student_test_suite_result.validity_check_stderr_filename)
 
         @property
         def grade_buggy_impls_stdout(self) -> Optional[BinaryIO]:
@@ -279,12 +322,26 @@ class StudentTestSuiteResult(AutograderModel):
 
             return open(self._student_test_suite_result.grade_buggy_impls_stdout_filename, 'rb')
 
+        def get_grade_buggy_impls_stdout_size(self) -> Optional[int]:
+            if not self._fdbk.show_grade_buggy_impls_stdout:
+                return None
+
+            return os.path.getsize(
+                self._student_test_suite_result.grade_buggy_impls_stdout_filename)
+
         @property
         def grade_buggy_impls_stderr(self) -> Optional[BinaryIO]:
             if not self._fdbk.show_grade_buggy_impls_stderr:
                 return None
 
             return open(self._student_test_suite_result.grade_buggy_impls_stderr_filename, 'rb')
+
+        def get_grade_buggy_impls_stderr_size(self) -> Optional[int]:
+            if not self._fdbk.show_grade_buggy_impls_stderr:
+                return None
+
+            return os.path.getsize(
+                self._student_test_suite_result.grade_buggy_impls_stderr_filename)
 
         @property
         def total_points(self) -> Decimal:
