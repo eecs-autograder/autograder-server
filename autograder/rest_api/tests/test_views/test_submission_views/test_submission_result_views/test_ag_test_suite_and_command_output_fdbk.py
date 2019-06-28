@@ -106,44 +106,61 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
         suite_result_pk = suite_result.pk
         self.ag_test_suite.delete()
 
+        url_kwargs = {
+            'pk': self.staff_submission.pk,
+            'result_pk': suite_result_pk
+        }
+
+        url_query_str = f'?feedback_category={ag_models.FeedbackCategory.max.value}'
+
         for field_name, url_lookup in zip(field_names, url_lookups):
-            url_kwargs = {
-                'pk': self.staff_submission.pk,
-                'result_pk': suite_result_pk}
-            url = (reverse(url_lookup, kwargs=url_kwargs)
-                   + f'?feedback_category={ag_models.FeedbackCategory.max.value}')
+            url = reverse(url_lookup, kwargs=url_kwargs) + url_query_str
             response = self.client.get(url)
             self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
-    def _do_suite_result_output_test(self, client, submission, suite_result, fdbk_category,
-                                     expect_404=False):
+        url = reverse('ag-test-suite-result-output-size', kwargs=url_kwargs) + url_query_str
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+    def _do_suite_result_output_test(self, client, submission, suite_result, fdbk_category):
         with suite_result.open_setup_stdout('w') as f:
             f.write('adkjfaksdjf;akjsdf;')
         with suite_result.open_setup_stderr('w') as f:
             f.write('qewiruqpewpuir')
+
+        fdbk = get_suite_fdbk(suite_result, fdbk_category)
 
         field_names = ['setup_stdout', 'setup_stderr']
         url_lookups = [
             'ag-test-suite-result-stdout',
             'ag-test-suite-result-stderr'
         ]
+        url_kwargs = {'pk': submission.pk, 'result_pk': suite_result.pk}
+        url_query_str = '?feedback_category={}'.format(fdbk_category.value)
         for field_name, url_lookup in zip(field_names, url_lookups):
             print(url_lookup)
-            url = (reverse(url_lookup,
-                           kwargs={'pk': submission.pk, 'result_pk': suite_result.pk})
-                   + '?feedback_category={}'.format(fdbk_category.value))
+            url = reverse(url_lookup, kwargs=url_kwargs) + url_query_str
             response = client.get(url)
-            if expect_404:
-                self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
-                continue
 
-            fdbk = get_suite_fdbk(suite_result, fdbk_category)
             expected = getattr(fdbk, field_name)
             if expected is None or not fdbk.fdbk_conf.visible:
                 self.assertIsNone(response.data)
             else:
                 self.assertEqual(expected.read(),
                                  b''.join((chunk for chunk in response.streaming_content)))
+
+        # Output size endpoint
+        url = reverse('ag-test-suite-result-output-size', kwargs=url_kwargs) + url_query_str
+        response = client.get(url)
+
+        if not fdbk.fdbk_conf.visible:
+            self.assertIsNone(response.data)
+        else:
+            expected = {
+                'setup_stdout_size': fdbk.get_setup_stdout_size(),
+                'setup_stderr_size': fdbk.get_setup_stderr_size(),
+            }
+            self.assertEqual(expected, response.data)
 
 
 class AGTestCommandOutputFeedbackTestCase(_SetUp):

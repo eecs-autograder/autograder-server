@@ -165,9 +165,6 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             status.HTTP_200_OK, None, self.setup_stderr_base_url)
 
     def test_get_get_test_names_result_output(self):
-        # NOTE: Whether a user can view the get_test_names output does not
-        # depend on feedback configuration. Instead, this output
-        # is always available to staff.
         self.do_get_output_test(
             self.client, self.admin, ag_models.FeedbackCategory.max,
             status.HTTP_200_OK, self.get_test_names_stdout, self.get_test_names_stdout_base_url)
@@ -271,3 +268,6 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
         else:
             self.assertEqual(expected_output,
                              ''.join((chunk.decode() for chunk in response.streaming_content)))
+
+    def do_get_output_size_test(self):
+        self.fail()

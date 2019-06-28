@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-from drf_yasg.openapi import Parameter
+from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
 from rest_framework.exceptions import ValidationError
@@ -39,13 +39,13 @@ values:
         requested by students on their own ultimate (a.k.a. final
         graded) submission once the project deadline has passed and
         hide_ultimate_submission_fdbk has been set to False on the
-        project.
+        project. Can similarly be requested by staff when looking
+        up another user's ultimate submission results after the
+        deadline.
     - {ag_models.FeedbackCategory.staff_viewer.value}: Can be requested
         by staff when looking up another user's submission results.
     - {ag_models.FeedbackCategory.max.value}: Can be requested by staff
-        on their own submissions. Can be requested by staff when looking
-        up another user's ultimate submission results after the
-        deadline."""
+        on their own submissions."""
 )
 
 
@@ -145,6 +145,32 @@ class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
         return _get_setup_output(submission_fdbk,
                                  suite_result_pk,
                                  lambda fdbk_calc: fdbk_calc.setup_stderr)
+
+
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(
+        manual_parameters=[_fdbk_category_param_docs],
+        responses={'200': Schema(
+            type='object',
+            properties={
+                'setup_stdout_size': Parameter('setup_stdout_size', 'body', type='Optional[int]'),
+                'setup_stderr_size': Parameter('setup_stderr_size', 'body', type='Optional[int]'),
+            }
+        )}
+    )
+)
+class AGTestSuiteResultsOutputSizeView(SubmissionResultsViewBase):
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
+                       fdbk_category: ag_models.FeedbackCategory):
+        suite_result_pk = self.kwargs['result_pk']
+        suite_fdbk = _find_ag_suite_result(submission_fdbk, suite_result_pk)
+        if suite_fdbk is None:
+            return response.Response(None)
+        return response.Response({
+            'setup_stdout_size': suite_fdbk.get_setup_stdout_size(),
+            'setup_stderr_size': suite_fdbk.get_setup_stderr_size(),
+        })
 
 
 GetOutputFnType = Callable[[AGTestSuiteResultFeedback], str]

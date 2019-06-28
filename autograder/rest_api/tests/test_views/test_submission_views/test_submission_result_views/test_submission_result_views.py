@@ -112,6 +112,12 @@ class _FeedbackTestsBase(UnitTestBase):
             response = client.get(url)
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
+    def do_get_output_and_diff_size_test(self):
+        self.fail()
+
+    def do_get_output_and_diff_size_permission_denied_test(self):
+        self.fail()
+
 
 class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
     def setUp(self):
@@ -133,6 +139,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
                                          self.normal_submission_result,
                                          ag_models.FeedbackCategory.normal)
 
+        self.do_get_output_and_diff_size_test()
+
     def test_student_get_own_normal_submission_non_normal_fdbk_permission_denied(self):
         self.client.force_authenticate(self.student1)
 
@@ -146,6 +154,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.normal_submission_result,
             ag_models.FeedbackCategory.past_limit_submission)
 
+        self.do_get_output_and_diff_size_permission_denied_test()
+
         # ultimate_submission
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group_normal_submission,
@@ -155,6 +165,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group_normal_submission,
             self.normal_submission_result,
             ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_output_and_diff_size_permission_denied_test()
 
         # staff_viewer
         self.do_get_fdbk_permission_denied_test(
@@ -166,6 +178,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.normal_submission_result,
             ag_models.FeedbackCategory.staff_viewer)
 
+        self.do_get_output_and_diff_size_permission_denied_test()
+
         # max
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group_normal_submission,
@@ -175,6 +189,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group_normal_submission,
             self.normal_submission_result,
             ag_models.FeedbackCategory.max)
+
+        self.do_get_output_and_diff_size_permission_denied_test()
 
     def test_student_get_other_student_submission_normal_fdbk_permission_denied(self):
         student2 = obj_build.make_student_user(self.course)
@@ -187,6 +203,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.normal)
 
+        self.do_get_output_and_diff_size_permission_denied_test()
+
     def test_student_get_normal_submission_max_or_staff_viewer_fdbk_permission_denied(self):
         self.client.force_authenticate(self.student1)
 
@@ -196,6 +214,7 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group_normal_submission,
@@ -203,6 +222,7 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.staff_viewer)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
     def test_student_get_normal_submission_fdbk_project_not_visible_permission_denied(self):
         self.project.validate_and_update(visible_to_students=False)
@@ -216,6 +236,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.normal)
 
+        self.do_get_output_and_diff_size_permission_denied_test()
+
         self.course.students.clear()
         self.project.validate_and_update(guests_can_submit=True)
 
@@ -226,6 +248,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.normal)
+
+        self.do_get_output_and_diff_size_permission_denied_test()
 
     def test_staff_get_student_normal_submission_normal_fdbk_permission_denied(self):
         staff = obj_build.make_staff_user(self.course)
@@ -240,6 +264,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.normal_submission_result,
             ag_models.FeedbackCategory.normal)
 
+        self.do_get_output_and_diff_size_permission_denied_test()
+
     def test_handgrader_get_student_normal_submission_normal_fdbk_permission_denied(self):
         handgrader = obj_build.make_handgrader_user(self.course)
         self.client.force_authenticate(handgrader)
@@ -251,6 +277,8 @@ class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.normal)
+
+        self.do_get_output_and_diff_size_permission_denied_test()
 
 
 class PastLimitSubmissionFeedbackTestCase(_FeedbackTestsBase):
@@ -271,6 +299,8 @@ class PastLimitSubmissionFeedbackTestCase(_FeedbackTestsBase):
                                          self.past_limit_submission_result,
                                          ag_models.FeedbackCategory.past_limit_submission)
 
+        self.do_get_output_and_diff_size_test()
+
     def test_student_get_other_student_past_limit_submission_past_limit_fdbk_permissn_denied(self):
         student2 = obj_build.make_student_user(self.course)
         self.client.force_authenticate(student2)
@@ -284,6 +314,8 @@ class PastLimitSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.past_limit_submission_result,
             ag_models.FeedbackCategory.past_limit_submission)
 
+        self.do_get_output_and_diff_size_permission_denied_test()
+
     def test_student_get_own_past_limit_submission_normal_fdbk_permission_denied(self):
         self.client.force_authenticate(self.student1)
         self.do_get_fdbk_permission_denied_test(
@@ -295,6 +327,8 @@ class PastLimitSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.past_limit_submission_result,
             ag_models.FeedbackCategory.normal)
 
+        self.do_get_output_and_diff_size_permission_denied_test()
+
     def test_student_get_past_limit_submission_max_or_staff_viewer_fdbk_permission_denied(self):
         self.client.force_authenticate(self.student1)
 
@@ -304,6 +338,7 @@ class PastLimitSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_past_limit_submission,
             self.past_limit_submission_result, ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group_past_limit_submission,
@@ -311,6 +346,7 @@ class PastLimitSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_past_limit_submission,
             self.past_limit_submission_result, ag_models.FeedbackCategory.staff_viewer)
+        self.do_get_output_and_diff_size_permission_denied()
 
     def test_staff_get_student_past_limit_submission_past_limit_fdbk_permission_denied(self):
         staff = obj_build.make_staff_user(self.course)
@@ -324,6 +360,8 @@ class PastLimitSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group_past_limit_submission,
             self.past_limit_submission_result,
             ag_models.FeedbackCategory.past_limit_submission)
+
+        self.do_get_output_and_diff_size_permission_denied()
 
 
 class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
@@ -359,6 +397,7 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_test(self.client, self.student_group1_most_recent_submission,
                                          self.student1_most_recent_res,
                                          ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_test()
 
         self.project.validate_and_update(
             ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
@@ -368,6 +407,7 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_test(self.client, self.student_group1_best_submission,
                                          self.student1_best_res,
                                          ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_test()
 
         # Different combinations of the deadline being past and having an extension or not.
         past_deadline = now - timezone.timedelta(2)
@@ -381,6 +421,7 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.do_get_output_and_diff_test(self.client, self.student_group1_best_submission,
                                              self.student1_best_res,
                                              ag_models.FeedbackCategory.ultimate_submission)
+            self.do_get_output_and_diff_size_test()
 
         # Late day finished
         self.project.validate_and_update(closing_time=past_deadline)
@@ -393,6 +434,7 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_test(self.client, self.student_group1_best_submission,
                                          self.student1_best_res,
                                          ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_test()
 
         # Extension and late day finished
         self.project.validate_and_update(closing_time=past_deadline)
@@ -406,6 +448,7 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_test(self.client, self.student_group1_best_submission,
                                          self.student1_best_res,
                                          ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_test()
 
     def test_student_get_other_student_ultimate_submission_ultimate_fdbk_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -421,6 +464,8 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_output_and_diff_size_permission_denied()
 
     def test_student_get_own_ultimate_submission_ultimate_fdbk_hidden_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -438,6 +483,8 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
+        self.do_get_output_and_diff_size_permission_denied()
+
     def test_student_get_ultimate_fdbk_but_deadline_not_past_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
@@ -453,6 +500,8 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+
+        self.do_get_output_and_diff_size_permission_denied()
 
     def test_student_get_ultimate_fdbk_but_extension_not_past_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -472,6 +521,8 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
+        self.do_get_output_and_diff_size_permission_denied()
+
     def test_student_get_ultimate_fdbk_but_has_unfinished_late_day_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
@@ -490,6 +541,8 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
 
+        self.do_get_output_and_diff_size_permission_denied()
+
     def test_student_ultimate_submission_get_max_or_staff_viewer_fdbk_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
                          self.project.ultimate_submission_policy)
@@ -502,6 +555,7 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_size_permission_denied()
 
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
@@ -509,6 +563,7 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.staff_viewer)
+        self.do_get_output_and_diff_size_permission_denied()
 
     def test_staff_get_student_ultimate_submission_ultimate_fdbk(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -522,6 +577,7 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_test(self.client, self.student_group1_most_recent_submission,
                                          self.student1_most_recent_res,
                                          ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_test()
 
     def test_staff_get_student_ultimate_submission_max_fdbk_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -537,6 +593,8 @@ class UltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.max)
+
+        self.do_get_output_and_diff_size_permission_denied()
 
 
 class StaffOwnSubmissionFeedbackTestCase(_FeedbackTestsBase):
@@ -559,25 +617,30 @@ class StaffOwnSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_fdbk_test(self.client, staff_submission, ag_models.FeedbackCategory.normal)
         self.do_get_output_and_diff_test(self.client, staff_submission, result,
                                          ag_models.FeedbackCategory.normal)
+        self.do_get_output_and_diff_size_test()
 
         self.do_get_fdbk_test(self.client, staff_submission,
                               ag_models.FeedbackCategory.past_limit_submission)
         self.do_get_output_and_diff_test(self.client, staff_submission, result,
                                          ag_models.FeedbackCategory.past_limit_submission)
+        self.do_get_output_and_diff_size_test()
 
         self.do_get_fdbk_test(self.client, staff_submission,
                               ag_models.FeedbackCategory.staff_viewer)
         self.do_get_output_and_diff_test(self.client, staff_submission, result,
                                          ag_models.FeedbackCategory.staff_viewer)
+        self.do_get_output_and_diff_size_test()
 
         self.do_get_fdbk_test(self.client, staff_submission,
                               ag_models.FeedbackCategory.ultimate_submission)
         self.do_get_output_and_diff_test(self.client, staff_submission, result,
                                          ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_test()
 
         self.do_get_fdbk_test(self.client, staff_submission, ag_models.FeedbackCategory.max)
         self.do_get_output_and_diff_test(self.client, staff_submission, result,
                                          ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_size_test()
 
 
 class StaffStudentLookupFeedbackTestCase(_FeedbackTestsBase):
@@ -600,6 +663,7 @@ class StaffStudentLookupFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_test(self.client, self.student_group_normal_submission,
                                          self.normal_submission_result,
                                          ag_models.FeedbackCategory.staff_viewer)
+        self.do_get_output_and_diff_size_test()
 
     def test_staff_get_student_submission_non_staff_viewer_fdbk_permission_denied(self):
         self.do_get_fdbk_permission_denied_test(
@@ -608,6 +672,7 @@ class StaffStudentLookupFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.normal)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group_normal_submission,
@@ -615,6 +680,7 @@ class StaffStudentLookupFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.past_limit_submission)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group_normal_submission,
@@ -622,6 +688,7 @@ class StaffStudentLookupFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
         self.do_get_fdbk_permission_denied_test(
             self.client, self.student_group_normal_submission,
@@ -629,6 +696,7 @@ class StaffStudentLookupFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group_normal_submission,
             self.normal_submission_result, ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
 
 class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
@@ -665,6 +733,7 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.do_get_output_and_diff_test(
                 self.client, self.student_group1_most_recent_submission,
                 self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+            self.do_get_output_and_diff_size_test()
 
             self.project.validate_and_update(
                 ultimate_submission_policy=ag_models.UltimateSubmissionPolicy.best)
@@ -674,6 +743,7 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
             self.do_get_output_and_diff_test(
                 self.client, self.student_group1_best_submission,
                 self.student1_best_res, ag_models.FeedbackCategory.ultimate_submission)
+            self.do_get_output_and_diff_size_test()
 
     def test_staff_get_student_ultimate_submision_fdbk_pending_late_day(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -691,6 +761,7 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_test()
 
     def test_staff_get_student_ultimate_submission_ultimate_fdbk_hidden_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -704,6 +775,7 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
     def test_staff_get_student_ultimate_submission_fdbk_before_deadline_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -718,6 +790,7 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
     def test_staff_get_student_ultimate_submission_fdbk_before_extension_permission_denied(self):
         self.assertEqual(ag_models.UltimateSubmissionPolicy.most_recent,
@@ -734,6 +807,7 @@ class StaffStudentLookupUltimateSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.do_get_output_and_diff_permission_denied_test(
             self.client, self.student_group1_most_recent_submission,
             self.student1_most_recent_res, ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_permission_denied_test()
 
 
 class AdminLookupStudentSubmissionTestCase(_FeedbackTestsBase):
@@ -755,25 +829,30 @@ class AdminLookupStudentSubmissionTestCase(_FeedbackTestsBase):
         self.do_get_fdbk_test(self.client, student_submission, ag_models.FeedbackCategory.normal)
         self.do_get_output_and_diff_test(self.client, student_submission, result,
                                          ag_models.FeedbackCategory.normal)
+        self.do_get_output_and_diff_size_test()
 
         self.do_get_fdbk_test(self.client, student_submission,
                               ag_models.FeedbackCategory.past_limit_submission)
         self.do_get_output_and_diff_test(self.client, student_submission, result,
                                          ag_models.FeedbackCategory.past_limit_submission)
+        self.do_get_output_and_diff_size_test()
 
         self.do_get_fdbk_test(self.client, student_submission,
                               ag_models.FeedbackCategory.staff_viewer)
         self.do_get_output_and_diff_test(self.client, student_submission, result,
                                          ag_models.FeedbackCategory.staff_viewer)
+        self.do_get_output_and_diff_size_test()
 
         self.do_get_fdbk_test(self.client, student_submission,
                               ag_models.FeedbackCategory.ultimate_submission)
         self.do_get_output_and_diff_test(self.client, student_submission, result,
                                          ag_models.FeedbackCategory.ultimate_submission)
+        self.do_get_output_and_diff_size_test()
 
         self.do_get_fdbk_test(self.client, student_submission, ag_models.FeedbackCategory.max)
         self.do_get_output_and_diff_test(self.client, student_submission, result,
                                          ag_models.FeedbackCategory.max)
+        self.do_get_output_and_diff_size_test()
 
 
 class MiscSubmissionFeedbackTestCase(UnitTestBase):
