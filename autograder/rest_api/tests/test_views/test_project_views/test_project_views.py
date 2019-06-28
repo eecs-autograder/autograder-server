@@ -229,6 +229,25 @@ class ImportHandgradingRubricTestCase(AGViewTestBase):
         self.assertNotEqual(self.import_to.handgrading_rubric.pk,
                             self.import_from.handgrading_rubric.pk)
 
+    def test_import_from_project_in_other_course_is_admin_for(self):
+        other_project = obj_build.make_project()
+        other_project.course.admins.add(self.admin)
+        hg_models.HandgradingRubric.objects.validate_and_create(project=other_project)
+
+        url = reverse('import-handgrading-rubric',
+                      kwargs={'project_pk': self.import_to.pk,
+                              'import_from_project_pk': other_project.pk})
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(url)
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        self.import_to.refresh_from_db()
+
+        self.assertTrue(hasattr(self.import_to, 'handgrading_rubric'))
+
+        self.assertNotEqual(self.import_to.handgrading_rubric.pk,
+                            self.import_from.handgrading_rubric.pk)
+
     def test_view_calls_import_handgrading_rubric(self):
         mock_import_rubric = mock.Mock()
         with mock.patch('autograder.rest_api.views.project_views'
@@ -245,21 +264,22 @@ class ImportHandgradingRubricTestCase(AGViewTestBase):
             mock_import_rubric.assert_called_once_with(
                 import_to=self.import_to, import_from=self.import_from)
 
-    def test_error_import_from_project_in_different_course(self):
+    def test_import_from_project_in_different_course_not_admin_for_permission_denied(self):
         other_project = obj_build.make_project()
 
         url = reverse('import-handgrading-rubric',
                       kwargs={'project_pk': self.import_to.pk,
                               'import_from_project_pk': other_project.pk})
         self.client.force_authenticate(self.admin)
+        self.assertFalse(other_project.course.is_admin(self.admin))
         response = self.client.post(url)
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
         self.import_to.refresh_from_db()
 
         self.assertFalse(hasattr(self.import_to, 'handgrading_rubric'))
 
-    def test_404_import_from_has_no_handgrading_rubric(self):
+    def test_400_import_from_has_no_handgrading_rubric(self):
         self.import_from.handgrading_rubric.delete()
 
         url = reverse('import-handgrading-rubric',
@@ -267,7 +287,9 @@ class ImportHandgradingRubricTestCase(AGViewTestBase):
                               'import_from_project_pk': self.import_from.pk})
         self.client.force_authenticate(self.admin)
         response = self.client.post(url)
-        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(f'The project "{self.import_from.name}" has no handgrading rubric',
+                         response.data)
 
     def test_non_admin_permission_denied(self):
         staff = obj_build.make_staff_user(self.course)
@@ -278,6 +300,18 @@ class ImportHandgradingRubricTestCase(AGViewTestBase):
                               'import_from_project_pk': self.import_from.pk})
         response = self.client.post(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_404_import_from_project_does_not_exist(self):
+        url = reverse('import-handgrading-rubric',
+                      kwargs={'project_pk': self.import_to.pk,
+                              'import_from_project_pk': 9002})
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(url)
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+        self.import_to.refresh_from_db()
+
+        self.assertFalse(hasattr(self.import_to, 'handgrading_rubric'))
 
 
 class RetrieveProjectTestCase(AGViewTestBase):
