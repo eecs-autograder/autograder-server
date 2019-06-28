@@ -58,6 +58,7 @@ from .submission_views.submission_result_views import (
     StudentTestSuiteResultValidityCheckStderrView,
     StudentTestSuiteResultGradeBuggyImplsStdoutView,
     StudentTestSuiteResultGradeBuggyImplsStderrView,
+    StudentTestSuiteOutputSizeView,
 )
 
 from .user_views import UserViewSet, CurrentUserCanCreateCoursesView, UserLateDaysView

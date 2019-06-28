@@ -232,7 +232,10 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
                 self.client, self.admin, ag_models.FeedbackCategory.staff_viewer,
                 status.HTTP_200_OK, None, url)
 
-        self.fail('output size')
+        url = self.make_output_size_url(ag_models.FeedbackCategory.staff_viewer)
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertIsNone(response.data)
 
     def test_get_output_suite_not_found(self):
         url_lookups = [
@@ -244,6 +247,7 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             'student-suite-validity-check-stderr',
             'student-suite-grade-buggy-impls-stdout',
             'student-suite-grade-buggy-impls-stderr',
+            'student-suite-result-output-size'
         ]
 
         for url_lookup in url_lookups:
@@ -252,7 +256,24 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
                 self.client, self.admin, ag_models.FeedbackCategory.max,
                 status.HTTP_404_NOT_FOUND, None, url_with_bad_pk)
 
-        self.fail('output size')
+    def test_get_output_size(self):
+        self.client.force_authenticate(self.admin)
+
+        url = self.make_output_size_url(ag_models.FeedbackCategory.max)
+        response = self.client.get(url)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        expected = {
+            'setup_stdout_size': len(self.setup_stdout),
+            'setup_stderr_size': len(self.setup_stderr),
+            'get_student_test_names_stdout_size': len(self.get_test_names_stdout),
+            'get_student_test_names_stderr_size': len(self.get_test_names_stderr),
+            'validity_check_stdout_size': len(self.validity_check_stdout),
+            'validity_check_stderr_size': len(self.validity_check_stderr),
+            'grade_buggy_impls_stdout_size': len(self.buggy_impls_stdout),
+            'grade_buggy_impls_stderr_size': len(self.buggy_impls_stderr),
+        }
+        self.assertEqual(expected, response.data)
 
     def do_get_output_test(self, client: APIClient, user, fdbk_category,
                            expected_status, expected_output, base_url):
@@ -273,6 +294,9 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             self.assertEqual(expected_output,
                              ''.join((chunk.decode() for chunk in response.streaming_content)))
 
-        self.fail('output size')
-        # Output size endpoint
-        url = reverse('student-test-suite-result-output-size')
+    def make_output_size_url(self, fdbk_category: ag_models.FeedbackCategory):
+        url = reverse('student-suite-result-output-size',
+                      kwargs={'pk': self.submission.pk,
+                              'result_pk': self.student_suite_result.pk})
+        url += f'?feedback_category={fdbk_category.value}'
+        return url

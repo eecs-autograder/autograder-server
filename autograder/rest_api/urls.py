@@ -270,4 +270,8 @@ urlpatterns = [
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/grade_buggy_impls_stderr/',  # noqa
          views.StudentTestSuiteResultGradeBuggyImplsStderrView.as_view(),
          name='student-suite-grade-buggy-impls-stderr'),
+
+    path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/output_size/',
+         views.StudentTestSuiteOutputSizeView.as_view(),
+         name='student-suite-result-output-size'),
 ]
