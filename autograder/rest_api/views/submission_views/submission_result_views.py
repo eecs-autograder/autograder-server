@@ -234,6 +234,36 @@ class AGTestCommandResultStderrView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.stderr)
 
 
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(
+        manual_parameters=[_fdbk_category_param_docs],
+        responses={'200': Schema(
+            type='object',
+            properties={
+                'stdout_size': Parameter('stdout_size', 'body', type='Optional[int]'),
+                'stderr_size': Parameter('stderr_size', 'body', type='Optional[int]'),
+                'stdout_diff_size': Parameter('stdout_diff_size', 'body', type='Optional[int]'),
+                'stderr_diff_size': Parameter('stderr_diff_size', 'body', type='Optional[int]'),
+            }
+        )}
+    )
+)
+class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
+                       fdbk_category: ag_models.FeedbackCategory):
+        cmd_result_pk = self.kwargs['result_pk']
+        cmd_fdbk = _find_ag_test_cmd_result(submission_fdbk, cmd_result_pk)
+        if cmd_fdbk is None:
+            return response.Response(None)
+        return response.Response({
+            'stdout_size': cmd_fdbk.get_stdout_size(),
+            'stderr_size': cmd_fdbk.get_stderr_size(),
+            'stdout_diff_size': cmd_fdbk.get_stdout_diff_size(),
+            'stderr_diff_size': cmd_fdbk.get_stderr_diff_size(),
+        })
+
+
 GetCmdOutputFnType = Callable[
     [AGTestCommandResultFeedback], Optional[BinaryIO]]
 
@@ -440,6 +470,52 @@ class StudentTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase)
             fdbk_category,
             student_suite_result_pk,
             lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stderr)
+
+
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(
+        manual_parameters=[_fdbk_category_param_docs],
+        responses={'200': Schema(
+            type='object',
+            properties={
+                'setup_stdout_size': Parameter('setup_stdout_size', 'body', type='Optional[int]'),
+                'setup_stderr_size': Parameter('setup_stderr_size', 'body', type='Optional[int]'),
+                'get_student_test_names_stdout_size': Parameter(
+                    'get_student_test_names_stdout_size', 'body', type='Optional[int]'),
+                'get_student_test_names_stderr_size': Parameter(
+                    'get_student_test_names_stderr_size', 'body', type='Optional[int]'),
+                'validity_check_stdout_size': Parameter(
+                    'validity_check_stdout_size', 'body', type='Optional[int]'),
+                'validity_check_stderr_size': Parameter(
+                    'validity_check_stderr_size', 'body', type='Optional[int]'),
+                'grade_buggy_impls_stdout_size': Parameter(
+                    'grade_buggy_impls_stdout_size', 'body', type='Optional[int]'),
+                'grade_buggy_impls_stderr_size': Parameter(
+                    'grade_buggy_impls_stderr_size', 'body', type='Optional[int]'),
+            }
+        )}
+    )
+)
+class StudentTestSuiteOutputSizeView(SubmissionResultsViewBase):
+    def _make_response(self, submission_fdbk: SubmissionResultFeedback,
+                       fdbk_category: ag_models.FeedbackCategory):
+        student_suite_result_pk = self.kwargs['result_pk']
+        result = _find_student_suite_result(submission_fdbk, student_suite_result_pk)
+        if result is None:
+            return response.Response(None)
+
+        fdbk = result.get_fdbk(fdbk_category)
+        return response.Response({
+            'setup_stdout_size': fdbk.get_setup_stdout_size(),
+            'setup_stderr_size': fdbk.get_setup_stderr_size(),
+            'get_student_test_names_stdout_size': fdbk.get_student_test_names_stdout_size(),
+            'get_student_test_names_stderr_size': fdbk.get_student_test_names_stderr_size(),
+            'validity_check_stdout_size': fdbk.get_validity_check_stdout_size(),
+            'validity_check_stderr_size': fdbk.get_validity_check_stderr_size(),
+            'grade_buggy_impls_stdout_size': fdbk.get_grade_buggy_impls_stdout_size(),
+            'grade_buggy_impls_stderr_size': fdbk.get_grade_buggy_impls_stderr_size(),
+        })
 
 
 GetStudentSuiteOutputFnType = Callable[

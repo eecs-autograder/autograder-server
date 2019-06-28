@@ -232,6 +232,8 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
                 self.client, self.admin, ag_models.FeedbackCategory.staff_viewer,
                 status.HTTP_200_OK, None, url)
 
+        self.fail('output size')
+
     def test_get_output_suite_not_found(self):
         url_lookups = [
             'student-suite-setup-stdout',
@@ -249,6 +251,8 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             self.do_get_output_test(
                 self.client, self.admin, ag_models.FeedbackCategory.max,
                 status.HTTP_404_NOT_FOUND, None, url_with_bad_pk)
+
+        self.fail('output size')
 
     def do_get_output_test(self, client: APIClient, user, fdbk_category,
                            expected_status, expected_output, base_url):
@@ -269,5 +273,6 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
             self.assertEqual(expected_output,
                              ''.join((chunk.decode() for chunk in response.streaming_content)))
 
-    def do_get_output_size_test(self):
-        self.fail()
+        self.fail('output size')
+        # Output size endpoint
+        url = reverse('student-test-suite-result-output-size')

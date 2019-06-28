@@ -48,6 +48,7 @@ from .submission_views.submission_result_views import (
     AGTestCommandResultStderrView,
     AGTestCommandResultStdoutDiffView,
     AGTestCommandResultStderrDiffView,
+    AGTestCommandResultOutputSizeView,
 
     StudentTestSuiteResultSetupStdoutView,
     StudentTestSuiteResultSetupStderrView,

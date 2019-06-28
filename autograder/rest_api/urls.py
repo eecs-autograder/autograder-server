@@ -239,6 +239,9 @@ urlpatterns = [
     path('submissions/<int:pk>/ag_test_cmd_results/<int:result_pk>/stderr_diff/',
          views.AGTestCommandResultStderrDiffView.as_view(),
          name='ag-test-cmd-result-stderr-diff'),
+    path('submissions/<int:pk>/ag_test_cmd_results/<int:result_pk>/output_size/',
+         views.AGTestCommandResultOutputSizeView.as_view(),
+         name='ag-test-cmd-result-output-size'),
 
     path('submissions/<int:pk>/student_test_suite_results/<int:result_pk>/setup_stdout/',
          views.StudentTestSuiteResultSetupStdoutView.as_view(),
