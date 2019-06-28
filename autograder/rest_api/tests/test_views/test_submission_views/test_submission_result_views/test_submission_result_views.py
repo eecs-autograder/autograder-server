@@ -49,24 +49,7 @@ class _FeedbackTestsBase(UnitTestBase):
         )
         self.ag_test_case = self.ag_test_cmd.ag_test_case
         self.ag_test_suite = self.ag_test_case.ag_test_suite
-        # self.ag_test_suite.validate_and_update(
-        #     normal_fdbk_config={
-        #         'show_setup_stdout': True,
-        #         'show_setup_stderr': True,
-        #     },
-        #     past_limit_submission_fdbk_config={
-        #         'show_setup_stdout': True,
-        #         'show_setup_stderr': False,
-        #     },
-        #     ultimate_submission_fdbk_config={
-        #         'show_setup_stdout': False,
-        #         'show_setup_stderr': True,
-        #     },
-        #     staff_viewer_fdbk_config={
-        #         'show_setup_stdout': False,
-        #         'show_setup_stderr': False,
-        #     },
-        # )
+
         self.project = self.ag_test_suite.project
         self.project.validate_and_update(
             visible_to_students=True,
