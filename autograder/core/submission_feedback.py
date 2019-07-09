@@ -1,3 +1,4 @@
+import os
 import tempfile
 from decimal import Decimal
 from typing import Dict, List, Sequence, Iterable, BinaryIO, Optional, Union
@@ -460,12 +461,24 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
         return self._ag_test_suite_result.open_setup_stdout()
 
+    def get_setup_stdout_size(self) -> Optional[int]:
+        if not self._fdbk.show_setup_stderr:
+            return None
+
+        return os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
+
     @property
     def setup_stderr(self) -> Optional[BinaryIO]:
         if not self._fdbk.show_setup_stderr:
             return None
 
         return self._ag_test_suite_result.open_setup_stderr()
+
+    def get_setup_stderr_size(self) -> Optional[int]:
+        if not self._fdbk.show_setup_stderr:
+            return None
+
+        return os.path.getsize(self._ag_test_suite_result.setup_stderr_filename)
 
     @property
     def _show_setup_names(self):
@@ -772,11 +785,21 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def stdout(self) -> Optional[BinaryIO]:
-        if (self._fdbk.show_actual_stdout
-                or self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual):
+        if self._show_actual_stdout:
             return open(self._ag_test_command_result.stdout_filename, 'rb')
 
         return None
+
+    def get_stdout_size(self) -> Optional[int]:
+        if self._show_actual_stdout:
+            return os.path.getsize(self._ag_test_command_result.stdout_filename)
+
+        return None
+
+    @property
+    def _show_actual_stdout(self) -> bool:
+        return (self._fdbk.show_actual_stdout
+                or self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual)
 
     @property
     def stdout_diff(self) -> Optional[core_ut.DiffResult]:
@@ -807,6 +830,13 @@ class AGTestCommandResultFeedback(ToDictMixin):
             raise ValueError(
                 'Invalid expected stdout source: {}'.format(self._cmd.expected_stdout_source))
 
+    def get_stdout_diff_size(self) -> Optional[int]:
+        diff = self.stdout_diff
+        if diff is None:
+            return None
+
+        return sum((len(line) for line in diff.diff_content))
+
     @property
     def stdout_points(self) -> int:
         if self.stdout_correct is None:
@@ -834,11 +864,20 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def stderr(self) -> Optional[BinaryIO]:
-        if (self._fdbk.show_actual_stderr
-                or self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual):
+        if self._show_actual_stderr():
             return open(self._ag_test_command_result.stderr_filename, 'rb')
 
         return None
+
+    def get_stderr_size(self) -> Optional[int]:
+        if self._show_actual_stderr():
+            return os.path.getsize(self._ag_test_command_result.stderr_filename)
+
+        return None
+
+    def _show_actual_stderr(self):
+        return (self._fdbk.show_actual_stderr
+                or self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual)
 
     @property
     def stderr_diff(self) -> Optional[core_ut.DiffResult]:
@@ -867,6 +906,13 @@ class AGTestCommandResultFeedback(ToDictMixin):
         else:
             raise ValueError(
                 'Invalid expected stderr source: {}'.format(self._cmd.expected_stdout_source))
+
+    def get_stderr_diff_size(self) -> Optional[int]:
+        diff = self.stderr_diff
+        if diff is None:
+            return None
+
+        return sum((len(line) for line in diff.diff_content))
 
     @property
     def stderr_points(self) -> int:

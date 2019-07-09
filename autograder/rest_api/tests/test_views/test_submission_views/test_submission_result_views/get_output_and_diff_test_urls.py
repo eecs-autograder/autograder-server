@@ -1,5 +1,6 @@
 from django.http import QueryDict
 from django.urls import reverse
+from typing import Union
 
 import autograder.core.models as ag_models
 
@@ -24,6 +25,16 @@ def get_output_and_diff_test_urls(submission: ag_models.Submission,
         result.append((url, field_name))
 
     return result
+
+
+def make_result_output_url(url_name: str,
+                           submission: ag_models.Submission,
+                           result: Union[ag_models.AGTestCommandResult,
+                                         ag_models.AGTestSuiteResult,
+                                         ag_models.StudentTestSuiteResult],
+                           fdbk_category: ag_models.FeedbackCategory):
+    url_kwargs = {'pk': submission.pk, 'result_pk': result.pk}
+    return reverse(url_name, kwargs=url_kwargs) + f'?feedback_category={fdbk_category.value}'
 
 
 _OUTPUT_AND_DIFF_FIELDS_TO_URL_LOOKUPS = {

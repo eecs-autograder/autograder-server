@@ -43,10 +43,12 @@ from .submission_views.submission_result_views import (
     SubmissionResultsView,
     AGTestSuiteResultsStdoutView,
     AGTestSuiteResultsStderrView,
+    AGTestSuiteResultsOutputSizeView,
     AGTestCommandResultStdoutView,
     AGTestCommandResultStderrView,
     AGTestCommandResultStdoutDiffView,
     AGTestCommandResultStderrDiffView,
+    AGTestCommandResultOutputSizeView,
 
     StudentTestSuiteResultSetupStdoutView,
     StudentTestSuiteResultSetupStderrView,
@@ -56,6 +58,7 @@ from .submission_views.submission_result_views import (
     StudentTestSuiteResultValidityCheckStderrView,
     StudentTestSuiteResultGradeBuggyImplsStdoutView,
     StudentTestSuiteResultGradeBuggyImplsStderrView,
+    StudentTestSuiteOutputSizeView,
 )
 
 from .user_views import UserViewSet, CurrentUserCanCreateCoursesView, UserLateDaysView

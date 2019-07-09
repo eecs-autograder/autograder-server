@@ -73,11 +73,11 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             points_per_exposed_bug=self.points_per_exposed_bug,
         )  # type: ag_models.StudentTestSuite
 
-        self.setup_stdout = 'adskfja;slekjaf'
+        self.setup_stdout = 'adskfja;nrstslekjaf'
         self.setup_stderr = 'amnak;sdjvaie'
         self.validity_check_stdout = 'aasdf'
-        self.validity_check_stderr = 'lkjll'
-        self.grade_buggy_impls_stdout = 'aoewij'
+        self.validity_check_stderr = 'lknrstjll'
+        self.grade_buggy_impls_stdout = 'aoenrstnrtsnwij'
         self.grade_buggy_impls_stderr = 'cvasdop;f'
 
         self.setup_result = ag_models.AGCommandResult.objects.validate_and_create(
@@ -280,19 +280,23 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.student_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': True})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(self.setup_stdout, fdbk.setup_stdout.read().decode())
+        self.assertEqual(len(self.setup_stdout), fdbk.get_setup_stdout_size())
 
         self.student_suite.validate_and_update(normal_fdbk_config={'show_setup_stdout': False})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_stdout)
+        self.assertIsNone(fdbk.get_setup_stdout_size())
 
     def test_show_and_hide_setup_stderr(self):
         self.student_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': True})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(self.setup_stderr, fdbk.setup_stderr.read().decode())
+        self.assertEqual(len(self.setup_stderr), fdbk.get_setup_stderr_size())
 
         self.student_suite.validate_and_update(normal_fdbk_config={'show_setup_stderr': False})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_stderr)
+        self.assertIsNone(fdbk.get_setup_stderr_size())
 
     def test_show_setup_stdout_and_stderr_with_setup_result_but_no_setup_cmd(self):
         self.student_suite.validate_and_update(use_setup_command=False)
@@ -300,7 +304,9 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
             normal_fdbk_config={'show_setup_stdout': True, 'show_setup_stderr': True})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(self.setup_stdout, fdbk.setup_stdout.read().decode())
+        self.assertEqual(len(self.setup_stdout), fdbk.get_setup_stdout_size())
         self.assertEqual(self.setup_stderr, fdbk.setup_stderr.read().decode())
+        self.assertEqual(len(self.setup_stderr), fdbk.get_setup_stderr_size())
 
     def test_show_setup_stdout_and_stderr_with_setup_cmd_but_no_setup_result(self):
         self.assertIsNotNone(self.student_suite.setup_command)
@@ -311,7 +317,9 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         self.result.save()
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.setup_stdout)
+        self.assertIsNone(fdbk.get_setup_stderr_size())
         self.assertIsNone(fdbk.setup_stderr)
+        self.assertIsNone(fdbk.get_setup_stderr_size())
 
     def test_show_and_hide_get_test_names_return_code(self):
         self.student_suite.validate_and_update(
@@ -335,11 +343,14 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(self.get_test_names_stdout,
                          fdbk.get_student_test_names_stdout.read().decode())
+        self.assertEqual(len(self.get_test_names_stdout),
+                         fdbk.get_student_test_names_stdout_size())
 
         self.student_suite.validate_and_update(
             normal_fdbk_config={'show_get_test_names_stdout': False})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.get_student_test_names_stdout)
+        self.assertIsNone(fdbk.get_student_test_names_stdout_size())
 
     def test_show_and_hide_get_test_names_stderr(self):
         self.student_suite.validate_and_update(
@@ -347,33 +358,40 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(self.get_test_names_stderr,
                          fdbk.get_student_test_names_stderr.read().decode())
+        self.assertEqual(len(self.get_test_names_stderr),
+                         fdbk.get_student_test_names_stderr_size())
 
         self.student_suite.validate_and_update(
             normal_fdbk_config={'show_get_test_names_stderr': False})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.get_student_test_names_stderr)
+        self.assertIsNone(fdbk.get_student_test_names_stderr_size())
 
     def test_show_and_hide_validity_check_stdout(self):
         self.student_suite.validate_and_update(
             normal_fdbk_config={'show_validity_check_stdout': True})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(self.validity_check_stdout, fdbk.validity_check_stdout.read().decode())
+        self.assertEqual(len(self.validity_check_stdout), fdbk.get_validity_check_stdout_size())
 
         self.student_suite.validate_and_update(
             normal_fdbk_config={'show_validity_check_stdout': False})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.validity_check_stdout)
+        self.assertIsNone(fdbk.get_validity_check_stdout_size())
 
     def test_show_and_hide_validity_check_stderr(self):
         self.student_suite.validate_and_update(
             normal_fdbk_config={'show_validity_check_stderr': True})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(self.validity_check_stderr, fdbk.validity_check_stderr.read().decode())
+        self.assertEqual(len(self.validity_check_stderr), fdbk.get_validity_check_stderr_size())
 
         self.student_suite.validate_and_update(
             normal_fdbk_config={'show_validity_check_stderr': False})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.validity_check_stderr)
+        self.assertIsNone(fdbk.get_validity_check_stdout_size())
 
     def test_show_and_hide_grade_impl_stdout(self):
         self.student_suite.validate_and_update(
@@ -381,11 +399,14 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(self.grade_buggy_impls_stdout,
                          fdbk.grade_buggy_impls_stdout.read().decode())
+        self.assertEqual(len(self.grade_buggy_impls_stdout),
+                         fdbk.get_grade_buggy_impls_stdout_size())
 
         self.student_suite.validate_and_update(
             normal_fdbk_config={'show_grade_buggy_impls_stdout': False})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.grade_buggy_impls_stdout)
+        self.assertIsNone(fdbk.get_grade_buggy_impls_stdout_size())
 
     def test_show_and_hide_grade_impl_stderr(self):
         self.student_suite.validate_and_update(
@@ -393,11 +414,14 @@ class StudentTestSuiteResultFeedbackTestCase(UnitTestBase):
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertEqual(self.grade_buggy_impls_stderr,
                          fdbk.grade_buggy_impls_stderr.read().decode())
+        self.assertEqual(len(self.grade_buggy_impls_stderr),
+                         fdbk.get_grade_buggy_impls_stderr_size())
 
         self.student_suite.validate_and_update(
             normal_fdbk_config={'show_grade_buggy_impls_stderr': False})
         fdbk = self.result.get_fdbk(ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.grade_buggy_impls_stderr)
+        self.assertIsNone(fdbk.get_grade_buggy_impls_stderr_size())
 
     def test_show_and_hide_invalid_and_timed_out_test_names(self):
         self.student_suite.validate_and_update(

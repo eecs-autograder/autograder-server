@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
+from typing import Optional, BinaryIO
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
@@ -16,7 +17,7 @@ from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import
     get_cmd_fdbk, get_submission_fdbk)
 from autograder.utils.testing import UnitTestBase
 
-from .get_output_and_diff_test_urls import get_output_and_diff_test_urls
+from .get_output_and_diff_test_urls import get_output_and_diff_test_urls, make_result_output_url
 
 
 class _FeedbackTestsBase(UnitTestBase):
@@ -48,6 +49,7 @@ class _FeedbackTestsBase(UnitTestBase):
         )
         self.ag_test_case = self.ag_test_cmd.ag_test_case
         self.ag_test_suite = self.ag_test_case.ag_test_suite
+
         self.project = self.ag_test_suite.project
         self.project.validate_and_update(
             visible_to_students=True,
@@ -85,22 +87,54 @@ class _FeedbackTestsBase(UnitTestBase):
                                     submission: ag_models.Submission,
                                     cmd_result: ag_models.AGTestCommandResult,
                                     fdbk_category: ag_models.FeedbackCategory):
-        urls_and_field_names = get_output_and_diff_test_urls(
-            submission, cmd_result, fdbk_category)
-        for url, field_name in urls_and_field_names:
-            response = client.get(url)
-            self.assertEqual(status.HTTP_200_OK, response.status_code)
-            expected = getattr(get_cmd_fdbk(cmd_result, fdbk_category), field_name)
-            if isinstance(expected, core_ut.DiffResult):
-                actual = ('' if response.content == b''
-                          else json.loads(response.content.decode('utf-8')))
-                self.assertEqual(expected.diff_content, actual)
-            else:
-                if not isinstance(response, FileResponse):
-                    self.assertIsNone(response.data)
-                else:
-                    self.assertEqual(
-                        expected.read(), b''.join((chunk for chunk in response.streaming_content)))
+        cmd_fdbk = get_cmd_fdbk(cmd_result, fdbk_category)
+
+        stdout_url = make_result_output_url(
+            'ag-test-cmd-result-stdout', submission, cmd_result, fdbk_category)
+        stderr_url = make_result_output_url(
+            'ag-test-cmd-result-stderr', submission, cmd_result, fdbk_category)
+
+        self.do_get_output_test(client, stdout_url, cmd_fdbk.stdout)
+        self.do_get_output_test(client, stderr_url, cmd_fdbk.stderr)
+
+        stdout_diff_url = make_result_output_url(
+            'ag-test-cmd-result-stdout-diff', submission, cmd_result, fdbk_category)
+        stderr_diff_url = make_result_output_url(
+            'ag-test-cmd-result-stderr-diff', submission, cmd_result, fdbk_category)
+
+        self.do_get_diff_test(client, stdout_diff_url, cmd_fdbk.stdout_diff)
+        self.do_get_diff_test(client, stderr_diff_url, cmd_fdbk.stderr_diff)
+
+        cmd_output_size_url = make_result_output_url(
+            'ag-test-cmd-result-output-size', submission, cmd_result, fdbk_category)
+        response = client.get(cmd_output_size_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        expected = {
+            'stdout_size': cmd_fdbk.get_stdout_size(),
+            'stderr_size': cmd_fdbk.get_stderr_size(),
+            'stdout_diff_size': cmd_fdbk.get_stdout_diff_size(),
+            'stderr_diff_size': cmd_fdbk.get_stderr_diff_size(),
+        }
+        self.assertEqual(expected, response.data)
+
+    def do_get_output_test(self, client, url, expected: Optional[BinaryIO]):
+        response = client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        if expected is None:
+            self.assertIsNone(response.data)
+        else:
+            self.assertEqual(
+                expected.read(), b''.join((chunk for chunk in response.streaming_content)))
+
+    def do_get_diff_test(self, client, url, expected: Optional[core_ut.DiffResult]):
+        response = client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        if expected is None:
+            self.assertIsNone(response.data)
+        else:
+            actual = ('' if response.content == b''
+                      else json.loads(response.content.decode('utf-8')))
+            self.assertEqual(expected.diff_content, actual)
 
     def do_get_output_and_diff_permission_denied_test(self, client,
                                                       submission: ag_models.Submission,
@@ -111,6 +145,11 @@ class _FeedbackTestsBase(UnitTestBase):
         for url, field_name in urls_and_field_names:
             response = client.get(url)
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        cmd_output_size_url = make_result_output_url(
+            'ag-test-cmd-result-output-size', submission, cmd_result, fdbk_category)
+        response = client.get(cmd_output_size_url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
 class NormalSubmissionFeedbackTestCase(_FeedbackTestsBase):
@@ -262,11 +301,15 @@ class PastLimitSubmissionFeedbackTestCase(_FeedbackTestsBase):
         self.past_limit_submission_result = obj_build.make_incorrect_ag_test_command_result(
             self.ag_test_cmd, submission=self.student_group_past_limit_submission)
 
+        self.student_group_past_limit_submission = update_denormalized_ag_test_results(
+            self.student_group_past_limit_submission.pk)
+
     def test_student_get_own_past_limit_submission_past_limit_fdbk(self):
         self.client.force_authenticate(self.student1)
         self.do_get_fdbk_test(self.client, self.student_group_past_limit_submission,
                               ag_models.FeedbackCategory.past_limit_submission)
 
+        # print(self.past_limit_submission_result.ag_test_case.ag_test_suite)
         self.do_get_output_and_diff_test(self.client, self.student_group_past_limit_submission,
                                          self.past_limit_submission_result,
                                          ag_models.FeedbackCategory.past_limit_submission)

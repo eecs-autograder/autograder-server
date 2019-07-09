@@ -178,6 +178,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         fdbk = get_cmd_fdbk(correct_cmd_result, ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_diff)
+        self.assertIsNone(fdbk.get_stdout_diff_size())
         self.assertEqual(_stdout_text(correct_cmd_result), _stdout_text(fdbk))
         self.assertEqual(0, fdbk.stdout_points)
         self.assertEqual(0, fdbk.stdout_points_possible)
@@ -209,6 +210,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         fdbk = get_cmd_fdbk(correct_cmd_result, ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
+        self.assertIsNone(fdbk.get_stderr_diff_size())
         self.assertEqual(_stderr_text(correct_cmd_result), _stderr_text(fdbk))
         self.assertEqual(0, fdbk.stderr_points)
         self.assertEqual(0, fdbk.stderr_points_possible)
@@ -403,6 +405,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         fdbk = get_cmd_fdbk(correct_result, ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_diff)
+        self.assertIsNone(fdbk.get_stdout_diff_size())
         self.assertEqual(0, fdbk.stdout_points)
         self.assertEqual(0, fdbk.stdout_points_possible)
 
@@ -412,6 +415,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         fdbk = get_cmd_fdbk(incorrect_result, ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_diff)
+        self.assertIsNone(fdbk.get_stdout_diff_size())
         self.assertEqual(0, fdbk.stdout_points)
         self.assertEqual(0, fdbk.stdout_points_possible)
 
@@ -426,6 +430,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         fdbk = get_cmd_fdbk(correct_result, ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.stdout_correct)
         self.assertIsNone(fdbk.stdout_diff)
+        self.assertIsNone(fdbk.get_stdout_diff_size())
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
                          fdbk.stdout_points)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
@@ -453,6 +458,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertTrue(fdbk.stdout_correct)
         diff = _get_expected_diff(self.ag_test_command.expected_stdout_text,
                                   correct_result.stdout_filename)
+        self.assertEqual(self._compute_diff_size(diff), fdbk.get_stdout_diff_size())
         self.assertEqual(diff.diff_content, fdbk.stdout_diff.diff_content)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
                          fdbk.stdout_points)
@@ -466,11 +472,15 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertFalse(fdbk.stdout_correct)
         diff = _get_expected_diff(self.ag_test_command.expected_stdout_text,
                                   incorrect_result.stdout_filename)
+        self.assertEqual(self._compute_diff_size(diff), fdbk.get_stdout_diff_size())
         self.assertEqual(diff.diff_content, fdbk.stdout_diff.diff_content)
         self.assertEqual(self.ag_test_command.deduction_for_wrong_stdout,
                          fdbk.stdout_points)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
                          fdbk.stdout_points_possible)
+
+    def _compute_diff_size(self, diff: core_ut.DiffResult) -> int:
+        return sum((len(line) for line in diff.diff_content))
 
     def test_stdout_correctness_show_diff_from_file(self):
         instructor_file = obj_build.make_instructor_file(self.project)
@@ -485,16 +495,16 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result.stdout = expected_stdout
         result.save()
         diff = _get_expected_diff(expected_stdout, result.stdout_filename)
-        self.assertEqual(
-            diff.diff_content,
-            get_cmd_fdbk(result, ag_models.FeedbackCategory.normal).stdout_diff.diff_content)
+        fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
+        self.assertEqual(self._compute_diff_size(diff), fdbk.get_stdout_diff_size())
+        self.assertEqual(diff.diff_content, fdbk.stdout_diff.diff_content)
 
         result.stdout = 'the wrong stdout'
         result.save()
         diff = _get_expected_diff(expected_stdout, result.stdout_filename)
-        self.assertEqual(
-            diff.diff_content,
-            get_cmd_fdbk(result, ag_models.FeedbackCategory.normal).stdout_diff.diff_content)
+        fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
+        self.assertEqual(self._compute_diff_size(diff), fdbk.get_stdout_diff_size())
+        self.assertEqual(diff.diff_content, fdbk.stdout_diff.diff_content)
 
     def test_stdout_show_actual(self):
         self.ag_test_command.validate_and_update(
@@ -506,6 +516,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result = self.make_correct_result()
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
+        self.assertEqual(len(_stdout_text(result)), fdbk.get_stdout_size())
         self.assertEqual(_stdout_text(result), _stdout_text(fdbk))
         self.assertIsNone(fdbk.stdout_correct)
         self.assertEqual(0, fdbk.stdout_points)
@@ -521,8 +532,10 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result = self.make_correct_result()
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
+        self.assertIsNone(fdbk.get_stdout_size())
         self.assertIsNone(fdbk.stdout)
         self.assertTrue(fdbk.stdout_correct)
+        self.assertIsNone(fdbk.get_stdout_diff_size())
         self.assertIsNone(fdbk.stdout_diff)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
                          fdbk.stdout_points)
@@ -539,7 +552,9 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result = self.make_correct_result()
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
+        self.assertIsNotNone(fdbk.get_stdout_diff_size())
         self.assertIsNotNone(fdbk.stdout_diff)
+        self.assertIsNotNone(fdbk.get_stdout_size())
         self.assertIsNotNone(fdbk.stdout)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
                          fdbk.stdout_points)
@@ -553,6 +568,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         correct_result = self.make_correct_result()
         fdbk = get_cmd_fdbk(correct_result, ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.stderr_correct)
+        self.assertIsNone(fdbk.get_stderr_diff_size())
         self.assertIsNone(fdbk.stderr_diff)
         self.assertEqual(0, fdbk.stderr_points)
         self.assertEqual(0, fdbk.stderr_points_possible)
@@ -562,6 +578,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         incorrect_result = self.make_incorrect_result()
         fdbk = get_cmd_fdbk(incorrect_result, ag_models.FeedbackCategory.normal)
         self.assertIsNone(fdbk.stderr_correct)
+        self.assertIsNone(fdbk.get_stderr_diff_size())
         self.assertIsNone(fdbk.stderr_diff)
         self.assertEqual(0, fdbk.stderr_points)
         self.assertEqual(0, fdbk.stderr_points_possible)
@@ -577,6 +594,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         fdbk = get_cmd_fdbk(correct_result, ag_models.FeedbackCategory.normal)
         self.assertTrue(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
+        self.assertIsNone(fdbk.get_stderr_diff_size())
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
                          fdbk.stderr_points)
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
@@ -604,6 +622,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertTrue(fdbk.stderr_correct)
         diff = _get_expected_diff(self.ag_test_command.expected_stderr_text,
                                   correct_result.stderr_filename)
+        self.assertEqual(self._compute_diff_size(diff), fdbk.get_stderr_diff_size())
         self.assertEqual(diff.diff_content, fdbk.stderr_diff.diff_content)
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
                          fdbk.stderr_points)
@@ -617,6 +636,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertFalse(fdbk.stderr_correct)
         diff = _get_expected_diff(self.ag_test_command.expected_stderr_text,
                                   incorrect_result.stderr_filename)
+        self.assertEqual(self._compute_diff_size(diff), fdbk.get_stderr_diff_size())
         self.assertEqual(diff.diff_content, fdbk.stderr_diff.diff_content)
         self.assertEqual(self.ag_test_command.deduction_for_wrong_stderr,
                          fdbk.stderr_points)
@@ -636,16 +656,16 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result.stderr = expected_stderr
         result.save()
         diff = _get_expected_diff(expected_stderr, result.stderr_filename)
-        self.assertEqual(
-            diff.diff_content,
-            get_cmd_fdbk(result, ag_models.FeedbackCategory.normal).stderr_diff.diff_content)
+        fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
+        self.assertEqual(self._compute_diff_size(diff), fdbk.get_stderr_diff_size())
+        self.assertEqual(diff.diff_content, fdbk.stderr_diff.diff_content)
 
         result.stderr = 'the wrong stderr'
         result.save()
         diff = _get_expected_diff(expected_stderr, result.stderr_filename)
-        self.assertEqual(
-            diff.diff_content,
-            get_cmd_fdbk(result, ag_models.FeedbackCategory.normal).stderr_diff.diff_content)
+        fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
+        self.assertEqual(self._compute_diff_size(diff), fdbk.get_stderr_diff_size())
+        self.assertEqual(diff.diff_content, fdbk.stderr_diff.diff_content)
 
     def test_stderr_show_actual(self):
         self.ag_test_command.validate_and_update(
@@ -657,6 +677,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         result = self.make_correct_result()
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
+        self.assertEqual(len(_stderr_text(result)), fdbk.get_stderr_size())
         self.assertEqual(_stderr_text(result), _stderr_text(fdbk))
         self.assertIsNone(fdbk.stderr_correct)
         self.assertEqual(0, fdbk.stderr_points)
@@ -673,8 +694,10 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
         self.assertIsNone(fdbk.stderr)
+        self.assertIsNone(fdbk.get_stderr_size())
         self.assertTrue(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
+        self.assertIsNone(fdbk.get_stderr_diff_size())
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
                          fdbk.stderr_points)
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
@@ -691,7 +714,9 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
         self.assertIsNotNone(fdbk.stderr_diff)
+        self.assertIsNotNone(fdbk.get_stderr_diff_size())
         self.assertIsNotNone(fdbk.stderr)
+        self.assertIsNotNone(fdbk.get_stderr_size())
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
                          fdbk.stderr_points)
 
@@ -840,10 +865,10 @@ def _stdout_text(result_or_fdbk: Union[ag_models.AGTestCommandResult,
 def _stderr_text(result_or_fdbk: Union[ag_models.AGTestCommandResult,
                                        AGTestCommandResultFeedback]) -> str:
     if isinstance(result_or_fdbk, ag_models.AGTestCommandResult):
-        with open(result_or_fdbk.stdout_filename) as f:
+        with open(result_or_fdbk.stderr_filename) as f:
             return f.read()
     elif isinstance(result_or_fdbk, AGTestCommandResultFeedback):
-        return result_or_fdbk.stdout.read().decode()
+        return result_or_fdbk.stderr.read().decode()
 
 
 def _write_stdout(result, stdout):

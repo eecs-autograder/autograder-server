@@ -12,7 +12,12 @@ from autograder.core.submission_feedback import update_denormalized_ag_test_resu
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import get_suite_fdbk
 from autograder.utils.testing import UnitTestBase
 
-from .get_output_and_diff_test_urls import get_output_and_diff_test_urls
+from .get_output_and_diff_test_urls import get_output_and_diff_test_urls, make_result_output_url
+
+
+# Note: Tests that involve requesting different feedback levels and
+# making sure the right data is returned are largely handled by
+# test_submission_result_views.py
 
 
 class _SetUp(UnitTestBase):
@@ -106,44 +111,61 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
         suite_result_pk = suite_result.pk
         self.ag_test_suite.delete()
 
+        url_kwargs = {
+            'pk': self.staff_submission.pk,
+            'result_pk': suite_result_pk
+        }
+
+        url_query_str = f'?feedback_category={ag_models.FeedbackCategory.max.value}'
+
         for field_name, url_lookup in zip(field_names, url_lookups):
-            url_kwargs = {
-                'pk': self.staff_submission.pk,
-                'result_pk': suite_result_pk}
-            url = (reverse(url_lookup, kwargs=url_kwargs)
-                   + f'?feedback_category={ag_models.FeedbackCategory.max.value}')
+            url = reverse(url_lookup, kwargs=url_kwargs) + url_query_str
             response = self.client.get(url)
             self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
-    def _do_suite_result_output_test(self, client, submission, suite_result, fdbk_category,
-                                     expect_404=False):
+        url = reverse('ag-test-suite-result-output-size', kwargs=url_kwargs) + url_query_str
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+    def _do_suite_result_output_test(self, client, submission, suite_result, fdbk_category):
         with suite_result.open_setup_stdout('w') as f:
             f.write('adkjfaksdjf;akjsdf;')
         with suite_result.open_setup_stderr('w') as f:
             f.write('qewiruqpewpuir')
+
+        fdbk = get_suite_fdbk(suite_result, fdbk_category)
 
         field_names = ['setup_stdout', 'setup_stderr']
         url_lookups = [
             'ag-test-suite-result-stdout',
             'ag-test-suite-result-stderr'
         ]
+        url_kwargs = {'pk': submission.pk, 'result_pk': suite_result.pk}
+        url_query_str = '?feedback_category={}'.format(fdbk_category.value)
         for field_name, url_lookup in zip(field_names, url_lookups):
             print(url_lookup)
-            url = (reverse(url_lookup,
-                           kwargs={'pk': submission.pk, 'result_pk': suite_result.pk})
-                   + '?feedback_category={}'.format(fdbk_category.value))
+            url = reverse(url_lookup, kwargs=url_kwargs) + url_query_str
             response = client.get(url)
-            if expect_404:
-                self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
-                continue
 
-            fdbk = get_suite_fdbk(suite_result, fdbk_category)
             expected = getattr(fdbk, field_name)
             if expected is None or not fdbk.fdbk_conf.visible:
                 self.assertIsNone(response.data)
             else:
                 self.assertEqual(expected.read(),
                                  b''.join((chunk for chunk in response.streaming_content)))
+
+        # Output size endpoint
+        url = reverse('ag-test-suite-result-output-size', kwargs=url_kwargs) + url_query_str
+        response = client.get(url)
+
+        if not fdbk.fdbk_conf.visible:
+            self.assertIsNone(response.data)
+        else:
+            expected = {
+                'setup_stdout_size': fdbk.get_setup_stdout_size(),
+                'setup_stderr_size': fdbk.get_setup_stderr_size(),
+            }
+            self.assertEqual(expected, response.data)
 
 
 class AGTestCommandOutputFeedbackTestCase(_SetUp):
@@ -216,6 +238,15 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(expected_diff, json.loads(response.content.decode('utf-8')))
 
+        # Make sure we don't get any errors requesting diff size.
+        size_url = make_result_output_url(
+            'ag-test-cmd-result-output-size',
+            self.staff_submission,
+            self.staff_result,
+            ag_models.FeedbackCategory.max)
+        response = self.client.get(size_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
     def test_cmd_result_output_or_diff_requested_cmd_doesnt_exist_404(self):
         urls_and_field_names = get_output_and_diff_test_urls(
             self.staff_submission,
@@ -229,6 +260,15 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
             response = self.client.get(url)
             self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
+        size_url = make_result_output_url(
+            'ag-test-cmd-result-output-size',
+            self.staff_submission,
+            self.staff_result,
+            ag_models.FeedbackCategory.max)
+
+        response = self.client.get(size_url)
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
     def do_get_output_and_diff_on_hidden_ag_test_test(self, client,
                                                       submission: ag_models.Submission,
                                                       cmd_result: ag_models.AGTestCommandResult,
@@ -239,3 +279,9 @@ class AGTestCommandOutputFeedbackTestCase(_SetUp):
             response = client.get(url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertIsNone(response.data)
+
+        size_url = make_result_output_url(
+            'ag-test-cmd-result-output-size', submission, cmd_result, fdbk_category)
+        response = client.get(size_url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertIsNone(response.data)
