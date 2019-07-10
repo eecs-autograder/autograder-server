@@ -128,10 +128,13 @@ class ImportHandgradingRubricView(AGModelAPIView):
         import_from_project = get_object_or_404(
             ag_models.Project.objects, pk=kwargs['import_from_project_pk'])
 
-        if project.course != import_from_project.course:
+        if not import_from_project.course.is_admin(self.request.user):
+            return response.Response(status=status.HTTP_403_FORBIDDEN)
+
+        if not hasattr(import_from_project, 'handgrading_rubric'):
             return response.Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data='Cannot import a handgrading rubric from another course.')
+                data=f'The project "{import_from_project.name}" has no handgrading rubric')
 
         import_handgrading_rubric(import_to=project, import_from=import_from_project)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
