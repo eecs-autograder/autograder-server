@@ -213,6 +213,13 @@ class Project(AutograderModel):
                     {'soft_closing_time': (
                         'Soft closing time must be before hard closing time')})
 
+    @property
+    def has_handgrading_rubric(self) -> bool:
+        """
+        Whether this project has a handgrading rubric.
+        """
+        return hasattr(self, 'handgrading_rubric')
+
     def to_dict(self):
         result = super().to_dict()
         result['submission_limit_reset_timezone'] = (
@@ -250,6 +257,8 @@ class Project(AutograderModel):
 
         'instructor_files',
         'expected_student_files',
+
+        'has_handgrading_rubric',
     )
 
     SERIALIZE_RELATED = (
