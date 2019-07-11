@@ -17,6 +17,8 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core.caching import clear_submission_results_cache
 from autograder.core.models.copy_project_and_course import copy_project
+import autograder.handgrading.models as hg_models
+import autograder.handgrading.serializers as hg_serializers
 from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
 from autograder.rest_api import tasks as api_tasks, transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
@@ -111,18 +113,18 @@ def on_project_created(sender, instance, created, **kwargs):
         connection=app.connection())
 
 
-class ImportHandgradingRubricView(AGModelAPIView):
+class ImportHandgradingRubricView(AGModelGenericViewSet):
     api_tags = [APITags.projects, APITags.handgrading_rubrics]
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects
 
     permission_classes = (ag_permissions.is_admin(),)
+    serializer_class = hg_serializers.HandgradingRubricSerializer
 
-    @swagger_auto_schema(responses={'204': ''})
     @handle_object_does_not_exist_404
     @transaction.atomic()
-    def post(self, *args, **kwargs):
+    def import_handgrading_rubric(self, *args, **kwargs):
         project: ag_models.Project = self.get_object()
 
         import_from_project = get_object_or_404(
@@ -137,7 +139,12 @@ class ImportHandgradingRubricView(AGModelAPIView):
                 data=f'The project "{import_from_project.name}" has no handgrading rubric')
 
         import_handgrading_rubric(import_to=project, import_from=import_from_project)
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
+        imported = hg_models.HandgradingRubric.objects.get(project=project)
+        return response.Response(status=status.HTTP_201_CREATED, data=imported.to_dict())
+
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'post': 'import_handgrading_rubric'}, **initkwargs)
 
 
 project_detail_permissions = (

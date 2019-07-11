@@ -220,7 +220,9 @@ class ImportHandgradingRubricTestCase(AGViewTestBase):
                               'import_from_project_pk': self.import_from.pk})
         self.client.force_authenticate(self.admin)
         response = self.client.post(url)
-        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.import_to.refresh_from_db()
+        self.assertEqual(self.import_to.handgrading_rubric.to_dict(), response.data)
 
         self.import_to.refresh_from_db()
 
@@ -239,7 +241,9 @@ class ImportHandgradingRubricTestCase(AGViewTestBase):
                               'import_from_project_pk': other_project.pk})
         self.client.force_authenticate(self.admin)
         response = self.client.post(url)
-        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.import_to.refresh_from_db()
+        self.assertEqual(self.import_to.handgrading_rubric.to_dict(), response.data)
 
         self.import_to.refresh_from_db()
 
@@ -249,17 +253,21 @@ class ImportHandgradingRubricTestCase(AGViewTestBase):
                             self.import_from.handgrading_rubric.pk)
 
     def test_view_calls_import_handgrading_rubric(self):
-        mock_import_rubric = mock.Mock()
-        with mock.patch('autograder.rest_api.views.project_views'
-                        '.project_views.import_handgrading_rubric',
-                        new=mock_import_rubric):
+        mock_import_rubric_path = ('autograder.rest_api.views.project_views'
+                                   '.project_views.import_handgrading_rubric')
+
+        def _create_rubric(*args, **kwargs):
+            hg_models.HandgradingRubric.objects.validate_and_create(project=self.import_to)
+
+        mock_import_rubric = mock.Mock(side_effect=_create_rubric)
+        with mock.patch(mock_import_rubric_path, new=mock_import_rubric):
             url = reverse('import-handgrading-rubric',
                           kwargs={'project_pk': self.import_to.pk,
                                   'import_from_project_pk': self.import_from.pk})
             self.client.force_authenticate(self.admin)
 
             response = self.client.post(url)
-            self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
             mock_import_rubric.assert_called_once_with(
                 import_to=self.import_to, import_from=self.import_from)
