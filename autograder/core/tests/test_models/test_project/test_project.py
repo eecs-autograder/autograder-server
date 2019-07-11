@@ -8,6 +8,7 @@ from django.utils import timezone
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
+import autograder.handgrading.models as hg_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase
 
@@ -105,6 +106,19 @@ class ProjectMiscTestCase(UnitTestBase):
         self.assertEqual(timezone.pytz.timezone(reset_timezone),
                          new_project.submission_limit_reset_timezone)
 
+    def test_has_handgrading_rubric(self):
+        project: ag_models.Project = ag_models.Project.objects.validate_and_create(
+            name=self.project_name, course=self.course)
+        self.assertFalse(project.has_handgrading_rubric)
+
+        hg_models.HandgradingRubric.objects.validate_and_create(project=project)
+        project.refresh_from_db()
+        self.assertTrue(project.has_handgrading_rubric)
+
+        project.handgrading_rubric.delete()
+        project.refresh_from_db()
+        self.assertFalse(project.has_handgrading_rubric)
+
     def test_serialize(self):
         project = ag_models.Project.objects.validate_and_create(
             name='qeiruqioewiur', course=self.course
@@ -145,6 +159,8 @@ class ProjectMiscTestCase(UnitTestBase):
 
             'instructor_files',
             'expected_student_files',
+
+            'has_handgrading_rubric',
         ]
         self.assertCountEqual(expected_keys, project_dict.keys())
         self.assertEqual('UTC', project_dict['submission_limit_reset_timezone'])
@@ -154,11 +170,16 @@ class ProjectMiscTestCase(UnitTestBase):
                                  project_dict['expected_student_files'])
 
         update_dict = copy.deepcopy(project_dict)
-        update_dict.pop('pk')
-        update_dict.pop('course')
-        update_dict.pop('last_modified')
-        update_dict.pop('instructor_files')
-        update_dict.pop('expected_student_files')
+        non_editable = [
+            'pk',
+            'course',
+            'last_modified',
+            'instructor_files',
+            'expected_student_files',
+            'has_handgrading_rubric',
+        ]
+        for field in non_editable:
+            update_dict.pop(field)
         project.validate_and_update(**update_dict)
 
         other_timezone = 'America/Chicago'
