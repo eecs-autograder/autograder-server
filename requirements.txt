@@ -7,7 +7,7 @@ django-timezone-field==2.0
 djangorestframework==3.7.7
 drf-composable-permissions==0.1.1
 google-api-python-client==1.5.5
-psycopg2==2.6.2
+psycopg2==2.8.3
 redis==2.10.5
 uWSGI==2.0.15
 uwsgitop==0.11
