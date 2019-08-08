@@ -198,4 +198,29 @@ INSTALLED_APPS += [
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[contactor] %(levelname)s %(asctime)s %(message)s'
+        },
+    },
+    'handlers': {
+        # Send all messages to console
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        # This is the "catch all" logger
+        '': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    }
+}
+
 from autograder.settings.celery_settings import *  # noqa
