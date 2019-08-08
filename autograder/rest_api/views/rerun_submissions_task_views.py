@@ -71,15 +71,15 @@ class RerunSubmissionsTaskListCreateView(ListCreateNestedModelViewSet):
         from autograder.celery import app
         if signatures:
             clear_cache_sig = clear_cached_submission_results.s(project.pk)
-            group_result = celery.chord(signatures,
-                                        clear_cache_sig).apply_async(connection=app.connection())
+
+            chord_result = celery.chord(signatures, body=clear_cache_sig, app=app).apply_async()
 
             # In case any of the subtasks finish before we reach this line
             # (definitely happens in testing), make sure we don't
             # accidentally overwrite the task's progress or error messages.
             ag_models.RerunSubmissionsTask.objects.filter(
                 pk=rerun_task.pk
-            ).update(celery_group_result_id=group_result.id)
+            ).update(celery_group_result_id=chord_result.id)
 
         return response.Response(self.get_serializer(rerun_task).data,
                                  status=status.HTTP_201_CREATED)
