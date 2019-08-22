@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Case, When
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.http import FileResponse
@@ -363,9 +363,13 @@ class EditBonusSubmissionsView(AGModelGenericViewSet):
                 bonus_submissions_remaining=(
                     F('bonus_submissions_remaining') + self.request.data.get('add')))
         if 'subtract' in self.request.data:
+            to_subtract = self.request.data.get('subtract')
             queryset.update(
-                bonus_submissions_remaining=(
-                    F('bonus_submissions_remaining') - self.request.data.get('subtract')))
+                bonus_submissions_remaining=Case(
+                    When(bonus_submissions_remaining__lte=to_subtract, then=0),
+                    default=F('bonus_submissions_remaining') - to_subtract,
+                )
+            )
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
