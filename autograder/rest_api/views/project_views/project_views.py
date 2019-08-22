@@ -309,6 +309,8 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
 
 
 class EditBonusSubmissionsView(AGModelGenericViewSet):
+    api_tags = [APITags.projects, APITags.groups]
+
     serializer_class = ag_serializers.ProjectSerializer
     permission_classes = (ag_permissions.is_admin(),)
 

@@ -745,7 +745,7 @@ class AGTestCommandResultFeedback(ToDictMixin):
         return self._ag_test_command_result.return_code_correct
 
     @property
-    def expected_return_code(self) -> Optional[ValueFeedbackLevel]:
+    def expected_return_code(self) -> Optional[ExpectedReturnCode]:
         if self._fdbk.return_code_fdbk_level != ValueFeedbackLevel.expected_and_actual:
             return None
 
