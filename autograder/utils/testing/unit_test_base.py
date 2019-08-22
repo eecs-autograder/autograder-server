@@ -30,8 +30,6 @@ class UnitTestBase(TransactionTestCase):
     the order of any items in sub-containers.
     """
 
-    fixtures = ['default_sandbox_image.json']
-
     def setUp(self):
         super().setUp()
 
@@ -41,6 +39,18 @@ class UnitTestBase(TransactionTestCase):
             print('Deleting temp filesystem')
             self.assertTrue(settings.MEDIA_ROOT.endswith('tmp_filesystem'))
             shutil.rmtree(settings.MEDIA_ROOT)
+
+        # Delete the image metadata created from migrations, re-create
+        # just the default image.
+        from autograder.core.models import SandboxDockerImage
+        SandboxDockerImage.objects.all().delete()
+        SandboxDockerImage.objects.get_or_create(
+            defaults={
+                "display_name": "Default",
+                "tag": "jameslp/autograder-sandbox:3.1.2"
+            },
+            name='default'
+        )
 
     def tearDown(self):
         try:
