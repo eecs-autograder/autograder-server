@@ -121,7 +121,7 @@ class StringArrayField(ValidatedArrayField):
 
         return stripped
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, *args, **kwargs):
         return self.to_python(value)
 
 
@@ -142,7 +142,7 @@ class ShortStringField(models.CharField):
 
         return super().to_python(value)
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, *args, **kwargs):
         return self.to_python(value)
 
 
@@ -166,7 +166,7 @@ class EnumField(models.TextField):
             raise ValidationError(
                 '"{}" is not a valid {}'.format(value, self.enum_type.__name__))
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, *args, **kwargs):
         return self.to_python(value)
 
     def get_prep_value(self, value):
@@ -207,7 +207,7 @@ class ValidatedJSONField(pg_fields.JSONField):
         else:
             super().validate(value.to_dict(), model_instance)
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, *args, **kwargs):
         return self.to_python(value)
 
     def get_prep_value(self, value):

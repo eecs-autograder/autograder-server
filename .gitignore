@@ -84,3 +84,5 @@ tags
 venv
 celerybeat-schedule
 venv-*
+.mypy_cache
+.pytest_cache
