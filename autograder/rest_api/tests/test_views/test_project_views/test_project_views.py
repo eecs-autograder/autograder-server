@@ -665,6 +665,13 @@ class EditBonusSubmissionsViewTestCase(UnitTestBase):
 
         self._check_bonus_submissions(self.initial_num_bonus_submissions)
 
+    def test_subtract_more_than_bonus_submissions_remaining_stop_at_zero(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(self.url, {'subtract': 1000})
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        self._check_bonus_submissions(0)
+
     def test_non_admin_permission_denied(self):
         staff = obj_build.make_staff_user(course=self.project.course)
         self.client.force_authenticate(staff)
