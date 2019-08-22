@@ -1,7 +1,5 @@
 from django.db import transaction
 from django.db.models import Prefetch
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
@@ -90,14 +88,3 @@ class AGTestSuiteDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGene
     model_manager = ag_models.AGTestSuite.objects.select_related(
         'project__course',
     )
-
-
-@receiver(post_save, sender=ag_models.AGTestSuite)
-def on_suite_save(sender, instance: ag_models.AGTestSuite, created, **kwargs):
-    if not created:
-        clear_submission_results_cache(instance.project_id)
-
-
-@receiver(post_delete, sender=ag_models.AGTestSuite)
-def on_suite_delete(sender, instance: ag_models.AGTestSuite, *args, **kwargs):
-    clear_submission_results_cache(instance.project_id)

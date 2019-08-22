@@ -1,11 +1,16 @@
 import os
 import shutil
 from contextlib import contextmanager
+from unittest import mock
 
-from django.core.cache import cache
 from django.conf import settings
+from django.core.cache import cache
+from django.db.models.signals import post_save
 from django.test import TransactionTestCase
 from django.test.utils import override_settings
+
+import autograder.core.models as ag_models
+from autograder.rest_api.signals import on_project_created
 
 
 @override_settings(MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem'))
@@ -52,6 +57,13 @@ class UnitTestBase(TransactionTestCase):
             name='default'
         )
 
+        # The function autograder.rest_api.signals.on_project_created
+        # causes a celery function to be called that causes the tests to stall.
+        # (The celery function is app.control.inspect().active())
+        # Our current solution is disconnect that function from the post_save
+        # signal. We can re-connect in tests where it's needed.
+        post_save.disconnect(on_project_created, sender=ag_models.Project)
+
     def tearDown(self):
         try:
             shutil.rmtree(settings.MEDIA_ROOT)
@@ -85,6 +97,10 @@ class UnitTestBase(TransactionTestCase):
 
     def assert_cache_key_invalidated(self, cache_key: str):
         return _assert_cache_key_invalidated(cache_key)
+
+    @property
+    def mock_register_project_queues(self):
+        return _mock_register_project_queues
 
 
 @contextmanager

@@ -1,6 +1,4 @@
 from django.db import transaction
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
@@ -69,14 +67,3 @@ class AGTestCaseDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGener
     model_manager = ag_models.AGTestCase.objects.select_related(
         'ag_test_suite__project__course',
     )
-
-
-@receiver(post_save, sender=ag_models.AGTestCase)
-def on_case_save(sender, instance: ag_models.AGTestCase, created, **kwargs):
-    if not created:
-        clear_submission_results_cache(instance.ag_test_suite.project_id)
-
-
-@receiver(post_delete, sender=ag_models.AGTestCase)
-def on_case_delete(sender, instance: ag_models.AGTestCase, *args, **kwargs):
-    clear_submission_results_cache(instance.ag_test_suite.project_id)

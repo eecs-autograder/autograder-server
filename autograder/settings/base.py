@@ -81,7 +81,7 @@ INSTALLED_APPS = [
     'timezone_field',
 
     'autograder.core',
-    'autograder.rest_api',
+    'autograder.rest_api.apps.RestApiConfig',
     'autograder.grading_tasks',
     'autograder.utils',
     'autograder.handgrading',
