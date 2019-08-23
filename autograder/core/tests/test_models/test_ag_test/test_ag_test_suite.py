@@ -11,6 +11,7 @@ from autograder.utils.testing import UnitTestBase
 
 class AGTestSuiteTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
         self.project = obj_build.build_project()
 
     def test_valid_create_with_defaults(self):

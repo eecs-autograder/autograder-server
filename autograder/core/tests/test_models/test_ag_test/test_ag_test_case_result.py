@@ -7,6 +7,8 @@ import autograder.utils.testing.model_obj_builders as obj_build
 
 class AGTestCaseResultTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
+
         self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
 

@@ -45,6 +45,7 @@ class UnitTestBase(TransactionTestCase):
             self.assertTrue(settings.MEDIA_ROOT.endswith('tmp_filesystem'))
             shutil.rmtree(settings.MEDIA_ROOT)
 
+        # FIXME: move the delete to sandbox tests
         # Delete the image metadata created from migrations, re-create
         # just the default image.
         from autograder.core.models import SandboxDockerImage
