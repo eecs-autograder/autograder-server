@@ -4,7 +4,7 @@ from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core import exceptions
-from django.test import TestCase
+from django.test import SimpleTestCase
 
 from autograder.core.models.ag_model_base import AutograderModel, DictSerializableMixin
 from autograder.utils.testing import UnitTestBase
@@ -834,7 +834,7 @@ class _SerializableClass(DictSerializableMixin):
                 '"less_than" must be greater than "greater_than"')
 
 
-class DictSerializableMixinTestCase(TestCase):
+class DictSerializableMixinTestCase(SimpleTestCase):
     def test_valid_from_dict(self):
         obj = _SerializableClass.from_dict({'required_int': 5})
         self.assertEqual(5, obj.required_int)

@@ -1,12 +1,12 @@
 from django.core import exceptions
-from django.test import TestCase
+from django.test import SimpleTestCase
 
 import autograder.core.models as ag_models
 from autograder.core import constants
 from autograder.utils.testing import UnitTestBase
 
 
-class CommandTestCase(TestCase):
+class CommandTestCase(SimpleTestCase):
     def test_from_dict_default_values(self):
         cmd = ag_models.Command.from_dict({'cmd': 'cmdy'})
 
