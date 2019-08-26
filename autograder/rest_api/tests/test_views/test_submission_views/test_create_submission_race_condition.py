@@ -13,7 +13,7 @@ import autograder.rest_api.tests.test_views.common_generic_data as test_data
 class RaceConditionTestCase(test_data.Client,
                             test_data.Project,
                             test_data.Group,
-                            test_ut.UnitTestBase):
+                            test_ut.TransactionUnitTestBase):
     def test_simultaneous_create_race_condition_prevented(self):
         group = self.admin_group(self.project)
         group_id = group.pk
