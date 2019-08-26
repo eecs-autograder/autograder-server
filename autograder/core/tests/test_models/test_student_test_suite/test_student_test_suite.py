@@ -4,7 +4,7 @@ from django.core import exceptions
 from django.db import IntegrityError
 
 from autograder.core import constants
-from autograder.utils.testing import UnitTestBase
+from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 
@@ -188,26 +188,6 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.project.set_studenttestsuite_order([suite1.pk, suite2.pk])
         self.assertSequenceEqual([suite1.pk, suite2.pk], self.project.get_studenttestsuite_order())
 
-    def test_sandbox_docker_image_cannot_be_deleted_and_name_cannot_be_changed_when_in_use(self):
-        """
-        Verifies that on_delete for StudentTestSuite.sandbox_docker_image is set to PROTECT
-        and that the name of an image can't be changed if any foreign key references to
-        it exist.
-        """
-        sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
-            name='waluigi', display_name='time', tag='taggy')
-
-        ag_models.StudentTestSuite.objects.validate_and_create(
-            name='suiteo', project=self.project, sandbox_docker_image=sandbox_image
-        )
-
-        with self.assertRaises(IntegrityError):
-            sandbox_image.delete()
-
-        with self.assertRaises(IntegrityError):
-            sandbox_image.name = 'bad'
-            sandbox_image.save()
-
     def test_error_name_not_unique(self):
         name = 'spam'
         suite1 = ag_models.StudentTestSuite.objects.validate_and_create(
@@ -358,3 +338,26 @@ class StudentTestSuiteTestCase(UnitTestBase):
             update_dict.pop(field)
 
         student_suite.validate_and_update(**update_dict)
+
+
+class StudentTestSuiteSandboxImageOnDeleteTestCase(TransactionUnitTestBase):
+    def test_sandbox_docker_image_cannot_be_deleted_and_name_cannot_be_changed_when_in_use(self):
+        """
+        Verifies that on_delete for StudentTestSuite.sandbox_docker_image is set to PROTECT
+        and that the name of an image can't be changed if any foreign key references to
+        it exist.
+        """
+        project = obj_build.make_project()
+        sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            name='waluigi', display_name='time', tag='taggy')
+
+        ag_models.StudentTestSuite.objects.validate_and_create(
+            name='suiteo', project=project, sandbox_docker_image=sandbox_image
+        )
+
+        with self.assertRaises(IntegrityError):
+            sandbox_image.delete()
+
+        with self.assertRaises(IntegrityError):
+            sandbox_image.name = 'bad'
+            sandbox_image.save()

@@ -4,19 +4,22 @@ from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.utils.testing import UnitTestBase
+from autograder.utils.testing import UnitTestBase, TransactionUnitTestBase
 
 
 class SandboxDockerImageViewTestCase(UnitTestBase):
+    @classmethod
+    def setUpTestData(cls):
+        ag_models.SandboxDockerImage.objects.exclude(name='default').delete()
+
+        cls.superuser = obj_build.make_user(superuser=True)
+        course = obj_build.make_course()
+        cls.admin = obj_build.make_admin_user(course)
+        cls.staff = obj_build.make_staff_user(course)
+
     def setUp(self):
         super().setUp()
-
         self.client = APIClient()
-
-        self.superuser = obj_build.make_user(superuser=True)
-        course = obj_build.make_course()
-        self.admin = obj_build.make_admin_user(course)
-        self.staff = obj_build.make_staff_user(course)
 
         # Create them out of order to verify sortedness
         self.image2 = ag_models.SandboxDockerImage.objects.validate_and_create(

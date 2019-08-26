@@ -11,6 +11,7 @@ class HandgradingRubricTestCase(UnitTestBase):
     Test cases relating the Handgrading Rubric Model
     """
     def setUp(self):
+        super().setUp()
         self.project = obj_build.make_project()
 
     def test_default_initialization(self):
