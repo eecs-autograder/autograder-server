@@ -1,7 +1,5 @@
 from django.db import transaction
 from django.db.models import F, Case, When
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from drf_composable_permissions.p import P
@@ -94,23 +92,6 @@ class CopyProjectView(AGModelGenericViewSet):
     @classmethod
     def as_view(cls, actions=None, **initkwargs):
         return super().as_view(actions={'post': 'copy_project'}, **initkwargs)
-
-
-@receiver(post_save, sender=ag_models.Project)
-def on_project_created(sender, instance, created, **kwargs):
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == 'test':
-        return
-
-    if not created:
-        return
-
-    from autograder.grading_tasks.tasks import register_project_queues
-
-    from autograder.celery import app
-    register_project_queues.apply_async(
-        kwargs={'project_pks': [instance.pk]}, queue='small_tasks',
-        connection=app.connection())
 
 
 class ImportHandgradingRubricView(AGModelGenericViewSet):

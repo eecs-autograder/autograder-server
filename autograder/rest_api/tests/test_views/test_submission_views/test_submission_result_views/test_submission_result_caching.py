@@ -16,10 +16,8 @@ from autograder.grading_tasks.tasks import mark_submission_as_finished
 from autograder.utils.testing import UnitTestBase
 
 
-# Disable cache invalidation from editing commands. Note that mocking
-# the signal receiver function doesn't work.
-@mock.patch('autograder.rest_api.views.ag_test_views'
-            '.ag_test_command_views.clear_submission_results_cache',
+# Disable cache invalidation from editing commands.
+@mock.patch('autograder.rest_api.signals.clear_submission_results_cache',
             new=lambda *args, **kwargs: None)
 class SubmissionResultsCachingTestCase(UnitTestBase):
     def setUp(self):

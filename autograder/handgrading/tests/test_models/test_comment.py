@@ -11,6 +11,7 @@ class CommentTestCase(UnitTestBase):
     Test cases relating the Comment Model
     """
     def setUp(self):
+        super().setUp()
         self.default_handgrading_rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,

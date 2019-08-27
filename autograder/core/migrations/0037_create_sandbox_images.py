@@ -10,11 +10,6 @@ import autograder_sandbox
 
 
 def create_default_image(apps, schemea_editor):
-    # The fixture autograder/core/fixture/default_sandbox_image.json handles
-    # creating the default image during testing.
-    if sys.argv[1] == 'test':
-        return
-
     SandboxDockerImage = apps.get_model('core', 'SandboxDockerImage')
     SandboxDockerImage.objects.create(
         name='default',

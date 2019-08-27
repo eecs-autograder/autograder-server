@@ -3,17 +3,19 @@ from typing import Optional
 from unittest import mock
 
 from django.core import exceptions
+from django.db.models.signals import post_save
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
+import autograder.handgrading.models as hg_models
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
+from autograder.rest_api.signals import on_project_created
+from autograder.rest_api.tests.test_views.ag_view_test_base import \
+    AGViewTestBase
 from autograder.utils import exclude_dict
 from autograder.utils.testing import UnitTestBase
-
-import autograder.handgrading.models as hg_models
 
 
 class ListProjectsTestCase(AGViewTestBase):
@@ -78,23 +80,30 @@ class CreateProjectTestCase(AGViewTestBase):
         self.url = reverse('projects', kwargs={'pk': self.course.pk})
 
     def test_course_admin_add_project(self):
-        admin = obj_build.make_admin_user(self.course)
-        args = {'name': 'spam project',
-                'min_group_size': 2,
-                'max_group_size': 3}
-        self.client.force_authenticate(admin)
-        response = self.client.post(self.url, args)
+        post_save.connect(on_project_created, sender=ag_models.Project)
+        path = 'autograder.rest_api.signals.register_project_queues'
+        with mock.patch(path) as mock_register_queues:
+            admin = obj_build.make_admin_user(self.course)
+            args = {'name': 'spam project',
+                    'min_group_size': 2,
+                    'max_group_size': 3}
+            self.client.force_authenticate(admin)
+            response = self.client.post(self.url, args)
 
-        # Regression check: closing_time and instructor_files should be present
-        # https://github.com/eecs-autograder/autograder-server/issues/390
-        self.assertIn('closing_time', response.data)
-        self.assertIn('instructor_files', response.data)
+            # Regression check: closing_time and instructor_files should be present
+            # https://github.com/eecs-autograder/autograder-server/issues/390
+            self.assertIn('closing_time', response.data)
+            self.assertIn('instructor_files', response.data)
 
-        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
-        new_project = self.course.projects.get(name=args['name'])
-        for arg_name, value in args.items():
-            self.assertEqual(value, getattr(new_project, arg_name), msg=arg_name)
+            new_project = self.course.projects.get(name=args['name'])
+            for arg_name, value in args.items():
+                self.assertEqual(value, getattr(new_project, arg_name), msg=arg_name)
+
+            mock_register_queues.apply_async.assert_called_once_with(
+                kwargs={'project_pks': [new_project.pk]}, queue=mock.ANY, connection=mock.ANY
+            )
 
     def test_other_add_project_permission_denied(self):
         staff = obj_build.make_staff_user(self.course)
@@ -115,7 +124,6 @@ class CreateProjectTestCase(AGViewTestBase):
 class CopyProjectViewTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-
         self.client = APIClient()
         self.project = obj_build.make_project()
         self.admin = obj_build.make_admin_user(self.project.course)
@@ -124,19 +132,26 @@ class CopyProjectViewTestCase(UnitTestBase):
         self.other_course.admins.add(self.admin)
 
     def test_admin_copy_project_to_same_course_with_new_name(self):
-        self.client.force_authenticate(self.admin)
-        new_name = 'New Project'
-        response = self.client.post(self.get_url(self.project, self.project.course, new_name))
-        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        post_save.connect(on_project_created, sender=ag_models.Project)
+        path = 'autograder.rest_api.signals.register_project_queues'
+        with mock.patch(path) as mock_register_queues:
+            self.client.force_authenticate(self.admin)
+            new_name = 'New Project'
+            response = self.client.post(self.get_url(self.project, self.project.course, new_name))
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
-        # Regression check: closing_time and instructor_files should be present
-        # https://github.com/eecs-autograder/autograder-server/issues/390
-        self.assertIn('closing_time', response.data)
-        self.assertIn('instructor_files', response.data)
+            # Regression check: closing_time and instructor_files should be present
+            # https://github.com/eecs-autograder/autograder-server/issues/390
+            self.assertIn('closing_time', response.data)
+            self.assertIn('instructor_files', response.data)
 
-        new_project = ag_models.Project.objects.get(pk=response.data['pk'])
-        self.assertEqual(new_name, new_project.name)
-        self.assertEqual(self.project.course, new_project.course)
+            new_project = ag_models.Project.objects.get(pk=response.data['pk'])
+            self.assertEqual(new_name, new_project.name)
+            self.assertEqual(self.project.course, new_project.course)
+
+            mock_register_queues.apply_async.assert_called_once_with(
+                kwargs={'project_pks': [new_project.pk]}, queue=mock.ANY, connection=mock.ANY
+            )
 
     def test_admin_copy_project_to_different_course_they_are_admin_for(self):
         self.client.force_authenticate(self.admin)

@@ -7,6 +7,7 @@ from autograder.utils.testing import UnitTestBase
 
 class AnnotationTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
         self.rubric = (
             handgrading_models.HandgradingRubric.objects.validate_and_create(
                 points_style=handgrading_models.PointsStyle.start_at_max_and_subtract,

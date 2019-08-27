@@ -15,7 +15,7 @@ from autograder.rest_api.views.group_views import GroupDetailViewSet, GroupsView
 class RaceConditionTestCase(test_data.Client,
                             test_data.Project,
                             test_data.Group,
-                            test_ut.UnitTestBase):
+                            test_ut.TransactionUnitTestBase):
     def test_create_group_and_invitation_with_invitor_in_both(self):
         self.visible_public_project.validate_and_update(max_group_size=4)
         project_id = self.visible_public_project.pk

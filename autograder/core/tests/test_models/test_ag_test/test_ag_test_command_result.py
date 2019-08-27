@@ -6,6 +6,8 @@ from autograder.utils.testing import UnitTestBase
 
 class AGTestCommandResultTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
+
         self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
 

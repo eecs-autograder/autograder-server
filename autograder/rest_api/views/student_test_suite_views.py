@@ -63,14 +63,3 @@ class StudentTestSuiteDetailViewSet(TransactionRetrievePatchDestroyMixin, AGMode
             lambda student_suite: student_suite.project.course)]
 
     model_manager = ag_models.StudentTestSuite.objects
-
-
-@receiver(post_save, sender=ag_models.StudentTestSuite)
-def on_suite_save(sender, instance: ag_models.StudentTestSuite, created, **kwargs):
-    if not created:
-        clear_submission_results_cache(instance.project_id)
-
-
-@receiver(post_delete, sender=ag_models.StudentTestSuite)
-def on_suite_delete(sender, instance: ag_models.StudentTestSuite, *args, **kwargs):
-    clear_submission_results_cache(instance.project_id)

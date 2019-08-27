@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from django.test import TestCase
+from django.test import SimpleTestCase
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
@@ -14,7 +14,7 @@ import autograder.core.utils as core_ut
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
-class DiffTestCase(TestCase):
+class DiffTestCase(SimpleTestCase):
     def setUp(self):
         super().setUp()
         self.file1 = tempfile.NamedTemporaryFile()
@@ -148,7 +148,7 @@ cheese\r
         self.assertTrue(result.diff_pass)
 
 
-class CheckFilenameTest(TestCase):
+class CheckFilenameTest(SimpleTestCase):
     def test_valid_filename(self):
         core_ut.check_filename('spAM-eggs_42.cpp')
 
@@ -297,7 +297,7 @@ class MyOrderedEnum(core_ut.OrderedEnum):
     egg = 'egg'
 
 
-class OrderedEnumTestCase(TestCase):
+class OrderedEnumTestCase(SimpleTestCase):
     def test_comparison(self):
         self.assertTrue(MyOrderedEnum.spam < MyOrderedEnum.egg)
         self.assertFalse(MyOrderedEnum.spam > MyOrderedEnum.egg)
