@@ -225,7 +225,8 @@ def _make_scores_csv(task: ag_models.DownloadTask,
                     row[ag_test_total_header] = case_fdbk.total_points
 
             for student_suite_result in fdbk.student_test_suite_results:
-                suite_fdbk = student_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+                suite_fdbk = student_suite_result.get_fdbk(
+                    ag_models.FeedbackCategory.max, fdbk.student_test_suite_preloader)
 
                 student_suite_total_header = student_suite_total_tmpl.format(
                     suite_fdbk.student_test_suite_name)

@@ -1591,9 +1591,9 @@ class RemoveFromQueueTestCase(test_data.Client,
                     submission, user)
 
     def test_error_remove_submission_not_in_queue(self):
-        statuses = set(Submission.GradingStatus.values)
-        statuses.remove(Submission.GradingStatus.queued)
-        statuses.remove(Submission.GradingStatus.received)
+        statuses = set(ag_models.Submission.GradingStatus.values)
+        statuses.remove(ag_models.Submission.GradingStatus.queued)
+        statuses.remove(ag_models.Submission.GradingStatus.received)
         for submission in self.all_submissions(self.visible_public_project):
             for grading_status in statuses:
                 submission.status = grading_status
@@ -1601,8 +1601,8 @@ class RemoveFromQueueTestCase(test_data.Client,
                 self.do_invalid_remove_from_queue_test(submission)
 
     def do_valid_remove_from_queue_test(self, submission, user=None):
-        for grading_status in (Submission.GradingStatus.received,
-                               Submission.GradingStatus.queued):
+        for grading_status in (ag_models.Submission.GradingStatus.received,
+                               ag_models.Submission.GradingStatus.queued):
             submission.status = grading_status
             submission.save()
 
@@ -1616,7 +1616,7 @@ class RemoveFromQueueTestCase(test_data.Client,
 
             submission.refresh_from_db()
 
-            self.assertEqual(Submission.GradingStatus.removed_from_queue,
+            self.assertEqual(ag_models.Submission.GradingStatus.removed_from_queue,
                              submission.status)
 
     def do_permission_denied_remove_from_queue_test(self, submission, user):

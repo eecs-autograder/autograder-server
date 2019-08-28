@@ -4,8 +4,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
+from autograder.core.submission_feedback import StudentTestSuitePreLoader
 import autograder.utils.testing.model_obj_builders as obj_build
-
 from autograder.utils.testing import UnitTestBase
 
 
@@ -130,7 +130,11 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
 
         response = self.client.get(url)
         expected_content = [
-            self.student_suite_result.get_fdbk(ag_models.FeedbackCategory.max).to_dict()]
+            self.student_suite_result.get_fdbk(
+                ag_models.FeedbackCategory.max,
+                StudentTestSuitePreLoader(self.project)
+            ).to_dict()
+        ]
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertSequenceEqual(expected_content, response.data['student_test_suite_results'])
 
@@ -218,9 +222,13 @@ class StudentTestSuiteResultsTestCase(UnitTestBase):
     def test_get_output_suite_hidden(self):
         self.maxDiff = None
         max_fdbk_settings = self.student_suite_result.get_fdbk(
-            ag_models.FeedbackCategory.max).fdbk_settings
+            ag_models.FeedbackCategory.max,
+            StudentTestSuitePreLoader(self.project)
+        ).fdbk_settings
         staff_viewer_fdbk_settings = self.student_suite_result.get_fdbk(
-            ag_models.FeedbackCategory.staff_viewer).fdbk_settings
+            ag_models.FeedbackCategory.staff_viewer,
+            StudentTestSuitePreLoader(self.project)
+        ).fdbk_settings
         self.assertEqual(max_fdbk_settings, staff_viewer_fdbk_settings)
 
         self.student_suite.validate_and_update(staff_viewer_fdbk_config={

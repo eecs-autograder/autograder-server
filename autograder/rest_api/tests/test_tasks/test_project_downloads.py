@@ -21,6 +21,7 @@ from autograder.core.submission_feedback import (
     update_denormalized_ag_test_results, SubmissionResultFeedback, AGTestPreLoader)
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_submission_fdbk)
+from autograder.core.submission_feedback import StudentTestSuitePreLoader
 from autograder.utils.testing import UnitTestBase
 
 
@@ -898,7 +899,8 @@ class DownloadAllSubmissionGradesTestCase(UnitTestBase):
                     values.append(str(case_fdbk.total_points))
 
             for suite_result in fdbk.student_test_suite_results:
-                suite_fdbk = suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+                suite_fdbk = suite_result.get_fdbk(
+                    ag_models.FeedbackCategory.max, StudentTestSuitePreLoader(self.project))
                 values += [str(suite_fdbk.total_points), str(suite_fdbk.total_points_possible)]
 
             self.assertEqual(len(expected_headers), len(values))

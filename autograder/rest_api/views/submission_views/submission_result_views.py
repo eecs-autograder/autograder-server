@@ -483,7 +483,7 @@ class StudentTestSuiteOutputSizeView(SubmissionResultsViewBase):
         if result is None:
             return response.Response(None)
 
-        fdbk = result.get_fdbk(fdbk_category)
+        fdbk = result.get_fdbk(fdbk_category, submission_fdbk.student_test_suite_preloader)
         return response.Response({
             'setup_stdout_size': fdbk.get_setup_stdout_size(),
             'setup_stderr_size': fdbk.get_setup_stderr_size(),
@@ -509,7 +509,8 @@ def _get_student_suite_result_output_field(
     if result is None:
         return response.Response(None)
 
-    output_stream = get_output_fn(result.get_fdbk(fdbk_category))
+    output_stream = get_output_fn(
+        result.get_fdbk(fdbk_category, submission_fdbk.student_test_suite_preloader))
     if output_stream is None:
         return response.Response(None)
 
