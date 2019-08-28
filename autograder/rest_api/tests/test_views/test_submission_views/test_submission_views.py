@@ -1,7 +1,7 @@
 import datetime
 import os
 import random
-from typing import Optional
+from typing import Iterable, Optional
 from unittest import mock
 
 from django.contrib.auth.models import User
@@ -17,9 +17,12 @@ import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.models import Submission
+from autograder import utils
+from autograder.core.submission_feedback import \
+    update_denormalized_ag_test_results
+from autograder.rest_api.tests.test_views.ag_view_test_base import \
+    AGViewTestBase
 from autograder.utils.testing import UnitTestBase
-
 
 # TODO: When removing common_generic_data module, add tests for
 # guests and allowed domain.
@@ -1241,6 +1244,173 @@ class RetrieveSubmissionAndFileTestCase(test_data.Client,
         self.assertEqual(
             expected_content,
             b''.join((chunk for chunk in response.streaming_content)))
+
+
+class ListSubmissionsWithResultsTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.ag_test_cmd = obj_build.make_full_ag_test_command(
+            normal_fdbk_config={
+                'show_points': True,
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.no_feedback,
+                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.no_feedback,
+            },
+            past_limit_submission_fdbk_config={
+                'show_points': True,
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.no_feedback,
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.no_feedback,
+            },
+            staff_viewer_fdbk_config={
+                'show_points': True,
+                'return_code_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+                'stdout_fdbk_level': ag_models.ValueFeedbackLevel.no_feedback,
+                'stderr_fdbk_level': ag_models.ValueFeedbackLevel.correct_or_incorrect,
+            }
+        )
+        self.project = self.ag_test_cmd.ag_test_case.ag_test_suite.project
+        self.project.validate_and_update(visible_to_students=True)
+
+        self.student_group = obj_build.make_group(project=self.project)
+        self.student_normal_submission = obj_build.make_finished_submission(
+            group=self.student_group)
+        obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=self.student_normal_submission)
+
+        self.student_normal_submission = update_denormalized_ag_test_results(
+            self.student_normal_submission.pk)
+
+        self.student_past_limit_submission = obj_build.make_finished_submission(
+            group=self.student_group, is_past_daily_limit=True)
+        obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=self.student_past_limit_submission)
+
+        self.student_past_limit_submission = update_denormalized_ag_test_results(
+            self.student_past_limit_submission.pk)
+
+    def test_student_has_normal_and_past_limit_submissions(self) -> None:
+        url = reverse('list-submissions-with-results',
+                      kwargs={'pk': self.student_group.pk})
+
+        self.client.force_authenticate(self.student_group.members.first())
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self._compare_submission_data(
+            [self.student_past_limit_submission, self.student_normal_submission],
+            response)
+
+        self.assertIsNone(
+            self._get_cmd_result(response.data[0])['return_code_correct'])
+        self.assertTrue(
+            self._get_cmd_result(response.data[0])['stdout_correct'])
+
+        self.assertTrue(
+            self._get_cmd_result(response.data[1])['return_code_correct'])
+        self.assertIsNone(
+            self._get_cmd_result(response.data[1])['stdout_correct'])
+
+    def test_staff_request_student_submissions(self) -> None:
+        url = reverse('list-submissions-with-results',
+                      kwargs={'pk': self.student_group.pk})
+
+        self.client.force_authenticate(obj_build.make_staff_user(self.project.course))
+        response = self.client.get(url)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self._compare_submission_data(
+            [self.student_past_limit_submission, self.student_normal_submission],
+            response)
+
+        self.assertIsNone(
+            self._get_cmd_result(response.data[0])['stdout_correct'])
+        self.assertTrue(
+            self._get_cmd_result(response.data[0])['stderr_correct'])
+
+        self.assertIsNone(
+            self._get_cmd_result(response.data[1])['stdout_correct'])
+        self.assertTrue(
+            self._get_cmd_result(response.data[1])['stderr_correct'])
+
+    def test_staff_request_own_submissions(self) -> None:
+        staff_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.staff)
+
+        staff_submission1 = obj_build.make_finished_submission(
+            group=staff_group)
+        obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=staff_submission1)
+
+        staff_submission1 = update_denormalized_ag_test_results(staff_submission1.pk)
+
+        staff_submission2 = obj_build.make_finished_submission(
+            group=staff_group, is_past_limit=True)
+        obj_build.make_correct_ag_test_command_result(
+            self.ag_test_cmd, submission=staff_submission2)
+
+        staff_submission2 = update_denormalized_ag_test_results(staff_submission2.pk)
+
+        url = reverse('list-submissions-with-results', kwargs={'pk': staff_group.pk})
+        self.client.force_authenticate(staff_group.members.first())
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self._compare_submission_data([staff_submission2, staff_submission1], response)
+
+        self.assertTrue(
+            self._get_cmd_result(response.data[0])['return_code_correct'])
+        self.assertTrue(
+            self._get_cmd_result(response.data[0])['stdout_correct'])
+        self.assertTrue(
+            self._get_cmd_result(response.data[0])['stderr_correct'])
+
+        self.assertTrue(
+            self._get_cmd_result(response.data[1])['return_code_correct'])
+        self.assertTrue(
+            self._get_cmd_result(response.data[1])['stdout_correct'])
+        self.assertTrue(
+            self._get_cmd_result(response.data[1])['stderr_correct'])
+
+    def test_admin_override_fdbk_category(self) -> None:
+        url = reverse('list-submissions-with-results',
+                      kwargs={'pk': self.student_group.pk})
+        url += f'?feedback_category={ag_models.FeedbackCategory.ultimate_submission.value}'
+
+        admin = obj_build.make_admin_user(self.project.course)
+        self.client.force_authenticate(admin)
+        response = self.client.get(url)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self._compare_submission_data(
+            [self.student_past_limit_submission, self.student_normal_submission],
+            response)
+
+        self.assertEqual(self.ag_test_cmd.ultimate_submission_fdbk_config.to_dict(),
+                         self._get_cmd_result(response.data[0])['fdbk_settings'])
+        self.assertEqual(self.ag_test_cmd.ultimate_submission_fdbk_config.to_dict(),
+                         self._get_cmd_result(response.data[1])['fdbk_settings'])
+
+    def _compare_submission_data(self, submissions: Iterable[ag_models.Submission], response):
+        self.assertEqual(
+            [utils.exclude_dict(submission.to_dict(), 'results') for submission in submissions],
+            [utils.exclude_dict(submission, 'results') for submission in response.data]
+        )
+
+        self.assertEqual(1, len(response.data[0]['results']['ag_test_suite_results']))
+        self.assertEqual(1, len(response.data[1]['results']['ag_test_suite_results']))
+
+        self.assertNotEqual(0, response.data[0]['results']['total_points'])
+        self.assertNotEqual(0, response.data[1]['results']['total_points'])
+
+    def _get_cmd_result(self, submission_dict: dict):
+        return submission_dict['results'][
+            'ag_test_suite_results'][0][
+            'ag_test_case_results'][0][
+            'ag_test_command_results'][0]
 
 
 class UpdateSubmissionTestCase(test_data.Client,

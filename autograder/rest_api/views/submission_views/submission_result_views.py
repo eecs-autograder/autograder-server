@@ -4,9 +4,10 @@ from django.core.cache import cache
 from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
+from drf_composable_permissions.p import P
 from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import response
+from rest_framework import response, status
 from rest_framework.exceptions import ValidationError
 
 import autograder.core.models as ag_models
@@ -18,35 +19,11 @@ from autograder.core.submission_feedback import (
     SubmissionResultFeedback, AGTestSuiteResultFeedback, AGTestCommandResultFeedback,
     AGTestPreLoader)
 from autograder.rest_api.views.ag_model_views import AGModelAPIView, require_query_params
-from autograder.rest_api.views.schema_generation import AGModelSchemaBuilder
+from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
+from autograder.rest_api.serialize_ultimate_submission_results import (
+    get_submission_data_with_results)
 
-_FDBK_CATEGORY_PARAM = 'feedback_category'
-
-
-_fdbk_category_param_docs = Parameter(
-    name=_FDBK_CATEGORY_PARAM, in_='query', required=True, type='string',
-    description=f"""
-The category of feedback being requested. Must be one of the following
-values:
-
-    - {ag_models.FeedbackCategory.normal.value}: Can be requested by
-        students before or after the project deadline on their
-        submissions that did not exceed the daily limit.
-    - {ag_models.FeedbackCategory.past_limit_submission.value}: Can be
-        requested by students on their submissions that exceeded the
-        daily limit.
-    - {ag_models.FeedbackCategory.ultimate_submission.value}: Can be
-        requested by students on their own ultimate (a.k.a. final
-        graded) submission once the project deadline has passed and
-        hide_ultimate_submission_fdbk has been set to False on the
-        project. Can similarly be requested by staff when looking
-        up another user's ultimate submission results after the
-        deadline.
-    - {ag_models.FeedbackCategory.staff_viewer.value}: Can be requested
-        by staff when looking up another user's submission results.
-    - {ag_models.FeedbackCategory.max.value}: Can be requested by staff
-        on their own submissions."""
-)
+from .common import make_fdbk_category_param_docs, validate_fdbk_category, FDBK_CATEGORY_PARAM
 
 
 class SubmissionResultsViewBase(AGModelAPIView):
@@ -55,20 +32,15 @@ class SubmissionResultsViewBase(AGModelAPIView):
                           ag_permissions.can_request_feedback_category())
     model_manager = ag_models.Submission.objects.select_related('project')
 
-    @method_decorator(require_query_params(_FDBK_CATEGORY_PARAM))
+    @method_decorator(require_query_params(FDBK_CATEGORY_PARAM))
     def get(self, *args, **kwargs):
         fdbk_category = self._get_fdbk_category()
         submission_fdbk = self._get_submission_fdbk(fdbk_category)
         return self._make_response(submission_fdbk, fdbk_category)
 
     def _get_fdbk_category(self) -> ag_models.FeedbackCategory:
-        fdbk_category_arg = self.request.query_params.get(_FDBK_CATEGORY_PARAM)
-        try:
-            return ag_models.FeedbackCategory(fdbk_category_arg)
-        except ValueError:
-            raise ValidationError({
-                _FDBK_CATEGORY_PARAM: 'Invalid value: {}'.format(fdbk_category_arg)
-            })
+        fdbk_category_arg = self.request.query_params.get(FDBK_CATEGORY_PARAM)
+        return validate_fdbk_category(fdbk_category_arg)
 
     def _get_submission_fdbk(
         self, fdbk_category: ag_models.FeedbackCategory
@@ -85,7 +57,7 @@ class SubmissionResultsViewBase(AGModelAPIView):
 @method_decorator(
     name='get',
     decorator=swagger_auto_schema(
-        manual_parameters=[_fdbk_category_param_docs],
+        manual_parameters=[make_fdbk_category_param_docs()],
         responses={
             '200': AGModelSchemaBuilder.get().get_schema(SubmissionResultFeedback)
         }
@@ -123,7 +95,7 @@ class SubmissionResultsView(SubmissionResultsViewBase):
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -136,7 +108,7 @@ class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -150,7 +122,7 @@ class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
 @method_decorator(
     name='get',
     decorator=swagger_auto_schema(
-        manual_parameters=[_fdbk_category_param_docs],
+        manual_parameters=[make_fdbk_category_param_docs()],
         responses={'200': Schema(
             type='object',
             properties={
@@ -208,7 +180,7 @@ def _find_ag_suite_result(submission_fdbk: SubmissionResultFeedback,
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -222,7 +194,7 @@ class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class AGTestCommandResultStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -237,7 +209,7 @@ class AGTestCommandResultStderrView(SubmissionResultsViewBase):
 @method_decorator(
     name='get',
     decorator=swagger_auto_schema(
-        manual_parameters=[_fdbk_category_param_docs],
+        manual_parameters=[make_fdbk_category_param_docs()],
         responses={'200': Schema(
             type='object',
             properties={
@@ -282,7 +254,7 @@ def _get_cmd_result_output(submission_fdbk: SubmissionResultFeedback,
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -296,7 +268,7 @@ class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class AGTestCommandResultStderrDiffView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -354,7 +326,7 @@ def _find_ag_test_cmd_result(submission_fdbk: SubmissionResultFeedback,
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -369,7 +341,7 @@ class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -384,7 +356,7 @@ class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -399,7 +371,7 @@ class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase)
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -414,7 +386,7 @@ class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase)
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -429,7 +401,7 @@ class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -444,7 +416,7 @@ class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -459,7 +431,7 @@ class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase)
 
 @method_decorator(
     name='get',
-    decorator=swagger_auto_schema(manual_parameters=[_fdbk_category_param_docs])
+    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
 )
 class StudentTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
@@ -475,7 +447,7 @@ class StudentTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase)
 @method_decorator(
     name='get',
     decorator=swagger_auto_schema(
-        manual_parameters=[_fdbk_category_param_docs],
+        manual_parameters=[make_fdbk_category_param_docs()],
         responses={'200': Schema(
             type='object',
             properties={

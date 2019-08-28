@@ -37,7 +37,11 @@ from .rerun_submissions_task_views import (
 from .student_test_suite_views import (
     StudentTestSuiteListCreateView, StudentTestSuiteOrderView, StudentTestSuiteDetailViewSet)
 
-from .submission_views.submission_views import ListCreateSubmissionViewSet, SubmissionDetailViewSet
+from .submission_views.submission_views import (
+    ListCreateSubmissionViewSet,
+    ListSubmissionsWithResults,
+    SubmissionDetailViewSet
+)
 
 from .submission_views.submission_result_views import (
     SubmissionResultsView,

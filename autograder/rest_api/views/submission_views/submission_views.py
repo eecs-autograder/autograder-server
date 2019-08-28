@@ -1,5 +1,6 @@
+import copy
 import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -9,17 +10,24 @@ from django.http.response import FileResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter
+from drf_yasg.openapi import Parameter, Schema
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, exceptions, mixins, response, status
 
 import autograder.core.models as ag_models
+from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
+from autograder.rest_api.serialize_ultimate_submission_results import (
+    get_submission_data_with_results)
 import autograder.utils.testing as test_ut
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet, require_query_params)
+    AGModelAPIView, AGModelGenericViewSet, ListCreateNestedModelViewSet,
+    require_query_params)
+from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
+
+from .common import make_fdbk_category_param_docs, validate_fdbk_category
 
 can_view_group = (
     P(ag_permissions.IsReadOnly)
@@ -205,6 +213,78 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
         submission.save()
 
         return response.Response(data=submission.to_dict(), status=status.HTTP_201_CREATED)
+
+
+def _make_submission_with_results_schema():
+    submission_with_results_schema = Schema(
+        type='object',
+        properties=copy.deepcopy(
+            AGModelSchemaBuilder.get().get_schema(ag_models.Submission).properties
+        )
+    )
+    submission_with_results_schema.properties['results'] = AGModelSchemaBuilder.get().get_schema(
+        SubmissionResultFeedback)
+
+    submission_with_results_schema.properties.move_to_end('results', last=False)
+
+    return submission_with_results_schema
+
+
+class ListSubmissionsWithResults(AGModelAPIView):
+    permission_classes = (
+        P(ag_permissions.can_view_project()) & P(ag_permissions.is_staff_or_group_member()),
+    )
+
+    model_manager = ag_models.Group.objects.select_related('project__course')
+    api_tags = (APITags.submissions,)
+
+    @swagger_auto_schema(
+        manual_parameters=[make_fdbk_category_param_docs(required=False)],
+        responses={
+            '200': Schema(
+                type='array',
+                items=_make_submission_with_results_schema()
+            )
+        }
+    )
+    def get(self, *args, **kwargs):
+        group = self.get_object()
+
+        user_roles = group.project.course.get_user_roles(self.request.user)
+        is_group_member = self.request.user.username in group.member_names
+        feedback_category = None
+
+        if 'feedback_category' in self.request.query_params:
+            feedback_category = validate_fdbk_category(
+                self.request.query_params.get('feedback_category'))
+            if not user_roles['is_admin']:
+                return response.Response(status=status.HTTP_403_FORBIDDEN,
+                                         data='Only admins can override feedback_category')
+
+        submissions_queryset = ag_models.get_submissions_with_results_queryset(
+            base_manager=group.submissions)
+
+        ag_test_preloader = AGTestPreLoader(group.project)
+
+        submissions = []
+        for submission in submissions_queryset:
+            if feedback_category is not None:
+                fdbk_category = feedback_category
+            elif user_roles['is_staff']:
+                fdbk_category = (ag_models.FeedbackCategory.max if is_group_member
+                                 else ag_models.FeedbackCategory.staff_viewer)
+            elif submission.is_past_daily_limit:
+                fdbk_category = ag_models.FeedbackCategory.past_limit_submission
+            else:
+                fdbk_category = ag_models.FeedbackCategory.normal
+
+            serialized = get_submission_data_with_results(
+                SubmissionResultFeedback(submission, fdbk_category, ag_test_preloader),
+                full_results=True
+            )
+            submissions.append(serialized)
+
+        return response.Response(status=status.HTTP_200_OK, data=submissions)
 
 
 class SubmissionDetailViewSet(mixins.RetrieveModelMixin,

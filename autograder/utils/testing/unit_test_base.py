@@ -87,6 +87,9 @@ class _SetUpTearDownCommon:
     IMPORTANT: Classes inheriting from this mixin should override the
     MEDIA_ROOT setting, such as with this decorator:
         @override_settings(MEDIA_ROOT=os.path.join(settings.PROJECT_ROOT, 'tmp_filesystem'))
+
+    NOTE: Avoid using setUpTestData until we implement some sort of filesystem
+    rollback behavior.
     """
     def setUp(self):
         super().setUp()
