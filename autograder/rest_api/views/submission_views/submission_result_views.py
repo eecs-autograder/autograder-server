@@ -17,7 +17,7 @@ from autograder.core.caching import get_cached_submission_feedback
 from autograder.core.models.submission import get_submissions_with_results_queryset
 from autograder.core.submission_feedback import (
     SubmissionResultFeedback, AGTestSuiteResultFeedback, AGTestCommandResultFeedback,
-    AGTestPreLoader)
+    AGTestPreLoader, StudentTestSuitePreLoader)
 from autograder.rest_api.views.ag_model_views import AGModelAPIView, require_query_params
 from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
 from autograder.rest_api.serialize_ultimate_submission_results import (
@@ -47,7 +47,10 @@ class SubmissionResultsViewBase(AGModelAPIView):
     ) -> SubmissionResultFeedback:
         submission = self.get_object()
         return SubmissionResultFeedback(
-            submission, fdbk_category, AGTestPreLoader(submission.project))
+            submission,
+            fdbk_category,
+            AGTestPreLoader(submission.project)
+        )
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -75,7 +78,10 @@ class SubmissionResultsView(SubmissionResultsViewBase):
         model_manager = get_submissions_with_results_queryset(base_manager=self.model_manager)
         submission = self.get_object(model_manager_override=model_manager)
         return SubmissionResultFeedback(
-            submission, fdbk_category, AGTestPreLoader(submission.project))
+            submission,
+            fdbk_category,
+            AGTestPreLoader(submission.project)
+        )
 
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):

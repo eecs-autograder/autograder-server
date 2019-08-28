@@ -4,7 +4,8 @@ from typing import Iterator, Optional, List, Sequence
 from django.contrib.auth.models import User
 from django.db.models import Prefetch
 
-from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
+from autograder.core.submission_feedback import (
+    SubmissionResultFeedback, AGTestPreLoader, StudentTestSuitePreLoader)
 from .project import Project, UltimateSubmissionPolicy
 from .ag_test.feedback_category import FeedbackCategory
 from .group import Group
@@ -21,6 +22,7 @@ def get_ultimate_submission(group: Group, user: Optional[User]=None) -> Optional
             group,
             FeedbackCategory.normal,
             ag_test_preloader=AGTestPreLoader(project),
+            student_test_suite_preloader=StudentTestSuitePreLoader(project),
             user=user
         )
         return best.submission if best is not None else None
@@ -29,6 +31,7 @@ def get_ultimate_submission(group: Group, user: Optional[User]=None) -> Optional
             group,
             FeedbackCategory.max,
             ag_test_preloader=AGTestPreLoader(project),
+            student_test_suite_preloader=StudentTestSuitePreLoader(project),
             user=user
         )
         return best.submission if best is not None else None
@@ -50,11 +53,18 @@ def get_ultimate_submissions(
     """
     filter_groups = _prefetch_submissions(project, filter_groups)
 
+    student_test_suite_preloader = StudentTestSuitePreLoader(project)
+
     if project.ultimate_submission_policy == UltimateSubmissionPolicy.most_recent:
-        return (SubmissionResultFeedback(group.submissions.first(),
-                                         FeedbackCategory.max,
-                                         ag_test_preloader)
-                for group in filter_groups if group.submissions.count())
+        return (
+            SubmissionResultFeedback(
+                group.submissions.first(),
+                FeedbackCategory.max,
+                ag_test_preloader,
+                student_test_suite_preloader
+            )
+            for group in filter_groups if group.submissions.count()
+        )
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best_with_normal_fdbk:
         warnings.warn('best_with_normal_fdbk is currently untested and may be deprecated soon.',
                       PendingDeprecationWarning)
@@ -62,20 +72,25 @@ def get_ultimate_submissions(
         # We need to generate best submissions with normal feedback
         # but return SubmissionResultFeedbacks with max feedback.
         best_submissions_fdbks = (
-            _get_best_submission(group, FeedbackCategory.normal, ag_test_preloader)
+            _get_best_submission(
+                group, FeedbackCategory.normal, ag_test_preloader, student_test_suite_preloader)
             for group in filter_groups
         )
         best_submissions = (fdbk.submission for fdbk in best_submissions_fdbks
                             if fdbk is not None)
         return (
-            SubmissionResultFeedback(submission, FeedbackCategory.max, ag_test_preloader)
+            SubmissionResultFeedback(
+                submission, FeedbackCategory.max, ag_test_preloader, student_test_suite_preloader)
             for submission in best_submissions)
     elif project.ultimate_submission_policy == UltimateSubmissionPolicy.best:
         best_submissions_fdbks = (
-            _get_best_submission(group, FeedbackCategory.max, ag_test_preloader)
+            _get_best_submission(
+                group, FeedbackCategory.max, ag_test_preloader, student_test_suite_preloader)
             for group in filter_groups
         )
         return (fdbk for fdbk in best_submissions_fdbks if fdbk is not None)
+
+    assert False
 
 
 def _prefetch_submissions(project: Project, groups: Optional[Sequence[Group]]) -> List[Group]:
@@ -101,13 +116,15 @@ def _get_most_recent_submission(group: Group, user: Optional[User]=None) -> Opti
 
 def _get_best_submission(group: Group, fdbk_category: FeedbackCategory,
                          ag_test_preloader: AGTestPreLoader,
+                         student_test_suite_preloader: StudentTestSuitePreLoader,
                          user: Optional[User]=None) -> Optional[SubmissionResultFeedback]:
     best: Optional[SubmissionResultFeedback] = None
     for submission in group.submissions.all():
         if user is not None and user.username in submission.does_not_count_for:
             continue
 
-        fdbk = SubmissionResultFeedback(submission, fdbk_category, ag_test_preloader)
+        fdbk = SubmissionResultFeedback(
+            submission, fdbk_category, ag_test_preloader, student_test_suite_preloader)
         if best is None or fdbk.total_points > best.total_points:
             best = fdbk
 

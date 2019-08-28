@@ -15,7 +15,8 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, exceptions, mixins, response, status
 
 import autograder.core.models as ag_models
-from autograder.core.submission_feedback import AGTestPreLoader, SubmissionResultFeedback
+from autograder.core.submission_feedback import (
+    AGTestPreLoader, StudentTestSuitePreLoader, SubmissionResultFeedback)
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.serialize_ultimate_submission_results import (
@@ -265,6 +266,7 @@ class ListSubmissionsWithResults(AGModelAPIView):
             base_manager=group.submissions)
 
         ag_test_preloader = AGTestPreLoader(group.project)
+        student_test_suite_preloader = StudentTestSuitePreLoader(group.project)
 
         submissions = []
         for submission in submissions_queryset:
@@ -279,7 +281,12 @@ class ListSubmissionsWithResults(AGModelAPIView):
                 fdbk_category = ag_models.FeedbackCategory.normal
 
             serialized = get_submission_data_with_results(
-                SubmissionResultFeedback(submission, fdbk_category, ag_test_preloader),
+                SubmissionResultFeedback(
+                    submission,
+                    fdbk_category,
+                    ag_test_preloader,
+                    student_test_suite_preloader
+                ),
                 full_results=True
             )
             submissions.append(serialized)

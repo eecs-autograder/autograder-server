@@ -10,6 +10,7 @@ from django.utils.functional import cached_property
 from autograder.core.models import Submission, AGTestCommandResult, StudentTestSuiteResult
 from autograder.core.models.ag_test.ag_test_suite_result import AGTestSuiteResult
 from autograder.core.models.ag_test.ag_test_case_result import AGTestCaseResult
+from autograder.core.models.student_test_suite import StudentTestSuite
 from autograder.core.models.ag_test.feedback_category import FeedbackCategory
 from autograder.core.models.ag_model_base import ToDictMixin
 from autograder.core.models.project import Project
@@ -69,6 +70,25 @@ class AGTestPreLoader:
             }
 
         return self._cmds_by_pk
+
+
+class StudentTestSuitePreLoader:
+    def __init__(self, project: Project):
+        self._project = project
+        self._suites_by_pk: Optional[Dict[int, StudentTestSuite]] = None
+
+    def get_student_test_suite(self, suite_pk: int) -> StudentTestSuite:
+        return self._suites[suite_pk]
+
+    @property
+    def _suites(self) -> Dict[int, StudentTestSuite]:
+        if self._suites_by_pk is None:
+            suites = StudentTestSuite.objects.filter(project=self._project)
+            self._suites_by_pk = {
+                suite.pk: suite for suite in suites
+            }
+
+        return self._suites_by_pk
 
 
 DenormedAGSuiteResType = Union[AGTestSuiteResult, 'SerializedAGTestSuiteResultWrapper']
@@ -286,18 +306,26 @@ def update_denormalized_ag_test_results(submission_pk: int) -> Submission:
 
 class SubmissionResultFeedback(ToDictMixin):
     def __init__(self, submission: Submission, fdbk_category: FeedbackCategory,
-                 ag_test_preloader: AGTestPreLoader):
+                 ag_test_preloader: AGTestPreLoader,
+                 student_test_suite_preloader: Optional[StudentTestSuitePreLoader]=None):
         self._submission = submission
         self._fdbk_category = fdbk_category
         self._project = self._submission.group.project
 
         self._ag_test_loader = ag_test_preloader
+        self._student_test_suite_preloader = (
+            student_test_suite_preloader if student_test_suite_preloader is not None
+            else StudentTestSuitePreLoader(self._project))
 
         self._ag_test_suite_results = _deserialize_denormed_ag_test_results(self._submission)
 
     @property
     def ag_test_preloader(self):
         return self._ag_test_loader
+
+    @property
+    def student_test_suite_preloader(self):
+        return self._student_test_suite_preloader
 
     @property
     def pk(self):
@@ -315,7 +343,8 @@ class SubmissionResultFeedback(ToDictMixin):
         ))
 
         student_suite_points = sum((
-            student_test_suite_result.get_fdbk(self._fdbk_category).total_points
+            student_test_suite_result.get_fdbk(
+                self._fdbk_category, self._student_test_suite_preloader).total_points
             for student_test_suite_result in self._visible_student_test_suite_results
         ))
 
@@ -329,7 +358,8 @@ class SubmissionResultFeedback(ToDictMixin):
         ))
 
         student_suite_points = sum((
-            student_test_suite_result.get_fdbk(self._fdbk_category).total_points_possible
+            student_test_suite_result.get_fdbk(
+                self._fdbk_category, self._student_test_suite_preloader).total_points_possible
             for student_test_suite_result in self._visible_student_test_suite_results
         ))
 
@@ -362,7 +392,8 @@ class SubmissionResultFeedback(ToDictMixin):
     def _visible_student_test_suite_results(self) -> Sequence['StudentTestSuiteResult']:
         return list(
             filter(
-                lambda result: result.get_fdbk(self._fdbk_category).fdbk_conf.visible,
+                lambda result: result.get_fdbk(
+                    self._fdbk_category, self._student_test_suite_preloader).fdbk_conf.visible,
                 self._submission.student_test_suite_results.all()
             )
         )
@@ -375,7 +406,8 @@ class SubmissionResultFeedback(ToDictMixin):
         ]
 
         result['student_test_suite_results'] = [
-            result.get_fdbk(self._fdbk_category).to_dict()
+            result.get_fdbk(
+                self._fdbk_category, self._student_test_suite_preloader).to_dict()
             for result in result['student_test_suite_results']]
 
         return result
