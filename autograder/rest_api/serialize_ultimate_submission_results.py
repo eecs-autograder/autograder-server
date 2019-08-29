@@ -50,8 +50,8 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
         if group.extended_due_date is not None and group.extended_due_date > timezone.now():
             submission_data = None
         else:
-            submission_data = _get_submission_data_with_results(submission_fdbk, full_results,
-                                                                include_handgrading)
+            submission_data = get_submission_data_with_results(
+                submission_fdbk, full_results, include_handgrading)
 
         group_data = group.to_dict()
 
@@ -65,10 +65,13 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
                 user_ultimate_submission = get_ultimate_submission(
                     group, group.members.get(username=username))
                 # NOTE: Do NOT overwrite submission_data
-                user_submission_data = _get_submission_data_with_results(
+                user_submission_data = get_submission_data_with_results(
                     SubmissionResultFeedback(
-                        user_ultimate_submission, ag_models.FeedbackCategory.max,
-                        submission_fdbk.ag_test_preloader),
+                        user_ultimate_submission,
+                        ag_models.FeedbackCategory.max,
+                        submission_fdbk.ag_test_preloader,
+                        submission_fdbk.student_test_suite_preloader
+                    ),
                     full_results,
                     include_handgrading
                 )
@@ -81,9 +84,9 @@ def serialize_ultimate_submission_results(ultimate_submissions: Iterable[Submiss
     return results
 
 
-def _get_submission_data_with_results(submission_fdbk: SubmissionResultFeedback,
-                                      full_results: bool,
-                                      include_handgrading: bool = False):
+def get_submission_data_with_results(submission_fdbk: SubmissionResultFeedback,
+                                     full_results: bool,
+                                     include_handgrading: bool = False):
     submission_data = submission_fdbk.submission.to_dict()
 
     if not full_results:

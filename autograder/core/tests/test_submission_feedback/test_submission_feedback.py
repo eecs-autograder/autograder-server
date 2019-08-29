@@ -5,8 +5,9 @@ from autograder.core.models import get_submissions_with_results_queryset
 from autograder.core.submission_feedback import update_denormalized_ag_test_results
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_suite_fdbk, get_submission_fdbk)
-from autograder.utils.testing import UnitTestBase
 import autograder.core.models as ag_models
+from autograder.core.submission_feedback import StudentTestSuitePreLoader
+from autograder.utils.testing import UnitTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
 
 
@@ -93,7 +94,9 @@ class SubmissionFeedbackTestCase(UnitTestBase):
 
         self.assertEqual(
             self.total_points_per_student_suite,
-            self.student_suite_result1.get_fdbk(ag_models.FeedbackCategory.max).total_points)
+            self.student_suite_result1.get_fdbk(
+                ag_models.FeedbackCategory.max,
+                StudentTestSuitePreLoader(self.project)).total_points)
 
         print(self.total_points)
         self.assertNotEqual(0, self.total_points_per_ag_suite)
@@ -285,8 +288,12 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertSequenceEqual([self.student_suite_result2, self.student_suite_result1],
                                  fdbk.student_test_suite_results)
         self.assertSequenceEqual(
-            [self.student_suite_result2.get_fdbk(ag_models.FeedbackCategory.max).to_dict(),
-             self.student_suite_result1.get_fdbk(ag_models.FeedbackCategory.max).to_dict()],
+            [self.student_suite_result2.get_fdbk(
+                ag_models.FeedbackCategory.max,
+                StudentTestSuitePreLoader(self.project)).to_dict(),
+             self.student_suite_result1.get_fdbk(
+                 ag_models.FeedbackCategory.max,
+                 StudentTestSuitePreLoader(self.project)).to_dict()],
             fdbk.to_dict()['student_test_suite_results'])
 
     def test_some_ag_and_student_test_suites_not_visible(self):
@@ -311,7 +318,8 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         self.assertSequenceEqual([self.student_suite_result1], fdbk.student_test_suite_results)
         self.assertSequenceEqual(
             [self.student_suite_result1.get_fdbk(
-                ag_models.FeedbackCategory.ultimate_submission).to_dict()],
+                ag_models.FeedbackCategory.ultimate_submission,
+                StudentTestSuitePreLoader(self.project)).to_dict()],
             fdbk.to_dict()['student_test_suite_results'])
 
     def test_fdbk_to_dict(self):
@@ -324,8 +332,12 @@ class SubmissionFeedbackTestCase(UnitTestBase):
                 get_suite_fdbk(self.ag_suite_result2, ag_models.FeedbackCategory.max).to_dict()
             ],
             'student_test_suite_results': [
-                self.student_suite_result1.get_fdbk(ag_models.FeedbackCategory.max).to_dict(),
-                self.student_suite_result2.get_fdbk(ag_models.FeedbackCategory.max).to_dict(),
+                self.student_suite_result1.get_fdbk(
+                    ag_models.FeedbackCategory.max,
+                    StudentTestSuitePreLoader(self.project)).to_dict(),
+                self.student_suite_result2.get_fdbk(
+                    ag_models.FeedbackCategory.max,
+                    StudentTestSuitePreLoader(self.project)).to_dict(),
             ]
         }
 

@@ -209,6 +209,10 @@ urlpatterns = [
         views.CreateSoloGroupView.as_view({'post': 'create'}),
         name='solo_group'),
 
+    path('groups/<int:pk>/submissions_with_results/',
+         views.ListSubmissionsWithResults.as_view(),
+         name='list-submissions-with-results'),
+
     path('submissions/<int:pk>/results/',
          views.SubmissionResultsView.as_view(),
          name='submission-results'),

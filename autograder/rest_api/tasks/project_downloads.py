@@ -12,7 +12,8 @@ import autograder.core.models as ag_models
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 import autograder.core.utils as core_ut
 from autograder import utils
-from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
+from autograder.core.submission_feedback import (
+    SubmissionResultFeedback, AGTestPreLoader, StudentTestSuitePreLoader)
 from autograder.rest_api.views.submission_views.all_ultimate_submission_results_view import (
     serialize_ultimate_submission_results)
 
@@ -27,9 +28,14 @@ def _get_all_submissions(
         project: ag_models.Project,
         groups: Sequence[ag_models.Group]) -> Tuple[List[SubmissionResultFeedback], int]:
     ag_test_loader = AGTestPreLoader(project)
+    student_test_suite_loader = StudentTestSuitePreLoader(project)
     submissions = [
-        SubmissionResultFeedback(submission, ag_models.FeedbackCategory.max,
-                                 ag_test_loader)
+        SubmissionResultFeedback(
+            submission,
+            ag_models.FeedbackCategory.max,
+            ag_test_loader,
+            student_test_suite_loader
+        )
         for submission in ag_models.Submission.objects.filter(group__in=groups)
     ]
     return submissions, len(submissions)
@@ -53,8 +59,14 @@ def all_submission_scores_task(project_pk, task_pk, include_staff, *args, **kwar
             )
         )
         ag_test_loader = AGTestPreLoader(project)
+        student_test_suite_loader = StudentTestSuitePreLoader(project)
         fdbks = [
-            SubmissionResultFeedback(submission, ag_models.FeedbackCategory.max, ag_test_loader)
+            SubmissionResultFeedback(
+                submission,
+                ag_models.FeedbackCategory.max,
+                ag_test_loader,
+                student_test_suite_loader
+            )
             for submission in submissions
         ]
         return fdbks, len(submissions)
@@ -213,7 +225,8 @@ def _make_scores_csv(task: ag_models.DownloadTask,
                     row[ag_test_total_header] = case_fdbk.total_points
 
             for student_suite_result in fdbk.student_test_suite_results:
-                suite_fdbk = student_suite_result.get_fdbk(ag_models.FeedbackCategory.max)
+                suite_fdbk = student_suite_result.get_fdbk(
+                    ag_models.FeedbackCategory.max, fdbk.student_test_suite_preloader)
 
                 student_suite_total_header = student_suite_total_tmpl.format(
                     suite_fdbk.student_test_suite_name)

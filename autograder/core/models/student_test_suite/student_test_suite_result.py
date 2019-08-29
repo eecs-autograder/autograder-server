@@ -1,18 +1,18 @@
 import os
 from decimal import Decimal
-from typing import Optional, BinaryIO, List
+from typing import BinaryIO, List, Optional
 
 from django.db import models
 
 import autograder.core.fields as ag_fields
-from .student_test_suite import (
-    BugsExposedFeedbackLevel, StudentTestSuite, StudentTestSuiteFeedbackConfig,
-    MAX_STUDENT_SUITE_FDBK_SETTINGS)
+import autograder.core.utils as core_ut
+
 from ..ag_command import AGCommandResult
 from ..ag_model_base import AutograderModel, ToDictMixin
 from ..ag_test.feedback_category import FeedbackCategory
-
-import autograder.core.utils as core_ut
+from .student_test_suite import (MAX_STUDENT_SUITE_FDBK_SETTINGS,
+                                 BugsExposedFeedbackLevel, StudentTestSuite,
+                                 StudentTestSuiteFeedbackConfig)
 
 
 def _make_get_test_names_result_default() -> int:
@@ -88,9 +88,13 @@ class StudentTestSuiteResult(AutograderModel):
             open(self.grade_buggy_impls_stdout_filename, 'w').close()
             open(self.grade_buggy_impls_stderr_filename, 'w').close()
 
-    def get_fdbk(self,
-                 fdbk_category: FeedbackCategory) -> 'StudentTestSuiteResult.FeedbackCalculator':
-        return StudentTestSuiteResult.FeedbackCalculator(self, fdbk_category)
+    def get_fdbk(
+        self,
+        fdbk_category: FeedbackCategory,
+        student_test_suite_preloader: 'StudentTestSuitePreLoader'
+    ) -> 'StudentTestSuiteResult.FeedbackCalculator':
+        return StudentTestSuiteResult.FeedbackCalculator(
+            self, fdbk_category, student_test_suite_preloader)
 
     class FeedbackCalculator(ToDictMixin):
         """
@@ -99,9 +103,11 @@ class StudentTestSuiteResult(AutograderModel):
         """
 
         def __init__(self, student_test_suite_result: 'StudentTestSuiteResult',
-                     fdbk_category: FeedbackCategory):
+                     fdbk_category: FeedbackCategory,
+                     student_test_suite_preloader: 'StudentTestSuitePreLoader'):
             self._student_test_suite_result = student_test_suite_result
-            self._student_test_suite = self._student_test_suite_result.student_test_suite
+            self._student_test_suite = student_test_suite_preloader.get_student_test_suite(
+                self._student_test_suite_result.student_test_suite_id)
 
             if fdbk_category == FeedbackCategory.normal:
                 self._fdbk = self._student_test_suite.normal_fdbk_config
