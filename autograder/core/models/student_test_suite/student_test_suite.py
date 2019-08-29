@@ -25,7 +25,7 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
     def __init__(
             self,
             visible: bool=True,
-            show_setup_return_code: bool=False,
+            show_setup_return_code: bool=True,
             show_setup_stdout: bool=False,
             show_setup_stderr: bool=False,
             show_get_test_names_return_code: bool=False,
@@ -61,6 +61,7 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
     @classmethod
     def default_ultimate_submission_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
         return NewStudentTestSuiteFeedbackConfig(
+            show_setup_return_code=True,
             show_invalid_test_names=True,
             show_points=True,
             bugs_exposed_fdbk_level=BugsExposedFeedbackLevel.num_bugs_exposed,
@@ -69,7 +70,7 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
     @classmethod
     def default_past_limit_submission_fdbk_config(cls) -> 'NewStudentTestSuiteFeedbackConfig':
         return NewStudentTestSuiteFeedbackConfig(
-            visible=False,
+            visible=True,
             show_setup_return_code=False,
             show_setup_stdout=False,
             show_setup_stderr=False,
