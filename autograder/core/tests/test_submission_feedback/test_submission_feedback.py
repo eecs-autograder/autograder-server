@@ -231,15 +231,24 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             }
         )
 
-        self.student_suite2.validate_and_update(
+        self.student_suite1.validate_and_update(
             past_limit_submission_fdbk_config={
                 'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.num_bugs_exposed,
                 'show_points': True
             }
         )
 
+        self.student_suite2.validate_and_update(
+            past_limit_submission_fdbk_config={
+                'visible': False,
+                'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.num_bugs_exposed,
+                'show_points': True
+            }
+        )
+
         expected_points = (
-            self.total_points_per_ag_suite - self.ag_test_cmd1.points_for_correct_stdout)
+            self.total_points_per_ag_suite - self.ag_test_cmd1.points_for_correct_stdout
+            + self.total_points_per_student_suite)
         fdbk = get_submission_fdbk(
             self.submission, ag_models.FeedbackCategory.past_limit_submission)
         self.assertEqual(expected_points, fdbk.total_points)
@@ -251,7 +260,7 @@ class SubmissionFeedbackTestCase(UnitTestBase):
             'ag_test_suite_results'][1]['ag_test_case_results'][0]['ag_test_command_results']
         self.assertSequenceEqual([], actual_cmd_results)
 
-        self.assertSequenceEqual([], fdbk.student_test_suite_results)
+        self.assertSequenceEqual([self.student_suite_result1], fdbk.student_test_suite_results)
 
     def test_ultimate_fdbk(self):
         self.ag_test_cmd1.validate_and_update(ultimate_submission_fdbk_config={'visible': False})

@@ -58,6 +58,7 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
         self.maxDiff = None
         ultimate_fdbk = ag_models.NewStudentTestSuiteFeedbackConfig.from_dict({
+            'show_setup_return_code': True,
             'show_invalid_test_names': True,
             'show_points': True,
             'bugs_exposed_fdbk_level': ag_models.BugsExposedFeedbackLevel.num_bugs_exposed
