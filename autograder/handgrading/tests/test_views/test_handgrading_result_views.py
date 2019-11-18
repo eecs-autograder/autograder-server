@@ -110,6 +110,7 @@ class RetrieveHandgradingResultTestCase(_SetUp):
             for file_ in self.submitted_files:
                 response = self.client.get(self.get_file_url(file_.name))
                 self.assertEqual(status.HTTP_200_OK, response.status_code)
+                self.assertIn('Content-Length', response)
                 file_.seek(0)
                 self.assertEqual(file_.read(),
                                  b''.join((chunk for chunk in response.streaming_content)))

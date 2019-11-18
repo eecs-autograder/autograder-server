@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import F
-from django.http.response import FileResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
@@ -21,6 +20,7 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.serialize_ultimate_submission_results import (
     get_submission_data_with_results)
+from autograder.rest_api.size_file_response import SizeFileResponse
 import autograder.utils.testing as test_ut
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
@@ -319,7 +319,7 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
         submission = self.get_object()
         filename = request.query_params['filename']
         try:
-            return FileResponse(submission.get_file(filename))
+            return SizeFileResponse(submission.get_file(filename))
         except ObjectDoesNotExist:
             return response.Response('File "{}" not found'.format(filename),
                                      status=status.HTTP_404_NOT_FOUND)

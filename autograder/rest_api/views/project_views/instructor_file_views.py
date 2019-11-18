@@ -1,6 +1,5 @@
 from django.core import exceptions
 from django.db import transaction
-from django.http import FileResponse
 from django.utils.decorators import method_decorator
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
@@ -11,6 +10,7 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core import constants
 from autograder.rest_api import transaction_mixins
+from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (
     ListCreateNestedModelViewSet, AGModelGenericViewSet, require_body_params, AGModelAPIView)
 from autograder.rest_api.views.schema_generation import APITags
@@ -97,7 +97,7 @@ class InstructorFileContentView(AGModelAPIView):
     @swagger_auto_schema(response_content_type='text/html',
                          responses={'200': 'Returns the file contents.'})
     def get(self, *args, **kwargs):
-        return FileResponse(self.get_object().file_obj)
+        return SizeFileResponse(self.get_object().file_obj)
 
     @swagger_auto_schema(request_body_parameters=_update_content_params,
                          responses={'200': 'Returns the updated InstructorFile metadata.'})

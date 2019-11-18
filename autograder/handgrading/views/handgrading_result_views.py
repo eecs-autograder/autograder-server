@@ -4,7 +4,6 @@ from collections import OrderedDict
 
 from django.contrib.auth.models import User
 from django.db.models import Prefetch
-from django.http import FileResponse
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from drf_yasg import openapi
@@ -22,6 +21,7 @@ from autograder.core.models.get_ultimate_submissions import get_ultimate_submiss
 import autograder.handgrading.models as handgrading_models
 import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
+from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (
     handle_object_does_not_exist_404, AGModelAPIView, AGModelGenericViewSet)
 from autograder import utils
@@ -79,7 +79,7 @@ class HandgradingResultView(AGModelGenericViewSet):
         submission = group.handgrading_result.submission
 
         filename = request.query_params['filename']
-        return FileResponse(submission.get_file(filename))
+        return SizeFileResponse(submission.get_file(filename))
 
     @transaction.atomic()
     def create(self, *args, **kwargs):

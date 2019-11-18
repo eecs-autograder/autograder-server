@@ -1,7 +1,7 @@
 import datetime
 import json
 
-from django.http import FileResponse, QueryDict
+from django.http import QueryDict
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -123,6 +123,7 @@ class _FeedbackTestsBase(UnitTestBase):
         if expected is None:
             self.assertIsNone(response.data)
         else:
+            self.assertIn('Content-Length', response)
             self.assertEqual(
                 expected.read(), b''.join((chunk for chunk in response.streaming_content)))
 
