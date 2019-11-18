@@ -1,6 +1,5 @@
 from django.db import transaction
 from django.db.models import F, Case, When
-from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from drf_composable_permissions.p import P
 from drf_yasg.openapi import Parameter, Schema
@@ -19,6 +18,7 @@ import autograder.handgrading.models as hg_models
 import autograder.handgrading.serializers as hg_serializers
 from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
 from autograder.rest_api import tasks as api_tasks, transaction_mixins
+from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, convert_django_validation_error, handle_object_does_not_exist_404,
     AGModelAPIView)
@@ -277,7 +277,7 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
                                      status=status.HTTP_400_BAD_REQUEST)
 
         content_type = self._get_content_type(task.download_type)
-        return FileResponse(open(task.result_filename, 'rb'), content_type=content_type)
+        return SizeFileResponse(open(task.result_filename, 'rb'), content_type=content_type)
 
     def _get_content_type(self, download_type: ag_models.DownloadType):
         if (download_type == ag_models.DownloadType.all_scores

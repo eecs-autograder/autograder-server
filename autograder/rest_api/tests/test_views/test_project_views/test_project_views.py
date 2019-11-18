@@ -569,6 +569,7 @@ class DownloadTaskEndpointsTestCase(UnitTestBase):
             self.client.force_authenticate(user)
             response = self.client.get(url)
             self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertIn('Content-Length', response)
             self.assertEqual(f.read(), b''.join((chunk for chunk in response.streaming_content)))
 
     def test_invalid_get_in_progress_download_task_result(self):
