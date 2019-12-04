@@ -1,6 +1,6 @@
 autograder-sandbox==3.1.2
 celery==4.2.1
-Django==2.2.4
+Django==2.2.8
 django-extensions==1.9.8
 django-redis==4.8.0
 django-timezone-field==2.0
