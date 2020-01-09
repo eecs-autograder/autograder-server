@@ -44,7 +44,7 @@ class GroupInvitationManager(ag_model_base.AutograderModelManager):
 class GroupInvitation(ag_model_base.AutograderModel):
     """
     This class stores an invitation for a set of users to create a
-    SubmissionGroup together.
+    Group together.
     """
     SERIALIZABLE_FIELDS = (
         'pk',

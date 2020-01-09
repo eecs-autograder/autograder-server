@@ -154,7 +154,7 @@ class Submission(ag_model_base.AutograderModel):
         'core.Group', related_name='submissions',
         on_delete=models.CASCADE,
         help_text="""
-            The SubmissionGroup that this submission belongs to. Note
+            The Group that this submission belongs to. Note
             that this field indirectly links this Submission object to a
             Project.
             This field is REQUIRED.""")

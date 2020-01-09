@@ -159,7 +159,7 @@ def build_group(num_members=1,
                 project_kwargs=None,
                 course_kwargs=None) -> ag_models.Group:
     """
-    Creates a SubmissionGroup with the specified data.
+    Creates a Group with the specified data.
     If the "members" key is not present in group_kwargs, then
     num_members Users will be created and added to the group instead.
     """
@@ -194,7 +194,7 @@ def make_submission(group: Optional[ag_models.Group]=None,
     """
     Creates a Submission with the given keyword arguments.
     If the "group" argument is None, then a
-    SubmissionGroup will be created with make_group() and
+    Group will be created with make_group() and
     used instead.
     Any fields passed in as submission_kwargs will be set derectly on
     the submission after it is created in order to bypass the

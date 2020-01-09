@@ -201,7 +201,7 @@ class HandgradingResult(AutograderModel):
     """
     group = models.OneToOneField(
         Group, related_name='handgrading_result', on_delete=models.CASCADE,
-        help_text='''The SubmissionGroup that this HandgradingResult is for.''')
+        help_text='''The Group that this HandgradingResult is for.''')
 
     submission = models.OneToOneField(
         Submission, related_name='handgrading_result', on_delete=models.CASCADE,

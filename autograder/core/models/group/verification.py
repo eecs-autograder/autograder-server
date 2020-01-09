@@ -130,7 +130,7 @@ def verify_users_not_in_other_group(users, project, error_dict_field_name,
             already in another group.
 
     Raises ValidationError if any of the given users are already in a
-    SubmissionGroup other than group_to_ignore.
+    Group other than group_to_ignore.
     """
     users = tuple(users)
 
