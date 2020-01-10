@@ -51,6 +51,25 @@ class ListProjectsTestCase(AGViewTestBase):
         guest = obj_build.make_user()
         self.do_permission_denied_get_test(self.client, guest, self.url)
 
+    def test_admin_plus_student_sees_all_projects(self) -> None:
+        self.maxDiff = None
+        student = obj_build.make_student_user(self.course)
+        self.course.admins.add(student)
+        self.do_valid_list_projects_test(
+            student, self.all_projects, show_closing_time=True, show_instructor_files=True)
+
+    def test_staff_plus_student_sees_all_projects(self) -> None:
+        self.maxDiff = None
+        student = obj_build.make_student_user(self.course)
+        self.course.staff.add(student)
+        self.do_valid_list_projects_test(student, self.all_projects, show_instructor_files=True)
+
+    def test_handgrader_plus_student_sees_all_projects(self) -> None:
+        self.maxDiff = None
+        student = obj_build.make_student_user(self.course)
+        self.course.handgraders.add(student)
+        self.do_valid_list_projects_test(student, self.all_projects)
+
     def do_valid_list_projects_test(self, user, expected_projects,
                                     *, show_closing_time: bool=False,
                                     show_instructor_files: bool=False):

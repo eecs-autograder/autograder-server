@@ -48,10 +48,12 @@ class ListCreateProjectView(ListCreateNestedModelViewSet):
             return queryset
 
         course = self.get_object()
-        if course.is_student(self.request.user):
-            return queryset.filter(visible_to_students=True)
+        if (course.is_admin(self.request.user)
+                or course.is_staff(self.request.user)
+                or course.is_handgrader(self.request.user)):
+            return queryset
 
-        return queryset
+        return queryset.filter(visible_to_students=True)
 
 
 class CopyProjectView(AGModelGenericViewSet):
