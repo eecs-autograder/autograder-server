@@ -9,13 +9,12 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import tag
 
 import autograder.core.models as ag_models
-from autograder.core import constants
 import autograder.utils.testing.model_obj_builders as obj_build
-from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
-    get_submission_fdbk)
-from autograder.utils.testing import UnitTestBase
-
+from autograder.core import constants
+from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
+    get_submission_fdbk
 from autograder.grading_tasks import tasks
+from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 
 
 @tag('slow', 'sandbox')
@@ -586,3 +585,86 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
 
         not_rerun_result = self.ag_test_cmd_2.agtestcommandresult_set.first()
         self.assertFalse(not_rerun_result.return_code_correct)
+
+
+@mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
+    def test_ag_test_suite_not_found_no_retry(self, sleep_mock) -> None:
+        submission = obj_build.make_submission()
+        ag_test_suite = obj_build.make_ag_test_suite()
+
+        ag_models.AGTestSuite.objects.get(pk=ag_test_suite.pk).delete()
+
+        tasks.grade_deferred_ag_test_suite(ag_test_suite.pk, submission.pk)
+        tasks.grade_ag_test_suite_impl(ag_test_suite, submission)
+        sleep_mock.assert_not_called()
+
+    def test_ag_test_case_not_found_no_retry(self, sleep_mock) -> None:
+        submission = obj_build.make_submission()
+        ag_test_case = obj_build.make_ag_test_case()
+        suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            ag_test_suite=ag_test_case.ag_test_suite,
+            submission=submission
+        )
+
+        ag_models.AGTestCase.objects.get(pk=ag_test_case.pk).delete()
+        tasks.grade_ag_test_case_impl(AutograderSandbox(), ag_test_case, suite_result)
+
+        sleep_mock.assert_not_called()
+
+    def test_suite_result_not_found_no_retry(self, sleep_mock) -> None:
+        submission = obj_build.make_submission()
+        ag_test_case = obj_build.make_ag_test_case()
+        suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            ag_test_suite=ag_test_case.ag_test_suite,
+            submission=submission
+        )
+
+        ag_models.AGTestSuiteResult.objects.get(pk=suite_result.pk).delete()
+        tasks.grade_ag_test_case_impl(AutograderSandbox(), ag_test_case, suite_result)
+
+        sleep_mock.assert_not_called()
+
+    @tag('sandbox')
+    def test_ag_test_command_not_found_no_retry(self, sleep_mock) -> None:
+        submission = obj_build.make_submission()
+        ag_test_command = obj_build.make_full_ag_test_command(
+            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
+        ag_test_case = ag_test_command.ag_test_case
+
+        suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            ag_test_suite=ag_test_case.ag_test_suite,
+            submission=submission
+        )
+        test_result = ag_models.AGTestCaseResult.objects.validate_and_create(
+            ag_test_case=ag_test_case,
+            ag_test_suite_result=suite_result
+        )
+
+        ag_models.AGTestCommand.objects.get(pk=ag_test_command.pk).delete()
+        with AutograderSandbox() as sandbox:
+            tasks.grade_ag_test_command_impl(sandbox, ag_test_command, test_result)
+
+        sleep_mock.assert_not_called()
+
+    @tag('sandbox')
+    def test_ag_test_case_result_not_found_no_retry(self, sleep_mock) -> None:
+        submission = obj_build.make_submission()
+        ag_test_command = obj_build.make_full_ag_test_command(
+            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
+        ag_test_case = ag_test_command.ag_test_case
+
+        suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            ag_test_suite=ag_test_case.ag_test_suite,
+            submission=submission
+        )
+        test_result = ag_models.AGTestCaseResult.objects.validate_and_create(
+            ag_test_case=ag_test_case,
+            ag_test_suite_result=suite_result
+        )
+
+        ag_models.AGTestCaseResult.objects.get(pk=test_result.pk).delete()
+        with AutograderSandbox() as sandbox:
+            tasks.grade_ag_test_command_impl(sandbox, ag_test_command, test_result)
+
+        sleep_mock.assert_not_called()
