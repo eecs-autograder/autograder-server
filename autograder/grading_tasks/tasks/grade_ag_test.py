@@ -9,7 +9,6 @@ import celery
 from autograder_sandbox import AutograderSandbox
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
-from psycopg2.errors import ForeignKeyViolation
 
 import autograder.core.models as ag_models
 import autograder.core.utils as core_ut
@@ -50,7 +49,7 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
         try:
             return ag_models.AGTestSuiteResult.objects.get_or_create(
                 ag_test_suite=ag_test_suite, submission=submission)[0]
-        except (IntegrityError, ForeignKeyViolation):
+        except IntegrityError:
             # The suite was deleted, so we skip it.
             return None
 
@@ -122,7 +121,7 @@ def grade_ag_test_case_impl(sandbox: AutograderSandbox,
         try:
             return ag_models.AGTestCaseResult.objects.get_or_create(
                 ag_test_case=ag_test_case, ag_test_suite_result=suite_result)[0]
-        except (ForeignKeyViolation, IntegrityError):
+        except IntegrityError:
             # The AGTestCase or AGSuiteResult has been deleted.
             return None
 
@@ -196,7 +195,7 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
                         shutil.copyfileobj(run_result.stdout, f)
                     with open(cmd_result.stderr_filename, 'wb') as f:
                         shutil.copyfileobj(run_result.stderr, f)
-            except (IntegrityError, ForeignKeyViolation):
+            except IntegrityError:
                 # The command or case result has likely been deleted
                 return
 

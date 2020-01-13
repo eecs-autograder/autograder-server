@@ -10,7 +10,6 @@ from autograder_sandbox import AutograderSandbox
 from autograder_sandbox.autograder_sandbox import CompletedCommand
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
-from psycopg2.errors import ForeignKeyViolation
 
 import autograder.core.models as ag_models
 from autograder.core import constants
@@ -221,6 +220,6 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
                 buggy_impls_stderr.seek(0)
                 with open(result.grade_buggy_impls_stderr_filename, 'wb') as f:
                     shutil.copyfileobj(buggy_impls_stderr, f)
-    except (IntegrityError, ForeignKeyViolation):
+    except IntegrityError:
         # The student test suite has likely been deleted, so do nothing
         pass

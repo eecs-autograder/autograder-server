@@ -27,7 +27,8 @@ class MaxRetriesExceeded(Exception):
 def retry(max_num_retries,
           retry_delay_start=0,
           retry_delay_end=0,
-          retry_delay_step=None):
+          retry_delay_step=None,
+          immediately_reraise_on=tuple()):
     """
     Returns a decorator that applies a synchronous retry loop to the
     decorated function.
@@ -45,6 +46,11 @@ def retry(max_num_retries,
     :param retry_delay_step: The number of seconds to increase the retry
         delay for each consecutive retry. If None, defaults to
         (retry_delay_end - retry_delay_start) / max_num_retries
+
+    :param immediately_reraise_on: A tuple of exception classes. If any
+        of these exceptions are caught, they will be immediately be
+        re-raised, halting the retry attempts. The tuple will be passed
+        directly as the second argument to isinstance().
     """
     if retry_delay_step is None:
         retry_delay_step = (retry_delay_end - retry_delay_start) / max_num_retries
@@ -60,6 +66,9 @@ def retry(max_num_retries,
                 except Exception as e:
                     print('Error in', func.__name__)
                     traceback.print_exc()
+
+                    if isinstance(e, immediately_reraise_on):
+                        raise
 
                     # In case the database connection was closed unexpectedly
                     # (this could happen if the database server restarts), we
@@ -98,15 +107,23 @@ def retry(max_num_retries,
     return decorator
 
 
+RERAISE_IMMEDIATELY = (
+    db.IntegrityError,
+)
+
+
 # Specialization of the "retry" decorator to be used for synchronous
 # tasks that should always succeed unless there is a database issue.
 retry_should_recover = retry(max_num_retries=60,
-                             retry_delay_start=1, retry_delay_end=60)
-# Specialization of the "retry" to be used for grading non-deferred
+                             retry_delay_start=1,
+                             retry_delay_end=60,
+                             immediately_reraise_on=RERAISE_IMMEDIATELY)
+# Specialization of "retry" to be used for grading non-deferred
 # autograder test cases.
 retry_ag_test_cmd = retry(max_num_retries=settings.AG_TEST_MAX_RETRIES,
                           retry_delay_start=settings.AG_TEST_MIN_RETRY_DELAY,
-                          retry_delay_end=settings.AG_TEST_MAX_RETRY_DELAY)
+                          retry_delay_end=settings.AG_TEST_MAX_RETRY_DELAY,
+                          immediately_reraise_on=RERAISE_IMMEDIATELY)
 
 
 @retry_should_recover
