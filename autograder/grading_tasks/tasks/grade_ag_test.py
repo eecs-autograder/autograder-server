@@ -6,26 +6,31 @@ from io import FileIO
 from typing import Tuple
 
 import celery
-
 from autograder_sandbox import AutograderSandbox
-from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError, transaction
 
 import autograder.core.models as ag_models
-from autograder.core import constants
 import autograder.core.utils as core_ut
-from autograder.core.submission_feedback import update_denormalized_ag_test_results
-from .utils import (
-    retry_should_recover, retry_ag_test_cmd, mark_submission_as_error, add_files_to_sandbox,
-    FileCloser, run_ag_test_command, run_command_from_args)
+from autograder.core import constants
+from autograder.core.submission_feedback import \
+    update_denormalized_ag_test_results
+
+from .utils import (FileCloser, add_files_to_sandbox, mark_submission_as_error,
+                    retry_ag_test_cmd, retry_should_recover,
+                    run_ag_test_command, run_command_from_args)
 
 
 @celery.shared_task(bind=True, queue='deferred', max_retries=1, acks_late=True)
 def grade_deferred_ag_test_suite(self, ag_test_suite_pk, submission_pk):
-
     @retry_should_recover
     def _grade_deferred_ag_test_suite_impl():
-        grade_ag_test_suite_impl(ag_models.AGTestSuite.objects.get(pk=ag_test_suite_pk),
-                                 ag_models.Submission.objects.get(pk=submission_pk))
+        try:
+            grade_ag_test_suite_impl(ag_models.AGTestSuite.objects.get(pk=ag_test_suite_pk),
+                                     ag_models.Submission.objects.get(pk=submission_pk))
+        except ObjectDoesNotExist:
+            # This means that the suite was deleted, so we skip it.
+            pass
 
     try:
         _grade_deferred_ag_test_suite_impl()
@@ -41,10 +46,16 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
                              *ag_test_cases_to_run: ag_models.AGTestCase):
     @retry_should_recover
     def get_or_create_suite_result():
-        return ag_models.AGTestSuiteResult.objects.get_or_create(
-            ag_test_suite=ag_test_suite, submission=submission)[0]
+        try:
+            return ag_models.AGTestSuiteResult.objects.get_or_create(
+                ag_test_suite=ag_test_suite, submission=submission)[0]
+        except IntegrityError:
+            # The suite was deleted, so we skip it.
+            return None
 
     suite_result = get_or_create_suite_result()
+    if suite_result is None:
+        return
 
     sandbox = AutograderSandbox(
         name='submission{}-suite{}-{}'.format(submission.pk, ag_test_suite.pk, uuid.uuid4().hex),
@@ -107,10 +118,16 @@ def grade_ag_test_case_impl(sandbox: AutograderSandbox,
                             suite_result: ag_models.AGTestSuiteResult):
     @retry_should_recover
     def get_or_create_ag_test_case_result():
-        return ag_models.AGTestCaseResult.objects.get_or_create(
-            ag_test_case=ag_test_case, ag_test_suite_result=suite_result)[0]
+        try:
+            return ag_models.AGTestCaseResult.objects.get_or_create(
+                ag_test_case=ag_test_case, ag_test_suite_result=suite_result)[0]
+        except IntegrityError:
+            # The AGTestCase or AGSuiteResult has been deleted.
+            return None
 
     case_result = get_or_create_ag_test_case_result()
+    if case_result is None:
+        return
 
     @retry_ag_test_cmd
     def _grade_ag_test_cmd_with_retry(ag_test_cmd, case_result):
@@ -167,16 +184,20 @@ def grade_ag_test_command_impl(sandbox: AutograderSandbox,
 
         @retry_should_recover
         def save_ag_test_cmd_result():
-            with transaction.atomic():
-                cmd_result = ag_models.AGTestCommandResult.objects.update_or_create(
-                    defaults=result_data,
-                    ag_test_command=ag_test_cmd,
-                    ag_test_case_result=case_result)[0]  # type: ag_models.AGTestCommandResult
+            try:
+                with transaction.atomic():
+                    cmd_result = ag_models.AGTestCommandResult.objects.update_or_create(
+                        defaults=result_data,
+                        ag_test_command=ag_test_cmd,
+                        ag_test_case_result=case_result)[0]  # type: ag_models.AGTestCommandResult
 
-                with open(cmd_result.stdout_filename, 'wb') as f:
-                    shutil.copyfileobj(run_result.stdout, f)
-                with open(cmd_result.stderr_filename, 'wb') as f:
-                    shutil.copyfileobj(run_result.stderr, f)
+                    with open(cmd_result.stdout_filename, 'wb') as f:
+                        shutil.copyfileobj(run_result.stdout, f)
+                    with open(cmd_result.stderr_filename, 'wb') as f:
+                        shutil.copyfileobj(run_result.stderr, f)
+            except IntegrityError:
+                # The command or case result has likely been deleted
+                return
 
         save_ag_test_cmd_result()
 

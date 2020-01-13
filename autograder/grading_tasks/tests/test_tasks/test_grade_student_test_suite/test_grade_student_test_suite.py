@@ -8,7 +8,7 @@ import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core import constants
 from autograder.grading_tasks import tasks
-from autograder.utils.testing import UnitTestBase
+from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 
 
 @tag('slow', 'sandbox')
@@ -381,3 +381,16 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
 
         result = self.submission.student_test_suite_results.get(student_test_suite=student_suite)
         self.assertEqual(0, result.setup_result.return_code)
+
+
+@mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
+    def test_student_test_suite_not_found_no_retry(self, sleep_mock) -> None:
+        submission = obj_build.make_submission()
+        suite = obj_build.make_student_test_suite()
+
+        ag_models.StudentTestSuite.objects.get(pk=suite.pk).delete()
+
+        tasks.grade_deferred_student_test_suite(suite.pk, submission.pk)
+        tasks.grade_student_test_suite_impl(suite, submission)
+        sleep_mock.assert_not_called()

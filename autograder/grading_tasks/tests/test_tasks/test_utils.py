@@ -1,14 +1,15 @@
 from unittest import mock
 
+from autograder_sandbox import AutograderSandbox
+from django.db.utils import IntegrityError
 from django.test import tag
 
-from autograder_sandbox import AutograderSandbox
-
 import autograder.core.models as ag_models
-from autograder.utils.testing import UnitTestBase
-from autograder.grading_tasks import tasks
-
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.grading_tasks import tasks
+from autograder.grading_tasks.tasks.utils import (retry_ag_test_cmd,
+                                                  retry_should_recover)
+from autograder.utils.testing import UnitTestBase
 
 
 class RetryDecoratorTestCase(UnitTestBase):
@@ -73,6 +74,45 @@ class RetryDecoratorTestCase(UnitTestBase):
             func_to_retry()
 
         mocked_sleep.assert_has_calls([mock.call(0) for i in range(max_num_retries)])
+
+    @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+    def test_immediatedly_reraise_on(self, sleep_mock) -> None:
+        @tasks.retry(max_num_retries=1, immediately_reraise_on=(ValueError, TypeError))
+        def func_to_retry(type_to_throw):
+            raise type_to_throw
+
+        with self.assertRaises(ValueError):
+            func_to_retry(ValueError)
+
+        with self.assertRaises(TypeError):
+            func_to_retry(TypeError)
+
+        sleep_mock.assert_not_called()
+
+        with self.assertRaises(tasks.MaxRetriesExceeded):
+            func_to_retry(RuntimeError)
+
+    @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+    def test_immediately_reraise_retry_should_recover(self, sleep_mock) -> None:
+        @retry_should_recover
+        def func():
+            raise IntegrityError
+
+        with self.assertRaises(IntegrityError):
+            func()
+
+        sleep_mock.assert_not_called()
+
+    @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+    def test_immediately_reraise_retry_ad_test_cmd(self, sleep_mock) -> None:
+        @retry_ag_test_cmd
+        def func():
+            raise IntegrityError
+
+        with self.assertRaises(IntegrityError):
+            func()
+
+        sleep_mock.assert_not_called()
 
 
 @tag('slow', 'sandbox')

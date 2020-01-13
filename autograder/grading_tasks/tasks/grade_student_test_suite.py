@@ -8,13 +8,14 @@ from typing import List
 import celery
 from autograder_sandbox import AutograderSandbox
 from autograder_sandbox.autograder_sandbox import CompletedCommand
-from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError, transaction
 
 import autograder.core.models as ag_models
 from autograder.core import constants
-from .utils import (
-    add_files_to_sandbox, retry_should_recover, mark_submission_as_error,
-    run_ag_test_command, run_ag_command)
+
+from .utils import (add_files_to_sandbox, mark_submission_as_error,
+                    retry_should_recover, run_ag_command, run_ag_test_command)
 
 
 @celery.shared_task(queue='deferred', max_retries=1, acks_late=True)
@@ -22,9 +23,13 @@ def grade_deferred_student_test_suite(student_test_suite_pk, submission_pk):
 
     @retry_should_recover
     def _grade_deferred_student_test_suite_impl():
-        grade_student_test_suite_impl(
-            ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk),
-            ag_models.Submission.objects.get(pk=submission_pk))
+        try:
+            grade_student_test_suite_impl(
+                ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk),
+                ag_models.Submission.objects.get(pk=submission_pk))
+        except ObjectDoesNotExist:
+            # This means that the suite was deleted, so we skip it.
+            pass
 
     try:
         _grade_deferred_student_test_suite_impl()
@@ -144,7 +149,6 @@ def grade_student_test_suite_impl(student_test_suite: ag_models.StudentTestSuite
 
 
 @retry_should_recover
-@transaction.atomic()
 def _save_results(student_test_suite: ag_models.StudentTestSuite,
                   submission: ag_models.Submission,
                   setup_run_result: CompletedCommand,
@@ -158,58 +162,64 @@ def _save_results(student_test_suite: ag_models.StudentTestSuite,
                   validity_check_stderr: FileIO=None,
                   buggy_impls_stdout: FileIO=None,
                   buggy_impls_stderr: FileIO=None):
-    result_kwargs = {
-        'student_tests': student_tests,
-        'discarded_tests': discarded_tests,
-        'invalid_tests': invalid_tests,
-        'timed_out_tests': timed_out_tests,
-        'bugs_exposed': bugs_exposed
-    }
-    result = ag_models.StudentTestSuiteResult.objects.update_or_create(
-        defaults=result_kwargs,
-        student_test_suite=student_test_suite,
-        submission=submission)[0]  # type: ag_models.StudentTestSuiteResult
+    try:
+        with transaction.atomic():
+            result_kwargs = {
+                'student_tests': student_tests,
+                'discarded_tests': discarded_tests,
+                'invalid_tests': invalid_tests,
+                'timed_out_tests': timed_out_tests,
+                'bugs_exposed': bugs_exposed
+            }
+            result = ag_models.StudentTestSuiteResult.objects.update_or_create(
+                defaults=result_kwargs,
+                student_test_suite=student_test_suite,
+                submission=submission)[0]  # type: ag_models.StudentTestSuiteResult
 
-    if setup_run_result is not None:
-        setup_result = ag_models.AGCommandResult.objects.validate_and_create(
-            return_code=setup_run_result.return_code,
-            timed_out=setup_run_result.timed_out,
-            stdout_truncated=setup_run_result.stdout_truncated,
-            stderr_truncated=setup_run_result.stderr_truncated)  # type: ag_models.AGCommandResult
+            if setup_run_result is not None:
+                setup_result = ag_models.AGCommandResult.objects.validate_and_create(
+                    return_code=setup_run_result.return_code,
+                    timed_out=setup_run_result.timed_out,
+                    stdout_truncated=setup_run_result.stdout_truncated,
+                    stderr_truncated=setup_run_result.stderr_truncated
+                )  # type: ag_models.AGCommandResult
 
-        with open(setup_result.stdout_filename, 'wb') as f:
-            shutil.copyfileobj(setup_run_result.stdout, f)
+                with open(setup_result.stdout_filename, 'wb') as f:
+                    shutil.copyfileobj(setup_run_result.stdout, f)
 
-        with open(setup_result.stderr_filename, 'wb') as f:
-            shutil.copyfileobj(setup_run_result.stderr, f)
+                with open(setup_result.stderr_filename, 'wb') as f:
+                    shutil.copyfileobj(setup_run_result.stderr, f)
 
-        result.setup_result = setup_result
-        result.save()
+                result.setup_result = setup_result
+                result.save()
 
-    if get_test_names_run_result is not None:
-        result.get_test_names_result.return_code = get_test_names_run_result.return_code
-        result.get_test_names_result.timed_out = get_test_names_run_result.timed_out
-        result.get_test_names_result.save()
-        with open(result.get_test_names_result.stdout_filename, 'wb') as f:
-            get_test_names_run_result.stdout.seek(0)
-            shutil.copyfileobj(get_test_names_run_result.stdout, f)
-        with open(result.get_test_names_result.stderr_filename, 'wb') as f:
-            get_test_names_run_result.stderr.seek(0)
-            shutil.copyfileobj(get_test_names_run_result.stderr, f)
+            if get_test_names_run_result is not None:
+                result.get_test_names_result.return_code = get_test_names_run_result.return_code
+                result.get_test_names_result.timed_out = get_test_names_run_result.timed_out
+                result.get_test_names_result.save()
+                with open(result.get_test_names_result.stdout_filename, 'wb') as f:
+                    get_test_names_run_result.stdout.seek(0)
+                    shutil.copyfileobj(get_test_names_run_result.stdout, f)
+                with open(result.get_test_names_result.stderr_filename, 'wb') as f:
+                    get_test_names_run_result.stderr.seek(0)
+                    shutil.copyfileobj(get_test_names_run_result.stderr, f)
 
-    if validity_check_stdout is not None:
-        validity_check_stdout.seek(0)
-        with open(result.validity_check_stdout_filename, 'wb') as f:
-            shutil.copyfileobj(validity_check_stdout, f)
-    if validity_check_stderr is not None:
-        validity_check_stderr.seek(0)
-        with open(result.validity_check_stderr_filename, 'wb') as f:
-            shutil.copyfileobj(validity_check_stderr, f)
-    if buggy_impls_stdout is not None:
-        buggy_impls_stdout.seek(0)
-        with open(result.grade_buggy_impls_stdout_filename, 'wb') as f:
-            shutil.copyfileobj(buggy_impls_stdout, f)
-    if buggy_impls_stderr is not None:
-        buggy_impls_stderr.seek(0)
-        with open(result.grade_buggy_impls_stderr_filename, 'wb') as f:
-            shutil.copyfileobj(buggy_impls_stderr, f)
+            if validity_check_stdout is not None:
+                validity_check_stdout.seek(0)
+                with open(result.validity_check_stdout_filename, 'wb') as f:
+                    shutil.copyfileobj(validity_check_stdout, f)
+            if validity_check_stderr is not None:
+                validity_check_stderr.seek(0)
+                with open(result.validity_check_stderr_filename, 'wb') as f:
+                    shutil.copyfileobj(validity_check_stderr, f)
+            if buggy_impls_stdout is not None:
+                buggy_impls_stdout.seek(0)
+                with open(result.grade_buggy_impls_stdout_filename, 'wb') as f:
+                    shutil.copyfileobj(buggy_impls_stdout, f)
+            if buggy_impls_stderr is not None:
+                buggy_impls_stderr.seek(0)
+                with open(result.grade_buggy_impls_stderr_filename, 'wb') as f:
+                    shutil.copyfileobj(buggy_impls_stderr, f)
+    except IntegrityError:
+        # The student test suite has likely been deleted, so do nothing
+        pass
