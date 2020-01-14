@@ -30,7 +30,6 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertEqual('', suite.setup_suite_cmd)
 
         self.assertFalse(suite.allow_network_access)
-        self.assertEqual(constants.SupportedImages.default, suite.docker_image_to_use)
         self.assertEqual(ag_models.SandboxDockerImage.objects.get(name='default'),
                          suite.sandbox_docker_image)
         self.assertFalse(suite.deferred)
@@ -95,7 +94,6 @@ class AGTestSuiteTestCase(UnitTestBase):
             setup_suite_cmd_name='steve',
             allow_network_access=allow_network_access,
             deferred=deferred,
-            docker_image_to_use=constants.SupportedImages.eecs490,
             sandbox_docker_image=sandbox_image.to_dict(),
             normal_fdbk_config={
                 'visible': False,
@@ -115,7 +113,6 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertCountEqual(student_files_needed, suite.student_files_needed.all())
         self.assertEqual(allow_network_access, suite.allow_network_access)
         self.assertEqual(deferred, suite.deferred)
-        self.assertEqual(constants.SupportedImages.eecs490, suite.docker_image_to_use)
         self.assertEqual(sandbox_image, suite.sandbox_docker_image)
         self.assertFalse(suite.normal_fdbk_config.visible)
 
@@ -207,7 +204,6 @@ class AGTestSuiteTestCase(UnitTestBase):
             'setup_suite_cmd',
             'setup_suite_cmd_name',
 
-            'docker_image_to_use',
             'sandbox_docker_image',
             'allow_network_access',
             'deferred',

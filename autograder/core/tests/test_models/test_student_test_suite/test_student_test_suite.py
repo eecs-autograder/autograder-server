@@ -42,7 +42,6 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertEqual(0, student_suite.points_per_exposed_bug)
         self.assertIsNone(student_suite.max_points)
         self.assertFalse(student_suite.deferred)
-        self.assertEqual(constants.SupportedImages.default, student_suite.docker_image_to_use)
         self.assertEqual(ag_models.SandboxDockerImage.objects.get(name='default'),
                          student_suite.sandbox_docker_image)
         self.assertFalse(student_suite.allow_network_access)
@@ -102,7 +101,6 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'points_per_exposed_bug': 42,
             'max_points': 462,
             'deferred': True,
-            'docker_image_to_use': constants.SupportedImages.eecs280,
             'sandbox_docker_image': sandbox_image.to_dict(),
             'allow_network_access': True,
             'normal_fdbk_config': {
@@ -296,7 +294,6 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'points_per_exposed_bug',
             'max_points',
             'deferred',
-            'docker_image_to_use',
             'sandbox_docker_image',
             'allow_network_access',
             'normal_fdbk_config',

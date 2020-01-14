@@ -141,12 +141,6 @@ class AGTestSuite(AutograderModel):
     setup_suite_cmd_name = ag_fields.ShortStringField(
         blank=True, help_text="""The name of this suite's setup command.""")
 
-    docker_image_to_use = ag_fields.EnumField(
-        constants.SupportedImages,
-        default=constants.SupportedImages.default,
-        help_text="""An identifier for the Docker image that the sandbox should be created from.
-                     This field is DEPRECATED in favor of sandbox_docker_image""")
-
     sandbox_docker_image = models.ForeignKey(
         SandboxDockerImage,
         on_delete=models.PROTECT,
@@ -249,7 +243,6 @@ class AGTestSuite(AutograderModel):
         'setup_suite_cmd',
         'setup_suite_cmd_name',
 
-        'docker_image_to_use',
         'sandbox_docker_image',
         'allow_network_access',
         'deferred',
@@ -281,7 +274,6 @@ class AGTestSuite(AutograderModel):
 
         'allow_network_access',
         'deferred',
-        'docker_image_to_use',
         'sandbox_docker_image',
 
         'normal_fdbk_config',

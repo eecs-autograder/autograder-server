@@ -4,13 +4,6 @@ import autograder.core.fields as ag_fields
 from autograder.core.models import AutograderModel
 
 
-# NOTE: Migration 0036 creates a "default" image entry in the database,
-# but only if we aren't running tests. For tests, we've added a fixture
-# in autograder/core/fixture/default_sandbox_image.json to create the
-# default image for tests (the UnitTestBase class handles loading the fixture).
-#
-# IMPORTANT: If the version of the default image changes, be sure to update
-# the tag field in autograder/core/fixture/default_sandbox_image.json
 class SandboxDockerImage(AutograderModel):
     """
     Contains the information required to identify and load sandbox

@@ -459,12 +459,6 @@ class StudentTestSuite(AutograderModel):
                      Deferred suites that have yet to be graded do not prevent members
                      of a group from submitting again.''')
 
-    docker_image_to_use = ag_fields.EnumField(
-        constants.SupportedImages,
-        default=constants.SupportedImages.default,
-        help_text="""An identifier for the Docker image that the sandbox should be created from.
-                     This field is DEPRECATED in favor of sandbox_docker_image""")
-
     sandbox_docker_image = models.ForeignKey(
         SandboxDockerImage,
         on_delete=models.PROTECT,
@@ -589,7 +583,6 @@ class StudentTestSuite(AutograderModel):
         'max_points',
 
         'deferred',
-        'docker_image_to_use',
         'sandbox_docker_image',
         'allow_network_access',
 
@@ -620,7 +613,6 @@ class StudentTestSuite(AutograderModel):
         'max_points',
 
         'deferred',
-        'docker_image_to_use',
         'sandbox_docker_image',
         'allow_network_access',
 
