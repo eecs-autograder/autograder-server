@@ -1,5 +1,5 @@
 from django.core import exceptions
-from django.db import models, connection
+from django.db import models, connection, transaction
 
 import autograder.core.fields as ag_fields
 from autograder.core import constants
@@ -221,6 +221,7 @@ class AGTestSuite(AutograderModel):
         if errors:
             raise exceptions.ValidationError(errors)
 
+    @transaction.atomic()
     def delete(self, *args, **kwargs):
         with connection.cursor() as cursor:
             cursor.execute(
