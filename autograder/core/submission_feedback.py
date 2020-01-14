@@ -367,22 +367,23 @@ class SubmissionResultFeedback(ToDictMixin):
 
     @cached_property
     def ag_test_suite_results(self) -> List['AGTestSuiteResultFeedback']:
-        visible = filter(
-            lambda result: AGTestSuiteResultFeedback(result,
-                                                     self._fdbk_category,
-                                                     self._ag_test_loader).fdbk_conf.visible,
-            self._ag_test_suite_results)
+        visible = []
+        for result in self._ag_test_suite_results:
+            try:
+                fdbk = AGTestSuiteResultFeedback(result, self._fdbk_category, self._ag_test_loader)
+                if fdbk.fdbk_conf.visible:
+                    visible.append(fdbk)
+            except KeyError:
+                # In certain rare cases, possibly caused by race condition when
+                # deleting a suite/test/command at just the right time, a
+                # submissions's denormalized AG test results can end up
+                # contaning the PK for a suite/test/command that no longer
+                # exists. Since this is unlikely to happen on a large scale,
+                # we'll just ignore those elements.
+                continue
 
-        def suite_result_sort_key(suite_res: DenormalizedAGTestSuiteResult):
-            suite = self._ag_test_loader.get_ag_test_suite(
-                suite_res.ag_test_suite_result.ag_test_suite_id)
-            return suite._order
-
-        return [
-            AGTestSuiteResultFeedback(
-                ag_test_suite_result, self._fdbk_category, self._ag_test_loader)
-            for ag_test_suite_result in sorted(visible, key=suite_result_sort_key)
-        ]
+        visible.sort(key=lambda item: item.ag_test_suite_order)
+        return visible
 
     @cached_property
     def student_test_suite_results(self) -> List['StudentTestSuiteResult']:
@@ -460,6 +461,10 @@ class AGTestSuiteResultFeedback(ToDictMixin):
     @property
     def ag_test_suite_pk(self) -> int:
         return self._ag_test_suite.pk
+
+    @property
+    def ag_test_suite_order(self) -> int:
+        return self._ag_test_suite._order
 
     @property
     def fdbk_settings(self) -> dict:
@@ -542,42 +547,26 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
     @cached_property
     def _visible_ag_test_case_results(self) -> List['AGTestCaseResultFeedback']:
-        result_fdbk = (
-            AGTestCaseResultFeedback(result, self._fdbk_category, self._ag_test_preloader)
-            for result in self._ag_test_case_results
-        )
-        visible = filter(lambda result_fdbk: result_fdbk.fdbk_conf.visible, result_fdbk)
-
-        def case_res_sort_key(case_res: AGTestCaseResultFeedback):
-            case = self._ag_test_preloader.get_ag_test_case(
-                case_res.ag_test_case_pk)
-            return case._order
-
-        if self._fdbk_category != FeedbackCategory.normal:
-            return [
-                AGTestCaseResultFeedback(case_fdbk.denormalized_ag_test_case_result,
-                                         self._fdbk_category,
-                                         self._ag_test_preloader,
-                                         is_first_failure=False)
-                for case_fdbk in sorted(visible, key=case_res_sort_key)
-            ]
-
-        # loop through, replace first failure with new ag test case result fdbk obj
-        result = []
+        visible = []
         first_failure_found = False
-        for case_fdbk in sorted(visible, key=case_res_sort_key):
-            if (not first_failure_found
-                    and case_fdbk.total_points < case_fdbk.total_points_possible):
-                result.append(
-                    AGTestCaseResultFeedback(case_fdbk.denormalized_ag_test_case_result,
-                                             self._fdbk_category,
-                                             self._ag_test_preloader,
-                                             is_first_failure=True))
-                first_failure_found = True
-            else:
-                result.append(case_fdbk)
+        for result in self._ag_test_case_results:
+            try:
+                fdbk = AGTestCaseResultFeedback(
+                    result, self._fdbk_category, self._ag_test_preloader)
 
-        return result
+                if (self._fdbk_category == FeedbackCategory.normal
+                        and not first_failure_found
+                        and fdbk.total_points < fdbk.total_points_possible):
+                    first_failure_found = True
+                    fdbk.is_first_failure = True
+
+                if fdbk.fdbk_conf.visible:
+                    visible.append(fdbk)
+            except KeyError:  # See comment in AGTestSuiteResultFeedback.ag_test_suite_results
+                continue
+
+        visible.sort(key=lambda item: item.ag_test_case_order)
+        return visible
 
     SERIALIZABLE_FIELDS = (
         'pk',
@@ -627,7 +616,7 @@ class AGTestCaseResultFeedback(ToDictMixin):
         elif fdbk_category == FeedbackCategory.max:
             self._fdbk = NewAGTestCaseFeedbackConfig()
 
-        self._is_first_failure = is_first_failure
+        self.is_first_failure = is_first_failure
 
     @property
     def fdbk_conf(self):
@@ -644,6 +633,10 @@ class AGTestCaseResultFeedback(ToDictMixin):
     @property
     def ag_test_case_pk(self) -> int:
         return self._ag_test_case.pk
+
+    @property
+    def ag_test_case_order(self) -> int:
+        return self._ag_test_case._order
 
     @property
     def denormalized_ag_test_case_result(self) -> DenormalizedAGTestCaseResult:
@@ -671,18 +664,20 @@ class AGTestCaseResultFeedback(ToDictMixin):
 
     @property
     def _visible_cmd_results(self) -> Iterable['AGTestCommandResultFeedback']:
-        results_fdbk = (
-            AGTestCommandResultFeedback(result, self._fdbk_category, self._ag_test_preloader,
-                                        is_in_first_failed_test=self._is_first_failure)
-            for result in self._ag_test_command_results
-        )
-        visible = filter(lambda result_fdbk: result_fdbk.fdbk_conf.visible, results_fdbk)
+        visible = []
+        for result in self._ag_test_command_results:
+            try:
+                fdbk = AGTestCommandResultFeedback(
+                    result, self._fdbk_category, self._ag_test_preloader,
+                    is_in_first_failed_test=self.is_first_failure
+                )
+                if fdbk.fdbk_conf.visible:
+                    visible.append(fdbk)
+            except KeyError:  # See comment in AGTestSuiteResultFeedback.ag_test_suite_results
+                continue
 
-        def cmd_res_sort_key(cmd_result: AGTestCommandResultFeedback):
-            cmd = self._ag_test_preloader.get_ag_test_cmd(cmd_result.ag_test_command_pk)
-            return cmd._order
-
-        return sorted(visible, key=cmd_res_sort_key)
+        visible.sort(key=lambda item: item.ag_test_command_order)
+        return visible
 
     SERIALIZABLE_FIELDS = (
         'pk',
@@ -748,6 +743,10 @@ class AGTestCommandResultFeedback(ToDictMixin):
     @property
     def ag_test_command_pk(self) -> int:
         return self._cmd.pk
+
+    @property
+    def ag_test_command_order(self) -> int:
+        return self._cmd._order
 
     @property
     def fdbk_conf(self) -> AGTestCommandFeedbackConfig:

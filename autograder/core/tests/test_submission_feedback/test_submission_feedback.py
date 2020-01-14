@@ -353,3 +353,21 @@ class SubmissionFeedbackTestCase(UnitTestBase):
         actual = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).to_dict()
         print(json.dumps(actual, indent=4, sort_keys=True))
         self.assertEqual(expected, actual)
+
+    def test_denormalized_data_updated_on_missing_suite_key_error(self) -> None:
+        self.ag_test_suite1.delete()
+        result = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
+        self.assertNotIn(self.ag_test_suite1, result.ag_test_suite_results)
+
+    def test_denormalized_data_updated_on_missing_ag_test_case_key_error(self) -> None:
+        self.ag_test_case2.delete()
+        result = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
+        for suite_res in result.ag_test_suite_results:
+            self.assertNotIn(self.ag_test_case2, suite_res.ag_test_case_results)
+
+    def test_denormalized_data_updated_on_missing_command_key_error(self) -> None:
+        self.ag_test_cmd1.delete()
+        result = get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max)
+        for suite_res in result.ag_test_suite_results:
+            for test_res in suite_res.ag_test_case_results:
+                self.assertNotIn(self.ag_test_cmd1, test_res.ag_test_command_results)
