@@ -1,7 +1,9 @@
 from django.db import models
 
 import autograder.core.fields as ag_fields
-from autograder.core.models import AutograderModel
+
+from .ag_model_base import AutograderModel
+from .course import Course
 
 
 class SandboxDockerImage(AutograderModel):
@@ -12,6 +14,7 @@ class SandboxDockerImage(AutograderModel):
 
     class Meta:
         ordering = ('display_name',)
+        unique_together = ('display_name', 'course')
 
     name = ag_fields.ShortStringField(
         blank=False,
@@ -22,9 +25,15 @@ class SandboxDockerImage(AutograderModel):
 
     display_name = ag_fields.ShortStringField(
         blank=False,
-        unique=True,
+        # unique=True,
         help_text="""A human-readable name for this sandbox image.
                      This field is required.""")
+
+    course = models.ForeignKey(
+        Course,
+        blank=True, null=True, default=None,
+        on_delete=models.CASCADE,
+        help_text="The course this image is associated with.")
 
     tag = models.TextField(
         blank=False,
