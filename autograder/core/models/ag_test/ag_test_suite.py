@@ -5,7 +5,7 @@ import autograder.core.fields as ag_fields
 from autograder.core import constants
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import ExpectedStudentFile, Project, InstructorFile
-from ..sandbox_docker_image import SandboxDockerImage
+from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
 
 class AGTestSuiteFeedbackConfig(AutograderModel):
@@ -143,7 +143,16 @@ class AGTestSuite(AutograderModel):
 
     sandbox_docker_image = models.ForeignKey(
         SandboxDockerImage,
-        on_delete=models.PROTECT,
+        on_delete=models.SET(get_default_image_pk),
+        default=get_default_image_pk,
+        related_name='+',
+        help_text="The sandbox docker image to use for running this suite."
+    )
+
+    # This is unused and will be removed eventually
+    old_sandbox_docker_image = models.ForeignKey(
+        SandboxDockerImage,
+        on_delete=models.SET_DEFAULT,
         default='default',
         to_field='name',
         help_text="""The sandbox docker image to use for running this suite."""
@@ -160,6 +169,7 @@ class AGTestSuite(AutograderModel):
                      have yet to be graded do not prevent members of a group from submitting
                      again.''')
 
+    # These are unused and will be removed eventually
     old_normal_fdbk_config = models.OneToOneField(
         AGTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
