@@ -6,6 +6,10 @@ from .ag_model_base import AutograderModel
 from .course import Course
 
 
+def get_default_image_pk():
+    return SandboxDockerImage.objects.get(display_name='Default', course=None).pk
+
+
 class SandboxDockerImage(AutograderModel):
     """
     Contains the information required to identify and load sandbox
@@ -25,8 +29,8 @@ class SandboxDockerImage(AutograderModel):
 
     display_name = ag_fields.ShortStringField(
         blank=False,
-        # unique=True,
         help_text="""A human-readable name for this sandbox image.
+                     Must be unique among images belonging to a course.
                      This field is required.""")
 
     course = models.ForeignKey(
@@ -44,9 +48,16 @@ class SandboxDockerImage(AutograderModel):
                      the new version of the image may not be fetched."""
     )
 
+    def full_clean(self, *args, **kwargs):
+        if not self.name:
+            self.name = self.display_name
+            if self.course is not None:
+                self.name += str(self.course.pk)
+
+        return super().full_clean(*args, **kwargs)
+
     SERIALIZABLE_FIELDS = [
         'pk',
-        'name',
         'display_name',
         'tag',
     ]

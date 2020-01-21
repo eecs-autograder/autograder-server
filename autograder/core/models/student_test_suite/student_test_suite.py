@@ -8,7 +8,7 @@ from autograder.core import constants
 from ..ag_command import AGCommand, Command
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import Project, InstructorFile, ExpectedStudentFile
-from ..sandbox_docker_image import SandboxDockerImage
+from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
 
 class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
@@ -461,7 +461,16 @@ class StudentTestSuite(AutograderModel):
 
     sandbox_docker_image = models.ForeignKey(
         SandboxDockerImage,
-        on_delete=models.PROTECT,
+        on_delete=models.SET(get_default_image_pk),
+        default=get_default_image_pk,
+        related_name='+',
+        help_text="The sandbox docker image to use for running this suite."
+    )
+
+    # This is unused and will be removed eventually
+    old_sandbox_docker_image = models.ForeignKey(
+        SandboxDockerImage,
+        on_delete=models.SET_DEFAULT,
         default='default',
         to_field='name',
         help_text="""The sandbox docker image to use for running this suite."""
@@ -472,6 +481,7 @@ class StudentTestSuite(AutograderModel):
         help_text='''Specifies whether the sandbox should allow commands run inside of it to
                      make network calls outside of the sandbox.''')
 
+    # These are unused and will be removed eventually
     old_normal_fdbk_config = models.OneToOneField(
         StudentTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
