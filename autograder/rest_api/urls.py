@@ -179,6 +179,9 @@ urlpatterns = [
     url(r'', include(ag_test_suite_detail_router.urls)),
 
     url(r'', include(sandbox_docker_image_router.urls)),
+    path('courses/<int:pk>/sandbox_docker_images/',
+         views.SandboxDockerImageForCourseViewSet.as_view(),
+         name='sandbox-docker-images-for-course'),
 
     url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/$',
         views.AGTestCaseListCreateView.as_view(), name='ag_test_cases'),

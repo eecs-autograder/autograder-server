@@ -5,7 +5,8 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet
+from autograder.rest_api.views.ag_model_views import (
+    AGModelGenericViewSet, ListCreateNestedModelViewSet)
 from autograder.rest_api.views.schema_generation import APITags
 
 
@@ -39,3 +40,12 @@ class SandboxDockerImageViewSet(mixins.ListModelMixin,
 
     def get_queryset(self):
         return ag_models.SandboxDockerImage.objects.all()
+
+
+class SandboxDockerImageForCourseViewSet(ListCreateNestedModelViewSet):
+    serializer_class = ag_serializers.SandboxDockerImageSerializer
+    permission_classes = (ag_permissions.is_admin(),)
+
+    model_manager = ag_models.Course.objects
+    to_one_field_name = 'course'
+    reverse_to_one_field_name = 'sandbox_docker_images'
