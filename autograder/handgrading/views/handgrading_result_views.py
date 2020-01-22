@@ -81,6 +81,14 @@ class HandgradingResultView(AGModelGenericViewSet):
         filename = request.query_params['filename']
         return SizeFileResponse(submission.get_file(filename))
 
+    @handle_object_does_not_exist_404
+    def has_correct_submission(self, *args, **kwargs):
+        group = self.get_object()  # type: ag_models.Group
+        return response.Response(
+            data=group.handgrading_result.submission == get_ultimate_submission(group),
+            status=status.HTTP_200_OK
+        )
+
     @transaction.atomic()
     def create(self, *args, **kwargs):
         """
@@ -133,6 +141,14 @@ class HandgradingResultView(AGModelGenericViewSet):
         handgrading_result = group.handgrading_result
         handgrading_result.validate_and_update(**request.data)
         return response.Response(self.get_serializer(handgrading_result).data)
+
+    @transaction.atomic()
+    @handle_object_does_not_exist_404
+    def destroy(self, *args, **kwargs):
+        group = self.get_object()  # type: ag_models.Group
+        group.handgrading_result.delete()
+
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 is_handgrader_or_staff = (P(ag_permissions.is_staff(lambda project: project.course))

@@ -55,8 +55,11 @@ urlpatterns = [
 
     url(r'^groups/(?P<group_pk>[0-9]+)/handgrading_result/$',
         views.HandgradingResultView.as_view(
-            {'get': 'retrieve', 'post': 'create', 'patch': 'partial_update'}),
+            {'get': 'retrieve', 'post': 'create', 'patch': 'partial_update', 'delete': 'destroy'}),
         name='handgrading_result'),
+    path('groups/<int:group_pk>/handgrading_result/has_correct_submission/',
+         views.HandgradingResultView.as_view({'get': 'has_correct_submission'}),
+         name='handgrading-result-has-correct-submission'),
 
     url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/applied_annotations/$',
         views.AppliedAnnotationListCreateView.as_view(), name='applied_annotations'),

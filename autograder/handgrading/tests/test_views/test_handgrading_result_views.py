@@ -15,10 +15,11 @@ import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.models import Submission
 from autograder.handgrading.views.handgrading_result_views import HandgradingResultPaginator
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from autograder.utils.testing import UnitTestBase
 
 
-class _SetUp(UnitTestBase):
+class _SetUp(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.group = obj_build.make_group()
@@ -175,7 +176,61 @@ class RetrieveHandgradingResultTestCase(_SetUp):
         return self.url + '?filename={}'.format(filename)
 
 
-class CreateHandgradingResultTestCase(test_impls.CreateObjectTest, _SetUp):
+class HasCorrectSubmissionTestCase(_SetUp):
+    def setUp(self):
+        super().setUp()
+
+        self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            group=self.submission.group,
+            handgrading_rubric=self.handgrading_rubric
+        )  # type: hg_models.HandgradingResult
+
+        self.url = reverse('handgrading-result-has-correct-submission',
+                           kwargs={'group_pk': self.submission.group.pk})
+
+    def test_has_correct_ultimate_submission(self) -> None:
+        for user in self.admin, self.staff, self.handgrader:
+            self.client.force_authenticate(user)
+            response = self.client.get(self.url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertIs(response.data, True)
+
+        self.project.validate_and_update(visible_to_students=True)
+        self.handgrading_rubric.validate_and_update(show_grades_and_rubric_to_students=True)
+        self.client.force_authenticate(self.student)
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertIs(response.data, True)
+
+    def test_has_incorrect_ultimate_submission(self) -> None:
+        other_submission = obj_build.make_submission(self.group)
+        self.handgrading_result.submission = other_submission
+        self.handgrading_result.save()
+
+        for user in self.admin, self.staff, self.handgrader:
+            self.client.force_authenticate(user)
+            response = self.client.get(self.url)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertIs(response.data, False)
+
+        self.project.validate_and_update(visible_to_students=True)
+        self.handgrading_rubric.validate_and_update(show_grades_and_rubric_to_students=True)
+        self.client.force_authenticate(self.student)
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertIs(response.data, False)
+
+    def test_handgrading_rubric_does_not_exist(self):
+        self.handgrading_rubric.delete()
+
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.get(self.url)
+        self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
+
+
+class CreateHandgradingResultTestCase(_SetUp):
     def setUp(self):
         super().setUp()
 
@@ -294,6 +349,33 @@ class UpdateHandgradingResultPointsAdjustmentTestCase(test_impls.UpdateObjectTes
         request_data = {'points_adjustment': -3}
         self.do_patch_object_permission_denied_test(
             self.handgrading_result, self.client, self.student, self.url, request_data)
+
+
+class DeleteHandgradingResultTestCase(_SetUp):
+    def setUp(self):
+        super().setUp()
+
+        self.handgrading_result = hg_models.HandgradingResult.objects.validate_and_create(
+            submission=self.submission,
+            group=self.submission.group,
+            handgrading_rubric=self.handgrading_rubric
+        )  # type: hg_models.HandgradingResult
+
+    def test_admin_delete_result(self) -> None:
+        self.do_delete_object_test(self.handgrading_result, self.client, self.admin, self.url)
+
+    def test_staff_delete_result(self) -> None:
+        self.do_delete_object_test(self.handgrading_result, self.client, self.staff, self.url)
+
+    def test_handgrader_delete_result(self) -> None:
+        self.do_delete_object_test(self.handgrading_result, self.client, self.handgrader, self.url)
+
+    def test_student_delete_result_permission_denied(self) -> None:
+        self.project.validate_and_update(visible_to_students=True)
+        self.handgrading_rubric.validate_and_update(show_grades_and_rubric_to_students=True)
+
+        self.do_delete_object_permission_denied_test(
+            self.handgrading_result, self.client, self.student, self.url)
 
 
 class ListHandgradingResultsViewTestCase(UnitTestBase):
