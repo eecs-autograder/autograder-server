@@ -37,6 +37,7 @@ class SandboxDockerImage(AutograderModel):
         Course,
         blank=True, null=True, default=None,
         on_delete=models.CASCADE,
+        related_name='sandbox_docker_images',
         help_text="The course this image is associated with.")
 
     tag = models.TextField(
@@ -59,6 +60,7 @@ class SandboxDockerImage(AutograderModel):
     SERIALIZABLE_FIELDS = [
         'pk',
         'display_name',
+        'course',
         'tag',
     ]
 
