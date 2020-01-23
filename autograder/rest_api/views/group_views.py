@@ -138,6 +138,7 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
 
 class GroupDetailViewSet(mixins.RetrieveModelMixin,
                          transaction_mixins.TransactionPartialUpdateMixin,
+                         transaction_mixins.TransactionDestroyMixin,
                          AGModelGenericViewSet):
     serializer_class = ag_serializers.SubmissionGroupSerializer
     permission_classes = (group_permissions,)

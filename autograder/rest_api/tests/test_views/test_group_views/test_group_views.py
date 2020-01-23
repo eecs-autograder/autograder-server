@@ -7,12 +7,14 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from autograder.utils.testing import UnitTestBase
 
 
@@ -623,3 +625,21 @@ class MergeGroupsTestCase(test_data.Client,
     def get_merge_url(self, group1, group2):
         return (reverse('group-merge-with', kwargs={'pk': group1.pk})
                 + '?other_group_pk=' + str(group2.pk))
+
+
+class DeleteGroupTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.group = obj_build.make_group()
+        self.course = self.group.project.course
+        self.url = reverse('group-detail', kwargs={'pk': self.group.pk})
+        self.client = APIClient()
+
+    def test_admin_delete_group(self) -> None:
+        admin = obj_build.make_admin_user(self.course)
+        self.do_delete_object_test(self.group, self.client, admin, self.url)
+
+    def test_non_admin_delete_group_permission_denied(self) -> None:
+        staff = obj_build.make_staff_user(self.course)
+        self.do_delete_object_permission_denied_test(self.group, self.client, staff, self.url)
