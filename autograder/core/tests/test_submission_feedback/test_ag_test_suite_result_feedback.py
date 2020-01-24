@@ -213,6 +213,8 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             'setup_name',
             'setup_return_code',
             'setup_timed_out',
+            'setup_stdout_truncated',
+            'setup_stderr_truncated',
             'total_points',
             'total_points_possible',
             'ag_test_case_results',

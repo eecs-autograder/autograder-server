@@ -840,10 +840,12 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
             'stdout_correct',
             'stdout_points',
             'stdout_points_possible',
+            'stdout_truncated',
 
             'stderr_correct',
             'stderr_points',
             'stderr_points_possible',
+            'stderr_truncated',
 
             'total_points',
             'total_points_possible',
