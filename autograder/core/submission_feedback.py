@@ -505,6 +505,10 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
 
     @property
+    def setup_stdout_truncated(self) -> bool:
+        return self._ag_test_suite_result.setup_stdout_truncated
+
+    @property
     def setup_stderr(self) -> Optional[BinaryIO]:
         if not self._fdbk.show_setup_stderr:
             return None
@@ -516,6 +520,10 @@ class AGTestSuiteResultFeedback(ToDictMixin):
             return None
 
         return os.path.getsize(self._ag_test_suite_result.setup_stderr_filename)
+
+    @property
+    def setup_stderr_truncated(self) -> bool:
+        return self._ag_test_suite_result.setup_stderr_truncated
 
     @property
     def _show_setup_names(self):
@@ -578,6 +586,9 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         'setup_name',
         'setup_return_code',
         'setup_timed_out',
+
+        'setup_stdout_truncated',
+        'setup_stderr_truncated',
 
         'ag_test_case_results'
     )
@@ -833,6 +844,10 @@ class AGTestCommandResultFeedback(ToDictMixin):
                 or self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual)
 
     @property
+    def stdout_truncated(self) -> bool:
+        return self._ag_test_command_result.stdout_truncated
+
+    @property
     def stdout_diff(self) -> Optional[core_ut.DiffResult]:
         if (self._cmd.expected_stdout_source == ExpectedOutputSource.none
                 or self._fdbk.stdout_fdbk_level != ValueFeedbackLevel.expected_and_actual):
@@ -909,6 +924,10 @@ class AGTestCommandResultFeedback(ToDictMixin):
     def _show_actual_stderr(self):
         return (self._fdbk.show_actual_stderr
                 or self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual)
+
+    @property
+    def stderr_truncated(self) -> bool:
+        return self._ag_test_command_result.stderr_truncated
 
     @property
     def stderr_diff(self) -> Optional[core_ut.DiffResult]:
@@ -994,10 +1013,12 @@ class AGTestCommandResultFeedback(ToDictMixin):
         'stdout_correct',
         'stdout_points',
         'stdout_points_possible',
+        'stdout_truncated',
 
         'stderr_correct',
         'stderr_points',
         'stderr_points_possible',
+        'stderr_truncated',
 
         'total_points',
         'total_points_possible'
