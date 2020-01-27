@@ -8,7 +8,8 @@ from ..project import Project
 
 
 def verify_users_have_same_enrollment_status(users: Iterable[User], project: Project,
-                                             error_dict_field_name: str):
+                                             error_dict_field_name: str,
+                                             ignore_guest_restrictions: bool):
     """
     Parameters:
         users -- An iterable of User objects that will potentially be
@@ -19,6 +20,10 @@ def verify_users_have_same_enrollment_status(users: Iterable[User], project: Pro
 
         error_dict_field_name -- The field name to use in the
             ValidationError error dictionary.
+
+        ignore_guest_restrictions -- When True, will not check whether
+            the project allows guests and whether users is a mix
+            of students and guests.
 
     Checks to see whether the users have the same enrollment status.
     - All users must either be:
@@ -31,19 +36,23 @@ def verify_users_have_same_enrollment_status(users: Iterable[User], project: Pro
     """
     users = tuple(users)
 
-    num_enrolled = utils.count_if(
-        users, lambda member: project.course.is_student(member))
     num_staff = utils.count_if(
         users, lambda member: project.course.is_staff(member))
 
-    # Note: yes, the nested ifs are necessary
-    if num_staff:
-        if num_staff != len(users):
-            raise exceptions.ValidationError({
-                error_dict_field_name: (
-                    "Groups with any staff users "
-                    "must consist of only staff users")})
-    elif num_enrolled:
+    if num_staff != 0:
+        if num_staff == len(users):
+            return
+        raise exceptions.ValidationError({
+            error_dict_field_name: (
+                "Groups with any staff users must consist of only staff users")})
+
+    if ignore_guest_restrictions:
+        return
+
+    num_enrolled = utils.count_if(
+        users, lambda member: project.course.is_student(member))
+
+    if num_enrolled:
         if num_enrolled != len(users):
             raise exceptions.ValidationError({
                 error_dict_field_name: (
@@ -68,8 +77,7 @@ def verify_users_have_same_enrollment_status(users: Iterable[User], project: Pro
             })
 
 
-def verify_group_size_allowed_by_project(users, project,
-                                         error_dict_field_name):
+def verify_group_size_allowed_by_project(users, project, error_dict_field_name):
     """
     Parameters:
         users -- An iterable of User objects that will potentially be in
@@ -149,12 +157,13 @@ def verify_users_not_in_other_group(users, project, error_dict_field_name,
 
 def verify_users_can_be_in_group(users, project, error_dict_field_name,
                                  group_to_ignore=None,
-                                 check_group_size_limits=True):
+                                 check_group_size_limits=True,
+                                 ignore_guest_restrictions=False):
     """
     A shortcut for calling the above 4 "verify_" functions.
     """
     verify_users_have_same_enrollment_status(
-        users, project, error_dict_field_name)
+        users, project, error_dict_field_name, ignore_guest_restrictions)
     if check_group_size_limits:
         verify_group_size_allowed_by_project(
             users, project, error_dict_field_name)

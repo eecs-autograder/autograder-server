@@ -631,15 +631,32 @@ class DeleteGroupTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
 
-        self.group = obj_build.make_group()
+        self.group = obj_build.make_group(num_members=5)
         self.course = self.group.project.course
         self.url = reverse('group-detail', kwargs={'pk': self.group.pk})
         self.client = APIClient()
 
     def test_admin_delete_group(self) -> None:
+        original_member_names = self.group.member_names
+        original_user_pks = {user.pk for user in self.group.members.all()}
         admin = obj_build.make_admin_user(self.course)
-        self.do_delete_object_test(self.group, self.client, admin, self.url)
+        self.client.force_authenticate(admin)
+        response = self.client.delete(self.url)
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        self.group = ag_models.Group.objects.get(pk=self.group.pk)
+        new_user_pks = {user.pk for user in self.group.members.all()}
+        self.assertTrue(original_user_pks.isdisjoint(new_user_pks))
+        for index, original_name in enumerate(original_member_names):
+            self.assertEqual(
+                f'~deleted_{self.group.pk}_' + original_name, self.group.member_names[index])
 
     def test_non_admin_delete_group_permission_denied(self) -> None:
+        original_member_names = self.group.member_names
         staff = obj_build.make_staff_user(self.course)
-        self.do_delete_object_permission_denied_test(self.group, self.client, staff, self.url)
+        self.client.force_authenticate(staff)
+        response = self.client.delete(self.url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        self.group = ag_models.Group.objects.get(pk=self.group.pk)
+        self.assertEqual(original_member_names, self.group.member_names)

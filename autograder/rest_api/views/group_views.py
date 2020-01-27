@@ -138,7 +138,6 @@ class _UltimateSubmissionPermissions(permissions.BasePermission):
 
 class GroupDetailViewSet(mixins.RetrieveModelMixin,
                          transaction_mixins.TransactionPartialUpdateMixin,
-                         transaction_mixins.TransactionDestroyMixin,
                          AGModelGenericViewSet):
     serializer_class = ag_serializers.SubmissionGroupSerializer
     permission_classes = (group_permissions,)
@@ -167,6 +166,25 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
             request.data['members'] = users
             request.data['check_group_size_limits'] = False
         return super().partial_update(request, *args, **kwargs)
+
+    @transaction.atomic
+    def delete(self, request, *args, **kwargs):
+        """
+        "Deletes" a group by removing all of its members. Each group
+        member is replaced with a dummy user whose username contains
+        the group's pk and the original username. This allows "deleted"
+        groups to be easily viewable and recoverable by the user.
+        """
+        group = self.get_object()
+        new_members = []
+        for username in group.member_names:
+            new_username = f'~deleted_{group.pk}_{username}'
+            new_members.append(User.objects.get_or_create(username=new_username)[0])
+
+        group.validate_and_update(
+            members=new_members, check_group_size_limits=False, ignore_guest_restrictions=True)
+
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @swagger_auto_schema(
         api_tags=[APITags.groups, APITags.submissions],
