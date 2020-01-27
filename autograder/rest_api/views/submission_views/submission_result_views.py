@@ -133,7 +133,13 @@ class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
             type='object',
             properties={
                 'setup_stdout_size': Parameter('setup_stdout_size', 'body', type='Optional[int]'),
+                'setup_stdout_truncated': Parameter(
+                    'setup_stdout_truncated', 'body', type='Optional[bool]'),
+
                 'setup_stderr_size': Parameter('setup_stderr_size', 'body', type='Optional[int]'),
+                'setup_stderr_truncated': Parameter(
+                    'setup_stderr_truncated', 'body', type='Optional[bool]'),
+
             }
         )}
     )
@@ -147,7 +153,9 @@ class AGTestSuiteResultsOutputSizeView(SubmissionResultsViewBase):
             return response.Response(None)
         return response.Response({
             'setup_stdout_size': suite_fdbk.get_setup_stdout_size(),
+            'setup_stdout_truncated': suite_fdbk.setup_stdout_truncated,
             'setup_stderr_size': suite_fdbk.get_setup_stderr_size(),
+            'setup_stderr_truncated': suite_fdbk.setup_stderr_truncated,
         })
 
 
@@ -220,7 +228,9 @@ class AGTestCommandResultStderrView(SubmissionResultsViewBase):
             type='object',
             properties={
                 'stdout_size': Parameter('stdout_size', 'body', type='Optional[int]'),
+                'stdout_truncated': Parameter('stdout_truncated', 'body', type='Optional[bool]'),
                 'stderr_size': Parameter('stderr_size', 'body', type='Optional[int]'),
+                'stderr_truncated': Parameter('stderr_truncated', 'body', type='Optional[bool]'),
                 'stdout_diff_size': Parameter('stdout_diff_size', 'body', type='Optional[int]'),
                 'stderr_diff_size': Parameter('stderr_diff_size', 'body', type='Optional[int]'),
             }
@@ -236,7 +246,9 @@ class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
             return response.Response(None)
         return response.Response({
             'stdout_size': cmd_fdbk.get_stdout_size(),
+            'stdout_truncated': cmd_fdbk.stdout_truncated,
             'stderr_size': cmd_fdbk.get_stderr_size(),
+            'stderr_truncated': cmd_fdbk.stderr_truncated,
             'stdout_diff_size': cmd_fdbk.get_stdout_diff_size(),
             'stderr_diff_size': cmd_fdbk.get_stderr_diff_size(),
         })

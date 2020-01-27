@@ -505,7 +505,10 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return os.path.getsize(self._ag_test_suite_result.setup_stdout_filename)
 
     @property
-    def setup_stdout_truncated(self) -> bool:
+    def setup_stdout_truncated(self) -> Optional[bool]:
+        if not self._fdbk.show_setup_stderr:
+            return None
+
         return self._ag_test_suite_result.setup_stdout_truncated
 
     @property
@@ -522,7 +525,10 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return os.path.getsize(self._ag_test_suite_result.setup_stderr_filename)
 
     @property
-    def setup_stderr_truncated(self) -> bool:
+    def setup_stderr_truncated(self) -> Optional[bool]:
+        if not self._fdbk.show_setup_stderr:
+            return None
+
         return self._ag_test_suite_result.setup_stderr_truncated
 
     @property
@@ -586,9 +592,6 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         'setup_name',
         'setup_return_code',
         'setup_timed_out',
-
-        'setup_stdout_truncated',
-        'setup_stderr_truncated',
 
         'ag_test_case_results'
     )
@@ -844,8 +847,11 @@ class AGTestCommandResultFeedback(ToDictMixin):
                 or self._fdbk.stdout_fdbk_level == ValueFeedbackLevel.expected_and_actual)
 
     @property
-    def stdout_truncated(self) -> bool:
-        return self._ag_test_command_result.stdout_truncated
+    def stdout_truncated(self) -> Optional[bool]:
+        if self._show_actual_stdout:
+            return self._ag_test_command_result.stdout_truncated
+
+        return None
 
     @property
     def stdout_diff(self) -> Optional[core_ut.DiffResult]:
@@ -910,24 +916,28 @@ class AGTestCommandResultFeedback(ToDictMixin):
 
     @property
     def stderr(self) -> Optional[BinaryIO]:
-        if self._show_actual_stderr():
+        if self._show_actual_stderr:
             return open(self._ag_test_command_result.stderr_filename, 'rb')
 
         return None
 
     def get_stderr_size(self) -> Optional[int]:
-        if self._show_actual_stderr():
+        if self._show_actual_stderr:
             return os.path.getsize(self._ag_test_command_result.stderr_filename)
 
         return None
 
+    @property
     def _show_actual_stderr(self):
         return (self._fdbk.show_actual_stderr
                 or self._fdbk.stderr_fdbk_level == ValueFeedbackLevel.expected_and_actual)
 
     @property
-    def stderr_truncated(self) -> bool:
-        return self._ag_test_command_result.stderr_truncated
+    def stderr_truncated(self) -> Optional[bool]:
+        if self._show_actual_stderr:
+            return self._ag_test_command_result.stderr_truncated
+
+        return None
 
     @property
     def stderr_diff(self) -> Optional[core_ut.DiffResult]:
@@ -1013,12 +1023,10 @@ class AGTestCommandResultFeedback(ToDictMixin):
         'stdout_correct',
         'stdout_points',
         'stdout_points_possible',
-        'stdout_truncated',
 
         'stderr_correct',
         'stderr_points',
         'stderr_points_possible',
-        'stderr_truncated',
 
         'total_points',
         'total_points_possible'
