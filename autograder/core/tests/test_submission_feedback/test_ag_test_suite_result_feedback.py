@@ -162,6 +162,7 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             f.write(setup_stderr)
         self.ag_test_suite_result.save()
 
+        self.ag_test_suite_result.setup_stdout_truncated = True
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
         self.assertEqual(self.ag_test_suite.setup_suite_cmd_name, fdbk.setup_name)
         self.assertEqual(setup_return_code, fdbk.setup_return_code)
@@ -170,6 +171,8 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertEqual(len(setup_stdout), fdbk.get_setup_stdout_size())
         self.assertEqual(setup_stderr, fdbk.setup_stderr.read().decode())
         self.assertEqual(len(setup_stderr), fdbk.get_setup_stderr_size())
+        self.assertTrue(fdbk.setup_stdout_truncated)
+        self.assertFalse(fdbk.setup_stderr_truncated)
 
         self.ag_test_suite.validate_and_update(
             normal_fdbk_config={
@@ -188,6 +191,8 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.get_setup_stdout_size())
         self.assertIsNone(fdbk.setup_stderr)
         self.assertIsNone(fdbk.get_setup_stderr_size())
+        self.assertIsNone(fdbk.setup_stdout_truncated)
+        self.assertIsNone(fdbk.setup_stderr_truncated)
 
     def test_some_ag_test_cases_not_visible(self):
         self.ag_test_case2.validate_and_update(ultimate_submission_fdbk_config={'visible': False})
@@ -213,8 +218,6 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
             'setup_name',
             'setup_return_code',
             'setup_timed_out',
-            'setup_stdout_truncated',
-            'setup_stderr_truncated',
             'total_points',
             'total_points_possible',
             'ag_test_case_results',

@@ -164,6 +164,8 @@ class AGTestSuiteOutputFeedbackTestCase(_SetUp):
             expected = {
                 'setup_stdout_size': fdbk.get_setup_stdout_size(),
                 'setup_stderr_size': fdbk.get_setup_stderr_size(),
+                'setup_stdout_truncated': fdbk.setup_stdout_truncated,
+                'setup_stderr_truncated': fdbk.setup_stderr_truncated,
             }
             self.assertEqual(expected, response.data)
 

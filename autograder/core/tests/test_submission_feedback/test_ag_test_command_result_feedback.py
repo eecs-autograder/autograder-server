@@ -514,11 +514,13 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
             }
         )
         result = self.make_correct_result()
+        result.stdout_truncated = True
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
         self.assertEqual(len(_stdout_text(result)), fdbk.get_stdout_size())
         self.assertEqual(_stdout_text(result), _stdout_text(fdbk))
         self.assertIsNone(fdbk.stdout_correct)
+        self.assertTrue(fdbk.stdout_truncated)
         self.assertEqual(0, fdbk.stdout_points)
         self.assertEqual(0, fdbk.stdout_points_possible)
 
@@ -535,6 +537,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.get_stdout_size())
         self.assertIsNone(fdbk.stdout)
         self.assertTrue(fdbk.stdout_correct)
+        self.assertIsNone(fdbk.stdout_truncated)
         self.assertIsNone(fdbk.get_stdout_diff_size())
         self.assertIsNone(fdbk.stdout_diff)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
@@ -556,6 +559,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertIsNotNone(fdbk.stdout_diff)
         self.assertIsNotNone(fdbk.get_stdout_size())
         self.assertIsNotNone(fdbk.stdout)
+        self.assertIsNotNone(fdbk.stdout_truncated)
         self.assertEqual(self.ag_test_command.points_for_correct_stdout,
                          fdbk.stdout_points)
 
@@ -675,11 +679,13 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
             }
         )
         result = self.make_correct_result()
+        result.stderr_truncated = True
         fdbk = get_cmd_fdbk(result, ag_models.FeedbackCategory.normal)
 
         self.assertEqual(len(_stderr_text(result)), fdbk.get_stderr_size())
         self.assertEqual(_stderr_text(result), _stderr_text(fdbk))
         self.assertIsNone(fdbk.stderr_correct)
+        self.assertTrue(fdbk.stderr_truncated)
         self.assertEqual(0, fdbk.stderr_points)
         self.assertEqual(0, fdbk.stderr_points_possible)
 
@@ -695,6 +701,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
 
         self.assertIsNone(fdbk.stderr)
         self.assertIsNone(fdbk.get_stderr_size())
+        self.assertIsNone(fdbk.stderr_truncated)
         self.assertTrue(fdbk.stderr_correct)
         self.assertIsNone(fdbk.stderr_diff)
         self.assertIsNone(fdbk.get_stderr_diff_size())
@@ -717,6 +724,7 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
         self.assertIsNotNone(fdbk.get_stderr_diff_size())
         self.assertIsNotNone(fdbk.stderr)
         self.assertIsNotNone(fdbk.get_stderr_size())
+        self.assertFalse(fdbk.stderr_truncated)
         self.assertEqual(self.ag_test_command.points_for_correct_stderr,
                          fdbk.stderr_points)
 
@@ -840,12 +848,10 @@ class AGTestCommandResultFeedbackTestCase(UnitTestBase):
             'stdout_correct',
             'stdout_points',
             'stdout_points_possible',
-            'stdout_truncated',
 
             'stderr_correct',
             'stderr_points',
             'stderr_points_possible',
-            'stderr_truncated',
 
             'total_points',
             'total_points_possible',

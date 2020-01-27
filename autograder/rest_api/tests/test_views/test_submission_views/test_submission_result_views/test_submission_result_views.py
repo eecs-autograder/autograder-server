@@ -112,6 +112,8 @@ class _FeedbackTestsBase(UnitTestBase):
         expected = {
             'stdout_size': cmd_fdbk.get_stdout_size(),
             'stderr_size': cmd_fdbk.get_stderr_size(),
+            'stdout_truncated': cmd_fdbk.stdout_truncated,
+            'stderr_truncated': cmd_fdbk.stderr_truncated,
             'stdout_diff_size': cmd_fdbk.get_stdout_diff_size(),
             'stderr_diff_size': cmd_fdbk.get_stderr_diff_size(),
         }
