@@ -7,12 +7,14 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from autograder.utils.testing import UnitTestBase
 
 
@@ -623,3 +625,38 @@ class MergeGroupsTestCase(test_data.Client,
     def get_merge_url(self, group1, group2):
         return (reverse('group-merge-with', kwargs={'pk': group1.pk})
                 + '?other_group_pk=' + str(group2.pk))
+
+
+class DeleteGroupTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.group = obj_build.make_group(num_members=5)
+        self.course = self.group.project.course
+        self.url = reverse('group-detail', kwargs={'pk': self.group.pk})
+        self.client = APIClient()
+
+    def test_admin_delete_group(self) -> None:
+        original_member_names = self.group.member_names
+        original_user_pks = {user.pk for user in self.group.members.all()}
+        admin = obj_build.make_admin_user(self.course)
+        self.client.force_authenticate(admin)
+        response = self.client.delete(self.url)
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        self.group = ag_models.Group.objects.get(pk=self.group.pk)
+        new_user_pks = {user.pk for user in self.group.members.all()}
+        self.assertTrue(original_user_pks.isdisjoint(new_user_pks))
+        for index, original_name in enumerate(original_member_names):
+            self.assertEqual(
+                f'~deleted_{self.group.pk}_' + original_name, self.group.member_names[index])
+
+    def test_non_admin_delete_group_permission_denied(self) -> None:
+        original_member_names = self.group.member_names
+        staff = obj_build.make_staff_user(self.course)
+        self.client.force_authenticate(staff)
+        response = self.client.delete(self.url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        self.group = ag_models.Group.objects.get(pk=self.group.pk)
+        self.assertEqual(original_member_names, self.group.member_names)

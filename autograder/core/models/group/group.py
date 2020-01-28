@@ -146,12 +146,18 @@ class Group(ag_model_base.AutograderModel):
         if not os.path.isdir(group_dir):
             os.makedirs(group_dir)
 
-    def validate_and_update(self, check_group_size_limits=True, **kwargs):
+    def validate_and_update(self, check_group_size_limits=True, ignore_guest_restrictions=False,
+                            **kwargs):
         """
         New parameters:
             check_group_size_limits -- When False, validation of
                 whether the group size is within specified project limits
                 will NOT be performed. Defaults to True.
+
+            ignore_guest_restrictions -- When True, validation of
+                whether the group members are a mix of students and
+                guests and whether guests can submit will NOT be
+                performed. Defaults to False.
 
         This method is overridden to provide validation and atomicity
         when overwriting the members field.
@@ -165,7 +171,8 @@ class Group(ag_model_base.AutograderModel):
             verification.verify_users_can_be_in_group(
                 members, self.project, 'members',
                 group_to_ignore=self,
-                check_group_size_limits=check_group_size_limits)
+                check_group_size_limits=check_group_size_limits,
+                ignore_guest_restrictions=ignore_guest_restrictions)
 
             self.members.set(members, clear=True)
             self._member_names = [
