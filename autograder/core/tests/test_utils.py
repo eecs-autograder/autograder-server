@@ -113,6 +113,21 @@ cheese\r
         diff = core_ut.get_diff(self.file1.name, self.file2.name)
         self.assertEqual(expected_diff, diff.diff_content)
 
+    # If diff sees a null byte, it will just print
+    # "Binary Files X and Y differ" by default. We want to make sure
+    # that we are passing the --text flag to diff.
+    def test_text_flag_passed_to_gnu_diff(self) -> None:
+        non_utf_bytes = b'\x00 I am null byte\n'
+
+        self._write_and_seek(self.file1, b'some stuff')
+        self._write_and_seek(self.file2, non_utf_bytes)
+
+        expected_diff = [
+            '- some stuff',
+            '+ ' + non_utf_bytes.decode('utf-8', 'surrogateescape')]
+        diff = core_ut.get_diff(self.file1.name, self.file2.name)
+        self.assertEqual(expected_diff, diff.diff_content)
+
     def test_ignore_case(self):
         self._write_and_seek(self.file1, 'SPAM')
         self._write_and_seek(self.file2, 'spam')
