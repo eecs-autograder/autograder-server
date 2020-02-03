@@ -87,6 +87,12 @@ def _run_suite_setup(sandbox: AutograderSandbox,
                      ag_test_suite: ag_models.AGTestSuite,
                      suite_result: ag_models.AGTestSuiteResult):
     if not ag_test_suite.setup_suite_cmd:
+        # Erase the setup output files.
+        with open(suite_result.setup_stdout_filename, 'wb') as f:
+            pass
+        with open(suite_result.setup_stderr_filename, 'wb') as f:
+            pass
+
         return
 
     setup_result = run_command_from_args(
