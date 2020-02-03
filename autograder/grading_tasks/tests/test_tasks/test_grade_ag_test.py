@@ -589,18 +589,27 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
 
     def test_rerun_with_setup_command_removed(self, *args) -> None:
         suite_result = ag_models.AGTestSuiteResult.objects.get(ag_test_suite=self.ag_test_suite)
+        suite_result.setup_timed_out = True  # So that we know this value gets reset
+        suite_result.save()
         with open(suite_result.setup_stdout_filename, 'r') as f:
             self.assertNotEqual('', f.read())
         with open(suite_result.setup_stderr_filename, 'r') as f:
             self.assertNotEqual('', f.read())
+
+        self.assertEqual(0, suite_result.setup_return_code)
+        self.assertTrue(suite_result.setup_timed_out)
 
         self.ag_test_suite.validate_and_update(setup_suite_cmd='')
         tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.ag_test_case_1)
 
+        suite_result.refresh_from_db()
         with open(suite_result.setup_stdout_filename, 'r') as f:
             self.assertEqual('', f.read())
         with open(suite_result.setup_stderr_filename, 'r') as f:
             self.assertEqual('', f.read())
+
+        self.assertIsNone(suite_result.setup_return_code)
+        self.assertFalse(suite_result.setup_timed_out)
 
 
 @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')

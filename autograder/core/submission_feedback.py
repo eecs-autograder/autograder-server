@@ -534,7 +534,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
     @property
     def _show_setup_name(self):
         has_setup_result = (self._ag_test_suite_result.setup_return_code is not None
-                            or self._ag_test_suite_result.setup_timed_out is not None)
+                            or self._ag_test_suite_result.setup_timed_out)
         setup_info_is_available = (
             self._fdbk.show_setup_stdout
             or self._fdbk.show_setup_stderr
