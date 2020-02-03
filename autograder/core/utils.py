@@ -37,6 +37,7 @@ def get_diff(first_filename: str, second_filename: str,
     # because GNU diff will otherwise handle missing trailing
     # newlines in a way that the client can't reliably parse.
     diff_cmd = ['diff',
+                '--text',  # Consider all files to be text
                 '--new-line-format', '+ %L\n',
                 '--old-line-format', '- %L\n',
                 '--unchanged-line-format', '  %L\n']
