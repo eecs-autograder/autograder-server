@@ -299,26 +299,26 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
 
 
 @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
-class ProjectFilePermissionsTestCase(UnitTestBase):
+class InstructorFilePermissionsTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
-        project_filename = 'filey.txt'
+        instructor_filename = 'filey.txt'
         self.retcode_points = 42
         self.cmd = obj_build.make_full_ag_test_command(
             set_arbitrary_expected_vals=False, set_arbitrary_points=False,
-            cmd='touch {}'.format(project_filename),
+            cmd='touch {}'.format(instructor_filename),
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=self.retcode_points)
 
         self.ag_suite = self.cmd.ag_test_case.ag_test_suite
         self.project = self.ag_suite.project
-        self.project_file = ag_models.InstructorFile.objects.validate_and_create(
-            project=self.project, file_obj=SimpleUploadedFile(project_filename, b'asdkfasdjkf'))
+        self.instructor_file = ag_models.InstructorFile.objects.validate_and_create(
+            project=self.project, file_obj=SimpleUploadedFile(instructor_filename, b'asdkfasdjkf'))
         self.group = obj_build.make_group(project=self.project)
-        self.ag_suite.instructor_files_needed.add(self.project_file)
+        self.ag_suite.instructor_files_needed.add(self.instructor_file)
         self.submission = obj_build.make_submission(group=self.group)
 
-    def test_project_files_read_only(self, *args):
+    def test_instructor_files_read_only(self, *args):
         self.assertTrue(self.ag_suite.read_only_instructor_files)
         tasks.grade_submission(self.submission.pk)
         self.submission.refresh_from_db()
@@ -330,7 +330,7 @@ class ProjectFilePermissionsTestCase(UnitTestBase):
             get_submission_fdbk(
                 self.submission, ag_models.FeedbackCategory.max).total_points_possible)
 
-    def test_project_files_not_read_only(self, *args):
+    def test_instructor_files_not_read_only(self, *args):
         self.ag_suite.validate_and_update(read_only_instructor_files=False)
         tasks.grade_submission(self.submission.pk)
         self.submission.refresh_from_db()
@@ -529,7 +529,8 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         super().setUp()
         self.submission = obj_build.make_submission()
         self.project = self.submission.group.project
-        self.ag_test_suite = obj_build.make_ag_test_suite(self.project)
+        self.ag_test_suite = obj_build.make_ag_test_suite(
+            self.project, setup_suite_cmd='echo "spaaaaam"; echo "eeeeeeegg" 1>&2')
 
         self.ag_test_case_1 = obj_build.make_ag_test_case(self.ag_test_suite)
         self.ag_test_cmd_1 = ag_models.AGTestCommand.objects.validate_and_create(
@@ -585,6 +586,21 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
 
         not_rerun_result = self.ag_test_cmd_2.agtestcommandresult_set.first()
         self.assertFalse(not_rerun_result.return_code_correct)
+
+    def test_rerun_with_setup_command_removed(self, *args) -> None:
+        suite_result = ag_models.AGTestSuiteResult.objects.get(ag_test_suite=self.ag_test_suite)
+        with open(suite_result.setup_stdout_filename, 'r') as f:
+            self.assertNotEqual('', f.read())
+        with open(suite_result.setup_stderr_filename, 'r') as f:
+            self.assertNotEqual('', f.read())
+
+        self.ag_test_suite.validate_and_update(setup_suite_cmd='')
+        tasks.grade_ag_test_suite_impl(self.ag_test_suite, self.submission, self.ag_test_case_1)
+
+        with open(suite_result.setup_stdout_filename, 'r') as f:
+            self.assertEqual('', f.read())
+        with open(suite_result.setup_stderr_filename, 'r') as f:
+            self.assertEqual('', f.read())
 
 
 @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')

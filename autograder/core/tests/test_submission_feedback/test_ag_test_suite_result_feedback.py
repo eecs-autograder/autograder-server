@@ -194,6 +194,45 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_stdout_truncated)
         self.assertIsNone(fdbk.setup_stderr_truncated)
 
+    def test_show_setup_name_with_return_code_non_null_and_timed_out_null(self) -> None:
+        self.ag_test_suite.validate_and_update(
+            normal_fdbk_config={
+                'show_setup_return_code': False,
+                'show_setup_timed_out': False,
+                'show_setup_stdout': False,
+                'show_setup_stderr': True,
+            }
+        )
+
+        self.ag_test_suite_result.setup_return_code = 42
+        self.ag_test_suite_result.setup_timed_out = None
+
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
+        self.assertEqual(self.ag_test_suite.setup_suite_cmd_name, fdbk.setup_name)
+
+    def test_show_setup_name_with_return_code_null_and_timed_out_non_null(self) -> None:
+        self.ag_test_suite.validate_and_update(
+            normal_fdbk_config={
+                'show_setup_return_code': False,
+                'show_setup_timed_out': False,
+                'show_setup_stdout': True,
+                'show_setup_stderr': False,
+            }
+        )
+
+        self.ag_test_suite_result.setup_return_code = None
+        self.ag_test_suite_result.setup_timed_out = True
+
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
+        self.assertEqual(self.ag_test_suite.setup_suite_cmd_name, fdbk.setup_name)
+
+    def test_show_setup_name_with_return_code_and_timed_out_null(self) -> None:
+        self.ag_test_suite_result.setup_return_code = None
+        self.ag_test_suite_result.setup_timed_out = None
+
+        fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
+        self.assertIsNone(fdbk.setup_name)
+
     def test_some_ag_test_cases_not_visible(self):
         self.ag_test_case2.validate_and_update(ultimate_submission_fdbk_config={'visible': False})
         expected_points = get_cmd_fdbk(
