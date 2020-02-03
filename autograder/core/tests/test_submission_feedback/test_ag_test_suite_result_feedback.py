@@ -194,7 +194,7 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         self.assertIsNone(fdbk.setup_stdout_truncated)
         self.assertIsNone(fdbk.setup_stderr_truncated)
 
-    def test_show_setup_name_with_return_code_non_null_and_timed_out_null(self) -> None:
+    def test_show_setup_name_with_return_code_non_null_and_timed_out_false(self) -> None:
         self.ag_test_suite.validate_and_update(
             normal_fdbk_config={
                 'show_setup_return_code': False,
@@ -205,12 +205,13 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
         )
 
         self.ag_test_suite_result.setup_return_code = 42
-        self.ag_test_suite_result.setup_timed_out = None
+        self.ag_test_suite_result.setup_timed_out = False
+        self.ag_test_suite_result.save()
 
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
         self.assertEqual(self.ag_test_suite.setup_suite_cmd_name, fdbk.setup_name)
 
-    def test_show_setup_name_with_return_code_null_and_timed_out_non_null(self) -> None:
+    def test_show_setup_name_with_return_code_null_and_timed_out_true(self) -> None:
         self.ag_test_suite.validate_and_update(
             normal_fdbk_config={
                 'show_setup_return_code': False,
@@ -222,13 +223,15 @@ class AGTestSuiteFeedbackTestCase(UnitTestBase):
 
         self.ag_test_suite_result.setup_return_code = None
         self.ag_test_suite_result.setup_timed_out = True
+        self.ag_test_suite_result.save()
 
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.normal)
         self.assertEqual(self.ag_test_suite.setup_suite_cmd_name, fdbk.setup_name)
 
-    def test_show_setup_name_with_return_code_and_timed_out_null(self) -> None:
+    def test_show_setup_name_with_return_code_null_and_timed_out_false(self) -> None:
         self.ag_test_suite_result.setup_return_code = None
-        self.ag_test_suite_result.setup_timed_out = None
+        self.ag_test_suite_result.setup_timed_out = False
+        self.ag_test_suite_result.save()
 
         fdbk = get_suite_fdbk(self.ag_test_suite_result, ag_models.FeedbackCategory.max)
         self.assertIsNone(fdbk.setup_name)

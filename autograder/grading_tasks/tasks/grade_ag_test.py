@@ -86,7 +86,15 @@ def grade_ag_test_suite_impl(ag_test_suite: ag_models.AGTestSuite,
 def _run_suite_setup(sandbox: AutograderSandbox,
                      ag_test_suite: ag_models.AGTestSuite,
                      suite_result: ag_models.AGTestSuiteResult):
+    @retry_should_recover
+    def _save_suite_result():
+        suite_result.save()
+
     if not ag_test_suite.setup_suite_cmd:
+        suite_result.setup_return_code = None
+        suite_result.setup_timed_out = False
+        _save_suite_result()
+
         # Erase the setup output files.
         with open(suite_result.setup_stdout_filename, 'wb') as f:
             pass
@@ -111,10 +119,6 @@ def _run_suite_setup(sandbox: AutograderSandbox,
         shutil.copyfileobj(setup_result.stdout, f)
     with open(suite_result.setup_stderr_filename, 'wb') as f:
         shutil.copyfileobj(setup_result.stderr, f)
-
-    @retry_should_recover
-    def _save_suite_result():
-        suite_result.save()
 
     _save_suite_result()
 
