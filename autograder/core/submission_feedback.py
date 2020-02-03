@@ -472,7 +472,7 @@ class AGTestSuiteResultFeedback(ToDictMixin):
 
     @property
     def setup_name(self) -> Optional[str]:
-        if not self._show_setup_names:
+        if not self._show_setup_name:
             return None
 
         return self._ag_test_suite.setup_suite_cmd_name
@@ -532,11 +532,17 @@ class AGTestSuiteResultFeedback(ToDictMixin):
         return self._ag_test_suite_result.setup_stderr_truncated
 
     @property
-    def _show_setup_names(self):
-        return (self._fdbk.show_setup_stdout
-                or self._fdbk.show_setup_stderr
-                or self._fdbk.show_setup_return_code
-                or self._fdbk.show_setup_timed_out)
+    def _show_setup_name(self):
+        has_setup_result = (self._ag_test_suite_result.setup_return_code is not None
+                            or self._ag_test_suite_result.setup_timed_out is not None)
+        setup_info_is_available = (
+            self._fdbk.show_setup_stdout
+            or self._fdbk.show_setup_stderr
+            or self._fdbk.show_setup_return_code
+            or self._fdbk.show_setup_timed_out
+        )
+
+        return has_setup_result and setup_info_is_available
 
     @property
     def total_points(self) -> int:
