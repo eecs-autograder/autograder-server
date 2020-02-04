@@ -22,9 +22,6 @@ def make_course_linked_images(apps, schema_editor):
     images = SandboxDockerImage.objects.exclude(display_name='Default')
     for image in images:
         suites = list(image.studenttestsuite_set.all()) + list(image.agtestsuite_set.all())
-        if len(suites) == 0:
-            continue
-
         for suite in suites:
             course = suite.project.course
             from_image = suite.sandbox_docker_image
@@ -42,6 +39,11 @@ def make_course_linked_images(apps, schema_editor):
             suite.save()
 
 
+def delete_course_linked_images(apps, schema_editor):
+    SandboxDockerImage = apps.get_model('core', 'SandboxDockerImage')
+    SandboxDockerImage.objects.exclude(course=None).delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -49,6 +51,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunSQL('SET CONSTRAINTS ALL IMMEDIATE',
+                          reverse_sql=migrations.RunSQL.noop),
+
         migrations.RunPython(set_updated_sandbox_docker_image_fields,
                              reverse_code=lambda apps, schema_editor: None),
 
@@ -64,5 +69,8 @@ class Migration(migrations.Migration):
         ),
 
         migrations.RunPython(make_course_linked_images,
-                             reverse_code=lambda apps, schema_editor: None),
+                             reverse_code=delete_course_linked_images),
+
+        migrations.RunSQL(migrations.RunSQL.noop,
+                          reverse_sql='SET CONSTRAINTS ALL IMMEDIATE'),
     ]
