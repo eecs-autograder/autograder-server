@@ -222,6 +222,14 @@ class AGTestSuite(AutograderModel):
                     'Student file pattern {} does not belong to the project "{}".'.format(
                         student_file.pattern, self.project.name))
 
+        if (self.sandbox_docker_image.course is not None
+                and self.sandbox_docker_image.course != self.project.course):
+            errors['sandbox_docker_image'] = (
+                'Sandbox image {} does not belong to the course "{}".'.format(
+                    self.sandbox_docker_image.display_name, self.project.course.name
+                )
+            )
+
         if errors:
             raise exceptions.ValidationError(errors)
 

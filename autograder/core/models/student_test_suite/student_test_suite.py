@@ -93,8 +93,6 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
     FIELD_DESCRIPTIONS = {}
 
 
-# FIXME: Change to use ValidatedJSONField
-# with "show_debug_info"
 class StudentTestSuiteFeedbackConfig(AutograderModel):
     visible = models.BooleanField(default=True)
 
@@ -545,6 +543,14 @@ class StudentTestSuite(AutograderModel):
                 errors['student_files_needed'] = (
                     'Student file pattern {} does not belong to the project "{}".'.format(
                         student_file.pattern, self.project.name))
+
+        if (self.sandbox_docker_image.course is not None
+                and self.sandbox_docker_image.course != self.project.course):
+            errors['sandbox_docker_image'] = (
+                'Sandbox image {} does not belong to the course "{}".'.format(
+                    self.sandbox_docker_image.display_name, self.project.course.name
+                )
+            )
 
         for cmd_field in ['setup_command',
                           'get_student_test_names_command',

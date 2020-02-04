@@ -232,6 +232,14 @@ def make_course(**kwargs) -> ag_models.Course:
     return ag_models.Course.objects.validate_and_create(**kwargs)
 
 
+def make_sandbox_docker_image(course: ag_models.Course=None) -> ag_models.SandboxDockerImage:
+    return ag_models.SandboxDockerImage.objects.validate_and_create(
+        course=course,
+        display_name='Image ' + get_unique_id(),
+        tag='tag' + get_unique_id()
+    )
+
+
 def make_project(course: ag_models.Course=None, **project_kwargs) -> ag_models.Project:
     if course is None:
         course = make_course()
