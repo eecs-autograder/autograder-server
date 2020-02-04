@@ -145,6 +145,16 @@ class AGTestSuiteTestCase(UnitTestBase):
         self.assertIn('instructor_files_needed', cm.exception.message_dict)
         self.assertIn('student_files_needed', cm.exception.message_dict)
 
+    def test_error_sandbox_docker_image_belongs_to_other_course(self) -> None:
+        other_course = obj_build.make_course()
+        other_image = obj_build.make_sandbox_docker_image(other_course)
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.AGTestSuite.objects.validate_and_create(
+                name='An suite', project=self.project,
+                sandbox_docker_image=other_image)
+
+        self.assertIn('sandbox_docker_image', cm.exception.message_dict)
+
     def test_suite_ordering(self):
         suite1 = ag_models.AGTestSuite.objects.validate_and_create(
             name='suite1', project=self.project)
