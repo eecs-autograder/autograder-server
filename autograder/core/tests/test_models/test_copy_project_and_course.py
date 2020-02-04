@@ -16,7 +16,7 @@ class CopyProjectTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
         self._custom_image = ag_models.SandboxDockerImage.objects.get_or_create(
-            name='custom_image', display_name='Custom Image', tag='custom_image')[0]
+            display_name='Custom Image', tag='custom_image')[0]
 
     def test_copy_project(self):
         # In new project, hide_ultimate_submission_fdbk should be set to True,
@@ -243,6 +243,77 @@ class CopyProjectTestCase(UnitTestBase):
         self.assertFalse(hasattr(project, 'handgrading_rubric'))
         new_project = copy_project(project, project.course, new_project_name='Projy')
         self.assertFalse(hasattr(new_project, 'handgrading_rubric'))
+
+
+class SandboxImageCopyingTestCase(UnitTestBase):
+    @classmethod
+    def setUpTestData(cls):
+        ag_models.SandboxDockerImage.objects.exclude(display_name='Default').delete()
+
+    def setUp(self):
+        super().setUp()
+
+        self.course1 = obj_build.make_course()
+        self.course1_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            course=self.course1,
+            display_name='Custom Image',
+            tag='custom_image'
+        )
+        self.course1_project = obj_build.make_project(self.course1)
+        obj_build.make_ag_test_suite(self.course1_project, sandbox_docker_image=self.course1_image)
+        obj_build.make_student_test_suite(
+            self.course1_project, sandbox_docker_image=self.course1_image)
+
+        self.course2 = obj_build.make_course()
+
+    def test_copy_project_to_same_course_no_new_sandbox_images(self) -> None:
+        original_num_images = ag_models.SandboxDockerImage.objects.count()
+        new_project = copy_project(self.course1_project, self.course1, 'Copied project')
+        self.assertEqual(
+            self.course1_image, new_project.ag_test_suites.first().sandbox_docker_image)
+        self.assertEqual(
+            self.course1_image, new_project.student_test_suites.first().sandbox_docker_image)
+
+        self.assertEqual(original_num_images, ag_models.SandboxDockerImage.objects.count())
+
+    def test_copy_project_to_different_course_sandbox_images_copied(self) -> None:
+        new_project = copy_project(self.course1_project, self.course2, 'Copied project')
+        self.assertNotEqual(
+            self.course1_image, new_project.ag_test_suites.first().sandbox_docker_image)
+        self.assertNotEqual(
+            self.course1_image, new_project.student_test_suites.first().sandbox_docker_image)
+
+        self.assertEqual(new_project.ag_test_suites.first().sandbox_docker_image,
+                         new_project.student_test_suites.first().sandbox_docker_image)
+
+        new_image = new_project.ag_test_suites.first().sandbox_docker_image
+        self.assertEqual(self.course1_image.display_name, new_image.display_name)
+        self.assertEqual(self.course1_image.tag, new_image.tag)
+
+        self.assertEqual(2, ag_models.SandboxDockerImage.objects.exclude(course=None).count())
+
+    # Scenario:
+    # - Two projects, P1 and P2, from different courses
+    # - Both courses have an image with display_name "My Image"
+    # - P1 is copied to P2's course
+    # - The copy of P1 uses the existing version of "My Image" that
+    #   belongs to P2's course instead of creating an additional
+    #   "My Image", thus avoiding a name conflict.
+    def test_copy_project_to_different_course_sandbox_image_name_conflicts_avoided(self) -> None:
+        course2_image = ag_models.SandboxDockerImage.objects.validate_and_create(
+            course=self.course2,
+            display_name='Custom Image',
+            tag='custom_image'
+        )
+        course2_project = obj_build.make_project(self.course2)
+
+        new_project = copy_project(self.course1_project, self.course2, 'Copied project')
+        self.assertEqual(
+            course2_image, new_project.ag_test_suites.first().sandbox_docker_image)
+        self.assertEqual(
+            course2_image, new_project.student_test_suites.first().sandbox_docker_image)
+
+        self.assertEqual(2, ag_models.SandboxDockerImage.objects.exclude(course=None).count())
 
 
 def _pop_many(dict_: dict, keys: Sequence[str]):

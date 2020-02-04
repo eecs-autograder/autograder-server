@@ -11,6 +11,7 @@ from .ag_test.ag_test_suite import AGTestSuite
 from .ag_test.ag_test_case import AGTestCase
 from .ag_test.ag_test_command import AGTestCommand
 from .student_test_suite import StudentTestSuite
+from .sandbox_docker_image import SandboxDockerImage
 
 
 @transaction.atomic()
@@ -73,7 +74,8 @@ def _copy_ag_tests(project, new_project):
             project=new_project,
             instructor_files_needed=instructor_files_needed,
             student_files_needed=student_files_needed,
-            sandbox_docker_image=suite.sandbox_docker_image,
+            sandbox_docker_image=_copy_sandbox_docker_image(
+                suite.sandbox_docker_image, new_project.course),
             **utils.exclude_dict(
                 suite.to_dict(),
                 ('pk', 'project') + AGTestSuite.get_serialize_related_fields())
@@ -140,11 +142,28 @@ def _copy_student_suites(project, new_project):
             project=new_project,
             instructor_files_needed=instructor_files_needed,
             student_files_needed=student_files_needed,
-            sandbox_docker_image=student_suite.sandbox_docker_image,
+            sandbox_docker_image=_copy_sandbox_docker_image(
+                student_suite.sandbox_docker_image, new_project.course),
             **utils.exclude_dict(
                 student_suite.to_dict(),
                 ('pk', 'project') + StudentTestSuite.get_serialize_related_fields())
         )
+
+
+def _copy_sandbox_docker_image(to_copy: SandboxDockerImage, target_course: Course):
+    if to_copy.course is None:
+        return to_copy
+
+    return SandboxDockerImage.objects.get_or_create(
+        course=target_course,
+        display_name=to_copy.display_name,
+        defaults={
+            'tag': to_copy.tag,
+            # We haven't gotten rid of the name field yet, so
+            # we need to generate a unique value to use.
+            'name': to_copy.display_name + str(target_course.pk)
+        },
+    )[0]
 
 
 @transaction.atomic()
