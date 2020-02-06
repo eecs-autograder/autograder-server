@@ -42,11 +42,13 @@ class SandboxDockerImage(AutograderModel):
 
     tag = models.TextField(
         blank=False,
-        help_text="""The full tag that can be used to fetch the image with
-                     the 'docker pull' command. This should include a specific
+        help_text="""The full name and tag that can be used to fetch the image
+                     with the 'docker pull' command, e.g. jameslp/eecs280:2.
+                     This should include a specific
                      version for the image, and the version number should be
-                     incremented every time the image is updated, otherwise
-                     the new version of the image may not be fetched."""
+                     incremented by the user every time the image is updated,
+                     otherwise the new version of the image will not be
+                     fetched."""
     )
 
     def full_clean(self, *args, **kwargs):

@@ -66,7 +66,7 @@ class AGViewTestBase(UnitTestBase):
         original_num = model_manager.count()
         client.force_authenticate(user)
         response = client.post(url, request_data, format=format)
-        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code, msg=response.data)
 
         self.assertEqual(original_num + 1, model_manager.count())
         if not check_data:

@@ -1,6 +1,11 @@
+from django.core import exceptions
+import requests
+
 import autograder.core.models as ag_models
 
 from .ag_model_serializer import AGModelSerializer
+
+from ..inspect_remote_image import inspect_remote_image, ImageDigestRequestUnauthorizedError
 
 
 class CourseSerializer(AGModelSerializer):
@@ -77,6 +82,41 @@ class SubmissionSerializer(AGModelSerializer):
 
 class SandboxDockerImageSerializer(AGModelSerializer):
     ag_model_class = ag_models.SandboxDockerImage
+
+    def validate_and_update(self, instance: ag_models.SandboxDockerImage, validated_data) -> None:
+        super().validate_and_update(instance, validated_data)
+        self._validate_image_config(instance)
+
+    def validate_and_create(self, data):
+        image = super().validate_and_create(data)
+        self._validate_image_config(image)
+        return image
+
+    def _validate_image_config(self, image: ag_models.SandboxDockerImage):
+        try:
+            config = inspect_remote_image(image.tag)['config']
+            entrypoint = config['Entrypoint']
+            cmd = config['Cmd']
+            if entrypoint is not None:
+                raise exceptions.ValidationError({
+                    '__all__': 'Custom images may not use the ENTRYPOINT directive.'
+                })
+
+            if cmd not in [['/bin/bash'], ['/bin/sh']]:
+                raise exceptions.ValidationError({
+                    '__all__': 'Custom images may not use the CMD directive. '
+                               f'Expected ["/bin/bash"] but was "{cmd}".'
+                })
+
+        except ImageDigestRequestUnauthorizedError as e:
+            raise exceptions.ValidationError({'__all__': f'Image "{image.tag}" not found.'})
+        except requests.HTTPError as e:
+            if e.response.status_code == 404:
+                raise exceptions.ValidationError({'__all__': f'Image "{image.tag}" not found.'})
+            raise exceptions.ValidationError({
+                '__all__': 'Error fetching image data for validation: '
+                           f'{e.response.status_code} {e.response.reason}'
+            })
 
 
 class AGTestSuiteSerializer(AGModelSerializer):
