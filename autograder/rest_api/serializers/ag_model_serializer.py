@@ -46,10 +46,13 @@ class AGModelSerializer(serializers.BaseSerializer):
 
     def update(self, instance, validated_data):
         try:
-            instance.validate_and_update(**validated_data)
+            self.validate_and_update(instance, validated_data)
             return instance
         except exceptions.ValidationError as e:
             raise serializers.ValidationError(e.message_dict)
+
+    def validate_and_update(self, instance, validated_data) -> None:
+        instance.validate_and_update(**validated_data)
 
     # Since we're pushing the validation down to the database
     # level, this method should return the given data unmodified.
