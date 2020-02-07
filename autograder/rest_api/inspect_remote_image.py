@@ -37,6 +37,8 @@ def inspect_remote_image(full_image_name: str):
             'Content-Type': 'application/json',
         }
     )
+    if response.status_code == 403 and 'request signature' in response.text:
+        raise SignatureVerificationFailedError(response)
     response.raise_for_status()
     return response.json()
 
@@ -88,7 +90,17 @@ def _split_repo_tag(repo_name: str):
     return repo_name, None
 
 
+# This will be thrown if the request for the actual inspect data
+# returns 401 status. This error should be treated as "image not found."
 class ImageDigestRequestUnauthorizedError(requests.RequestException):
+    pass
+
+
+# This will be thrown if the request for the inspect data returns
+# 403 status due to signature verification failing.
+# See: https://github.com/docker/hub-feedback/issues/1636
+#      https://github.com/moby/moby/issues/34185
+class SignatureVerificationFailedError(requests.RequestException):
     pass
 
 

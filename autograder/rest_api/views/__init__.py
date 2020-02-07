@@ -6,7 +6,9 @@ from .ag_test_views.ag_test_suite_views import (
     AGTestSuiteListCreateView, AGTestSuiteOrderView, AGTestSuiteDetailViewSet)
 
 from .sandbox_docker_image_views import (
-    SandboxDockerImageViewSet, SandboxDockerImageForCourseViewSet)
+    ListCreateSandboxDockerImageViewSet,
+    SandboxDockerImageDetailViewSet,
+    SandboxDockerImageForCourseViewSet)
 
 from .course_views.course_admins import CourseAdminViewSet
 from .course_views.course_handgraders import CourseHandgradersViewSet
