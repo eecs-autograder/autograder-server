@@ -43,9 +43,14 @@ submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            base_name='submission')
 
+courseless_sandbox_docker_image_router = routers.SimpleRouter()
+courseless_sandbox_docker_image_router.register(
+    r'sandbox_docker_images', views.ListCreateSandboxDockerImageViewSet,
+    base_name='courseless-sandbox-docker-image')
 sandbox_docker_image_router = routers.SimpleRouter()
-sandbox_docker_image_router.register(r'sandbox_docker_images', views.SandboxDockerImageViewSet,
-                                     base_name='sandbox-docker-image')
+sandbox_docker_image_router.register(
+    r'sandbox_docker_images', views.SandboxDockerImageDetailViewSet,
+    base_name='sandbox-docker-image')
 
 ag_test_suite_detail_router = routers.SimpleRouter()
 ag_test_suite_detail_router.register(r'ag_test_suites', views.AGTestSuiteDetailViewSet,
@@ -178,6 +183,7 @@ urlpatterns = [
         views.AGTestSuiteOrderView.as_view(), name='ag_test_suite_order'),
     url(r'', include(ag_test_suite_detail_router.urls)),
 
+    url(r'', include(courseless_sandbox_docker_image_router.urls)),
     url(r'', include(sandbox_docker_image_router.urls)),
     path('courses/<int:pk>/sandbox_docker_images/',
          views.SandboxDockerImageForCourseViewSet.as_view(),

@@ -5,7 +5,9 @@ import autograder.core.models as ag_models
 
 from .ag_model_serializer import AGModelSerializer
 
-from ..inspect_remote_image import inspect_remote_image, ImageDigestRequestUnauthorizedError
+from ..inspect_remote_image import (
+    inspect_remote_image, ImageDigestRequestUnauthorizedError, SignatureVerificationFailedError
+)
 
 
 class CourseSerializer(AGModelSerializer):
@@ -84,8 +86,10 @@ class SandboxDockerImageSerializer(AGModelSerializer):
     ag_model_class = ag_models.SandboxDockerImage
 
     def validate_and_update(self, instance: ag_models.SandboxDockerImage, validated_data) -> None:
+        tag_changed = 'tag' in validated_data and validated_data['tag'] != instance.tag
         super().validate_and_update(instance, validated_data)
-        self._validate_image_config(instance)
+        if tag_changed:
+            self._validate_image_config(instance)
 
     def validate_and_create(self, data):
         image = super().validate_and_create(data)
@@ -110,6 +114,10 @@ class SandboxDockerImageSerializer(AGModelSerializer):
 
         except ImageDigestRequestUnauthorizedError as e:
             raise exceptions.ValidationError({'__all__': f'Image "{image.tag}" not found.'})
+        except SignatureVerificationFailedError as e:
+            raise exceptions.ValidationError({
+                '__all__': 'Temporary error fetching image data from DockerHub. '
+                           'Please wait a few minutes and try again.'})
         except requests.HTTPError as e:
             if e.response.status_code == 404:
                 raise exceptions.ValidationError({'__all__': f'Image "{image.tag}" not found.'})
