@@ -51,6 +51,10 @@ class SandboxDockerImage(AutograderModel):
                      fetched."""
     )
 
+    validation_warning = models.TextField(
+        blank=True,
+        help_text="Warning text from image validation. If empty, then validation succeeded.")
+
     def full_clean(self, *args, **kwargs):
         if not self.name:
             self.name = self.display_name
@@ -64,6 +68,7 @@ class SandboxDockerImage(AutograderModel):
         'display_name',
         'course',
         'tag',
+        'validation_warning',
     ]
 
     EDITABLE_FIELDS = [

@@ -87,9 +87,14 @@ class AGViewTestBase(UnitTestBase):
         return response
 
     def do_patch_object_test(self, ag_model_obj, client, user, url,
-                             request_data, format='json'):
+                             request_data, format='json',
+                             ignore_fields=[]):
+        ignore_fields = list(ignore_fields)
+        ignore_fields.append('last_modified')
+
         expected_data = ag_model_obj.to_dict()
-        expected_data.pop('last_modified', None)
+        for field in ignore_fields:
+            expected_data.pop(field, None)
         for key, value in request_data.items():
             if isinstance(value, dict):
                 expected_data[key].update(value)
@@ -102,9 +107,9 @@ class AGViewTestBase(UnitTestBase):
 
         ag_model_obj = ag_model_obj._meta.model.objects.get(pk=ag_model_obj.pk)
         self.assert_dict_contents_equal(
-            expected_data, utils.exclude_dict(ag_model_obj.to_dict(), 'last_modified'))
+            expected_data, utils.exclude_dict(ag_model_obj.to_dict(), ignore_fields))
         self.assert_dict_contents_equal(
-            expected_data, utils.exclude_dict(response.data, 'last_modified'))
+            expected_data, utils.exclude_dict(response.data, ignore_fields))
 
         return response
 
