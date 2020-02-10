@@ -228,98 +228,119 @@ class ImageConfigValidationTestCase(AGViewTestBase):
             'sandbox-docker-image-detail', kwargs={'pk': self.default_image.pk})
 
     def test_valid_image_config(self) -> None:
-        self.do_create_object_test(
+        response = self.do_create_object_test(
             ag_models.SandboxDockerImage.objects, self.client, self.superuser,
             self.images_no_course_url,
             {'display_name': 'Default 2', 'tag': 'jameslp/ag-ubuntu-16:1'}
         )
+        self.assertEqual('', response.data['validation_warning'])
 
-        self.do_create_object_test(
+        response = self.do_create_object_test(
             ag_models.SandboxDockerImage.objects, self.client, self.admin,
             self.images_for_course_url,
             {'display_name': 'I am image', 'tag': 'jameslp/autograder-sandbox:3.1.0'}
         )
+        self.assertEqual('', response.data['validation_warning'])
 
-        self.do_patch_object_test(
+        response = self.do_patch_object_test(
             self.default_image, self.client, self.superuser,
             self.default_image_url,
             {'tag': 'jameslp/autograder-sandbox:3.0.0'}
         )
+        self.assertEqual('', response.data['validation_warning'])
 
     def test_invalid_image_entrypoint(self) -> None:
-        response = self.do_invalid_create_object_test(
+        response = self.do_create_object_test(
             ag_models.SandboxDockerImage.objects, self.client, self.superuser,
             self.images_no_course_url,
             {'display_name': 'Default 2', 'tag': 'postgres:latest'}
         )
-        self.assertIn('ENTRYPOINT', response.data['__all__'][0])
+        self.assertIn('ENTRYPOINT', response.data['validation_warning'])
 
-        response = self.do_invalid_create_object_test(
+        response = self.do_create_object_test(
             ag_models.SandboxDockerImage.objects, self.client, self.admin,
             self.images_for_course_url,
             {'display_name': 'I am image', 'tag': 'postgres:latest'}
         )
-        self.assertIn('ENTRYPOINT', response.data['__all__'][0])
+        self.assertIn('ENTRYPOINT', response.data['validation_warning'])
 
-        response = self.do_patch_object_invalid_args_test(
+        response = self.do_patch_object_test(
             self.default_image, self.client, self.superuser,
             self.default_image_url,
-            {'tag': 'postgres:latest'}
+            {'tag': 'postgres:latest'},
+            ignore_fields=['validation_warning']
         )
-        self.assertIn('ENTRYPOINT', response.data['__all__'][0])
+        self.assertIn('ENTRYPOINT', response.data['validation_warning'])
 
     def test_invalid_image_cmd(self) -> None:
-        response = self.do_invalid_create_object_test(
+        response = self.do_create_object_test(
             ag_models.SandboxDockerImage.objects, self.client, self.superuser,
             self.images_no_course_url,
             {'display_name': 'Default 2', 'tag': 'nginx:latest'}
         )
-        self.assertIn('CMD', response.data['__all__'][0])
+        self.assertIn('CMD', response.data['validation_warning'])
 
-        response = self.do_invalid_create_object_test(
+        response = self.do_create_object_test(
             ag_models.SandboxDockerImage.objects, self.client, self.admin,
             self.images_for_course_url,
             {'display_name': 'I am image', 'tag': 'nginx:latest'}
         )
-        self.assertIn('CMD', response.data['__all__'][0])
+        self.assertIn('CMD', response.data['validation_warning'])
 
-        response = self.do_patch_object_invalid_args_test(
+        response = self.do_patch_object_test(
             self.default_image, self.client, self.superuser,
             self.default_image_url,
-            {'tag': 'nginx:latest'}
+            {'tag': 'nginx:latest'},
+            ignore_fields=['validation_warning']
         )
-        self.assertIn('CMD', response.data['__all__'][0])
+        self.assertIn('CMD', response.data['validation_warning'])
 
     def test_image_not_found(self) -> None:
-        response = self.do_invalid_create_object_test(
+        response = self.do_create_object_test(
             ag_models.SandboxDockerImage.objects, self.client, self.superuser,
             self.images_no_course_url,
             {'display_name': 'Default 2', 'tag': 'noooope'}
         )
-        self.assertIn('not found', response.data['__all__'][0])
+        self.assertIn('not found', response.data['validation_warning'])
 
-        response = self.do_invalid_create_object_test(
+        response = self.do_create_object_test(
             ag_models.SandboxDockerImage.objects, self.client, self.admin,
             self.images_for_course_url,
             {'display_name': 'I am image', 'tag': 'jameslp/does_not_exist'}
         )
-        self.assertIn('not found', response.data['__all__'][0])
+        self.assertIn('not found', response.data['validation_warning'])
 
-        response = self.do_patch_object_invalid_args_test(
+        response = self.do_patch_object_test(
             self.default_image, self.client, self.superuser,
             self.default_image_url,
-            {'tag': 'jameslp/ag-ubuntu-16:not.a.tag'}
+            {'tag': 'jameslp/ag-ubuntu-16:not.a.tag'},
+            ignore_fields=['validation_warning']
         )
-        self.assertIn('not found', response.data['__all__'][0])
+        self.assertIn('not found', response.data['validation_warning'])
 
     def test_signature_verification_failed_error_handled(self) -> None:
         mock_inspect_image = mock.Mock(side_effect=SignatureVerificationFailedError)
         with mock.patch('autograder.rest_api.serializers.serializer_impls.inspect_remote_image',
                         new=mock_inspect_image):
 
-            response = self.do_patch_object_invalid_args_test(
+            response = self.do_patch_object_test(
                 self.default_image, self.client, self.superuser,
                 self.default_image_url,
-                {'tag': 'jameslp/autograder-sandbox:3.0.0'}
+                {'tag': 'jameslp/autograder-sandbox:3.0.0'},
+                ignore_fields=['validation_warning']
             )
-            self.assertIn('Temporary error fetching image', response.data['__all__'][0])
+            self.assertIn('Temporary error fetching image', response.data['validation_warning'])
+
+    def test_validation_warning_reset(self) -> None:
+        self.default_image.validation_warning = 'RAAAAAAAWR INVALID!!!1'
+        self.default_image.save()
+
+        response = self.do_patch_object_test(
+            self.default_image, self.client, self.superuser,
+            self.default_image_url,
+            {'tag': 'jameslp/autograder-sandbox:3.0.0'},
+            ignore_fields=['validation_warning']
+        )
+        self.assertEqual('', response.data['validation_warning'])
+        self.default_image.refresh_from_db()
+        self.assertEqual('', self.default_image.validation_warning)

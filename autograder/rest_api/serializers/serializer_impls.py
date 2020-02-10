@@ -97,34 +97,31 @@ class SandboxDockerImageSerializer(AGModelSerializer):
         return image
 
     def _validate_image_config(self, image: ag_models.SandboxDockerImage):
+        image.validation_warning = ''
         try:
             config = inspect_remote_image(image.tag)['config']
             entrypoint = config['Entrypoint']
             cmd = config['Cmd']
             if entrypoint is not None:
-                raise exceptions.ValidationError({
-                    '__all__': 'Custom images may not use the ENTRYPOINT directive.'
-                })
+                image.validation_warning += 'Custom images may not use the ENTRYPOINT directive.\n'
 
             if cmd not in [['/bin/bash'], ['/bin/sh']]:
-                raise exceptions.ValidationError({
-                    '__all__': 'Custom images may not use the CMD directive. '
-                               f'Expected ["/bin/bash"] but was "{cmd}".'
-                })
+                image.validation_warning += ('Custom images may not use the CMD directive. '
+                                             f'Expected ["/bin/bash"] but was "{cmd}".\n')
 
         except ImageDigestRequestUnauthorizedError as e:
-            raise exceptions.ValidationError({'__all__': f'Image "{image.tag}" not found.'})
+            image.validation_warning = f'Image "{image.tag}" not found.'
         except SignatureVerificationFailedError as e:
-            raise exceptions.ValidationError({
-                '__all__': 'Temporary error fetching image data from DockerHub. '
-                           'Please wait a few minutes and try again.'})
+            image.validation_warning = ('Temporary error fetching image data from DockerHub. '
+                                        'Please wait a few minutes and try again.')
         except requests.HTTPError as e:
             if e.response.status_code == 404:
-                raise exceptions.ValidationError({'__all__': f'Image "{image.tag}" not found.'})
-            raise exceptions.ValidationError({
-                '__all__': 'Error fetching image data for validation: '
-                           f'{e.response.status_code} {e.response.reason}'
-            })
+                image.validation_warning = f'Image "{image.tag}" not found.'
+            else:
+                image.validation_warning = ('Error fetching image data for validation: '
+                                            f'{e.response.status_code} {e.response.reason}')
+        finally:
+            image.save()
 
 
 class AGTestSuiteSerializer(AGModelSerializer):

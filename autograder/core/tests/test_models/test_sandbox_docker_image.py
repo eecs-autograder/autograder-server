@@ -111,6 +111,7 @@ class SandboxDockerImageTestCase(UnitTestBase):
             'course': image.course.pk,
             'display_name': image.display_name,
             'tag': image.tag,
+            'validation_warning': '',
         }
 
         self.assertEqual(expected, serialized)
