@@ -14,7 +14,7 @@ def create_default_image(apps, schemea_editor):
     SandboxDockerImage.objects.create(
         name='default',
         display_name='Default',
-        tag=f'jameslp/autograder-sandbox:{autograder_sandbox.VERSION}'
+        tag=f'jameslp/autograder-sandbox:3.1.2'
     )
 
 
