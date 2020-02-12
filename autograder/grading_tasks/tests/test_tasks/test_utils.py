@@ -42,7 +42,7 @@ class RetryDecoratorTestCase(UnitTestBase):
         with self.assertRaises(tasks.MaxRetriesExceeded):
             func_to_retry()
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
     def test_retry_delay(self, mocked_sleep):
         max_num_retries = 3
         min_delay = 2
@@ -61,7 +61,7 @@ class RetryDecoratorTestCase(UnitTestBase):
         mocked_sleep.assert_has_calls(
             [mock.call(delay) for delay in range(min_delay, max_delay, delay_step)])
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
     def test_retry_zero_delay(self, mocked_sleep):
         max_num_retries = 1
 
@@ -75,7 +75,7 @@ class RetryDecoratorTestCase(UnitTestBase):
 
         mocked_sleep.assert_has_calls([mock.call(0) for i in range(max_num_retries)])
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
     def test_immediatedly_reraise_on(self, sleep_mock) -> None:
         @tasks.retry(max_num_retries=1, immediately_reraise_on=(ValueError, TypeError))
         def func_to_retry(type_to_throw):
@@ -92,7 +92,7 @@ class RetryDecoratorTestCase(UnitTestBase):
         with self.assertRaises(tasks.MaxRetriesExceeded):
             func_to_retry(RuntimeError)
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
     def test_immediately_reraise_retry_should_recover(self, sleep_mock) -> None:
         @retry_should_recover
         def func():
@@ -103,7 +103,7 @@ class RetryDecoratorTestCase(UnitTestBase):
 
         sleep_mock.assert_not_called()
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
     def test_immediately_reraise_retry_ad_test_cmd(self, sleep_mock) -> None:
         @retry_ag_test_cmd
         def func():

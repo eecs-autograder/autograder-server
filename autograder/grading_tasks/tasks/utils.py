@@ -24,6 +24,14 @@ class MaxRetriesExceeded(Exception):
     pass
 
 
+# This thin wrapper around time.sleep is needed so that we can mock
+# the calls to sleep in this module only. As of this writing, patching
+# autograder.grading_tasks.tasks.utils.time.sleep also causes uses
+# of time.sleep in the subprocess module to be mocked.
+def sleep(secs: float):
+    return time.sleep(secs)
+
+
 def retry(max_num_retries,
           retry_delay_start=0,
           retry_delay_end=0,
@@ -96,7 +104,7 @@ def retry(max_num_retries,
 
                     print('Will try again in', retry_delay, 'seconds')
                     num_retries_remaining -= 1
-                    time.sleep(retry_delay)
+                    sleep(retry_delay)
                     retry_delay += retry_delay_step
                     latest_exception = traceback.format_exc()
 
