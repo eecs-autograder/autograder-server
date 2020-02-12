@@ -12,7 +12,7 @@ from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
 class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -205,7 +205,7 @@ class EECS280StyleStudentTestGradingIntegrationTestCase(UnitTestBase):
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
 class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -383,7 +383,7 @@ class StudentTestCaseGradingEdgeCaseTestCase(UnitTestBase):
         self.assertEqual(0, result.setup_result.return_code)
 
 
-@mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
 class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
     def test_student_test_suite_not_found_no_retry(self, sleep_mock) -> None:
         submission = obj_build.make_submission()

@@ -67,5 +67,5 @@ DOCKER_IMAGE_IDS_TO_URLS = {
     SupportedImages.eecs598w19_data_mining: 'jameslp/eecs598w19_data_mining',
     SupportedImages.engr101: 'jameslp/engr101',
 
-    SupportedImages.default: 'jameslp/autograder-sandbox:{}'.format(autograder_sandbox.VERSION)
+    SupportedImages.default: 'jameslp/autograder-sandbox:3.1.2'
 }

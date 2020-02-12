@@ -54,7 +54,7 @@ class ListRerunSubmissionsTasksTestCase(UnitTestBase):
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
 class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()

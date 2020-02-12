@@ -30,7 +30,7 @@ def _make_mock_grade_ag_test_cmd_fail_then_succeed(num_times_to_fail):
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.time.sleep')
+@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
 class GradeSubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
