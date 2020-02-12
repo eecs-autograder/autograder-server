@@ -183,21 +183,7 @@ def _make_scores_csv(task: ag_models.DownloadTask,
         username_headers = [user_tmpl.format(i + 1) for i in range(project.max_group_size)]
         row_headers = username_headers + [timestamp_header, total_header, total_possible_header]
 
-        ag_suite_total_tmpl = '{} Total'
-        ag_suite_total_possible_tmpl = '{} Total Possible'
-        ag_test_header_tmpl = '{} - {}'
-        student_suite_total_tmpl = '{} Total'
-        student_suite_total_possible_tmpl = '{} Total Possible'
-
-        for suite in project.ag_test_suites.all():
-            row_headers += [ag_suite_total_tmpl.format(suite.name),
-                            ag_suite_total_possible_tmpl.format(suite.name)]
-            row_headers += [ag_test_header_tmpl.format(suite.name, case.name)
-                            for case in suite.ag_test_cases.all()]
-
-        for suite in project.student_test_suites.all():
-            row_headers += [student_suite_total_tmpl.format(suite.name),
-                            student_suite_total_possible_tmpl.format(suite.name)]
+        row_headers += _make_test_detail_headers(project)
 
         writer = csv.DictWriter(csv_file, row_headers)
         writer.writeheader()
@@ -212,29 +198,7 @@ def _make_scores_csv(task: ag_models.DownloadTask,
             row[total_header] = fdbk.total_points
             row[total_possible_header] = fdbk.total_points_possible
 
-            for suite_fdbk in fdbk.ag_test_suite_results:
-                ag_suite_total_header = ag_suite_total_tmpl.format(suite_fdbk.ag_test_suite_name)
-                row[ag_suite_total_header] = suite_fdbk.total_points
-                ag_suite_total_possible_header = ag_suite_total_possible_tmpl.format(
-                    suite_fdbk.ag_test_suite_name)
-                row[ag_suite_total_possible_header] = suite_fdbk.total_points_possible
-
-                for case_fdbk in suite_fdbk.ag_test_case_results:
-                    ag_test_total_header = ag_test_header_tmpl.format(
-                        suite_fdbk.ag_test_suite_name, case_fdbk.ag_test_case_name)
-                    row[ag_test_total_header] = case_fdbk.total_points
-
-            for student_suite_result in fdbk.student_test_suite_results:
-                suite_fdbk = student_suite_result.get_fdbk(
-                    ag_models.FeedbackCategory.max, fdbk.student_test_suite_preloader)
-
-                student_suite_total_header = student_suite_total_tmpl.format(
-                    suite_fdbk.student_test_suite_name)
-                row[student_suite_total_header] = suite_fdbk.total_points
-
-                student_suite_total_possible_header = student_suite_total_possible_tmpl.format(
-                    suite_fdbk.student_test_suite_name)
-                row[student_suite_total_possible_header] = suite_fdbk.total_points_possible
+            row.update(_make_test_detail_columns(fdbk.to_dict()))
 
             writer.writerow(row)
 
@@ -247,13 +211,11 @@ def _make_scores_csv(task: ag_models.DownloadTask,
 def _make_ultimate_submission_scores_csv(task: ag_models.DownloadTask,
                                          submission_fdbks: Iterator[SubmissionResultFeedback],
                                          num_submissions: int, dest_filename: str):
-    print(submission_fdbks)
-
     project_has_handgrading = False
     if hasattr(task.project, 'handgrading_rubric'):
         project_has_handgrading = True
 
-    results = serialize_ultimate_submission_results(submission_fdbks, full_results=False,
+    results = serialize_ultimate_submission_results(submission_fdbks, full_results=True,
                                                     include_handgrading=project_has_handgrading)
 
     with open(dest_filename, 'w', newline='') as csv_file:
@@ -265,8 +227,9 @@ def _make_ultimate_submission_scores_csv(task: ag_models.DownloadTask,
         if project_has_handgrading:
             headers += ['Handgrading Total Points', 'Handgrading Total Points Possible']
 
-        writer = csv.DictWriter(csv_file, headers)
+        headers += _make_test_detail_headers(task.project)
 
+        writer = csv.DictWriter(csv_file, headers)
         writer.writeheader()
 
         for progress_index, result in enumerate(results):
@@ -289,9 +252,65 @@ def _make_ultimate_submission_scores_csv(task: ag_models.DownloadTask,
                 row['Handgrading Total Points Possible'] = (
                     result['ultimate_submission']['results']['handgrading_total_points_possible'])
 
+            row.update(_make_test_detail_columns(result['ultimate_submission']['results']))
+
             writer.writerow(row)
 
             if progress_index % _PROGRESS_UPDATE_FREQUENCY == 0:
                 task.progress = (progress_index / num_submissions) * 100
                 task.save()
                 print('Updated task {} progress: {}'.format(task.pk, task.progress))
+
+
+AG_SUITE_TOTAL_TMPL = '{} Total'
+AG_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
+AG_TEST_HEADER_TMPL = '{} - {}'
+STUDENT_SUITE_TOTAL_TMPL = '{} Total'
+STUDENT_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
+
+
+def _make_test_detail_headers(project: ag_models.Project):
+    headers = []
+    AG_SUITE_TOTAL_TMPL = '{} Total'
+    AG_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
+    AG_TEST_HEADER_TMPL = '{} - {}'
+    STUDENT_SUITE_TOTAL_TMPL = '{} Total'
+    STUDENT_SUITE_TOTAL_POSSIBLE_TMPL = '{} Total Possible'
+
+    for suite in project.ag_test_suites.all():
+        headers += [AG_SUITE_TOTAL_TMPL.format(suite.name),
+                    AG_SUITE_TOTAL_POSSIBLE_TMPL.format(suite.name)]
+        headers += [AG_TEST_HEADER_TMPL.format(suite.name, case.name)
+                    for case in suite.ag_test_cases.all()]
+
+    for suite in project.student_test_suites.all():
+        headers += [STUDENT_SUITE_TOTAL_TMPL.format(suite.name),
+                    STUDENT_SUITE_TOTAL_POSSIBLE_TMPL.format(suite.name)]
+
+    return headers
+
+
+def _make_test_detail_columns(submission_fdbk_dict: dict):
+    row = {}
+    for suite_fdbk in submission_fdbk_dict['ag_test_suite_results']:
+        ag_suite_total_header = AG_SUITE_TOTAL_TMPL.format(suite_fdbk['ag_test_suite_name'])
+        row[ag_suite_total_header] = suite_fdbk['total_points']
+        ag_suite_total_possible_header = AG_SUITE_TOTAL_POSSIBLE_TMPL.format(
+            suite_fdbk['ag_test_suite_name'])
+        row[ag_suite_total_possible_header] = suite_fdbk['total_points_possible']
+
+        for case_fdbk in suite_fdbk['ag_test_case_results']:
+            ag_test_total_header = AG_TEST_HEADER_TMPL.format(
+                suite_fdbk['ag_test_suite_name'], case_fdbk['ag_test_case_name'])
+            row[ag_test_total_header] = case_fdbk['total_points']
+
+    for suite_fdbk in submission_fdbk_dict['student_test_suite_results']:
+        student_suite_total_header = STUDENT_SUITE_TOTAL_TMPL.format(
+            suite_fdbk['student_test_suite_name'])
+        row[student_suite_total_header] = suite_fdbk['total_points']
+
+        student_suite_total_possible_header = STUDENT_SUITE_TOTAL_POSSIBLE_TMPL.format(
+            suite_fdbk['student_test_suite_name'])
+        row[student_suite_total_possible_header] = suite_fdbk['total_points_possible']
+
+    return row
