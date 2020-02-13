@@ -315,7 +315,13 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Timestamp': str(self.student_submission.timestamp),
                 'Extension': '',
                 'Total Points': str(self.student_result_fdbk.total_points),
-                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                # These point values are the same as the totals because its the only test case
+                f'{self.ag_test_suite.name} Total': str(self.student_result_fdbk.total_points),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             }),
             OrderedDict({
                 'Username': self.student_group.member_names[1],
@@ -324,7 +330,12 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Timestamp': str(self.student_submission.timestamp),
                 'Extension': '',
                 'Total Points': str(self.student_result_fdbk.total_points),
-                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                f'{self.ag_test_suite.name} Total': (str(self.student_result_fdbk.total_points)),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             })
         ]
 
@@ -345,7 +356,13 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Timestamp': str(self.student_submission.timestamp),
                 'Extension': str(student_extension),
                 'Total Points': str(self.student_result_fdbk.total_points),
-                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                # These point values are the same as the totals because its the only test case
+                f'{self.ag_test_suite.name} Total': str(self.student_result_fdbk.total_points),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             }),
             OrderedDict({
                 'Username': self.student_group.member_names[1],
@@ -354,7 +371,12 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Timestamp': str(self.student_submission.timestamp),
                 'Extension': str(student_extension),
                 'Total Points': str(self.student_result_fdbk.total_points),
-                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                f'{self.ag_test_suite.name} Total': (str(self.student_result_fdbk.total_points)),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             })
         ]
 
@@ -394,7 +416,13 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Timestamp': str(self.student_submission.timestamp),
                 'Extension': '',
                 'Total Points': str(self.student_result_fdbk.total_points),
-                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                # These point values are the same as the totals because its the only test case
+                f'{self.ag_test_suite.name} Total': str(self.student_result_fdbk.total_points),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             }),
             OrderedDict({
                 'Username': self.student_group.member_names[1],
@@ -403,7 +431,12 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Timestamp': str(self.student_submission.timestamp),
                 'Extension': '',
                 'Total Points': str(self.student_result_fdbk.total_points),
-                'Total Points Possible': str(self.student_result_fdbk.total_points_possible)
+                'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
+                f'{self.ag_test_suite.name} Total': (str(self.student_result_fdbk.total_points)),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             })
         ]
 
@@ -413,7 +446,13 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
             'Timestamp': str(self.staff_submission.timestamp),
             'Extension': '',
             'Total Points': str(self.staff_result_fdbk.total_points),
-            'Total Points Possible': str(self.staff_result_fdbk.total_points_possible)
+            'Total Points Possible': str(self.staff_result_fdbk.total_points_possible),
+            f'{self.ag_test_suite.name} Total': (
+                str(self.staff_result_fdbk.total_points)),
+            f'{self.ag_test_suite.name} Total Possible': (
+                str(self.staff_result_fdbk.total_points_possible)),
+            f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                str(self.staff_result_fdbk.total_points)),
         })
 
         self.assertEqual(2, self.project.groups.count())
@@ -483,7 +522,13 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Handgrading Total Points': str(
                     self.student_submission.handgrading_result.total_points),
                 'Handgrading Total Points Possible': (
-                    str(self.student_submission.handgrading_result.total_points_possible))
+                    str(self.student_submission.handgrading_result.total_points_possible)),
+                # These point values are the same as the totals because its the only test case
+                f'{self.ag_test_suite.name} Total': str(self.student_result_fdbk.total_points),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             }),
             OrderedDict({
                 'Username': self.student_group.member_names[1],
@@ -496,7 +541,12 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Handgrading Total Points': str(
                     self.student_submission.handgrading_result.total_points),
                 'Handgrading Total Points Possible': (
-                    str(self.student_submission.handgrading_result.total_points_possible))
+                    str(self.student_submission.handgrading_result.total_points_possible)),
+                f'{self.ag_test_suite.name} Total': (str(self.student_result_fdbk.total_points)),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             })
         ]
 
@@ -533,7 +583,13 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Total Points': str(self.student_result_fdbk.total_points),
                 'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
                 'Handgrading Total Points': '',
-                'Handgrading Total Points Possible': ''
+                'Handgrading Total Points Possible': '',
+                # These point values are the same as the totals because its the only test case
+                f'{self.ag_test_suite.name} Total': str(self.student_result_fdbk.total_points),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             }),
             OrderedDict({
                 'Username': self.student_group.member_names[1],
@@ -544,7 +600,12 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Total Points': str(self.student_result_fdbk.total_points),
                 'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
                 'Handgrading Total Points': '',
-                'Handgrading Total Points Possible': ''
+                'Handgrading Total Points Possible': '',
+                f'{self.ag_test_suite.name} Total': (str(self.student_result_fdbk.total_points)),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             })
         ]
 
@@ -559,7 +620,13 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
             'Handgrading Total Points': (
                 str(self.staff_submission.handgrading_result.total_points)),
             'Handgrading Total Points Possible': (
-                str(self.staff_submission.handgrading_result.total_points_possible))
+                str(self.staff_submission.handgrading_result.total_points_possible)),
+            # These point values are the same as the totals because its the only test case
+            f'{self.ag_test_suite.name} Total': str(self.staff_result_fdbk.total_points),
+            f'{self.ag_test_suite.name} Total Possible': (
+                str(self.staff_result_fdbk.total_points_possible)),
+            f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                str(self.staff_result_fdbk.total_points)),
         })
 
         if self.staff_group == self.project.groups.first():
@@ -599,7 +666,13 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Total Points': str(self.student_result_fdbk.total_points),
                 'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
                 'Handgrading Total Points': '',
-                'Handgrading Total Points Possible': ''
+                'Handgrading Total Points Possible': '',
+                # These point values are the same as the totals because its the only test case
+                f'{self.ag_test_suite.name} Total': str(self.student_result_fdbk.total_points),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             }),
             OrderedDict({
                 'Username': self.student_group.member_names[1],
@@ -610,7 +683,12 @@ class DownloadAllUltimateSubmissionGradesTestCase(UnitTestBase):
                 'Total Points': str(self.student_result_fdbk.total_points),
                 'Total Points Possible': str(self.student_result_fdbk.total_points_possible),
                 'Handgrading Total Points': '',
-                'Handgrading Total Points Possible': ''
+                'Handgrading Total Points Possible': '',
+                f'{self.ag_test_suite.name} Total': (str(self.student_result_fdbk.total_points)),
+                f'{self.ag_test_suite.name} Total Possible': (
+                    str(self.student_result_fdbk.total_points_possible)),
+                f'{self.ag_test_suite.name} - {self.ag_test_case.name}': (
+                    str(self.student_result_fdbk.total_points)),
             })
         ]
 
