@@ -103,7 +103,10 @@ def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test
             ag_test_cases = ag_test_suite.ag_test_cases.filter(pk__in=ag_test_case_pks)
             submission = ag_models.Submission.objects.get(pk=submission_pk)
 
-            if ag_test_cases:
+            # - ag_test_case_pks being empty means we want to rerun all tests.
+            # - ag_test_case_pks being non-empty and ag_test_cases being empty
+            # implies that none of the requested tests exist.
+            if not ag_test_case_pks or ag_test_cases:
                 tasks.grade_ag_test_suite_impl(ag_test_suite, submission, *ag_test_cases)
         except ObjectDoesNotExist:
             # This means that the suite was deleted, so we skip it.
