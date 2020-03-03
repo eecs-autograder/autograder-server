@@ -1,6 +1,7 @@
 import traceback
 
 import celery
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import F
 from django.db.models import Value
@@ -97,65 +98,67 @@ class RerunSubmissionsTaskDetailVewSet(mixins.RetrieveModelMixin,
 def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test_case_pks):
     @retry_should_recover
     def _rerun_ag_test_suite_impl():
-        ag_test_suite = ag_models.AGTestSuite.objects.get(pk=ag_test_suite_pk)
-        ag_test_cases = ag_test_suite.ag_test_cases.filter(pk__in=ag_test_case_pks)
-        submission = ag_models.Submission.objects.get(pk=submission_pk)
+        try:
+            ag_test_suite = ag_models.AGTestSuite.objects.get(pk=ag_test_suite_pk)
+            ag_test_cases = ag_test_suite.ag_test_cases.filter(pk__in=ag_test_case_pks)
+            submission = ag_models.Submission.objects.get(pk=submission_pk)
 
-        tasks.grade_ag_test_suite_impl(ag_test_suite, submission, *ag_test_cases)
+            if ag_test_cases:
+                tasks.grade_ag_test_suite_impl(ag_test_suite, submission, *ag_test_cases)
+        except ObjectDoesNotExist:
+            # This means that the suite was deleted, so we skip it.
+            pass
 
-        with transaction.atomic():
-            ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
-                pk=rerun_task_pk
-            ).update(num_completed_subtasks=F('num_completed_subtasks') + 1)
-
-    @retry_should_recover
-    def _handle_rerun_error():
-        error_msg = (
-            f'\nError rerunning ag test suite {ag_test_suite_pk} for submission {submission_pk}\n'
-            f'{str(e)} {traceback.format_exc()}\n')
-
-        with transaction.atomic():
-            ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
-                pk=rerun_task_pk
-            ).update(error_msg=Concat('error_msg', Value(error_msg)))
+        _update_rerun_progress(rerun_task_pk)
 
     try:
         _rerun_ag_test_suite_impl()
     except Exception as e:
-        _handle_rerun_error()
+        error_msg = (
+            f'\nError rerunning ag test suite {ag_test_suite_pk} for submission {submission_pk}\n'
+            f'{str(e)} {traceback.format_exc()}\n')
+        _update_rerun_error_msg(rerun_task_pk, error_msg)
 
 
 @celery.shared_task(queue='rerun', max_retries=1, acks_late=True)
 def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk):
     @retry_should_recover
     def _rerun_student_test_suite_impl():
-        student_suite = ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk)
-        submission = ag_models.Submission.objects.get(pk=submission_pk)
+        try:
+            student_suite = ag_models.StudentTestSuite.objects.get(pk=student_test_suite_pk)
+            submission = ag_models.Submission.objects.get(pk=submission_pk)
 
-        tasks.grade_student_test_suite_impl(student_suite, submission)
+            tasks.grade_student_test_suite_impl(student_suite, submission)
+        except ObjectDoesNotExist:
+            pass
 
-        with transaction.atomic():
-            ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
-                pk=rerun_task_pk
-            ).update(num_completed_subtasks=F('num_completed_subtasks') + 1)
+        _update_rerun_progress(rerun_task_pk)
 
-    @retry_should_recover
-    def _handle_rerun_error():
+    try:
+        _rerun_student_test_suite_impl()
+    except Exception as e:
         error_msg = (
             f'\nError rerunning student test suite {student_test_suite_pk} for submission '
             f'{submission_pk}\n'
             f'{str(e)} {traceback.format_exc()}\n'
         )
+        _update_rerun_error_msg(rerun_task_pk, error_msg)
 
-        with transaction.atomic():
-            ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
-                pk=rerun_task_pk
-            ).update(error_msg=Concat('error_msg', Value(error_msg)))
 
-    try:
-        _rerun_student_test_suite_impl()
-    except Exception as e:
-        _handle_rerun_error()
+@retry_should_recover
+def _update_rerun_progress(rerun_task_pk: int):
+    with transaction.atomic():
+        ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
+            pk=rerun_task_pk
+        ).update(num_completed_subtasks=F('num_completed_subtasks') + 1)
+
+
+@retry_should_recover
+def _update_rerun_error_msg(rerun_task_pk: int, error_msg: str):
+    with transaction.atomic():
+        ag_models.RerunSubmissionsTask.objects.select_for_update().filter(
+            pk=rerun_task_pk
+        ).update(error_msg=Concat('error_msg', Value(error_msg)))
 
 
 @celery.shared_task(queue='small_tasks', max_retries=1, acks_late=True)

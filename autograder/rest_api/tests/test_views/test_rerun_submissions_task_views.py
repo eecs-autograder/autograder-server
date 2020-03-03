@@ -15,7 +15,9 @@ from autograder.core.submission_feedback import SubmissionResultFeedback, AGTest
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import (
     get_submission_fdbk)
 from autograder.grading_tasks import tasks
-from autograder.utils.testing import UnitTestBase
+from autograder.rest_api.views.rerun_submissions_task_views import (
+    rerun_ag_test_suite, rerun_student_test_suite)
+from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 
 
 class ListRerunSubmissionsTasksTestCase(UnitTestBase):
@@ -386,3 +388,59 @@ class GetRerunSubmissionsTaskTestCase(test_impls.GetObjectTest, UnitTestBase):
         self.client.force_authenticate(staff)
         response = self.client.get(self.url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+
+@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
+    def setUp(self):
+        super().setUp()
+
+        self.submission = obj_build.make_submission()
+        self.group = self.submission.group
+        self.project = self.group.project
+        self.rerun_task = ag_models.RerunSubmissionsTask.objects.validate_and_create(
+            project=self.project,
+            creator=obj_build.make_user(),
+        )
+
+    def test_ag_test_suite_not_found_no_retry(self, sleep_mock) -> None:
+        ag_test_suite = obj_build.make_ag_test_suite()
+
+        ag_models.AGTestSuite.objects.get(pk=ag_test_suite.pk).delete()
+
+        rerun_ag_test_suite(self.rerun_task.pk, self.submission.pk, ag_test_suite.pk)
+        sleep_mock.assert_not_called()
+
+    @mock.patch(
+        'autograder.rest_api.views.rerun_submissions_task_views.tasks.grade_ag_test_suite_impl'
+    )
+    def test_ag_test_case_not_found_no_retry(self, sleep_mock, grade_suite_mock) -> None:
+        ag_test_case = obj_build.make_ag_test_case()
+        ag_test_suite = ag_test_case.ag_test_suite
+        ag_models.AGTestCase.objects.get(pk=ag_test_case.pk).delete()
+        rerun_ag_test_suite(
+            self.rerun_task.pk, self.submission.pk, ag_test_suite.pk, ag_test_case.pk)
+
+        grade_suite_mock.assert_not_called()
+        sleep_mock.assert_not_called()
+
+    @tag('sandbox')
+    def test_ag_test_command_not_found_no_retry(self, sleep_mock) -> None:
+        submission = obj_build.make_submission()
+        ag_test_command = obj_build.make_full_ag_test_command(
+            set_arbitrary_points=False, set_arbitrary_expected_vals=False)
+        ag_test_case = ag_test_command.ag_test_case
+
+        suite_result = ag_models.AGTestSuiteResult.objects.validate_and_create(
+            ag_test_suite=ag_test_case.ag_test_suite,
+            submission=submission
+        )
+        test_result = ag_models.AGTestCaseResult.objects.validate_and_create(
+            ag_test_case=ag_test_case,
+            ag_test_suite_result=suite_result
+        )
+
+        ag_models.AGTestCommand.objects.get(pk=ag_test_command.pk).delete()
+        rerun_ag_test_suite(self.rerun_task.pk, self.submission.pk, ag_test_case.ag_test_suite.pk)
+
+        sleep_mock.assert_not_called()
