@@ -444,3 +444,12 @@ class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
         rerun_ag_test_suite(self.rerun_task.pk, self.submission.pk, ag_test_case.ag_test_suite.pk)
 
         sleep_mock.assert_not_called()
+
+    def test_student_test_suite_not_found_no_retry(self, sleep_mock) -> None:
+        submission = obj_build.make_submission()
+        student_suite = obj_build.make_student_test_suite()
+
+        ag_models.StudentTestSuite.objects.get(pk=student_suite.pk).delete()
+
+        rerun_student_test_suite(self.rerun_task.pk, self.submission.pk, student_suite.pk)
+        sleep_mock.assert_not_called()
