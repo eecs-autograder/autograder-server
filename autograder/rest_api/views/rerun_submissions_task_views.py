@@ -7,9 +7,8 @@ from django.db.models import F
 from django.db.models import Value
 from django.db.models.functions import Concat
 
-from rest_framework import mixins
-from rest_framework import response
-from rest_framework import status
+from rest_framework import mixins, response, status
+from rest_framework.decorators import detail_route
 from rest_framework.request import Request
 
 from autograder.core.caching import clear_submission_results_cache
@@ -93,9 +92,21 @@ class RerunSubmissionsTaskDetailVewSet(mixins.RetrieveModelMixin,
 
     model_manager = ag_models.RerunSubmissionsTask.objects
 
+    @transaction.atomic
+    @detail_route(methods=['POST'])
+    def cancel(self, *args, **kwargs):
+        task = self.get_object()
+        task.is_cancelled = True
+        task.save()
+
+        return response.Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+
 
 @celery.shared_task(queue='rerun', max_retries=1, acks_late=True)
 def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test_case_pks):
+    if _rerun_is_cancelled(rerun_task_pk):
+        return
+
     @retry_should_recover
     def _rerun_ag_test_suite_impl():
         try:
@@ -125,6 +136,9 @@ def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test
 
 @celery.shared_task(queue='rerun', max_retries=1, acks_late=True)
 def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk):
+    if _rerun_is_cancelled(rerun_task_pk):
+        return
+
     @retry_should_recover
     def _rerun_student_test_suite_impl():
         try:
@@ -146,6 +160,12 @@ def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk
             f'{str(e)} {traceback.format_exc()}\n'
         )
         _update_rerun_error_msg(rerun_task_pk, error_msg)
+
+
+@retry_should_recover
+def _rerun_is_cancelled(rerun_task_pk: int):
+    task = ag_models.RerunSubmissionsTask.objects.get(pk=rerun_task_pk)
+    return task.is_cancelled
 
 
 @retry_should_recover
