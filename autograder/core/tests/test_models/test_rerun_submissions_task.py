@@ -154,6 +154,7 @@ class RerunSubmissionsTaskTestCase(UnitTestBase):
         expected_fields = [
             'pk',
             'progress',
+            'is_cancelled',
             'error_msg',
             'creator',
             'created_at',

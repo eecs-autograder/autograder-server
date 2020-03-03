@@ -58,6 +58,11 @@ class RerunSubmissionsTask(Task):
         help_text="""When rerun_all_student_test_suites is False, specifies which
                      student test suites should be rerun.""")
 
+    is_cancelled = models.BooleanField(
+        blank=True, default=False,
+        help_text="Indicates whether the task has been cancelled by the user."
+    )
+
     num_completed_subtasks = models.IntegerField(default=0)
     total_num_subtasks = models.IntegerField(default=0)
 
@@ -150,6 +155,7 @@ class RerunSubmissionsTask(Task):
     SERIALIZABLE_FIELDS = [
         'pk',
         'progress',
+        'is_cancelled',
         'error_msg',
         'creator',
         'created_at',
