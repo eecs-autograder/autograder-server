@@ -5,6 +5,7 @@ import tempfile
 
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import Prefetch
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
@@ -41,7 +42,10 @@ class GroupsViewSet(ListCreateNestedModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         if self.request.method.lower() == 'get':
-            queryset = queryset.prefetch_related('submissions')
+            queryset = queryset.prefetch_related(
+                Prefetch('submissions',
+                         ag_models.Submission.objects.defer('denormalized_ag_test_results'))
+            )
 
         return queryset
 
