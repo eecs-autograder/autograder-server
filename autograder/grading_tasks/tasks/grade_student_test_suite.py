@@ -18,7 +18,7 @@ from .utils import (add_files_to_sandbox, mark_submission_as_error,
                     retry_should_recover, run_ag_command, run_ag_test_command)
 
 
-@celery.shared_task(queue='deferred', max_retries=1, acks_late=True)
+@celery.shared_task(max_retries=1, acks_late=True)
 def grade_deferred_student_test_suite(student_test_suite_pk, submission_pk):
 
     @retry_should_recover
