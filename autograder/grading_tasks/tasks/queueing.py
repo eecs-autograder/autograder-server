@@ -24,7 +24,6 @@ def _estimated_grading_time(project_pk: int):
     return ag_test_time_max + student_test_suite_time_max
 
 
-
 @celery.shared_task
 def queue_submissions():
     with transaction.atomic():
