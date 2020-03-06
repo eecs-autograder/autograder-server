@@ -34,3 +34,23 @@ CELERYBEAT_SCHEDULE = {
 }
 
 SUBMISSION_WORKER_PREFIX = 'submission_grader'
+FAST_GRADER_WORKER_PREFIX = 'fast_submission_grader'
+DEFERRED_WORKER_PREFIX = 'deferred'
+RERUN_WORKER_PREFIX = 'rerun'
+
+SUBMISSION_QUEUE_TMPL = 'project{}'
+FAST_QUEUE_TMPL = 'fast_project{}'
+DEFERRED_QUEUE_TMPL = 'deferred_project{}'
+RERUN_QUEUE_TMPL = 'rerun_project{}'
+
+# Grading workers should be configured to have a hostname of
+# XX@host_machine, where XX is one of the keys in this dictionary.
+# This dictionary then defines the kinds of queues those workers should
+# consume from. For example, 'submission_grader' workers consume from
+# both 'project' and 'fast_project' queues.
+WORKER_PREFIX_TO_QUEUE_TMPLS = {
+    SUBMISSION_WORKER_PREFIX: [SUBMISSION_QUEUE_TMPL, FAST_QUEUE_TMPL],
+    FAST_GRADER_WORKER_PREFIX: [FAST_QUEUE_TMPL],
+    DEFERRED_WORKER_PREFIX: [DEFERRED_QUEUE_TMPL],
+    RERUN_WORKER_PREFIX: [RERUN_QUEUE_TMPL],
+}

@@ -1,6 +1,7 @@
 import traceback
 
 import celery
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import F
@@ -57,13 +58,19 @@ class RerunSubmissionsTaskListCreateView(ListCreateNestedModelViewSet):
         signatures = []
         for submission in submissions:
             ag_suite_sigs = [
-                rerun_ag_test_suite.s(rerun_task.pk, submission.pk, ag_suite.pk,
-                                      *ag_suites_data.get(str(ag_suite.pk), []))
-                for ag_suite in ag_test_suites]
+                rerun_ag_test_suite.s(
+                    rerun_task.pk, submission.pk, ag_suite.pk,
+                    *ag_suites_data.get(str(ag_suite.pk), [])
+                ).set(queue=settings.RERUN_QUEUE_TMPL.format(ag_suite.project_id))
+                for ag_suite in ag_test_suites
+            ]
 
             student_suite_sigs = [
-                rerun_student_test_suite.s(rerun_task.pk, submission.pk, student_suite.pk)
-                for student_suite in student_suites]
+                rerun_student_test_suite.s(
+                    rerun_task.pk, submission.pk, student_suite.pk
+                ).set(queue=settings.RERUN_QUEUE_TMPL.format(student_suite.project_id))
+                for student_suite in student_suites
+            ]
 
             signatures += ag_suite_sigs
             signatures += student_suite_sigs
@@ -102,7 +109,7 @@ class RerunSubmissionsTaskDetailVewSet(mixins.RetrieveModelMixin,
         return response.Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
 
 
-@celery.shared_task(queue='rerun', max_retries=1, acks_late=True)
+@celery.shared_task(max_retries=1, acks_late=True)
 def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test_case_pks):
     if _rerun_is_cancelled(rerun_task_pk):
         return
@@ -134,7 +141,7 @@ def rerun_ag_test_suite(rerun_task_pk, submission_pk, ag_test_suite_pk, *ag_test
         _update_rerun_error_msg(rerun_task_pk, error_msg)
 
 
-@celery.shared_task(queue='rerun', max_retries=1, acks_late=True)
+@celery.shared_task(max_retries=1, acks_late=True)
 def rerun_student_test_suite(rerun_task_pk, submission_pk, student_test_suite_pk):
     if _rerun_is_cancelled(rerun_task_pk):
         return

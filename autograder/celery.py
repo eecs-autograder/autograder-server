@@ -12,16 +12,11 @@ app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 @worker_ready.connect()
 def detect_queues(sender, **kwargs):
-    if not sender.hostname.startswith(settings.SUBMISSION_WORKER_PREFIX):
+    import autograder.core.models as ag_models
+    from autograder.grading_tasks.tasks.queueing import get_worker_prefix, register_project_queues
+
+    if get_worker_prefix(sender.hostname) not in settings.WORKER_PREFIX_TO_QUEUE_TMPLS:
         return
 
-    import autograder.core.models as ag_models
-    for project in ag_models.Project.objects.all():
-        _register_project_queue(project.pk, sender.hostname)
-
-
-def _register_project_queue(project_pk, worker_name):
-    print('project {}'.format(project_pk))
-    res = app.control.add_consumer('project{}'.format(project_pk),
-                                   destination=[worker_name])
-    print(res)
+    project_pks = [project.pk for project in ag_models.Project.objects.all()]
+    register_project_queues(worker_names=[sender.hostname], project_pks=project_pks)

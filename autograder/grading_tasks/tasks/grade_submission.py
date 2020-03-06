@@ -2,6 +2,7 @@ import traceback
 
 import celery
 
+from django.conf import settings
 from django.db import transaction
 
 import autograder.core.models as ag_models
@@ -41,14 +42,22 @@ def grade_submission(submission_pk):
         deferred_ag_test_suites = load_queryset_with_retry(
             project.ag_test_suites.filter(deferred=True))
 
-        ag_suite_signatures = [grade_deferred_ag_test_suite.s(ag_test_suite.pk, submission_pk)
-                               for ag_test_suite in deferred_ag_test_suites]
+        ag_suite_signatures = [
+            grade_deferred_ag_test_suite.s(
+                ag_test_suite.pk, submission_pk
+            ).set(queue=settings.DEFERRED_QUEUE_TMPL.format(ag_test_suite.project_id))
+            for ag_test_suite in deferred_ag_test_suites
+        ]
 
         deferred_student_test_suites = load_queryset_with_retry(
             project.student_test_suites.filter(deferred=True))
 
-        student_suite_signatures = [grade_deferred_student_test_suite.s(suite.pk, submission.pk)
-                                    for suite in deferred_student_test_suites]
+        student_suite_signatures = [
+            grade_deferred_student_test_suite.s(
+                suite.pk, submission.pk
+            ).set(queue=settings.DEFERRED_QUEUE_TMPL.format(suite.project_id))
+            for suite in deferred_student_test_suites
+        ]
 
         signatures = ag_suite_signatures + student_suite_signatures
         if not signatures:
