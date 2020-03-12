@@ -8,7 +8,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0048_remove_docker_image_to_use'),
+        ('core', '0049_remove_docker_image_to_use'),
     ]
 
     operations = [

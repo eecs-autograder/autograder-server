@@ -245,7 +245,7 @@ class ImageConfigValidationTestCase(AGViewTestBase):
         response = self.do_patch_object_test(
             self.default_image, self.client, self.superuser,
             self.default_image_url,
-            {'tag': 'jameslp/autograder-sandbox:3.0.0'}
+            {'tag': 'jameslp/autograder-sandbox:3.1.0'}
         )
         self.assertEqual('', response.data['validation_warning'])
 
@@ -326,7 +326,7 @@ class ImageConfigValidationTestCase(AGViewTestBase):
             response = self.do_patch_object_test(
                 self.default_image, self.client, self.superuser,
                 self.default_image_url,
-                {'tag': 'jameslp/autograder-sandbox:3.0.0'},
+                {'tag': 'jameslp/autograder-sandbox:3.1.0'},
                 ignore_fields=['validation_warning']
             )
             self.assertIn('Temporary error fetching image', response.data['validation_warning'])
@@ -338,7 +338,7 @@ class ImageConfigValidationTestCase(AGViewTestBase):
         response = self.do_patch_object_test(
             self.default_image, self.client, self.superuser,
             self.default_image_url,
-            {'tag': 'jameslp/autograder-sandbox:3.0.0'},
+            {'tag': 'jameslp/autograder-sandbox:3.1.0'},
             ignore_fields=['validation_warning']
         )
         self.assertEqual('', response.data['validation_warning'])
