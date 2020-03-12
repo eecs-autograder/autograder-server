@@ -47,7 +47,7 @@ def delete_course_linked_images(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0051_change_sandbox_docker_image_related_attr_2'),
+        ('core', '0052_change_sandbox_docker_image_related_attr_2'),
     ]
 
     operations = [

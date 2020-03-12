@@ -244,22 +244,16 @@ class AGTestSuiteTestCase(UnitTestBase):
 
 
 class AGTestSuiteSandboxImageOnDeleteTestCase(TransactionUnitTestBase):
-    def test_sandbox_docker_image_cannot_be_deleted_and_name_cannot_be_changed_when_in_use(self):
-        """
-        Verifies that on_delete for AGTestSuite.sandbox_docker_image is set to PROTECT
-        and that the name of an image can't be changed if any foreign key references to it exist.
-        """
+    def test_sandbox_docker_image_set_to_default_on_delete(self):
         project = obj_build.make_project()
         sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
             name='waaaa', display_name='luigi', tag='taggy')
 
-        ag_models.AGTestSuite.objects.validate_and_create(
+        suite = ag_models.AGTestSuite.objects.validate_and_create(
             name='suiteo', project=project, sandbox_docker_image=sandbox_image
         )
 
-        with self.assertRaises(IntegrityError):
-            sandbox_image.delete()
-
-        with self.assertRaises(IntegrityError):
-            sandbox_image.name = 'bad'
-            sandbox_image.save()
+        sandbox_image.delete()
+        suite.refresh_from_db()
+        self.assertEqual(ag_models.SandboxDockerImage.objects.get(display_name='Default'),
+                         suite.sandbox_docker_image)

@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0047_instructor_file_uniqueness'),
+        ('core', '0048_rerun_submissions_task_is_cancelled'),
     ]
 
     operations = [

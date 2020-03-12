@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0049_add_course_field_to_sandbox_docker_image'),
+        ('core', '0050_add_course_field_to_sandbox_docker_image'),
     ]
 
     operations = [

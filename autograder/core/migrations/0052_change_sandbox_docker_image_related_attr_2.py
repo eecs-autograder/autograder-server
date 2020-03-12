@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0050_change_sandbox_docker_image_related_attr_1'),
+        ('core', '0051_change_sandbox_docker_image_related_attr_1'),
     ]
 
     operations = [
