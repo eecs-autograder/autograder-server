@@ -56,7 +56,7 @@ class ListRerunSubmissionsTasksTestCase(UnitTestBase):
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -410,7 +410,7 @@ class RerunSubmissionsTaskDetailViewSetTestCase(test_impls.GetObjectTest, UnitTe
         self.assertFalse(self.rerun_task.is_cancelled)
 
 
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
     def setUp(self):
         super().setUp()

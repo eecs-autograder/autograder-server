@@ -9,6 +9,7 @@ import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import \
     get_submission_fdbk
 from autograder.grading_tasks import tasks
+from autograder.utils.retry import MaxRetriesExceeded, retry
 from autograder.utils.testing import UnitTestBase
 
 
@@ -30,7 +31,7 @@ def _make_mock_grade_ag_test_cmd_fail_then_succeed(num_times_to_fail):
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class GradeSubmissionTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -408,7 +409,7 @@ void file2() {
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
@@ -444,7 +445,7 @@ void file2() {
             get_submission_fdbk(self.submission, ag_models.FeedbackCategory.max).total_points)
 
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test.retry_should_recover',
-                new=tasks.retry(max_num_retries=2))
+                new=retry(max_num_retries=2))
     @mock.patch('autograder.grading_tasks.tasks.grade_ag_test.grade_ag_test_command_impl',
                 new=_make_mock_grade_ag_test_cmd_fail_then_succeed(None))
     def test_deferred_ag_test_error(self, *args):
@@ -457,7 +458,7 @@ void file2() {
             expected_return_code=ag_models.ExpectedReturnCode.zero,
             points_for_correct_return_code=3)
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             tasks.grade_submission(self.submission.pk)
 
         self.submission.refresh_from_db()
