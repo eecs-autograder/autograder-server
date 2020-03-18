@@ -18,7 +18,7 @@ from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class AGTestCommandCorrectnessTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -236,7 +236,7 @@ class AGTestCommandCorrectnessTestCase(UnitTestBase):
         self.assertFalse(res.stderr_correct)
 
 
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class AGTestCommandStdinSourceTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -298,7 +298,7 @@ class AGTestCommandStdinSourceTestCase(UnitTestBase):
         self.assertEqual(self.setup_stderr, open(res.stdout_filename).read())
 
 
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class InstructorFilePermissionsTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -344,7 +344,7 @@ class InstructorFilePermissionsTestCase(UnitTestBase):
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class ResourceLimitsExceededTestCase(UnitTestBase):
     def setUp(self):
         super().setUp()
@@ -518,7 +518,7 @@ sys.stderr.flush()
 
 
 @tag('slow', 'sandbox')
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class AGTestSuiteRerunTestCase(UnitTestBase):
     def setUp(self):
         # 1. Create an AGTestSuite with 2 test cases (one command per test).
@@ -612,7 +612,7 @@ class AGTestSuiteRerunTestCase(UnitTestBase):
         self.assertFalse(suite_result.setup_timed_out)
 
 
-@mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+@mock.patch('autograder.utils.retry.sleep')
 class NoRetryOnObjectNotFoundTestCase(TransactionUnitTestBase):
     def test_ag_test_suite_not_found_no_retry(self, sleep_mock) -> None:
         submission = obj_build.make_submission()

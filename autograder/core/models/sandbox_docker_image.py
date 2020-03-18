@@ -1,6 +1,7 @@
 import enum
 import os
 
+from django.conf import settings
 from django.core import exceptions
 from django.db import models, transaction
 
@@ -84,7 +85,9 @@ class SandboxDockerImage(AutograderModel):
 
 class _BuildSandboxDockerImageManager(AutograderModelManager):
     @transaction.atomic
-    def validate_and_create(self, files, course, image_to_update=None):
+    def validate_and_create(
+        self, files, course, image_to_update=None
+    ) -> 'BuildSandboxDockerImageTask':
         build_task = self.model(
             course=course,
             image_to_update=image_to_update,
@@ -101,7 +104,7 @@ class _BuildSandboxDockerImageManager(AutograderModelManager):
             core_ut.check_filename(file_.name)
             build_task.filenames.append(file_.name)
             write_dest = os.path.join(
-                get_build_sandbox_docker_image_task_dir(build_task),
+                build_task.build_dir,
                 file_.name
             )
             with open(write_dest, 'wb') as f:
@@ -116,9 +119,10 @@ class _BuildSandboxDockerImageManager(AutograderModelManager):
 class BuildImageStatus(enum.Enum):
     queued = 'queued'
     in_progress = 'in_progress'
-    succeeded = 'succeeded'
+    done = 'done'
+    image_invalid = 'image_invalid'
     cancelled = 'cancelled'
-    failed = 'failed'
+    internal_error = 'internal_error'
 
 
 class BuildSandboxDockerImageTask(AutograderModel):
@@ -129,6 +133,16 @@ class BuildSandboxDockerImageTask(AutograderModel):
         help_text="The status of the build."
     )
 
+    return_code = models.IntegerField(
+        blank=True, null=True, default=None,
+        help_text="The exit status of the build command."
+    )
+
+    timed_out = models.BooleanField(
+        blank=True, default=False,
+        help_text="True if the build timed out."
+    )
+
     filenames = ag_fields.StringArrayField(
         blank=True, default=list,
         help_text="The names of the files uploaded by the user."
@@ -137,7 +151,10 @@ class BuildSandboxDockerImageTask(AutograderModel):
     course = models.ForeignKey(
         'core.Course', related_name='build_sandbox_docker_image_tasks',
         on_delete=models.CASCADE,
-        help_text="The course this task is associated with."
+        blank=True, null=True, default=None,
+        help_text="""The course this task is associated with.
+            Only superusers can create or update images with no associated course.
+        """
     )
 
     image_to_update = models.ForeignKey(
@@ -147,27 +164,37 @@ class BuildSandboxDockerImageTask(AutograderModel):
             Otherwise, refers to the image to be updated on build success."""
     )
 
+    validation_error_msg = models.TextField(
+        blank=True,
+        help_text="Information for the user as to while the built image is invalid."
+    )
+
+    internal_error_msg = models.TextField(
+        blank=True,
+        help_text="If an internal error occurs, the error message will be stored here."
+    )
+
     @property
     def output_filename(self) -> str:
         return os.path.join(
-            get_build_sandbox_docker_image_task_dir(self),
+            self.build_dir,
             f'__build{self.pk}_output',
         )
+
+    @property
+    def build_dir(self) -> str:
+        return get_build_sandbox_docker_image_task_dir(self)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        dirname = get_build_sandbox_docker_image_task_dir(self)
+        dirname = self.build_dir
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
 
     def clean(self, *args, **kwargs):
         if self.image_to_update is None:
             return
-
-        if self.image_to_update.course is None:
-            raise exceptions.ValidationError(
-                {'image_to_update': 'Image to update must belong to a course.'})
 
         if self.image_to_update.course != self.course:
             raise exceptions.ValidationError({
@@ -177,8 +204,13 @@ class BuildSandboxDockerImageTask(AutograderModel):
 
 
 def get_build_sandbox_docker_image_task_dir(build_task: BuildSandboxDockerImageTask) -> str:
-    return os.path.join(
-        core_ut.get_course_root_dir(build_task.course),
+    path_parts = [
+        settings.MEDIA_ROOT,
         'image_builds',
+    ]
+    if build_task.course is not None:
+        path_parts.append(f'course{build_task.course}')
+    return os.path.join(
+        *path_parts,
         f'task{build_task.pk}',
     )

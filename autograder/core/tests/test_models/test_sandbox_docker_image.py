@@ -1,5 +1,6 @@
 import os
 
+from django.conf import settings
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -123,6 +124,7 @@ class SandboxDockerImageTestCase(UnitTestBase):
 
 class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
     def setUp(self):
+        super().setUp()
         self.course = obj_build.make_course()
 
     def test_create_build_task(self) -> None:
@@ -131,14 +133,16 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             SimpleUploadedFile('Dockerfile', b'blee'),
             SimpleUploadedFile('sausage.sh', b'bloo'),
         ]
-        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
-            files, self.course)
+        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(files)
 
         loaded = ag_models.BuildSandboxDockerImageTask.objects.get(pk=task.pk)
         self.assertEqual(ag_models.BuildImageStatus.queued, loaded.status)
+        self.assertIsNone(loaded.return_code)
+        self.assertFalse(loaded.timed_out)
         self.assertEqual(['spam.sh', 'Dockerfile', 'sausage.sh'], loaded.filenames)
-        self.assertEqual(self.course, loaded.course)
+        self.assertIsNone(loaded.course)
         self.assertIsNone(loaded.image_to_update)
+        self.assertEqual('', loaded.internal_error_msg)
 
         for file_ in files:
             file_.seek(0)
@@ -150,6 +154,20 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             )
             with open(path, 'rb') as f:
                 self.assertEqual(file_.read(), f.read())
+
+    def test_create_build_task_course_none_image_to_update_has_no_course(self) -> None:
+        image_to_update = obj_build.make_sandbox_docker_image()
+        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            files=[
+                SimpleUploadedFile('Dockerfile', b'blee'),
+            ],
+            image_to_update=image_to_update
+        )
+        loaded = ag_models.BuildSandboxDockerImageTask.objects.get(pk=task.pk)
+        self.assertEqual(ag_models.BuildImageStatus.queued, loaded.status)
+        self.assertEqual(['Dockerfile'], loaded.filenames)
+        self.assertIsNone(loaded.course)
+        self.assertEqual(image_to_update, loaded.image_to_update)
 
     def test_create_build_task_image_to_update_not_none(self) -> None:
         image_to_update = obj_build.make_sandbox_docker_image(self.course)
@@ -166,7 +184,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         self.assertEqual(self.course, loaded.course)
         self.assertEqual(image_to_update, loaded.image_to_update)
 
-    def test_task_output_filename(self) -> None:
+    def test_task_output_filename_with_course(self) -> None:
         task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
             files=[
                 SimpleUploadedFile('Dockerfile', b'blee'),
@@ -174,7 +192,22 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             course=self.course,
         )
         expected = os.path.join(
-            core_ut.get_course_root_dir(self.course),
+            settings.MEDIA_ROOT,
+            'image_builds',
+            f'course{self.course.pk}',
+            f'task{task.pk}',
+            f'__build{task.pk}_output'
+        )
+        self.assertEqual(expected, task.output_filename)
+
+    def test_task_output_filename_no_course(self) -> None:
+        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            files=[
+                SimpleUploadedFile('Dockerfile', b'blee'),
+            ],
+        )
+        expected = os.path.join(
+            settings.MEDIA_ROOT,
             'image_builds',
             f'task{task.pk}',
             f'__build{task.pk}_output'
@@ -193,7 +226,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             )
         self.assertIn('image_to_update', cm.exception.message_dict)
 
-    def test_error_image_to_update_has_no_course(self) -> None:
+    def test_error_image_to_update_has_no_course_and_course_not_null(self) -> None:
         other_course = obj_build.make_course()
         image_to_update = obj_build.make_sandbox_docker_image()
 
