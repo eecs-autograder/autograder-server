@@ -49,17 +49,12 @@ class SandboxDockerImage(AutograderModel):
     tag = models.TextField(
         blank=False,
         help_text="""The full name and tag that can be used to fetch the image
-                     with the 'docker pull' command, e.g. jameslp/eecs280:2.
-                     This should include a specific
-                     version for the image, and the version number should be
-                     incremented by the user every time the image is updated,
-                     otherwise the new version of the image will not be
-                     fetched."""
+                     with the 'docker pull' command, e.g. localhost:5555/eecs280:latest."""
     )
 
-    validation_warning = models.TextField(
-        blank=True,
-        help_text="Warning text from image validation. If empty, then validation succeeded.")
+    # validation_warning = models.TextField(
+    #     blank=True,
+    #     help_text="Warning text from image validation. If empty, then validation succeeded.")
 
     def full_clean(self, *args, **kwargs):
         if not self.name:
@@ -73,13 +68,13 @@ class SandboxDockerImage(AutograderModel):
         'pk',
         'display_name',
         'course',
-        'tag',
-        'validation_warning',
+        # 'tag',
+        # 'validation_warning',
     ]
 
     EDITABLE_FIELDS = [
         'display_name',
-        'tag',
+        # 'tag',
     ]
 
 

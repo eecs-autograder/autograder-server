@@ -85,43 +85,47 @@ class SubmissionSerializer(AGModelSerializer):
 class SandboxDockerImageSerializer(AGModelSerializer):
     ag_model_class = ag_models.SandboxDockerImage
 
-    def validate_and_update(self, instance: ag_models.SandboxDockerImage, validated_data) -> None:
-        tag_changed = 'tag' in validated_data and validated_data['tag'] != instance.tag
-        super().validate_and_update(instance, validated_data)
-        if tag_changed:
-            self._validate_image_config(instance)
+    # def validate_and_update(self, instance: ag_models.SandboxDockerImage, validated_data) -> None:
+    #     tag_changed = 'tag' in validated_data and validated_data['tag'] != instance.tag
+    #     super().validate_and_update(instance, validated_data)
+    #     if tag_changed:
+    #         self._validate_image_config(instance)
 
-    def validate_and_create(self, data):
-        image = super().validate_and_create(data)
-        self._validate_image_config(image)
-        return image
+    # def validate_and_create(self, data):
+    #     image = super().validate_and_create(data)
+    #     self._validate_image_config(image)
+    #     return image
 
-    def _validate_image_config(self, image: ag_models.SandboxDockerImage):
-        image.validation_warning = ''
-        try:
-            config = inspect_remote_image(image.tag)['config']
-            entrypoint = config['Entrypoint']
-            cmd = config['Cmd']
-            if entrypoint is not None:
-                image.validation_warning += 'Custom images may not use the ENTRYPOINT directive.\n'
+    # def _validate_image_config(self, image: ag_models.SandboxDockerImage):
+    #     image.validation_warning = ''
+    #     try:
+    #         config = inspect_remote_image(image.tag)['config']
+    #         entrypoint = config['Entrypoint']
+    #         cmd = config['Cmd']
+    #         if entrypoint is not None:
+    #             image.validation_warning += 'Custom images may not use the ENTRYPOINT directive.\n'
 
-            if cmd not in [['/bin/bash'], ['/bin/sh']]:
-                image.validation_warning += ('Custom images may not use the CMD directive. '
-                                             f'Expected ["/bin/bash"] but was "{cmd}".\n')
+    #         if cmd not in [['/bin/bash'], ['/bin/sh']]:
+    #             image.validation_warning += ('Custom images may not use the CMD directive. '
+    #                                          f'Expected ["/bin/bash"] but was "{cmd}".\n')
 
-        except ImageDigestRequestUnauthorizedError as e:
-            image.validation_warning = f'Image "{image.tag}" not found.'
-        except SignatureVerificationFailedError as e:
-            image.validation_warning = ('Temporary error fetching image data from DockerHub. '
-                                        'Please wait a few minutes and try again.')
-        except requests.HTTPError as e:
-            if e.response.status_code == 404:
-                image.validation_warning = f'Image "{image.tag}" not found.'
-            else:
-                image.validation_warning = ('Error fetching image data for validation: '
-                                            f'{e.response.status_code} {e.response.reason}')
-        finally:
-            image.save()
+    #     except ImageDigestRequestUnauthorizedError as e:
+    #         image.validation_warning = f'Image "{image.tag}" not found.'
+    #     except SignatureVerificationFailedError as e:
+    #         image.validation_warning = ('Temporary error fetching image data from DockerHub. '
+    #                                     'Please wait a few minutes and try again.')
+    #     except requests.HTTPError as e:
+    #         if e.response.status_code == 404:
+    #             image.validation_warning = f'Image "{image.tag}" not found.'
+    #         else:
+    #             image.validation_warning = ('Error fetching image data for validation: '
+    #                                         f'{e.response.status_code} {e.response.reason}')
+    #     finally:
+    #         image.save()
+
+
+class BuildSandboxDockerImageTaskSerializer(AGModelSerializer):
+    ag_model_class = ag_models.BuildSandboxDockerImageTask
 
 
 class AGTestSuiteSerializer(AGModelSerializer):

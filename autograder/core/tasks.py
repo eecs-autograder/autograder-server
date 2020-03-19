@@ -63,6 +63,7 @@ def build_sandbox_docker_image(build_task_pk: int):
         push_image(builder.tag)
 
         @retry_should_recover
+        @transaction.atomic
         def _create_or_save_image():
             if task.image_to_update is None:
                 ag_models.SandboxDockerImage.objects.validate_and_create(
@@ -72,8 +73,10 @@ def build_sandbox_docker_image(build_task_pk: int):
                 )
             else:
                 image = task.image_to_update
-                image.tag = builder.tag
-                image.save()
+                # Make sure we don't overwrite, say, "display_name"
+                ag_models.SandboxDockerImage.objects.select_for_update().filter(
+                    pk=image.pk
+                ).update(tag=builder.tag)
 
             task.status = ag_models.BuildImageStatus.done
             task.save()
