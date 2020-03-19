@@ -1,32 +1,27 @@
+from typing import Union
+
 from drf_composable_permissions.p import P
-from rest_framework import mixins, permissions
+from rest_framework import mixins, permissions, decorators, response, status
 
 import autograder.core.models as ag_models
+from autograder.core.tasks import build_sandbox_docker_image
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet)
 from autograder.rest_api.views.schema_generation import APITags
 
+from . import ag_model_views as ag_views
 
-class ListCreateCourselessDockerImagePermissions(permissions.BasePermission):
+
+class IsAdminForAnyCourse(permissions.BasePermission):
     def has_permission(self, request, view):
-        if request.user.is_superuser:
-            return True
-
-        if request.method.lower() == 'get':
-            return request.user.courses_is_admin_for.count() > 0
-
-        return False
+        return request.user.courses_is_admin_for.count() > 0
 
 
-class ListCreateSandboxDockerImageViewSet(mixins.ListModelMixin,
-                                          transaction_mixins.TransactionCreateMixin,
-                                          AGModelGenericViewSet):
+class ListGlobalSandboxDockerImagesView(mixins.ListModelMixin, ag_views.AGModelGenericViewSet):
     serializer_class = ag_serializers.SandboxDockerImageSerializer
     permission_classes = (
-        ListCreateCourselessDockerImagePermissions,
+        P(ag_permissions.IsSuperuser) | P(IsAdminForAnyCourse),
     )
 
     api_tags = [APITags.sandbox_docker_images]
@@ -34,9 +29,78 @@ class ListCreateSandboxDockerImageViewSet(mixins.ListModelMixin,
     def get_queryset(self):
         return ag_models.SandboxDockerImage.objects.filter(course=None)
 
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'get': 'list'}, **initkwargs)
 
-class SandboxDockerImagePermissions(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
+
+class BuildGlobalSandboxDockerImageView(ag_views.AGModelAPIView):
+    permission_classes = (
+        ag_permissions.IsSuperuser,
+    )
+
+    api_tags = [APITags.sandbox_docker_images]
+
+    def post(self, request, *args, **kwargs):
+        build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            request.data.get('files', []), None
+        )
+
+        return _start_build_task(build_task)
+
+
+class ListSandboxDockerImagesForCourseView(ag_views.ListNestedModelViewSet):
+    serializer_class = ag_serializers.SandboxDockerImageSerializer
+    permission_classes = (ag_permissions.is_admin(),)
+
+    model_manager = ag_models.Course.objects
+    to_one_field_name = 'course'
+    reverse_to_one_field_name = 'sandbox_docker_images'
+
+
+class BuildNewImageForCourseView(ag_views.AGModelAPIView):
+    permission_classes = (ag_permissions.is_admin(),)
+
+    model_manager = ag_models.Course.objects
+    to_one_field_name = 'course'
+
+    def create(self, request, *args, **kwargs):
+        course = self.get_object()
+        build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            request.data.get('files', []), course
+        )
+
+        return _start_build_task(build_task)
+
+
+class ListGlobalBuildTasksView(mixins.ListModelMixin, ag_views.AGModelGenericViewSet):
+    permission_classes = (ag_permissions.IsSuperuser,)
+    serializer_class = ag_serializers.BuildSandboxDockerImageTaskSerializer
+
+    api_tags = [APITags.sandbox_docker_images]
+
+    def get_queryset(self):
+        return ag_models.BuildSandboxDockerImageTask.objects.filter(course=None)
+
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'get': 'list'}, **initkwargs)
+
+
+class ListBuildTasksForCourseView(ag_views.ListNestedModelViewSet):
+    serializer_class = ag_serializers.BuildSandboxDockerImageTaskSerializer
+    permission_classes = (ag_permissions.is_admin(),)
+
+    model_manager = ag_models.Course.objects
+    to_one_field_name = 'course'
+    reverse_to_one_field_name = 'build_sandbox_docker_image_tasks'
+
+
+class SandboxDockerImageDetailPermissions(permissions.BasePermission):
+    def has_object_permission(
+        self, request, view,
+        obj: Union[ag_models.SandboxDockerImage, ag_models.BuildSandboxDockerImageTask]
+    ) -> bool:
         if request.user.is_superuser:
             return True
 
@@ -49,24 +113,45 @@ class SandboxDockerImagePermissions(permissions.BasePermission):
         return obj.course.is_admin(request.user)
 
 
+class BuildTaskDetailViews(mixins.RetrieveModelMixin, ag_views.AGModelGenericViewSet):
+    serializer_class = ag_serializers.BuildSandboxDockerImageTaskSerializer
+    permission_classes = (
+        SandboxDockerImageDetailPermissions,
+    )
+
+    model_manager = ag_models.BuildSandboxDockerImageTask.objects
+
+    api_tags = [APITags.sandbox_docker_images]
+
+    @decorators.detail_route(methods=['POST'])
+    def cancel(self, *args, **kwargs):
+        pass
+
+
 class SandboxDockerImageDetailViewSet(mixins.RetrieveModelMixin,
                                       transaction_mixins.TransactionPartialUpdateMixin,
-                                      transaction_mixins.TransactionCreateMixin,
-                                      AGModelGenericViewSet):
+                                      ag_views.AGModelGenericViewSet):
     serializer_class = ag_serializers.SandboxDockerImageSerializer
     permission_classes = (
-        SandboxDockerImagePermissions,
+        SandboxDockerImageDetailPermissions,
     )
 
     model_manager = ag_models.SandboxDockerImage.objects
 
     api_tags = [APITags.sandbox_docker_images]
 
+    @decorators.detail_route(methods=['PUT'])
+    def rebuild(self, request, *args, **kwargs):
+        image_to_update = self.get_object()
+        build_task = ag_models.BuildSandboxDockerImageTask(
+            request.data.get('files', []), image_to_update.course, image_to_update
+        )
 
-class SandboxDockerImageForCourseViewSet(ListCreateNestedModelViewSet):
-    serializer_class = ag_serializers.SandboxDockerImageSerializer
-    permission_classes = (ag_permissions.is_admin(),)
+        return _start_build_task(build_task)
 
-    model_manager = ag_models.Course.objects
-    to_one_field_name = 'course'
-    reverse_to_one_field_name = 'sandbox_docker_images'
+
+def _start_build_task(build_task: ag_models.BuildSandboxDockerImageTask) -> response.Response:
+    from autograder.celery import app
+    build_sandbox_docker_image.apply_async((build_task.pk,), connection=app.connection())
+
+    return response.Response(data=build_task.to_dict(), status=status.HTTP_202_ACCEPTED)

@@ -8,6 +8,7 @@ from .serializer_impls import (
     SubmissionGroupInvitationSerializer,
     SubmissionSerializer,
     SandboxDockerImageSerializer,
+    BuildSandboxDockerImageTaskSerializer,
     AGTestSuiteSerializer,
     AGTestCaseSerializer,
     AGTestCommandSerializer,

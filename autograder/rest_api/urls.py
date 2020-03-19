@@ -43,12 +43,8 @@ submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            base_name='submission')
 
-courseless_sandbox_docker_image_router = routers.SimpleRouter()
-courseless_sandbox_docker_image_router.register(
-    r'sandbox_docker_images', views.ListCreateSandboxDockerImageViewSet,
-    base_name='courseless-sandbox-docker-image')
-sandbox_docker_image_router = routers.SimpleRouter()
-sandbox_docker_image_router.register(
+sandbox_docker_image_detail_router = routers.SimpleRouter()
+sandbox_docker_image_detail_router.register(
     r'sandbox_docker_images', views.SandboxDockerImageDetailViewSet,
     base_name='sandbox-docker-image')
 
@@ -183,11 +179,22 @@ urlpatterns = [
         views.AGTestSuiteOrderView.as_view(), name='ag_test_suite_order'),
     url(r'', include(ag_test_suite_detail_router.urls)),
 
-    url(r'', include(courseless_sandbox_docker_image_router.urls)),
-    url(r'', include(sandbox_docker_image_router.urls)),
+    path('sandbox_docker_images/', views.ListGlobalSandboxDockerImagesView.as_view(),
+         name='list-global-sandbox-images'),
+    path('sandbox_docker_images/', views.BuildGlobalSandboxDockerImageView.as_view(),
+         name='build-global-sandbox-docker-image'),
     path('courses/<int:pk>/sandbox_docker_images/',
-         views.SandboxDockerImageForCourseViewSet.as_view(),
-         name='sandbox-docker-images-for-course'),
+         views.ListSandboxDockerImagesForCourseView.as_view(),
+         name='list-course-sandbox-images'),
+    path('courses/<int:pk>/sandbox_docker_images/',
+         views.BuildNewImageForCourseView.as_view(),
+         name='bulid-course-sandbox-image'),
+    path('image_build_tasks/', views.ListGlobalBuildTasksView.as_view(),
+         name='list-global-image-builds'),
+    path('courses/<int:pk>/image_build_tasks/',
+         views.ListBuildTasksForCourseView.as_view(),
+         name='list-course-image-builds'),
+    url(r'', include(sandbox_docker_image_detail_router.urls)),
 
     url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/$',
         views.AGTestCaseListCreateView.as_view(), name='ag_test_cases'),

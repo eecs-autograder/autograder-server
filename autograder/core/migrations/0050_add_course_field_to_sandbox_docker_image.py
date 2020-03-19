@@ -26,9 +26,4 @@ class Migration(migrations.Migration):
             name='sandboxdockerimage',
             unique_together={('display_name', 'course')},
         ),
-        migrations.AddField(
-            model_name='sandboxdockerimage',
-            name='validation_warning',
-            field=models.TextField(blank=True, help_text='Warning text from image validation. If empty, then validation succeeded.'),
-        ),
     ]
