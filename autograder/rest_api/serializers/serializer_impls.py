@@ -5,10 +5,6 @@ import autograder.core.models as ag_models
 
 from .ag_model_serializer import AGModelSerializer
 
-from ..inspect_remote_image import (
-    inspect_remote_image, ImageDigestRequestUnauthorizedError, SignatureVerificationFailedError
-)
-
 
 class CourseSerializer(AGModelSerializer):
     ag_model_class = ag_models.Course
