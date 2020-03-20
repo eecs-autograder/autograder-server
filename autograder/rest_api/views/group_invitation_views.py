@@ -19,7 +19,7 @@ from autograder.rest_api.views.ag_model_views import (
 from autograder.rest_api.views.schema_generation import AGModelSchemaBuilder
 
 
-class CanSendInvitation:
+class CanSendInvitation(permissions.BasePermission):
     def has_object_permission(self, request, view, project: ag_models.Project):
         if (project.disallow_group_registration
                 and not project.course.is_staff(request.user)):
