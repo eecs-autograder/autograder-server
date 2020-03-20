@@ -146,10 +146,11 @@ class SandboxDockerImageDetailViewSet(mixins.RetrieveModelMixin,
     api_tags = [APITags.sandbox_docker_images]
 
     @decorators.detail_route(methods=['PUT'])
+    @transaction.atomic
     def rebuild(self, request, *args, **kwargs):
         image_to_update = self.get_object()
-        build_task = ag_models.BuildSandboxDockerImageTask(
-            request.data.get('files', []), image_to_update.course, image_to_update
+        build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            request.data.getlist('files'), image_to_update.course, image_to_update
         )
 
         return _start_build_task(build_task)

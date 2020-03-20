@@ -216,7 +216,7 @@ def get_build_sandbox_docker_image_task_dir(build_task: BuildSandboxDockerImageT
         'image_builds',
     ]
     if build_task.course is not None:
-        path_parts.append(f'course{build_task.course}')
+        path_parts.append(f'course{build_task.course.pk}')
     return os.path.join(
         *path_parts,
         f'task{build_task.pk}',

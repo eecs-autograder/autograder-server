@@ -123,7 +123,7 @@ class ListSandboxDockerImagesForCourseViewTestCase(_SetUp):
         self.course_image2 = ag_models.SandboxDockerImage.objects.validate_and_create(
             display_name='Image 2', tag='tag2', course=self.course)
 
-        self.url = reverse('list-course-sandbox-images', kwargs={'pk': self.course.pk})
+        self.url = reverse('course-sandbox-images', kwargs={'pk': self.course.pk})
 
     def test_admin_list_images_for_their_course(self) -> None:
         self.do_list_objects_test(
@@ -408,14 +408,66 @@ class GetUpdateSandboxImageViewTestCase(_SetUp):
 @mock.patch('autograder.core.tasks.push_image')
 @mock.patch('autograder.utils.retry.sleep', new=mock.Mock())
 class RebuildSandboxImageViewTestCase(AGViewTestBase):
-    def test_superuser_update_global_sandbox_image(self):
-        self.fail('build request')
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.url = reverse('global-sandbox-images')
 
-    def test_non_superuser_update_global_sandbox_image_permission_denied(self):
-        self.fail('build request')
+        self.files = [
+            SimpleUploadedFile('Dockerfile', b'FROM jameslp/ag-ubuntu-16:1'),
+            SimpleUploadedFile('filey.txt', b'')
+        ]
 
-    def test_admin_update_sandbox_image_with_course(self) -> None:
-        self.fail('build request')
+        self.course = obj_build.make_course()
+        self.admin = obj_build.make_admin_user(self.course)
 
-    def test_non_admin_update_sandbox_image_with_course_permission_denied(self) -> None:
-        self.fail('build request')
+    def test_superuser_update_global_sandbox_image(self, push_image_mock):
+        superuser = obj_build.make_user(superuser=True)
+        image = obj_build.make_sandbox_docker_image()
+        self._do_rebuild_image_test(superuser, image)
+        push_image_mock.assert_called_once()
+
+    def test_non_superuser_update_global_sandbox_image_permission_denied(self, *args):
+        image = obj_build.make_sandbox_docker_image()
+        self._do_permission_denied_rebuild_image_test(self.admin, image)
+
+    def test_admin_update_sandbox_image_with_course(self, push_image_mock) -> None:
+        image = obj_build.make_sandbox_docker_image(self.course)
+        self._do_rebuild_image_test(self.admin, image)
+        push_image_mock.assert_called_once()
+
+    def test_non_admin_update_sandbox_image_with_course_permission_denied(self, *args) -> None:
+        staff = obj_build.make_staff_user(self.course)
+        image = obj_build.make_sandbox_docker_image(self.course)
+        self._do_permission_denied_rebuild_image_test(staff, image)
+
+    def _do_rebuild_image_test(self, user, image: ag_models.SandboxDockerImage):
+        self.client.force_authenticate(user)
+        url = reverse('sandbox-docker-image-rebuild', kwargs={'pk': image.pk})
+
+        original_tag = image.tag
+
+        response = self.client.put(url, {'files': self.files}, format='multipart')
+        self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
+        self.assertEqual(ag_models.BuildImageStatus.queued.value, response.data['status'])
+
+        loaded_task = ag_models.BuildSandboxDockerImageTask.objects.get(
+            pk=response.data['pk']
+        )
+        self.assertEqual(['Dockerfile', 'filey.txt'], loaded_task.filenames)
+        self.assertEqual(ag_models.BuildImageStatus.done, loaded_task.status)
+
+        image.refresh_from_db()
+        self.assertNotEqual(original_tag, image.tag)
+
+    def _do_permission_denied_rebuild_image_test(self, user, image: ag_models.SandboxDockerImage):
+        self.client.force_authenticate(user)
+        url = reverse('sandbox-docker-image-rebuild', kwargs={'pk': image.pk})
+
+        original_tag = image.tag
+
+        response = self.client.put(url, {'files': self.files}, format='multipart')
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        image.refresh_from_db()
+        self.assertEqual(original_tag, image.tag)
