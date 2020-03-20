@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-from autograder.rest_api.inspect_remote_image import SignatureVerificationFailedError
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 
