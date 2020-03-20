@@ -60,14 +60,10 @@ class SandboxDockerImageTestCase(UnitTestBase):
             display_name='An Image', tag='jameslp/imagey:1')
 
         new_display_name = 'Very Image'
-        new_tag = 'jameslp/imagey:2'
-
-        image.validate_and_update(display_name=new_display_name, tag=new_tag)
+        image.validate_and_update(display_name=new_display_name)
 
         image.refresh_from_db()
-
         self.assertEqual(new_display_name, image.display_name)
-        self.assertEqual(new_tag, image.tag)
 
     # Note: The name field will be removed eventually.
     def test_name_not_editable(self):
@@ -100,11 +96,6 @@ class SandboxDockerImageTestCase(UnitTestBase):
 
         self.assertIn('display_name', cm.exception.message_dict)
 
-        with self.assertRaises(exceptions.ValidationError) as cm:
-            image.validate_and_update(tag='')
-
-        self.assertIn('tag', cm.exception.message_dict)
-
     def test_serialize_sandbox_docker_image(self):
         course = obj_build.make_course()
         image = ag_models.SandboxDockerImage.objects.validate_and_create(
@@ -115,8 +106,6 @@ class SandboxDockerImageTestCase(UnitTestBase):
             'pk': image.pk,
             'course': image.course.pk,
             'display_name': image.display_name,
-            'tag': image.tag,
-            'validation_warning': '',
         }
 
         self.assertEqual(expected, serialized)
@@ -133,7 +122,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             SimpleUploadedFile('Dockerfile', b'blee'),
             SimpleUploadedFile('sausage.sh', b'bloo'),
         ]
-        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(files)
+        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(files, None)
 
         loaded = ag_models.BuildSandboxDockerImageTask.objects.get(pk=task.pk)
         self.assertEqual(ag_models.BuildImageStatus.queued, loaded.status)
@@ -146,12 +135,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
 
         for file_ in files:
             file_.seek(0)
-            path = os.path.join(
-                core_ut.get_course_root_dir(self.course),
-                'image_builds',
-                f'task{loaded.pk}',
-                file_.name
-            )
+            path = os.path.join(loaded.build_dir, file_.name)
             with open(path, 'rb') as f:
                 self.assertEqual(file_.read(), f.read())
 
@@ -161,6 +145,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             files=[
                 SimpleUploadedFile('Dockerfile', b'blee'),
             ],
+            course=None,
             image_to_update=image_to_update
         )
         loaded = ag_models.BuildSandboxDockerImageTask.objects.get(pk=task.pk)
@@ -169,7 +154,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         self.assertIsNone(loaded.course)
         self.assertEqual(image_to_update, loaded.image_to_update)
 
-    def test_create_build_task_image_to_update_not_none(self) -> None:
+    def test_create_build_task_course_and_image_to_update_not_none(self) -> None:
         image_to_update = obj_build.make_sandbox_docker_image(self.course)
         task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
             files=[
@@ -255,6 +240,7 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
             files=[
                 SimpleUploadedFile('Dockerfile', b'blee'),
             ],
+            course=None,
         )
         expected = os.path.join(
             settings.MEDIA_ROOT,
@@ -324,8 +310,6 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         self.assertIsNone(task.image_to_update)
 
     def test_serialize_build_task(self):
-        self.fail()
-        course = obj_build.make_course()
         image_to_update = obj_build.make_sandbox_docker_image(self.course)
         task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
             files=[
@@ -338,12 +322,12 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         serialized = task.to_dict()
         expected = {
             'pk': task.pk,
-            'status': task.status,
+            'status': task.status.value,
             'return_code': task.return_code,
             'timed_out': task.timed_out,
             'filenames': task.filenames,
-            'course': course.pk,
-            'image_to_update': image_to_update,
+            'course': self.course.pk,
+            'image_to_update': image_to_update.pk,
             'validation_error_msg': '',
             'internal_error_msg': '',
         }
