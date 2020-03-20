@@ -272,3 +272,30 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         image_to_update.delete()
         task.refresh_from_db()
         self.assertIsNone(task.image_to_update)
+
+    def test_serialize_build_task(self):
+        self.fail()
+        course = obj_build.make_course()
+        image_to_update = obj_build.make_sandbox_docker_image(self.course)
+        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            files=[
+                SimpleUploadedFile('Dockerfile', b'blee'),
+            ],
+            course=self.course,
+            image_to_update=image_to_update
+        )
+
+        serialized = task.to_dict()
+        expected = {
+            'pk': task.pk,
+            'status': task.status,
+            'return_code': task.return_code,
+            'timed_out': task.timed_out,
+            'filenames': task.filenames,
+            'course': course.pk,
+            'image_to_update': image_to_update,
+            'validation_error_msg': '',
+            'internal_error_msg': '',
+        }
+
+        self.assertEqual(expected, serialized)

@@ -6,8 +6,7 @@ from .ag_test_views.ag_test_suite_views import (
     AGTestSuiteListCreateView, AGTestSuiteOrderView, AGTestSuiteDetailViewSet)
 
 from .sandbox_docker_image_views import (
-    ListGlobalSandboxDockerImagesView,
-    BuildGlobalSandboxDockerImageView,
+    GlobalSandboxDockerImageViews,
     ListSandboxDockerImagesForCourseView,
     BuildNewImageForCourseView,
     ListGlobalBuildTasksView,

@@ -1,5 +1,6 @@
 from unittest import mock
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -40,7 +41,7 @@ class ListGlobalImagesTestCase(_SetUp):
             display_name='Image with an course', tag='very_tag', course=self.course
         )
 
-        self.url = reverse('list-global-sandbox-images')
+        self.url = reverse('global-sandbox-images')
 
     def test_superuser_list_sandbox_images(self):
         self.client.force_authenticate(self.superuser)
@@ -73,13 +74,43 @@ class ListGlobalImagesTestCase(_SetUp):
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-@mock.patch('autograder.core.tasks.push_image', new=mock.Mock())
+@mock.patch('autograder.core.tasks.push_image')
+@mock.patch('autograder.utils.retry.sleep', new=mock.Mock())
 class BuildGlobalImageTestCase(_SetUp):
-    def test_superuser_create_global_sandbox_image(self):
-        self.fail('build request')
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.url = reverse('global-sandbox-images')
 
-    def test_non_superuser_create_global_sandbox_image_permission_denied(self):
-        self.fail('build request')
+        self.files = [
+            SimpleUploadedFile('Dockerfile', b'FROM jameslp/ag-ubuntu-16:1'),
+            SimpleUploadedFile('filey.txt', b'')
+        ]
+
+        self.superuser = obj_build.make_user(superuser=True)
+        self.admin = obj_build.make_admin_user(obj_build.make_course())
+
+    def test_superuser_create_global_sandbox_image(self, push_image_mock) -> None:
+        self.client.force_authenticate(self.superuser)
+        response = self.client.post(self.url, {'files': self.files}, format='multipart')
+        self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
+        self.assertEqual(ag_models.BuildImageStatus.queued.value, response.data['status'])
+
+        loaded = ag_models.BuildSandboxDockerImageTask.objects.get(
+            pk=response.data['pk']
+        )
+        self.assertEqual(['Dockerfile', 'filey.txt'], loaded.filenames)
+        self.assertEqual(ag_models.BuildImageStatus.done, loaded.status)
+
+        push_image_mock.assert_called_once()
+
+    def test_non_superuser_create_global_sandbox_image_permission_denied(self, push_image_mock):
+        self.do_permission_denied_create_test(
+            ag_models.BuildSandboxDockerImageTask.objects,
+            self.client, self.admin, self.url,
+            {'files': self.files}, format='multipart'
+        )
+        push_image_mock.assert_not_called()
 
 
 class ListSandboxDockerImagesForCourseViewTestCase(_SetUp):
@@ -110,7 +141,7 @@ class BuildSandboxDockerImageForCourseViewTestCase(_SetUp):
 
     def test_non_admin_create_image_for_course_permission_denied(self) -> None:
         self.fail('build request')
-
+#
 
 @mock.patch('autograder.core.tasks.push_image', new=mock.Mock())
 class BuildNewImageViewTests(AGViewTestBase):

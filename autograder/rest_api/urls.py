@@ -179,10 +179,8 @@ urlpatterns = [
         views.AGTestSuiteOrderView.as_view(), name='ag_test_suite_order'),
     url(r'', include(ag_test_suite_detail_router.urls)),
 
-    path('sandbox_docker_images/', views.ListGlobalSandboxDockerImagesView.as_view(),
-         name='list-global-sandbox-images'),
-    path('sandbox_docker_images/', views.BuildGlobalSandboxDockerImageView.as_view(),
-         name='build-global-sandbox-docker-image'),
+    path('sandbox_docker_images/', views.GlobalSandboxDockerImageViews.as_view(),
+         name='global-sandbox-images'),
     path('courses/<int:pk>/sandbox_docker_images/',
          views.ListSandboxDockerImagesForCourseView.as_view(),
          name='list-course-sandbox-images'),

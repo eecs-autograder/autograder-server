@@ -154,6 +154,7 @@ CMD ls
             with open(task.output_filename) as f:
                 print(f.read())
             self.assertTrue(task.timed_out)
+            self.assertEqual(ag_models.BuildImageStatus.done, task.status)
 
     def test_image_build_failed(self, push_image_mock) -> None:
         dockerfile = SimpleUploadedFile(
@@ -174,6 +175,7 @@ RUN false
             ag_models.SandboxDockerImage.objects.filter(display_name__startswith='New Image'))
         push_image_mock.assert_not_called()
         self.assertEqual(task.internal_error_msg, '')
+        self.assertEqual(ag_models.BuildImageStatus.done, task.status)
 
     def test_called_process_error_output_recorded(self, push_image_mock) -> None:
         error_text = 'This is an error it is such badness'
