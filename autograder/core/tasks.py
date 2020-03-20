@@ -27,6 +27,8 @@ def build_sandbox_docker_image(build_task_pk: int):
         if task.status == ag_models.BuildImageStatus.cancelled:
             return
 
+        _save_task_status(task, ag_models.BuildImageStatus.in_progress)
+
         tag = (f'localhost:{settings.SANDBOX_IMAGE_REGISTRY_PORT}'
                f'/build{task.pk}_result{uuid.uuid4().hex}')
         builder = _ImageBuilder(
@@ -53,7 +55,10 @@ def build_sandbox_docker_image(build_task_pk: int):
             task.save()
         _save_return_code()
 
-        if builder.cancelled or builder.timed_out or builder.return_code != 0:
+        if builder.timed_out or builder.return_code != 0:
+            _save_task_status(task, ag_models.BuildImageStatus.done)
+
+        if builder.cancelled:
             return
 
         assert builder.tag is not None
@@ -78,8 +83,7 @@ def build_sandbox_docker_image(build_task_pk: int):
                     pk=image.pk
                 ).update(tag=builder.tag)
 
-            task.status = ag_models.BuildImageStatus.done
-            task.save()
+            _save_task_status(task, ag_models.BuildImageStatus.done)
 
         _create_or_save_image()
     except subprocess.CalledProcessError as e:
@@ -88,6 +92,17 @@ def build_sandbox_docker_image(build_task_pk: int):
     except Exception:
         print(traceback.format_exc(), flush=True)
         _save_internal_error_msg(task, traceback.format_exc())
+
+
+@retry_should_recover
+@transaction.atomic
+def _save_task_status(
+    task: ag_models.BuildSandboxDockerImageTask,
+    status: ag_models.BuildImageStatus
+):
+    ag_models.BuildSandboxDockerImageTask.objects.select_for_update().filter(
+        pk=task.pk
+    ).update(status=status)
 
 
 # Thin wrapper for mocking the "docker push" step.
@@ -130,17 +145,25 @@ def _validate_image_config(tag: str, task: ag_models.BuildSandboxDockerImageTask
 
 
 @retry_should_recover
+@transaction.atomic
 def _save_validation_error_msg(build_task: ag_models.BuildSandboxDockerImageTask, error_msg: str):
-    build_task.validation_error_msg = error_msg
-    build_task.status = ag_models.BuildImageStatus.image_invalid
-    build_task.save()
+    ag_models.BuildSandboxDockerImageTask.objects.select_for_update().filter(
+        pk=build_task.pk
+    ).update(
+        status=ag_models.BuildImageStatus.image_invalid,
+        validation_error_msg=error_msg
+    )
 
 
 @retry_should_recover
+@transaction.atomic
 def _save_internal_error_msg(build_task: ag_models.BuildSandboxDockerImageTask, error_msg: str):
-    build_task.internal_error_msg = error_msg
-    build_task.status = ag_models.BuildImageStatus.internal_error
-    build_task.save()
+    ag_models.BuildSandboxDockerImageTask.objects.select_for_update().filter(
+        pk=build_task.pk
+    ).update(
+        status=ag_models.BuildImageStatus.internal_error,
+        internal_error_msg=error_msg
+    )
 
 
 IMAGE_BUILD_TIMEOUT = 60 * 10
@@ -181,6 +204,7 @@ class _ImageBuilder(threading.Thread):
                 [
                     'docker', 'build',
                     '--no-cache',
+                    '--pull',
                     '--memory', '8GB',
                     '--memory-swap', '8GB',
                     '--ulimit', 'nproc=1000:1000',

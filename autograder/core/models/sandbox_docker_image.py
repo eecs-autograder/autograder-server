@@ -68,13 +68,10 @@ class SandboxDockerImage(AutograderModel):
         'pk',
         'display_name',
         'course',
-        # 'tag',
-        # 'validation_warning',
     ]
 
     EDITABLE_FIELDS = [
         'display_name',
-        # 'tag',
     ]
 
 
@@ -196,6 +193,18 @@ class BuildSandboxDockerImageTask(AutograderModel):
                 'image_to_update':
                     'Image to update must belong to the same course as the build task.'
             })
+
+    SERIALIZABLE_FIELDS = [
+        'pk',
+        'status',
+        'return_code',
+        'timed_out',
+        'filenames',
+        'course',
+        'image_to_update',
+        'validation_error_msg',
+        'internal_error_msg',
+    ]
 
 
 def get_build_sandbox_docker_image_task_dir(build_task: BuildSandboxDockerImageTask) -> str:

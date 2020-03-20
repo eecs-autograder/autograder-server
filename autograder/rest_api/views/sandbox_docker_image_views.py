@@ -18,10 +18,10 @@ class IsAdminForAnyCourse(permissions.BasePermission):
         return request.user.courses_is_admin_for.count() > 0
 
 
-class ListGlobalSandboxDockerImagesView(mixins.ListModelMixin, ag_views.AGModelGenericViewSet):
+class GlobalSandboxDockerImageViews(mixins.ListModelMixin, ag_views.AGModelGenericViewSet):
     serializer_class = ag_serializers.SandboxDockerImageSerializer
     permission_classes = (
-        P(ag_permissions.IsSuperuser) | P(IsAdminForAnyCourse),
+        P(ag_permissions.IsSuperuser) | (P(ag_permissions.IsReadOnly) & P(IsAdminForAnyCourse)),
     )
 
     api_tags = [APITags.sandbox_docker_images]
@@ -29,24 +29,16 @@ class ListGlobalSandboxDockerImagesView(mixins.ListModelMixin, ag_views.AGModelG
     def get_queryset(self):
         return ag_models.SandboxDockerImage.objects.filter(course=None)
 
-    @classmethod
-    def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'get': 'list'}, **initkwargs)
-
-
-class BuildGlobalSandboxDockerImageView(ag_views.AGModelAPIView):
-    permission_classes = (
-        ag_permissions.IsSuperuser,
-    )
-
-    api_tags = [APITags.sandbox_docker_images]
-
     def post(self, request, *args, **kwargs):
         build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
-            request.data.get('files', []), None
+            request.data.getlist('files'), None
         )
 
         return _start_build_task(build_task)
+
+    @classmethod
+    def as_view(cls, actions=None, **initkwargs):
+        return super().as_view(actions={'get': 'list'}, **initkwargs)
 
 
 class ListSandboxDockerImagesForCourseView(ag_views.ListNestedModelViewSet):
