@@ -52,10 +52,6 @@ class SandboxDockerImage(AutograderModel):
                      with the 'docker pull' command, e.g. localhost:5555/eecs280:latest."""
     )
 
-    # validation_warning = models.TextField(
-    #     blank=True,
-    #     help_text="Warning text from image validation. If empty, then validation succeeded.")
-
     def full_clean(self, *args, **kwargs):
         if not self.name:
             self.name = self.display_name
@@ -80,6 +76,13 @@ class _BuildSandboxDockerImageManager(AutograderModelManager):
     def validate_and_create(
         self, files, course, image_to_update=None
     ) -> 'BuildSandboxDockerImageTask':
+        pending_tasks_for_image = BuildSandboxDockerImageTask.objects.filter(
+            image_to_update=image_to_update,
+            status__in=[BuildImageStatus.queued, BuildImageStatus.in_progress]
+        )
+        if image_to_update is not None and pending_tasks_for_image.exists():
+            raise exceptions.ValidationError({'image_to_update': 'There is a '})
+
         build_task = self.model(
             course=course,
             image_to_update=image_to_update,
