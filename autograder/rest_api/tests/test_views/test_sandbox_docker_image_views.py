@@ -134,58 +134,191 @@ class ListSandboxDockerImagesForCourseViewTestCase(_SetUp):
         self.do_permission_denied_get_test(self.client, self.staff, self.url)
 
 
-@mock.patch('autograder.core.tasks.push_image', new=mock.Mock())
+@mock.patch('autograder.core.tasks.push_image')
+@mock.patch('autograder.utils.retry.sleep', new=mock.Mock())
 class BuildSandboxDockerImageForCourseViewTestCase(_SetUp):
-    def test_admin_create_image_for_their_course(self) -> None:
-        self.fail('build request')
+    def setUp(self):
+        super().setUp()
+        self.course = obj_build.make_course()
 
-    def test_non_admin_create_image_for_course_permission_denied(self) -> None:
-        self.fail('build request')
-#
+        self.client = APIClient()
+        self.url = reverse('course-sandbox-images', kwargs={'pk': self.course.pk})
 
-@mock.patch('autograder.core.tasks.push_image', new=mock.Mock())
-class BuildNewImageViewTests(AGViewTestBase):
-    pass
+        self.files = [
+            SimpleUploadedFile('Dockerfile', b'FROM jameslp/ag-ubuntu-16:1'),
+            SimpleUploadedFile('filey.txt', b'')
+        ]
+
+        self.admin = obj_build.make_admin_user(self.course)
+
+    def test_admin_create_image_for_their_course(self, push_image_mock) -> None:
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(self.url, {'files': self.files}, format='multipart')
+        self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
+        self.assertEqual(ag_models.BuildImageStatus.queued.value, response.data['status'])
+
+        loaded = ag_models.BuildSandboxDockerImageTask.objects.get(
+            pk=response.data['pk']
+        )
+        self.assertEqual(['Dockerfile', 'filey.txt'], loaded.filenames)
+        self.assertEqual(ag_models.BuildImageStatus.done, loaded.status)
+        self.assertEqual(self.course, loaded.course)
+
+        push_image_mock.assert_called_once()
+
+    def test_non_admin_create_image_for_course_permission_denied(self, push_image_mock) -> None:
+        self.do_permission_denied_create_test(
+            ag_models.BuildSandboxDockerImageTask.objects,
+            self.client, self.staff, self.url,
+            {'files': self.files}, format='multipart'
+        )
+        push_image_mock.assert_not_called()
 
 
 class ListBuildTaskTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+        self.course = obj_build.make_course()
+        self.admin = obj_build.make_admin_user(self.course)
+
+        self.global_build_tasks = [
+            ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+                files=[SimpleUploadedFile('Dockerfile', b'')],
+                course=None
+            ).to_dict(),
+            ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+                files=[SimpleUploadedFile('Dockerfile', b'')],
+                course=None
+            ).to_dict()
+        ]
+
+        self.build_tasks_for_course = [
+            ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+                files=[SimpleUploadedFile('Dockerfile', b'')],
+                course=self.course
+            ).to_dict(),
+            ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+                files=[SimpleUploadedFile('Dockerfile', b'')],
+                course=self.course
+            ).to_dict()
+        ]
+
     def test_superuser_list_global_build_tasks(self) -> None:
-        self.fail()
+        superuser = obj_build.make_user(superuser=True)
+        url = reverse('list-global-image-builds')
+        self.do_list_objects_test(self.client, superuser, url, self.global_build_tasks)
 
     def test_non_superuser_list_global_build_tasks_permission_denied(self) -> None:
-        self.fail()
+        url = reverse('list-global-image-builds')
+        self.do_permission_denied_get_test(self.client, self.admin, url)
 
     def test_admin_list_build_tasks_for_course(self) -> None:
-        self.fail()
+        url = reverse('list-course-image-builds', kwargs={'pk': self.course.pk})
+        self.do_list_objects_test(self.client, self.admin, url, self.build_tasks_for_course)
 
     def test_non_admin_list_build_tasks_for_course(self) -> None:
-        self.fail()
+        url = reverse('list-course-image-builds', kwargs={'pk': self.course.pk})
+        staff = obj_build.make_staff_user(self.course)
+        self.do_permission_denied_get_test(self.client, staff, url)
 
 
 class BuildTaskDetailViewTestCase(AGViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+        self.superuser = obj_build.make_user(superuser=True)
+        self.course = obj_build.make_course()
+        self.admin = obj_build.make_admin_user(self.course)
+        self.staff = obj_build.make_staff_user(self.course)
+
+    def _make_global_build_task(self):
+        return ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            files=[SimpleUploadedFile('Dockerfile', b'')],
+            course=None
+        )
+
+    def _make_build_task_for_course(self):
+        return ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            files=[SimpleUploadedFile('Dockerfile', b'')],
+            course=self.course
+        )
+
     def test_superuser_get_global_build_task(self) -> None:
-        self.fail()
+        task = self._make_global_build_task()
+        url = reverse('image-build-task-detail', kwargs={'pk': task.pk})
+        self.do_get_object_test(self.client, self.superuser, url, task.to_dict())
 
     def test_non_superuser_get_global_build_task_permission_denied(self) -> None:
-        self.fail()
+        task = self._make_global_build_task()
+        url = reverse('image-build-task-detail', kwargs={'pk': task.pk})
+        self.do_permission_denied_get_test(self.client, self.admin, url)
 
     def test_admin_get_build_task_for_course(self) -> None:
-        self.fail()
+        task = self._make_build_task_for_course()
+        url = reverse('image-build-task-detail', kwargs={'pk': task.pk})
+        self.do_get_object_test(self.client, self.admin, url, task.to_dict())
 
     def test_non_admin_get_build_task_for_course_permission_denied(self) -> None:
-        self.fail()
+        task = self._make_build_task_for_course()
+        url = reverse('image-build-task-detail', kwargs={'pk': task.pk})
+        self.do_permission_denied_get_test(self.client, self.staff, url)
 
     def test_superuser_cancel_global_build_task(self) -> None:
-        self.fail()
+        task = self._make_global_build_task()
+        self._do_cancel_task_test(self.superuser, task)
 
     def test_non_superuser_cancel_global_build_task_permission_denied(self) -> None:
-        self.fail()
+        task = self._make_global_build_task()
+        self._do_permission_denied_cancel_task_test(self.admin, task)
 
     def test_admin_cancel_build_task_for_course(self) -> None:
-        self.fail()
+        task = self._make_build_task_for_course()
+        self._do_cancel_task_test(self.admin, task)
 
     def test_non_admin_cancel_build_task_for_course_permission_denied(self) -> None:
-        self.fail()
+        task = self._make_build_task_for_course()
+        self._do_permission_denied_cancel_task_test(self.staff, task)
+
+    def test_cancel_finished_task_bad_request(self) -> None:
+        task = self._make_global_build_task()
+        url = reverse('image-build-task-cancel', kwargs={'pk': task.pk})
+        self.client.force_authenticate(self.superuser)
+        done_statuses = [
+            ag_models.BuildImageStatus.done,
+            ag_models.BuildImageStatus.image_invalid,
+            ag_models.BuildImageStatus.internal_error,
+            ag_models.BuildImageStatus.cancelled
+        ]
+        for build_status in done_statuses:
+            task.status = build_status
+            task.save()
+
+            response = self.client.post(url)
+            self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def _do_cancel_task_test(self, user, task: ag_models.BuildSandboxDockerImageTask):
+        self.client.force_authenticate(user)
+        url = reverse('image-build-task-cancel', kwargs={'pk': task.pk})
+        response = self.client.post(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        loaded = ag_models.BuildSandboxDockerImageTask.objects.get(pk=task.pk)
+        self.assertEqual(ag_models.BuildImageStatus.cancelled, loaded.status)
+        self.assertEqual(loaded.to_dict(), response.data)
+
+    def _do_permission_denied_cancel_task_test(
+        self, user, task: ag_models.BuildSandboxDockerImageTask
+    ):
+        self.client.force_authenticate(user)
+        url = reverse('image-build-task-cancel', kwargs={'pk': task.pk})
+        response = self.client.post(url)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        loaded = ag_models.BuildSandboxDockerImageTask.objects.get(pk=task.pk)
+        self.assertEqual(ag_models.BuildImageStatus.queued, loaded.status)
 
 
 class GetUpdateSandboxImageViewTestCase(_SetUp):
@@ -272,7 +405,8 @@ class GetUpdateSandboxImageViewTestCase(_SetUp):
             {'display_name': 'New Display Name', 'tag': 'new_taggy'})
 
 
-@mock.patch('autograder.core.tasks.push_image', new=mock.Mock())
+@mock.patch('autograder.core.tasks.push_image')
+@mock.patch('autograder.utils.retry.sleep', new=mock.Mock())
 class RebuildSandboxImageViewTestCase(AGViewTestBase):
     def test_superuser_update_global_sandbox_image(self):
         self.fail('build request')

@@ -1,7 +1,6 @@
-from typing import Union
-
+from django.db import transaction
 from drf_composable_permissions.p import P
-from rest_framework import mixins, permissions, decorators, response, status
+from rest_framework import mixins, permissions, decorators, response, status, exceptions
 
 import autograder.core.models as ag_models
 from autograder.core.tasks import build_sandbox_docker_image
@@ -41,7 +40,7 @@ class GlobalSandboxDockerImageViews(mixins.ListModelMixin, ag_views.AGModelGener
         return super().as_view(actions={'get': 'list'}, **initkwargs)
 
 
-class ListSandboxDockerImagesForCourseView(ag_views.ListNestedModelViewSet):
+class SandboxDockerImageForCourseViews(ag_views.ListNestedModelViewSet):
     serializer_class = ag_serializers.SandboxDockerImageSerializer
     permission_classes = (ag_permissions.is_admin(),)
 
@@ -49,17 +48,11 @@ class ListSandboxDockerImagesForCourseView(ag_views.ListNestedModelViewSet):
     to_one_field_name = 'course'
     reverse_to_one_field_name = 'sandbox_docker_images'
 
-
-class BuildNewImageForCourseView(ag_views.AGModelAPIView):
-    permission_classes = (ag_permissions.is_admin(),)
-
-    model_manager = ag_models.Course.objects
-    to_one_field_name = 'course'
-
-    def create(self, request, *args, **kwargs):
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
         course = self.get_object()
         build_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
-            request.data.get('files', []), course
+            request.data.getlist('files'), course
         )
 
         return _start_build_task(build_task)
@@ -88,10 +81,45 @@ class ListBuildTasksForCourseView(ag_views.ListNestedModelViewSet):
     reverse_to_one_field_name = 'build_sandbox_docker_image_tasks'
 
 
+class ImageBuildTaskDetailPermissions(permissions.BasePermission):
+    def has_object_permission(
+        self, request, view, obj: ag_models.BuildSandboxDockerImageTask
+    ) -> bool:
+        if obj.course is not None:
+            return obj.course.is_admin(request.user)
+
+        return request.user.is_superuser
+
+
+class BuildTaskDetailViews(mixins.RetrieveModelMixin, ag_views.AGModelGenericViewSet):
+    serializer_class = ag_serializers.BuildSandboxDockerImageTaskSerializer
+    permission_classes = (
+        ImageBuildTaskDetailPermissions,
+    )
+
+    model_manager = ag_models.BuildSandboxDockerImageTask.objects
+
+    api_tags = [APITags.sandbox_docker_images]
+
+    @decorators.detail_route(methods=['POST'])
+    @transaction.atomic
+    def cancel(self, *args, **kwargs):
+        task = self.get_object()
+
+        if task.status not in (ag_models.BuildImageStatus.queued,
+                               ag_models.BuildImageStatus.in_progress):
+            raise exceptions.ValidationError(
+                'This image is finished processing and cannot be cancelled'
+            )
+
+        task.status = ag_models.BuildImageStatus.cancelled
+        task.save()
+        return response.Response(task.to_dict(), status.HTTP_200_OK)
+
+
 class SandboxDockerImageDetailPermissions(permissions.BasePermission):
     def has_object_permission(
-        self, request, view,
-        obj: Union[ag_models.SandboxDockerImage, ag_models.BuildSandboxDockerImageTask]
+        self, request, view, obj: ag_models.SandboxDockerImage
     ) -> bool:
         if request.user.is_superuser:
             return True
@@ -103,21 +131,6 @@ class SandboxDockerImageDetailPermissions(permissions.BasePermission):
             return request.user.is_superuser
 
         return obj.course.is_admin(request.user)
-
-
-class BuildTaskDetailViews(mixins.RetrieveModelMixin, ag_views.AGModelGenericViewSet):
-    serializer_class = ag_serializers.BuildSandboxDockerImageTaskSerializer
-    permission_classes = (
-        SandboxDockerImageDetailPermissions,
-    )
-
-    model_manager = ag_models.BuildSandboxDockerImageTask.objects
-
-    api_tags = [APITags.sandbox_docker_images]
-
-    @decorators.detail_route(methods=['POST'])
-    def cancel(self, *args, **kwargs):
-        pass
 
 
 class SandboxDockerImageDetailViewSet(mixins.RetrieveModelMixin,

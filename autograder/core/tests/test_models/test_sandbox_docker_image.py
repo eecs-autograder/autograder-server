@@ -184,6 +184,56 @@ class BuildSandboxDockerImageTaskTestCase(UnitTestBase):
         self.assertEqual(self.course, loaded.course)
         self.assertEqual(image_to_update, loaded.image_to_update)
 
+    def test_image_to_update_has_finished_build_task(self) -> None:
+        image_to_update = obj_build.make_sandbox_docker_image()
+        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            files=[SimpleUploadedFile('Dockerfile', b'')],
+            course=None,
+            image_to_update=image_to_update
+        )
+        done_statuses = [
+            ag_models.BuildImageStatus.done,
+            ag_models.BuildImageStatus.image_invalid,
+            ag_models.BuildImageStatus.internal_error,
+            ag_models.BuildImageStatus.cancelled
+        ]
+        for status in done_statuses:
+            task.status = status
+            task.save()
+            new_task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+                files=[SimpleUploadedFile('Dockerfile', b'')],
+                course=None,
+                image_to_update=image_to_update,
+            )
+            new_task.delete()
+
+    def test_error_image_to_update_has_unfinished_build_task(self) -> None:
+        image_to_update = obj_build.make_sandbox_docker_image()
+        task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+            files=[SimpleUploadedFile('Dockerfile', b'')],
+            course=None,
+            image_to_update=image_to_update
+        )
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+                files=[SimpleUploadedFile('Dockerfile', b'')],
+                course=None,
+                image_to_update=image_to_update,
+            )
+        self.assertIn('image_to_update', cm.exception.message_dict)
+
+        task.status = ag_models.BuildImageStatus.in_progress
+        task.save()
+
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
+                files=[SimpleUploadedFile('Dockerfile', b'')],
+                course=None,
+                image_to_update=image_to_update,
+            )
+        self.assertIn('image_to_update', cm.exception.message_dict)
+
     def test_task_output_filename_with_course(self) -> None:
         task = ag_models.BuildSandboxDockerImageTask.objects.validate_and_create(
             files=[
