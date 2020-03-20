@@ -55,10 +55,11 @@ def build_sandbox_docker_image(build_task_pk: int):
             task.save()
         _save_return_code()
 
+        if builder.cancelled:
+            return
+
         if builder.timed_out or builder.return_code != 0:
             _save_task_status(task, ag_models.BuildImageStatus.done)
-
-        if builder.cancelled:
             return
 
         assert builder.tag is not None
