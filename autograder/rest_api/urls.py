@@ -1,128 +1,128 @@
 from django.conf import settings
 from django.conf.urls import include, url
 from django.urls import path
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
+# from drf_yasg import openapi
+# from drf_yasg.views import get_schema_view
 from rest_framework import permissions, routers
 
 from autograder.rest_api import views
-from autograder.rest_api.views.schema_generation import AGSchemaGenerator
+# from autograder.rest_api.views.schema_generation import AGSchemaGenerator
 
 user_router = routers.SimpleRouter()
-user_router.register(r'users', views.UserViewSet, base_name='user')
+user_router.register(r'users', views.UserViewSet, basename='user')
 
 course_router = routers.SimpleRouter()
-course_router.register(r'courses', views.CourseViewSet, base_name='course')
+course_router.register(r'courses', views.CourseViewSet, basename='course')
 
 project_router = routers.SimpleRouter()
-project_router.register(r'projects', views.ProjectDetailViewSet, base_name='project')
+project_router.register(r'projects', views.ProjectDetailViewSet, basename='project')
 
 project_downloads_router = routers.SimpleRouter()
 project_downloads_router.register(r'download_tasks', views.DownloadTaskDetailViewSet,
-                                  base_name='download_tasks')
+                                  basename='download_tasks')
 
 expected_student_pattern_router = routers.SimpleRouter()
 expected_student_pattern_router.register(r'expected_student_files',
                                          views.ExpectedStudentFilePatternDetailViewSet,
-                                         base_name='expected-student-file')
+                                         basename='expected-student-file')
 
 uploaded_file_router = routers.SimpleRouter()
 uploaded_file_router.register(r'instructor_files',
                               views.InstructorFileDetailViewSet,
-                              base_name='uploaded-file')
+                              basename='uploaded-file')
 
 group_invitation_router = routers.SimpleRouter()
 group_invitation_router.register(r'group_invitations',
                                  views.GroupInvitationDetailViewSet,
-                                 base_name='group-invitation')
+                                 basename='group-invitation')
 
 group_router = routers.SimpleRouter()
-group_router.register(r'groups', views.GroupDetailViewSet, base_name='group')
+group_router.register(r'groups', views.GroupDetailViewSet, basename='group')
 
 submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
-                           base_name='submission')
+                           basename='submission')
 
 sandbox_docker_image_detail_router = routers.SimpleRouter()
 sandbox_docker_image_detail_router.register(
     r'sandbox_docker_images', views.SandboxDockerImageDetailViewSet,
-    base_name='sandbox-docker-image')
+    basename='sandbox-docker-image')
 image_build_task_detail_router = routers.SimpleRouter()
 image_build_task_detail_router.register(
     r'image_build_tasks', views.BuildTaskDetailViews,
-    base_name='image-build-task'
+    basename='image-build-task'
 )
 
 ag_test_suite_detail_router = routers.SimpleRouter()
 ag_test_suite_detail_router.register(r'ag_test_suites', views.AGTestSuiteDetailViewSet,
-                                     base_name='ag-test-suite')
+                                     basename='ag-test-suite')
 
 ag_test_case_detail_router = routers.SimpleRouter()
 ag_test_case_detail_router.register(r'ag_test_cases', views.AGTestCaseDetailViewSet,
-                                    base_name='ag-test-case')
+                                    basename='ag-test-case')
 
 ag_test_command_detail_router = routers.SimpleRouter()
 ag_test_command_detail_router.register(r'ag_test_commands', views.AGTestCommandDetailViewSet,
-                                       base_name='ag-test-command')
+                                       basename='ag-test-command')
 
 student_test_suite_detail_router = routers.SimpleRouter()
 student_test_suite_detail_router.register(r'student_test_suites',
                                           views.StudentTestSuiteDetailViewSet,
-                                          base_name='student-test-suite')
+                                          basename='student-test-suite')
 
 rerun_submissions_task_detail_router = routers.SimpleRouter()
 rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
                                               views.RerunSubmissionsTaskDetailVewSet,
-                                              base_name='rerun-submissions-task')
+                                              basename='rerun-submissions-task')
 
 
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Autograder API",
-        default_version=settings.VERSION,
-        description="""
-<h3>Welcome to the Autograder API documentation!</h3>
-<div>
-  To authenticate:
-</div>
-<ol>
-  <li>
-    If you'll be using the API a lot, you might want to request a dedicated access token.
-    To get one, send an email to jameslp at umich.edu, and we'll see about securely sending you
-    a new token.
-  </li>
-  <li>
-    Otherwise, you can snag the token from your user account.
-    Head over to <a href="autograder.io">autograder.io</a>, log in,
-    and open up the developer console.</li>
-  <li>
-    Under the "Network" tab, select any of the requests to the
-    "/users/current/my_roles/" endpoint. Find the "Authorization" header and copy the value
-    "Token &lt;token&gt;", where &lt;token&gt; is your authorization
-    token.
-  </li>
-  <li>
-    When sending requests from your own code, set the "Authorization" header with the value
-    "Token &lt;token&gt;"
-  </li>
-  <li>
-    When you click on the "Authorize" or "Try it out" buttons on this page,
-    enter "Token &lt;token&gt;" into the "Value" field.
-  </li>
-</ol>
-        """,
-        # terms_of_service="https://www.google.com/policies/terms/",
-        # contact=openapi.Contact(email="contact@snippets.local"),
-        # license=openapi.License(name="BSD License"),
-    ),
-    public=True,
-    permission_classes=(permissions.AllowAny,),
-    generator_class=AGSchemaGenerator,
-)
+# schema_view = get_schema_view(
+#     openapi.Info(
+#         title="Autograder API",
+#         default_version=settings.VERSION,
+#         description="""
+# <h3>Welcome to the Autograder API documentation!</h3>
+# <div>
+#   To authenticate:
+# </div>
+# <ol>
+#   <li>
+#     If you'll be using the API a lot, you might want to request a dedicated access token.
+#     To get one, send an email to jameslp at umich.edu, and we'll see about securely sending you
+#     a new token.
+#   </li>
+#   <li>
+#     Otherwise, you can snag the token from your user account.
+#     Head over to <a href="autograder.io">autograder.io</a>, log in,
+#     and open up the developer console.</li>
+#   <li>
+#     Under the "Network" tab, select any of the requests to the
+#     "/users/current/my_roles/" endpoint. Find the "Authorization" header and copy the value
+#     "Token &lt;token&gt;", where &lt;token&gt; is your authorization
+#     token.
+#   </li>
+#   <li>
+#     When sending requests from your own code, set the "Authorization" header with the value
+#     "Token &lt;token&gt;"
+#   </li>
+#   <li>
+#     When you click on the "Authorize" or "Try it out" buttons on this page,
+#     enter "Token &lt;token&gt;" into the "Value" field.
+#   </li>
+# </ol>
+#         """,
+#         # terms_of_service="https://www.google.com/policies/terms/",
+#         # contact=openapi.Contact(email="contact@snippets.local"),
+#         # license=openapi.License(name="BSD License"),
+#     ),
+#     public=True,
+#     permission_classes=(permissions.AllowAny,),
+#     generator_class=AGSchemaGenerator,
+# )
 
 
 urlpatterns = [
-    url(r'^docs/?$', schema_view.with_ui('swagger'), name='schema-swagger-ui'),
+    # url(r'^docs/?$', schema_view.with_ui('swagger'), name='schema-swagger-ui'),
 
     url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
 

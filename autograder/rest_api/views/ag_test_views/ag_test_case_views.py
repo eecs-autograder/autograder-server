@@ -1,6 +1,6 @@
 from django.db import transaction
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
 
 import autograder.core.models as ag_models
@@ -36,19 +36,19 @@ class AGTestCaseOrderView(AGModelAPIView):
     model_manager = ag_models.AGTestSuite.objects.select_related('project__course')
     api_tags = [APITags.ag_test_cases]
 
-    @swagger_auto_schema(
-        responses={'200': 'Returns a list of AGTestCase IDs, in their assigned order.'})
+    # @swagger_auto_schema(
+    #     responses={'200': 'Returns a list of AGTestCase IDs, in their assigned order.'})
     def get(self, request, *args, **kwargs):
         ag_test_suite = self.get_object()
         return response.Response(list(ag_test_suite.get_agtestcase_order()))
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='', in_='body',
-                      type='List[string]',
-                      description='A list of AGTestCase IDs, in the new order to set.')],
-        responses={'200': 'Returns a list of AGTestCase IDs, in their new order.'}
-    )
+    # @swagger_auto_schema(
+    #     request_body_parameters=[
+    #         Parameter(name='', in_='body',
+    #                   type='List[string]',
+    #                   description='A list of AGTestCase IDs, in the new order to set.')],
+    #     responses={'200': 'Returns a list of AGTestCase IDs, in their new order.'}
+    # )
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             ag_test_suite = self.get_object()

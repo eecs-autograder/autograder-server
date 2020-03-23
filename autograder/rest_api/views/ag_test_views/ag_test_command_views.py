@@ -1,8 +1,8 @@
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
 
 import autograder.core.models as ag_models
@@ -38,19 +38,19 @@ class AGTestCommandOrderView(AGModelAPIView):
     model_manager = ag_models.AGTestCase.objects.select_related('ag_test_suite__project__course')
     api_tags = [APITags.ag_test_commands]
 
-    @swagger_auto_schema(
-        responses={'200': 'Returns a list of AGTestCommand IDs, in their assigned order.'})
+    # @swagger_auto_schema(
+    #     responses={'200': 'Returns a list of AGTestCommand IDs, in their assigned order.'})
     def get(self, request, *args, **kwargs):
         ag_test_case = self.get_object()
         return response.Response(list(ag_test_case.get_agtestcommand_order()))
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='', in_='body',
-                      type='List[string]',
-                      description='A list of AGTestCommand IDs, in the new order to set.')],
-        responses={'200': 'Returns a list of AGTestCommand IDs, in their new order.'}
-    )
+    # @swagger_auto_schema(
+    #     request_body_parameters=[
+    #         Parameter(name='', in_='body',
+    #                   type='List[string]',
+    #                   description='A list of AGTestCommand IDs, in the new order to set.')],
+    #     responses={'200': 'Returns a list of AGTestCommand IDs, in their new order.'}
+    # )
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             ag_test_case = self.get_object()

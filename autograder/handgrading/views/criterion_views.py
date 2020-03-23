@@ -1,6 +1,6 @@
 from django.db import transaction
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
 
 import autograder.handgrading.models as hg_models
@@ -62,19 +62,19 @@ class CriterionOrderView(AGModelAPIView):
     model_manager = hg_models.HandgradingRubric.objects.select_related('project__course')
     api_tags = [APITags.criteria]
 
-    @swagger_auto_schema(
-        responses={'200': 'Returns a list of Criterion IDs, in their assigned order.'})
+    # @swagger_auto_schema(
+    #     responses={'200': 'Returns a list of Criterion IDs, in their assigned order.'})
     def get(self, request, *args, **kwargs):
         handgrading_rubric = self.get_object()
         return response.Response(list(handgrading_rubric.get_criterion_order()))
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='', in_='body',
-                      type='List[string]',
-                      description='A list of Criterion IDs, in the new order to set.')],
-        responses={'200': 'Returns a list of Criterion IDs, in their new order.'}
-    )
+    # @swagger_auto_schema(
+    #     request_body_parameters=[
+    #         Parameter(name='', in_='body',
+    #                   type='List[string]',
+    #                   description='A list of Criterion IDs, in the new order to set.')],
+    #     responses={'200': 'Returns a list of Criterion IDs, in their new order.'}
+    # )
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             handgrading_rubric = self.get_object()

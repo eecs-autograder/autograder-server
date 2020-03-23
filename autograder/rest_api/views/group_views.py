@@ -9,8 +9,8 @@ from django.db.models import Prefetch
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, mixins, permissions, response, status
 
 import autograder.core.models as ag_models
@@ -49,12 +49,12 @@ class GroupsViewSet(ListCreateNestedModelViewSet):
 
         return queryset
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='member_names', in_='body',
-                      description='Usernames to add to the new Group.',
-                      type='List[string]', required=True)]
-    )
+    # @swagger_auto_schema(
+    #     request_body_parameters=[
+    #         Parameter(name='member_names', in_='body',
+    #                   description='Usernames to add to the new Group.',
+    #                   type='List[string]', required=True)]
+    # )
     @transaction.atomic()
     @method_decorator(require_body_params('member_names'))
     def create(self, request, *args, **kwargs):
@@ -97,7 +97,7 @@ class CreateSoloGroupView(mixins.CreateModelMixin, AGModelGenericViewSet):
 
     api_tags = [APITags.groups]
 
-    @swagger_auto_schema(request_body_parameters=[])
+    # @swagger_auto_schema(request_body_parameters=[])
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
         """
@@ -149,12 +149,12 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
     model_manager = ag_models.Group.objects.select_related(
         'project__course').prefetch_related('members', 'submissions')
 
-    @swagger_auto_schema(
-        extra_request_body_parameters=[
-            Parameter(name='member_names', in_='body',
-                      description='Usernames to replace the current group members with.',
-                      type='List[string]')]
-    )
+    # @swagger_auto_schema(
+    #     extra_request_body_parameters=[
+    #         Parameter(name='member_names', in_='body',
+    #                   description='Usernames to replace the current group members with.',
+    #                   type='List[string]')]
+    # )
     @transaction.atomic()
     def partial_update(self, request, *args, **kwargs):
         if 'member_names' in request.data:
@@ -190,11 +190,12 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(
-        api_tags=[APITags.groups, APITags.submissions],
-        responses={'200': ag_serializers.SubmissionSerializer}
-    )
-    @decorators.detail_route(
+    # @swagger_auto_schema(
+    #     api_tags=[APITags.groups, APITags.submissions],
+    #     responses={'200': ag_serializers.SubmissionSerializer}
+    # )
+    @decorators.action(
+        detail=True,
         permission_classes=(group_permissions, _UltimateSubmissionPermissions,))
     def ultimate_submission(self, request, *args, **kwargs):
         """
@@ -218,16 +219,16 @@ class GroupDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(ag_serializers.SubmissionSerializer(ultimate_submission).data)
 
-    @swagger_auto_schema(
-        manual_parameters=[
-            Parameter(name='other_group_pk', in_='query',
-                      type='int', required=True,
-                      description='The ID of the second group to merge.')
-        ],
-        request_body_parameters=[]
-    )
+    # @swagger_auto_schema(
+    #     manual_parameters=[
+    #         Parameter(name='other_group_pk', in_='query',
+    #                   type='int', required=True,
+    #                   description='The ID of the second group to merge.')
+    #     ],
+    #     request_body_parameters=[]
+    # )
     @method_decorator(require_query_params('other_group_pk'))
-    @decorators.detail_route(methods=['POST'])
+    @decorators.action(detail=True, methods=['POST'])
     @transaction.atomic()
     def merge_with(self, request, *args, **kwargs):
         """

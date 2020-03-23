@@ -2,8 +2,8 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter, Schema
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter, Schema
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, permissions, decorators, response, status
 from rest_framework.permissions import DjangoModelPermissions, BasePermission
 from rest_framework.request import Request
@@ -17,7 +17,7 @@ from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
     AGModelGenericViewSet, AlwaysIsAuthenticatedMixin, require_body_params,
     convert_django_validation_error)
-from autograder.rest_api.views.schema_generation import APITags, AGModelViewAutoSchema
+from autograder.rest_api.views.schema_generation import APITags#, AGModelViewAutoSchema
 
 
 class CoursePermissions(permissions.BasePermission):
@@ -36,15 +36,15 @@ class CoursePermissions(permissions.BasePermission):
         return course.is_admin(request.user)
 
 
-_my_roles_schema = Schema(
-    type='object',
-    properties={
-        'is_admin': Parameter('is_admin', 'body', type='boolean'),
-        'is_staff': Parameter('is_staff', 'body', type='boolean'),
-        'is_student': Parameter('is_student', 'body', type='boolean'),
-        'is_handgrader': Parameter('is_handgrader', 'body', type='boolean'),
-    }
-)
+# _my_roles_schema = Schema(
+#     type='object',
+#     properties={
+#         'is_admin': Parameter('is_admin', 'body', type='boolean'),
+#         'is_staff': Parameter('is_staff', 'body', type='boolean'),
+#         'is_student': Parameter('is_student', 'body', type='boolean'),
+#         'is_handgrader': Parameter('is_handgrader', 'body', type='boolean'),
+#     }
+# )
 
 
 class CourseViewSet(mixins.ListModelMixin,
@@ -66,8 +66,8 @@ class CourseViewSet(mixins.ListModelMixin,
         course = serializer.save()
         course.admins.add(self.request.user)
 
-    @swagger_auto_schema(responses={'200': _my_roles_schema}, api_tags=[APITags.permissions])
-    @decorators.detail_route()
+    # @swagger_auto_schema(responses={'200': _my_roles_schema}, api_tags=[APITags.permissions])
+    @decorators.action(detail=True)
     def my_roles(self, request, *args, **kwargs):
         course = self.get_object()
         return response.Response(course.get_user_roles(request.user))
@@ -91,24 +91,24 @@ class CopyCourseView(AGModelGenericViewSet):
 
     permission_classes = P(ag_permissions.IsSuperuser) | P(ag_permissions.is_admin()),
 
-    @swagger_auto_schema(
-        operation_description="""Makes a copy of the given course and all its projects.
-            The projects and all of their  instructor file,
-            expected student file, test case, and handgrading data.
-            Note that groups, submissions, and results (test case, handgrading,
-            etc.) are NOT copied.
-            The admin list is copied to the new project, but other permissions
-            (staff, students, etc.) are not.
-        """,
-        request_body_parameters=[
-            Parameter('new_name', in_='body', type='string', required=True),
-            Parameter(
-                'new_semester', in_='body', type='string', required=True,
-                description='Must be one of: '
-                            + f'{", ".join((semester.value for semester in ag_models.Semester))}'),
-            Parameter('new_year', in_='body', type='integer', required=True)
-        ],
-    )
+    # @swagger_auto_schema(
+    #     operation_description="""Makes a copy of the given course and all its projects.
+    #         The projects and all of their  instructor file,
+    #         expected student file, test case, and handgrading data.
+    #         Note that groups, submissions, and results (test case, handgrading,
+    #         etc.) are NOT copied.
+    #         The admin list is copied to the new project, but other permissions
+    #         (staff, students, etc.) are not.
+    #     """,
+    #     request_body_parameters=[
+    #         Parameter('new_name', in_='body', type='string', required=True),
+    #         Parameter(
+    #             'new_semester', in_='body', type='string', required=True,
+    #             description='Must be one of: '
+    #                         + f'{", ".join((semester.value for semester in ag_models.Semester))}'),
+    #         Parameter('new_year', in_='body', type='integer', required=True)
+    #     ],
+    # )
     @transaction.atomic()
     @convert_django_validation_error
     @method_decorator(require_body_params('new_name', 'new_semester', 'new_year'))
@@ -136,19 +136,19 @@ class CopyCourseView(AGModelGenericViewSet):
 
 
 class CourseByNameSemesterYearView(AlwaysIsAuthenticatedMixin, APIView):
-    swagger_schema = AGModelViewAutoSchema
+    # swagger_schema = AGModelViewAutoSchema
     api_tags = [APITags.courses]
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter('name', in_='path', type='string', required=True),
-            Parameter(
-                'semester', in_='path', type='string', required=True,
-                description='Must be one of: '
-                            + f'{", ".join((semester.value for semester in ag_models.Semester))}'),
-            Parameter('year', in_='path', type='integer', required=True)
-        ]
-    )
+    # @swagger_auto_schema(
+    #     request_body_parameters=[
+    #         Parameter('name', in_='path', type='string', required=True),
+    #         Parameter(
+    #             'semester', in_='path', type='string', required=True,
+    #             description='Must be one of: '
+    #                         + f'{", ".join((semester.value for semester in ag_models.Semester))}'),
+    #         Parameter('year', in_='path', type='integer', required=True)
+    #     ]
+    # )
     def get(self, request: Request, *args, **kwargs):
         name = kwargs.get('name')
         semester = kwargs.get('semester')

@@ -9,8 +9,8 @@ from django.db.models import F
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter, Schema
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter, Schema
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, exceptions, mixins, response, status
 
 import autograder.core.models as ag_models
@@ -26,7 +26,7 @@ from autograder.rest_api import transaction_mixins
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelGenericViewSet, ListCreateNestedModelViewSet,
     require_query_params)
-from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
+from autograder.rest_api.views.schema_generation import APITags#, AGModelSchemaBuilder
 
 from .common import make_fdbk_category_param_docs, validate_fdbk_category
 
@@ -56,13 +56,13 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
     to_one_field_name = 'group'
     reverse_to_one_field_name = 'submissions'
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='submitted_files', in_='body',
-                      description='The files being submitted, as multipart/form-data.',
-                      type='List[file]')
-        ]
-    )
+    # @swagger_auto_schema(
+    #     request_body_parameters=[
+    #         Parameter(name='submitted_files', in_='body',
+    #                   description='The files being submitted, as multipart/form-data.',
+    #                   type='List[file]')
+    #     ]
+    # )
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
         # NOTE: The way that submitted_files gets encoded in requests,
@@ -216,19 +216,19 @@ class ListCreateSubmissionViewSet(ListCreateNestedModelViewSet):
         return response.Response(data=submission.to_dict(), status=status.HTTP_201_CREATED)
 
 
-def _make_submission_with_results_schema():
-    submission_with_results_schema = Schema(
-        type='object',
-        properties=copy.deepcopy(
-            AGModelSchemaBuilder.get().get_schema(ag_models.Submission).properties
-        )
-    )
-    submission_with_results_schema.properties['results'] = AGModelSchemaBuilder.get().get_schema(
-        SubmissionResultFeedback)
+# def _make_submission_with_results_schema():
+#     submission_with_results_schema = Schema(
+#         type='object',
+#         properties=copy.deepcopy(
+#             AGModelSchemaBuilder.get().get_schema(ag_models.Submission).properties
+#         )
+#     )
+#     submission_with_results_schema.properties['results'] = AGModelSchemaBuilder.get().get_schema(
+#         SubmissionResultFeedback)
 
-    submission_with_results_schema.properties.move_to_end('results', last=False)
+#     submission_with_results_schema.properties.move_to_end('results', last=False)
 
-    return submission_with_results_schema
+#     return submission_with_results_schema
 
 
 class ListSubmissionsWithResults(AGModelAPIView):
@@ -239,15 +239,15 @@ class ListSubmissionsWithResults(AGModelAPIView):
     model_manager = ag_models.Group.objects.select_related('project__course')
     api_tags = (APITags.submissions,)
 
-    @swagger_auto_schema(
-        manual_parameters=[make_fdbk_category_param_docs(required=False)],
-        responses={
-            '200': Schema(
-                type='array',
-                items=_make_submission_with_results_schema()
-            )
-        }
-    )
+    # @swagger_auto_schema(
+    #     manual_parameters=[make_fdbk_category_param_docs(required=False)],
+    #     responses={
+    #         '200': Schema(
+    #             type='array',
+    #             items=_make_submission_with_results_schema()
+    #         )
+    #     }
+    # )
     def get(self, *args, **kwargs):
         group = self.get_object()
 
@@ -305,16 +305,16 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
                           ag_permissions.can_view_project(),
                           ag_permissions.is_staff_or_group_member())
 
-    @swagger_auto_schema(
-        manual_parameters=[
-            Parameter(
-                name='filename', in_='query',
-                description='The name of the file to return.',
-                required=True, type='str')
-        ],
-        responses={'200': 'Returns the file contents.'})
+    # @swagger_auto_schema(
+    #     manual_parameters=[
+    #         Parameter(
+    #             name='filename', in_='query',
+    #             description='The name of the file to return.',
+    #             required=True, type='str')
+    #     ],
+    #     responses={'200': 'Returns the file contents.'})
     @method_decorator(require_query_params('filename'))
-    @decorators.detail_route()
+    @decorators.action(detail=True)
     def file(self, request, *args, **kwargs):
         submission = self.get_object()
         filename = request.query_params['filename']
@@ -324,10 +324,11 @@ class SubmissionDetailViewSet(mixins.RetrieveModelMixin,
             return response.Response('File "{}" not found'.format(filename),
                                      status=status.HTTP_404_NOT_FOUND)
 
-    @swagger_auto_schema(responses={'204': 'The submission has been removed from the queue.'},
-                         request_body_parameters=[])
+    # @swagger_auto_schema(responses={'204': 'The submission has been removed from the queue.'},
+    #                      request_body_parameters=[])
     @transaction.atomic()
-    @decorators.detail_route(
+    @decorators.action(
+        detail=True,
         methods=['post'],
         # NOTE: Only group members can remove their own submissions from the queue.
         permission_classes=(ag_permissions.can_view_project(), ag_permissions.is_group_member()))

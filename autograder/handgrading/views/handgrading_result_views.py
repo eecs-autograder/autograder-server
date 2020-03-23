@@ -6,9 +6,9 @@ from django.contrib.auth.models import User
 from django.db.models import Prefetch
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from drf_yasg import openapi
-from drf_yasg.openapi import Parameter, Schema
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg import openapi
+# from drf_yasg.openapi import Parameter, Schema
+# from drf_yasg.utils import swagger_auto_schema
 
 from rest_framework import status, permissions
 from rest_framework.pagination import PageNumberPagination
@@ -25,7 +25,7 @@ from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (
     handle_object_does_not_exist_404, AGModelAPIView, AGModelGenericViewSet)
 from autograder import utils
-from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
+from autograder.rest_api.views.schema_generation import APITags#, AGModelSchemaBuilder
 
 is_admin = ag_permissions.is_admin(lambda group: group.project.course)
 is_staff = ag_permissions.is_staff(lambda group: group.project.course)
@@ -61,14 +61,14 @@ class HandgradingResultView(AGModelGenericViewSet):
 
     api_tags = [APITags.handgrading_results]
 
-    @swagger_auto_schema(
-        manual_parameters=[
-            Parameter(
-                name='filename', in_='query', type='string',
-                description='The name of a submitted file. When this parameter is included, '
-                            'this endpoint will return the contents of the requested file.')
-        ]
-    )
+    # @swagger_auto_schema(
+    #     manual_parameters=[
+    #         Parameter(
+    #             name='filename', in_='query', type='string',
+    #             description='The name of a submitted file. When this parameter is included, '
+    #                         'this endpoint will return the contents of the requested file.')
+    #     ]
+    # )
     @handle_object_does_not_exist_404
     def retrieve(self, request, *args, **kwargs):
         group = self.get_object()  # type: ag_models.Group
@@ -155,48 +155,48 @@ is_handgrader_or_staff = (P(ag_permissions.is_staff(lambda project: project.cour
                           | P(ag_permissions.is_handgrader(lambda project: project.course)))
 
 
-def _buid_minimal_handgrading_resuit_schema():
-    group_with_handgrading_result_schema = Schema(
-        type='object',
-        properties=copy.deepcopy(AGModelSchemaBuilder.get().get_schema(ag_models.Group).properties)
-    )
-    assert (group_with_handgrading_result_schema.properties is not
-            AGModelSchemaBuilder.get().get_schema(ag_models.Group).properties)
-    group_with_handgrading_result_schema.properties['handgrading_result'] = Schema(
-        title='MinimalHandgradingResult',
-        type='object',
-        description=('When this value is null, indicates that '
-                     'handgrading has not started for this group.'),
-        properties=OrderedDict([
-            ('finished_grading', Schema(
-                type='boolean',
-                description="Indicates whether a human grader "
-                            "has finished grading this group's code.",
-            )),
-            ('total_points', Schema(
-                type='float',
-            )),
-            ('total_points_possible', Schema(
-                type='float',
-            )),
-        ])
-    )
+# def _buid_minimal_handgrading_resuit_schema():
+#     group_with_handgrading_result_schema = Schema(
+#         type='object',
+#         properties=copy.deepcopy(AGModelSchemaBuilder.get().get_schema(ag_models.Group).properties)
+#     )
+#     assert (group_with_handgrading_result_schema.properties is not
+#             AGModelSchemaBuilder.get().get_schema(ag_models.Group).properties)
+#     group_with_handgrading_result_schema.properties['handgrading_result'] = Schema(
+#         title='MinimalHandgradingResult',
+#         type='object',
+#         description=('When this value is null, indicates that '
+#                      'handgrading has not started for this group.'),
+#         properties=OrderedDict([
+#             ('finished_grading', Schema(
+#                 type='boolean',
+#                 description="Indicates whether a human grader "
+#                             "has finished grading this group's code.",
+#             )),
+#             ('total_points', Schema(
+#                 type='float',
+#             )),
+#             ('total_points_possible', Schema(
+#                 type='float',
+#             )),
+#         ])
+#     )
 
-    return group_with_handgrading_result_schema
+#     return group_with_handgrading_result_schema
 
 
-_handgrading_results_schema = Schema(
-    type='object',
-    properties=OrderedDict([
-        ('count', openapi.Schema(type=openapi.TYPE_INTEGER)),
-        ('next', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
-        ('previous', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
-        ('results', Schema(
-            type='array',
-            items=_buid_minimal_handgrading_resuit_schema(),
-        )),
-    ])
-)
+# _handgrading_results_schema = Schema(
+#     type='object',
+#     properties=OrderedDict([
+#         ('count', openapi.Schema(type=openapi.TYPE_INTEGER)),
+#         ('next', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
+#         ('previous', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
+#         ('results', Schema(
+#             type='array',
+#             items=_buid_minimal_handgrading_resuit_schema(),
+#         )),
+#     ])
+# )
 
 
 class HandgradingResultPaginator(PageNumberPagination):
@@ -212,21 +212,21 @@ class ListHandgradingResultsView(AGModelAPIView):
 
     api_tags = [APITags.projects, APITags.handgrading_results]
 
-    @swagger_auto_schema(
-        manual_parameters=[
-            Parameter(
-                name='include_staff', type='string', enum=['true', 'false'], in_='query',
-                description='When false, excludes staff and admin users '
-                            'from the results. Defaults to true.'
-            ),
-            Parameter(name='page', type='integer', in_='query'),
-            Parameter(name='page_size', type='integer', in_='query',
-                      default=HandgradingResultPaginator.page_size,
-                      description='Max page size: {}'.format(
-                          HandgradingResultPaginator.max_page_size))
-        ],
-        responses={'200': _handgrading_results_schema}
-    )
+    # @swagger_auto_schema(
+    #     manual_parameters=[
+    #         Parameter(
+    #             name='include_staff', type='string', enum=['true', 'false'], in_='query',
+    #             description='When false, excludes staff and admin users '
+    #                         'from the results. Defaults to true.'
+    #         ),
+    #         Parameter(name='page', type='integer', in_='query'),
+    #         Parameter(name='page_size', type='integer', in_='query',
+    #                   default=HandgradingResultPaginator.page_size,
+    #                   description='Max page size: {}'.format(
+    #                       HandgradingResultPaginator.max_page_size))
+    #     ],
+    #     responses={'200': _handgrading_results_schema}
+    # )
     @handle_object_does_not_exist_404
     def get(self, *args, **kwargs):
         project = self.get_object()  # type: ag_models.Project

@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response, status, exceptions
 
 import autograder.core.models as ag_models
@@ -13,28 +13,28 @@ from autograder.core.models.course import clear_cached_user_roles
 from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet, require_body_params
 from autograder.rest_api.views.schema_generation import APITags
 
-_add_admins_params = [
-    Parameter(
-        'new_admins',
-        'body',
-        type='List[string]',
-        required=True,
-        description='A list of usernames who should be granted admin '
-                    'privileges for this course.'
-    )
-]
+# _add_admins_params = [
+#     Parameter(
+#         'new_admins',
+#         'body',
+#         type='List[string]',
+#         required=True,
+#         description='A list of usernames who should be granted admin '
+#                     'privileges for this course.'
+#     )
+# ]
 
 
-_remove_admins_params = [
-    Parameter(
-        'remove_admins',
-        'body',
-        type='List[User]',
-        required=True,
-        description='A list of users whose admin privileges '
-                    'should be revoked for this course.'
-    )
-]
+# _remove_admins_params = [
+#     Parameter(
+#         'remove_admins',
+#         'body',
+#         type='List[User]',
+#         required=True,
+#         description='A list of users whose admin privileges '
+#                     'should be revoked for this course.'
+#     )
+# ]
 
 
 class CourseAdminViewSet(ListNestedModelViewSet):
@@ -48,7 +48,7 @@ class CourseAdminViewSet(ListNestedModelViewSet):
 
     api_tags = [APITags.permissions]
 
-    @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_add_admins_params)
+    # @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_add_admins_params)
     @transaction.atomic()
     @method_decorator(require_body_params('new_admins'))
     def post(self, request, *args, **kwargs):
@@ -58,7 +58,7 @@ class CourseAdminViewSet(ListNestedModelViewSet):
         clear_cached_user_roles(course.pk)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_remove_admins_params)
+    # @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_remove_admins_params)
     @transaction.atomic()
     @method_decorator(require_body_params('remove_admins'))
     def patch(self, request, *args, **kwargs):
