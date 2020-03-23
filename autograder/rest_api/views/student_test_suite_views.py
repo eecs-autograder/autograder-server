@@ -1,8 +1,8 @@
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
 from rest_framework.views import APIView
 
@@ -35,19 +35,19 @@ class StudentTestSuiteOrderView(AGModelAPIView):
     model_manager = ag_models.Project.objects.select_related('course')
     api_tags = [APITags.student_test_suites]
 
-    @swagger_auto_schema(
-        responses={'200': 'Returns a list of StudentTestSuite IDs, in their assigned order.'})
+    # @swagger_auto_schema(
+    #     responses={'200': 'Returns a list of StudentTestSuite IDs, in their assigned order.'})
     def get(self, *args, **kwargs):
         project = self.get_object()
         return response.Response(list(project.get_studenttestsuite_order()))
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='', in_='body',
-                      type='List[string]',
-                      description='A list of StudentTestSuite IDs, in the new order to set.')],
-        responses={'200': 'Returns a list of StudentTestSuite IDs, in their new order.'}
-    )
+    # @swagger_auto_schema(
+    #     request_body_parameters=[
+    #         Parameter(name='', in_='body',
+    #                   type='List[string]',
+    #                   description='A list of StudentTestSuite IDs, in the new order to set.')],
+    #     responses={'200': 'Returns a list of StudentTestSuite IDs, in their new order.'}
+    # )
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             project = self.get_object()

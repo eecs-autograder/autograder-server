@@ -10,7 +10,8 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 
 from autograder.rest_api.views.schema_generation import (
-    AGModelViewAutoSchema, NestedModelViewAutoSchema, APITags)
+    # AGModelViewAutoSchema, NestedModelViewAutoSchema,
+    APITags)
 from ..transaction_mixins import (
     TransactionCreateMixin, TransactionPartialUpdateMixin,
     TransactionDestroyMixin)
@@ -71,7 +72,7 @@ class AGModelAPIView(GetObjectLockOnUnsafeMixin, AlwaysIsAuthenticatedMixin, API
     A derived class of APIView that inherits from the mixins
     GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
     """
-    swagger_schema = AGModelViewAutoSchema
+    # swagger_schema = AGModelViewAutoSchema
 
     # Tags to apply to all operations in this view.
     # This can be overridden on individual operations by passing
@@ -86,7 +87,7 @@ class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,
     A derived class of GenericViewSet that inherits from the mixins
     GetObjectLockOnUnsafeMixin and AlwaysIsAuthenticatedMixin.
     """
-    swagger_schema = AGModelViewAutoSchema
+    # swagger_schema = AGModelViewAutoSchema
 
     # Tags to apply to all operations in this view.
     # This can be overridden on individual operations by passing
@@ -114,7 +115,7 @@ class NestedModelViewSet(GetObjectLockOnUnsafeMixin,
     has_object_permissions() as needed.
     """
 
-    swagger_schema = NestedModelViewAutoSchema
+    # swagger_schema = NestedModelViewAutoSchema
 
     reverse_to_one_field_name = None
 

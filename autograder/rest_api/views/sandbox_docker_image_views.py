@@ -101,7 +101,7 @@ class BuildTaskDetailViews(mixins.RetrieveModelMixin, ag_views.AGModelGenericVie
 
     api_tags = [APITags.sandbox_docker_images]
 
-    @decorators.detail_route(methods=['POST'])
+    @decorators.action(detail=True, methods=['POST'])
     @transaction.atomic
     def cancel(self, *args, **kwargs):
         task = self.get_object()
@@ -145,7 +145,7 @@ class SandboxDockerImageDetailViewSet(mixins.RetrieveModelMixin,
 
     api_tags = [APITags.sandbox_docker_images]
 
-    @decorators.detail_route(methods=['PUT'])
+    @decorators.action(detail=True, methods=['PUT'])
     @transaction.atomic
     def rebuild(self, request, *args, **kwargs):
         image_to_update = self.get_object()

@@ -5,8 +5,8 @@ from django.http.response import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter, Schema
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter, Schema
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response, status
 from rest_framework.exceptions import ValidationError
 
@@ -19,7 +19,7 @@ from autograder.core.submission_feedback import (
     SubmissionResultFeedback, AGTestSuiteResultFeedback, AGTestCommandResultFeedback,
     AGTestPreLoader, StudentTestSuitePreLoader)
 from autograder.rest_api.views.ag_model_views import AGModelAPIView, require_query_params
-from autograder.rest_api.views.schema_generation import APITags, AGModelSchemaBuilder
+from autograder.rest_api.views.schema_generation import APITags#, AGModelSchemaBuilder
 from autograder.rest_api.serialize_ultimate_submission_results import (
     get_submission_data_with_results)
 
@@ -57,15 +57,15 @@ class SubmissionResultsViewBase(AGModelAPIView):
         raise NotImplementedError
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(
-        manual_parameters=[make_fdbk_category_param_docs()],
-        responses={
-            '200': AGModelSchemaBuilder.get().get_schema(SubmissionResultFeedback)
-        }
-    )
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(
+#         manual_parameters=[make_fdbk_category_param_docs()],
+#         responses={
+#             '200': AGModelSchemaBuilder.get().get_schema(SubmissionResultFeedback)
+#         }
+#     )
+# )
 class SubmissionResultsView(SubmissionResultsViewBase):
     def _get_submission_fdbk(
         self, fdbk_category: ag_models.FeedbackCategory
@@ -99,10 +99,10 @@ class SubmissionResultsView(SubmissionResultsViewBase):
         return response.Response(get_cached_submission_feedback(submission, submission_fdbk))
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -112,10 +112,10 @@ class AGTestSuiteResultsStdoutView(SubmissionResultsViewBase):
                                  lambda fdbk_calc: fdbk_calc.setup_stdout)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -125,25 +125,25 @@ class AGTestSuiteResultsStderrView(SubmissionResultsViewBase):
                                  lambda fdbk_calc: fdbk_calc.setup_stderr)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(
-        manual_parameters=[make_fdbk_category_param_docs()],
-        responses={'200': Schema(
-            type='object',
-            properties={
-                'setup_stdout_size': Parameter('setup_stdout_size', 'body', type='Optional[int]'),
-                'setup_stdout_truncated': Parameter(
-                    'setup_stdout_truncated', 'body', type='Optional[bool]'),
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(
+#         manual_parameters=[make_fdbk_category_param_docs()],
+#         responses={'200': Schema(
+#             type='object',
+#             properties={
+#                 'setup_stdout_size': Parameter('setup_stdout_size', 'body', type='Optional[int]'),
+#                 'setup_stdout_truncated': Parameter(
+#                     'setup_stdout_truncated', 'body', type='Optional[bool]'),
 
-                'setup_stderr_size': Parameter('setup_stderr_size', 'body', type='Optional[int]'),
-                'setup_stderr_truncated': Parameter(
-                    'setup_stderr_truncated', 'body', type='Optional[bool]'),
+#                 'setup_stderr_size': Parameter('setup_stderr_size', 'body', type='Optional[int]'),
+#                 'setup_stderr_truncated': Parameter(
+#                     'setup_stderr_truncated', 'body', type='Optional[bool]'),
 
-            }
-        )}
-    )
-)
+#             }
+#         )}
+#     )
+# )
 class AGTestSuiteResultsOutputSizeView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -192,10 +192,10 @@ def _find_ag_suite_result(submission_fdbk: SubmissionResultFeedback,
     return None
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -206,10 +206,10 @@ class AGTestCommandResultStdoutView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.stdout)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class AGTestCommandResultStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -220,23 +220,23 @@ class AGTestCommandResultStderrView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.stderr)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(
-        manual_parameters=[make_fdbk_category_param_docs()],
-        responses={'200': Schema(
-            type='object',
-            properties={
-                'stdout_size': Parameter('stdout_size', 'body', type='Optional[int]'),
-                'stdout_truncated': Parameter('stdout_truncated', 'body', type='Optional[bool]'),
-                'stderr_size': Parameter('stderr_size', 'body', type='Optional[int]'),
-                'stderr_truncated': Parameter('stderr_truncated', 'body', type='Optional[bool]'),
-                'stdout_diff_size': Parameter('stdout_diff_size', 'body', type='Optional[int]'),
-                'stderr_diff_size': Parameter('stderr_diff_size', 'body', type='Optional[int]'),
-            }
-        )}
-    )
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(
+#         manual_parameters=[make_fdbk_category_param_docs()],
+#         responses={'200': Schema(
+#             type='object',
+#             properties={
+#                 'stdout_size': Parameter('stdout_size', 'body', type='Optional[int]'),
+#                 'stdout_truncated': Parameter('stdout_truncated', 'body', type='Optional[bool]'),
+#                 'stderr_size': Parameter('stderr_size', 'body', type='Optional[int]'),
+#                 'stderr_truncated': Parameter('stderr_truncated', 'body', type='Optional[bool]'),
+#                 'stdout_diff_size': Parameter('stdout_diff_size', 'body', type='Optional[int]'),
+#                 'stderr_diff_size': Parameter('stderr_diff_size', 'body', type='Optional[int]'),
+#             }
+#         )}
+#     )
+# )
 class AGTestCommandResultOutputSizeView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -270,10 +270,10 @@ def _get_cmd_result_output(submission_fdbk: SubmissionResultFeedback,
     return FileResponse(stream_data)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -284,10 +284,10 @@ class AGTestCommandResultStdoutDiffView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.stdout_diff)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class AGTestCommandResultStderrDiffView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -342,10 +342,10 @@ def _find_ag_test_cmd_result(submission_fdbk: SubmissionResultFeedback,
     return None
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -357,10 +357,10 @@ class StudentTestSuiteResultSetupStdoutView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.setup_stdout)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -372,10 +372,10 @@ class StudentTestSuiteResultSetupStderrView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.setup_stderr)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -387,10 +387,10 @@ class StudentTestSuiteResultGetStudentTestsStdoutView(SubmissionResultsViewBase)
             lambda fdbk_calc: fdbk_calc.get_student_test_names_stdout)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -402,10 +402,10 @@ class StudentTestSuiteResultGetStudentTestsStderrView(SubmissionResultsViewBase)
             lambda fdbk_calc: fdbk_calc.get_student_test_names_stderr)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -417,10 +417,10 @@ class StudentTestSuiteResultValidityCheckStdoutView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.validity_check_stdout)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -432,10 +432,10 @@ class StudentTestSuiteResultValidityCheckStderrView(SubmissionResultsViewBase):
             lambda fdbk_calc: fdbk_calc.validity_check_stderr)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -447,10 +447,10 @@ class StudentTestSuiteResultGradeBuggyImplsStdoutView(SubmissionResultsViewBase)
             lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stdout)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(manual_parameters=[make_fdbk_category_param_docs()])
+# )
 class StudentTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):
@@ -462,31 +462,31 @@ class StudentTestSuiteResultGradeBuggyImplsStderrView(SubmissionResultsViewBase)
             lambda fdbk_calc: fdbk_calc.grade_buggy_impls_stderr)
 
 
-@method_decorator(
-    name='get',
-    decorator=swagger_auto_schema(
-        manual_parameters=[make_fdbk_category_param_docs()],
-        responses={'200': Schema(
-            type='object',
-            properties={
-                'setup_stdout_size': Parameter('setup_stdout_size', 'body', type='Optional[int]'),
-                'setup_stderr_size': Parameter('setup_stderr_size', 'body', type='Optional[int]'),
-                'get_student_test_names_stdout_size': Parameter(
-                    'get_student_test_names_stdout_size', 'body', type='Optional[int]'),
-                'get_student_test_names_stderr_size': Parameter(
-                    'get_student_test_names_stderr_size', 'body', type='Optional[int]'),
-                'validity_check_stdout_size': Parameter(
-                    'validity_check_stdout_size', 'body', type='Optional[int]'),
-                'validity_check_stderr_size': Parameter(
-                    'validity_check_stderr_size', 'body', type='Optional[int]'),
-                'grade_buggy_impls_stdout_size': Parameter(
-                    'grade_buggy_impls_stdout_size', 'body', type='Optional[int]'),
-                'grade_buggy_impls_stderr_size': Parameter(
-                    'grade_buggy_impls_stderr_size', 'body', type='Optional[int]'),
-            }
-        )}
-    )
-)
+# @method_decorator(
+#     name='get',
+#     decorator=swagger_auto_schema(
+#         manual_parameters=[make_fdbk_category_param_docs()],
+#         responses={'200': Schema(
+#             type='object',
+#             properties={
+#                 'setup_stdout_size': Parameter('setup_stdout_size', 'body', type='Optional[int]'),
+#                 'setup_stderr_size': Parameter('setup_stderr_size', 'body', type='Optional[int]'),
+#                 'get_student_test_names_stdout_size': Parameter(
+#                     'get_student_test_names_stdout_size', 'body', type='Optional[int]'),
+#                 'get_student_test_names_stderr_size': Parameter(
+#                     'get_student_test_names_stderr_size', 'body', type='Optional[int]'),
+#                 'validity_check_stdout_size': Parameter(
+#                     'validity_check_stdout_size', 'body', type='Optional[int]'),
+#                 'validity_check_stderr_size': Parameter(
+#                     'validity_check_stderr_size', 'body', type='Optional[int]'),
+#                 'grade_buggy_impls_stdout_size': Parameter(
+#                     'grade_buggy_impls_stdout_size', 'body', type='Optional[int]'),
+#                 'grade_buggy_impls_stderr_size': Parameter(
+#                     'grade_buggy_impls_stderr_size', 'body', type='Optional[int]'),
+#             }
+#         )}
+#     )
+# )
 class StudentTestSuiteOutputSizeView(SubmissionResultsViewBase):
     def _make_response(self, submission_fdbk: SubmissionResultFeedback,
                        fdbk_category: ag_models.FeedbackCategory):

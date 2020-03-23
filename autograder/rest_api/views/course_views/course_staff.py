@@ -1,8 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response, status
 
 import autograder.core.models as ag_models
@@ -12,28 +12,28 @@ from autograder.core.models.course import clear_cached_user_roles
 from autograder.rest_api.views.ag_model_views import ListNestedModelViewSet, require_body_params
 from autograder.rest_api.views.schema_generation import APITags
 
-_add_staff_params = [
-    Parameter(
-        'new_staff',
-        'body',
-        type='List[string]',
-        required=True,
-        description='A list of usernames who should be granted staff '
-                    'privileges for this course.'
-    )
-]
+# _add_staff_params = [
+#     Parameter(
+#         'new_staff',
+#         'body',
+#         type='List[string]',
+#         required=True,
+#         description='A list of usernames who should be granted staff '
+#                     'privileges for this course.'
+#     )
+# ]
 
 
-_remove_staff_params = [
-    Parameter(
-        'remove_staff',
-        'body',
-        type='List[User]',
-        required=True,
-        description='A list of users whose staff privileges '
-                    'should be revoked for this course.'
-    )
-]
+# _remove_staff_params = [
+#     Parameter(
+#         'remove_staff',
+#         'body',
+#         type='List[User]',
+#         required=True,
+#         description='A list of users whose staff privileges '
+#                     'should be revoked for this course.'
+#     )
+# ]
 
 
 class CourseStaffViewSet(ListNestedModelViewSet):
@@ -45,7 +45,7 @@ class CourseStaffViewSet(ListNestedModelViewSet):
 
     api_tags = [APITags.permissions]
 
-    @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_add_staff_params)
+    # @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_add_staff_params)
     @transaction.atomic()
     @method_decorator(require_body_params('new_staff'))
     def post(self, request, *args, **kwargs):
@@ -55,7 +55,7 @@ class CourseStaffViewSet(ListNestedModelViewSet):
         clear_cached_user_roles(course.pk)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_remove_staff_params)
+    # @swagger_auto_schema(responses={'204': ''}, request_body_parameters=_remove_staff_params)
     @transaction.atomic()
     @method_decorator(require_body_params('remove_staff'))
     def patch(self, request, *args, **kwargs):

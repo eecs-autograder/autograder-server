@@ -2,8 +2,8 @@ from django.db import transaction
 from django.db.models import F, Case, When
 from django.shortcuts import get_object_or_404
 from drf_composable_permissions.p import P
-from drf_yasg.openapi import Parameter, Schema
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter, Schema
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, mixins, response
 from rest_framework import permissions
 from rest_framework import status
@@ -65,17 +65,17 @@ class CopyProjectView(AGModelGenericViewSet):
     serializer_class = ag_serializers.ProjectSerializer
     permission_classes = (ag_permissions.is_admin(),)
 
-    @swagger_auto_schema(
-        operation_description="""Makes a copy of the specified project and
-            all of its instructor file, expected student file, test case,
-            and handgrading data.
-            Note that groups, submissions, and results (test case, handgrading,
-            etc.) are NOT copied.
-        """,
-        request_body_parameters=[
-            Parameter('new_project_name', in_='query', type='string', required=False),
-        ]
-    )
+    # @swagger_auto_schema(
+    #     operation_description="""Makes a copy of the specified project and
+    #         all of its instructor file, expected student file, test case,
+    #         and handgrading data.
+    #         Note that groups, submissions, and results (test case, handgrading,
+    #         etc.) are NOT copied.
+    #     """,
+    #     request_body_parameters=[
+    #         Parameter('new_project_name', in_='query', type='string', required=False),
+    #     ]
+    # )
     @convert_django_validation_error
     @transaction.atomic()
     def copy_project(self, request: Request, *args, **kwargs):
@@ -144,11 +144,11 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
     serializer_class = ag_serializers.ProjectSerializer
     permission_classes = (project_detail_permissions,)
 
-    @swagger_auto_schema(responses={
-        '200': Schema(type='integer',
-                      description='The number of submissions for this '
-                                  'project with grading status "queued"')})
-    @decorators.detail_route()
+    # @swagger_auto_schema(responses={
+    #     '200': Schema(type='integer',
+    #                   description='The number of submissions for this '
+    #                               'project with grading status "queued"')})
+    @decorators.action(detail=True)
     def num_queued_submissions(self, *args, **kwargs):
         project = self.get_object()
         num_queued_submissions = ag_models.Submission.objects.filter(
@@ -157,8 +157,9 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(data=num_queued_submissions)
 
-    @swagger_auto_schema(auto_schema=None)
-    @decorators.detail_route(
+    # @swagger_auto_schema(auto_schema=None)
+    @decorators.action(
+        detail=True,
         methods=['POST'],
         permission_classes=[
             permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
@@ -177,8 +178,9 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    @swagger_auto_schema(auto_schema=None)
-    @decorators.detail_route(
+    # @swagger_auto_schema(auto_schema=None)
+    @decorators.action(
+        detail=True,
         methods=['POST'],
         permission_classes=[
             permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
@@ -197,8 +199,9 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    @swagger_auto_schema(auto_schema=None)
-    @decorators.detail_route(
+    # @swagger_auto_schema(auto_schema=None)
+    @decorators.action(
+        detail=True,
         methods=['POST'],
         permission_classes=[
             permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
@@ -217,8 +220,9 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    @swagger_auto_schema(auto_schema=None)
-    @decorators.detail_route(
+    # @swagger_auto_schema(auto_schema=None)
+    @decorators.action(
+        detail=True,
         methods=['POST'],
         permission_classes=[
             permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
@@ -237,16 +241,22 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    @swagger_auto_schema(auto_schema=None)
-    @decorators.detail_route(permission_classes=[
-        permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
+    # @swagger_auto_schema(auto_schema=None)
+    @decorators.action(
+        detail=True,
+        permission_classes=[
+            permissions.IsAuthenticated,
+            ag_permissions.is_admin(lambda project: project.course)
+        ]
+    )
     def download_tasks(self, *args, **kwargs):
         project = self.get_object()
         queryset = project.download_tasks.all()
         serializer = ag_serializers.DownloadTaskSerializer(queryset, many=True)
         return response.Response(data=serializer.data)
 
-    @decorators.detail_route(
+    @decorators.action(
+        detail=True,
         methods=['DELETE'],
         permission_classes=[
             permissions.IsAuthenticated,
@@ -266,9 +276,9 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
 
     model_manager = ag_models.DownloadTask.objects
 
-    swagger_schema = None
+    # swagger_schema = None
 
-    @decorators.detail_route()
+    @decorators.action(detail=True)
     def result(self, *args, **kwargs):
         task = self.get_object()
         if task.progress != 100:
@@ -300,34 +310,34 @@ class EditBonusSubmissionsView(AGModelGenericViewSet):
     model_manager = ag_models.Project.objects.select_related('course')
     pk_key = 'project_pk'
 
-    @swagger_auto_schema(
-        responses={'204': ''},
-        request_body_parameters=[
-            Parameter(
-                'add',
-                'body',
-                type='integer',
-                description="""How many bonus submissions to add to each group's total.
-                               Mutually exclusive with "subtract"."""
-            ),
-            Parameter(
-                'subtract',
-                'body',
-                type='integer',
-                description="""How many bonus submissions to subtract from each group's total.
-                       Mutually exclusive with "add"."""
-            )
-        ],
-        manual_parameters=[
-            Parameter(
-                'group_pk',
-                'query',
-                type='integer',
-                description="""Instead of modifying the bonus submission totals for every group,
-                               only modify the group with the specified primary key."""
-            )
-        ]
-    )
+    # @swagger_auto_schema(
+    #     responses={'204': ''},
+    #     request_body_parameters=[
+    #         Parameter(
+    #             'add',
+    #             'body',
+    #             type='integer',
+    #             description="""How many bonus submissions to add to each group's total.
+    #                            Mutually exclusive with "subtract"."""
+    #         ),
+    #         Parameter(
+    #             'subtract',
+    #             'body',
+    #             type='integer',
+    #             description="""How many bonus submissions to subtract from each group's total.
+    #                    Mutually exclusive with "add"."""
+    #         )
+    #     ],
+    #     manual_parameters=[
+    #         Parameter(
+    #             'group_pk',
+    #             'query',
+    #             type='integer',
+    #             description="""Instead of modifying the bonus submission totals for every group,
+    #                            only modify the group with the specified primary key."""
+    #         )
+    #     ]
+    # )
     @transaction.atomic()
     def partial_update(self, *args, **kwargs):
         project: ag_models.Project = self.get_object()

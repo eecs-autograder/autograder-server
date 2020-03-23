@@ -1,4 +1,4 @@
-from drf_yasg.openapi import Parameter
+# from drf_yasg.openapi import Parameter
 from rest_framework.exceptions import ValidationError
 
 import autograder.core.models as ag_models

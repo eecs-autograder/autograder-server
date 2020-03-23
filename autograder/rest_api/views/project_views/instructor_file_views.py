@@ -1,8 +1,8 @@
 from django.core import exceptions
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, mixins, permissions, response, status, viewsets
 
 import autograder.core.models as ag_models
@@ -16,20 +16,20 @@ from autograder.rest_api.views.ag_model_views import (
 from autograder.rest_api.views.schema_generation import APITags
 
 
-_create_file_params = [
-    Parameter(
-        'file_obj',
-        'form',
-        type='file',
-        required=True,
-        description='The contents for this file, as multipart/form-data.'
-    )
-]
+# _create_file_params = [
+#     Parameter(
+#         'file_obj',
+#         'form',
+#         type='file',
+#         required=True,
+#         description='The contents for this file, as multipart/form-data.'
+#     )
+# ]
 
 
-@method_decorator(
-    name='create',
-    decorator=swagger_auto_schema(request_body_parameters=_create_file_params))
+# @method_decorator(
+#     name='create',
+#     decorator=swagger_auto_schema(request_body_parameters=_create_file_params))
 class ListCreateInstructorFilesViewSet(ListCreateNestedModelViewSet):
     serializer_class = ag_serializers.InstructorFileSerializer
     permission_classes = (ag_permissions.is_admin_or_read_only_staff(),)
@@ -39,26 +39,26 @@ class ListCreateInstructorFilesViewSet(ListCreateNestedModelViewSet):
     reverse_to_one_field_name = 'instructor_files'
 
 
-_rename_file_params = [
-    Parameter(
-        'name',
-        'body',
-        type='string',
-        required=True,
-        description='The new name for this file.'
-    )
-]
+# _rename_file_params = [
+#     Parameter(
+#         'name',
+#         'body',
+#         type='string',
+#         required=True,
+#         description='The new name for this file.'
+#     )
+# ]
 
 
-_update_content_params = [
-    Parameter(
-        'file_obj',
-        'form',
-        type='file',
-        required=True,
-        description='The new contents for this file, as multipart/form-data.'
-    )
-]
+# _update_content_params = [
+#     Parameter(
+#         'file_obj',
+#         'form',
+#         type='file',
+#         required=True,
+#         description='The new contents for this file, as multipart/form-data.'
+#     )
+# ]
 
 
 class InstructorFileDetailViewSet(mixins.RetrieveModelMixin,
@@ -71,11 +71,11 @@ class InstructorFileDetailViewSet(mixins.RetrieveModelMixin,
 
     api_tags = [APITags.instructor_files]
 
-    @swagger_auto_schema(responses={'200': 'Returns the updated InstructorFile metadata.'},
-                         request_body_parameters=_rename_file_params)
+    # @swagger_auto_schema(responses={'200': 'Returns the updated InstructorFile metadata.'},
+    #                      request_body_parameters=_rename_file_params)
     @transaction.atomic()
     @method_decorator(require_body_params('name'))
-    @decorators.detail_route(methods=['put'])
+    @decorators.action(detail=True, methods=['put'])
     def name(self, *args, **kwargs):
         uploaded_file = self.get_object()
         try:
@@ -94,13 +94,13 @@ class InstructorFileContentView(AGModelAPIView):
 
     api_tags = [APITags.instructor_files]
 
-    @swagger_auto_schema(response_content_type='text/html',
-                         responses={'200': 'Returns the file contents.'})
+    # @swagger_auto_schema(response_content_type='text/html',
+    #                      responses={'200': 'Returns the file contents.'})
     def get(self, *args, **kwargs):
         return SizeFileResponse(self.get_object().file_obj)
 
-    @swagger_auto_schema(request_body_parameters=_update_content_params,
-                         responses={'200': 'Returns the updated InstructorFile metadata.'})
+    # @swagger_auto_schema(request_body_parameters=_update_content_params,
+    #                      responses={'200': 'Returns the updated InstructorFile metadata.'})
     @method_decorator(require_body_params('file_obj'))
     @transaction.atomic()
     def put(self, *args, **kwargs):

@@ -9,7 +9,7 @@ from django.db.models import Value
 from django.db.models.functions import Concat
 
 from rest_framework import mixins, response, status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import action
 from rest_framework.request import Request
 
 from autograder.core.caching import clear_submission_results_cache
@@ -100,7 +100,7 @@ class RerunSubmissionsTaskDetailVewSet(mixins.RetrieveModelMixin,
     model_manager = ag_models.RerunSubmissionsTask.objects
 
     @transaction.atomic
-    @detail_route(methods=['POST'])
+    @action(detail=True, methods=['POST'])
     def cancel(self, *args, **kwargs):
         task = self.get_object()
         task.is_cancelled = True

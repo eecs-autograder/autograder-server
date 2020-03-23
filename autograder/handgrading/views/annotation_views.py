@@ -1,6 +1,6 @@
 from django.db import transaction
-from drf_yasg.openapi import Parameter
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.openapi import Parameter
+# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
 
 import autograder.handgrading.models as handgrading_models
@@ -44,19 +44,19 @@ class AnnotationOrderView(AGModelAPIView):
     model_manager = handgrading_models.HandgradingRubric.objects.select_related('project__course')
     api_tags = [APITags.annotations]
 
-    @swagger_auto_schema(
-        responses={'200': 'Returns a list of Annotation IDs, in their assigned order.'})
+    # @swagger_auto_schema(
+    #     responses={'200': 'Returns a list of Annotation IDs, in their assigned order.'})
     def get(self, request, *args, **kwargs):
         handgrading_rubric = self.get_object()
         return response.Response(list(handgrading_rubric.get_annotation_order()))
 
-    @swagger_auto_schema(
-        request_body_parameters=[
-            Parameter(name='', in_='body',
-                      type='List[string]',
-                      description='A list of Annotation IDs, in the new order to set.')],
-        responses={'200': 'Returns a list of Annotation IDs, in their new order.'}
-    )
+    # @swagger_auto_schema(
+    #     request_body_parameters=[
+    #         Parameter(name='', in_='body',
+    #                   type='List[string]',
+    #                   description='A list of Annotation IDs, in the new order to set.')],
+    #     responses={'200': 'Returns a list of Annotation IDs, in their new order.'}
+    # )
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             handgrading_rubric = self.get_object()

@@ -7,33 +7,33 @@ from . import views
 handgrading_rubric_detail_router = routers.SimpleRouter()
 handgrading_rubric_detail_router.register(r'handgrading_rubrics',
                                           views.HandgradingRubricDetailViewSet,
-                                          base_name='handgrading-rubric')
+                                          basename='handgrading-rubric')
 
 annotation_detail_router = routers.SimpleRouter()
 annotation_detail_router.register(r'annotations',
                                   views.AnnotationDetailViewSet,
-                                  base_name='annotation')
+                                  basename='annotation')
 
 criterion_detail_router = routers.SimpleRouter()
 criterion_detail_router.register(r'criteria',
                                  views.CriterionDetailViewSet,
-                                 base_name='criterion')
+                                 basename='criterion')
 
 applied_annotation_detail_router = routers.SimpleRouter()
 applied_annotation_detail_router.register(r'applied_annotations',
                                           views.AppliedAnnotationDetailViewSet,
-                                          base_name='applied-annotation')
+                                          basename='applied-annotation')
 
 
 criterion_result_detail_router = routers.SimpleRouter()
 criterion_result_detail_router.register(r'criterion_results',
                                         views.CriterionResultDetailViewSet,
-                                        base_name='criterion-result')
+                                        basename='criterion-result')
 
 comment_detail_router = routers.SimpleRouter()
 comment_detail_router.register(r'comments',
                                views.CommentDetailViewSet,
-                               base_name='comment')
+                               basename='comment')
 
 
 urlpatterns = [
