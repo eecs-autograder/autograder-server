@@ -18,7 +18,7 @@ from .submission import (
     get_student_test_suite_results_queryset,
 )
 
-from .sandbox_docker_image import SandboxDockerImage
+from .sandbox_docker_image import SandboxDockerImage, BuildSandboxDockerImageTask, BuildImageStatus
 
 from .ag_command import (
     Command, AGCommandBase, AGCommand, AGCommandResultBase, AGCommandResult)

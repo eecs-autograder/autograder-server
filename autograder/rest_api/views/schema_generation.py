@@ -102,6 +102,8 @@ class APITags(enum.Enum):
     instructor_files = 'instructor_files'
     expected_student_files = 'expected_student_files'
 
+    sandbox_docker_images = 'sandbox_docker_images'
+
     ag_test_suites = 'ag_test_suites'
     ag_test_cases = 'ag_test_cases'
     ag_test_commands = 'ag_test_commands'

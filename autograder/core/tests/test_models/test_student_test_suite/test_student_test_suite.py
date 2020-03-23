@@ -42,7 +42,6 @@ class StudentTestSuiteTestCase(UnitTestBase):
         self.assertEqual(0, student_suite.points_per_exposed_bug)
         self.assertIsNone(student_suite.max_points)
         self.assertFalse(student_suite.deferred)
-        self.assertEqual(constants.SupportedImages.default, student_suite.docker_image_to_use)
         self.assertEqual(ag_models.SandboxDockerImage.objects.get(name='default'),
                          student_suite.sandbox_docker_image)
         self.assertFalse(student_suite.allow_network_access)
@@ -102,7 +101,6 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'points_per_exposed_bug': 42,
             'max_points': 462,
             'deferred': True,
-            'docker_image_to_use': constants.SupportedImages.eecs280,
             'sandbox_docker_image': sandbox_image.to_dict(),
             'allow_network_access': True,
             'normal_fdbk_config': {
@@ -276,6 +274,16 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
         self.assertIn('student_files_needed', cm.exception.message_dict)
 
+    def test_error_sandbox_docker_image_belongs_to_other_course(self) -> None:
+        other_course = obj_build.make_course()
+        other_image = obj_build.make_sandbox_docker_image(other_course)
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            ag_models.StudentTestSuite.objects.validate_and_create(
+                name=self.name, project=self.project,
+                sandbox_docker_image=other_image)
+
+        self.assertIn('sandbox_docker_image', cm.exception.message_dict)
+
     def test_serialization(self):
         expected_field_names = [
             'pk',
@@ -296,7 +304,6 @@ class StudentTestSuiteTestCase(UnitTestBase):
             'points_per_exposed_bug',
             'max_points',
             'deferred',
-            'docker_image_to_use',
             'sandbox_docker_image',
             'allow_network_access',
             'normal_fdbk_config',
@@ -342,23 +349,16 @@ class StudentTestSuiteTestCase(UnitTestBase):
 
 
 class StudentTestSuiteSandboxImageOnDeleteTestCase(TransactionUnitTestBase):
-    def test_sandbox_docker_image_cannot_be_deleted_and_name_cannot_be_changed_when_in_use(self):
-        """
-        Verifies that on_delete for StudentTestSuite.sandbox_docker_image is set to PROTECT
-        and that the name of an image can't be changed if any foreign key references to
-        it exist.
-        """
+    def test_sandbox_docker_image_set_to_default_on_delete(self):
         project = obj_build.make_project()
         sandbox_image = ag_models.SandboxDockerImage.objects.validate_and_create(
             name='waluigi', display_name='time', tag='taggy')
 
-        ag_models.StudentTestSuite.objects.validate_and_create(
+        suite = ag_models.StudentTestSuite.objects.validate_and_create(
             name='suiteo', project=project, sandbox_docker_image=sandbox_image
         )
 
-        with self.assertRaises(IntegrityError):
-            sandbox_image.delete()
-
-        with self.assertRaises(IntegrityError):
-            sandbox_image.name = 'bad'
-            sandbox_image.save()
+        sandbox_image.delete()
+        suite.refresh_from_db()
+        self.assertEqual(ag_models.SandboxDockerImage.objects.get(display_name='Default'),
+                         suite.sandbox_docker_image)

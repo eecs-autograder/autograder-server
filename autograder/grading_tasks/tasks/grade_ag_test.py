@@ -15,9 +15,9 @@ import autograder.core.utils as core_ut
 from autograder.core import constants
 from autograder.core.submission_feedback import \
     update_denormalized_ag_test_results
+from autograder.utils.retry import retry_ag_test_cmd, retry_should_recover
 
 from .utils import (FileCloser, add_files_to_sandbox, mark_submission_as_error,
-                    retry_ag_test_cmd, retry_should_recover,
                     run_ag_test_command, run_command_from_args)
 
 

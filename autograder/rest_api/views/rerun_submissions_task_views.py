@@ -14,12 +14,12 @@ from rest_framework.request import Request
 
 from autograder.core.caching import clear_submission_results_cache
 from autograder.grading_tasks import tasks
-from autograder.grading_tasks.tasks.utils import retry_should_recover
 from autograder.rest_api.views.ag_model_views import (
     ListCreateNestedModelViewSet, AGModelGenericViewSet)
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 import autograder.rest_api.permissions as ag_permissions
+from autograder.utils.retry import retry_should_recover
 
 
 class RerunSubmissionsTaskListCreateView(ListCreateNestedModelViewSet):

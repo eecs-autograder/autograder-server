@@ -1,3 +1,6 @@
+from django.core import exceptions
+import requests
+
 import autograder.core.models as ag_models
 
 from .ag_model_serializer import AGModelSerializer
@@ -77,6 +80,10 @@ class SubmissionSerializer(AGModelSerializer):
 
 class SandboxDockerImageSerializer(AGModelSerializer):
     ag_model_class = ag_models.SandboxDockerImage
+
+
+class BuildSandboxDockerImageTaskSerializer(AGModelSerializer):
+    ag_model_class = ag_models.BuildSandboxDockerImageTask
 
 
 class AGTestSuiteSerializer(AGModelSerializer):

@@ -7,10 +7,12 @@ from django.db import transaction
 
 import autograder.core.models as ag_models
 from autograder.core.caching import delete_cached_submission_result
+from autograder.utils.retry import retry_should_recover
+
 from .grade_student_test_suite import (
     grade_student_test_suite_impl, grade_deferred_student_test_suite)
 from .grade_ag_test import grade_ag_test_suite_impl, grade_deferred_ag_test_suite
-from .utils import retry_should_recover, mark_submission_as_error, load_queryset_with_retry
+from .utils import mark_submission_as_error, load_queryset_with_retry
 
 
 @celery.shared_task(acks_late=True)

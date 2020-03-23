@@ -7,8 +7,8 @@ from django.test import tag
 import autograder.core.models as ag_models
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.grading_tasks import tasks
-from autograder.grading_tasks.tasks.utils import (retry_ag_test_cmd,
-                                                  retry_should_recover)
+from autograder.utils.retry import (
+    retry, retry_ag_test_cmd, retry_should_recover, MaxRetriesExceeded)
 from autograder.utils.testing import UnitTestBase
 
 
@@ -20,7 +20,7 @@ class RetryDecoratorTestCase(UnitTestBase):
 
         should_throw = True
 
-        @tasks.retry(max_num_retries=1, retry_delay_start=0, retry_delay_end=0)
+        @retry(max_num_retries=1, retry_delay_start=0, retry_delay_end=0)
         def func_to_retry(test_case, arg, kwarg=None):
             test_case.assertEqual(arg_val, arg)
             test_case.assertEqual(kwarg_val, kwarg)
@@ -35,49 +35,48 @@ class RetryDecoratorTestCase(UnitTestBase):
         self.assertEqual(return_val, func_to_retry(self, arg_val, kwarg_val))
 
     def test_max_retries_exceeded(self):
-        @tasks.retry(max_num_retries=10, retry_delay_start=0, retry_delay_end=0)
+        @retry(max_num_retries=10, retry_delay_start=0, retry_delay_end=0)
         def func_to_retry():
             raise Exception('Errrrror')
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             func_to_retry()
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_retry_delay(self, mocked_sleep):
         max_num_retries = 3
         min_delay = 2
         max_delay = 6
         delay_step = 2
 
-        @tasks.retry(max_num_retries=max_num_retries,
-                     retry_delay_start=min_delay, retry_delay_end=max_delay,
-                     retry_delay_step=delay_step)
+        @retry(max_num_retries=max_num_retries,
+               retry_delay_start=min_delay, retry_delay_end=max_delay,
+               retry_delay_step=delay_step)
         def func_to_retry():
             raise Exception
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             func_to_retry()
 
         mocked_sleep.assert_has_calls(
             [mock.call(delay) for delay in range(min_delay, max_delay, delay_step)])
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_retry_zero_delay(self, mocked_sleep):
         max_num_retries = 1
 
-        @tasks.retry(max_num_retries=max_num_retries,
-                     retry_delay_start=0, retry_delay_end=0)
+        @retry(max_num_retries=max_num_retries, retry_delay_start=0, retry_delay_end=0)
         def func_to_retry():
             raise Exception
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             func_to_retry()
 
         mocked_sleep.assert_has_calls([mock.call(0) for i in range(max_num_retries)])
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_immediatedly_reraise_on(self, sleep_mock) -> None:
-        @tasks.retry(max_num_retries=1, immediately_reraise_on=(ValueError, TypeError))
+        @retry(max_num_retries=1, immediately_reraise_on=(ValueError, TypeError))
         def func_to_retry(type_to_throw):
             raise type_to_throw
 
@@ -89,10 +88,10 @@ class RetryDecoratorTestCase(UnitTestBase):
 
         sleep_mock.assert_not_called()
 
-        with self.assertRaises(tasks.MaxRetriesExceeded):
+        with self.assertRaises(MaxRetriesExceeded):
             func_to_retry(RuntimeError)
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_immediately_reraise_retry_should_recover(self, sleep_mock) -> None:
         @retry_should_recover
         def func():
@@ -103,7 +102,7 @@ class RetryDecoratorTestCase(UnitTestBase):
 
         sleep_mock.assert_not_called()
 
-    @mock.patch('autograder.grading_tasks.tasks.utils.sleep')
+    @mock.patch('autograder.utils.retry.sleep')
     def test_immediately_reraise_retry_ad_test_cmd(self, sleep_mock) -> None:
         @retry_ag_test_cmd
         def func():

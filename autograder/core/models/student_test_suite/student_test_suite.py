@@ -8,7 +8,7 @@ from autograder.core import constants
 from ..ag_command import AGCommand, Command
 from ..ag_model_base import AutograderModel, DictSerializableMixin
 from ..project import Project, InstructorFile, ExpectedStudentFile
-from ..sandbox_docker_image import SandboxDockerImage
+from ..sandbox_docker_image import SandboxDockerImage, get_default_image_pk
 
 
 class BugsExposedFeedbackLevel(core_ut.OrderedEnum):
@@ -93,8 +93,6 @@ class NewStudentTestSuiteFeedbackConfig(DictSerializableMixin):
     FIELD_DESCRIPTIONS = {}
 
 
-# FIXME: Change to use ValidatedJSONField
-# with "show_debug_info"
 class StudentTestSuiteFeedbackConfig(AutograderModel):
     visible = models.BooleanField(default=True)
 
@@ -459,15 +457,18 @@ class StudentTestSuite(AutograderModel):
                      Deferred suites that have yet to be graded do not prevent members
                      of a group from submitting again.''')
 
-    docker_image_to_use = ag_fields.EnumField(
-        constants.SupportedImages,
-        default=constants.SupportedImages.default,
-        help_text="""An identifier for the Docker image that the sandbox should be created from.
-                     This field is DEPRECATED in favor of sandbox_docker_image""")
-
     sandbox_docker_image = models.ForeignKey(
         SandboxDockerImage,
-        on_delete=models.PROTECT,
+        on_delete=models.SET(get_default_image_pk),
+        default=get_default_image_pk,
+        related_name='+',
+        help_text="The sandbox docker image to use for running this suite."
+    )
+
+    # This is unused and will be removed eventually
+    old_sandbox_docker_image = models.ForeignKey(
+        SandboxDockerImage,
+        on_delete=models.SET_DEFAULT,
         default='default',
         to_field='name',
         help_text="""The sandbox docker image to use for running this suite."""
@@ -478,6 +479,7 @@ class StudentTestSuite(AutograderModel):
         help_text='''Specifies whether the sandbox should allow commands run inside of it to
                      make network calls outside of the sandbox.''')
 
+    # These are unused and will be removed eventually
     old_normal_fdbk_config = models.OneToOneField(
         StudentTestSuiteFeedbackConfig,
         on_delete=models.PROTECT,
@@ -542,6 +544,14 @@ class StudentTestSuite(AutograderModel):
                     'Student file pattern {} does not belong to the project "{}".'.format(
                         student_file.pattern, self.project.name))
 
+        if (self.sandbox_docker_image.course is not None
+                and self.sandbox_docker_image.course != self.project.course):
+            errors['sandbox_docker_image'] = (
+                'Sandbox image {} does not belong to the course "{}".'.format(
+                    self.sandbox_docker_image.display_name, self.project.course.name
+                )
+            )
+
         for cmd_field in ['setup_command',
                           'get_student_test_names_command',
                           'student_test_validity_check_command',
@@ -589,7 +599,6 @@ class StudentTestSuite(AutograderModel):
         'max_points',
 
         'deferred',
-        'docker_image_to_use',
         'sandbox_docker_image',
         'allow_network_access',
 
@@ -620,7 +629,6 @@ class StudentTestSuite(AutograderModel):
         'max_points',
 
         'deferred',
-        'docker_image_to_use',
         'sandbox_docker_image',
         'allow_network_access',
 
