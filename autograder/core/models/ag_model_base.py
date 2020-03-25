@@ -323,6 +323,7 @@ class DictSerializableMixin(ToDictMixin):
         updated fields are assigned. Note that this is done in a way
         that the updates will be undone if an exception is thrown.
         """
+        pass
 
     @classmethod
     def prepare_input(cls, input_: dict) -> dict:
@@ -374,7 +375,7 @@ class DictSerializableMixin(ToDictMixin):
         return list(inspect.signature(cls.__init__).parameters.keys())[1:]
 
     @classmethod
-    def get_field_type(cls, field_name: str) -> typing.Type:
+    def get_field_type(cls, field_name: str) -> type:
         """
         Attempts to determine the type of the field with the given
         name by inspecting the type annotation of the parameter
@@ -411,7 +412,8 @@ class DictSerializableMixin(ToDictMixin):
     def get_field_descriptions(cls):
         return cls.FIELD_DESCRIPTIONS
 
-    # A dictionary of field names to field descriptions.
+    # A dictionary of field names to field descriptions. Used for
+    # generating the API schema.
     FIELD_DESCRIPTIONS: typing.Dict[str, str] = {}
 
     @classmethod
