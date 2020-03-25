@@ -1,0 +1,5759 @@
+openapi: 3.0.2
+info:
+  title: Autograder.io API
+  version: 3.5.2
+paths:
+  /api/users/current/:
+    get:
+      operationId: currentUser
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/users/{id}/:
+    get:
+      operationId: retrieveUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/users/{id}/courses_is_admin_for/:
+    get:
+      operationId: courses_is_admin_forUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/users/{id}/courses_is_enrolled_in/:
+    get:
+      operationId: courses_is_enrolled_inUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/users/{id}/courses_is_handgrader_for/:
+    get:
+      operationId: courses_is_handgrader_forUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/users/{id}/courses_is_staff_for/:
+    get:
+      operationId: courses_is_staff_forUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/users/{id}/group_invitations_received/:
+    get:
+      operationId: group_invitations_receivedUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/users/{id}/group_invitations_sent/:
+    get:
+      operationId: group_invitations_sentUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/users/{id}/groups_is_member_of/:
+    get:
+      operationId: groups_is_member_ofUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/users/current/can_create_courses/:
+    get:
+      operationId: listCurrentUserCanCreateCourses
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/users/{username_or_pk}/late_days/:
+    get:
+      operationId: listUserLateDays
+      description: ''
+      parameters:
+      - name: username_or_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    put:
+      operationId: UpdateUserLateDays
+      description: ''
+      parameters:
+      - name: username_or_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/courses/:
+    get:
+      operationId: listCourses
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createCourse
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/courses/{id}/:
+    get:
+      operationId: retrieveCourse
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateCourse
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/courses/{id}/my_roles/:
+    get:
+      operationId: my_rolesCourse
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/course/{name}/{semester}/{year}/:
+    get:
+      operationId: RetrieveCourseByNameSemesterYear
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: semester
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: year
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/courses/{id}/admins/:
+    get:
+      operationId: listUsers
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  properties:
+                    pk:
+                      type: integer
+                      readOnly: true
+                    username:
+                      type: string
+                      description: Required. 150 characters or fewer. Letters, digits
+                        and @/./+/-/_ only.
+                      pattern: ^[\w.@+-]+$
+                      maxLength: 150
+                    first_name:
+                      type: string
+                      maxLength: 30
+                    last_name:
+                      type: string
+                      maxLength: 150
+                    email:
+                      type: string
+                      format: email
+                      maxLength: 254
+                    is_superuser:
+                      type: boolean
+                      description: Designates that this user has all permissions without
+                        explicitly assigning them.
+                  required:
+                  - username
+          description: ''
+    post:
+      operationId: CreateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id001
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+              required:
+              - username
+          application/x-www-form-urlencoded:
+            schema: *id001
+          multipart/form-data:
+            schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+    patch:
+      operationId: PartialUpdateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id002
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+          application/x-www-form-urlencoded:
+            schema: *id002
+          multipart/form-data:
+            schema: *id002
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/courses/{id}/staff/:
+    get:
+      operationId: listUsers
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  properties:
+                    pk:
+                      type: integer
+                      readOnly: true
+                    username:
+                      type: string
+                      description: Required. 150 characters or fewer. Letters, digits
+                        and @/./+/-/_ only.
+                      pattern: ^[\w.@+-]+$
+                      maxLength: 150
+                    first_name:
+                      type: string
+                      maxLength: 30
+                    last_name:
+                      type: string
+                      maxLength: 150
+                    email:
+                      type: string
+                      format: email
+                      maxLength: 254
+                    is_superuser:
+                      type: boolean
+                      description: Designates that this user has all permissions without
+                        explicitly assigning them.
+                  required:
+                  - username
+          description: ''
+    post:
+      operationId: CreateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id003
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+              required:
+              - username
+          application/x-www-form-urlencoded:
+            schema: *id003
+          multipart/form-data:
+            schema: *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+    patch:
+      operationId: PartialUpdateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id004
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+          application/x-www-form-urlencoded:
+            schema: *id004
+          multipart/form-data:
+            schema: *id004
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/courses/{id}/students/:
+    get:
+      operationId: listUsers
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  properties:
+                    pk:
+                      type: integer
+                      readOnly: true
+                    username:
+                      type: string
+                      description: Required. 150 characters or fewer. Letters, digits
+                        and @/./+/-/_ only.
+                      pattern: ^[\w.@+-]+$
+                      maxLength: 150
+                    first_name:
+                      type: string
+                      maxLength: 30
+                    last_name:
+                      type: string
+                      maxLength: 150
+                    email:
+                      type: string
+                      format: email
+                      maxLength: 254
+                    is_superuser:
+                      type: boolean
+                      description: Designates that this user has all permissions without
+                        explicitly assigning them.
+                  required:
+                  - username
+          description: ''
+    post:
+      operationId: CreateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id005
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+              required:
+              - username
+          application/x-www-form-urlencoded:
+            schema: *id005
+          multipart/form-data:
+            schema: *id005
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+    put:
+      operationId: UpdateUser
+      description: 'Completely REPLACES the student roster with the one included in
+
+        the request.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id006
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+              required:
+              - username
+          application/x-www-form-urlencoded:
+            schema: *id006
+          multipart/form-data:
+            schema: *id006
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+    patch:
+      operationId: PartialUpdateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id007
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+          application/x-www-form-urlencoded:
+            schema: *id007
+          multipart/form-data:
+            schema: *id007
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/courses/{id}/handgraders/:
+    get:
+      operationId: listUsers
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  properties:
+                    pk:
+                      type: integer
+                      readOnly: true
+                    username:
+                      type: string
+                      description: Required. 150 characters or fewer. Letters, digits
+                        and @/./+/-/_ only.
+                      pattern: ^[\w.@+-]+$
+                      maxLength: 150
+                    first_name:
+                      type: string
+                      maxLength: 30
+                    last_name:
+                      type: string
+                      maxLength: 150
+                    email:
+                      type: string
+                      format: email
+                      maxLength: 254
+                    is_superuser:
+                      type: boolean
+                      description: Designates that this user has all permissions without
+                        explicitly assigning them.
+                  required:
+                  - username
+          description: ''
+    post:
+      operationId: CreateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id008
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+              required:
+              - username
+          application/x-www-form-urlencoded:
+            schema: *id008
+          multipart/form-data:
+            schema: *id008
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+    patch:
+      operationId: PartialUpdateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id009
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+          application/x-www-form-urlencoded:
+            schema: *id009
+          multipart/form-data:
+            schema: *id009
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/courses/{id}/projects/:
+    get:
+      operationId: listProjects
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/:
+    get:
+      operationId: retrieveProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/download_tasks/:
+    get:
+      operationId: download_tasksProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/num_queued_submissions/:
+    get:
+      operationId: num_queued_submissionsProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/instructor_files/:
+    get:
+      operationId: listInstructorFiles
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createInstructorFile
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/instructor_files/{id}/:
+    get:
+      operationId: retrieveInstructorFile
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyInstructorFile
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/instructor_files/{id}/content/:
+    get:
+      operationId: listInstructorFileContents
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    put:
+      operationId: UpdateInstructorFileContent
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/expected_student_files/:
+    get:
+      operationId: listExpectedStudentFiles
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createExpectedStudentFile
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/expected_student_files/{id}/:
+    get:
+      operationId: retrieveExpectedStudentFile
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateExpectedStudentFile
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyExpectedStudentFile
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/download_tasks/{id}/:
+    get:
+      operationId: retrieveDownloadTask
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/download_tasks/{id}/result/:
+    get:
+      operationId: resultDownloadTask
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/group_invitations/:
+    get:
+      operationId: listSubmissionGroupInvitations
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createSubmissionGroupInvitation
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/group_invitations/{id}/:
+    get:
+      operationId: retrieveSubmissionGroupInvitation
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroySubmissionGroupInvitation
+      description: Revoke or reject this invitation.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/groups/{id}/:
+    get:
+      operationId: retrieveSubmissionGroup
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateSubmissionGroup
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/groups/{id}/ultimate_submission/:
+    get:
+      operationId: ultimate_submissionSubmissionGroup
+      description: "Permissions details:\n- The normal group and submission viewing\
+        \ permissions apply\n  first.\n- Staff members can always view their own ultimate\
+        \ submission.\n- Staff members can only view student and other staff ultimate\n\
+        \  submissions if the project closing time has passed.\n- If the project closing\
+        \ time has passed, staff can view student\n  and other staff ultimate submissions\
+        \ regardless of whether\n  ultimate submissions are marked as hidden.\n- Students\
+        \ can view their ultimate submissions as long as the\n  closing time has passed\
+        \ and ultimate submissions are not\n  overridden as being hidden."
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/groups/{id}/submissions/:
+    get:
+      operationId: listSubmissions
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createSubmission
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/submissions/{id}/:
+    get:
+      operationId: retrieveSubmission
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateSubmission
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/submissions/{id}/file/:
+    get:
+      operationId: fileSubmission
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{project_pk}/ag_test_suites/:
+    get:
+      operationId: listAGTestSuites
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createAGTestSuite
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{project_pk}/ag_test_suites/order/:
+    get:
+      operationId: listAGTestSuiteOrders
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    put:
+      operationId: UpdateAGTestSuiteOrder
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/ag_test_suites/{id}/:
+    get:
+      operationId: retrieveAGTestSuite
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateAGTestSuite
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyAGTestSuite
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/sandbox_docker_images/:
+    get:
+      operationId: listSandboxDockerImages
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/courses/{id}/sandbox_docker_images/:
+    get:
+      operationId: listSandboxDockerImages
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/image_build_tasks/:
+    get:
+      operationId: listBuildSandboxDockerImageTasks
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/courses/{id}/image_build_tasks/:
+    get:
+      operationId: listBuildSandboxDockerImageTasks
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/sandbox_docker_images/{id}/:
+    get:
+      operationId: retrieveSandboxDockerImage
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateSandboxDockerImage
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/image_build_tasks/{id}/:
+    get:
+      operationId: retrieveBuildSandboxDockerImageTask
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/:
+    get:
+      operationId: listAGTestCases
+      description: ''
+      parameters:
+      - name: ag_test_suite_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createAGTestCase
+      description: ''
+      parameters:
+      - name: ag_test_suite_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/order/:
+    get:
+      operationId: listAGTestCaseOrders
+      description: ''
+      parameters:
+      - name: ag_test_suite_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    put:
+      operationId: UpdateAGTestCaseOrder
+      description: ''
+      parameters:
+      - name: ag_test_suite_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/ag_test_cases/{id}/:
+    get:
+      operationId: retrieveAGTestCase
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateAGTestCase
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyAGTestCase
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/:
+    get:
+      operationId: listAGTestCommands
+      description: ''
+      parameters:
+      - name: ag_test_case_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createAGTestCommand
+      description: ''
+      parameters:
+      - name: ag_test_case_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/order/:
+    get:
+      operationId: listAGTestCommandOrders
+      description: ''
+      parameters:
+      - name: ag_test_case_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    put:
+      operationId: UpdateAGTestCommandOrder
+      description: ''
+      parameters:
+      - name: ag_test_case_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/ag_test_commands/{id}/:
+    get:
+      operationId: retrieveAGTestCommand
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateAGTestCommand
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyAGTestCommand
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/projects/{project_pk}/student_test_suites/:
+    get:
+      operationId: listStudentTestSuites
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createStudentTestSuite
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{project_pk}/student_test_suites/order/:
+    get:
+      operationId: listStudentTestSuiteOrders
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    put:
+      operationId: UpdateStudentTestSuiteOrder
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/student_test_suites/{id}/:
+    get:
+      operationId: retrieveStudentTestSuite
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateStudentTestSuite
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyStudentTestSuite
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/projects/{project_pk}/rerun_submissions_tasks/:
+    get:
+      operationId: listRerunSubmissionTasks
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createRerunSubmissionTask
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/rerun_submissions_tasks/{id}/:
+    get:
+      operationId: retrieveRerunSubmissionTask
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{project_pk}/groups/:
+    get:
+      operationId: listSubmissionGroups
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createSubmissionGroup
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/groups/{id}/submissions_with_results/:
+    get:
+      operationId: listListSubmissionsWithResults
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/results/:
+    get:
+      operationId: listSubmissionResults
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/projects/{project_pk}/all_ultimate_submission_results/:
+    get:
+      operationId: listAllUltimateSubmissionResults
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/ag_test_suite_results/{result_pk}/stdout/:
+    get:
+      operationId: listAGTestSuiteResultsStdouts
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/ag_test_suite_results/{result_pk}/stderr/:
+    get:
+      operationId: listAGTestSuiteResultsStderrs
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/ag_test_suite_results/{result_pk}/output_size/:
+    get:
+      operationId: listAGTestSuiteResultsOutputSizes
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stdout/:
+    get:
+      operationId: listAGTestCommandResultStdouts
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stderr/:
+    get:
+      operationId: listAGTestCommandResultStderrs
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stdout_diff/:
+    get:
+      operationId: listAGTestCommandResultStdoutDiffs
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/ag_test_cmd_results/{result_pk}/stderr_diff/:
+    get:
+      operationId: listAGTestCommandResultStderrDiffs
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/ag_test_cmd_results/{result_pk}/output_size/:
+    get:
+      operationId: listAGTestCommandResultOutputSizes
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/student_test_suite_results/{result_pk}/setup_stdout/:
+    get:
+      operationId: listStudentTestSuiteResultSetupStdouts
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/student_test_suite_results/{result_pk}/setup_stderr/:
+    get:
+      operationId: listStudentTestSuiteResultSetupStderrs
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/student_test_suite_results/{result_pk}/get_student_test_names_stdout/:
+    get:
+      operationId: listStudentTestSuiteResultGetStudentTestsStdouts
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/student_test_suite_results/{result_pk}/get_student_test_names_stderr/:
+    get:
+      operationId: listStudentTestSuiteResultGetStudentTestsStderrs
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/student_test_suite_results/{result_pk}/validity_check_stdout/:
+    get:
+      operationId: listStudentTestSuiteResultValidityCheckStdouts
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/student_test_suite_results/{result_pk}/validity_check_stderr/:
+    get:
+      operationId: listStudentTestSuiteResultValidityCheckStderrs
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/student_test_suite_results/{result_pk}/grade_buggy_impls_stdout/:
+    get:
+      operationId: listStudentTestSuiteResultGradeBuggyImplsStdouts
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/student_test_suite_results/{result_pk}/grade_buggy_impls_stderr/:
+    get:
+      operationId: listStudentTestSuiteResultGradeBuggyImplsStderrs
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/submissions/{id}/student_test_suite_results/{result_pk}/output_size/:
+    get:
+      operationId: listStudentTestSuiteOutputSizes
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/projects/{project_pk}/handgrading_rubric/:
+    get:
+      operationId: retrieveHandgradingRubric
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    post:
+      operationId: createHandgradingRubric
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/handgrading_rubrics/{id}/:
+    get:
+      operationId: retrieveHandgradingRubric
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateHandgradingRubric
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyHandgradingRubric
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/handgrading_rubrics/{handgrading_rubric_pk}/annotations/:
+    get:
+      operationId: listAnnotations
+      description: ''
+      parameters:
+      - name: handgrading_rubric_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createAnnotation
+      description: ''
+      parameters:
+      - name: handgrading_rubric_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/handgrading_rubrics/{handgrading_rubric_pk}/annotations/order/:
+    get:
+      operationId: listAnnotationOrders
+      description: ''
+      parameters:
+      - name: handgrading_rubric_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    put:
+      operationId: UpdateAnnotationOrder
+      description: ''
+      parameters:
+      - name: handgrading_rubric_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/annotations/{id}/:
+    get:
+      operationId: retrieveAnnotation
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateAnnotation
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyAnnotation
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/handgrading_rubrics/{handgrading_rubric_pk}/criteria/:
+    get:
+      operationId: listCriterions
+      description: ''
+      parameters:
+      - name: handgrading_rubric_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createCriterion
+      description: ''
+      parameters:
+      - name: handgrading_rubric_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/handgrading_rubrics/{handgrading_rubric_pk}/criteria/order/:
+    get:
+      operationId: listCriterionOrders
+      description: ''
+      parameters:
+      - name: handgrading_rubric_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    put:
+      operationId: UpdateCriterionOrder
+      description: ''
+      parameters:
+      - name: handgrading_rubric_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/criteria/{id}/:
+    get:
+      operationId: retrieveCriterion
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateCriterion
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyCriterion
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/groups/{group_pk}/handgrading_result/:
+    get:
+      operationId: retrieveHandgradingResult
+      description: ''
+      parameters:
+      - name: group_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    post:
+      operationId: createHandgradingResult
+      description: 'Creates a new HandgradingResult for the specified Group, or returns
+
+        an already existing one.'
+      parameters:
+      - name: group_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateHandgradingResult
+      description: ''
+      parameters:
+      - name: group_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyHandgradingResult
+      description: ''
+      parameters:
+      - name: group_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/groups/{group_pk}/handgrading_result/has_correct_submission/:
+    get:
+      operationId: has_correct_submissionHandgradingResult
+      description: ''
+      parameters:
+      - name: group_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/handgrading_results/{handgrading_result_pk}/applied_annotations/:
+    get:
+      operationId: listAppliedAnnotations
+      description: ''
+      parameters:
+      - name: handgrading_result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createAppliedAnnotation
+      description: ''
+      parameters:
+      - name: handgrading_result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/applied_annotations/{id}/:
+    get:
+      operationId: retrieveAppliedAnnotation
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateAppliedAnnotation
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyAppliedAnnotation
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/handgrading_results/{handgrading_result_pk}/comments/:
+    get:
+      operationId: listComments
+      description: ''
+      parameters:
+      - name: handgrading_result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createComment
+      description: ''
+      parameters:
+      - name: handgrading_result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/comments/{id}/:
+    get:
+      operationId: retrieveComment
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateComment
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyComment
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/handgrading_results/{handgrading_result_pk}/criterion_results/:
+    get:
+      operationId: listCriterionResults
+      description: ''
+      parameters:
+      - name: handgrading_result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+    post:
+      operationId: createCriterionResult
+      description: ''
+      parameters:
+      - name: handgrading_result_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/criterion_results/{id}/:
+    get:
+      operationId: retrieveCriterionResult
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    patch:
+      operationId: partial_updateCriterionResult
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+    delete:
+      operationId: destroyCriterionResult
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+  /api/projects/{id}/handgrading_results/:
+    get:
+      operationId: listListHandgradingResults
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+  /api/courses/{course_pk}/copy/:
+    post:
+      operationId: copy_courseCourse
+      description: ''
+      parameters:
+      - name: course_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{project_pk}/copy_to_course/{target_course_pk}/:
+    post:
+      operationId: copy_projectProject
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: target_course_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{project_pk}/import_handgrading_rubric_from/{import_from_project_pk}/:
+    post:
+      operationId: import_handgrading_rubricHandgradingRubric
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: import_from_project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/all_submission_files/:
+    post:
+      operationId: all_submission_filesProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/all_submission_scores/:
+    post:
+      operationId: all_submission_scoresProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/ultimate_submission_files/:
+    post:
+      operationId: ultimate_submission_filesProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/ultimate_submission_scores/:
+    post:
+      operationId: ultimate_submission_scoresProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/group_invitations/{id}/accept/:
+    post:
+      operationId: acceptSubmissionGroupInvitation
+      description: 'Accept this group invitation. If all invitees have accepted,
+
+        create a group, delete the invitation, and return the group.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/groups/{id}/merge_with/:
+    post:
+      operationId: merge_withSubmissionGroup
+      description: 'Merge two groups together, preserving their submissions, and
+
+        return the newly created group.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/submissions/{id}/remove_from_queue/:
+    post:
+      operationId: remove_from_queueSubmission
+      description: Remove this submission from the grading queue.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/image_build_tasks/{id}/cancel/:
+    post:
+      operationId: cancelBuildSandboxDockerImageTask
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/rerun_submissions_tasks/{id}/cancel/:
+    post:
+      operationId: cancelRerunSubmissionTask
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{project_pk}/groups/solo_group/:
+    post:
+      operationId: createSubmissionGroup
+      description: Creates a group containing only the user making the request.
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/instructor_files/{id}/name/:
+    put:
+      operationId: nameInstructorFile
+      description: 'str(object='''') -> str
+
+        str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+
+        Create a new string object from the given object. If encoding or
+
+        errors is specified, then the object must expose a data buffer
+
+        that will be decoded using the given encoding and error handler.
+
+        Otherwise, returns the result of object.__str__() (if defined)
+
+        or repr(object).
+
+        encoding defaults to sys.getdefaultencoding().
+
+        errors defaults to ''strict''.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/sandbox_docker_images/{id}/rebuild/:
+    put:
+      operationId: rebuildSandboxDockerImage
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{project_pk}/groups/bonus_submissions/:
+    patch:
+      operationId: partial_updateProject
+      description: ''
+      parameters:
+      - name: project_pk
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+  /api/projects/{id}/results_cache/:
+    delete:
+      operationId: results_cacheProject
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        pk: &id010
+          type: integer
+          format: id
+          read_only: true
+        username:
+          read_only: false
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          nullable: false
+          type: string
+        first_name:
+          read_only: false
+          description: ''
+          nullable: false
+          type: string
+        last_name:
+          read_only: false
+          description: ''
+          nullable: false
+          type: string
+        email:
+          read_only: false
+          description: ''
+          nullable: false
+          type: string
+          format: email
+        is_superuser:
+          read_only: false
+          description: Designates that this user has all permissions without explicitly
+            assigning them.
+          nullable: false
+          type: boolean
+    Course:
+      type: object
+      properties:
+        pk: *id010
+        name:
+          read_only: false
+          description: The name of this course. Must be unique, non-empty and non-null.
+          nullable: false
+          type: string
+        semester:
+          read_only: false
+          description: ''
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/Semester'
+        year:
+          read_only: false
+          description: ''
+          nullable: true
+          type: integer
+        subtitle:
+          read_only: false
+          description: An optional descriptive name for the course.
+          nullable: false
+          type: string
+        num_late_days:
+          read_only: false
+          description: The number of late days to give to users submitting to this
+            course's projects.
+          nullable: false
+          type: integer
+        allowed_guest_domain:
+          read_only: false
+          description: "When non-empty, indicates that guest users' usernames\n  \
+            \                   must end with this string for them to be allowed access\n\
+            \                     to projects that allow guests.\n               \
+            \      When empty, indicates that all guests can access projects\n   \
+            \                  in this course where guests are allowed access."
+          nullable: false
+          type: string
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+    Semester:
+      type: string
+      enum:
+      - Fall
+      - Winter
+      - Spring
+      - Summer
+    Project:
+      type: object
+      properties:
+        pk: *id010
+        name:
+          read_only: false
+          description: "The name used to identify this project.\n            Must\
+            \ be non-empty and non-null.\n            Must be unique among Projects\
+            \ associated with\n            a given course.\n            This field\
+            \ is REQUIRED."
+          nullable: false
+          type: string
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        course: *id010
+        visible_to_students:
+          read_only: false
+          description: "Whether information about this Project can\n            be\
+            \ viewed by students."
+          nullable: false
+          type: boolean
+        closing_time:
+          read_only: false
+          description: "The date and time that this project should stop\n        \
+            \    accepting submissions.\n            A value of None indicates that\
+            \ this project should\n            stay open.\n            In the API,\
+            \ this field is hidden from non-admins."
+          nullable: true
+          type: string
+          format: date-time
+        soft_closing_time:
+          read_only: false
+          description: "The date and time that should be displayed as the\n      \
+            \      due date for this project. Unlike closing_time,\n            soft_closing_time\
+            \ does not affect whether submissions are\n            actually accepted.\n\
+            \            If not None and closing_time is not None, this value must\
+            \ be\n            less than (before) closing_time."
+          nullable: true
+          type: string
+          format: date-time
+        disallow_student_submissions:
+          read_only: false
+          description: "A hard override that indicates that students should\n    \
+            \        be prevented from submitting even if visible_to_students is\n\
+            \            True and it is before closing_time."
+          nullable: false
+          type: boolean
+        disallow_group_registration:
+          read_only: false
+          description: "A hard override that indicates that students should\n    \
+            \        not be able to send, accept, or reject group\n            invitations."
+          nullable: false
+          type: boolean
+        guests_can_submit:
+          read_only: false
+          description: "By default, only admins, staff, and students\n           \
+            \ for a given Course can view and submit to its Projects.\n          \
+            \  When True, submissions will be accepted from guests\n            with\
+            \ the following caveats:\n                - Guests must be given a direct\
+            \ link to the project.\n                - When group work is allowed,\
+            \ guests can\n                only be in groups with other guests."
+          nullable: false
+          type: boolean
+        min_group_size:
+          read_only: false
+          description: "The minimum number of students that can work in a\n      \
+            \      group on this project.\n            Must be >= 1.\n           \
+            \ Must be <= max_group_size."
+          nullable: false
+          type: integer
+        max_group_size:
+          read_only: false
+          description: "The maximum number of students that can work in a\n      \
+            \      group on this project.\n            Must be >= 1.\n           \
+            \ Must be >= min_group_size."
+          nullable: false
+          type: integer
+        submission_limit_per_day:
+          read_only: false
+          description: "The number of submissions each group is allowed per\n    \
+            \        day before either reducing feedback or preventing further\n \
+            \           submissions. A value of None indicates no limit."
+          nullable: true
+          type: integer
+        allow_submissions_past_limit:
+          read_only: false
+          description: "Whether to allow additional submissions after a\n        \
+            \    group has submitted submission_limit_per_day times."
+          nullable: false
+          type: boolean
+        groups_combine_daily_submissions:
+          read_only: false
+          description: "If True, group members can \"pool\" their daily submissions.\n\
+            \            For example, if submission_limit_per_day is 3,\n        \
+            \    a group with 2 members would get 6 submissions per day."
+          nullable: false
+          type: boolean
+        submission_limit_reset_time:
+          read_only: false
+          description: "The time that marks the beginning and end of the 24\n    \
+            \        hour period during which submissions should be counted\n    \
+            \        towards the daily limit. Defaults to 00:00:00."
+          nullable: false
+          type: string
+          format: time
+        submission_limit_reset_timezone:
+          read_only: false
+          description: "The timezone to use when computing how many\n            submissions\
+            \ a group has made in a 24 hour period."
+          nullable: false
+          type: string
+          format: timezone
+        num_bonus_submissions:
+          read_only: false
+          description: ''
+          nullable: false
+          type: integer
+        total_submission_limit:
+          read_only: false
+          description: "The maximum number of times a Group can submit to\n      \
+            \      this Project EVER."
+          nullable: true
+          type: integer
+        allow_late_days:
+          read_only: false
+          description: "Whether to allow the use of late days for submitting\n   \
+            \         past the deadline."
+          nullable: false
+          type: boolean
+        ultimate_submission_policy:
+          read_only: false
+          description: "The \"ultimate\" submission for a group is the one\n     \
+            \       that will be used for final grading. This field specifies\n  \
+            \          how the ultimate submission should be determined."
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/UltimateSubmissionPolicy'
+        hide_ultimate_submission_fdbk:
+          read_only: false
+          description: "A hard override that indicates that ultimate\n           \
+            \ submission feedback should not be shown, even if the\n            appropriate\
+            \ criteria are met."
+          nullable: false
+          type: boolean
+        instructor_files:
+          read_only: true
+          description: ''
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/InstructorFile'
+        expected_student_files:
+          read_only: true
+          description: ''
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpectedStudentFile'
+        has_handgrading_rubric: &id015
+          type: boolean
+    UltimateSubmissionPolicy:
+      type: string
+      enum:
+      - most_recent
+      - best_basic_score
+      - best
+    ExpectedStudentFile:
+      type: object
+      properties:
+        pk: *id010
+        project: *id010
+        pattern:
+          read_only: false
+          description: "A shell-style file pattern suitable for\n            use with\
+            \ Python's fnmatch.fnmatch()\n            function (https://docs.python.org/3.5/library/fnmatch.html)\n\
+            \            This string must be a legal UNIX filename and may not be\n\
+            \            '..' or '.'.\n            NOTE: Patterns for a given project\
+            \ must not overlap,\n                otherwise the behavior is undefined."
+          nullable: false
+          type: string
+        min_num_matches:
+          read_only: false
+          description: "The minimum number of submitted student files that\n     \
+            \       should match the pattern. Must be non-negative."
+          nullable: false
+          type: integer
+        max_num_matches:
+          read_only: false
+          description: "The maximum number of submitted student files that\n     \
+            \       can match the pattern. Must be >= min_num_matches"
+          nullable: false
+          type: integer
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+    InstructorFile:
+      type: object
+      properties:
+        pk: *id010
+        project: *id010
+        name:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        size: &id011
+          type: integer
+    DownloadTask:
+      type: object
+      properties:
+        pk: *id010
+        project: *id010
+        download_type:
+          read_only: true
+          description: ''
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/DownloadType'
+        result_filename:
+          read_only: false
+          description: ''
+          nullable: false
+          type: string
+        progress:
+          read_only: false
+          description: A percentage indicating how close the task is to completion.
+          nullable: false
+          type: integer
+        error_msg:
+          read_only: false
+          description: ''
+          nullable: false
+          type: string
+        created_at:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+    DownloadType:
+      type: string
+      enum:
+      - all_scores
+      - final_graded_submission_scores
+      - all_submission_files
+      - final_graded_submission_files
+    Group:
+      type: object
+      properties:
+        pk: *id010
+        project: *id010
+        extended_due_date:
+          read_only: false
+          description: "When this field is set, it indicates that members\n      \
+            \      of this submission group can submit until this specified\n    \
+            \        date, overriding the project closing time.\n            Default\
+            \ value: None"
+          nullable: true
+          type: string
+          format: date-time
+        member_names:
+          type: array
+          items: &id012
+            type: string
+        bonus_submissions_remaining:
+          read_only: false
+          description: "The number of bonus submissions this group has left.\n   \
+            \         This field is automatically initialized to self.project.num_bonus_submissions"
+          nullable: false
+          type: integer
+        late_days_used:
+          read_only: true
+          description: "Keeps track of how many late days each user in this\n    \
+            \        group has used.\n            Data format: {\n               \
+            \ \"\\<username\\>\": \\<num late days used\\>,\n                ...\n\
+            \            }\n            NOTE: This field is updated only when a group\
+            \ member uses a\n            late day. If a user is moved to another group\
+            \ or this group\n            is merged with another one, this field will\
+            \ NOT be updated.\n        "
+          nullable: false
+          type: object
+        num_submissions: *id011
+        num_submits_towards_limit: *id011
+        created_at:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+    GroupInvitation:
+      type: object
+      properties:
+        pk: *id010
+        invitation_creator: *id010
+        project: *id010
+        invited_usernames:
+          type: array
+          items: *id012
+        invitees_who_accepted:
+          type: array
+          items: *id012
+    Submission:
+      type: object
+      properties:
+        pk: *id010
+        group: *id010
+        timestamp:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        submitter:
+          read_only: true
+          description: The name of the user who made this submission
+          nullable: false
+          type: string
+        submitted_filenames:
+          read_only: true
+          description: "The names of files that were submitted,\n                \
+            \     excluding those that were discarded."
+          nullable: false
+          type: array
+          items: &id013
+            type: string
+        discarded_files:
+          read_only: true
+          description: The names of files that were discarded when this Submission
+            was created.
+          nullable: false
+          type: array
+          items: *id013
+        missing_files:
+          read_only: true
+          description: "Stores missing filenames and the additional number\n     \
+            \       of files needed to satisfy a file pattern requirement.\n     \
+            \       Stored as key-value pairs of the form:\n            {pattern:\
+            \ num_additional_needed}"
+          nullable: false
+          type: object
+        status:
+          read_only: true
+          description: "The grading status of this submission see\n            Submission.GradingStatus\
+            \ for details on allowed values."
+          nullable: false
+          type: string
+        count_towards_daily_limit:
+          read_only: false
+          description: "Indicates whether this submission should count\n         \
+            \   towards the daily submission limit."
+          nullable: false
+          type: boolean
+        is_past_daily_limit:
+          read_only: true
+          description: Whether this submission is past the daily submission limit.
+          nullable: false
+          type: boolean
+        is_bonus_submission:
+          read_only: true
+          description: "When True, indicates that the group that made this\n     \
+            \       submission should be able to request normal feedback for\n   \
+            \         this submission's results.\n            Note: If this field\
+            \ is True, is_past_daily_limit should be\n            False."
+          nullable: false
+          type: boolean
+        count_towards_total_limit:
+          read_only: false
+          description: Whether this submission should count towards the total submission
+            limit.
+          nullable: false
+          type: boolean
+        does_not_count_for:
+          read_only: true
+          description: "A list of users for whom this submission will NOT\n      \
+            \      count as their final graded submission. Users are added to\n  \
+            \          this list if they are out of late days and another group\n\
+            \            member (who still has late days remaining) uses their own\n\
+            \            late day to submit."
+          nullable: false
+          type: array
+          items:
+            read_only: true
+            description: ''
+            nullable: false
+            type: string
+        position_in_queue: *id011
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+    Command:
+      type: object
+      properties:
+        cmd:
+          description: "A string containing the command to be run.\n             \
+            \     Note: This string will be inserted into ['bash', '-c', <cmd>]\n\
+            \                     in order to be executed."
+          type: string
+        name:
+          description: An optional name for this command to be displayed to users.
+          type: string
+        time_limit:
+          description: "The time limit in seconds to be placed on the command.\n \
+            \           Must be > 0\n            Must be <= 90"
+          type: integer
+        stack_size_limit:
+          description: "The maximum stack size in bytes.\n            Must be > 0\n\
+            \            Must be <= 100000000\n            NOTE: Setting this value\
+            \ too low may cause the command to crash prematurely."
+          type: integer
+        virtual_memory_limit:
+          description: "The maximum amount of virtual memory (in bytes) allowed.\n\
+            \            Must be > 0\n            Must be <= 4000000000\n        \
+            \    NOTE: Setting this value too low may cause the command to crash prematurely."
+          type: integer
+        process_spawn_limit:
+          description: "The maximum number of processes the command is allowed to\
+            \ spawn.\n            Must be >= 0\n            Must be <= 150\n     \
+            \       NOTE: This limit applies cumulatively to the processes\n     \
+            \             spawned by the main program being run. i.e. If a\n     \
+            \             spawned process spawns it's own child process, both\n  \
+            \                of those processes will count towards the main\n    \
+            \              program's process limit."
+          type: integer
+    SandboxDockerImage:
+      type: object
+      properties:
+        pk: *id010
+        display_name:
+          read_only: false
+          description: "A human-readable name for this sandbox image.\n          \
+            \           Must be unique among images belonging to a course.\n     \
+            \                This field is required."
+          nullable: false
+          type: string
+        course: *id010
+    BuildSandboxDockerImageTask:
+      type: object
+      properties:
+        pk: *id010
+        status:
+          read_only: true
+          description: The status of the build.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/BuildImageStatus'
+        return_code:
+          read_only: true
+          description: The exit status of the build command.
+          nullable: true
+          type: integer
+        timed_out:
+          read_only: true
+          description: True if the build timed out.
+          nullable: false
+          type: boolean
+        filenames:
+          read_only: true
+          description: The names of the files uploaded by the user.
+          nullable: false
+          type: array
+          items: *id013
+        course: *id010
+        image_to_update: *id010
+        validation_error_msg:
+          read_only: true
+          description: Information for the user as to while the built image is invalid.
+          nullable: false
+          type: string
+        internal_error_msg:
+          read_only: true
+          description: If an internal error occurs, the error message will be stored
+            here.
+          nullable: false
+          type: string
+    BuildImageStatus:
+      type: string
+      enum:
+      - queued
+      - in_progress
+      - done
+      - image_invalid
+      - cancelled
+      - internal_error
+    AGTestSuite:
+      type: object
+      properties:
+        pk: *id010
+        name:
+          read_only: false
+          description: "The name used to identify this suite.\n                  \
+            \   Must be non-empty and non-null.\n                     Must be unique\
+            \ among suites that belong to the same project.\n                    \
+            \ This field is REQUIRED."
+          nullable: false
+          type: string
+        project: *id010
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        instructor_files_needed:
+          read_only: false
+          description: "The project files that will be copied into the sandbox before\
+            \ the suite's\n                     tests are run."
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/InstructorFile'
+        read_only_instructor_files:
+          read_only: false
+          description: "When True, project files needed for this suite will be read-only\
+            \ when this\n                     suite is run."
+          nullable: false
+          type: boolean
+        student_files_needed:
+          read_only: false
+          description: "Student-submitted files matching these patterns will be copied\
+            \ into the\n                     sandbox before the suite's tests are\
+            \ run."
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpectedStudentFile'
+        ag_test_cases:
+          read_only: true
+          description: ''
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/AGTestCase'
+        setup_suite_cmd:
+          read_only: false
+          description: "A command to be run before this suite's tests are run.\n \
+            \                    This command is only run once at the beginning of\
+            \ the suite.\n                     This command will be run after the\
+            \ student and project files\n                     have been added to the\
+            \ sandbox."
+          nullable: false
+          type: string
+        setup_suite_cmd_name:
+          read_only: false
+          description: The name of this suite's setup command.
+          nullable: false
+          type: string
+        sandbox_docker_image:
+          type: unknown
+        allow_network_access:
+          read_only: false
+          description: "Specifies whether the sandbox should allow commands run inside\
+            \ of it to\n                     make network calls outside of the sandbox."
+          nullable: false
+          type: boolean
+        deferred:
+          read_only: false
+          description: "If true, this test suite can be graded asynchronously. Deferred\
+            \ suites that\n                     have yet to be graded do not prevent\
+            \ members of a group from submitting\n                     again."
+          nullable: false
+          type: boolean
+        normal_fdbk_config:
+          read_only: false
+          description: ''
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
+        ultimate_submission_fdbk_config:
+          read_only: false
+          description: ''
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
+        past_limit_submission_fdbk_config:
+          read_only: false
+          description: ''
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
+        staff_viewer_fdbk_config:
+          read_only: false
+          description: ''
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
+    AGTestSuiteFeedbackConfig:
+      type: object
+      properties:
+        visible:
+          description: ''
+          type: boolean
+        show_individual_tests:
+          description: Whether to show information about individual tests in a suite
+            or just a points summary (if available).
+          type: boolean
+        show_setup_return_code:
+          description: ''
+          type: boolean
+        show_setup_timed_out:
+          description: ''
+          type: boolean
+        show_setup_stdout:
+          description: Whether to show stdout content from a suite's setup command.
+          type: boolean
+        show_setup_stderr:
+          description: Whether to show stderr content from a suite's setup command.
+          type: boolean
+    AGTestCase:
+      type: object
+      properties:
+        pk: *id010
+        name:
+          read_only: false
+          description: "The name used to identify this autograder test.\n        \
+            \             Must be non-empty and non-null.\n                     Must\
+            \ be unique among autograder tests that belong to the same suite.\n  \
+            \                   This field is REQUIRED."
+          nullable: false
+          type: string
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        ag_test_suite: *id010
+        ag_test_commands:
+          read_only: true
+          description: ''
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/AGTestCommand'
+        normal_fdbk_config:
+          read_only: false
+          description: ''
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
+        ultimate_submission_fdbk_config:
+          read_only: false
+          description: ''
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
+        past_limit_submission_fdbk_config:
+          read_only: false
+          description: ''
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
+        staff_viewer_fdbk_config:
+          read_only: false
+          description: ''
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
+    AGTestCaseFeedbackConfig:
+      type: object
+      properties:
+        visible:
+          description: ''
+          type: boolean
+        show_individual_commands:
+          description: ''
+          type: boolean
+    AGTestCommand:
+      type: object
+      properties:
+        pk: *id010
+        name:
+          read_only: false
+          description: "The name used to identify this command.\n                \
+            \         Must be non-empty and non-null.\n                         Must\
+            \ be unique among commands that belong to the same autograder test.\n\
+            \                         This field is REQUIRED."
+          nullable: false
+          type: string
+        ag_test_case: *id010
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        cmd:
+          read_only: false
+          description: "A string containing the command to be run.\n             \
+            \        Note: This string will be inserted into ['bash', '-c', <cmd>]\n\
+            \                        in order to be executed.\n                  \
+            \   Note: This string defaults to the \"true\" command\n             \
+            \        (which does nothing and returns 0) so that AGCommands are\n \
+            \                    default-creatable."
+          nullable: false
+          type: string
+        stdin_source:
+          read_only: false
+          description: Specifies what kind of source stdin will be redirected from.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/StdinSource'
+        stdin_text:
+          read_only: false
+          description: "A string whose contents should be redirected to the stdin\
+            \ of this command.\n                     This value is used when stdin_source\
+            \ is StdinSource.text and is ignored\n                     otherwise."
+          nullable: false
+          type: string
+        stdin_instructor_file:
+          type: unknown
+        expected_return_code:
+          read_only: false
+          description: Specifies the command's expected return code.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/ExpectedReturnCode'
+        expected_stdout_source:
+          read_only: false
+          description: Specifies what kind of source this command's stdout should
+            be compared to.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/ExpectedOutputSource'
+        expected_stdout_text:
+          read_only: false
+          description: "A string whose contents should be compared against this command's\
+            \ stdout.\n                     This value is used when expected_stdout_source\
+            \ is ExpectedOutputSource.text\n                     and is ignored otherwise."
+          nullable: false
+          type: string
+        expected_stdout_instructor_file:
+          type: unknown
+        expected_stderr_source:
+          read_only: false
+          description: Specifies what kind of source this command's stderr should
+            be compared to.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/ExpectedOutputSource'
+        expected_stderr_text:
+          read_only: false
+          description: "A string whose contents should be compared against this command's\
+            \ stderr.\n                     This value is used when expected_stderr_source\
+            \ is ExpectedOutputSource.text\n                     and is ignored otherwise."
+          nullable: false
+          type: string
+        expected_stderr_instructor_file:
+          type: unknown
+        ignore_case:
+          read_only: false
+          description: Ignore case when checking output. Equivalent to diff -i
+          nullable: false
+          type: boolean
+        ignore_whitespace:
+          read_only: false
+          description: Ignore inline whitespace when checking output. Equivalent to
+            diff -w
+          nullable: false
+          type: boolean
+        ignore_whitespace_changes:
+          read_only: false
+          description: Ignore whitespace changes when checking output. Equivalent
+            to diff -b
+          nullable: false
+          type: boolean
+        ignore_blank_lines:
+          read_only: false
+          description: Ignore changes in blank lines when checking output. Equivalent
+            to diff -B
+          nullable: false
+          type: boolean
+        points_for_correct_return_code:
+          read_only: false
+          description: "The number of points to be awarded when this command\n   \
+            \                  produces the correct return_code"
+          nullable: false
+          type: integer
+        points_for_correct_stdout:
+          read_only: false
+          description: "The number of points to be awarded when this command\n   \
+            \                  produces the correct stdout"
+          nullable: false
+          type: integer
+        points_for_correct_stderr:
+          read_only: false
+          description: "The number of points to be awarded when this command\n   \
+            \                  produces the correct stderr"
+          nullable: false
+          type: integer
+        deduction_for_wrong_return_code:
+          read_only: false
+          description: "The number of points to deduct when this command\n       \
+            \              produces the wrong return code (this value must be negative).\n\
+            \                     Note: The total points given for a single command\
+            \ may be negative,\n                     but the total points for an AGTestCase\
+            \ will be capped at zero."
+          nullable: false
+          type: integer
+        deduction_for_wrong_stdout:
+          read_only: false
+          description: "The number of points to deduct when this command\n       \
+            \              produces the wrong stdout (this value must be negative).\n\
+            \                     Note: The total points given for a single command\
+            \ may be negative,\n                     but the total points for an AGTestCase\
+            \ will be capped at zero."
+          nullable: false
+          type: integer
+        deduction_for_wrong_stderr:
+          read_only: false
+          description: "The number of points to deduct when this command\n       \
+            \              produces the wrong stderr (this value must be negative).\n\
+            \                     Note: The total points given for a single command\
+            \ may be negative,\n                     but the total points for an AGTestCase\
+            \ will be capped at zero."
+          nullable: false
+          type: integer
+        normal_fdbk_config:
+          read_only: false
+          description: Feedback settings for a normal Submission.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
+        first_failed_test_normal_fdbk_config:
+          read_only: false
+          description: "When non-null, specifies feedback to be given when\n     \
+            \                this command is in the first test case that failed\n\
+            \                     within a suite."
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
+        ultimate_submission_fdbk_config:
+          read_only: false
+          description: Feedback settings for an ultimate Submission.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
+        past_limit_submission_fdbk_config:
+          read_only: false
+          description: Feedback settings for a Submission that is past the daily limit.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
+        staff_viewer_fdbk_config:
+          read_only: false
+          description: Feedback settings for a staff member viewing a Submission from
+            another group.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
+        time_limit:
+          read_only: false
+          description: "The time limit in seconds to be placed on the command.\n \
+            \           Must be > 0\n            Must be <= 90"
+          nullable: false
+          type: integer
+        stack_size_limit:
+          read_only: false
+          description: "The maximum stack size in bytes.\n            Must be > 0\n\
+            \            Must be <= 100000000\n            NOTE: Setting this value\
+            \ too low may cause the command to crash prematurely."
+          nullable: false
+          type: integer
+        virtual_memory_limit:
+          read_only: false
+          description: "The maximum amount of virtual memory\n            (in bytes)\
+            \ the command can use.\n            Must be > 0\n            Must be <=\
+            \ 4000000000\n            NOTE: Setting this value too low may cause the\
+            \ command to crash prematurely."
+          nullable: false
+          type: integer
+        process_spawn_limit:
+          read_only: false
+          description: "The maximum number of processes that the command is allowed\
+            \ to spawn.\n            Must be >= 0\n            Must be <= 150\n  \
+            \          NOTE: This limit applies cumulatively to the processes\n  \
+            \                spawned by the main program being run. i.e. If a\n  \
+            \                spawned process spawns it's own child process, both\n\
+            \                  of those processes will count towards the main\n  \
+            \                program's process limit."
+          nullable: false
+          type: integer
+    AGTestCommandFeedbackConfig:
+      type: object
+      properties:
+        visible:
+          description: ''
+          type: boolean
+        return_code_fdbk_level:
+          description: ''
+          $ref: '#/components/schemas/ValueFeedbackLevel'
+        stdout_fdbk_level:
+          description: ''
+          $ref: '#/components/schemas/ValueFeedbackLevel'
+        stderr_fdbk_level:
+          description: ''
+          $ref: '#/components/schemas/ValueFeedbackLevel'
+        show_points:
+          description: ''
+          type: boolean
+        show_actual_return_code:
+          description: ''
+          type: boolean
+        show_actual_stdout:
+          description: ''
+          type: boolean
+        show_actual_stderr:
+          description: ''
+          type: boolean
+        show_whether_timed_out:
+          description: ''
+          type: boolean
+    StdinSource:
+      type: string
+      enum:
+      - none
+      - text
+      - instructor_file
+      - setup_stdout
+      - setup_stderr
+    ExpectedOutputSource:
+      type: string
+      enum:
+      - none
+      - text
+      - instructor_file
+    ExpectedReturnCode:
+      type: string
+      enum:
+      - none
+      - zero
+      - nonzero
+    ValueFeedbackLevel:
+      type: string
+      enum:
+      - no_feedback
+      - correct_or_incorrect
+      - expected_and_actual
+    SubmissionResultFeedback:
+      type: object
+      properties:
+        pk: *id010
+        total_points:
+          anyOf:
+          - *id011
+          - &id014
+            type: string
+            format: float
+        total_points_possible:
+          anyOf:
+          - *id011
+          - *id014
+        ag_test_suite_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AGTestSuiteResultFeedback'
+        student_test_suite_results:
+          type: array
+          items:
+            type: unknown
+    AGTestSuiteResultFeedback:
+      type: object
+      properties:
+        pk: *id010
+        ag_test_suite_name: *id012
+        ag_test_suite_pk: *id011
+        fdbk_settings:
+          type: unknown
+        total_points: *id011
+        total_points_possible: *id011
+        setup_name:
+          nullable: true
+          type: string
+        setup_return_code:
+          nullable: true
+          type: integer
+        setup_timed_out:
+          nullable: true
+          type: boolean
+        ag_test_case_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AGTestCaseResultFeedback'
+    AGTestCaseResultFeedback:
+      type: object
+      properties:
+        pk: *id010
+        ag_test_case_name: *id012
+        ag_test_case_pk: *id011
+        fdbk_settings:
+          type: unknown
+        total_points: *id011
+        total_points_possible: *id011
+        ag_test_command_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AGTestCommandResultFeedback'
+    AGTestCommandResultFeedback:
+      type: object
+      properties:
+        pk: *id010
+        ag_test_command_pk: *id011
+        ag_test_command_name: *id012
+        fdbk_settings:
+          type: unknown
+        timed_out:
+          nullable: true
+          type: boolean
+        return_code_correct:
+          nullable: true
+          type: boolean
+        expected_return_code:
+          nullable: true
+          $ref: '#/components/schemas/ExpectedReturnCode'
+        actual_return_code:
+          nullable: true
+          type: integer
+        return_code_points: *id011
+        return_code_points_possible: *id011
+        stdout_correct:
+          nullable: true
+          type: boolean
+        stdout_points: *id011
+        stdout_points_possible: *id011
+        stderr_correct:
+          nullable: true
+          type: boolean
+        stderr_points: *id011
+        stderr_points_possible: *id011
+        total_points: *id011
+        total_points_possible: *id011
+    FeedbackCategory:
+      type: string
+      enum:
+      - normal
+      - ultimate_submission
+      - past_limit_submission
+      - staff_viewer
+      - max
+    StudentTestSuite:
+      type: object
+      properties:
+        pk: *id010
+        name:
+          read_only: false
+          description: "The name used to identify this StudentTestSuite.\n       \
+            \              Must be non-empty and non-null."
+          nullable: false
+          type: string
+        project: *id010
+        instructor_files_needed:
+          read_only: false
+          description: "The project files that will be copied into the sandbox before\
+            \ the suite\n                     is graded."
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/InstructorFile'
+        read_only_instructor_files:
+          read_only: false
+          description: "When True, project files needed for this suite will be read-only\
+            \ when this\n                     suite is graded."
+          nullable: false
+          type: boolean
+        student_files_needed:
+          read_only: false
+          description: "Student-submitted files matching these patterns will be copied\
+            \ into the\n                     sandbox before the suite is graded."
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpectedStudentFile'
+        buggy_impl_names:
+          read_only: false
+          description: The names of buggy implementations that student tests should
+            be run against.
+          nullable: false
+          type: array
+          items: *id013
+        use_setup_command:
+          read_only: false
+          description: ''
+          nullable: false
+          type: boolean
+        setup_command:
+          read_only: false
+          description: "A command to be run after student and project files have\n\
+            \                     been added to the sandbox but before any other commands\
+            \ are run.\n                     To indicate that no setup command should\
+            \ be run,\n                     set use_setup_command to False."
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/Command'
+        get_student_test_names_command:
+          read_only: false
+          description: "This required command should print out a whitespace-separated\n\
+            \                     list of detected student names. The output of this\
+            \ command will\n                     be parsed using Python's str.split()."
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/Command'
+        max_num_student_tests:
+          read_only: false
+          description: "The maximum number of test cases students are allowed to submit.\n\
+            \                     If more than this many tests are discovered by the\n\
+            \                     get_student_test_names_command, test names will\
+            \ be discarded\n                     from the end of that list."
+          nullable: false
+          type: integer
+        student_test_validity_check_command:
+          read_only: false
+          description: "This command will be run once for each detected student test\
+            \ case.\n                     An exit status of zero indicates that a\
+            \ student test case is valid,\n                     whereas a nonzero\
+            \ exit status indicates that a student test case\n                   \
+            \  is invalid.\n                     This command must contain the placeholder\
+            \ ${student_test_name} at least once. That\n                     placeholder\
+            \ will be replaced with the name of the student test case\n          \
+            \           that is to be checked for validity.\n                    \
+            \ NOTE: This AGCommand's 'cmd' field must not be blank.\n            \
+            \         "
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/Command'
+        grade_buggy_impl_command:
+          read_only: false
+          description: "\n            This command will be run once for every (buggy\
+            \ implementation, valid test) pair.\n            A nonzero exit status\
+            \ indicates that the valid student tests exposed the\n            buggy\
+            \ impl, whereas an exit status of zero indicates that the student\n  \
+            \          tests did not expose the buggy impl.\n            This command\
+            \ must contain the placeholders ${student_test_name} and ${buggy_impl_name}.\
+            \ The placeholder\n            ${student_test_name} will be replaced with\
+            \ the name of a valid student test case.\n            The placeholder\
+            \ ${buggy_impl_name} will be replaced with the name of\n            the\
+            \ buggy impl that the student test is being run against.\n           \
+            \ NOTE: This AGCommand's 'cmd' field must not be blank.\n        "
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/Command'
+        points_per_exposed_bug:
+          read_only: false
+          description: "The number of points to be awarded per buggy implementation\
+            \ exposed by\n                     the student test cases. This field\
+            \ is limited to 4 digits total and a maximum\n                     of\
+            \ 2 decimal places."
+          nullable: false
+          type: string
+          format: float
+        max_points:
+          read_only: false
+          description: An optional ceiling on the number of points to be awarded.
+          nullable: true
+          type: integer
+        deferred:
+          read_only: false
+          description: "If true, this student test suite can be graded asynchronously.\n\
+            \                     Deferred suites that have yet to be graded do not\
+            \ prevent members\n                     of a group from submitting again."
+          nullable: false
+          type: boolean
+        sandbox_docker_image:
+          type: unknown
+        allow_network_access:
+          read_only: false
+          description: "Specifies whether the sandbox should allow commands run inside\
+            \ of it to\n                     make network calls outside of the sandbox."
+          nullable: false
+          type: boolean
+        normal_fdbk_config:
+          read_only: false
+          description: Feedback settings for a normal Submission.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+        ultimate_submission_fdbk_config:
+          read_only: false
+          description: Feedback settings for an ultimate Submission.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+        past_limit_submission_fdbk_config:
+          read_only: false
+          description: Feedback settings for a Submission that is past the daily limit.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+        staff_viewer_fdbk_config:
+          read_only: false
+          description: Feedback settings for a staff member viewing a Submission from
+            another group.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+    StudentTestSuiteFeedbackConfig:
+      type: object
+      properties:
+        visible:
+          description: ''
+          type: boolean
+        show_setup_return_code:
+          description: ''
+          type: boolean
+        show_setup_stdout:
+          description: ''
+          type: boolean
+        show_setup_stderr:
+          description: ''
+          type: boolean
+        show_get_test_names_return_code:
+          description: ''
+          type: boolean
+        show_get_test_names_stdout:
+          description: ''
+          type: boolean
+        show_get_test_names_stderr:
+          description: ''
+          type: boolean
+        show_validity_check_stdout:
+          description: ''
+          type: boolean
+        show_validity_check_stderr:
+          description: ''
+          type: boolean
+        show_grade_buggy_impls_stdout:
+          description: ''
+          type: boolean
+        show_grade_buggy_impls_stderr:
+          description: ''
+          type: boolean
+        show_invalid_test_names:
+          description: ''
+          type: boolean
+        show_points:
+          description: ''
+          type: boolean
+        bugs_exposed_fdbk_level:
+          description: ''
+          $ref: '#/components/schemas/BugsExposedFeedbackLevel'
+    StudentTestSuiteResult:
+      type: object
+      properties:
+        pk: *id010
+        student_test_suite_name: *id012
+        student_test_suite_pk: *id011
+        fdbk_settings:
+          type: unknown
+        has_setup_command: *id015
+        setup_command_name:
+          nullable: true
+          type: string
+        setup_return_code:
+          nullable: true
+          type: integer
+        setup_timed_out:
+          nullable: true
+          type: boolean
+        get_student_test_names_return_code:
+          nullable: true
+          type: integer
+        get_student_test_names_timed_out:
+          nullable: true
+          type: boolean
+        student_tests:
+          type: array
+          items: *id012
+        discarded_tests:
+          type: array
+          items: *id012
+        invalid_tests:
+          nullable: true
+          type: array
+          items: *id012
+        timed_out_tests:
+          nullable: true
+          type: array
+          items: *id012
+        num_bugs_exposed:
+          nullable: true
+          type: integer
+        bugs_exposed:
+          nullable: true
+          type: array
+          items: *id012
+        total_points: *id014
+        total_points_possible: *id014
+    BugsExposedFeedbackLevel:
+      type: string
+      enum:
+      - no_feedback
+      - num_bugs_exposed
+      - exposed_bug_names
+    RerunSubmissionsTask:
+      type: object
+      properties:
+        pk: *id010
+        progress: *id011
+        is_cancelled:
+          read_only: true
+          description: Indicates whether the task has been cancelled by the user.
+          nullable: false
+          type: boolean
+        error_msg:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+        creator: *id010
+        created_at:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        has_error: *id015
+        project: *id010
+        rerun_all_submissions:
+          read_only: true
+          description: "When True, indicates that all submissions for the specified\n\
+            \                     project should be rerun. Otherwise, only the submissions\n\
+            \                     whose primary keys are listed in submission_pks\
+            \ should be rerun."
+          nullable: false
+          type: boolean
+        submission_pks:
+          read_only: true
+          description: "When rerun_all_submissions is False, specifies which submissions\n\
+            \                     should be rerun."
+          nullable: false
+          type: array
+          items:
+            read_only: true
+            description: ''
+            nullable: false
+            type: integer
+        rerun_all_ag_test_suites:
+          read_only: true
+          description: "When True, indicates that all AGTestSuites belonging\n   \
+            \                  to the specified project should be rerun. Otherwise,\n\
+            \                     only the AGTestSuites specified in ag_test_suite_data\
+            \ should\n                     be rerun."
+          nullable: false
+          type: boolean
+        ag_test_suite_data:
+          read_only: true
+          description: "When rerun_all_ag_test_suites is False, specifies which\n\
+            \                     AGTestSuites should be rerun and which AGTestCases\
+            \ within\n                     those suites should be rerun.\n       \
+            \ Data format:\n        {\n            // Note: JSON format requires that\
+            \ keys are strings. Postgres\n            // doesn't seem to care, but\
+            \ some JSON serializers might.\n            \"<ag_test_suite_pk>\": [<ag_test_case_pk>,\
+            \ ...],\n            ...\n        }\n        If an ag_test_suite_pk is\
+            \ mapped to an empty list, then all ag test cases\n        belonging to\
+            \ that ag test suite will be rerun."
+          nullable: false
+          type: object
+        rerun_all_student_test_suites:
+          read_only: true
+          description: "When True, indicates that all StudentTestSuites belonging\n\
+            \                     to the specified project should be rerun. Otherwise,\n\
+            \                     only the StudentTestSuites specified in student_test_suite_pks\n\
+            \                     should be rerun."
+          nullable: false
+          type: boolean
+        student_suite_pks:
+          read_only: true
+          description: "When rerun_all_student_test_suites is False, specifies which\n\
+            \                     student test suites should be rerun."
+          nullable: false
+          type: array
+          items:
+            read_only: true
+            description: ''
+            nullable: false
+            type: integer
+    HandgradingRubric:
+      type: object
+      properties:
+        pk: *id010
+        project: *id010
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        points_style:
+          read_only: false
+          description: "Determines how total_points and total_possible_points are\
+            \ calculated\n                     for HandgradingResults."
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/PointsStyle'
+        max_points:
+          read_only: false
+          description: "The denominator of a handgrading score.\n                \
+            \     When points_style is \"start_at_zero_and_add\", this value\n   \
+            \                  overrides the sum of positive Criteria point values\
+            \ as the\n                     total points possible.\n              \
+            \       When points_style is \"start_at_max_and_subtract\", this field\n\
+            \                     is REQUIRED."
+          nullable: true
+          type: number
+        show_grades_and_rubric_to_students:
+          read_only: false
+          description: "Whether students can see their handgrading scores,\n     \
+            \                including information from the rubric."
+          nullable: false
+          type: boolean
+        handgraders_can_leave_comments:
+          read_only: false
+          description: Whether handgraders can add comments to a HandgradingResult.
+          nullable: false
+          type: boolean
+        handgraders_can_adjust_points:
+          read_only: false
+          description: Whether handgraders can edit HandgradingResult.point_adjustment.
+          nullable: false
+          type: boolean
+        criteria:
+          read_only: true
+          description: ''
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/Criterion'
+        annotations:
+          read_only: true
+          description: ''
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+    PointsStyle:
+      type: string
+      enum:
+      - start_at_zero_and_add
+      - start_at_max_and_subtract
+    Criterion:
+      type: object
+      properties:
+        pk: *id010
+        handgrading_rubric: *id010
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        short_description:
+          read_only: false
+          description: A short description of this Criterion.
+          nullable: false
+          type: string
+        long_description:
+          read_only: false
+          description: "A long description of this Criterion. Note that there is no\n\
+            \                     enforced length difference between short_ and long_description.\n\
+            \                     The separation is purely to be used by clients."
+          nullable: false
+          type: string
+        points:
+          read_only: false
+          description: "The amount of points to add or subtract from a handgrading\
+            \ score\n                     when selected."
+          nullable: false
+          type: number
+    Annotation:
+      type: object
+      properties:
+        pk: *id010
+        handgrading_rubric: *id010
+        short_description:
+          read_only: false
+          description: A short description of this Annotation.
+          nullable: false
+          type: string
+        long_description:
+          read_only: false
+          description: "A long description of this Criterion. Note that there is no\n\
+            \                     enforced length difference between short_ and long_description.\n\
+            \                     The separation is purely to be used by clients."
+          nullable: false
+          type: string
+        deduction:
+          read_only: false
+          description: "The amount of points to deduct from a handgrading score when\n\
+            \                     applied. Must be non-positive."
+          nullable: false
+          type: number
+        max_deduction:
+          read_only: false
+          description: "The maximum amount of points that can be cumulatively\n  \
+            \                   deducted from a handgrading score by applications\
+            \ of\n                     this annotation. Must be None or non-positive."
+          nullable: true
+          type: number
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+    HandgradingResult:
+      type: object
+      properties:
+        pk: *id010
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        submission: *id010
+        handgrading_rubric:
+          type: unknown
+        group: *id010
+        applied_annotations:
+          read_only: true
+          description: ''
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedAnnotation'
+        comments:
+          read_only: true
+          description: ''
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+        criterion_results:
+          read_only: true
+          description: ''
+          nullable: false
+          type: array
+          items:
+            $ref: '#/components/schemas/CriterionResult'
+        finished_grading:
+          read_only: false
+          description: "Handgraders should set this field to True when they are finished\n\
+            \                     grading this group's submission."
+          nullable: false
+          type: boolean
+        points_adjustment:
+          read_only: false
+          description: "An arbitrary adjustment to this result's total points.\n \
+            \                    Note that this does not affect total points possible."
+          nullable: false
+          type: number
+        submitted_filenames:
+          type: array
+          items: *id012
+        total_points: &id016
+          type: number
+        total_points_possible: *id016
+    CriterionResult:
+      type: object
+      properties:
+        pk: *id010
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        selected:
+          read_only: false
+          description: "When True, indicates that the criterion's point allotment\
+            \ should be\n                     added to (or subtracted from if negative)\
+            \ the total handgrading points."
+          nullable: false
+          type: boolean
+        criterion:
+          type: unknown
+        handgrading_result: *id010
+    AppliedAnnotation:
+      type: object
+      properties:
+        pk: *id010
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        location:
+          read_only: true
+          description: The source code location where the Annotation was applied.
+          nullable: false
+          allOf:
+          - $ref: '#/components/schemas/Location'
+        annotation:
+          type: unknown
+        handgrading_result: *id010
+    Comment:
+      type: object
+      properties:
+        pk: *id010
+        last_modified:
+          read_only: true
+          description: ''
+          nullable: false
+          type: string
+          format: date-time
+        location:
+          read_only: true
+          description: "When not None, specifies the source code location this comment\n\
+            \                     applies to."
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/Location'
+        text:
+          read_only: false
+          description: Text to be shown to students.
+          nullable: false
+          type: string
+        handgrading_result: *id010
+    Location:
+      type: object
+      properties:
+        filename:
+          description: The file that contains the source code region.
+          type: string
+        first_line:
+          description: The first line in the source code region. Must be non-negative.
+          type: integer
+        last_line:
+          description: The last line in the source code region (inclusive). Must be
+            non-negative.
+          type: integer
