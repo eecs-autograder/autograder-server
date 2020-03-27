@@ -4059,7 +4059,7 @@ components:
           read_only: false
           description: ''
           nullable: true
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/Semester'
         year:
           read_only: false
@@ -4238,7 +4238,7 @@ components:
             \       that will be used for final grading. This field specifies\n  \
             \          how the ultimate submission should be determined."
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/UltimateSubmissionPolicy'
         hide_ultimate_submission_fdbk:
           read_only: false
@@ -4261,7 +4261,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExpectedStudentFile'
-        has_handgrading_rubric: &id015
+        has_handgrading_rubric:
+          readOnly: true
+          description: Whether this project has a handgrading rubric.
           type: boolean
     UltimateSubmissionPolicy:
       type: string
@@ -4317,7 +4319,9 @@ components:
           nullable: false
           type: string
           format: date-time
-        size: &id011
+        size:
+          readOnly: true
+          description: ''
           type: integer
     DownloadTask:
       type: object
@@ -4328,7 +4332,7 @@ components:
           read_only: true
           description: ''
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/DownloadType'
         result_filename:
           read_only: false
@@ -4373,8 +4377,10 @@ components:
           type: string
           format: date-time
         member_names:
+          readOnly: true
+          description: A list of usernames of the group members, sorted alphabetically.
           type: array
-          items: &id012
+          items: &id011
             type: string
         bonus_submissions_remaining:
           read_only: false
@@ -4390,11 +4396,19 @@ components:
             \            }\n            NOTE: This field is updated only when a group\
             \ member uses a\n            late day. If a user is moved to another group\
             \ or this group\n            is merged with another one, this field will\
-            \ NOT be updated.\n        "
+            \ NOT be updated."
           nullable: false
           type: object
-        num_submissions: *id011
-        num_submits_towards_limit: *id011
+        num_submissions:
+          readOnly: true
+          description: ''
+          type: integer
+        num_submits_towards_limit:
+          readOnly: true
+          description: "The number of submissions this group has made in the current\
+            \ 24\n        hour period that are counted towards the daily submission\
+            \ limit."
+          type: integer
         created_at:
           read_only: true
           description: ''
@@ -4414,11 +4428,16 @@ components:
         invitation_creator: *id010
         project: *id010
         invited_usernames:
+          readOnly: true
+          description: The usernames of the Users that will receive this invitation.
           type: array
-          items: *id012
+          items: *id011
         invitees_who_accepted:
+          readOnly: true
+          description: "A list of usernames indicating which invitees have accepted\n\
+            \        this invitation.\n        This field is READ ONLY."
           type: array
-          items: *id012
+          items: *id011
     Submission:
       type: object
       properties:
@@ -4441,7 +4460,7 @@ components:
             \     excluding those that were discarded."
           nullable: false
           type: array
-          items: &id013
+          items: &id012
             type: string
         discarded_files:
           read_only: true
@@ -4449,7 +4468,7 @@ components:
             was created.
           nullable: false
           type: array
-          items: *id013
+          items: *id012
         missing_files:
           read_only: true
           description: "Stores missing filenames and the additional number\n     \
@@ -4503,7 +4522,11 @@ components:
             description: ''
             nullable: false
             type: string
-        position_in_queue: *id011
+        position_in_queue:
+          readOnly: true
+          description: "Returns this submission's position in the queue of submissions\n\
+            \        to be graded for the associated project."
+          type: integer
         last_modified:
           read_only: true
           description: ''
@@ -4564,7 +4587,7 @@ components:
           read_only: true
           description: The status of the build.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/BuildImageStatus'
         return_code:
           read_only: true
@@ -4581,7 +4604,7 @@ components:
           description: The names of the files uploaded by the user.
           nullable: false
           type: array
-          items: *id013
+          items: *id012
         course: *id010
         image_to_update: *id010
         validation_error_msg:
@@ -4668,7 +4691,11 @@ components:
           nullable: false
           type: string
         sandbox_docker_image:
-          type: unknown
+          read_only: false
+          description: The sandbox docker image to use for running this suite.
+          nullable: false
+          oneOf:
+          - $ref: '#/components/schemas/SandboxDockerImage'
         allow_network_access:
           read_only: false
           description: "Specifies whether the sandbox should allow commands run inside\
@@ -4686,25 +4713,25 @@ components:
           read_only: false
           description: ''
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
         ultimate_submission_fdbk_config:
           read_only: false
           description: ''
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
         past_limit_submission_fdbk_config:
           read_only: false
           description: ''
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
         staff_viewer_fdbk_config:
           read_only: false
           description: ''
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
     AGTestSuiteFeedbackConfig:
       type: object
@@ -4758,25 +4785,25 @@ components:
           read_only: false
           description: ''
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
         ultimate_submission_fdbk_config:
           read_only: false
           description: ''
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
         past_limit_submission_fdbk_config:
           read_only: false
           description: ''
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
         staff_viewer_fdbk_config:
           read_only: false
           description: ''
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
     AGTestCaseFeedbackConfig:
       type: object
@@ -4820,7 +4847,7 @@ components:
           read_only: false
           description: Specifies what kind of source stdin will be redirected from.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/StdinSource'
         stdin_text:
           read_only: false
@@ -4830,19 +4857,26 @@ components:
           nullable: false
           type: string
         stdin_instructor_file:
-          type: unknown
+          read_only: false
+          description: "An InstructorFile whose contents should be redirected to the\
+            \ stdin of this\n                     command. This value is used when\
+            \ stdin_source is StdinSource.instructor_file\n                     and\
+            \ is ignored otherwise."
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/InstructorFile'
         expected_return_code:
           read_only: false
           description: Specifies the command's expected return code.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/ExpectedReturnCode'
         expected_stdout_source:
           read_only: false
           description: Specifies what kind of source this command's stdout should
             be compared to.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/ExpectedOutputSource'
         expected_stdout_text:
           read_only: false
@@ -4852,13 +4886,20 @@ components:
           nullable: false
           type: string
         expected_stdout_instructor_file:
-          type: unknown
+          read_only: false
+          description: "An InstructorFile whose contents should be compared against\
+            \ this command's\n                     stdout. This value is used (and\
+            \ may not be null) when expected_stdout_source\n                     is\
+            \ ExpectedOutputSource.instructor_file and is ignored otherwise."
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/InstructorFile'
         expected_stderr_source:
           read_only: false
           description: Specifies what kind of source this command's stderr should
             be compared to.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/ExpectedOutputSource'
         expected_stderr_text:
           read_only: false
@@ -4868,7 +4909,14 @@ components:
           nullable: false
           type: string
         expected_stderr_instructor_file:
-          type: unknown
+          read_only: false
+          description: "An InstructorFile whose contents should be compared against\
+            \ this command's\n                     stderr. This value is used (and\
+            \ may not be null) when expected_stderr_source\n                     is\
+            \ ExpectedOutputSource.instructor_file and is ignored otherwise."
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/InstructorFile'
         ignore_case:
           read_only: false
           description: Ignore case when checking output. Equivalent to diff -i
@@ -4941,7 +4989,7 @@ components:
           read_only: false
           description: Feedback settings for a normal Submission.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         first_failed_test_normal_fdbk_config:
           read_only: false
@@ -4949,26 +4997,26 @@ components:
             \                this command is in the first test case that failed\n\
             \                     within a suite."
           nullable: true
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         ultimate_submission_fdbk_config:
           read_only: false
           description: Feedback settings for an ultimate Submission.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         past_limit_submission_fdbk_config:
           read_only: false
           description: Feedback settings for a Submission that is past the daily limit.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         staff_viewer_fdbk_config:
           read_only: false
           description: Feedback settings for a staff member viewing a Submission from
             another group.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         time_limit:
           read_only: false
@@ -5063,43 +5111,74 @@ components:
       properties:
         pk: *id010
         total_points:
+          readOnly: true
+          description: ''
           anyOf:
-          - *id011
+          - &id013
+            type: integer
           - &id014
             type: string
             format: float
         total_points_possible:
+          readOnly: true
+          description: ''
           anyOf:
-          - *id011
+          - *id013
           - *id014
         ag_test_suite_results:
+          readOnly: true
+          description: ''
           type: array
           items:
             $ref: '#/components/schemas/AGTestSuiteResultFeedback'
         student_test_suite_results:
+          readOnly: true
+          description: ''
           type: array
           items:
-            type: unknown
+            $ref: '#/components/schemas/StudentTestSuiteResultFeedback'
     AGTestSuiteResultFeedback:
       type: object
       properties:
         pk: *id010
-        ag_test_suite_name: *id012
-        ag_test_suite_pk: *id011
+        ag_test_suite_name:
+          readOnly: true
+          description: ''
+          type: string
+        ag_test_suite_pk:
+          readOnly: true
+          description: ''
+          type: integer
         fdbk_settings:
-          type: unknown
-        total_points: *id011
-        total_points_possible: *id011
+          readOnly: true
+          description: ''
+          type: object
+        total_points:
+          readOnly: true
+          description: ''
+          type: integer
+        total_points_possible:
+          readOnly: true
+          description: ''
+          type: integer
         setup_name:
+          readOnly: true
+          description: ''
           nullable: true
           type: string
         setup_return_code:
+          readOnly: true
+          description: ''
           nullable: true
           type: integer
         setup_timed_out:
+          readOnly: true
+          description: ''
           nullable: true
           type: boolean
         ag_test_case_results:
+          readOnly: true
+          description: ''
           type: array
           items:
             $ref: '#/components/schemas/AGTestCaseResultFeedback'
@@ -5107,13 +5186,29 @@ components:
       type: object
       properties:
         pk: *id010
-        ag_test_case_name: *id012
-        ag_test_case_pk: *id011
+        ag_test_case_name:
+          readOnly: true
+          description: ''
+          type: string
+        ag_test_case_pk:
+          readOnly: true
+          description: ''
+          type: integer
         fdbk_settings:
-          type: unknown
-        total_points: *id011
-        total_points_possible: *id011
+          readOnly: true
+          description: ''
+          type: object
+        total_points:
+          readOnly: true
+          description: ''
+          type: integer
+        total_points_possible:
+          readOnly: true
+          description: ''
+          type: integer
         ag_test_command_results:
+          readOnly: true
+          description: ''
           type: array
           items:
             $ref: '#/components/schemas/AGTestCommandResultFeedback'
@@ -5121,36 +5216,80 @@ components:
       type: object
       properties:
         pk: *id010
-        ag_test_command_pk: *id011
-        ag_test_command_name: *id012
+        ag_test_command_pk:
+          readOnly: true
+          description: ''
+          type: integer
+        ag_test_command_name:
+          readOnly: true
+          description: ''
+          type: string
         fdbk_settings:
-          type: unknown
+          readOnly: true
+          description: ''
+          type: object
         timed_out:
+          readOnly: true
+          description: ''
           nullable: true
           type: boolean
         return_code_correct:
+          readOnly: true
+          description: ''
           nullable: true
           type: boolean
         expected_return_code:
+          readOnly: true
+          description: ''
           nullable: true
           $ref: '#/components/schemas/ExpectedReturnCode'
         actual_return_code:
+          readOnly: true
+          description: ''
           nullable: true
           type: integer
-        return_code_points: *id011
-        return_code_points_possible: *id011
+        return_code_points:
+          readOnly: true
+          description: ''
+          type: integer
+        return_code_points_possible:
+          readOnly: true
+          description: ''
+          type: integer
         stdout_correct:
+          readOnly: true
+          description: ''
           nullable: true
           type: boolean
-        stdout_points: *id011
-        stdout_points_possible: *id011
+        stdout_points:
+          readOnly: true
+          description: ''
+          type: integer
+        stdout_points_possible:
+          readOnly: true
+          description: ''
+          type: integer
         stderr_correct:
+          readOnly: true
+          description: ''
           nullable: true
           type: boolean
-        stderr_points: *id011
-        stderr_points_possible: *id011
-        total_points: *id011
-        total_points_possible: *id011
+        stderr_points:
+          readOnly: true
+          description: ''
+          type: integer
+        stderr_points_possible:
+          readOnly: true
+          description: ''
+          type: integer
+        total_points:
+          readOnly: true
+          description: ''
+          type: integer
+        total_points_possible:
+          readOnly: true
+          description: ''
+          type: integer
     FeedbackCategory:
       type: string
       enum:
@@ -5198,7 +5337,7 @@ components:
             be run against.
           nullable: false
           type: array
-          items: *id013
+          items: *id012
         use_setup_command:
           read_only: false
           description: ''
@@ -5211,7 +5350,7 @@ components:
             \ are run.\n                     To indicate that no setup command should\
             \ be run,\n                     set use_setup_command to False."
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/Command'
         get_student_test_names_command:
           read_only: false
@@ -5219,7 +5358,7 @@ components:
             \                     list of detected student names. The output of this\
             \ command will\n                     be parsed using Python's str.split()."
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/Command'
         max_num_student_tests:
           read_only: false
@@ -5239,26 +5378,25 @@ components:
             \ ${student_test_name} at least once. That\n                     placeholder\
             \ will be replaced with the name of the student test case\n          \
             \           that is to be checked for validity.\n                    \
-            \ NOTE: This AGCommand's 'cmd' field must not be blank.\n            \
-            \         "
+            \ NOTE: This AGCommand's 'cmd' field must not be blank."
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/Command'
         grade_buggy_impl_command:
           read_only: false
-          description: "\n            This command will be run once for every (buggy\
-            \ implementation, valid test) pair.\n            A nonzero exit status\
-            \ indicates that the valid student tests exposed the\n            buggy\
-            \ impl, whereas an exit status of zero indicates that the student\n  \
-            \          tests did not expose the buggy impl.\n            This command\
-            \ must contain the placeholders ${student_test_name} and ${buggy_impl_name}.\
-            \ The placeholder\n            ${student_test_name} will be replaced with\
-            \ the name of a valid student test case.\n            The placeholder\
-            \ ${buggy_impl_name} will be replaced with the name of\n            the\
-            \ buggy impl that the student test is being run against.\n           \
-            \ NOTE: This AGCommand's 'cmd' field must not be blank.\n        "
+          description: "This command will be run once for every (buggy implementation,\
+            \ valid test) pair.\n            A nonzero exit status indicates that\
+            \ the valid student tests exposed the\n            buggy impl, whereas\
+            \ an exit status of zero indicates that the student\n            tests\
+            \ did not expose the buggy impl.\n            This command must contain\
+            \ the placeholders ${student_test_name} and ${buggy_impl_name}. The placeholder\n\
+            \            ${student_test_name} will be replaced with the name of a\
+            \ valid student test case.\n            The placeholder ${buggy_impl_name}\
+            \ will be replaced with the name of\n            the buggy impl that the\
+            \ student test is being run against.\n            NOTE: This AGCommand's\
+            \ 'cmd' field must not be blank."
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/Command'
         points_per_exposed_bug:
           read_only: false
@@ -5282,7 +5420,11 @@ components:
           nullable: false
           type: boolean
         sandbox_docker_image:
-          type: unknown
+          read_only: false
+          description: The sandbox docker image to use for running this suite.
+          nullable: false
+          oneOf:
+          - $ref: '#/components/schemas/SandboxDockerImage'
         allow_network_access:
           read_only: false
           description: "Specifies whether the sandbox should allow commands run inside\
@@ -5293,26 +5435,26 @@ components:
           read_only: false
           description: Feedback settings for a normal Submission.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         ultimate_submission_fdbk_config:
           read_only: false
           description: Feedback settings for an ultimate Submission.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         past_limit_submission_fdbk_config:
           read_only: false
           description: Feedback settings for a Submission that is past the daily limit.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         staff_viewer_fdbk_config:
           read_only: false
           description: Feedback settings for a staff member viewing a Submission from
             another group.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         last_modified:
           read_only: true
@@ -5365,53 +5507,94 @@ components:
         bugs_exposed_fdbk_level:
           description: ''
           $ref: '#/components/schemas/BugsExposedFeedbackLevel'
-    StudentTestSuiteResult:
+    StudentTestSuiteResultFeedback:
       type: object
       properties:
         pk: *id010
-        student_test_suite_name: *id012
-        student_test_suite_pk: *id011
+        student_test_suite_name:
+          readOnly: true
+          description: ''
+          type: string
+        student_test_suite_pk:
+          readOnly: true
+          description: ''
+          type: integer
         fdbk_settings:
-          type: unknown
-        has_setup_command: *id015
+          readOnly: true
+          description: A dictionary representation of this object's feedback config.
+          type: object
+        has_setup_command:
+          readOnly: true
+          description: ''
+          type: boolean
         setup_command_name:
+          readOnly: true
+          description: ''
           nullable: true
           type: string
         setup_return_code:
+          readOnly: true
+          description: ''
           nullable: true
           type: integer
         setup_timed_out:
+          readOnly: true
+          description: ''
           nullable: true
           type: boolean
         get_student_test_names_return_code:
+          readOnly: true
+          description: ''
           nullable: true
           type: integer
         get_student_test_names_timed_out:
+          readOnly: true
+          description: ''
           nullable: true
           type: boolean
         student_tests:
+          readOnly: true
+          description: ''
           type: array
-          items: *id012
+          items: *id011
         discarded_tests:
+          readOnly: true
+          description: ''
           type: array
-          items: *id012
+          items: *id011
         invalid_tests:
+          readOnly: true
+          description: ''
           nullable: true
           type: array
-          items: *id012
+          items: *id011
         timed_out_tests:
+          readOnly: true
+          description: ''
           nullable: true
           type: array
-          items: *id012
+          items: *id011
         num_bugs_exposed:
+          readOnly: true
+          description: ''
           nullable: true
           type: integer
         bugs_exposed:
+          readOnly: true
+          description: ''
           nullable: true
           type: array
-          items: *id012
-        total_points: *id014
-        total_points_possible: *id014
+          items: *id011
+        total_points:
+          readOnly: true
+          description: ''
+          type: string
+          format: float
+        total_points_possible:
+          readOnly: true
+          description: ''
+          type: string
+          format: float
     BugsExposedFeedbackLevel:
       type: string
       enum:
@@ -5422,7 +5605,10 @@ components:
       type: object
       properties:
         pk: *id010
-        progress: *id011
+        progress:
+          readOnly: true
+          description: ''
+          type: integer
         is_cancelled:
           read_only: true
           description: Indicates whether the task has been cancelled by the user.
@@ -5440,7 +5626,10 @@ components:
           nullable: false
           type: string
           format: date-time
-        has_error: *id015
+        has_error:
+          readOnly: true
+          description: ''
+          type: boolean
         project: *id010
         rerun_all_submissions:
           read_only: true
@@ -5517,7 +5706,7 @@ components:
           description: "Determines how total_points and total_possible_points are\
             \ calculated\n                     for HandgradingResults."
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/PointsStyle'
         max_points:
           read_only: false
@@ -5641,7 +5830,12 @@ components:
           format: date-time
         submission: *id010
         handgrading_rubric:
-          type: unknown
+          read_only: true
+          description: The HandgradingRubric that this HandgradingResult is based
+            on.
+          nullable: false
+          oneOf:
+          - $ref: '#/components/schemas/HandgradingRubric'
         group: *id010
         applied_annotations:
           read_only: true
@@ -5677,11 +5871,21 @@ components:
           nullable: false
           type: number
         submitted_filenames:
+          readOnly: true
+          description: "Returns a list of strings containing the filenames of the\
+            \ Submission this result\n        belongs to."
           type: array
-          items: *id012
-        total_points: &id016
+          items: *id011
+        total_points:
+          readOnly: true
+          description: "The total number of points awarded. Note that it is possible\n\
+            \        for this value to be greater than total_points."
           type: number
-        total_points_possible: *id016
+        total_points_possible:
+          readOnly: true
+          description: "The denominator of the handgrading score based on the\n  \
+            \      handgrading rubric's points style and max points."
+          type: number
     CriterionResult:
       type: object
       properties:
@@ -5700,7 +5904,11 @@ components:
           nullable: false
           type: boolean
         criterion:
-          type: unknown
+          read_only: true
+          description: The Criterion that the CriterionResult is tied to.
+          nullable: false
+          oneOf:
+          - $ref: '#/components/schemas/Criterion'
         handgrading_result: *id010
     AppliedAnnotation:
       type: object
@@ -5716,10 +5924,14 @@ components:
           read_only: true
           description: The source code location where the Annotation was applied.
           nullable: false
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/Location'
         annotation:
-          type: unknown
+          read_only: true
+          description: The Annotation that was applied to the source code.
+          nullable: false
+          oneOf:
+          - $ref: '#/components/schemas/Annotation'
         handgrading_result: *id010
     Comment:
       type: object
@@ -5736,7 +5948,7 @@ components:
           description: "When not None, specifies the source code location this comment\n\
             \                     applies to."
           nullable: true
-          allOf:
+          oneOf:
           - $ref: '#/components/schemas/Location'
         text:
           read_only: false

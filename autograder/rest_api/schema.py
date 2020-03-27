@@ -109,7 +109,10 @@ API_OBJ_TYPE_NAMES = {
 
     ag_models.StudentTestSuite: ag_models.StudentTestSuite.__name__,
     ag_models.NewStudentTestSuiteFeedbackConfig: 'StudentTestSuiteFeedbackConfig',
-    ag_models.StudentTestSuiteResult.FeedbackCalculator: 'StudentTestSuiteResult',
+    # Hack: SubmissionResultFeedback.student_test_suite_results returns
+    # List[StudentTestSuiteResult], but it gets serialized to StudentTestSuiteResultFeedback
+    ag_models.StudentTestSuiteResult: 'StudentTestSuiteResultFeedback',
+    ag_models.StudentTestSuiteResult.FeedbackCalculator: 'StudentTestSuiteResultFeedback',
     ag_models.BugsExposedFeedbackLevel: ag_models.BugsExposedFeedbackLevel.__name__,
 
     ag_models.RerunSubmissionsTask: ag_models.RerunSubmissionsTask.__name__,
@@ -274,7 +277,7 @@ def _django_field(
     result: dict = {
         'read_only': read_only,
         # str() is used to force processing of django lazy eval
-        'description': str(field.help_text) if hasattr(field, 'help_text') else '',
+        'description': str(field.help_text).strip() if hasattr(field, 'help_text') else '',
         'nullable': field.null,
     }
 
@@ -291,13 +294,13 @@ def _django_field(
 
     if isinstance(field, ag_fields.ValidatedJSONField):
         result.update({
-            'allOf': [_as_schema_ref(field.serializable_class)]
+            'oneOf': [_as_schema_ref(field.serializable_class)]
         })
         return result
 
     if isinstance(field, ag_fields.EnumField):
         result.update({
-            'allOf': [_as_schema_ref(field.enum_type)]
+            'oneOf': [_as_schema_ref(field.enum_type)]
         })
         return result
 
@@ -320,8 +323,9 @@ def _django_field(
 
         if field.name in model_class.get_serialize_related_fields():
             result.update({
-                'allOf': [_as_schema_ref(field.related_model)]
+                'oneOf': [_as_schema_ref(field.related_model)]
             })
+            return result
         else:
             return _PK_SCHEMA
 
@@ -355,7 +359,12 @@ def _property(prop: property, api_class: APIClassType, name: str) -> dict:
     if name == 'pk':
         return _PK_SCHEMA
 
-    return _get_py_type_schema(get_type_hints(prop.fget).get('return', Any))
+    result = {
+        'readOnly': True,
+        'description': _get_prop_description(prop),
+    }
+    result.update(_get_py_type_schema(get_type_hints(prop.fget).get('return', Any)))
+    return result
 
 
 @_get_field_schema.register
@@ -363,7 +372,20 @@ def _cached_property(prop: cached_property, api_class: APIClassType, name: str) 
     if name == 'pk':
         return _PK_SCHEMA
 
-    return _get_py_type_schema(get_type_hints(prop.func).get('return', Any))
+    result = {
+        'readOnly': True,
+        'description': _get_prop_description(prop),
+    }
+    result.update(_get_py_type_schema(get_type_hints(prop.func).get('return', Any)))
+    return result
+
+
+def _get_prop_description(prop: Union[property, cached_property]) -> str:
+    description = ''
+    if hasattr(prop, '__doc__') and prop.__doc__ is not None:
+        description = prop.__doc__.strip()
+
+    return description
 
 
 def _as_schema_ref(type: APIClassType) -> dict:
@@ -408,7 +430,7 @@ def _get_py_type_schema(type_: type) -> dict:
         return _PY_ATTR_TYPES[type_]
 
     if issubclass(type_, Enum):
-        return {'allOf': [_as_schema_ref(type_)]}
+        return {'oneOf': [_as_schema_ref(type_)]}
 
     return {'type': 'unknown'}
 
@@ -419,4 +441,5 @@ _PY_ATTR_TYPES = {
     str: {'type': 'string'},
     bool: {'type': 'boolean'},
     Decimal: {'type': 'string', 'format': 'float'},
+    dict: {'type': 'object'},
 }
