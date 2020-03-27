@@ -364,6 +364,7 @@ def _property(prop: property, api_class: APIClassType, name: str) -> dict:
         'description': _get_prop_description(prop),
     }
     result.update(_get_py_type_schema(get_type_hints(prop.fget).get('return', Any)))
+    result.update(_PROP_FIELD_OVERRIDES.get(api_class, {}).get(name, {}))
     return result
 
 
@@ -377,6 +378,7 @@ def _cached_property(prop: cached_property, api_class: APIClassType, name: str) 
         'description': _get_prop_description(prop),
     }
     result.update(_get_py_type_schema(get_type_hints(prop.func).get('return', Any)))
+    result.update(_PROP_FIELD_OVERRIDES.get(api_class, {}).get(name, {}))
     return result
 
 
@@ -386,6 +388,15 @@ def _get_prop_description(prop: Union[property, cached_property]) -> str:
         description = prop.__doc__.strip()
 
     return description
+
+
+_PROP_FIELD_OVERRIDES: Dict[APIClassType, Dict[str, dict]] = {
+    ag_models.Group: {
+        'member_names': {
+            'readOnly': False,
+        }
+    }
+}
 
 
 def _as_schema_ref(type: APIClassType) -> dict:
@@ -443,3 +454,7 @@ _PY_ATTR_TYPES = {
     Decimal: {'type': 'string', 'format': 'float'},
     dict: {'type': 'object'},
 }
+
+# =============================================================================
+
+
