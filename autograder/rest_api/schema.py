@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import sys
+from abc import abstractmethod
 from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
-from typing import (Any, Dict, ForwardRef, List, Sequence, Tuple, Type, Union,
-                    cast, get_args, get_origin, get_type_hints)
+from typing import (Any, Dict, ForwardRef, List, Literal, Optional, Sequence,
+                    Tuple, Type, TypedDict, Union, cast, get_args, get_origin,
+                    get_type_hints)
 
 import django.contrib.postgres.fields as pg_fields
 from django.conf import settings
@@ -14,7 +16,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Field, fields
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from django.utils.functional import cached_property
-from rest_framework.schemas.openapi import SchemaGenerator
+from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
 from timezone_field.fields import TimeZoneField
 
 import autograder.core.fields as ag_fields
@@ -62,12 +64,24 @@ class AGSchemaGenerator(SchemaGenerator):
         return schema
 
     def _get_model_schemas(self) -> dict:
-        return {
+        result = {
             'schemas': {
                 name: APIClassSchemaGenerator.factory(class_).generate()
                 for class_, name in API_OBJ_TYPE_NAMES.items()
             }
         }
+
+        result['schemas']['UserRoles'] = {
+            'type': 'object',
+            'properties': {
+                'is_admin': {'type': 'boolean'},
+                'is_staff': {'type': 'boolean'},
+                'is_student': {'type': 'boolean'},
+                'is_handgrader': {'type': 'boolean'},
+            }
+        }
+
+        return result
 
 
 API_OBJ_TYPE_NAMES = {
@@ -188,14 +202,31 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
     def __init__(self, class_: Type[AutograderModel]):
         self._class = class_
 
-    # We'll build CreateModelRequest schemas separately
-    # def generate(self) -> dict:
-    #     result = super().generate()
-    #     result['required'] = self._get_required_fields()
-    #     return result
+    def generate(self) -> dict:
+        result = super().generate()
+        result['required'] = self._get_required_fields()
+        return result
 
-    # def _get_required_fields(self):
-    #     return []
+    def _get_required_fields(self):
+        return [
+            field_name for field_name in self._class.get_serializable_fields()
+            if self._field_is_required(field_name)
+        ]
+
+    def _field_is_required(self, field_name) -> bool:
+        override = _PROP_FIELD_IS_REQUIRED_OVERRIDES.get(self._class, {}).get(field_name, None)
+        if override is not None:
+            return override
+
+        try:
+            field = cast(Type[AutograderModel], self._class)._meta.get_field(field_name)
+            return (
+                not field.many_to_many
+                and not field.blank
+                and field.default == fields.NOT_PROVIDED
+            )
+        except (FieldDoesNotExist, AttributeError):
+            return False
 
 
 class DictSerializableSchemaGenerator(HasToDictMixinSchemaGenerator):
@@ -275,7 +306,7 @@ def _django_field(
         read_only = True
 
     result: dict = {
-        'read_only': read_only,
+        'readOnly': read_only,
         # str() is used to force processing of django lazy eval
         'description': str(field.help_text).strip() if hasattr(field, 'help_text') else '',
         'nullable': field.null,
@@ -398,6 +429,12 @@ _PROP_FIELD_OVERRIDES: Dict[APIClassType, Dict[str, dict]] = {
     }
 }
 
+_PROP_FIELD_IS_REQUIRED_OVERRIDES: Dict[APIClassType, Dict[str, bool]] = {
+    ag_models.Group: {
+        'member_names': True
+    }
+}
+
 
 def _as_schema_ref(type: APIClassType) -> dict:
     return {'$ref': f'#/components/schemas/{API_OBJ_TYPE_NAMES[type]}'}
@@ -406,7 +443,7 @@ def _as_schema_ref(type: APIClassType) -> dict:
 _PK_SCHEMA = {
     'type': 'integer',
     'format': 'id',
-    'read_only': True,
+    'readOnly': True,
 }
 
 
@@ -458,3 +495,148 @@ _PY_ATTR_TYPES = {
 # =============================================================================
 
 
+class AGViewSchemaGenerator(AutoSchema):
+    def __init__(self, api_class: Optional[APIClassType] = None):
+        super().__init__()
+        self._api_class = api_class
+
+    def get_operation(self, path, method) -> dict:
+        return super().get_operation(path, method)
+
+    def generate_list_op_schema(self, path, method) -> dict:
+        result = super().get_operation(path, method)
+        result['responses']['200']['content']['application/json']['schema']['items'] = (
+            _as_schema_ref(self.get_api_class())
+        )
+        return result
+
+    def generate_create_op_schema(self, path, method) -> dict:
+        result = super().get_operation(path, method)
+        response_schema = result['responses'].pop('200')
+        response_schema['content']['application/json']['schema'] = (
+            _as_schema_ref(self.get_api_class())
+        )
+        result['responses']['201'] = response_schema
+
+        result['requestBody'] = self.make_api_class_request_body()
+
+        return result
+
+    def generate_retrieve_op_schema(self, path, method):
+        result = super().get_operation(path, method)
+        result['responses']['200']['content']['application/json']['schema'] = (
+            _as_schema_ref(self.get_api_class())
+        )
+
+        return result
+
+    def generate_patch_op_schema(self, path, method):
+        result = super().get_operation(path, method)
+        result['responses']['200']['content']['application/json']['schema'] = (
+            _as_schema_ref(self.get_api_class())
+        )
+
+        result['requestBody'] = self.make_api_class_request_body()
+
+        return result
+
+    def get_api_class(self) -> APIClassType:
+        if self._api_class is not None:
+            return self._api_class
+
+        if not hasattr(self.view, 'model_manager'):
+            raise Exception(
+                'View class has no "model_manager" and '
+                'the value provided for "api_class" was None'
+            )
+
+        return self.view.model_manager.model
+
+    def make_api_class_request_body(self) -> dict:
+        return {
+            'required': True,
+            'content': {
+                'application/json': {
+                    'schema': _as_schema_ref(self.get_api_class())
+                }
+            }
+        }
+
+
+class AGListCreateViewSchemaGenerator(AGViewSchemaGenerator):
+    def get_operation(self, path, method):
+        if method == 'GET':
+            return self.generate_list_op_schema(path, method)
+
+        if method == 'POST':
+            return self.generate_create_op_schema(path, method)
+
+        return super().get_operation(path, method)
+
+
+class AGDetailViewSchemaGenerator(AGViewSchemaGenerator):
+    def get_operation(self, path, method):
+        if method == 'GET':
+            return self.generate_retrieve_op_schema(path, method)
+
+        if method == 'PATCH':
+            return self.generate_patch_op_schema(path, method)
+
+        return super().get_operation(path, method)
+
+
+class CustomViewDict(TypedDict, total=False):
+    GET: CustomViewMethodData
+    POST: CustomViewMethodData
+    PUT: CustomViewMethodData
+    PATCH: CustomViewMethodData
+    DELETE: CustomViewMethodData
+
+
+class CustomViewMethodData(TypedDict, total=False):
+    request_body_ref: str
+    responses: Dict[str, ResponseSchemaData]
+
+
+class ResponseSchemaData(TypedDict, total=False):
+    content_type: str
+    body_ref: str
+
+
+HTTPMethodName = Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+
+
+class CustomViewSchema(AutoSchema):
+    def __init__(self, data: CustomViewDict):
+        super().__init__()
+        self.data = data
+
+    def get_operation(self, path, method: HTTPMethodName) -> dict:
+        result = super().get_operation(path, method)
+        method_data = self.data.get(method, None)
+        if method_data is None:
+            return result
+
+        if 'request_body_ref' in method_data:
+            result['request_body'] = {
+                'required': True,
+                'content': {
+                    'application/json': {
+                        'schema': {'$ref': method_data['request_body_ref']}
+                    }
+                }
+            }
+
+        responses = {}
+        for status, response_data in method_data.get('responses', {}).items():
+            assert 'body_ref' in response_data
+            responses[status] = {
+                'content': {
+                    response_data.get('content_type', 'application/json'): {
+                        'schema': {'$ref': response_data['body_ref']}
+                    }
+                }
+            }
+
+        result['responses'] = responses
+        return result

@@ -1,11 +1,13 @@
-from typing import Optional, List
+from abc import abstractmethod
+from typing import Optional, List, Protocol
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, mixins, response, status
-from rest_framework.exceptions import ValidationError as RestFrameworkValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -15,6 +17,22 @@ from autograder.rest_api.views.schema_generation import (
 from ..transaction_mixins import (
     TransactionCreateMixin, TransactionPartialUpdateMixin,
     TransactionDestroyMixin)
+from rest_framework.response import Response
+
+
+def convert_django_validation_error(func):
+    """
+    If the decorated function raises django.core.exceptions.ValidationError,
+    catches the error and raises rest_framework.exceptions.ValidationError
+    with the same content.
+    """
+    def decorated_func(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except DjangoValidationError as e:
+            raise ValidationError(e.message_dict)
+
+    return decorated_func
 
 
 class GetObjectLockOnUnsafeMixin:
@@ -80,6 +98,90 @@ class AGModelAPIView(GetObjectLockOnUnsafeMixin, AlwaysIsAuthenticatedMixin, API
     api_tags = None  # type: Optional[List[APITags]]
 
 
+class AGModelDetailView(AGModelAPIView):
+    """
+    A view base class used for defining endpoints that operate on a
+    single object, e.g. retrieving, updating, deleting.
+    """
+    def do_get(self):
+        return response.Response(self.serialize_object(self.get_object()))
+
+    @convert_django_validation_error
+    @transaction.atomic
+    def do_patch(self):
+        obj = self.get_object()
+        obj.validate_and_update(**self.request.data)
+        return response.Response(data=self.serialize_object(obj), status=status.HTTP_200_OK)
+
+    @transaction.atomic
+    def do_delete(self):
+        self.get_object().delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    def serialize_object(self, obj):
+        return obj.to_dict()
+
+
+class NestedModelView(AGModelAPIView):
+    """
+    A view base class used for defining endpoints that operate on collections
+    of objects that belong to one model type, e.g. Projects for a Course.
+    """
+    def get_queryset(self):
+        """
+        Returns a queryset of objects related to the one loaded with
+        self.get_object().
+        """
+        if self.nested_field_name is None:
+            raise ValueError('"nested_field_name" must not be None.')
+
+        return getattr(self.get_object(), self.nested_field_name).all()
+
+    # The name of the relationship that can be used to load the nested objects.
+    # For example, if loading Projects from a Course, this attribute would
+    # have the value 'projects'.
+    # If NestedModelView.get_queryset() or NestedModelView.do_list() are
+    # to be called, this attribute must be non-null.
+    nested_field_name: Optional[str] = None
+
+    # In the object being created, the name of the field whose
+    # value is the parent object (the object loaded with self.get_object()).
+    # For example, if creating a new Project for a Course, this attribute
+    # would have the value 'course'.
+    # If NestedModelView.do_create() is to be called,
+    # this attribute must be non-null.
+    parent_obj_field_name: Optional[str] = None
+
+    def do_list(self):
+        return Response(
+            data=[self.serialize_object(obj) for obj in self.get_queryset()],
+            status=status.HTTP_200_OK,
+        )
+
+    @convert_django_validation_error
+    @transaction.atomic
+    def do_create(self):
+        data = dict(self.request.data)
+        data[self.parent_obj_field_name] = self.get_object()
+
+        queryset = self.get_queryset()
+        result = queryset.validate_and_create(**data)
+        return Response(
+            data=self.serialize_object(result),
+            status=status.HTTP_201_CREATED
+        )
+
+    # def do_retrieve(self):
+    #     if self.nested_field_name is None:
+    #         raise ValueError('"nested_field_name" must not be None.')
+
+    #     obj = getattr(self.get_object(), self.nested_field_name)
+    #     return response.Response(self.serialize_object(obj))
+
+    def serialize_object(self, obj):
+        return obj.to_dict()
+
+
 class AGModelGenericViewSet(GetObjectLockOnUnsafeMixin,
                             AlwaysIsAuthenticatedMixin,
                             viewsets.GenericViewSet):
@@ -143,6 +245,7 @@ class ListNestedModelMixin(mixins.ListModelMixin):
     pass
 
 
+# TODO: phase out (it's only used for handgrading rubric)
 class RetrieveNestedModelMixin(mixins.RetrieveModelMixin):
     """
     Provides 'retrieve' functionality when mixed with a
@@ -218,6 +321,7 @@ class ListCreateNestedModelViewSet(ListNestedModelMixin,
         return super().as_view(actions={'get': 'list', 'post': 'create'}, **initkwargs)
 
 
+# TODO: phase out
 class RetrieveCreateNestedModelViewSet(RetrieveNestedModelMixin,
                                        CreateNestedModelMixin,
                                        NestedModelViewSet):
@@ -242,21 +346,6 @@ def handle_object_does_not_exist_404(func):
             return func(*args, **kwargs)
         except ObjectDoesNotExist:
             raise Http404
-
-    return decorated_func
-
-
-def convert_django_validation_error(func):
-    """
-    If the decorated function raises django.core.exceptions.ValidationError,
-    catches the error and raises rest_framework.exceptions.ValidationError
-    with the same content.
-    """
-    def decorated_func(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except DjangoValidationError as e:
-            raise RestFrameworkValidationError(e.message_dict)
 
     return decorated_func
 

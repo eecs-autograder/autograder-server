@@ -24,7 +24,7 @@ class ListCoursesTestCase(UnitTestBase):
         [superuser] = obj_build.make_users(1, superuser=True)
 
         self.client.force_authenticate(user=superuser)
-        response = self.client.get(reverse('course-list'))
+        response = self.client.get(reverse('list-create-courses'))
 
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
@@ -39,7 +39,7 @@ class ListCoursesTestCase(UnitTestBase):
 
         for user in admin, guest:
             self.client.force_authenticate(user=user)
-            response = self.client.get(reverse('course-list'))
+            response = self.client.get(reverse('list-create-courses'))
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
@@ -53,7 +53,7 @@ class CreateCourseTestCase(UnitTestBase):
         self.client.force_authenticate(superuser)
 
         name = 'new_course'
-        response = self.client.post(reverse('course-list'), {'name': name})
+        response = self.client.post(reverse('list-create-courses'), {'name': name})
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         loaded_course = ag_models.Course.objects.get(name=name)
@@ -65,7 +65,7 @@ class CreateCourseTestCase(UnitTestBase):
         user.user_permissions.add(Permission.objects.get(codename='create_course'))
         self.client.force_authenticate(user)
 
-        response = self.client.post(reverse('course-list'), {'name': 'waluigi'})
+        response = self.client.post(reverse('list-create-courses'), {'name': 'waluigi'})
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         loaded_course = ag_models.Course.objects.get(name='waluigi')
@@ -77,7 +77,7 @@ class CreateCourseTestCase(UnitTestBase):
 
         name = 'spam'
         self.client.force_authenticate(guest)
-        response = self.client.post(reverse('course-list'), {'name': name})
+        response = self.client.post(reverse('list-create-courses'), {'name': name})
 
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.assertEqual(0, ag_models.Course.objects.count())
@@ -319,7 +319,7 @@ class UserRolesForCourseTestCase(test_impls.GetObjectTest, UnitTestBase):
         super().setUp()
         self.client = APIClient()
         self.course = obj_build.make_course()
-        self.url = reverse('course-my-roles', kwargs={'pk': self.course.pk})
+        self.url = reverse('course-user-roles', kwargs={'pk': self.course.pk})
 
     def expected_response_base(self):
         return {
