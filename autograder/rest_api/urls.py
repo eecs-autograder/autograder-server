@@ -12,8 +12,6 @@ from autograder.rest_api import views
 user_router = routers.SimpleRouter()
 user_router.register(r'users', views.UserViewSet, basename='user')
 
-course_router = routers.SimpleRouter()
-course_router.register(r'courses', views.CourseViewSet, basename='course')
 
 project_router = routers.SimpleRouter()
 project_router.register(r'projects', views.ProjectDetailViewSet, basename='project')
@@ -133,7 +131,11 @@ urlpatterns = [
     path('users/<username_or_pk>/late_days/', views.UserLateDaysView.as_view(),
          name='user-late-days'),
 
-    url(r'', include(course_router.urls)),
+    path('courses/', views.ListCreateCourseView.as_view(), name='list-create-courses'),
+    path('courses/<int:pk>/', views.CourseDetailView.as_view(), name='course-detail'),
+    path('courses/<int:pk>/my_roles/',
+         views.CourseUserRolesView.as_view(),
+         name='course-user-roles'),
     path('course/<str:name>/<str:semester>/<int:year>/',
          views.CourseByNameSemesterYearView.as_view(),
          name='course-by-fields'),

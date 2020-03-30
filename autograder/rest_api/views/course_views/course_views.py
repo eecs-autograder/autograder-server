@@ -4,8 +4,8 @@ from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
 # from drf_yasg.openapi import Parameter, Schema
 # from drf_yasg.utils import swagger_auto_schema
-from rest_framework import mixins, permissions, decorators, response, status
-from rest_framework.permissions import DjangoModelPermissions, BasePermission
+from rest_framework import decorators, mixins, permissions, response, status
+from rest_framework.permissions import BasePermission, DjangoModelPermissions
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -14,10 +14,13 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.copy_project_and_course import copy_course
 from autograder.rest_api import transaction_mixins
+from autograder.rest_api.schema import AGDetailViewSchemaGenerator, AGListCreateViewSchemaGenerator, CustomViewSchema
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, AlwaysIsAuthenticatedMixin, require_body_params,
-    convert_django_validation_error)
-from autograder.rest_api.views.schema_generation import APITags#, AGModelViewAutoSchema
+    AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
+    AlwaysIsAuthenticatedMixin, CreateNestedModelMixin, NestedModelView,
+    convert_django_validation_error, require_body_params)
+from autograder.rest_api.views.schema_generation import \
+    APITags  # , AGModelViewAutoSchema
 
 
 class CoursePermissions(permissions.BasePermission):
@@ -46,39 +49,64 @@ class CoursePermissions(permissions.BasePermission):
 #     }
 # )
 
+class ListCreateCoursePermissions(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return request.user.is_superuser
 
-class CourseViewSet(mixins.ListModelMixin,
-                    mixins.RetrieveModelMixin,
-                    transaction_mixins.TransactionPartialUpdateMixin,
-                    transaction_mixins.TransactionCreateMixin,
-                    AGModelGenericViewSet):
-    serializer_class = ag_serializers.CourseSerializer
-    permission_classes = (permissions.IsAuthenticated, CoursePermissions,)
+        return request.user.is_superuser or request.user.has_perm('core.create_course')
+
+
+class ListCreateCourseView(APIView):
+    schema = AGListCreateViewSchemaGenerator(ag_models.Course)
+
+    permission_classes = [ListCreateCoursePermissions]
+
+    def get(self, *args, **kwargs):
+        return response.Response(
+            data=[course.to_dict() for course in ag_models.Course.objects.all()],
+            status=status.HTTP_200_OK
+        )
+
+    @transaction.atomic
+    def post(self, *args, **kwargs):
+        new_course = ag_models.Course.objects.validate_and_create(
+            **self.request.data
+        )
+        new_course.admins.add(self.request.user)
+        return response.Response(data=new_course.to_dict(), status=status.HTTP_201_CREATED)
+
+
+class CourseDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator(ag_models.Course)
+
+    model_manager = ag_models.Course.objects
+    permission_classes = [P(ag_permissions.is_admin()) | P(ag_permissions.IsReadOnly)]
+
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+    def patch(self, *args, **kwargs):
+        return self.do_patch()
+
+    def delete(self, *args, **kwargs):
+        return self.do_delete()
+
+
+class CourseUserRolesView(AGModelAPIView):
+    schema = CustomViewSchema({
+        'GET': {
+            'responses': {
+                '200': {'body_ref': '#/components/schemas/UserRoles'}
+            }
+        }
+    })
 
     model_manager = ag_models.Course.objects
 
-    api_tags = [APITags.courses]
-
-    def get_queryset(self):
-        return ag_models.Course.objects.all()
-
-    def perform_create(self, serializer):
-        course = serializer.save()
-        course.admins.add(self.request.user)
-
-    # @swagger_auto_schema(responses={'200': _my_roles_schema}, api_tags=[APITags.permissions])
-    @decorators.action(detail=True)
-    def my_roles(self, request, *args, **kwargs):
+    def get(self, *args, **kwargs):
         course = self.get_object()
-        return response.Response(course.get_user_roles(request.user))
-
-
-class CanCreateCourses(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.has_perm('core.create_course')
-
-    def has_object_permission(self, request, view, obj):
-        return self.has_permission(request, view)
+        return response.Response(course.get_user_roles(self.request.user))
 
 
 class CopyCourseView(AGModelGenericViewSet):
@@ -89,7 +117,7 @@ class CopyCourseView(AGModelGenericViewSet):
 
     serializer_class = ag_serializers.CourseSerializer
 
-    permission_classes = P(ag_permissions.IsSuperuser) | P(ag_permissions.is_admin()),
+    permission_classes = [P(ag_permissions.IsSuperuser) | P(ag_permissions.is_admin())]
 
     # @swagger_auto_schema(
     #     operation_description="""Makes a copy of the given course and all its projects.

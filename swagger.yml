@@ -434,7 +434,7 @@ paths:
           description: ''
   /api/courses/:
     get:
-      operationId: listCourses
+      operationId: listListCreateCourses
       description: ''
       parameters: []
       responses:
@@ -443,21 +443,29 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  $ref: '#/components/schemas/Course'
           description: ''
     post:
-      operationId: createCourse
+      operationId: CreateListCreateCourse
       description: ''
       parameters: []
       responses:
-        '200':
+        '201':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Course'
           description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Course'
   /api/courses/{id}/:
     get:
-      operationId: retrieveCourse
+      operationId: RetrieveCourseDetail
       description: ''
       parameters:
       - name: id
@@ -470,10 +478,11 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Course'
           description: ''
     patch:
-      operationId: partial_updateCourse
+      operationId: PartialUpdateCourseDetail
       description: ''
       parameters:
       - name: id
@@ -486,11 +495,31 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Course'
+          description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Course'
+    delete:
+      operationId: DestroyCourseDetail
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
           description: ''
   /api/courses/{id}/my_roles/:
     get:
-      operationId: my_rolesCourse
+      operationId: listCourseUserRoles
       description: ''
       parameters:
       - name: id
@@ -503,8 +532,8 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema:
+                $ref: '#/components/schemas/UserRoles'
   /api/course/{name}/{semester}/{year}/:
     get:
       operationId: RetrieveCourseByNameSemesterYear
@@ -4017,31 +4046,31 @@ components:
         pk: &id010
           type: integer
           format: id
-          read_only: true
+          readOnly: true
         username:
-          read_only: false
+          readOnly: false
           description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
             only.
           nullable: false
           type: string
         first_name:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           type: string
         last_name:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           type: string
         email:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           type: string
           format: email
         is_superuser:
-          read_only: false
+          readOnly: false
           description: Designates that this user has all permissions without explicitly
             assigning them.
           nullable: false
@@ -4051,34 +4080,34 @@ components:
       properties:
         pk: *id010
         name:
-          read_only: false
+          readOnly: false
           description: The name of this course. Must be unique, non-empty and non-null.
           nullable: false
           type: string
         semester:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: true
           oneOf:
           - $ref: '#/components/schemas/Semester'
         year:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: true
           type: integer
         subtitle:
-          read_only: false
+          readOnly: false
           description: An optional descriptive name for the course.
           nullable: false
           type: string
         num_late_days:
-          read_only: false
+          readOnly: false
           description: The number of late days to give to users submitting to this
             course's projects.
           nullable: false
           type: integer
         allowed_guest_domain:
-          read_only: false
+          readOnly: false
           description: "When non-empty, indicates that guest users' usernames\n  \
             \                   must end with this string for them to be allowed access\n\
             \                     to projects that allow guests.\n               \
@@ -4087,11 +4116,13 @@ components:
           nullable: false
           type: string
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
+      required:
+      - name
     Semester:
       type: string
       enum:
@@ -4104,7 +4135,7 @@ components:
       properties:
         pk: *id010
         name:
-          read_only: false
+          readOnly: false
           description: "The name used to identify this project.\n            Must\
             \ be non-empty and non-null.\n            Must be unique among Projects\
             \ associated with\n            a given course.\n            This field\
@@ -4112,20 +4143,20 @@ components:
           nullable: false
           type: string
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         course: *id010
         visible_to_students:
-          read_only: false
+          readOnly: false
           description: "Whether information about this Project can\n            be\
             \ viewed by students."
           nullable: false
           type: boolean
         closing_time:
-          read_only: false
+          readOnly: false
           description: "The date and time that this project should stop\n        \
             \    accepting submissions.\n            A value of None indicates that\
             \ this project should\n            stay open.\n            In the API,\
@@ -4134,7 +4165,7 @@ components:
           type: string
           format: date-time
         soft_closing_time:
-          read_only: false
+          readOnly: false
           description: "The date and time that should be displayed as the\n      \
             \      due date for this project. Unlike closing_time,\n            soft_closing_time\
             \ does not affect whether submissions are\n            actually accepted.\n\
@@ -4144,20 +4175,20 @@ components:
           type: string
           format: date-time
         disallow_student_submissions:
-          read_only: false
+          readOnly: false
           description: "A hard override that indicates that students should\n    \
             \        be prevented from submitting even if visible_to_students is\n\
             \            True and it is before closing_time."
           nullable: false
           type: boolean
         disallow_group_registration:
-          read_only: false
+          readOnly: false
           description: "A hard override that indicates that students should\n    \
             \        not be able to send, accept, or reject group\n            invitations."
           nullable: false
           type: boolean
         guests_can_submit:
-          read_only: false
+          readOnly: false
           description: "By default, only admins, staff, and students\n           \
             \ for a given Course can view and submit to its Projects.\n          \
             \  When True, submissions will be accepted from guests\n            with\
@@ -4167,41 +4198,41 @@ components:
           nullable: false
           type: boolean
         min_group_size:
-          read_only: false
+          readOnly: false
           description: "The minimum number of students that can work in a\n      \
             \      group on this project.\n            Must be >= 1.\n           \
             \ Must be <= max_group_size."
           nullable: false
           type: integer
         max_group_size:
-          read_only: false
+          readOnly: false
           description: "The maximum number of students that can work in a\n      \
             \      group on this project.\n            Must be >= 1.\n           \
             \ Must be >= min_group_size."
           nullable: false
           type: integer
         submission_limit_per_day:
-          read_only: false
+          readOnly: false
           description: "The number of submissions each group is allowed per\n    \
             \        day before either reducing feedback or preventing further\n \
             \           submissions. A value of None indicates no limit."
           nullable: true
           type: integer
         allow_submissions_past_limit:
-          read_only: false
+          readOnly: false
           description: "Whether to allow additional submissions after a\n        \
             \    group has submitted submission_limit_per_day times."
           nullable: false
           type: boolean
         groups_combine_daily_submissions:
-          read_only: false
+          readOnly: false
           description: "If True, group members can \"pool\" their daily submissions.\n\
             \            For example, if submission_limit_per_day is 3,\n        \
             \    a group with 2 members would get 6 submissions per day."
           nullable: false
           type: boolean
         submission_limit_reset_time:
-          read_only: false
+          readOnly: false
           description: "The time that marks the beginning and end of the 24\n    \
             \        hour period during which submissions should be counted\n    \
             \        towards the daily limit. Defaults to 00:00:00."
@@ -4209,31 +4240,31 @@ components:
           type: string
           format: time
         submission_limit_reset_timezone:
-          read_only: false
+          readOnly: false
           description: "The timezone to use when computing how many\n            submissions\
             \ a group has made in a 24 hour period."
           nullable: false
           type: string
           format: timezone
         num_bonus_submissions:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           type: integer
         total_submission_limit:
-          read_only: false
+          readOnly: false
           description: "The maximum number of times a Group can submit to\n      \
             \      this Project EVER."
           nullable: true
           type: integer
         allow_late_days:
-          read_only: false
+          readOnly: false
           description: "Whether to allow the use of late days for submitting\n   \
             \         past the deadline."
           nullable: false
           type: boolean
         ultimate_submission_policy:
-          read_only: false
+          readOnly: false
           description: "The \"ultimate\" submission for a group is the one\n     \
             \       that will be used for final grading. This field specifies\n  \
             \          how the ultimate submission should be determined."
@@ -4241,21 +4272,21 @@ components:
           oneOf:
           - $ref: '#/components/schemas/UltimateSubmissionPolicy'
         hide_ultimate_submission_fdbk:
-          read_only: false
+          readOnly: false
           description: "A hard override that indicates that ultimate\n           \
             \ submission feedback should not be shown, even if the\n            appropriate\
             \ criteria are met."
           nullable: false
           type: boolean
         instructor_files:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: array
           items:
             $ref: '#/components/schemas/InstructorFile'
         expected_student_files:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: array
@@ -4265,6 +4296,9 @@ components:
           readOnly: true
           description: Whether this project has a handgrading rubric.
           type: boolean
+      required:
+      - name
+      - course
     UltimateSubmissionPolicy:
       type: string
       enum:
@@ -4277,7 +4311,7 @@ components:
         pk: *id010
         project: *id010
         pattern:
-          read_only: false
+          readOnly: false
           description: "A shell-style file pattern suitable for\n            use with\
             \ Python's fnmatch.fnmatch()\n            function (https://docs.python.org/3.5/library/fnmatch.html)\n\
             \            This string must be a legal UNIX filename and may not be\n\
@@ -4286,35 +4320,38 @@ components:
           nullable: false
           type: string
         min_num_matches:
-          read_only: false
+          readOnly: false
           description: "The minimum number of submitted student files that\n     \
             \       should match the pattern. Must be non-negative."
           nullable: false
           type: integer
         max_num_matches:
-          read_only: false
+          readOnly: false
           description: "The maximum number of submitted student files that\n     \
             \       can match the pattern. Must be >= min_num_matches"
           nullable: false
           type: integer
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
+      required:
+      - project
+      - pattern
     InstructorFile:
       type: object
       properties:
         pk: *id010
         project: *id010
         name:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
@@ -4323,38 +4360,44 @@ components:
           readOnly: true
           description: ''
           type: integer
+      required:
+      - project
+      - name
     DownloadTask:
       type: object
       properties:
         pk: *id010
         project: *id010
         download_type:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/DownloadType'
         result_filename:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           type: string
         progress:
-          read_only: false
+          readOnly: false
           description: A percentage indicating how close the task is to completion.
           nullable: false
           type: integer
         error_msg:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           type: string
         created_at:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
+      required:
+      - project
+      - download_type
     DownloadType:
       type: string
       enum:
@@ -4368,7 +4411,7 @@ components:
         pk: *id010
         project: *id010
         extended_due_date:
-          read_only: false
+          readOnly: false
           description: "When this field is set, it indicates that members\n      \
             \      of this submission group can submit until this specified\n    \
             \        date, overriding the project closing time.\n            Default\
@@ -4383,13 +4426,13 @@ components:
           items: &id011
             type: string
         bonus_submissions_remaining:
-          read_only: false
+          readOnly: false
           description: "The number of bonus submissions this group has left.\n   \
             \         This field is automatically initialized to self.project.num_bonus_submissions"
           nullable: false
           type: integer
         late_days_used:
-          read_only: true
+          readOnly: true
           description: "Keeps track of how many late days each user in this\n    \
             \        group has used.\n            Data format: {\n               \
             \ \"\\<username\\>\": \\<num late days used\\>,\n                ...\n\
@@ -4410,17 +4453,20 @@ components:
             \ limit."
           type: integer
         created_at:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
+      required:
+      - project
+      - member_names
     GroupInvitation:
       type: object
       properties:
@@ -4438,24 +4484,27 @@ components:
             \        this invitation.\n        This field is READ ONLY."
           type: array
           items: *id011
+      required:
+      - invitation_creator
+      - project
     Submission:
       type: object
       properties:
         pk: *id010
         group: *id010
         timestamp:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         submitter:
-          read_only: true
+          readOnly: true
           description: The name of the user who made this submission
           nullable: false
           type: string
         submitted_filenames:
-          read_only: true
+          readOnly: true
           description: "The names of files that were submitted,\n                \
             \     excluding those that were discarded."
           nullable: false
@@ -4463,14 +4512,14 @@ components:
           items: &id012
             type: string
         discarded_files:
-          read_only: true
+          readOnly: true
           description: The names of files that were discarded when this Submission
             was created.
           nullable: false
           type: array
           items: *id012
         missing_files:
-          read_only: true
+          readOnly: true
           description: "Stores missing filenames and the additional number\n     \
             \       of files needed to satisfy a file pattern requirement.\n     \
             \       Stored as key-value pairs of the form:\n            {pattern:\
@@ -4478,24 +4527,24 @@ components:
           nullable: false
           type: object
         status:
-          read_only: true
+          readOnly: true
           description: "The grading status of this submission see\n            Submission.GradingStatus\
             \ for details on allowed values."
           nullable: false
           type: string
         count_towards_daily_limit:
-          read_only: false
+          readOnly: false
           description: "Indicates whether this submission should count\n         \
             \   towards the daily submission limit."
           nullable: false
           type: boolean
         is_past_daily_limit:
-          read_only: true
+          readOnly: true
           description: Whether this submission is past the daily submission limit.
           nullable: false
           type: boolean
         is_bonus_submission:
-          read_only: true
+          readOnly: true
           description: "When True, indicates that the group that made this\n     \
             \       submission should be able to request normal feedback for\n   \
             \         this submission's results.\n            Note: If this field\
@@ -4503,13 +4552,13 @@ components:
           nullable: false
           type: boolean
         count_towards_total_limit:
-          read_only: false
+          readOnly: false
           description: Whether this submission should count towards the total submission
             limit.
           nullable: false
           type: boolean
         does_not_count_for:
-          read_only: true
+          readOnly: true
           description: "A list of users for whom this submission will NOT\n      \
             \      count as their final graded submission. Users are added to\n  \
             \          this list if they are out of late days and another group\n\
@@ -4518,7 +4567,7 @@ components:
           nullable: false
           type: array
           items:
-            read_only: true
+            readOnly: true
             description: ''
             nullable: false
             type: string
@@ -4528,11 +4577,13 @@ components:
             \        to be graded for the associated project."
           type: integer
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
+      required:
+      - group
     Command:
       type: object
       properties:
@@ -4572,35 +4623,37 @@ components:
       properties:
         pk: *id010
         display_name:
-          read_only: false
+          readOnly: false
           description: "A human-readable name for this sandbox image.\n          \
             \           Must be unique among images belonging to a course.\n     \
             \                This field is required."
           nullable: false
           type: string
         course: *id010
+      required:
+      - display_name
     BuildSandboxDockerImageTask:
       type: object
       properties:
         pk: *id010
         status:
-          read_only: true
+          readOnly: true
           description: The status of the build.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/BuildImageStatus'
         return_code:
-          read_only: true
+          readOnly: true
           description: The exit status of the build command.
           nullable: true
           type: integer
         timed_out:
-          read_only: true
+          readOnly: true
           description: True if the build timed out.
           nullable: false
           type: boolean
         filenames:
-          read_only: true
+          readOnly: true
           description: The names of the files uploaded by the user.
           nullable: false
           type: array
@@ -4608,16 +4661,17 @@ components:
         course: *id010
         image_to_update: *id010
         validation_error_msg:
-          read_only: true
+          readOnly: true
           description: Information for the user as to while the built image is invalid.
           nullable: false
           type: string
         internal_error_msg:
-          read_only: true
+          readOnly: true
           description: If an internal error occurs, the error message will be stored
             here.
           nullable: false
           type: string
+      required: []
     BuildImageStatus:
       type: string
       enum:
@@ -4632,7 +4686,7 @@ components:
       properties:
         pk: *id010
         name:
-          read_only: false
+          readOnly: false
           description: "The name used to identify this suite.\n                  \
             \   Must be non-empty and non-null.\n                     Must be unique\
             \ among suites that belong to the same project.\n                    \
@@ -4641,13 +4695,13 @@ components:
           type: string
         project: *id010
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         instructor_files_needed:
-          read_only: false
+          readOnly: false
           description: "The project files that will be copied into the sandbox before\
             \ the suite's\n                     tests are run."
           nullable: false
@@ -4655,13 +4709,13 @@ components:
           items:
             $ref: '#/components/schemas/InstructorFile'
         read_only_instructor_files:
-          read_only: false
+          readOnly: false
           description: "When True, project files needed for this suite will be read-only\
             \ when this\n                     suite is run."
           nullable: false
           type: boolean
         student_files_needed:
-          read_only: false
+          readOnly: false
           description: "Student-submitted files matching these patterns will be copied\
             \ into the\n                     sandbox before the suite's tests are\
             \ run."
@@ -4670,14 +4724,14 @@ components:
           items:
             $ref: '#/components/schemas/ExpectedStudentFile'
         ag_test_cases:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: array
           items:
             $ref: '#/components/schemas/AGTestCase'
         setup_suite_cmd:
-          read_only: false
+          readOnly: false
           description: "A command to be run before this suite's tests are run.\n \
             \                    This command is only run once at the beginning of\
             \ the suite.\n                     This command will be run after the\
@@ -4686,53 +4740,56 @@ components:
           nullable: false
           type: string
         setup_suite_cmd_name:
-          read_only: false
+          readOnly: false
           description: The name of this suite's setup command.
           nullable: false
           type: string
         sandbox_docker_image:
-          read_only: false
+          readOnly: false
           description: The sandbox docker image to use for running this suite.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/SandboxDockerImage'
         allow_network_access:
-          read_only: false
+          readOnly: false
           description: "Specifies whether the sandbox should allow commands run inside\
             \ of it to\n                     make network calls outside of the sandbox."
           nullable: false
           type: boolean
         deferred:
-          read_only: false
+          readOnly: false
           description: "If true, this test suite can be graded asynchronously. Deferred\
             \ suites that\n                     have yet to be graded do not prevent\
             \ members of a group from submitting\n                     again."
           nullable: false
           type: boolean
         normal_fdbk_config:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
         ultimate_submission_fdbk_config:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
         past_limit_submission_fdbk_config:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
         staff_viewer_fdbk_config:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
+      required:
+      - name
+      - project
     AGTestSuiteFeedbackConfig:
       type: object
       properties:
@@ -4760,7 +4817,7 @@ components:
       properties:
         pk: *id010
         name:
-          read_only: false
+          readOnly: false
           description: "The name used to identify this autograder test.\n        \
             \             Must be non-empty and non-null.\n                     Must\
             \ be unique among autograder tests that belong to the same suite.\n  \
@@ -4768,43 +4825,46 @@ components:
           nullable: false
           type: string
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         ag_test_suite: *id010
         ag_test_commands:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: array
           items:
             $ref: '#/components/schemas/AGTestCommand'
         normal_fdbk_config:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
         ultimate_submission_fdbk_config:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
         past_limit_submission_fdbk_config:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
         staff_viewer_fdbk_config:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
+      required:
+      - name
+      - ag_test_suite
     AGTestCaseFeedbackConfig:
       type: object
       properties:
@@ -4819,7 +4879,7 @@ components:
       properties:
         pk: *id010
         name:
-          read_only: false
+          readOnly: false
           description: "The name used to identify this command.\n                \
             \         Must be non-empty and non-null.\n                         Must\
             \ be unique among commands that belong to the same autograder test.\n\
@@ -4828,13 +4888,13 @@ components:
           type: string
         ag_test_case: *id010
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         cmd:
-          read_only: false
+          readOnly: false
           description: "A string containing the command to be run.\n             \
             \        Note: This string will be inserted into ['bash', '-c', <cmd>]\n\
             \                        in order to be executed.\n                  \
@@ -4844,20 +4904,20 @@ components:
           nullable: false
           type: string
         stdin_source:
-          read_only: false
+          readOnly: false
           description: Specifies what kind of source stdin will be redirected from.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/StdinSource'
         stdin_text:
-          read_only: false
+          readOnly: false
           description: "A string whose contents should be redirected to the stdin\
             \ of this command.\n                     This value is used when stdin_source\
             \ is StdinSource.text and is ignored\n                     otherwise."
           nullable: false
           type: string
         stdin_instructor_file:
-          read_only: false
+          readOnly: false
           description: "An InstructorFile whose contents should be redirected to the\
             \ stdin of this\n                     command. This value is used when\
             \ stdin_source is StdinSource.instructor_file\n                     and\
@@ -4866,27 +4926,27 @@ components:
           oneOf:
           - $ref: '#/components/schemas/InstructorFile'
         expected_return_code:
-          read_only: false
+          readOnly: false
           description: Specifies the command's expected return code.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/ExpectedReturnCode'
         expected_stdout_source:
-          read_only: false
+          readOnly: false
           description: Specifies what kind of source this command's stdout should
             be compared to.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/ExpectedOutputSource'
         expected_stdout_text:
-          read_only: false
+          readOnly: false
           description: "A string whose contents should be compared against this command's\
             \ stdout.\n                     This value is used when expected_stdout_source\
             \ is ExpectedOutputSource.text\n                     and is ignored otherwise."
           nullable: false
           type: string
         expected_stdout_instructor_file:
-          read_only: false
+          readOnly: false
           description: "An InstructorFile whose contents should be compared against\
             \ this command's\n                     stdout. This value is used (and\
             \ may not be null) when expected_stdout_source\n                     is\
@@ -4895,21 +4955,21 @@ components:
           oneOf:
           - $ref: '#/components/schemas/InstructorFile'
         expected_stderr_source:
-          read_only: false
+          readOnly: false
           description: Specifies what kind of source this command's stderr should
             be compared to.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/ExpectedOutputSource'
         expected_stderr_text:
-          read_only: false
+          readOnly: false
           description: "A string whose contents should be compared against this command's\
             \ stderr.\n                     This value is used when expected_stderr_source\
             \ is ExpectedOutputSource.text\n                     and is ignored otherwise."
           nullable: false
           type: string
         expected_stderr_instructor_file:
-          read_only: false
+          readOnly: false
           description: "An InstructorFile whose contents should be compared against\
             \ this command's\n                     stderr. This value is used (and\
             \ may not be null) when expected_stderr_source\n                     is\
@@ -4918,48 +4978,48 @@ components:
           oneOf:
           - $ref: '#/components/schemas/InstructorFile'
         ignore_case:
-          read_only: false
+          readOnly: false
           description: Ignore case when checking output. Equivalent to diff -i
           nullable: false
           type: boolean
         ignore_whitespace:
-          read_only: false
+          readOnly: false
           description: Ignore inline whitespace when checking output. Equivalent to
             diff -w
           nullable: false
           type: boolean
         ignore_whitespace_changes:
-          read_only: false
+          readOnly: false
           description: Ignore whitespace changes when checking output. Equivalent
             to diff -b
           nullable: false
           type: boolean
         ignore_blank_lines:
-          read_only: false
+          readOnly: false
           description: Ignore changes in blank lines when checking output. Equivalent
             to diff -B
           nullable: false
           type: boolean
         points_for_correct_return_code:
-          read_only: false
+          readOnly: false
           description: "The number of points to be awarded when this command\n   \
             \                  produces the correct return_code"
           nullable: false
           type: integer
         points_for_correct_stdout:
-          read_only: false
+          readOnly: false
           description: "The number of points to be awarded when this command\n   \
             \                  produces the correct stdout"
           nullable: false
           type: integer
         points_for_correct_stderr:
-          read_only: false
+          readOnly: false
           description: "The number of points to be awarded when this command\n   \
             \                  produces the correct stderr"
           nullable: false
           type: integer
         deduction_for_wrong_return_code:
-          read_only: false
+          readOnly: false
           description: "The number of points to deduct when this command\n       \
             \              produces the wrong return code (this value must be negative).\n\
             \                     Note: The total points given for a single command\
@@ -4968,7 +5028,7 @@ components:
           nullable: false
           type: integer
         deduction_for_wrong_stdout:
-          read_only: false
+          readOnly: false
           description: "The number of points to deduct when this command\n       \
             \              produces the wrong stdout (this value must be negative).\n\
             \                     Note: The total points given for a single command\
@@ -4977,7 +5037,7 @@ components:
           nullable: false
           type: integer
         deduction_for_wrong_stderr:
-          read_only: false
+          readOnly: false
           description: "The number of points to deduct when this command\n       \
             \              produces the wrong stderr (this value must be negative).\n\
             \                     Note: The total points given for a single command\
@@ -4986,13 +5046,13 @@ components:
           nullable: false
           type: integer
         normal_fdbk_config:
-          read_only: false
+          readOnly: false
           description: Feedback settings for a normal Submission.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         first_failed_test_normal_fdbk_config:
-          read_only: false
+          readOnly: false
           description: "When non-null, specifies feedback to be given when\n     \
             \                this command is in the first test case that failed\n\
             \                     within a suite."
@@ -5000,39 +5060,39 @@ components:
           oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         ultimate_submission_fdbk_config:
-          read_only: false
+          readOnly: false
           description: Feedback settings for an ultimate Submission.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         past_limit_submission_fdbk_config:
-          read_only: false
+          readOnly: false
           description: Feedback settings for a Submission that is past the daily limit.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         staff_viewer_fdbk_config:
-          read_only: false
+          readOnly: false
           description: Feedback settings for a staff member viewing a Submission from
             another group.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         time_limit:
-          read_only: false
+          readOnly: false
           description: "The time limit in seconds to be placed on the command.\n \
             \           Must be > 0\n            Must be <= 90"
           nullable: false
           type: integer
         stack_size_limit:
-          read_only: false
+          readOnly: false
           description: "The maximum stack size in bytes.\n            Must be > 0\n\
             \            Must be <= 100000000\n            NOTE: Setting this value\
             \ too low may cause the command to crash prematurely."
           nullable: false
           type: integer
         virtual_memory_limit:
-          read_only: false
+          readOnly: false
           description: "The maximum amount of virtual memory\n            (in bytes)\
             \ the command can use.\n            Must be > 0\n            Must be <=\
             \ 4000000000\n            NOTE: Setting this value too low may cause the\
@@ -5040,7 +5100,7 @@ components:
           nullable: false
           type: integer
         process_spawn_limit:
-          read_only: false
+          readOnly: false
           description: "The maximum number of processes that the command is allowed\
             \ to spawn.\n            Must be >= 0\n            Must be <= 150\n  \
             \          NOTE: This limit applies cumulatively to the processes\n  \
@@ -5050,6 +5110,10 @@ components:
             \                program's process limit."
           nullable: false
           type: integer
+      required:
+      - name
+      - ag_test_case
+      - cmd
     AGTestCommandFeedbackConfig:
       type: object
       properties:
@@ -5303,14 +5367,14 @@ components:
       properties:
         pk: *id010
         name:
-          read_only: false
+          readOnly: false
           description: "The name used to identify this StudentTestSuite.\n       \
             \              Must be non-empty and non-null."
           nullable: false
           type: string
         project: *id010
         instructor_files_needed:
-          read_only: false
+          readOnly: false
           description: "The project files that will be copied into the sandbox before\
             \ the suite\n                     is graded."
           nullable: false
@@ -5318,13 +5382,13 @@ components:
           items:
             $ref: '#/components/schemas/InstructorFile'
         read_only_instructor_files:
-          read_only: false
+          readOnly: false
           description: "When True, project files needed for this suite will be read-only\
             \ when this\n                     suite is graded."
           nullable: false
           type: boolean
         student_files_needed:
-          read_only: false
+          readOnly: false
           description: "Student-submitted files matching these patterns will be copied\
             \ into the\n                     sandbox before the suite is graded."
           nullable: false
@@ -5332,19 +5396,19 @@ components:
           items:
             $ref: '#/components/schemas/ExpectedStudentFile'
         buggy_impl_names:
-          read_only: false
+          readOnly: false
           description: The names of buggy implementations that student tests should
             be run against.
           nullable: false
           type: array
           items: *id012
         use_setup_command:
-          read_only: false
+          readOnly: false
           description: ''
           nullable: false
           type: boolean
         setup_command:
-          read_only: false
+          readOnly: false
           description: "A command to be run after student and project files have\n\
             \                     been added to the sandbox but before any other commands\
             \ are run.\n                     To indicate that no setup command should\
@@ -5353,7 +5417,7 @@ components:
           oneOf:
           - $ref: '#/components/schemas/Command'
         get_student_test_names_command:
-          read_only: false
+          readOnly: false
           description: "This required command should print out a whitespace-separated\n\
             \                     list of detected student names. The output of this\
             \ command will\n                     be parsed using Python's str.split()."
@@ -5361,7 +5425,7 @@ components:
           oneOf:
           - $ref: '#/components/schemas/Command'
         max_num_student_tests:
-          read_only: false
+          readOnly: false
           description: "The maximum number of test cases students are allowed to submit.\n\
             \                     If more than this many tests are discovered by the\n\
             \                     get_student_test_names_command, test names will\
@@ -5369,7 +5433,7 @@ components:
           nullable: false
           type: integer
         student_test_validity_check_command:
-          read_only: false
+          readOnly: false
           description: "This command will be run once for each detected student test\
             \ case.\n                     An exit status of zero indicates that a\
             \ student test case is valid,\n                     whereas a nonzero\
@@ -5383,7 +5447,7 @@ components:
           oneOf:
           - $ref: '#/components/schemas/Command'
         grade_buggy_impl_command:
-          read_only: false
+          readOnly: false
           description: "This command will be run once for every (buggy implementation,\
             \ valid test) pair.\n            A nonzero exit status indicates that\
             \ the valid student tests exposed the\n            buggy impl, whereas\
@@ -5399,7 +5463,7 @@ components:
           oneOf:
           - $ref: '#/components/schemas/Command'
         points_per_exposed_bug:
-          read_only: false
+          readOnly: false
           description: "The number of points to be awarded per buggy implementation\
             \ exposed by\n                     the student test cases. This field\
             \ is limited to 4 digits total and a maximum\n                     of\
@@ -5408,60 +5472,63 @@ components:
           type: string
           format: float
         max_points:
-          read_only: false
+          readOnly: false
           description: An optional ceiling on the number of points to be awarded.
           nullable: true
           type: integer
         deferred:
-          read_only: false
+          readOnly: false
           description: "If true, this student test suite can be graded asynchronously.\n\
             \                     Deferred suites that have yet to be graded do not\
             \ prevent members\n                     of a group from submitting again."
           nullable: false
           type: boolean
         sandbox_docker_image:
-          read_only: false
+          readOnly: false
           description: The sandbox docker image to use for running this suite.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/SandboxDockerImage'
         allow_network_access:
-          read_only: false
+          readOnly: false
           description: "Specifies whether the sandbox should allow commands run inside\
             \ of it to\n                     make network calls outside of the sandbox."
           nullable: false
           type: boolean
         normal_fdbk_config:
-          read_only: false
+          readOnly: false
           description: Feedback settings for a normal Submission.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         ultimate_submission_fdbk_config:
-          read_only: false
+          readOnly: false
           description: Feedback settings for an ultimate Submission.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         past_limit_submission_fdbk_config:
-          read_only: false
+          readOnly: false
           description: Feedback settings for a Submission that is past the daily limit.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         staff_viewer_fdbk_config:
-          read_only: false
+          readOnly: false
           description: Feedback settings for a staff member viewing a Submission from
             another group.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
+      required:
+      - name
+      - project
     StudentTestSuiteFeedbackConfig:
       type: object
       properties:
@@ -5610,18 +5677,18 @@ components:
           description: ''
           type: integer
         is_cancelled:
-          read_only: true
+          readOnly: true
           description: Indicates whether the task has been cancelled by the user.
           nullable: false
           type: boolean
         error_msg:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
         creator: *id010
         created_at:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
@@ -5632,7 +5699,7 @@ components:
           type: boolean
         project: *id010
         rerun_all_submissions:
-          read_only: true
+          readOnly: true
           description: "When True, indicates that all submissions for the specified\n\
             \                     project should be rerun. Otherwise, only the submissions\n\
             \                     whose primary keys are listed in submission_pks\
@@ -5640,18 +5707,18 @@ components:
           nullable: false
           type: boolean
         submission_pks:
-          read_only: true
+          readOnly: true
           description: "When rerun_all_submissions is False, specifies which submissions\n\
             \                     should be rerun."
           nullable: false
           type: array
           items:
-            read_only: true
+            readOnly: true
             description: ''
             nullable: false
             type: integer
         rerun_all_ag_test_suites:
-          read_only: true
+          readOnly: true
           description: "When True, indicates that all AGTestSuites belonging\n   \
             \                  to the specified project should be rerun. Otherwise,\n\
             \                     only the AGTestSuites specified in ag_test_suite_data\
@@ -5659,7 +5726,7 @@ components:
           nullable: false
           type: boolean
         ag_test_suite_data:
-          read_only: true
+          readOnly: true
           description: "When rerun_all_ag_test_suites is False, specifies which\n\
             \                     AGTestSuites should be rerun and which AGTestCases\
             \ within\n                     those suites should be rerun.\n       \
@@ -5672,7 +5739,7 @@ components:
           nullable: false
           type: object
         rerun_all_student_test_suites:
-          read_only: true
+          readOnly: true
           description: "When True, indicates that all StudentTestSuites belonging\n\
             \                     to the specified project should be rerun. Otherwise,\n\
             \                     only the StudentTestSuites specified in student_test_suite_pks\n\
@@ -5680,36 +5747,39 @@ components:
           nullable: false
           type: boolean
         student_suite_pks:
-          read_only: true
+          readOnly: true
           description: "When rerun_all_student_test_suites is False, specifies which\n\
             \                     student test suites should be rerun."
           nullable: false
           type: array
           items:
-            read_only: true
+            readOnly: true
             description: ''
             nullable: false
             type: integer
+      required:
+      - creator
+      - project
     HandgradingRubric:
       type: object
       properties:
         pk: *id010
         project: *id010
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         points_style:
-          read_only: false
+          readOnly: false
           description: "Determines how total_points and total_possible_points are\
             \ calculated\n                     for HandgradingResults."
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/PointsStyle'
         max_points:
-          read_only: false
+          readOnly: false
           description: "The denominator of a handgrading score.\n                \
             \     When points_style is \"start_at_zero_and_add\", this value\n   \
             \                  overrides the sum of positive Criteria point values\
@@ -5719,35 +5789,37 @@ components:
           nullable: true
           type: number
         show_grades_and_rubric_to_students:
-          read_only: false
+          readOnly: false
           description: "Whether students can see their handgrading scores,\n     \
             \                including information from the rubric."
           nullable: false
           type: boolean
         handgraders_can_leave_comments:
-          read_only: false
+          readOnly: false
           description: Whether handgraders can add comments to a HandgradingResult.
           nullable: false
           type: boolean
         handgraders_can_adjust_points:
-          read_only: false
+          readOnly: false
           description: Whether handgraders can edit HandgradingResult.point_adjustment.
           nullable: false
           type: boolean
         criteria:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: array
           items:
             $ref: '#/components/schemas/Criterion'
         annotations:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: array
           items:
             $ref: '#/components/schemas/Annotation'
+      required:
+      - project
     PointsStyle:
       type: string
       enum:
@@ -5759,78 +5831,82 @@ components:
         pk: *id010
         handgrading_rubric: *id010
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         short_description:
-          read_only: false
+          readOnly: false
           description: A short description of this Criterion.
           nullable: false
           type: string
         long_description:
-          read_only: false
+          readOnly: false
           description: "A long description of this Criterion. Note that there is no\n\
             \                     enforced length difference between short_ and long_description.\n\
             \                     The separation is purely to be used by clients."
           nullable: false
           type: string
         points:
-          read_only: false
+          readOnly: false
           description: "The amount of points to add or subtract from a handgrading\
             \ score\n                     when selected."
           nullable: false
           type: number
+      required:
+      - handgrading_rubric
     Annotation:
       type: object
       properties:
         pk: *id010
         handgrading_rubric: *id010
         short_description:
-          read_only: false
+          readOnly: false
           description: A short description of this Annotation.
           nullable: false
           type: string
         long_description:
-          read_only: false
+          readOnly: false
           description: "A long description of this Criterion. Note that there is no\n\
             \                     enforced length difference between short_ and long_description.\n\
             \                     The separation is purely to be used by clients."
           nullable: false
           type: string
         deduction:
-          read_only: false
+          readOnly: false
           description: "The amount of points to deduct from a handgrading score when\n\
             \                     applied. Must be non-positive."
           nullable: false
           type: number
         max_deduction:
-          read_only: false
+          readOnly: false
           description: "The maximum amount of points that can be cumulatively\n  \
             \                   deducted from a handgrading score by applications\
             \ of\n                     this annotation. Must be None or non-positive."
           nullable: true
           type: number
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
+      required:
+      - handgrading_rubric
     HandgradingResult:
       type: object
       properties:
         pk: *id010
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         submission: *id010
         handgrading_rubric:
-          read_only: true
+          readOnly: true
           description: The HandgradingRubric that this HandgradingResult is based
             on.
           nullable: false
@@ -5838,34 +5914,34 @@ components:
           - $ref: '#/components/schemas/HandgradingRubric'
         group: *id010
         applied_annotations:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: array
           items:
             $ref: '#/components/schemas/AppliedAnnotation'
         comments:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: array
           items:
             $ref: '#/components/schemas/Comment'
         criterion_results:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: array
           items:
             $ref: '#/components/schemas/CriterionResult'
         finished_grading:
-          read_only: false
+          readOnly: false
           description: "Handgraders should set this field to True when they are finished\n\
             \                     grading this group's submission."
           nullable: false
           type: boolean
         points_adjustment:
-          read_only: false
+          readOnly: false
           description: "An arbitrary adjustment to this result's total points.\n \
             \                    Note that this does not affect total points possible."
           nullable: false
@@ -5886,76 +5962,91 @@ components:
           description: "The denominator of the handgrading score based on the\n  \
             \      handgrading rubric's points style and max points."
           type: number
+      required:
+      - submission
+      - handgrading_rubric
+      - group
     CriterionResult:
       type: object
       properties:
         pk: *id010
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         selected:
-          read_only: false
+          readOnly: false
           description: "When True, indicates that the criterion's point allotment\
             \ should be\n                     added to (or subtracted from if negative)\
             \ the total handgrading points."
           nullable: false
           type: boolean
         criterion:
-          read_only: true
+          readOnly: true
           description: The Criterion that the CriterionResult is tied to.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Criterion'
         handgrading_result: *id010
+      required:
+      - selected
+      - criterion
+      - handgrading_result
     AppliedAnnotation:
       type: object
       properties:
         pk: *id010
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         location:
-          read_only: true
+          readOnly: true
           description: The source code location where the Annotation was applied.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Location'
         annotation:
-          read_only: true
+          readOnly: true
           description: The Annotation that was applied to the source code.
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Annotation'
         handgrading_result: *id010
+      required:
+      - location
+      - annotation
+      - handgrading_result
     Comment:
       type: object
       properties:
         pk: *id010
         last_modified:
-          read_only: true
+          readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
         location:
-          read_only: true
+          readOnly: true
           description: "When not None, specifies the source code location this comment\n\
             \                     applies to."
           nullable: true
           oneOf:
           - $ref: '#/components/schemas/Location'
         text:
-          read_only: false
+          readOnly: false
           description: Text to be shown to students.
           nullable: false
           type: string
         handgrading_result: *id010
+      required:
+      - text
+      - handgrading_result
     Location:
       type: object
       properties:
@@ -5969,3 +6060,14 @@ components:
           description: The last line in the source code region (inclusive). Must be
             non-negative.
           type: integer
+    UserRoles:
+      type: object
+      properties:
+        is_admin:
+          type: boolean
+        is_staff:
+          type: boolean
+        is_student:
+          type: boolean
+        is_handgrader:
+          type: boolean

@@ -15,6 +15,8 @@ is_admin_or_read_only = ag_permissions.is_admin_or_read_only_staff(lambda projec
 is_handgrader = ag_permissions.is_handgrader(lambda project: project.course)
 
 
+# FIXME: Phase out RetrieveCreateNestedModelViewSet, just implement retrieve here
+# as a one-off
 class HandgradingRubricRetrieveCreateViewSet(RetrieveCreateNestedModelViewSet):
     serializer_class = handgrading_serializers.HandgradingRubricSerializer
     permission_classes = [
