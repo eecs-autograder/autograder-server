@@ -5,7 +5,7 @@ from abc import abstractmethod
 from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
-from typing import (Any, Dict, ForwardRef, List, Literal, Optional, Sequence,
+from typing import (Any, Dict, List, Literal, Optional, Sequence,
                     Tuple, Type, TypedDict, Union, cast, get_args, get_origin,
                     get_type_hints)
 
@@ -29,6 +29,7 @@ from autograder.core.submission_feedback import (AGTestCaseResultFeedback,
                                                  AGTestCommandResultFeedback,
                                                  AGTestSuiteResultFeedback,
                                                  SubmissionResultFeedback)
+from autograder.rest_api.views.schema_generation import APITags
 
 
 def stderr(*args, **kwargs):
@@ -61,6 +62,7 @@ class AGSchemaGenerator(SchemaGenerator):
     def get_schema(self, request=None, public=False):
         schema = super().get_schema(request=request, public=public)
         schema['components'] = self._get_model_schemas()
+        schema['tags'] = [{'name': item.value} for item in APITags]
         return schema
 
     def _get_model_schemas(self) -> dict:
@@ -472,7 +474,7 @@ def _get_py_type_schema(type_: type) -> dict:
     if type_ in API_OBJ_TYPE_NAMES:
         return _as_schema_ref(type_)
 
-    assert not isinstance(type_, ForwardRef), f'ForwardRef detected: {ForwardRef}'
+    # assert not isinstance(type_, ForwardRef), f'ForwardRef detected: {ForwardRef}'
 
     if type_ in _PY_ATTR_TYPES:
         return _PY_ATTR_TYPES[type_]
@@ -496,49 +498,51 @@ _PY_ATTR_TYPES = {
 
 
 class AGViewSchemaGenerator(AutoSchema):
-    def __init__(self, api_class: Optional[APIClassType] = None):
+    def __init__(self, tags: List[APITags], api_class: Optional[APIClassType] = None):
         super().__init__()
+        self._tags = [tag.value for tag in tags]
         self._api_class = api_class
 
     def get_operation(self, path, method) -> dict:
-        return super().get_operation(path, method)
-
-    def generate_list_op_schema(self, path, method) -> dict:
-        result = super().get_operation(path, method)
-        result['responses']['200']['content']['application/json']['schema']['items'] = (
-            _as_schema_ref(self.get_api_class())
-        )
+        result = self.get_operation_impl(path, method)
+        result['tags'] = self._tags
         return result
 
-    def generate_create_op_schema(self, path, method) -> dict:
-        result = super().get_operation(path, method)
-        response_schema = result['responses'].pop('200')
+    def get_operation_impl(self, path, method) -> dict:
+        return super().get_operation(path, method)
+
+    def generate_list_op_schema(self, base_result) -> dict:
+        base_result['responses']['200']['content']['application/json']['schema']['items'] = (
+            _as_schema_ref(self.get_api_class())
+        )
+        return base_result
+
+    def generate_create_op_schema(self, base_result) -> dict:
+        response_schema = base_result['responses'].pop('200')
         response_schema['content']['application/json']['schema'] = (
             _as_schema_ref(self.get_api_class())
         )
-        result['responses']['201'] = response_schema
+        base_result['responses']['201'] = response_schema
 
-        result['requestBody'] = self.make_api_class_request_body()
+        base_result['requestBody'] = self.make_api_class_request_body()
 
-        return result
+        return base_result
 
-    def generate_retrieve_op_schema(self, path, method):
-        result = super().get_operation(path, method)
-        result['responses']['200']['content']['application/json']['schema'] = (
+    def generate_retrieve_op_schema(self, base_result):
+        base_result['responses']['200']['content']['application/json']['schema'] = (
             _as_schema_ref(self.get_api_class())
         )
 
-        return result
+        return base_result
 
-    def generate_patch_op_schema(self, path, method):
-        result = super().get_operation(path, method)
-        result['responses']['200']['content']['application/json']['schema'] = (
+    def generate_patch_op_schema(self, base_result):
+        base_result['responses']['200']['content']['application/json']['schema'] = (
             _as_schema_ref(self.get_api_class())
         )
 
-        result['requestBody'] = self.make_api_class_request_body()
+        base_result['requestBody'] = self.make_api_class_request_body()
 
-        return result
+        return base_result
 
     def get_api_class(self) -> APIClassType:
         if self._api_class is not None:
@@ -563,26 +567,52 @@ class AGViewSchemaGenerator(AutoSchema):
         }
 
 
-class AGListCreateViewSchemaGenerator(AGViewSchemaGenerator):
-    def get_operation(self, path, method):
+class AGListViewSchemaMixin:
+    def get_operation_impl(self, path, method):
+        base_result = super().get_operation_impl(path, method)
         if method == 'GET':
-            return self.generate_list_op_schema(path, method)
+            return self.generate_list_op_schema(base_result)
 
+        return base_result
+
+
+class AGCreateViewSchemaMixin:
+    def get_operation_impl(self, path, method):
+        base_result = super().get_operation_impl(path, method)
         if method == 'POST':
-            return self.generate_create_op_schema(path, method)
+            return self.generate_create_op_schema(base_result)
 
-        return super().get_operation(path, method)
+        return base_result
 
 
-class AGDetailViewSchemaGenerator(AGViewSchemaGenerator):
-    def get_operation(self, path, method):
+class AGListCreateViewSchemaGenerator(
+    AGListViewSchemaMixin, AGCreateViewSchemaMixin, AGViewSchemaGenerator
+):
+    pass
+
+
+class AGRetrieveViewSchemaGenerator:
+    def get_operation_impl(self, path, method):
+        base_result = super().get_operation_impl(path, method)
         if method == 'GET':
-            return self.generate_retrieve_op_schema(path, method)
+            return self.generate_retrieve_op_schema(base_result)
 
+        return base_result
+
+
+class AGPatchViewSchemaGenerator:
+    def get_operation_impl(self, path, method):
+        base_result = super().get_operation_impl(path, method)
         if method == 'PATCH':
-            return self.generate_patch_op_schema(path, method)
+            return self.generate_patch_op_schema(base_result)
 
-        return super().get_operation(path, method)
+        return base_result
+
+
+class AGDetailViewSchemaGenerator(
+    AGRetrieveViewSchemaGenerator, AGPatchViewSchemaGenerator, AGViewSchemaGenerator
+):
+    pass
 
 
 class CustomViewDict(TypedDict, total=False):
@@ -594,21 +624,39 @@ class CustomViewDict(TypedDict, total=False):
 
 
 class CustomViewMethodData(TypedDict, total=False):
-    request_body_ref: str
+    parameters: RequestParam
+    request_payload: RequestBodyData
+    # Key = response status
     responses: Dict[str, ResponseSchemaData]
+
+
+# https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md#parameter-object
+RequestParam = TypedDict('RequestParam', {
+    'name': str,
+    'in': str,
+    'description': str,
+    'required': bool,
+    'deprecated': bool,
+    'allowEmptyValue': bool
+}, total=False)
+
+
+class RequestBodyData(TypedDict, total=False):
+    content_type: str
+    body: dict
 
 
 class ResponseSchemaData(TypedDict, total=False):
     content_type: str
-    body_ref: str
+    body: dict
 
 
 HTTPMethodName = Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 
-class CustomViewSchema(AutoSchema):
-    def __init__(self, data: CustomViewDict):
-        super().__init__()
+class CustomViewSchema(AGViewSchemaGenerator):
+    def __init__(self, tags: List[APITags], data: CustomViewDict):
+        super().__init__(tags)
         self.data = data
 
     def get_operation(self, path, method: HTTPMethodName) -> dict:
@@ -617,26 +665,32 @@ class CustomViewSchema(AutoSchema):
         if method_data is None:
             return result
 
-        if 'request_body_ref' in method_data:
-            result['request_body'] = {
+        if 'parameters' in method_data:
+            result['parameters'] = method_data['parameters']
+
+        if 'request_payload' in method_data:
+            request_data = method_data['request_payload']
+            result['requestBody'] = {
                 'required': True,
                 'content': {
-                    'application/json': {
-                        'schema': {'$ref': method_data['request_body_ref']}
+                    request_data.get('content_type', 'application/json'): {
+                        'schema': request_data['body']
                     }
                 }
             }
 
         responses = {}
         for status, response_data in method_data.get('responses', {}).items():
-            assert 'body_ref' in response_data
-            responses[status] = {
-                'content': {
-                    response_data.get('content_type', 'application/json'): {
-                        'schema': {'$ref': response_data['body_ref']}
+            if 'body' in response_data:
+                responses[status] = {
+                    'content': {
+                        response_data.get('content_type', 'application/json'): {
+                            'schema': response_data['body']
+                        }
                     }
                 }
-            }
 
-        result['responses'] = responses
+        if responses:
+            result['responses'] = responses
+
         return result

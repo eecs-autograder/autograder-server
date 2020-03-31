@@ -446,6 +446,8 @@ paths:
                 items:
                   $ref: '#/components/schemas/Course'
           description: ''
+      tags: &id001
+      - courses
     post:
       operationId: CreateListCreateCourse
       description: ''
@@ -463,6 +465,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Course'
+      tags: *id001
   /api/courses/{id}/:
     get:
       operationId: RetrieveCourseDetail
@@ -481,6 +484,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Course'
           description: ''
+      tags: &id002
+      - courses
     patch:
       operationId: PartialUpdateCourseDetail
       description: ''
@@ -504,6 +509,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Course'
+      tags: *id002
     delete:
       operationId: DestroyCourseDetail
       description: ''
@@ -517,6 +523,7 @@ paths:
       responses:
         '204':
           description: ''
+      tags: *id002
   /api/courses/{id}/my_roles/:
     get:
       operationId: listCourseUserRoles
@@ -534,6 +541,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserRoles'
+      tags:
+      - courses
   /api/course/{name}/{semester}/{year}/:
     get:
       operationId: RetrieveCourseByNameSemesterYear
@@ -561,198 +570,12 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Course'
           description: ''
+      tags:
+      - courses
   /api/courses/{id}/admins/:
-    get:
-      operationId: listUsers
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  properties:
-                    pk:
-                      type: integer
-                      readOnly: true
-                    username:
-                      type: string
-                      description: Required. 150 characters or fewer. Letters, digits
-                        and @/./+/-/_ only.
-                      pattern: ^[\w.@+-]+$
-                      maxLength: 150
-                    first_name:
-                      type: string
-                      maxLength: 30
-                    last_name:
-                      type: string
-                      maxLength: 150
-                    email:
-                      type: string
-                      format: email
-                      maxLength: 254
-                    is_superuser:
-                      type: boolean
-                      description: Designates that this user has all permissions without
-                        explicitly assigning them.
-                  required:
-                  - username
-          description: ''
-    post:
-      operationId: CreateUser
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema: &id001
-              properties:
-                username:
-                  type: string
-                  description: Required. 150 characters or fewer. Letters, digits
-                    and @/./+/-/_ only.
-                  pattern: ^[\w.@+-]+$
-                  maxLength: 150
-                first_name:
-                  type: string
-                  maxLength: 30
-                last_name:
-                  type: string
-                  maxLength: 150
-                email:
-                  type: string
-                  format: email
-                  maxLength: 254
-                is_superuser:
-                  type: boolean
-                  description: Designates that this user has all permissions without
-                    explicitly assigning them.
-              required:
-              - username
-          application/x-www-form-urlencoded:
-            schema: *id001
-          multipart/form-data:
-            schema: *id001
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                properties:
-                  pk:
-                    type: integer
-                    readOnly: true
-                  username:
-                    type: string
-                    description: Required. 150 characters or fewer. Letters, digits
-                      and @/./+/-/_ only.
-                    pattern: ^[\w.@+-]+$
-                    maxLength: 150
-                  first_name:
-                    type: string
-                    maxLength: 30
-                  last_name:
-                    type: string
-                    maxLength: 150
-                  email:
-                    type: string
-                    format: email
-                    maxLength: 254
-                  is_superuser:
-                    type: boolean
-                    description: Designates that this user has all permissions without
-                      explicitly assigning them.
-                required:
-                - username
-          description: ''
-    patch:
-      operationId: PartialUpdateUser
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema: &id002
-              properties:
-                username:
-                  type: string
-                  description: Required. 150 characters or fewer. Letters, digits
-                    and @/./+/-/_ only.
-                  pattern: ^[\w.@+-]+$
-                  maxLength: 150
-                first_name:
-                  type: string
-                  maxLength: 30
-                last_name:
-                  type: string
-                  maxLength: 150
-                email:
-                  type: string
-                  format: email
-                  maxLength: 254
-                is_superuser:
-                  type: boolean
-                  description: Designates that this user has all permissions without
-                    explicitly assigning them.
-          application/x-www-form-urlencoded:
-            schema: *id002
-          multipart/form-data:
-            schema: *id002
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                properties:
-                  pk:
-                    type: integer
-                    readOnly: true
-                  username:
-                    type: string
-                    description: Required. 150 characters or fewer. Letters, digits
-                      and @/./+/-/_ only.
-                    pattern: ^[\w.@+-]+$
-                    maxLength: 150
-                  first_name:
-                    type: string
-                    maxLength: 30
-                  last_name:
-                    type: string
-                    maxLength: 150
-                  email:
-                    type: string
-                    format: email
-                    maxLength: 254
-                  is_superuser:
-                    type: boolean
-                    description: Designates that this user has all permissions without
-                      explicitly assigning them.
-                required:
-                - username
-          description: ''
-  /api/courses/{id}/staff/:
     get:
       operationId: listUsers
       description: ''
@@ -941,7 +764,7 @@ paths:
                 required:
                 - username
           description: ''
-  /api/courses/{id}/students/:
+  /api/courses/{id}/staff/:
     get:
       operationId: listUsers
       description: ''
@@ -1059,11 +882,9 @@ paths:
                 required:
                 - username
           description: ''
-    put:
-      operationId: UpdateUser
-      description: 'Completely REPLACES the student roster with the one included in
-
-        the request.'
+    patch:
+      operationId: PartialUpdateUser
+      description: ''
       parameters:
       - name: id
         in: path
@@ -1096,8 +917,6 @@ paths:
                   type: boolean
                   description: Designates that this user has all permissions without
                     explicitly assigning them.
-              required:
-              - username
           application/x-www-form-urlencoded:
             schema: *id006
           multipart/form-data:
@@ -1134,78 +953,7 @@ paths:
                 required:
                 - username
           description: ''
-    patch:
-      operationId: PartialUpdateUser
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema: &id007
-              properties:
-                username:
-                  type: string
-                  description: Required. 150 characters or fewer. Letters, digits
-                    and @/./+/-/_ only.
-                  pattern: ^[\w.@+-]+$
-                  maxLength: 150
-                first_name:
-                  type: string
-                  maxLength: 30
-                last_name:
-                  type: string
-                  maxLength: 150
-                email:
-                  type: string
-                  format: email
-                  maxLength: 254
-                is_superuser:
-                  type: boolean
-                  description: Designates that this user has all permissions without
-                    explicitly assigning them.
-          application/x-www-form-urlencoded:
-            schema: *id007
-          multipart/form-data:
-            schema: *id007
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                properties:
-                  pk:
-                    type: integer
-                    readOnly: true
-                  username:
-                    type: string
-                    description: Required. 150 characters or fewer. Letters, digits
-                      and @/./+/-/_ only.
-                    pattern: ^[\w.@+-]+$
-                    maxLength: 150
-                  first_name:
-                    type: string
-                    maxLength: 30
-                  last_name:
-                    type: string
-                    maxLength: 150
-                  email:
-                    type: string
-                    format: email
-                    maxLength: 254
-                  is_superuser:
-                    type: boolean
-                    description: Designates that this user has all permissions without
-                      explicitly assigning them.
-                required:
-                - username
-          description: ''
-  /api/courses/{id}/handgraders/:
+  /api/courses/{id}/students/:
     get:
       operationId: listUsers
       description: ''
@@ -1253,6 +1001,81 @@ paths:
     post:
       operationId: CreateUser
       description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id007
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+              required:
+              - username
+          application/x-www-form-urlencoded:
+            schema: *id007
+          multipart/form-data:
+            schema: *id007
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+    put:
+      operationId: UpdateUser
+      description: 'Completely REPLACES the student roster with the one included in
+
+        the request.'
       parameters:
       - name: id
         in: path
@@ -1362,6 +1185,195 @@ paths:
             schema: *id009
           multipart/form-data:
             schema: *id009
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+  /api/courses/{id}/handgraders/:
+    get:
+      operationId: listUsers
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  properties:
+                    pk:
+                      type: integer
+                      readOnly: true
+                    username:
+                      type: string
+                      description: Required. 150 characters or fewer. Letters, digits
+                        and @/./+/-/_ only.
+                      pattern: ^[\w.@+-]+$
+                      maxLength: 150
+                    first_name:
+                      type: string
+                      maxLength: 30
+                    last_name:
+                      type: string
+                      maxLength: 150
+                    email:
+                      type: string
+                      format: email
+                      maxLength: 254
+                    is_superuser:
+                      type: boolean
+                      description: Designates that this user has all permissions without
+                        explicitly assigning them.
+                  required:
+                  - username
+          description: ''
+    post:
+      operationId: CreateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id010
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+              required:
+              - username
+          application/x-www-form-urlencoded:
+            schema: *id010
+          multipart/form-data:
+            schema: *id010
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  pk:
+                    type: integer
+                    readOnly: true
+                  username:
+                    type: string
+                    description: Required. 150 characters or fewer. Letters, digits
+                      and @/./+/-/_ only.
+                    pattern: ^[\w.@+-]+$
+                    maxLength: 150
+                  first_name:
+                    type: string
+                    maxLength: 30
+                  last_name:
+                    type: string
+                    maxLength: 150
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 254
+                  is_superuser:
+                    type: boolean
+                    description: Designates that this user has all permissions without
+                      explicitly assigning them.
+                required:
+                - username
+          description: ''
+    patch:
+      operationId: PartialUpdateUser
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema: &id011
+              properties:
+                username:
+                  type: string
+                  description: Required. 150 characters or fewer. Letters, digits
+                    and @/./+/-/_ only.
+                  pattern: ^[\w.@+-]+$
+                  maxLength: 150
+                first_name:
+                  type: string
+                  maxLength: 30
+                last_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                is_superuser:
+                  type: boolean
+                  description: Designates that this user has all permissions without
+                    explicitly assigning them.
+          application/x-www-form-urlencoded:
+            schema: *id011
+          multipart/form-data:
+            schema: *id011
       responses:
         '200':
           content:
@@ -3719,23 +3731,43 @@ paths:
                 type: array
                 items: {}
           description: ''
-  /api/courses/{course_pk}/copy/:
+  /api/courses/{id}/copy/:
     post:
-      operationId: copy_courseCourse
+      operationId: CreateCopyCourse
       description: ''
       parameters:
-      - name: course_pk
+      - name: id
         in: path
         required: true
         description: ''
         schema:
           type: string
       responses:
-        '200':
+        '201':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Course'
           description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - new_name
+              - new_semester
+              - new_year
+              properties:
+                new_name:
+                  type: string
+                new_semester:
+                  $ref: '#/components/schemas/Semester'
+                new_year:
+                  type: integer
+      tags:
+      - courses
   /api/projects/{project_pk}/copy_to_course/{target_course_pk}/:
     post:
       operationId: copy_projectProject
@@ -4043,7 +4075,7 @@ components:
     User:
       type: object
       properties:
-        pk: &id010
+        pk: &id012
           type: integer
           format: id
           readOnly: true
@@ -4078,7 +4110,7 @@ components:
     Course:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         name:
           readOnly: false
           description: The name of this course. Must be unique, non-empty and non-null.
@@ -4133,7 +4165,7 @@ components:
     Project:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         name:
           readOnly: false
           description: "The name used to identify this project.\n            Must\
@@ -4148,7 +4180,7 @@ components:
           nullable: false
           type: string
           format: date-time
-        course: *id010
+        course: *id012
         visible_to_students:
           readOnly: false
           description: "Whether information about this Project can\n            be\
@@ -4308,8 +4340,8 @@ components:
     ExpectedStudentFile:
       type: object
       properties:
-        pk: *id010
-        project: *id010
+        pk: *id012
+        project: *id012
         pattern:
           readOnly: false
           description: "A shell-style file pattern suitable for\n            use with\
@@ -4343,8 +4375,8 @@ components:
     InstructorFile:
       type: object
       properties:
-        pk: *id010
-        project: *id010
+        pk: *id012
+        project: *id012
         name:
           readOnly: true
           description: ''
@@ -4366,8 +4398,8 @@ components:
     DownloadTask:
       type: object
       properties:
-        pk: *id010
-        project: *id010
+        pk: *id012
+        project: *id012
         download_type:
           readOnly: true
           description: ''
@@ -4408,8 +4440,8 @@ components:
     Group:
       type: object
       properties:
-        pk: *id010
-        project: *id010
+        pk: *id012
+        project: *id012
         extended_due_date:
           readOnly: false
           description: "When this field is set, it indicates that members\n      \
@@ -4423,7 +4455,7 @@ components:
           readOnly: false
           description: A list of usernames of the group members, sorted alphabetically.
           type: array
-          items: &id011
+          items: &id013
             type: string
         bonus_submissions_remaining:
           readOnly: false
@@ -4470,28 +4502,28 @@ components:
     GroupInvitation:
       type: object
       properties:
-        pk: *id010
-        invitation_creator: *id010
-        project: *id010
+        pk: *id012
+        invitation_creator: *id012
+        project: *id012
         invited_usernames:
           readOnly: true
           description: The usernames of the Users that will receive this invitation.
           type: array
-          items: *id011
+          items: *id013
         invitees_who_accepted:
           readOnly: true
           description: "A list of usernames indicating which invitees have accepted\n\
             \        this invitation.\n        This field is READ ONLY."
           type: array
-          items: *id011
+          items: *id013
       required:
       - invitation_creator
       - project
     Submission:
       type: object
       properties:
-        pk: *id010
-        group: *id010
+        pk: *id012
+        group: *id012
         timestamp:
           readOnly: true
           description: ''
@@ -4509,7 +4541,7 @@ components:
             \     excluding those that were discarded."
           nullable: false
           type: array
-          items: &id012
+          items: &id014
             type: string
         discarded_files:
           readOnly: true
@@ -4517,7 +4549,7 @@ components:
             was created.
           nullable: false
           type: array
-          items: *id012
+          items: *id014
         missing_files:
           readOnly: true
           description: "Stores missing filenames and the additional number\n     \
@@ -4621,7 +4653,7 @@ components:
     SandboxDockerImage:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         display_name:
           readOnly: false
           description: "A human-readable name for this sandbox image.\n          \
@@ -4629,13 +4661,13 @@ components:
             \                This field is required."
           nullable: false
           type: string
-        course: *id010
+        course: *id012
       required:
       - display_name
     BuildSandboxDockerImageTask:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         status:
           readOnly: true
           description: The status of the build.
@@ -4657,9 +4689,9 @@ components:
           description: The names of the files uploaded by the user.
           nullable: false
           type: array
-          items: *id012
-        course: *id010
-        image_to_update: *id010
+          items: *id014
+        course: *id012
+        image_to_update: *id012
         validation_error_msg:
           readOnly: true
           description: Information for the user as to while the built image is invalid.
@@ -4684,7 +4716,7 @@ components:
     AGTestSuite:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         name:
           readOnly: false
           description: "The name used to identify this suite.\n                  \
@@ -4693,7 +4725,7 @@ components:
             \ This field is REQUIRED."
           nullable: false
           type: string
-        project: *id010
+        project: *id012
         last_modified:
           readOnly: true
           description: ''
@@ -4815,7 +4847,7 @@ components:
     AGTestCase:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         name:
           readOnly: false
           description: "The name used to identify this autograder test.\n        \
@@ -4830,7 +4862,7 @@ components:
           nullable: false
           type: string
           format: date-time
-        ag_test_suite: *id010
+        ag_test_suite: *id012
         ag_test_commands:
           readOnly: true
           description: ''
@@ -4877,7 +4909,7 @@ components:
     AGTestCommand:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         name:
           readOnly: false
           description: "The name used to identify this command.\n                \
@@ -4886,7 +4918,7 @@ components:
             \                         This field is REQUIRED."
           nullable: false
           type: string
-        ag_test_case: *id010
+        ag_test_case: *id012
         last_modified:
           readOnly: true
           description: ''
@@ -5173,22 +5205,22 @@ components:
     SubmissionResultFeedback:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         total_points:
           readOnly: true
           description: ''
           anyOf:
-          - &id013
+          - &id015
             type: integer
-          - &id014
+          - &id016
             type: string
             format: float
         total_points_possible:
           readOnly: true
           description: ''
           anyOf:
-          - *id013
-          - *id014
+          - *id015
+          - *id016
         ag_test_suite_results:
           readOnly: true
           description: ''
@@ -5204,7 +5236,7 @@ components:
     AGTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         ag_test_suite_name:
           readOnly: true
           description: ''
@@ -5249,7 +5281,7 @@ components:
     AGTestCaseResultFeedback:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         ag_test_case_name:
           readOnly: true
           description: ''
@@ -5279,7 +5311,7 @@ components:
     AGTestCommandResultFeedback:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         ag_test_command_pk:
           readOnly: true
           description: ''
@@ -5365,14 +5397,14 @@ components:
     StudentTestSuite:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         name:
           readOnly: false
           description: "The name used to identify this StudentTestSuite.\n       \
             \              Must be non-empty and non-null."
           nullable: false
           type: string
-        project: *id010
+        project: *id012
         instructor_files_needed:
           readOnly: false
           description: "The project files that will be copied into the sandbox before\
@@ -5401,7 +5433,7 @@ components:
             be run against.
           nullable: false
           type: array
-          items: *id012
+          items: *id014
         use_setup_command:
           readOnly: false
           description: ''
@@ -5577,7 +5609,7 @@ components:
     StudentTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         student_test_suite_name:
           readOnly: true
           description: ''
@@ -5623,24 +5655,24 @@ components:
           readOnly: true
           description: ''
           type: array
-          items: *id011
+          items: *id013
         discarded_tests:
           readOnly: true
           description: ''
           type: array
-          items: *id011
+          items: *id013
         invalid_tests:
           readOnly: true
           description: ''
           nullable: true
           type: array
-          items: *id011
+          items: *id013
         timed_out_tests:
           readOnly: true
           description: ''
           nullable: true
           type: array
-          items: *id011
+          items: *id013
         num_bugs_exposed:
           readOnly: true
           description: ''
@@ -5651,7 +5683,7 @@ components:
           description: ''
           nullable: true
           type: array
-          items: *id011
+          items: *id013
         total_points:
           readOnly: true
           description: ''
@@ -5671,7 +5703,7 @@ components:
     RerunSubmissionsTask:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         progress:
           readOnly: true
           description: ''
@@ -5686,7 +5718,7 @@ components:
           description: ''
           nullable: false
           type: string
-        creator: *id010
+        creator: *id012
         created_at:
           readOnly: true
           description: ''
@@ -5697,7 +5729,7 @@ components:
           readOnly: true
           description: ''
           type: boolean
-        project: *id010
+        project: *id012
         rerun_all_submissions:
           readOnly: true
           description: "When True, indicates that all submissions for the specified\n\
@@ -5763,8 +5795,8 @@ components:
     HandgradingRubric:
       type: object
       properties:
-        pk: *id010
-        project: *id010
+        pk: *id012
+        project: *id012
         last_modified:
           readOnly: true
           description: ''
@@ -5828,8 +5860,8 @@ components:
     Criterion:
       type: object
       properties:
-        pk: *id010
-        handgrading_rubric: *id010
+        pk: *id012
+        handgrading_rubric: *id012
         last_modified:
           readOnly: true
           description: ''
@@ -5859,8 +5891,8 @@ components:
     Annotation:
       type: object
       properties:
-        pk: *id010
-        handgrading_rubric: *id010
+        pk: *id012
+        handgrading_rubric: *id012
         short_description:
           readOnly: false
           description: A short description of this Annotation.
@@ -5897,14 +5929,14 @@ components:
     HandgradingResult:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         last_modified:
           readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
-        submission: *id010
+        submission: *id012
         handgrading_rubric:
           readOnly: true
           description: The HandgradingRubric that this HandgradingResult is based
@@ -5912,7 +5944,7 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/HandgradingRubric'
-        group: *id010
+        group: *id012
         applied_annotations:
           readOnly: true
           description: ''
@@ -5951,7 +5983,7 @@ components:
           description: "Returns a list of strings containing the filenames of the\
             \ Submission this result\n        belongs to."
           type: array
-          items: *id011
+          items: *id013
         total_points:
           readOnly: true
           description: "The total number of points awarded. Note that it is possible\n\
@@ -5969,7 +6001,7 @@ components:
     CriterionResult:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         last_modified:
           readOnly: true
           description: ''
@@ -5989,7 +6021,7 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Criterion'
-        handgrading_result: *id010
+        handgrading_result: *id012
       required:
       - selected
       - criterion
@@ -5997,7 +6029,7 @@ components:
     AppliedAnnotation:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         last_modified:
           readOnly: true
           description: ''
@@ -6016,7 +6048,7 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Annotation'
-        handgrading_result: *id010
+        handgrading_result: *id012
       required:
       - location
       - annotation
@@ -6024,7 +6056,7 @@ components:
     Comment:
       type: object
       properties:
-        pk: *id010
+        pk: *id012
         last_modified:
           readOnly: true
           description: ''
@@ -6043,7 +6075,7 @@ components:
           description: Text to be shown to students.
           nullable: false
           type: string
-        handgrading_result: *id010
+        handgrading_result: *id012
       required:
       - text
       - handgrading_result
@@ -6071,3 +6103,26 @@ components:
           type: boolean
         is_handgrader:
           type: boolean
+tags:
+- name: users
+- name: courses
+- name: permissions
+- name: projects
+- name: instructor_files
+- name: expected_student_files
+- name: sandbox_docker_images
+- name: ag_test_suites
+- name: ag_test_cases
+- name: ag_test_commands
+- name: student_test_suites
+- name: group_invitations
+- name: groups
+- name: submissions
+- name: rerun_submissions_tasks
+- name: handgrading_rubrics
+- name: handgrading_results
+- name: criteria
+- name: annotations
+- name: criterion_results
+- name: applied_annotations
+- name: comments
