@@ -2,20 +2,21 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-# from drf_yasg.openapi import Schema, Parameter
-# from drf_yasg.utils import swagger_auto_schema
-
-from rest_framework import mixins, permissions, decorators, response
+from rest_framework import decorators, mixins, permissions, response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
-from autograder.rest_api.views.ag_model_views import AGModelGenericViewSet, require_query_params, \
-    require_body_params, AGModelAPIView, AlwaysIsAuthenticatedMixin
-from autograder.rest_api.views.schema_generation import APITags #, AGModelSchemaBuilder, \
-    # AGModelViewAutoSchema
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator)
+from autograder.rest_api.serialize_user import serialize_user
+from autograder.rest_api.views.ag_model_views import (
+    AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
+    AlwaysIsAuthenticatedMixin, NestedModelView, require_body_params,
+    require_query_params)
+from autograder.rest_api.views.schema_generation import APITags
 
 
 class _Permissions(permissions.BasePermission):
@@ -23,96 +24,96 @@ class _Permissions(permissions.BasePermission):
         return True
 
     def has_object_permission(self, request, view, ag_test):
-        return view.kwargs['pk'] == str(request.user.pk)
+        return view.kwargs['pk'] == request.user.pk
 
 
 # _course_list_schema = Schema(
 #     type='array', items=AGModelSchemaBuilder.get().get_schema(ag_models.Course))
 
+class CurrentUserView(AGModelAPIView):
+    schema = AGDetailViewSchemaGenerator(tags=[APITags.users], api_class=User)
 
-class UserViewSet(mixins.RetrieveModelMixin,
-                  AGModelGenericViewSet):
-    serializer_class = ag_serializers.UserSerializer
-    permission_classes = (_Permissions,)
+    def get(self, *args, **kwargs):
+        return response.Response(serialize_user(self.request.user))
+
+
+class UserDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator(tags=[APITags.users])
+    permission_classes = [_Permissions]
+    model_manager = User.objects
+
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+    def serialize_object(self, obj):
+        return serialize_user(obj)
+
+
+class _RosterViewBase(NestedModelView):
+    schema = AGListCreateViewSchemaGenerator(
+        tags=[APITags.users, APITags.permissions, APITags.courses],
+        api_class=ag_models.Course
+    )
 
     model_manager = User.objects
 
-    api_tags = [APITags.permissions]
+    permission_classes = [_Permissions]
 
-    @decorators.action(detail=False)
-    # @swagger_auto_schema(responses={'200': ag_serializers.UserSerializer})
-    def current(self, request, *args, **kwargs):
-        return response.Response(
-            ag_serializers.UserSerializer(request.user).data)
+    def get(self, *args, **kwargs):
+        return self.do_list()
 
-    # @swagger_auto_schema(responses={'200': _course_list_schema},
-    #                      api_tags=[APITags.permissions])
-    @decorators.action(detail=True)
-    def courses_is_admin_for(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.CourseSerializer(user.courses_is_admin_for.all(),
-                                            many=True).data)
 
-    # @swagger_auto_schema(responses={'200': _course_list_schema},
-    #                      api_tags=[APITags.permissions])
-    @decorators.action(detail=True)
-    def courses_is_staff_for(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.CourseSerializer(user.courses_is_staff_for.all(),
-                                            many=True).data)
+class CoursesIsAdminForView(_RosterViewBase):
+    nested_field_name = 'courses_is_admin_for'
 
-    # @swagger_auto_schema(responses={'200': _course_list_schema},
-    #                      api_tags=[APITags.permissions])
-    @decorators.action(detail=True)
-    def courses_is_handgrader_for(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.CourseSerializer(user.courses_is_handgrader_for.all(),
-                                            many=True).data)
 
-    # @swagger_auto_schema(responses={'200': _course_list_schema},
-    #                      api_tags=[APITags.permissions])
-    @decorators.action(detail=True)
-    def courses_is_enrolled_in(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.CourseSerializer(user.courses_is_enrolled_in.all(),
-                                            many=True).data)
+class CoursesIsStaffForView(_RosterViewBase):
+    nested_field_name = 'courses_is_staff_for'
 
-    # @swagger_auto_schema(
-    #     responses={'200': Schema(type='array',
-    #                              items=AGModelSchemaBuilder.get().get_schema(ag_models.Group))})
-    @decorators.action(detail=True)
-    def groups_is_member_of(self, request, *args, **kwargs):
-        user = self.get_object()
-        queryset = user.groups_is_member_of.select_related(
-            'project').prefetch_related('members').all()
-        return response.Response(
-            ag_serializers.SubmissionGroupSerializer(queryset, many=True).data)
 
-    # @swagger_auto_schema(
-    #     responses={
-    #         '200': Schema(type='array',
-    #                       items=AGModelSchemaBuilder.get().get_schema(ag_models.GroupInvitation))})
-    @decorators.action(detail=True)
-    def group_invitations_received(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.SubmissionGroupInvitationSerializer(
-                user.group_invitations_received.all(), many=True).data)
+class CoursesIsEnrolledInView(_RosterViewBase):
+    nested_field_name = 'courses_is_enrolled_in'
 
-    # @swagger_auto_schema(
-    #     responses={
-    #         '200': Schema(type='array',
-    #                       items=AGModelSchemaBuilder.get().get_schema(ag_models.GroupInvitation))})
-    @decorators.action(detail=True)
-    def group_invitations_sent(self, request, *args, **kwargs):
-        user = self.get_object()
-        return response.Response(
-            ag_serializers.SubmissionGroupInvitationSerializer(
-                user.group_invitations_sent.all(), many=True).data)
+
+class CoursesIsHandgraderForView(_RosterViewBase):
+    nested_field_name = 'courses_is_handgrader_for'
+
+
+class GroupsIsMemberOfView(NestedModelView):
+    schema = AGListCreateViewSchemaGenerator(
+        tags=[APITags.users, APITags.permissions, APITags.groups],
+        api_class=ag_models.Group
+    )
+
+    model_manager = User.objects
+    nested_field_name = 'groups_is_member_of'
+
+    permission_classes = [_Permissions]
+
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+
+class _InvitationViewBase(NestedModelView):
+    schema = AGListCreateViewSchemaGenerator(
+        tags=[APITags.users, APITags.permissions, APITags.groups],
+        api_class=ag_models.GroupInvitation
+    )
+
+    model_manager = User.objects
+
+    permission_classes = [_Permissions]
+
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+
+class GroupInvitationsSentView(_InvitationViewBase):
+    nested_field_name = 'group_invitations_sent'
+
+
+class GroupInvitationsReceivedView(_InvitationViewBase):
+    nested_field_name = 'group_invitations_received'
 
 
 class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):

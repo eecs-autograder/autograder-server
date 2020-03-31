@@ -9,10 +9,6 @@ from rest_framework.schemas import get_schema_view
 from autograder.rest_api import views
 # from autograder.rest_api.views.schema_generation import AGSchemaGenerator
 
-user_router = routers.SimpleRouter()
-user_router.register(r'users', views.UserViewSet, basename='user')
-
-
 project_router = routers.SimpleRouter()
 project_router.register(r'projects', views.ProjectDetailViewSet, basename='project')
 
@@ -123,13 +119,27 @@ rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
 urlpatterns = [
     # url(r'^docs/?$', schema_view.with_ui('swagger'), name='schema-swagger-ui'),
 
-    url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),
-
-    url(r'', include(user_router.urls)),
+    url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),    path('users/current/', views.CurrentUserView.as_view(), name='current-user'),
     path('users/current/can_create_courses/', views.CurrentUserCanCreateCoursesView.as_view(),
          name='user-can-create-courses'),
+    path('users/<int:pk>/', views.UserDetailView.as_view(), name='user-detail'),
     path('users/<username_or_pk>/late_days/', views.UserLateDaysView.as_view(),
          name='user-late-days'),
+    path('users/<int:pk>/courses_is_admin_for/', views.CoursesIsAdminForView.as_view(),
+         name='courses-is-admin-for'),
+    path('users/<int:pk>/courses_is_staff_for/', views.CoursesIsStaffForView.as_view(),
+         name='courses-is-staff-for'),
+    path('users/<int:pk>/courses_is_enrolled_in/', views.CoursesIsEnrolledInView.as_view(),
+         name='courses-is-enrolled-in'),
+    path('users/<int:pk>/courses_is_handgrader_for/', views.CoursesIsHandgraderForView.as_view(),
+         name='courses-is-handgrader-for'),
+    path('users/<int:pk>/groups_is_member_of/', views.GroupsIsMemberOfView.as_view(),
+         name='groups-is-member-of'),
+    path('users/<int:pk>/group_invitations_sent/', views.GroupInvitationsSentView.as_view(),
+         name='group-invitations-sent'),
+    path('users/<int:pk>/group_invitations_received/', views.GroupInvitationsReceivedView.as_view(),
+         name='groups-invitations-received'),
+
 
     path('courses/', views.ListCreateCourseView.as_view(), name='list-create-courses'),
     path('courses/<int:pk>/', views.CourseDetailView.as_view(), name='course-detail'),

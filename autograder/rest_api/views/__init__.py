@@ -13,8 +13,7 @@ from .course_views.course_staff import CourseStaffViewSet
 from .course_views.course_students import CourseStudentsViewSet
 from .course_views.course_views import (CopyCourseView,
                                         CourseByNameSemesterYearView,
-                                        CourseDetailView,
-                                        CourseUserRolesView,
+                                        CourseDetailView, CourseUserRolesView,
                                         ListCreateCourseView)
 from .group_invitation_views import (GroupInvitationDetailViewSet,
                                      ListCreateGroupInvitationViewSet)
@@ -62,5 +61,9 @@ from .submission_views.submission_result_views import (
 from .submission_views.submission_views import (ListCreateSubmissionViewSet,
                                                 ListSubmissionsWithResults,
                                                 SubmissionDetailViewSet)
-from .user_views import (CurrentUserCanCreateCoursesView, UserLateDaysView,
-                         UserViewSet)
+from .user_views import (CoursesIsAdminForView, CoursesIsEnrolledInView,
+                         CoursesIsHandgraderForView, CoursesIsStaffForView,
+                         CurrentUserCanCreateCoursesView, CurrentUserView,
+                         GroupInvitationsReceivedView,
+                         GroupInvitationsSentView, GroupsIsMemberOfView,
+                         UserLateDaysView, UserDetailView)

@@ -9,12 +9,11 @@ from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
 
-from autograder.utils.testing import UnitTestBase
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 import autograder.utils.testing.model_obj_builders as obj_build
-import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 
 
-class ListCoursesTestCase(UnitTestBase):
+class ListCoursesTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
@@ -43,7 +42,7 @@ class ListCoursesTestCase(UnitTestBase):
             self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
 
-class CreateCourseTestCase(UnitTestBase):
+class CreateCourseTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
@@ -83,7 +82,7 @@ class CreateCourseTestCase(UnitTestBase):
         self.assertEqual(0, ag_models.Course.objects.count())
 
 
-class CopyCourseViewTestCase(UnitTestBase):
+class CopyCourseViewTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
 
@@ -244,7 +243,7 @@ class CopyCourseViewTestCase(UnitTestBase):
         self.assertIn('exists', response.data['__all__'][0])
 
 
-class RetrieveCourseTestCase(UnitTestBase):
+class RetrieveCourseTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
@@ -269,7 +268,7 @@ class RetrieveCourseTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
-class UpdateCourseTestCase(UnitTestBase):
+class UpdateCourseTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
@@ -314,7 +313,7 @@ class UpdateCourseTestCase(UnitTestBase):
         self.assertEqual(status.HTTP_404_NOT_FOUND, response.status_code)
 
 
-class UserRolesForCourseTestCase(test_impls.GetObjectTest, UnitTestBase):
+class UserRolesForCourseTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()
@@ -370,7 +369,7 @@ class UserRolesForCourseTestCase(test_impls.GetObjectTest, UnitTestBase):
             self.expected_response_base())
 
 
-class CourseByNameSemesterYearViewTestCase(UnitTestBase):
+class CourseByNameSemesterYearViewTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
         self.client = APIClient()

@@ -2,8 +2,6 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from drf_composable_permissions.p import P
-# from drf_yasg.openapi import Parameter, Schema
-# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import decorators, mixins, permissions, response, status
 from rest_framework.permissions import BasePermission, DjangoModelPermissions
 from rest_framework.request import Request
@@ -22,8 +20,7 @@ from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
     AlwaysIsAuthenticatedMixin, CreateNestedModelMixin, NestedModelView,
     convert_django_validation_error, require_body_params)
-from autograder.rest_api.views.schema_generation import \
-    APITags  # , AGModelViewAutoSchema
+from autograder.rest_api.views.schema_generation import APITags
 
 
 class CoursePermissions(permissions.BasePermission):
