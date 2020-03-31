@@ -591,7 +591,7 @@ class AGListCreateViewSchemaGenerator(
     pass
 
 
-class AGRetrieveViewSchemaGenerator:
+class AGRetrieveViewSchemaMixin:
     def get_operation_impl(self, path, method):
         base_result = super().get_operation_impl(path, method)
         if method == 'GET':
@@ -600,7 +600,7 @@ class AGRetrieveViewSchemaGenerator:
         return base_result
 
 
-class AGPatchViewSchemaGenerator:
+class AGPatchViewSchemaMixin:
     def get_operation_impl(self, path, method):
         base_result = super().get_operation_impl(path, method)
         if method == 'PATCH':
@@ -610,7 +610,7 @@ class AGPatchViewSchemaGenerator:
 
 
 class AGDetailViewSchemaGenerator(
-    AGRetrieveViewSchemaGenerator, AGPatchViewSchemaGenerator, AGViewSchemaGenerator
+    AGRetrieveViewSchemaMixin, AGPatchViewSchemaMixin, AGViewSchemaGenerator
 ):
     pass
 
