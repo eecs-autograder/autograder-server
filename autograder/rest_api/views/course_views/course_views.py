@@ -14,7 +14,10 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.copy_project_and_course import copy_course
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.schema import AGDetailViewSchemaGenerator, AGListCreateViewSchemaGenerator, CustomViewSchema
+from autograder.rest_api.schema import (AGCreateViewSchemaMixin,
+                                        AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator,
+                                        CustomViewSchema)
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
     AlwaysIsAuthenticatedMixin, CreateNestedModelMixin, NestedModelView,
@@ -58,7 +61,7 @@ class ListCreateCoursePermissions(permissions.BasePermission):
 
 
 class ListCreateCourseView(APIView):
-    schema = AGListCreateViewSchemaGenerator(ag_models.Course)
+    schema = AGListCreateViewSchemaGenerator([APITags.courses], ag_models.Course)
 
     permission_classes = [ListCreateCoursePermissions]
 
@@ -78,7 +81,7 @@ class ListCreateCourseView(APIView):
 
 
 class CourseDetailView(AGModelDetailView):
-    schema = AGDetailViewSchemaGenerator(ag_models.Course)
+    schema = AGDetailViewSchemaGenerator([APITags.courses], ag_models.Course)
 
     model_manager = ag_models.Course.objects
     permission_classes = [P(ag_permissions.is_admin()) | P(ag_permissions.IsReadOnly)]
@@ -94,10 +97,10 @@ class CourseDetailView(AGModelDetailView):
 
 
 class CourseUserRolesView(AGModelAPIView):
-    schema = CustomViewSchema({
+    schema = CustomViewSchema([APITags.courses], {
         'GET': {
             'responses': {
-                '200': {'body_ref': '#/components/schemas/UserRoles'}
+                '200': {'body': {'$ref': '#/components/schemas/UserRoles'}}
             }
         }
     })
@@ -109,38 +112,54 @@ class CourseUserRolesView(AGModelAPIView):
         return response.Response(course.get_user_roles(self.request.user))
 
 
-class CopyCourseView(AGModelGenericViewSet):
-    api_tags = [APITags.courses]
+class _CopyCourseSchemaGen(AGCreateViewSchemaMixin, CustomViewSchema):
+    pass
 
-    pk_key = 'course_pk'
+
+class CopyCourseView(AGModelAPIView):
+    schema = _CopyCourseSchemaGen([APITags.courses], {
+        'POST': {
+            'request_payload': {
+                'body': {
+                    'type': 'object',
+                    'required': [
+                        'new_name',
+                        'new_semester',
+                        'new_year',
+                    ],
+                    'properties': {
+                        'new_name': {
+                            'type': 'string'
+                        },
+                        'new_semester': {
+                            '$ref': '#/components/schemas/Semester'
+                        },
+                        'new_year': {
+                            'type': 'integer'
+                        }
+                    }
+                }
+            }
+        }
+    })
+
     model_manager = ag_models.Course.objects
-
-    serializer_class = ag_serializers.CourseSerializer
 
     permission_classes = [P(ag_permissions.IsSuperuser) | P(ag_permissions.is_admin())]
 
-    # @swagger_auto_schema(
-    #     operation_description="""Makes a copy of the given course and all its projects.
-    #         The projects and all of their  instructor file,
-    #         expected student file, test case, and handgrading data.
-    #         Note that groups, submissions, and results (test case, handgrading,
-    #         etc.) are NOT copied.
-    #         The admin list is copied to the new project, but other permissions
-    #         (staff, students, etc.) are not.
-    #     """,
-    #     request_body_parameters=[
-    #         Parameter('new_name', in_='body', type='string', required=True),
-    #         Parameter(
-    #             'new_semester', in_='body', type='string', required=True,
-    #             description='Must be one of: '
-    #                         + f'{", ".join((semester.value for semester in ag_models.Semester))}'),
-    #         Parameter('new_year', in_='body', type='integer', required=True)
-    #     ],
-    # )
     @transaction.atomic()
     @convert_django_validation_error
     @method_decorator(require_body_params('new_name', 'new_semester', 'new_year'))
-    def copy_course(self, request: Request, *args, **kwargs):
+    def post(self, request: Request, *args, **kwargs):
+        """
+        Makes a copy of the given course and all its projects.
+        The projects and all of their  instructor file,
+        expected student file, test case, and handgrading data.
+        Note that groups, submissions, and results (test case, handgrading,
+        etc.) are NOT copied.
+        The admin list is copied to the new project, but other permissions
+        (staff, students, etc.) are not.
+        """
         course: ag_models.Course = self.get_object()
 
         new_semester = request.data['new_semester']
@@ -158,25 +177,11 @@ class CopyCourseView(AGModelGenericViewSet):
 
         return response.Response(status=status.HTTP_201_CREATED, data=new_course.to_dict())
 
-    @classmethod
-    def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'post': 'copy_course'}, **initkwargs)
-
 
 class CourseByNameSemesterYearView(AlwaysIsAuthenticatedMixin, APIView):
-    # swagger_schema = AGModelViewAutoSchema
-    api_tags = [APITags.courses]
+    # FIXME: Correct path param types
+    schema = AGDetailViewSchemaGenerator([APITags.courses], ag_models.Course)
 
-    # @swagger_auto_schema(
-    #     request_body_parameters=[
-    #         Parameter('name', in_='path', type='string', required=True),
-    #         Parameter(
-    #             'semester', in_='path', type='string', required=True,
-    #             description='Must be one of: '
-    #                         + f'{", ".join((semester.value for semester in ag_models.Semester))}'),
-    #         Parameter('year', in_='path', type='integer', required=True)
-    #     ]
-    # )
     def get(self, request: Request, *args, **kwargs):
         name = kwargs.get('name')
         semester = kwargs.get('semester')

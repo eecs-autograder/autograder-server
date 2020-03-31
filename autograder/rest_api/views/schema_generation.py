@@ -95,6 +95,7 @@ API_MODELS = OrderedDict([
 # Defines the order of API tags and provides a single point of
 # maintenance for their string values.
 class APITags(enum.Enum):
+    users = 'users'
     courses = 'courses'
     permissions = 'permissions'
 

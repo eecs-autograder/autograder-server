@@ -98,7 +98,7 @@ class CopyCourseViewTestCase(UnitTestBase):
         new_year = 2019
 
         self.client.force_authenticate(superuser)
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_name': new_name,
                                      'new_semester': new_semester.value,
                                      'new_year': new_year})
@@ -121,7 +121,7 @@ class CopyCourseViewTestCase(UnitTestBase):
                         new=mock_copy_course):
             self.client.force_authenticate(superuser)
             response = self.client.post(
-                reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+                reverse('copy-course', kwargs={'pk': self.course.pk}),
                 {'new_name': 'Clone',
                  'new_semester': ag_models.Semester.winter.value,
                  'new_year': 2020}
@@ -140,7 +140,7 @@ class CopyCourseViewTestCase(UnitTestBase):
         new_year = 2017
 
         self.client.force_authenticate(user)
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_name': new_name,
                                      'new_semester': new_semester.value,
                                      'new_year': new_year})
@@ -163,7 +163,7 @@ class CopyCourseViewTestCase(UnitTestBase):
                         new=mock_copy_course):
             self.client.force_authenticate(user)
             response = self.client.post(
-                reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+                reverse('copy-course', kwargs={'pk': self.course.pk}),
                 {'new_name': 'Cloney',
                  'new_semester': ag_models.Semester.spring.value,
                  'new_year': 2021}
@@ -180,7 +180,7 @@ class CopyCourseViewTestCase(UnitTestBase):
 
         self.client.force_authenticate(user)
         response = self.client.post(
-            reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+            reverse('copy-course', kwargs={'pk': self.course.pk}),
             {
                 'new_name': 'New',
                 'new_semester': ag_models.Semester.summer.value,
@@ -195,7 +195,7 @@ class CopyCourseViewTestCase(UnitTestBase):
 
         self.client.force_authenticate(user)
         response = self.client.post(
-            reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+            reverse('copy-course', kwargs={'pk': self.course.pk}),
             {'new_name': 'New',
              'new_semester': ag_models.Semester.summer.value,
              'new_year': 2021}
@@ -210,17 +210,17 @@ class CopyCourseViewTestCase(UnitTestBase):
         new_year = 2019
 
         self.client.force_authenticate(superuser)
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_name': new_name,
                                      'new_semester': new_semester.value})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_name': new_name,
                                      'new_year': new_year})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-        response = self.client.post(reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+        response = self.client.post(reverse('copy-course', kwargs={'pk': self.course.pk}),
                                     {'new_semester': new_semester.value,
                                      'new_year': new_year})
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -234,7 +234,7 @@ class CopyCourseViewTestCase(UnitTestBase):
         self.course.save()
 
         response = self.client.post(
-            reverse('copy-course', kwargs={'course_pk': self.course.pk}),
+            reverse('copy-course', kwargs={'pk': self.course.pk}),
             {'new_name': self.course.name,
              'new_semester': self.course.semester.value,
              'new_year': self.course.year}
