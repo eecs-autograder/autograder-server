@@ -13,13 +13,13 @@ import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator,
-                                        CustomViewSchema, RequestParam)
+                                        APITags, CustomViewSchema,
+                                        RequestParam)
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
     AlwaysIsAuthenticatedMixin, NestedModelView, require_body_params,
     require_query_params)
-from autograder.rest_api.views.schema_generation import APITags
 
 
 class _Permissions(permissions.BasePermission):
@@ -49,9 +49,9 @@ class UserDetailView(AGModelDetailView):
         return serialize_user(obj)
 
 
-class _RosterViewBase(NestedModelView):
+class _UserCoursesViewBase(NestedModelView):
     schema = AGListCreateViewSchemaGenerator(
-        tags=[APITags.users, APITags.permissions, APITags.courses],
+        tags=[APITags.users, APITags.courses],
         api_class=ag_models.Course
     )
 
@@ -63,25 +63,25 @@ class _RosterViewBase(NestedModelView):
         return self.do_list()
 
 
-class CoursesIsAdminForView(_RosterViewBase):
+class CoursesIsAdminForView(_UserCoursesViewBase):
     nested_field_name = 'courses_is_admin_for'
 
 
-class CoursesIsStaffForView(_RosterViewBase):
+class CoursesIsStaffForView(_UserCoursesViewBase):
     nested_field_name = 'courses_is_staff_for'
 
 
-class CoursesIsEnrolledInView(_RosterViewBase):
+class CoursesIsEnrolledInView(_UserCoursesViewBase):
     nested_field_name = 'courses_is_enrolled_in'
 
 
-class CoursesIsHandgraderForView(_RosterViewBase):
+class CoursesIsHandgraderForView(_UserCoursesViewBase):
     nested_field_name = 'courses_is_handgrader_for'
 
 
 class GroupsIsMemberOfView(NestedModelView):
     schema = AGListCreateViewSchemaGenerator(
-        tags=[APITags.users, APITags.permissions, APITags.groups],
+        tags=[APITags.users, APITags.groups],
         api_class=ag_models.Group
     )
 
@@ -96,7 +96,7 @@ class GroupsIsMemberOfView(NestedModelView):
 
 class _InvitationViewBase(NestedModelView):
     schema = AGListCreateViewSchemaGenerator(
-        tags=[APITags.users, APITags.permissions, APITags.groups],
+        tags=[APITags.users, APITags.groups],
         api_class=ag_models.GroupInvitation
     )
 
@@ -117,7 +117,7 @@ class GroupInvitationsReceivedView(_InvitationViewBase):
 
 
 class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
-    schema = CustomViewSchema([APITags.permissions, APITags.users], {
+    schema = CustomViewSchema([APITags.users], {
         'GET': {
             'responses': {
                 '200': {

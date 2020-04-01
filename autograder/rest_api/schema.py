@@ -84,6 +84,15 @@ class AGSchemaGenerator(SchemaGenerator):
             }
         }
 
+        result['schemas']['UserID'] = {
+            'type': 'object',
+            'required': ['pk'],
+            'properties': {
+                'pk': _PK_SCHEMA,
+                'username': {'type': 'string', 'format': 'email'}
+            }
+        }
+
         return result
 
 
@@ -194,9 +203,6 @@ class HasToDictMixinSchemaGenerator(APIClassSchemaGenerator):
     def __init__(self, class_: Type[ToDictMixin]):
         self._class = class_
 
-    # def generate(self) -> dict:
-    #     pass
-
     def _field_names(self) -> Sequence[str]:
         return self._class.get_serializable_fields()
 
@@ -257,12 +263,19 @@ class UserSchemaGenerator(APIClassSchemaGenerator):
         'username',
         'first_name',
         'last_name',
-        'email',
         'is_superuser'
     )
 
     def __init__(self, class_: Type[User]):
         self._class = class_
+
+    def generate(self) -> dict:
+        result = super().generate()
+        for name, prop in result['properties'].items():
+            if name == 'username':
+                prop['format'] = 'email'
+
+        return result
 
     def _field_names(self) -> Sequence[str]:
         return self._fields
@@ -351,7 +364,7 @@ def _django_field(
             else:
                 result.update({
                     'type': 'array',
-                    'items': _PK_SCHEMA,
+                    'items': _PK_SCHEMA_READ_ONLY,
                 })
                 return result
 
@@ -361,7 +374,7 @@ def _django_field(
             })
             return result
         else:
-            return _PK_SCHEMA
+            return _PK_SCHEMA_READ_ONLY
 
     return {'type': 'unknown'}
 
@@ -391,7 +404,7 @@ _FIELD_TYPES: Dict[Type[Field], dict] = {
 @_get_field_schema.register
 def _property(prop: property, api_class: APIClassType, name: str) -> dict:
     if name == 'pk':
-        return _PK_SCHEMA
+        return _PK_SCHEMA_READ_ONLY
 
     result = {
         'readOnly': True,
@@ -405,7 +418,7 @@ def _property(prop: property, api_class: APIClassType, name: str) -> dict:
 @_get_field_schema.register
 def _cached_property(prop: cached_property, api_class: APIClassType, name: str) -> dict:
     if name == 'pk':
-        return _PK_SCHEMA
+        return _PK_SCHEMA_READ_ONLY
 
     result = {
         'readOnly': True,
@@ -444,6 +457,12 @@ def _as_schema_ref(type: APIClassType) -> dict:
 
 
 _PK_SCHEMA = {
+    'type': 'integer',
+    'format': 'id',
+}
+
+
+_PK_SCHEMA_READ_ONLY = {
     'type': 'integer',
     'format': 'id',
     'readOnly': True,
@@ -630,7 +649,7 @@ class CustomViewMethodData(TypedDict, total=False):
     param_schema_overrides: Dict[str, dict]
     request_payload: RequestBodyData
     # Key = response status
-    responses: Dict[str, ResponseSchemaData]
+    responses: Dict[str, Optional[ResponseSchemaData]]
 
 
 # https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md#parameter-object
@@ -693,9 +712,11 @@ class CustomViewSchema(AGViewSchemaGenerator):
                 }
             }
 
-        responses = {}
+        responses: Dict[str, dict] = {}
         for status, response_data in method_data.get('responses', {}).items():
-            if 'body' in response_data:
+            if response_data is None:
+                responses[status] = {}
+            elif 'body' in response_data:
                 responses[status] = {
                     'content': {
                         response_data.get('content_type', 'application/json'): {

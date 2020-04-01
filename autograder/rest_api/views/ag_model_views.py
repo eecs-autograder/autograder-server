@@ -13,7 +13,7 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 
 from autograder.rest_api.views.schema_generation import (
-    # AGModelViewAutoSchema, NestedModelViewAutoSchema,
+
     APITags)
 from ..transaction_mixins import (
     TransactionCreateMixin, TransactionPartialUpdateMixin,
