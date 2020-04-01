@@ -319,20 +319,6 @@ paths:
             schema:
               $ref: '#/components/schemas/Course'
       tags: *id004
-    delete:
-      operationId: DestroyCourseDetail
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '204':
-          description: ''
-      tags: *id004
   /api/courses/{id}/my_roles/:
     get:
       operationId: listCourseUserRoles

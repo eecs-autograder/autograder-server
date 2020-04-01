@@ -89,9 +89,6 @@ class CourseDetailView(AGModelDetailView):
     def patch(self, *args, **kwargs):
         return self.do_patch()
 
-    def delete(self, *args, **kwargs):
-        return self.do_delete()
-
 
 class CourseUserRolesView(AGModelAPIView):
     schema = CustomViewSchema([APITags.courses], {
