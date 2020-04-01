@@ -97,6 +97,7 @@ API_MODELS = OrderedDict([
 class APITags(enum.Enum):
     users = 'users'
     courses = 'courses'
+    rosters = 'rosters'
     permissions = 'permissions'
 
     projects = 'projects'

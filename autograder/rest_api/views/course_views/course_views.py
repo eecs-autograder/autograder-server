@@ -15,13 +15,12 @@ from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGCreateViewSchemaMixin,
                                         AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator,
-                                        AGRetrieveViewSchemaMixin,
+                                        AGRetrieveViewSchemaMixin, APITags,
                                         CustomViewSchema)
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
     AlwaysIsAuthenticatedMixin, CreateNestedModelMixin, NestedModelView,
     convert_django_validation_error, require_body_params)
-from autograder.rest_api.views.schema_generation import APITags
 
 
 class CoursePermissions(permissions.BasePermission):
@@ -82,7 +81,7 @@ class CourseDetailView(AGModelDetailView):
 
 
 class CourseUserRolesView(AGModelAPIView):
-    schema = CustomViewSchema([APITags.courses], {
+    schema = CustomViewSchema([APITags.courses, APITags.users], {
         'GET': {
             'responses': {
                 '200': {'body': {'$ref': '#/components/schemas/UserRoles'}}
