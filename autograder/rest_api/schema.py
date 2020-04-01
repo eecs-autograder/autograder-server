@@ -625,7 +625,7 @@ class CustomViewDict(TypedDict, total=False):
 
 
 class CustomViewMethodData(TypedDict, total=False):
-    parameters: RequestParam
+    parameters: List[RequestParam]
     # Key = param name, Value = schema dict
     param_schema_overrides: Dict[str, dict]
     request_payload: RequestBodyData
@@ -637,6 +637,7 @@ class CustomViewMethodData(TypedDict, total=False):
 RequestParam = TypedDict('RequestParam', {
     'name': str,
     'in': str,
+    'schema': dict,
     'description': str,
     'required': bool,
     'deprecated': bool,

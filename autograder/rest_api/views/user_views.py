@@ -1,3 +1,5 @@
+from typing import List
+
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -11,7 +13,7 @@ import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator,
-                                        CustomViewSchema)
+                                        CustomViewSchema, RequestParam)
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
@@ -133,24 +135,59 @@ class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
 
 
 class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
-    # swagger_schema = AGModelViewAutoSchema
+    _LATE_DAYS_REMAINING_BODY = {
+        'type': 'object',
+        'required': ['late_days_remaining'],
+        'properties': {
+            'late_days_remaining': {'type': 'integer'}
+        }
+    }
 
-    api_tags = [APITags.courses]
+    _PARAMS: List[RequestParam] = [
+        {
+            'name': 'username_or_id',
+            'in': 'path',
+            'required': True,
+            'description': 'The ID or username of the user.',
+            'schema': {
+                # Note: swagger-ui doesn't seem to be able to render
+                # oneOf for params.
+                'oneOf': [
+                    {'type': 'string', 'format': 'username'},
+                    {'type': 'integer', 'format': 'id'},
+                ]
+            }
+        },
+        {
+            'name': 'course_pk',
+            'in': 'query',
+            'required': True,
+            'schema': {'type': 'integer', 'format': 'id'}
+        }
+    ]
 
-    # @swagger_auto_schema(
-    #     manual_parameters=[Parameter('course_pk', in_='query', type='integer', required=True)],
-    #     responses={
-    #         '200': Schema(
-    #             type='object',
-    #             properties=[Parameter('late_days_remaining', in_='body', type='integer')])
-    #     }
-    # )
+    schema = CustomViewSchema([APITags.courses, APITags.users], {
+        'GET': {
+            'parameters': _PARAMS,
+            'responses': {
+                '200': {'body': _LATE_DAYS_REMAINING_BODY}
+            }
+        },
+        'PUT': {
+            'parameters': _PARAMS,
+            'request_payload': {'body': _LATE_DAYS_REMAINING_BODY},
+            'responses': {
+                '200': {'body': _LATE_DAYS_REMAINING_BODY}
+            }
+        }
+    })
+
     @method_decorator(require_query_params('course_pk'))
     def get(self, request: Request, *args, **kwargs):
         try:
-            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_pk']))
+            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_id']))
         except ValueError:
-            user = get_object_or_404(User.objects, username=kwargs['username_or_pk'])
+            user = get_object_or_404(User.objects, username=kwargs['username_or_id'])
 
         course = get_object_or_404(ag_models.Course.objects, pk=request.query_params['course_pk'])
         remaining = ag_models.LateDaysRemaining.objects.get_or_create(user=user, course=course)[0]
@@ -159,22 +196,12 @@ class UserLateDaysView(AlwaysIsAuthenticatedMixin, APIView):
 
         return response.Response({'late_days_remaining': remaining.late_days_remaining})
 
-    # @swagger_auto_schema(
-    #     manual_parameters=[Parameter('course_pk', in_='query', type='integer', required=True)],
-    #     request_body_parameters=[
-    #         Parameter('late_days_remaining', in_='body', type='integer', required=True)],
-    #     responses={
-    #         '200': Schema(
-    #             type='object',
-    #             properties=[Parameter('late_days_remaining', in_='body', type='integer')])
-    #     }
-    # )
     @method_decorator(require_body_params('late_days_remaining'))
     def put(self, request: Request, *args, **kwargs):
         try:
-            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_pk']))
+            user = get_object_or_404(User.objects, pk=int(kwargs['username_or_id']))
         except ValueError:
-            user = get_object_or_404(User.objects, username=kwargs['username_or_pk'])
+            user = get_object_or_404(User.objects, username=kwargs['username_or_id'])
 
         course = get_object_or_404(ag_models.Course.objects, pk=request.query_params['course_pk'])
 
