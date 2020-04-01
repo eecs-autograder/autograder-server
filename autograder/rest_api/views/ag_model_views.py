@@ -1,3 +1,4 @@
+from functools import wraps
 from abc import abstractmethod
 from typing import Optional, List, Protocol
 
@@ -26,6 +27,7 @@ def convert_django_validation_error(func):
     catches the error and raises rest_framework.exceptions.ValidationError
     with the same content.
     """
+    @wraps(func)
     def decorated_func(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -341,6 +343,7 @@ class TransactionRetrievePatchDestroyMixin(mixins.RetrieveModelMixin,
 
 
 def handle_object_does_not_exist_404(func):
+    @wraps(func)
     def decorated_func(*args, **kwargs):
         try:
             return func(*args, **kwargs)

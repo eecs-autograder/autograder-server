@@ -20,16 +20,17 @@ paths:
   /api/users/current/can_create_courses/:
     get:
       operationId: listCurrentUserCanCreateCourses
-      description: ''
+      description: Indicates whether the current user can create empty courses.
       parameters: []
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items: {}
-          description: ''
+                type: boolean
+      tags:
+      - permissions
+      - users
   /api/users/{id}/:
     get:
       operationId: RetrieveUserDetail
@@ -354,13 +355,13 @@ paths:
         required: true
         description: ''
         schema:
-          type: string
+          $ref: '#/components/schemas/Semester'
       - name: year
         in: path
         required: true
         description: ''
         schema:
-          type: string
+          type: integer
       responses:
         '200':
           content:
@@ -3529,7 +3530,19 @@ paths:
   /api/courses/{id}/copy/:
     post:
       operationId: CreateCopyCourse
-      description: ''
+      description: 'Makes a copy of the given course and all its projects.
+
+        The projects and all of their  instructor file,
+
+        expected student file, test case, and handgrading data.
+
+        Note that groups, submissions, and results (test case, handgrading,
+
+        etc.) are NOT copied.
+
+        The admin list is copied to the new project, but other permissions
+
+        (staff, students, etc.) are not.'
       parameters:
       - name: id
         in: path
@@ -3549,18 +3562,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - new_name
-              - new_semester
-              - new_year
-              properties:
-                new_name:
-                  type: string
-                new_semester:
-                  $ref: '#/components/schemas/Semester'
-                new_year:
-                  type: integer
+              $ref: '#/components/schemas/Course'
       tags:
       - courses
   /api/projects/{project_pk}/copy_to_course/{target_course_pk}/:
