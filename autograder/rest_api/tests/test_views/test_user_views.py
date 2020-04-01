@@ -115,67 +115,65 @@ class UsersCourseViewTestCase(AGViewTestBase):
 
 
 class UserGroupsTestCase(AGViewTestBase):
-    def test_self_list_groups_is_member_of(self):
-        for group in self.all_groups(self.visible_public_project):
-            self.do_list_objects_test(
-                self.client, group.members.first(),
-                user_url(group.members.first(), 'groups-is-member-of'),
-                [group.to_dict()])
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
 
-        other_user = obj_build.create_dummy_user()
+    def test_self_list_groups_is_member_of(self):
+        group1 = obj_build.make_group(members_role=obj_build.UserRole.guest)
+        group2 = obj_build.make_group(members=list(group1.members.all()))
+
+        user = group1.members.first()
+
+        self.do_list_objects_test(
+            self.client, user,
+            user_url(user, 'groups-is-member-of'), [group1.to_dict(), group2.to_dict()])
+
+        other_user = obj_build.make_user()
         self.do_list_objects_test(
             self.client, other_user, user_url(other_user, 'groups-is-member-of'), [])
 
     def test_other_list_groups_is_member_of_forbidden(self):
-        self.do_get_user_info_permission_denied_test('groups-is-member-of')
+        group = obj_build.make_group()
+        other_user = obj_build.make_user()
+        self.do_permission_denied_get_test(
+            self.client, other_user, user_url(group.members.first(), 'groups-is-member-of'))
 
     def test_self_list_invitations_received(self):
-        invite = self.non_enrolled_group_invitation(self.visible_public_project)
-        for user in invite.invited_users.all():
-            self.do_list_objects_test(
-                self.client, user,
-                user_url(user, 'group-invitations-received'),
-                [invite.to_dict()])
-
-        other_user = obj_build.create_dummy_user()
+        invitation = obj_build.make_group_invitation()
+        recipient = invitation.invited_users.first()
         self.do_list_objects_test(
-            self.client, other_user,
-            user_url(other_user, 'group-invitations-received'),
-            [])
+            self.client, recipient,
+            user_url(recipient, 'group-invitations-received'), [invitation.to_dict()])
+
+        other_user = obj_build.make_user()
+        self.do_list_objects_test(
+            self.client, other_user, user_url(other_user, 'group-invitations-received'), [])
 
     def test_other_list_invitations_received_forbidden(self):
-        self.do_get_user_info_permission_denied_test(
-            'group-invitations-received')
+        invitation = obj_build.make_group_invitation()
+        other_user = obj_build.make_user()
+        self.do_permission_denied_get_test(
+            self.client, other_user,
+            user_url(invitation.invitation_creator, 'group-invitations-received'))
 
     def test_self_list_invitations_sent(self):
-        invite = self.non_enrolled_group_invitation(self.visible_public_project)
+        invitation = obj_build.make_group_invitation()
+        sender = invitation.invitation_creator
         self.do_list_objects_test(
-            self.client, invite.invitation_creator,
-            user_url(invite.invitation_creator, 'group-invitations-sent'),
-            [invite.to_dict()])
+            self.client, sender,
+            user_url(sender, 'group-invitations-sent'), [invitation.to_dict()])
 
-        other_user = obj_build.create_dummy_user()
+        other_user = obj_build.make_user()
         self.do_list_objects_test(
-            self.client, other_user,
-            user_url(other_user, 'group-invitations-sent'),
-            [])
+            self.client, other_user, user_url(other_user, 'group-invitations-sent'), [])
 
     def test_other_list_invitations_sent_forbidden(self):
-        self.do_get_user_info_permission_denied_test(
-            'group-invitations-sent')
-
-    def do_get_user_info_permission_denied_test(self, url_lookup):
-        for requester, to_get in itertools.product(self.all_users,
-                                                   self.all_users):
-            if requester == to_get:
-                continue
-
-            self.do_permission_denied_get_test(
-                self.client, requester, user_url(to_get, url_lookup))
-
-    @property
-    def all_users(self):
-        return [self.admin, self.staff, self.enrolled, self.nobody]
+        invitation = obj_build.make_group_invitation()
+        other_user = obj_build.make_user()
+        self.do_permission_denied_get_test(
+            self.client, other_user,
+            user_url(invitation.invitation_creator, 'group-invitations-sent'))
 
 
 def user_url(user, lookup='user-detail'):
