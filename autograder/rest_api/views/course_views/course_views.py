@@ -15,6 +15,7 @@ from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGCreateViewSchemaMixin,
                                         AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator,
+                                        AGRetrieveViewSchemaMixin,
                                         CustomViewSchema)
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
@@ -38,16 +39,6 @@ class CoursePermissions(permissions.BasePermission):
 
         return course.is_admin(request.user)
 
-
-# _my_roles_schema = Schema(
-#     type='object',
-#     properties={
-#         'is_admin': Parameter('is_admin', 'body', type='boolean'),
-#         'is_staff': Parameter('is_staff', 'body', type='boolean'),
-#         'is_student': Parameter('is_student', 'body', type='boolean'),
-#         'is_handgrader': Parameter('is_handgrader', 'body', type='boolean'),
-#     }
-# )
 
 class ListCreateCoursePermissions(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -172,9 +163,20 @@ class CopyCourseView(AGModelAPIView):
         return response.Response(status=status.HTTP_201_CREATED, data=new_course.to_dict())
 
 
+class CourseByNameSemesterYearViewSchema(AGRetrieveViewSchemaMixin, CustomViewSchema):
+    pass
+
+
 class CourseByNameSemesterYearView(AlwaysIsAuthenticatedMixin, APIView):
-    # FIXME: Correct path param types
-    schema = AGDetailViewSchemaGenerator([APITags.courses], ag_models.Course)
+    schema = CourseByNameSemesterYearViewSchema(
+        tags=[APITags.courses], api_class=ag_models.Course, data={
+            'GET': {
+                'param_schema_overrides': {
+                    'semester': {'$ref': '#/components/schemas/Semester'},
+                    'year': {'type': 'integer'}
+                }
+            }
+        })
 
     def get(self, request: Request, *args, **kwargs):
         name = kwargs.get('name')

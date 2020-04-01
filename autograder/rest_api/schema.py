@@ -30,6 +30,7 @@ from autograder.core.submission_feedback import (AGTestCaseResultFeedback,
                                                  AGTestSuiteResultFeedback,
                                                  SubmissionResultFeedback)
 from autograder.rest_api.views.schema_generation import APITags
+from autograder import utils
 
 
 def stderr(*args, **kwargs):
@@ -625,6 +626,8 @@ class CustomViewDict(TypedDict, total=False):
 
 class CustomViewMethodData(TypedDict, total=False):
     parameters: RequestParam
+    # Key = param name, Value = schema dict
+    param_schema_overrides: Dict[str, dict]
     request_payload: RequestBodyData
     # Key = response status
     responses: Dict[str, ResponseSchemaData]
@@ -642,12 +645,16 @@ RequestParam = TypedDict('RequestParam', {
 
 
 class RequestBodyData(TypedDict, total=False):
+    # Defaults to 'application/json'
     content_type: str
+    # Stored under the 'schema' key
     body: dict
 
 
 class ResponseSchemaData(TypedDict, total=False):
+    # Defaults to 'application/json'
     content_type: str
+    # Stored under the 'schema' key
     body: dict
 
 
@@ -655,18 +662,24 @@ HTTPMethodName = Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 
 class CustomViewSchema(AGViewSchemaGenerator):
-    def __init__(self, tags: List[APITags], data: CustomViewDict):
-        super().__init__(tags)
+    def __init__(self, tags: List[APITags],
+                 data: CustomViewDict,
+                 api_class: Optional[APIClassType] = None):
+        super().__init__(tags, api_class=api_class)
         self.data = data
 
-    def get_operation(self, path, method: HTTPMethodName) -> dict:
-        result = super().get_operation(path, method)
+    def get_operation_impl(self, path, method: HTTPMethodName) -> dict:
+        result = super().get_operation_impl(path, method)
         method_data = self.data.get(method, None)
         if method_data is None:
             return result
 
         if 'parameters' in method_data:
             result['parameters'] = method_data['parameters']
+
+        for param_name, schema in method_data.get('param_schema_overrides', {}).items():
+            param = utils.find_if(result['parameters'], lambda item: item['name'] == param_name)
+            param['schema'] = schema
 
         if 'request_payload' in method_data:
             request_data = method_data['request_payload']

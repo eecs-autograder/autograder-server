@@ -10,7 +10,8 @@ from rest_framework.views import APIView
 import autograder.core.models as ag_models
 import autograder.rest_api.serializers as ag_serializers
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator)
+                                        AGListCreateViewSchemaGenerator,
+                                        CustomViewSchema)
 from autograder.rest_api.serialize_user import serialize_user
 from autograder.rest_api.views.ag_model_views import (
     AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
@@ -26,9 +27,6 @@ class _Permissions(permissions.BasePermission):
     def has_object_permission(self, request, view, ag_test):
         return view.kwargs['pk'] == request.user.pk
 
-
-# _course_list_schema = Schema(
-#     type='array', items=AGModelSchemaBuilder.get().get_schema(ag_models.Course))
 
 class CurrentUserView(AGModelAPIView):
     schema = AGDetailViewSchemaGenerator(tags=[APITags.users], api_class=User)
@@ -117,19 +115,20 @@ class GroupInvitationsReceivedView(_InvitationViewBase):
 
 
 class CurrentUserCanCreateCoursesView(AlwaysIsAuthenticatedMixin, APIView):
-    # swagger_schema = AGModelViewAutoSchema
+    schema = CustomViewSchema([APITags.permissions, APITags.users], {
+        'GET': {
+            'responses': {
+                '200': {
+                    'body': {'type': 'boolean'}
+                }
+            }
+        }
+    })
 
-    api_tags = [APITags.permissions]
-
-    # @swagger_auto_schema(
-    #     responses={
-    #         '200': Schema(
-    #             type='boolean',
-    #             description='Whether or not the current user can create empty courses.'
-    #         )
-    #     }
-    # )
     def get(self, request: Request, *args, **kwargs):
+        """
+        Indicates whether the current user can create empty courses.
+        """
         return response.Response(request.user.has_perm('core.create_course'))
 
 
