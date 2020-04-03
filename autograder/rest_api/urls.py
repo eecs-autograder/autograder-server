@@ -18,16 +18,6 @@ submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            basename='submission')
 
-sandbox_docker_image_detail_router = routers.SimpleRouter()
-sandbox_docker_image_detail_router.register(
-    r'sandbox_docker_images', views.SandboxDockerImageDetailViewSet,
-    basename='sandbox-docker-image')
-image_build_task_detail_router = routers.SimpleRouter()
-image_build_task_detail_router.register(
-    r'image_build_tasks', views.BuildTaskDetailViews,
-    basename='image-build-task'
-)
-
 ag_test_suite_detail_router = routers.SimpleRouter()
 ag_test_suite_detail_router.register(r'ag_test_suites', views.AGTestSuiteDetailViewSet,
                                      basename='ag-test-suite')
@@ -205,18 +195,24 @@ urlpatterns = [
         views.AGTestSuiteOrderView.as_view(), name='ag_test_suite_order'),
     url(r'', include(ag_test_suite_detail_router.urls)),
 
-    path('sandbox_docker_images/', views.GlobalSandboxDockerImageViews.as_view(),
+    path('sandbox_docker_images/', views.ListCreateGlobalSandboxDockerImageView.as_view(),
          name='global-sandbox-images'),
     path('courses/<int:pk>/sandbox_docker_images/',
-         views.SandboxDockerImageForCourseViews.as_view(),
+         views.ListCreateSandboxDockerImageForCourseView.as_view(),
          name='course-sandbox-images'),
     path('image_build_tasks/', views.ListGlobalBuildTasksView.as_view(),
          name='list-global-image-builds'),
     path('courses/<int:pk>/image_build_tasks/',
          views.ListBuildTasksForCourseView.as_view(),
          name='list-course-image-builds'),
-    url(r'', include(sandbox_docker_image_detail_router.urls)),
-    url(r'', include(image_build_task_detail_router.urls)),
+    path('image_build_tasks/<int:pk>/', views.BuildTaskDetailView.as_view(),
+         name='image-build-task-detail'),
+    path('image_build_tasks/<int:pk>/cancel/', views.CancelBuildTaskView.as_view(),
+         name='cancel-image-build-task'),
+    path('sandbox_docker_images/<int:pk>/', views.SandboxDockerImageDetailView.as_view(),
+         name='sandbox-docker-image-detail'),
+    path('sandbox_docker_images/<int:pk>/rebuild/', views.RebuildSandboxDockerImageView.as_view(),
+         name='rebuild-sandbox-docker-image'),
 
     url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/$',
         views.AGTestCaseListCreateView.as_view(), name='ag_test_cases'),

@@ -21,9 +21,10 @@ from .group_views import CreateSoloGroupView, GroupDetailViewSet, GroupsViewSet
 from .oauth2callback import oauth2_callback
 from .project_views.expected_student_file_views import (
     ExpectedStudentFileDetailView, ListCreateExpectedStudentFileView)
-from .project_views.instructor_file_views import (
-    InstructorFileContentView, InstructorFileDetailView,
-    ListCreateInstructorFileView, RenameInstructorFileView)
+from .project_views.instructor_file_views import (InstructorFileContentView,
+                                                  InstructorFileDetailView,
+                                                  ListCreateInstructorFileView,
+                                                  RenameInstructorFileView)
 from .project_views.project_views import (
     AllScoresTaskView, AllSubmittedFilesTaskView, ClearResultsCacheView,
     CopyProjectView, DownloadTaskDetailView, DownloadTaskResultView,
@@ -33,12 +34,11 @@ from .project_views.project_views import (
     UltimateSubmissionSubmittedFilesTaskView)
 from .rerun_submissions_task_views import (RerunSubmissionsTaskDetailVewSet,
                                            RerunSubmissionsTaskListCreateView)
-from .sandbox_docker_image_views import (BuildTaskDetailViews,
-                                         GlobalSandboxDockerImageViews,
-                                         ListBuildTasksForCourseView,
-                                         ListGlobalBuildTasksView,
-                                         SandboxDockerImageDetailViewSet,
-                                         SandboxDockerImageForCourseViews)
+from .sandbox_docker_image_views import (
+    BuildTaskDetailView, CancelBuildTaskView, ListCreateGlobalSandboxDockerImageView,
+    ListBuildTasksForCourseView, ListCreateSandboxDockerImageForCourseView,
+    ListGlobalBuildTasksView, RebuildSandboxDockerImageView,
+    SandboxDockerImageDetailView)
 from .student_test_suite_views import (StudentTestSuiteDetailViewSet,
                                        StudentTestSuiteListCreateView,
                                        StudentTestSuiteOrderView)

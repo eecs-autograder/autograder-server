@@ -1426,8 +1426,8 @@ paths:
           description: ''
   /api/sandbox_docker_images/:
     get:
-      operationId: listSandboxDockerImages
-      description: ''
+      operationId: listListCreateGlobalSandboxDockerImages
+      description: Lists all global sandbox images (ones that don't belong to a course).
       parameters: []
       responses:
         '200':
@@ -1435,11 +1435,38 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
-          description: ''
+                items:
+                  $ref: '#/components/schemas/SandboxDockerImage'
+      tags: &id020
+      - sandbox_docker_images
+    post:
+      operationId: CreateListCreateGlobalSandboxDockerImage
+      description: Build a new global sandbox image.
+      parameters: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema: &id021
+                $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: &id022
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: The form-encoded files. One file must be named "Dockerfile"
+            examples: {}
+      tags: *id020
   /api/courses/{id}/sandbox_docker_images/:
     get:
-      operationId: listSandboxDockerImages
+      operationId: listListCreateSandboxDockerImageForCourses
       description: ''
       parameters:
       - name: id
@@ -1454,12 +1481,37 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  $ref: '#/components/schemas/SandboxDockerImage'
           description: ''
+      tags: &id023
+      - sandbox_docker_images
+    post:
+      operationId: CreateListCreateSandboxDockerImageForCourse
+      description: List all sandbox images for the specified course.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '202':
+          content:
+            application/json:
+              schema: *id021
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: *id022
+            examples: {}
+      tags: *id023
   /api/image_build_tasks/:
     get:
-      operationId: listBuildSandboxDockerImageTasks
-      description: ''
+      operationId: listListGlobalBuildTasks
+      description: List all global (not belonging to a course) image build tasks.
       parameters: []
       responses:
         '200':
@@ -1467,12 +1519,15 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  $ref: '#/components/schemas/BuildSandboxDockerImageTask'
           description: ''
+      tags:
+      - sandbox_docker_images
   /api/courses/{id}/image_build_tasks/:
     get:
-      operationId: listBuildSandboxDockerImageTasks
-      description: ''
+      operationId: listListBuildTasksForCourses
+      description: List all image build tasks for the specified course.
       parameters:
       - name: id
         in: path
@@ -1486,44 +1541,14 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  $ref: '#/components/schemas/BuildSandboxDockerImageTask'
           description: ''
-  /api/sandbox_docker_images/{id}/:
-    get:
-      operationId: retrieveSandboxDockerImage
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
-          description: ''
-    patch:
-      operationId: partial_updateSandboxDockerImage
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
-          description: ''
+      tags:
+      - sandbox_docker_images
   /api/image_build_tasks/{id}/:
     get:
-      operationId: retrieveBuildSandboxDockerImageTask
+      operationId: RetrieveBuildTaskDetail
       description: ''
       parameters:
       - name: id
@@ -1536,8 +1561,55 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/BuildSandboxDockerImageTask'
           description: ''
+      tags:
+      - sandbox_docker_images
+  /api/sandbox_docker_images/{id}/:
+    get:
+      operationId: RetrieveSandboxDockerImageDetail
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxDockerImage'
+          description: ''
+      tags: &id024
+      - sandbox_docker_images
+    patch:
+      operationId: PartialUpdateSandboxDockerImageDetail
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxDockerImage'
+          description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SandboxDockerImage'
+      tags: *id024
   /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/:
     get:
       operationId: listAGTestCases
@@ -3277,7 +3349,7 @@ paths:
           description: ''
   /api/image_build_tasks/{id}/cancel/:
     post:
-      operationId: cancelBuildSandboxDockerImageTask
+      operationId: CreateCancelBuildTask
       description: ''
       parameters:
       - name: id
@@ -3290,8 +3362,10 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema:
+                $ref: '#/components/schemas/BuildSandboxDockerImageTask'
+      tags:
+      - sandbox_docker_images
   /api/rerun_submissions_tasks/{id}/cancel/:
     post:
       operationId: cancelRerunSubmissionTask
@@ -3356,8 +3430,8 @@ paths:
       - instructor_files
   /api/sandbox_docker_images/{id}/rebuild/:
     put:
-      operationId: rebuildSandboxDockerImage
-      description: ''
+      operationId: UpdateRebuildSandboxDockerImage
+      description: Rebuild the specified image using the files uploaded.
       parameters:
       - name: id
         in: path
@@ -3366,11 +3440,18 @@ paths:
         schema:
           type: string
       responses:
-        '200':
+        '202':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema: *id021
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: *id022
+            examples: {}
+      tags:
+      - sandbox_docker_images
   /api/projects/{project_pk}/groups/bonus_submissions/:
     patch:
       operationId: PartialUpdateEditBonusSubmissions
@@ -3420,7 +3501,7 @@ components:
     User:
       type: object
       properties:
-        pk: &id020
+        pk: &id025
           type: integer
           format: id
           readOnly: true
@@ -3450,7 +3531,7 @@ components:
     Course:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         name:
           readOnly: false
           description: The name of this course. Must be unique, non-empty and non-null.
@@ -3505,7 +3586,7 @@ components:
     Project:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         name:
           readOnly: false
           description: "The name used to identify this project.\n            Must\
@@ -3520,7 +3601,13 @@ components:
           nullable: false
           type: string
           format: date-time
-        course: *id020
+        course:
+          readOnly: true
+          description: "The Course this project belongs to.\n            This field\
+            \ is REQUIRED."
+          nullable: false
+          type: integer
+          format: id
         visible_to_students:
           readOnly: false
           description: "Whether information about this Project can\n            be\
@@ -3680,8 +3767,13 @@ components:
     ExpectedStudentFile:
       type: object
       properties:
-        pk: *id020
-        project: *id020
+        pk: *id025
+        project:
+          readOnly: true
+          description: ''
+          nullable: false
+          type: integer
+          format: id
         pattern:
           readOnly: false
           description: "A shell-style file pattern suitable for\n            use with\
@@ -3715,8 +3807,13 @@ components:
     InstructorFile:
       type: object
       properties:
-        pk: *id020
-        project: *id020
+        pk: *id025
+        project:
+          readOnly: true
+          description: ''
+          nullable: false
+          type: integer
+          format: id
         name:
           readOnly: true
           description: ''
@@ -3738,8 +3835,13 @@ components:
     DownloadTask:
       type: object
       properties:
-        pk: *id020
-        project: *id020
+        pk: *id025
+        project:
+          readOnly: true
+          description: ''
+          nullable: false
+          type: integer
+          format: id
         download_type:
           readOnly: true
           description: ''
@@ -3780,8 +3882,13 @@ components:
     Group:
       type: object
       properties:
-        pk: *id020
-        project: *id020
+        pk: *id025
+        project:
+          readOnly: true
+          description: ''
+          nullable: false
+          type: integer
+          format: id
         extended_due_date:
           readOnly: false
           description: "When this field is set, it indicates that members\n      \
@@ -3795,7 +3902,7 @@ components:
           readOnly: false
           description: A list of usernames of the group members, sorted alphabetically.
           type: array
-          items: &id021
+          items: &id026
             type: string
         bonus_submissions_remaining:
           readOnly: false
@@ -3842,28 +3949,46 @@ components:
     GroupInvitation:
       type: object
       properties:
-        pk: *id020
-        invitation_creator: *id020
-        project: *id020
+        pk: *id025
+        invitation_creator:
+          readOnly: true
+          description: "The User who created this invitation.\n            This field\
+            \ is REQUIRED."
+          nullable: false
+          type: integer
+          format: id
+        project:
+          readOnly: true
+          description: ''
+          nullable: false
+          type: integer
+          format: id
         invited_usernames:
           readOnly: true
           description: The usernames of the Users that will receive this invitation.
           type: array
-          items: *id021
+          items: *id026
         invitees_who_accepted:
           readOnly: true
           description: "A list of usernames indicating which invitees have accepted\n\
             \        this invitation.\n        This field is READ ONLY."
           type: array
-          items: *id021
+          items: *id026
       required:
       - invitation_creator
       - project
     Submission:
       type: object
       properties:
-        pk: *id020
-        group: *id020
+        pk: *id025
+        group:
+          readOnly: true
+          description: "The SubmissionGroup that this submission belongs to. Note\n\
+            \            that this field indirectly links this Submission object to\
+            \ a\n            Project.\n            This field is REQUIRED."
+          nullable: false
+          type: integer
+          format: id
         timestamp:
           readOnly: true
           description: ''
@@ -3881,7 +4006,7 @@ components:
             \     excluding those that were discarded."
           nullable: false
           type: array
-          items: &id022
+          items: &id027
             type: string
         discarded_files:
           readOnly: true
@@ -3889,7 +4014,7 @@ components:
             was created.
           nullable: false
           type: array
-          items: *id022
+          items: *id027
         missing_files:
           readOnly: true
           description: "Stores missing filenames and the additional number\n     \
@@ -3993,7 +4118,7 @@ components:
     SandboxDockerImage:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         display_name:
           readOnly: false
           description: "A human-readable name for this sandbox image.\n          \
@@ -4001,13 +4126,18 @@ components:
             \                This field is required."
           nullable: false
           type: string
-        course: *id020
+        course:
+          readOnly: true
+          description: The course this image is associated with.
+          nullable: true
+          type: integer
+          format: id
       required:
       - display_name
     BuildSandboxDockerImageTask:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         status:
           readOnly: true
           description: The status of the build.
@@ -4029,9 +4159,21 @@ components:
           description: The names of the files uploaded by the user.
           nullable: false
           type: array
-          items: *id022
-        course: *id020
-        image_to_update: *id020
+          items: *id027
+        course:
+          readOnly: true
+          description: "The course this task is associated with.\n            Only\
+            \ superusers can create or update images with no associated course."
+          nullable: true
+          type: integer
+          format: id
+        image_to_update:
+          readOnly: true
+          description: "When null, indicates that a new image will be created.\n \
+            \           Otherwise, refers to the image to be updated on build success."
+          nullable: true
+          type: integer
+          format: id
         validation_error_msg:
           readOnly: true
           description: Information for the user as to while the built image is invalid.
@@ -4056,7 +4198,7 @@ components:
     AGTestSuite:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         name:
           readOnly: false
           description: "The name used to identify this suite.\n                  \
@@ -4065,7 +4207,13 @@ components:
             \ This field is REQUIRED."
           nullable: false
           type: string
-        project: *id020
+        project:
+          readOnly: true
+          description: "The project this suite belongs to.\n                     \
+            \                        This field is REQUIRED."
+          nullable: false
+          type: integer
+          format: id
         last_modified:
           readOnly: true
           description: ''
@@ -4187,7 +4335,7 @@ components:
     AGTestCase:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         name:
           readOnly: false
           description: "The name used to identify this autograder test.\n        \
@@ -4202,7 +4350,13 @@ components:
           nullable: false
           type: string
           format: date-time
-        ag_test_suite: *id020
+        ag_test_suite:
+          readOnly: true
+          description: "The suite this autograder test belongs to.\n             \
+            \        This field is REQUIRED."
+          nullable: false
+          type: integer
+          format: id
         ag_test_commands:
           readOnly: true
           description: ''
@@ -4249,7 +4403,7 @@ components:
     AGTestCommand:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         name:
           readOnly: false
           description: "The name used to identify this command.\n                \
@@ -4258,7 +4412,12 @@ components:
             \                         This field is REQUIRED."
           nullable: false
           type: string
-        ag_test_case: *id020
+        ag_test_case:
+          readOnly: true
+          description: The AGTestCase that this command belongs to.
+          nullable: false
+          type: integer
+          format: id
         last_modified:
           readOnly: true
           description: ''
@@ -4545,22 +4704,22 @@ components:
     SubmissionResultFeedback:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         total_points:
           readOnly: true
           description: ''
           anyOf:
-          - &id023
+          - &id028
             type: integer
-          - &id024
+          - &id029
             type: string
             format: float
         total_points_possible:
           readOnly: true
           description: ''
           anyOf:
-          - *id023
-          - *id024
+          - *id028
+          - *id029
         ag_test_suite_results:
           readOnly: true
           description: ''
@@ -4576,7 +4735,7 @@ components:
     AGTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         ag_test_suite_name:
           readOnly: true
           description: ''
@@ -4621,7 +4780,7 @@ components:
     AGTestCaseResultFeedback:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         ag_test_case_name:
           readOnly: true
           description: ''
@@ -4651,7 +4810,7 @@ components:
     AGTestCommandResultFeedback:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         ag_test_command_pk:
           readOnly: true
           description: ''
@@ -4737,14 +4896,19 @@ components:
     StudentTestSuite:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         name:
           readOnly: false
           description: "The name used to identify this StudentTestSuite.\n       \
             \              Must be non-empty and non-null."
           nullable: false
           type: string
-        project: *id020
+        project:
+          readOnly: true
+          description: The Project that this student test suite belongs to.
+          nullable: false
+          type: integer
+          format: id
         instructor_files_needed:
           readOnly: false
           description: "The project files that will be copied into the sandbox before\
@@ -4773,7 +4937,7 @@ components:
             be run against.
           nullable: false
           type: array
-          items: *id022
+          items: *id027
         use_setup_command:
           readOnly: false
           description: ''
@@ -4949,7 +5113,7 @@ components:
     StudentTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         student_test_suite_name:
           readOnly: true
           description: ''
@@ -4995,24 +5159,24 @@ components:
           readOnly: true
           description: ''
           type: array
-          items: *id021
+          items: *id026
         discarded_tests:
           readOnly: true
           description: ''
           type: array
-          items: *id021
+          items: *id026
         invalid_tests:
           readOnly: true
           description: ''
           nullable: true
           type: array
-          items: *id021
+          items: *id026
         timed_out_tests:
           readOnly: true
           description: ''
           nullable: true
           type: array
-          items: *id021
+          items: *id026
         num_bugs_exposed:
           readOnly: true
           description: ''
@@ -5023,7 +5187,7 @@ components:
           description: ''
           nullable: true
           type: array
-          items: *id021
+          items: *id026
         total_points:
           readOnly: true
           description: ''
@@ -5043,7 +5207,7 @@ components:
     RerunSubmissionsTask:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         progress:
           readOnly: true
           description: ''
@@ -5058,7 +5222,12 @@ components:
           description: ''
           nullable: false
           type: string
-        creator: *id020
+        creator:
+          readOnly: true
+          description: ''
+          nullable: true
+          type: integer
+          format: id
         created_at:
           readOnly: true
           description: ''
@@ -5069,7 +5238,12 @@ components:
           readOnly: true
           description: ''
           type: boolean
-        project: *id020
+        project:
+          readOnly: true
+          description: The Project this task belongs to.
+          nullable: false
+          type: integer
+          format: id
         rerun_all_submissions:
           readOnly: true
           description: "When True, indicates that all submissions for the specified\n\
@@ -5135,8 +5309,13 @@ components:
     HandgradingRubric:
       type: object
       properties:
-        pk: *id020
-        project: *id020
+        pk: *id025
+        project:
+          readOnly: true
+          description: The Project this HandgradingRubric belongs to.
+          nullable: false
+          type: integer
+          format: id
         last_modified:
           readOnly: true
           description: ''
@@ -5200,8 +5379,13 @@ components:
     Criterion:
       type: object
       properties:
-        pk: *id020
-        handgrading_rubric: *id020
+        pk: *id025
+        handgrading_rubric:
+          readOnly: true
+          description: The rubric this Criterion belongs to.
+          nullable: false
+          type: integer
+          format: id
         last_modified:
           readOnly: true
           description: ''
@@ -5231,8 +5415,13 @@ components:
     Annotation:
       type: object
       properties:
-        pk: *id020
-        handgrading_rubric: *id020
+        pk: *id025
+        handgrading_rubric:
+          readOnly: true
+          description: The HandgradingRubric this Annotation belongs to.
+          nullable: false
+          type: integer
+          format: id
         short_description:
           readOnly: false
           description: A short description of this Annotation.
@@ -5269,14 +5458,19 @@ components:
     HandgradingResult:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         last_modified:
           readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
-        submission: *id020
+        submission:
+          readOnly: true
+          description: The specific submission that is being handgraded.
+          nullable: false
+          type: integer
+          format: id
         handgrading_rubric:
           readOnly: true
           description: The HandgradingRubric that this HandgradingResult is based
@@ -5284,7 +5478,12 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/HandgradingRubric'
-        group: *id020
+        group:
+          readOnly: true
+          description: The SubmissionGroup that this HandgradingResult is for.
+          nullable: false
+          type: integer
+          format: id
         applied_annotations:
           readOnly: true
           description: ''
@@ -5323,7 +5522,7 @@ components:
           description: "Returns a list of strings containing the filenames of the\
             \ Submission this result\n        belongs to."
           type: array
-          items: *id021
+          items: *id026
         total_points:
           readOnly: true
           description: "The total number of points awarded. Note that it is possible\n\
@@ -5341,7 +5540,7 @@ components:
     CriterionResult:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         last_modified:
           readOnly: true
           description: ''
@@ -5361,7 +5560,12 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Criterion'
-        handgrading_result: *id020
+        handgrading_result:
+          readOnly: true
+          description: The HandgradingResult this CriterionResult belongs to.
+          nullable: false
+          type: integer
+          format: id
       required:
       - selected
       - criterion
@@ -5369,7 +5573,7 @@ components:
     AppliedAnnotation:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         last_modified:
           readOnly: true
           description: ''
@@ -5388,7 +5592,12 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Annotation'
-        handgrading_result: *id020
+        handgrading_result:
+          readOnly: true
+          description: The HandgradingResult the applied annotation belongs to.
+          nullable: false
+          type: integer
+          format: id
       required:
       - location
       - annotation
@@ -5396,7 +5605,7 @@ components:
     Comment:
       type: object
       properties:
-        pk: *id020
+        pk: *id025
         last_modified:
           readOnly: true
           description: ''
@@ -5415,7 +5624,12 @@ components:
           description: Text to be shown to students.
           nullable: false
           type: string
-        handgrading_result: *id020
+        handgrading_result:
+          readOnly: true
+          description: The HandgradingResult that this Comment belongs to.
+          nullable: false
+          type: integer
+          format: id
       required:
       - text
       - handgrading_result
