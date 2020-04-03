@@ -6,11 +6,6 @@ from rest_framework.schemas import get_schema_view
 
 from autograder.rest_api import views
 
-uploaded_file_router = routers.SimpleRouter()
-uploaded_file_router.register(r'instructor_files',
-                              views.InstructorFileDetailViewSet,
-                              basename='uploaded-file')
-
 group_invitation_router = routers.SimpleRouter()
 group_invitation_router.register(r'group_invitations',
                                  views.GroupInvitationDetailViewSet,
@@ -173,13 +168,15 @@ urlpatterns = [
 
     path('projects/<int:project_pk>/import_handgrading_rubric_from/<int:import_from_project_pk>/',
          views.ImportHandgradingRubricView.as_view(), name='import-handgrading-rubric'),
-    # url(r'', include(project_router.urls)),
 
-    path('projects/<int:pk>/instructor_files/', views.ListCreateInstructorFilesViewSet.as_view(),
+    path('projects/<int:pk>/instructor_files/', views.ListCreateInstructorFileView.as_view(),
          name='instructor-files'),
-    url(r'', include(uploaded_file_router.urls)),
+    path('instructor_files/<int:pk>/', views.InstructorFileDetailView.as_view(),
+         name='instructor-file-detail'),
+    path('instructor_files/<int:pk>/name/', views.RenameInstructorFileView.as_view(),
+         name='instructor-file-rename'),
     path('instructor_files/<int:pk>/content/', views.InstructorFileContentView.as_view(),
-         name='uploaded-file-content'),
+         name='instructor-file-content'),
 
     path('projects/<int:pk>/expected_student_files/',
          views.ListCreateExpectedStudentFileView.as_view(), name='expected-student-files'),

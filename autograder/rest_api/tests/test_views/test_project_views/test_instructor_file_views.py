@@ -124,7 +124,7 @@ class CreateInstructorFileTestCase(_InstructorFilesSetUp,
 
 
 def file_url(uploaded_file):
-    return reverse('uploaded-file-detail', kwargs={'pk': uploaded_file.pk})
+    return reverse('instructor-file-detail', kwargs={'pk': uploaded_file.pk})
 
 
 class _BuildFile:
@@ -170,7 +170,7 @@ class RetrieveUploadedFileTestCase(_BuildFile,
 
 
 def file_name_url(uploaded_file):
-    return reverse('uploaded-file-name',
+    return reverse('instructor-file-rename',
                    kwargs={'pk': uploaded_file.pk})
 
 
@@ -208,7 +208,7 @@ class RenameUploadedFileTestCase(_BuildFile,
 
 
 def file_content_url(uploaded_file):
-    return reverse('uploaded-file-content',
+    return reverse('instructor-file-content',
                    kwargs={'pk': uploaded_file.pk})
 
 
