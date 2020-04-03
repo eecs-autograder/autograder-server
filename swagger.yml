@@ -944,7 +944,7 @@ paths:
           description: ''
   /api/projects/{id}/expected_student_files/:
     get:
-      operationId: listExpectedStudentFiles
+      operationId: listListCreateExpectedStudentFiles
       description: ''
       parameters:
       - name: id
@@ -959,10 +959,13 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  $ref: '#/components/schemas/ExpectedStudentFile'
           description: ''
+      tags: &id014
+      - expected_student_files
     post:
-      operationId: createExpectedStudentFile
+      operationId: CreateListCreateExpectedStudentFile
       description: ''
       parameters:
       - name: id
@@ -972,14 +975,22 @@ paths:
         schema:
           type: string
       responses:
-        '200':
+        '201':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/ExpectedStudentFile'
           description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpectedStudentFile'
+      tags: *id014
   /api/expected_student_files/{id}/:
     get:
-      operationId: retrieveExpectedStudentFile
+      operationId: RetrieveExpectedStudentFileDetail
       description: ''
       parameters:
       - name: id
@@ -992,10 +1003,13 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/ExpectedStudentFile'
           description: ''
+      tags: &id015
+      - expected_student_files
     patch:
-      operationId: partial_updateExpectedStudentFile
+      operationId: PartialUpdateExpectedStudentFileDetail
       description: ''
       parameters:
       - name: id
@@ -1008,10 +1022,18 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/ExpectedStudentFile'
           description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpectedStudentFile'
+      tags: *id015
     delete:
-      operationId: destroyExpectedStudentFile
+      operationId: DestroyExpectedStudentFileDetail
       description: ''
       parameters:
       - name: id
@@ -1023,6 +1045,7 @@ paths:
       responses:
         '204':
           description: ''
+      tags: *id015
   /api/projects/{id}/group_invitations/:
     get:
       operationId: listSubmissionGroupInvitations
@@ -3348,7 +3371,7 @@ components:
     User:
       type: object
       properties:
-        pk: &id014
+        pk: &id016
           type: integer
           format: id
           readOnly: true
@@ -3378,7 +3401,7 @@ components:
     Course:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         name:
           readOnly: false
           description: The name of this course. Must be unique, non-empty and non-null.
@@ -3433,7 +3456,7 @@ components:
     Project:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         name:
           readOnly: false
           description: "The name used to identify this project.\n            Must\
@@ -3448,7 +3471,7 @@ components:
           nullable: false
           type: string
           format: date-time
-        course: *id014
+        course: *id016
         visible_to_students:
           readOnly: false
           description: "Whether information about this Project can\n            be\
@@ -3608,8 +3631,8 @@ components:
     ExpectedStudentFile:
       type: object
       properties:
-        pk: *id014
-        project: *id014
+        pk: *id016
+        project: *id016
         pattern:
           readOnly: false
           description: "A shell-style file pattern suitable for\n            use with\
@@ -3643,8 +3666,8 @@ components:
     InstructorFile:
       type: object
       properties:
-        pk: *id014
-        project: *id014
+        pk: *id016
+        project: *id016
         name:
           readOnly: true
           description: ''
@@ -3666,8 +3689,8 @@ components:
     DownloadTask:
       type: object
       properties:
-        pk: *id014
-        project: *id014
+        pk: *id016
+        project: *id016
         download_type:
           readOnly: true
           description: ''
@@ -3708,8 +3731,8 @@ components:
     Group:
       type: object
       properties:
-        pk: *id014
-        project: *id014
+        pk: *id016
+        project: *id016
         extended_due_date:
           readOnly: false
           description: "When this field is set, it indicates that members\n      \
@@ -3723,7 +3746,7 @@ components:
           readOnly: false
           description: A list of usernames of the group members, sorted alphabetically.
           type: array
-          items: &id015
+          items: &id017
             type: string
         bonus_submissions_remaining:
           readOnly: false
@@ -3770,28 +3793,28 @@ components:
     GroupInvitation:
       type: object
       properties:
-        pk: *id014
-        invitation_creator: *id014
-        project: *id014
+        pk: *id016
+        invitation_creator: *id016
+        project: *id016
         invited_usernames:
           readOnly: true
           description: The usernames of the Users that will receive this invitation.
           type: array
-          items: *id015
+          items: *id017
         invitees_who_accepted:
           readOnly: true
           description: "A list of usernames indicating which invitees have accepted\n\
             \        this invitation.\n        This field is READ ONLY."
           type: array
-          items: *id015
+          items: *id017
       required:
       - invitation_creator
       - project
     Submission:
       type: object
       properties:
-        pk: *id014
-        group: *id014
+        pk: *id016
+        group: *id016
         timestamp:
           readOnly: true
           description: ''
@@ -3809,7 +3832,7 @@ components:
             \     excluding those that were discarded."
           nullable: false
           type: array
-          items: &id016
+          items: &id018
             type: string
         discarded_files:
           readOnly: true
@@ -3817,7 +3840,7 @@ components:
             was created.
           nullable: false
           type: array
-          items: *id016
+          items: *id018
         missing_files:
           readOnly: true
           description: "Stores missing filenames and the additional number\n     \
@@ -3921,7 +3944,7 @@ components:
     SandboxDockerImage:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         display_name:
           readOnly: false
           description: "A human-readable name for this sandbox image.\n          \
@@ -3929,13 +3952,13 @@ components:
             \                This field is required."
           nullable: false
           type: string
-        course: *id014
+        course: *id016
       required:
       - display_name
     BuildSandboxDockerImageTask:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         status:
           readOnly: true
           description: The status of the build.
@@ -3957,9 +3980,9 @@ components:
           description: The names of the files uploaded by the user.
           nullable: false
           type: array
-          items: *id016
-        course: *id014
-        image_to_update: *id014
+          items: *id018
+        course: *id016
+        image_to_update: *id016
         validation_error_msg:
           readOnly: true
           description: Information for the user as to while the built image is invalid.
@@ -3984,7 +4007,7 @@ components:
     AGTestSuite:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         name:
           readOnly: false
           description: "The name used to identify this suite.\n                  \
@@ -3993,7 +4016,7 @@ components:
             \ This field is REQUIRED."
           nullable: false
           type: string
-        project: *id014
+        project: *id016
         last_modified:
           readOnly: true
           description: ''
@@ -4115,7 +4138,7 @@ components:
     AGTestCase:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         name:
           readOnly: false
           description: "The name used to identify this autograder test.\n        \
@@ -4130,7 +4153,7 @@ components:
           nullable: false
           type: string
           format: date-time
-        ag_test_suite: *id014
+        ag_test_suite: *id016
         ag_test_commands:
           readOnly: true
           description: ''
@@ -4177,7 +4200,7 @@ components:
     AGTestCommand:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         name:
           readOnly: false
           description: "The name used to identify this command.\n                \
@@ -4186,7 +4209,7 @@ components:
             \                         This field is REQUIRED."
           nullable: false
           type: string
-        ag_test_case: *id014
+        ag_test_case: *id016
         last_modified:
           readOnly: true
           description: ''
@@ -4473,22 +4496,22 @@ components:
     SubmissionResultFeedback:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         total_points:
           readOnly: true
           description: ''
           anyOf:
-          - &id017
+          - &id019
             type: integer
-          - &id018
+          - &id020
             type: string
             format: float
         total_points_possible:
           readOnly: true
           description: ''
           anyOf:
-          - *id017
-          - *id018
+          - *id019
+          - *id020
         ag_test_suite_results:
           readOnly: true
           description: ''
@@ -4504,7 +4527,7 @@ components:
     AGTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         ag_test_suite_name:
           readOnly: true
           description: ''
@@ -4549,7 +4572,7 @@ components:
     AGTestCaseResultFeedback:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         ag_test_case_name:
           readOnly: true
           description: ''
@@ -4579,7 +4602,7 @@ components:
     AGTestCommandResultFeedback:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         ag_test_command_pk:
           readOnly: true
           description: ''
@@ -4665,14 +4688,14 @@ components:
     StudentTestSuite:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         name:
           readOnly: false
           description: "The name used to identify this StudentTestSuite.\n       \
             \              Must be non-empty and non-null."
           nullable: false
           type: string
-        project: *id014
+        project: *id016
         instructor_files_needed:
           readOnly: false
           description: "The project files that will be copied into the sandbox before\
@@ -4701,7 +4724,7 @@ components:
             be run against.
           nullable: false
           type: array
-          items: *id016
+          items: *id018
         use_setup_command:
           readOnly: false
           description: ''
@@ -4877,7 +4900,7 @@ components:
     StudentTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         student_test_suite_name:
           readOnly: true
           description: ''
@@ -4923,24 +4946,24 @@ components:
           readOnly: true
           description: ''
           type: array
-          items: *id015
+          items: *id017
         discarded_tests:
           readOnly: true
           description: ''
           type: array
-          items: *id015
+          items: *id017
         invalid_tests:
           readOnly: true
           description: ''
           nullable: true
           type: array
-          items: *id015
+          items: *id017
         timed_out_tests:
           readOnly: true
           description: ''
           nullable: true
           type: array
-          items: *id015
+          items: *id017
         num_bugs_exposed:
           readOnly: true
           description: ''
@@ -4951,7 +4974,7 @@ components:
           description: ''
           nullable: true
           type: array
-          items: *id015
+          items: *id017
         total_points:
           readOnly: true
           description: ''
@@ -4971,7 +4994,7 @@ components:
     RerunSubmissionsTask:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         progress:
           readOnly: true
           description: ''
@@ -4986,7 +5009,7 @@ components:
           description: ''
           nullable: false
           type: string
-        creator: *id014
+        creator: *id016
         created_at:
           readOnly: true
           description: ''
@@ -4997,7 +5020,7 @@ components:
           readOnly: true
           description: ''
           type: boolean
-        project: *id014
+        project: *id016
         rerun_all_submissions:
           readOnly: true
           description: "When True, indicates that all submissions for the specified\n\
@@ -5063,8 +5086,8 @@ components:
     HandgradingRubric:
       type: object
       properties:
-        pk: *id014
-        project: *id014
+        pk: *id016
+        project: *id016
         last_modified:
           readOnly: true
           description: ''
@@ -5128,8 +5151,8 @@ components:
     Criterion:
       type: object
       properties:
-        pk: *id014
-        handgrading_rubric: *id014
+        pk: *id016
+        handgrading_rubric: *id016
         last_modified:
           readOnly: true
           description: ''
@@ -5159,8 +5182,8 @@ components:
     Annotation:
       type: object
       properties:
-        pk: *id014
-        handgrading_rubric: *id014
+        pk: *id016
+        handgrading_rubric: *id016
         short_description:
           readOnly: false
           description: A short description of this Annotation.
@@ -5197,14 +5220,14 @@ components:
     HandgradingResult:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         last_modified:
           readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
-        submission: *id014
+        submission: *id016
         handgrading_rubric:
           readOnly: true
           description: The HandgradingRubric that this HandgradingResult is based
@@ -5212,7 +5235,7 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/HandgradingRubric'
-        group: *id014
+        group: *id016
         applied_annotations:
           readOnly: true
           description: ''
@@ -5251,7 +5274,7 @@ components:
           description: "Returns a list of strings containing the filenames of the\
             \ Submission this result\n        belongs to."
           type: array
-          items: *id015
+          items: *id017
         total_points:
           readOnly: true
           description: "The total number of points awarded. Note that it is possible\n\
@@ -5269,7 +5292,7 @@ components:
     CriterionResult:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         last_modified:
           readOnly: true
           description: ''
@@ -5289,7 +5312,7 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Criterion'
-        handgrading_result: *id014
+        handgrading_result: *id016
       required:
       - selected
       - criterion
@@ -5297,7 +5320,7 @@ components:
     AppliedAnnotation:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         last_modified:
           readOnly: true
           description: ''
@@ -5316,7 +5339,7 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Annotation'
-        handgrading_result: *id014
+        handgrading_result: *id016
       required:
       - location
       - annotation
@@ -5324,7 +5347,7 @@ components:
     Comment:
       type: object
       properties:
-        pk: *id014
+        pk: *id016
         last_modified:
           readOnly: true
           description: ''
@@ -5343,7 +5366,7 @@ components:
           description: Text to be shown to students.
           nullable: false
           type: string
-        handgrading_result: *id014
+        handgrading_result: *id016
       required:
       - text
       - handgrading_result
