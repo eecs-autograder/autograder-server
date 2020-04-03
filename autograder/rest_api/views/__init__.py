@@ -22,8 +22,8 @@ from .oauth2callback import oauth2_callback
 from .project_views.expected_student_file_views import (
     ExpectedStudentFileDetailView, ListCreateExpectedStudentFileView)
 from .project_views.instructor_file_views import (
-    InstructorFileContentView, InstructorFileDetailViewSet,
-    ListCreateInstructorFilesViewSet)
+    InstructorFileContentView, InstructorFileDetailView,
+    ListCreateInstructorFileView, RenameInstructorFileView)
 from .project_views.project_views import (
     AllScoresTaskView, AllSubmittedFilesTaskView, ClearResultsCacheView,
     CopyProjectView, DownloadTaskDetailView, DownloadTaskResultView,

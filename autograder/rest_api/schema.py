@@ -679,6 +679,8 @@ class ResponseSchemaData(TypedDict, total=False):
     # Stored under the 'schema' key
     body: dict
 
+    examples: dict
+
 
 HTTPMethodName = Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
@@ -720,11 +722,14 @@ class CustomViewSchema(AGViewSchemaGenerator):
             if response_data is None:
                 responses[status] = {}
             elif 'body' in response_data:
+                body = {
+                    'schema': response_data['body']
+                }
+                if 'examples' in response_data:
+                    body['examples'] = response_data['examples']
                 responses[status] = {
                     'content': {
-                        response_data.get('content_type', 'application/json'): {
-                            'schema': response_data['body']
-                        }
+                        response_data.get('content_type', 'application/json'): body
                     }
                 }
 
