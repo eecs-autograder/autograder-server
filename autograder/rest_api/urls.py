@@ -6,11 +6,6 @@ from rest_framework.schemas import get_schema_view
 
 from autograder.rest_api import views
 
-expected_student_pattern_router = routers.SimpleRouter()
-expected_student_pattern_router.register(r'expected_student_files',
-                                         views.ExpectedStudentFilePatternDetailViewSet,
-                                         basename='expected-student-file')
-
 uploaded_file_router = routers.SimpleRouter()
 uploaded_file_router.register(r'instructor_files',
                               views.InstructorFileDetailViewSet,
@@ -187,10 +182,10 @@ urlpatterns = [
          name='uploaded-file-content'),
 
     path('projects/<int:pk>/expected_student_files/',
-         views.ListCreateExpectedStudentFilesViewSet.as_view(), name='expected-student-files'),
-    url(r'', include(expected_student_pattern_router.urls)),
+         views.ListCreateExpectedStudentFileView.as_view(), name='expected-student-files'),
+    path('expected_student_files/<int:pk>/',
+         views.ExpectedStudentFileDetailView.as_view(), name='expected-student-file-detail'),
 
-    # url(r'', include(project_downloads_router.urls)),
 
     path('projects/<int:pk>/group_invitations/',
          views.ListCreateGroupInvitationViewSet.as_view(),

@@ -20,8 +20,7 @@ from .group_invitation_views import (GroupInvitationDetailViewSet,
 from .group_views import CreateSoloGroupView, GroupDetailViewSet, GroupsViewSet
 from .oauth2callback import oauth2_callback
 from .project_views.expected_student_file_views import (
-    ExpectedStudentFilePatternDetailViewSet,
-    ListCreateExpectedStudentFilesViewSet)
+    ExpectedStudentFileDetailView, ListCreateExpectedStudentFileView)
 from .project_views.instructor_file_views import (
     InstructorFileContentView, InstructorFileDetailViewSet,
     ListCreateInstructorFilesViewSet)
