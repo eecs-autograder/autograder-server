@@ -283,7 +283,7 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
 
     def test_cancel_finished_task_bad_request(self) -> None:
         task = self._make_global_build_task()
-        url = reverse('image-build-task-cancel', kwargs={'pk': task.pk})
+        url = reverse('cancel-image-build-task', kwargs={'pk': task.pk})
         self.client.force_authenticate(self.superuser)
         done_statuses = [
             ag_models.BuildImageStatus.done,
@@ -300,7 +300,7 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
 
     def _do_cancel_task_test(self, user, task: ag_models.BuildSandboxDockerImageTask):
         self.client.force_authenticate(user)
-        url = reverse('image-build-task-cancel', kwargs={'pk': task.pk})
+        url = reverse('cancel-image-build-task', kwargs={'pk': task.pk})
         response = self.client.post(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
@@ -312,7 +312,7 @@ class BuildTaskDetailViewTestCase(AGViewTestBase):
         self, user, task: ag_models.BuildSandboxDockerImageTask
     ):
         self.client.force_authenticate(user)
-        url = reverse('image-build-task-cancel', kwargs={'pk': task.pk})
+        url = reverse('cancel-image-build-task', kwargs={'pk': task.pk})
         response = self.client.post(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
@@ -442,7 +442,7 @@ class RebuildSandboxImageViewTestCase(AGViewTestBase):
 
     def _do_rebuild_image_test(self, user, image: ag_models.SandboxDockerImage):
         self.client.force_authenticate(user)
-        url = reverse('sandbox-docker-image-rebuild', kwargs={'pk': image.pk})
+        url = reverse('rebuild-sandbox-docker-image', kwargs={'pk': image.pk})
 
         original_tag = image.tag
 
@@ -461,7 +461,7 @@ class RebuildSandboxImageViewTestCase(AGViewTestBase):
 
     def _do_permission_denied_rebuild_image_test(self, user, image: ag_models.SandboxDockerImage):
         self.client.force_authenticate(user)
-        url = reverse('sandbox-docker-image-rebuild', kwargs={'pk': image.pk})
+        url = reverse('rebuild-sandbox-docker-image', kwargs={'pk': image.pk})
 
         original_tag = image.tag
 

@@ -61,6 +61,7 @@ class AGSchemaGenerator(SchemaGenerator):
         )
 
     def get_schema(self, request=None, public=False):
+        stderr('Remember to fix examples for models')
         schema = super().get_schema(request=request, public=public)
         schema['components'] = self._get_model_schemas()
         schema['tags'] = [{'name': item.value} for item in APITags]
@@ -354,7 +355,8 @@ def _django_field(
     if field.is_relation:
         model_class: Union[Type[AutograderModel], Type[User]] = field.model
         if field.many_to_many or field.one_to_many:
-            result['nullable'] = False
+            if isinstance(field, ForeignObjectRel):
+                result['nullable'] = False
             if field.name in model_class.get_serialize_related_fields():
                 result.update({
                     'type': 'array',
@@ -374,7 +376,8 @@ def _django_field(
             })
             return result
         else:
-            return _PK_SCHEMA_READ_ONLY
+            result.update(_PK_SCHEMA_READ_ONLY)
+            return result
 
     return {'type': 'unknown'}
 
@@ -572,6 +575,12 @@ class AGViewSchemaGenerator(AutoSchema):
             raise Exception(
                 'View class has no "model_manager" and '
                 'the value provided for "api_class" was None'
+            )
+
+        if self.view.model_manager is None:
+            raise Exception(
+                'Either the class\'s ".model_manager" or '
+                'the value provided for "api_class" must be non-None'
             )
 
         return self.view.model_manager.model

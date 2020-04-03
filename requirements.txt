@@ -1,5 +1,5 @@
 autograder-sandbox==4.0.2
-celery==4.2.1
+celery==4.4.2
 Django==2.2.4
 django-extensions==1.9.8
 django-redis==4.8.0
