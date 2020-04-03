@@ -25,12 +25,13 @@ from .project_views.expected_student_file_views import (
 from .project_views.instructor_file_views import (
     InstructorFileContentView, InstructorFileDetailViewSet,
     ListCreateInstructorFilesViewSet)
-from .project_views.project_views import (CopyProjectView,
-                                          DownloadTaskDetailViewSet,
-                                          EditBonusSubmissionsView,
-                                          ImportHandgradingRubricView,
-                                          ListCreateProjectView,
-                                          ProjectDetailViewSet)
+from .project_views.project_views import (
+    AllScoresTaskView, AllSubmittedFilesTaskView, ClearResultsCacheView,
+    CopyProjectView, DownloadTaskDetailView, DownloadTaskResultView,
+    EditBonusSubmissionsView, ImportHandgradingRubricView,
+    ListCreateProjectView, ListDownloadTasksView, NumQueuedSubmissionsView,
+    ProjectDetailView, UltimateSubmissionScoresTaskView,
+    UltimateSubmissionSubmittedFilesTaskView)
 from .rerun_submissions_task_views import (RerunSubmissionsTaskDetailVewSet,
                                            RerunSubmissionsTaskListCreateView)
 from .sandbox_docker_image_views import (BuildTaskDetailViews,
@@ -66,4 +67,4 @@ from .user_views import (CoursesIsAdminForView, CoursesIsEnrolledInView,
                          CurrentUserCanCreateCoursesView, CurrentUserView,
                          GroupInvitationsReceivedView,
                          GroupInvitationsSentView, GroupsIsMemberOfView,
-                         UserLateDaysView, UserDetailView)
+                         UserDetailView, UserLateDaysView)

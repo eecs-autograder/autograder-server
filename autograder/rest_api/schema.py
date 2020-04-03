@@ -5,8 +5,8 @@ from abc import abstractmethod
 from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
-from typing import (Any, Dict, List, Literal, Optional, Sequence,
-                    Tuple, Type, TypedDict, Union, cast, get_args, get_origin,
+from typing import (Any, Dict, List, Literal, Optional, Sequence, Tuple, Type,
+                    TypedDict, Union, cast, get_args, get_origin,
                     get_type_hints)
 
 import django.contrib.postgres.fields as pg_fields
@@ -22,6 +22,7 @@ from timezone_field.fields import TimeZoneField
 import autograder.core.fields as ag_fields
 import autograder.core.models as ag_models
 import autograder.handgrading.models as hg_models
+from autograder import utils
 from autograder.core.models.ag_model_base import (AutograderModel,
                                                   DictSerializableMixin,
                                                   ToDictMixin)
@@ -30,7 +31,6 @@ from autograder.core.submission_feedback import (AGTestCaseResultFeedback,
                                                  AGTestSuiteResultFeedback,
                                                  SubmissionResultFeedback)
 from autograder.rest_api.views.schema_generation import APITags
-from autograder import utils
 
 
 def stderr(*args, **kwargs):
@@ -670,6 +670,8 @@ class RequestBodyData(TypedDict, total=False):
     # Stored under the 'schema' key
     body: dict
 
+    examples: dict
+
 
 class ResponseSchemaData(TypedDict, total=False):
     # Defaults to 'application/json'
@@ -707,8 +709,9 @@ class CustomViewSchema(AGViewSchemaGenerator):
                 'required': True,
                 'content': {
                     request_data.get('content_type', 'application/json'): {
-                        'schema': request_data['body']
-                    }
+                        'schema': request_data['body'],
+                        'examples': request_data.get('examples', {})
+                    },
                 }
             }
 
