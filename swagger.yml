@@ -99,6 +99,7 @@ paths:
         content:
           application/json:
             schema: *id002
+            examples: {}
       tags: *id003
   /api/users/{id}/courses_is_admin_for/:
     get:
@@ -431,6 +432,7 @@ paths:
                     format: username
                   description: Usernames who should be granted admin privileges for
                     the course.
+            examples: {}
       tags: *id008
     patch:
       operationId: PartialUpdateCourseAdminViewSet
@@ -459,6 +461,7 @@ paths:
                     $ref: '#/components/schemas/UserID'
                   description: Users whose admin privileges should be revoked for
                     the course.
+            examples: {}
       tags: *id008
   /api/courses/{id}/staff/:
     get:
@@ -508,6 +511,7 @@ paths:
                     format: username
                   description: Usernames who should be granted staff privileges for
                     the course.
+            examples: {}
       tags: *id009
     patch:
       operationId: PartialUpdateCourseStaffViewSet
@@ -536,6 +540,7 @@ paths:
                     $ref: '#/components/schemas/UserID'
                   description: Users whose staff privileges should be revoked for
                     the course.
+            examples: {}
       tags: *id009
   /api/courses/{id}/students/:
     get:
@@ -585,6 +590,7 @@ paths:
                     format: username
                   description: Usernames to be granted student privileges for the
                     course.
+            examples: {}
       tags: *id010
     put:
       operationId: UpdateCourseStudentsViewSet
@@ -616,6 +622,7 @@ paths:
                     format: username
                   description: Usernames to be granted student privileges for the
                     course.
+            examples: {}
       tags: *id010
     patch:
       operationId: PartialUpdateCourseStudentsViewSet
@@ -644,6 +651,7 @@ paths:
                     $ref: '#/components/schemas/UserID'
                   description: Users whose student privileges should be revoked for
                     the course.
+            examples: {}
       tags: *id010
   /api/courses/{id}/handgraders/:
     get:
@@ -693,6 +701,7 @@ paths:
                     format: username
                   description: Usernames to be granted handgrading privileges for
                     the course.
+            examples: {}
       tags: *id011
     patch:
       operationId: PartialUpdateCourseHandgradersViewSet
@@ -720,10 +729,11 @@ paths:
                   items:
                     $ref: '#/components/schemas/UserID'
                   description: Users to revoke handgrading privileges from.
+            examples: {}
       tags: *id011
   /api/courses/{id}/projects/:
     get:
-      operationId: listProjects
+      operationId: listListCreateProjects
       description: ''
       parameters:
       - name: id
@@ -738,10 +748,13 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  $ref: '#/components/schemas/Project'
           description: ''
+      tags: &id012
+      - projects
     post:
-      operationId: createProject
+      operationId: CreateListCreateProject
       description: ''
       parameters:
       - name: id
@@ -751,14 +764,22 @@ paths:
         schema:
           type: string
       responses:
-        '200':
+        '201':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Project'
           description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+      tags: *id012
   /api/projects/{id}/:
     get:
-      operationId: retrieveProject
+      operationId: RetrieveProjectDetail
       description: ''
       parameters:
       - name: id
@@ -771,10 +792,13 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Project'
           description: ''
+      tags: &id013
+      - projects
     patch:
-      operationId: partial_updateProject
+      operationId: PartialUpdateProjectDetail
       description: ''
       parameters:
       - name: id
@@ -787,29 +811,21 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Project'
           description: ''
-  /api/projects/{id}/download_tasks/:
-    get:
-      operationId: download_tasksProject
-      description: ''
-      parameters:
-      - name: id
-        in: path
+      requestBody:
         required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
-          description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+      tags: *id013
   /api/projects/{id}/num_queued_submissions/:
     get:
-      operationId: num_queued_submissionsProject
-      description: ''
+      operationId: listNumQueuedSubmissions
+      description: The number of submissions for this project with grading status
+        "queued".
       parameters:
       - name: id
         in: path
@@ -821,8 +837,11 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema:
+                type: integer
+      tags:
+      - projects
+      - submissions
   /api/projects/{id}/instructor_files/:
     get:
       operationId: listInstructorFiles
@@ -1003,40 +1022,6 @@ paths:
           type: string
       responses:
         '204':
-          description: ''
-  /api/download_tasks/{id}/:
-    get:
-      operationId: retrieveDownloadTask
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
-          description: ''
-  /api/download_tasks/{id}/result/:
-    get:
-      operationId: resultDownloadTask
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
           description: ''
   /api/projects/{id}/group_invitations/:
     get:
@@ -3086,8 +3071,16 @@ paths:
       - courses
   /api/projects/{project_pk}/copy_to_course/{target_course_pk}/:
     post:
-      operationId: copy_projectProject
-      description: ''
+      operationId: CreateCopyProject
+      description: 'Makes a copy of the specified project and
+
+        all of its instructor file, expected student file, test case,
+
+        and handgrading data.
+
+        Note that groups, submissions, and results (test case, handgrading,
+
+        etc.) are NOT copied.'
       parameters:
       - name: project_pk
         in: path
@@ -3102,14 +3095,30 @@ paths:
         schema:
           type: string
       responses:
-        '200':
+        '201':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema:
+                $ref: '#/components/schemas/Project'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                new_project_name:
+                  type: string
+                  description: "The name for the new project.\n                  \
+                    \              Only required if the target course is the same\
+                    \ as the\n                                one the project belongs\
+                    \ to.\n                            "
+            examples: {}
+      tags:
+      - projects
   /api/projects/{project_pk}/import_handgrading_rubric_from/{import_from_project_pk}/:
     post:
-      operationId: import_handgrading_rubricHandgradingRubric
+      operationId: CreateImportHandgradingRubric
       description: ''
       parameters:
       - name: project_pk
@@ -3125,79 +3134,14 @@ paths:
         schema:
           type: string
       responses:
-        '200':
+        '201':
           content:
             application/json:
-              schema: {}
-          description: ''
-  /api/projects/{id}/all_submission_files/:
-    post:
-      operationId: all_submission_filesProject
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
-          description: ''
-  /api/projects/{id}/all_submission_scores/:
-    post:
-      operationId: all_submission_scoresProject
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
-          description: ''
-  /api/projects/{id}/ultimate_submission_files/:
-    post:
-      operationId: ultimate_submission_filesProject
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
-          description: ''
-  /api/projects/{id}/ultimate_submission_scores/:
-    post:
-      operationId: ultimate_submission_scoresProject
-      description: ''
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
-          description: ''
+              schema:
+                $ref: '#/components/schemas/HandgradingRubric'
+      tags:
+      - projects
+      - handgrading_rubrics
   /api/group_invitations/{id}/accept/:
     post:
       operationId: acceptSubmissionGroupInvitation
@@ -3357,41 +3301,54 @@ paths:
           description: ''
   /api/projects/{project_pk}/groups/bonus_submissions/:
     patch:
-      operationId: partial_updateProject
+      operationId: PartialUpdateEditBonusSubmissions
       description: ''
       parameters:
-      - name: project_pk
-        in: path
-        required: true
-        description: ''
+      - name: group_pk
+        in: query
+        description: "Instead of modifying the bonus submission totals for\n     \
+          \                   every group, only modify the group with this ID."
         schema:
-          type: string
+          type: integer
+          format: id
       responses:
-        '200':
-          content:
-            application/json:
-              schema: {}
-          description: ''
-  /api/projects/{id}/results_cache/:
-    delete:
-      operationId: results_cacheProject
-      description: ''
-      parameters:
-      - name: id
-        in: path
+        '204': {}
+      requestBody:
         required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '204':
-          description: ''
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+                properties:
+                  add:
+                    type: integer
+                    description: How many bonus submissions to add to each group's
+                      total.
+              - type: object
+                properties:
+                  subtract:
+                    type: integer
+                    description: "How many bonus submissions to subtract from\n  \
+                      \                                      each group's total."
+            examples:
+              addExample:
+                summary: Give every group 2 extra bonus submissions.
+                value:
+                  add: 2
+              subtractExample:
+                summary: Take away 1 bonus submission from every group.
+                value:
+                  subtract: 1
+      tags:
+      - projects
+      - groups
 components:
   schemas:
     User:
       type: object
       properties:
-        pk: &id012
+        pk: &id014
           type: integer
           format: id
           readOnly: true
@@ -3421,7 +3378,7 @@ components:
     Course:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         name:
           readOnly: false
           description: The name of this course. Must be unique, non-empty and non-null.
@@ -3476,7 +3433,7 @@ components:
     Project:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         name:
           readOnly: false
           description: "The name used to identify this project.\n            Must\
@@ -3491,7 +3448,7 @@ components:
           nullable: false
           type: string
           format: date-time
-        course: *id012
+        course: *id014
         visible_to_students:
           readOnly: false
           description: "Whether information about this Project can\n            be\
@@ -3651,8 +3608,8 @@ components:
     ExpectedStudentFile:
       type: object
       properties:
-        pk: *id012
-        project: *id012
+        pk: *id014
+        project: *id014
         pattern:
           readOnly: false
           description: "A shell-style file pattern suitable for\n            use with\
@@ -3686,8 +3643,8 @@ components:
     InstructorFile:
       type: object
       properties:
-        pk: *id012
-        project: *id012
+        pk: *id014
+        project: *id014
         name:
           readOnly: true
           description: ''
@@ -3709,8 +3666,8 @@ components:
     DownloadTask:
       type: object
       properties:
-        pk: *id012
-        project: *id012
+        pk: *id014
+        project: *id014
         download_type:
           readOnly: true
           description: ''
@@ -3751,8 +3708,8 @@ components:
     Group:
       type: object
       properties:
-        pk: *id012
-        project: *id012
+        pk: *id014
+        project: *id014
         extended_due_date:
           readOnly: false
           description: "When this field is set, it indicates that members\n      \
@@ -3766,7 +3723,7 @@ components:
           readOnly: false
           description: A list of usernames of the group members, sorted alphabetically.
           type: array
-          items: &id013
+          items: &id015
             type: string
         bonus_submissions_remaining:
           readOnly: false
@@ -3813,28 +3770,28 @@ components:
     GroupInvitation:
       type: object
       properties:
-        pk: *id012
-        invitation_creator: *id012
-        project: *id012
+        pk: *id014
+        invitation_creator: *id014
+        project: *id014
         invited_usernames:
           readOnly: true
           description: The usernames of the Users that will receive this invitation.
           type: array
-          items: *id013
+          items: *id015
         invitees_who_accepted:
           readOnly: true
           description: "A list of usernames indicating which invitees have accepted\n\
             \        this invitation.\n        This field is READ ONLY."
           type: array
-          items: *id013
+          items: *id015
       required:
       - invitation_creator
       - project
     Submission:
       type: object
       properties:
-        pk: *id012
-        group: *id012
+        pk: *id014
+        group: *id014
         timestamp:
           readOnly: true
           description: ''
@@ -3852,7 +3809,7 @@ components:
             \     excluding those that were discarded."
           nullable: false
           type: array
-          items: &id014
+          items: &id016
             type: string
         discarded_files:
           readOnly: true
@@ -3860,7 +3817,7 @@ components:
             was created.
           nullable: false
           type: array
-          items: *id014
+          items: *id016
         missing_files:
           readOnly: true
           description: "Stores missing filenames and the additional number\n     \
@@ -3964,7 +3921,7 @@ components:
     SandboxDockerImage:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         display_name:
           readOnly: false
           description: "A human-readable name for this sandbox image.\n          \
@@ -3972,13 +3929,13 @@ components:
             \                This field is required."
           nullable: false
           type: string
-        course: *id012
+        course: *id014
       required:
       - display_name
     BuildSandboxDockerImageTask:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         status:
           readOnly: true
           description: The status of the build.
@@ -4000,9 +3957,9 @@ components:
           description: The names of the files uploaded by the user.
           nullable: false
           type: array
-          items: *id014
-        course: *id012
-        image_to_update: *id012
+          items: *id016
+        course: *id014
+        image_to_update: *id014
         validation_error_msg:
           readOnly: true
           description: Information for the user as to while the built image is invalid.
@@ -4027,7 +3984,7 @@ components:
     AGTestSuite:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         name:
           readOnly: false
           description: "The name used to identify this suite.\n                  \
@@ -4036,7 +3993,7 @@ components:
             \ This field is REQUIRED."
           nullable: false
           type: string
-        project: *id012
+        project: *id014
         last_modified:
           readOnly: true
           description: ''
@@ -4158,7 +4115,7 @@ components:
     AGTestCase:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         name:
           readOnly: false
           description: "The name used to identify this autograder test.\n        \
@@ -4173,7 +4130,7 @@ components:
           nullable: false
           type: string
           format: date-time
-        ag_test_suite: *id012
+        ag_test_suite: *id014
         ag_test_commands:
           readOnly: true
           description: ''
@@ -4220,7 +4177,7 @@ components:
     AGTestCommand:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         name:
           readOnly: false
           description: "The name used to identify this command.\n                \
@@ -4229,7 +4186,7 @@ components:
             \                         This field is REQUIRED."
           nullable: false
           type: string
-        ag_test_case: *id012
+        ag_test_case: *id014
         last_modified:
           readOnly: true
           description: ''
@@ -4516,22 +4473,22 @@ components:
     SubmissionResultFeedback:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         total_points:
           readOnly: true
           description: ''
           anyOf:
-          - &id015
+          - &id017
             type: integer
-          - &id016
+          - &id018
             type: string
             format: float
         total_points_possible:
           readOnly: true
           description: ''
           anyOf:
-          - *id015
-          - *id016
+          - *id017
+          - *id018
         ag_test_suite_results:
           readOnly: true
           description: ''
@@ -4547,7 +4504,7 @@ components:
     AGTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         ag_test_suite_name:
           readOnly: true
           description: ''
@@ -4592,7 +4549,7 @@ components:
     AGTestCaseResultFeedback:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         ag_test_case_name:
           readOnly: true
           description: ''
@@ -4622,7 +4579,7 @@ components:
     AGTestCommandResultFeedback:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         ag_test_command_pk:
           readOnly: true
           description: ''
@@ -4708,14 +4665,14 @@ components:
     StudentTestSuite:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         name:
           readOnly: false
           description: "The name used to identify this StudentTestSuite.\n       \
             \              Must be non-empty and non-null."
           nullable: false
           type: string
-        project: *id012
+        project: *id014
         instructor_files_needed:
           readOnly: false
           description: "The project files that will be copied into the sandbox before\
@@ -4744,7 +4701,7 @@ components:
             be run against.
           nullable: false
           type: array
-          items: *id014
+          items: *id016
         use_setup_command:
           readOnly: false
           description: ''
@@ -4920,7 +4877,7 @@ components:
     StudentTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         student_test_suite_name:
           readOnly: true
           description: ''
@@ -4966,24 +4923,24 @@ components:
           readOnly: true
           description: ''
           type: array
-          items: *id013
+          items: *id015
         discarded_tests:
           readOnly: true
           description: ''
           type: array
-          items: *id013
+          items: *id015
         invalid_tests:
           readOnly: true
           description: ''
           nullable: true
           type: array
-          items: *id013
+          items: *id015
         timed_out_tests:
           readOnly: true
           description: ''
           nullable: true
           type: array
-          items: *id013
+          items: *id015
         num_bugs_exposed:
           readOnly: true
           description: ''
@@ -4994,7 +4951,7 @@ components:
           description: ''
           nullable: true
           type: array
-          items: *id013
+          items: *id015
         total_points:
           readOnly: true
           description: ''
@@ -5014,7 +4971,7 @@ components:
     RerunSubmissionsTask:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         progress:
           readOnly: true
           description: ''
@@ -5029,7 +4986,7 @@ components:
           description: ''
           nullable: false
           type: string
-        creator: *id012
+        creator: *id014
         created_at:
           readOnly: true
           description: ''
@@ -5040,7 +4997,7 @@ components:
           readOnly: true
           description: ''
           type: boolean
-        project: *id012
+        project: *id014
         rerun_all_submissions:
           readOnly: true
           description: "When True, indicates that all submissions for the specified\n\
@@ -5106,8 +5063,8 @@ components:
     HandgradingRubric:
       type: object
       properties:
-        pk: *id012
-        project: *id012
+        pk: *id014
+        project: *id014
         last_modified:
           readOnly: true
           description: ''
@@ -5171,8 +5128,8 @@ components:
     Criterion:
       type: object
       properties:
-        pk: *id012
-        handgrading_rubric: *id012
+        pk: *id014
+        handgrading_rubric: *id014
         last_modified:
           readOnly: true
           description: ''
@@ -5202,8 +5159,8 @@ components:
     Annotation:
       type: object
       properties:
-        pk: *id012
-        handgrading_rubric: *id012
+        pk: *id014
+        handgrading_rubric: *id014
         short_description:
           readOnly: false
           description: A short description of this Annotation.
@@ -5240,14 +5197,14 @@ components:
     HandgradingResult:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         last_modified:
           readOnly: true
           description: ''
           nullable: false
           type: string
           format: date-time
-        submission: *id012
+        submission: *id014
         handgrading_rubric:
           readOnly: true
           description: The HandgradingRubric that this HandgradingResult is based
@@ -5255,7 +5212,7 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/HandgradingRubric'
-        group: *id012
+        group: *id014
         applied_annotations:
           readOnly: true
           description: ''
@@ -5294,7 +5251,7 @@ components:
           description: "Returns a list of strings containing the filenames of the\
             \ Submission this result\n        belongs to."
           type: array
-          items: *id013
+          items: *id015
         total_points:
           readOnly: true
           description: "The total number of points awarded. Note that it is possible\n\
@@ -5312,7 +5269,7 @@ components:
     CriterionResult:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         last_modified:
           readOnly: true
           description: ''
@@ -5332,7 +5289,7 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Criterion'
-        handgrading_result: *id012
+        handgrading_result: *id014
       required:
       - selected
       - criterion
@@ -5340,7 +5297,7 @@ components:
     AppliedAnnotation:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         last_modified:
           readOnly: true
           description: ''
@@ -5359,7 +5316,7 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/Annotation'
-        handgrading_result: *id012
+        handgrading_result: *id014
       required:
       - location
       - annotation
@@ -5367,7 +5324,7 @@ components:
     Comment:
       type: object
       properties:
-        pk: *id012
+        pk: *id014
         last_modified:
           readOnly: true
           description: ''
@@ -5386,7 +5343,7 @@ components:
           description: Text to be shown to students.
           nullable: false
           type: string
-        handgrading_result: *id012
+        handgrading_result: *id014
       required:
       - text
       - handgrading_result

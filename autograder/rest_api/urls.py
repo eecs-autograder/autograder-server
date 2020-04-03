@@ -1,20 +1,10 @@
 from django.conf import settings
 from django.conf.urls import include, url
 from django.urls import path
-# from drf_yasg import openapi
-# from drf_yasg.views import get_schema_view
 from rest_framework import permissions, routers
 from rest_framework.schemas import get_schema_view
 
 from autograder.rest_api import views
-# from autograder.rest_api.views.schema_generation import AGSchemaGenerator
-
-project_router = routers.SimpleRouter()
-project_router.register(r'projects', views.ProjectDetailViewSet, basename='project')
-
-project_downloads_router = routers.SimpleRouter()
-project_downloads_router.register(r'download_tasks', views.DownloadTaskDetailViewSet,
-                                  basename='download_tasks')
 
 expected_student_pattern_router = routers.SimpleRouter()
 expected_student_pattern_router.register(r'expected_student_files',
@@ -157,12 +147,38 @@ urlpatterns = [
     path('courses/<int:pk>/handgraders/', views.CourseHandgradersViewSet.as_view(),
          name='course-handgraders'),
 
-    path('courses/<int:pk>/projects/', views.ListCreateProjectView.as_view(), name='projects'),
+    path('courses/<int:pk>/projects/', views.ListCreateProjectView.as_view(),
+         name='list-create-projects'),
+    path('projects/<int:pk>/', views.ProjectDetailView.as_view(), name='project-detail'),
+    path('projects/<int:pk>/num_queued_submissions/', views.NumQueuedSubmissionsView.as_view(),
+         name='num-queued-submissions'),
     path('projects/<int:project_pk>/copy_to_course/<int:target_course_pk>/',
          views.CopyProjectView.as_view(), name='copy-project'),
+
+    path('projects/<int:pk>/all_submission_files/', views.AllSubmittedFilesTaskView.as_view(),
+         name='all-submission-files-task'),
+    path('projects/<int:pk>/ultimate_submission_files/',
+         views.UltimateSubmissionSubmittedFilesTaskView.as_view(),
+         name='ultimate-submission-files-task'),
+    path('projects/<int:pk>/all_submission_scores/', views.AllScoresTaskView.as_view(),
+         name='all-submission-scores-task'),
+    path('projects/<int:pk>/ultimate_submission_scores/',
+         views.UltimateSubmissionScoresTaskView.as_view(),
+         name='ultimate-submission-scores-task'),
+
+    path('projects/<int:pk>/download_tasks/', views.ListDownloadTasksView.as_view(),
+         name='download-tasks'),
+    path('download_tasks/<int:pk>/', views.DownloadTaskDetailView.as_view(),
+         name='download-task-detail'),
+    path('download_tasks/<int:pk>/result/', views.DownloadTaskResultView.as_view(),
+         name='download-task-result'),
+
+    path('projects/<int:pk>/results_cache/', views.ClearResultsCacheView.as_view(),
+         name='results-cache'),
+
     path('projects/<int:project_pk>/import_handgrading_rubric_from/<int:import_from_project_pk>/',
          views.ImportHandgradingRubricView.as_view(), name='import-handgrading-rubric'),
-    url(r'', include(project_router.urls)),
+    # url(r'', include(project_router.urls)),
 
     path('projects/<int:pk>/instructor_files/', views.ListCreateInstructorFilesViewSet.as_view(),
          name='instructor-files'),
@@ -174,7 +190,7 @@ urlpatterns = [
          views.ListCreateExpectedStudentFilesViewSet.as_view(), name='expected-student-files'),
     url(r'', include(expected_student_pattern_router.urls)),
 
-    url(r'', include(project_downloads_router.urls)),
+    # url(r'', include(project_downloads_router.urls)),
 
     path('projects/<int:pk>/group_invitations/',
          views.ListCreateGroupInvitationViewSet.as_view(),

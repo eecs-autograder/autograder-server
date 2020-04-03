@@ -129,20 +129,20 @@ class NestedModelView(AGModelAPIView):
     A view base class used for defining endpoints that operate on collections
     of objects that belong to one model type, e.g. Projects for a Course.
     """
-    def get_queryset(self):
+    def get_nested_manager(self):
         """
-        Returns a queryset of objects related to the one loaded with
+        Returns a model manager of objects related to the one loaded with
         self.get_object().
         """
         if self.nested_field_name is None:
             raise ValueError('"nested_field_name" must not be None.')
 
-        return getattr(self.get_object(), self.nested_field_name).all()
+        return getattr(self.get_object(), self.nested_field_name)
 
     # The name of the relationship that can be used to load the nested objects.
     # For example, if loading Projects from a Course, this attribute would
     # have the value 'projects'.
-    # If NestedModelView.get_queryset() or NestedModelView.do_list() are
+    # If NestedModelView.get_nested_manager() or NestedModelView.do_list() are
     # to be called, this attribute must be non-null.
     nested_field_name: Optional[str] = None
 
@@ -156,7 +156,7 @@ class NestedModelView(AGModelAPIView):
 
     def do_list(self):
         return Response(
-            data=[self.serialize_object(obj) for obj in self.get_queryset()],
+            data=[self.serialize_object(obj) for obj in self.get_nested_manager().all()],
             status=status.HTTP_200_OK,
         )
 
@@ -166,7 +166,7 @@ class NestedModelView(AGModelAPIView):
         data = dict(self.request.data)
         data[self.parent_obj_field_name] = self.get_object()
 
-        queryset = self.get_queryset()
+        queryset = self.get_nested_manager()
         result = queryset.validate_and_create(**data)
         return Response(
             data=self.serialize_object(result),

@@ -1,29 +1,31 @@
 from django.db import transaction
-from django.db.models import F, Case, When
+from django.db.models import Case, F, When
 from django.shortcuts import get_object_or_404
 from drf_composable_permissions.p import P
-# from drf_yasg.openapi import Parameter, Schema
-# from drf_yasg.utils import swagger_auto_schema
-from rest_framework import decorators, mixins, response
-from rest_framework import permissions
-from rest_framework import status
+from rest_framework import decorators, mixins, permissions, response, status
 from rest_framework.request import Request
+from rest_framework.response import Response
 
 import autograder.core.models as ag_models
+import autograder.handgrading.models as hg_models
+import autograder.handgrading.serializers as hg_serializers
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core.caching import clear_submission_results_cache
 from autograder.core.models.copy_project_and_course import copy_project
-import autograder.handgrading.models as hg_models
-import autograder.handgrading.serializers as hg_serializers
-from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
-from autograder.rest_api import tasks as api_tasks, transaction_mixins
+from autograder.handgrading.import_handgrading_rubric import \
+    import_handgrading_rubric
+from autograder.rest_api import tasks as api_tasks
+from autograder.rest_api import transaction_mixins
+from autograder.rest_api.schema import (AGCreateViewSchemaMixin,
+                                        AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator,
+                                        APITags, CustomViewSchema)
 from autograder.rest_api.size_file_response import SizeFileResponse
 from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, convert_django_validation_error, handle_object_does_not_exist_404,
-    AGModelAPIView)
-from autograder.rest_api.views.ag_model_views import ListCreateNestedModelViewSet
-from autograder.rest_api.views.schema_generation import APITags
+    AGModelAPIView, AGModelDetailView, AGModelGenericViewSet, NestedModelView,
+    convert_django_validation_error, handle_object_does_not_exist_404)
+from typing import Optional
 
 can_list_projects = (
     P(ag_permissions.IsReadOnly)
@@ -34,51 +36,99 @@ can_list_projects = (
 list_create_project_permissions = P(ag_permissions.is_admin()) | can_list_projects
 
 
-class ListCreateProjectView(ListCreateNestedModelViewSet):
-    serializer_class = ag_serializers.ProjectSerializer
-    permission_classes = (list_create_project_permissions,)
+class SerializeProjectMixin:
+    def serialize_object(self, obj: ag_models.Project) -> dict:
+        result = super().serialize_object(obj)
+        if not obj.course.is_admin(self.request.user):
+            result.pop('closing_time', None)
+
+        if not obj.course.is_staff(self.request.user):
+            result.pop('instructor_files', None)
+
+        return result
+
+
+class ListCreateProjectView(SerializeProjectMixin, NestedModelView):
+    schema = AGListCreateViewSchemaGenerator([APITags.projects], ag_models.Project)
+
+    permission_classes = [list_create_project_permissions]
 
     model_manager = ag_models.Course.objects
-    to_one_field_name = 'course'
-    reverse_to_one_field_name = 'projects'
+    nested_field_name = 'projects'
+    parent_obj_field_name = 'course'
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        if self.request.method not in permissions.SAFE_METHODS:
-            return queryset
-
+    def get(self, *args, **kwargs):
         course = self.get_object()
-        if (course.is_admin(self.request.user)
+        projects = course.projects.all()
+
+        if not (course.is_admin(self.request.user)
                 or course.is_staff(self.request.user)
                 or course.is_handgrader(self.request.user)):
-            return queryset
+            projects = projects.filter(visible_to_students=True)
 
-        return queryset.filter(visible_to_students=True)
+        return Response([self.serialize_object(project) for project in projects])
+
+    def post(self, *args, **kwargs):
+        return self.do_create()
 
 
-class CopyProjectView(AGModelGenericViewSet):
-    api_tags = [APITags.projects]
+project_detail_permissions = (
+    P(ag_permissions.is_admin())
+    | (P(ag_permissions.IsReadOnly) & P(ag_permissions.can_view_project()))
+)
+
+
+class ProjectDetailView(SerializeProjectMixin, AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator([APITags.projects], ag_models.Project)
+
+    model_manager = ag_models.Project.objects.select_related('course')
+    permission_classes = [project_detail_permissions]
+
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+    def patch(self, *args, **kwargs):
+        return self.do_patch()
+
+
+class CopyProjectView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.projects], {
+        'POST': {
+            'request_payload': {
+                'body': {
+                    'type': 'object',
+                    'properties': {
+                        'new_project_name': {
+                            'type': 'string',
+                            'description': '''The name for the new project.
+                                Only required if the target course is the same as the
+                                one the project belongs to.
+                            '''
+                        }
+                    }
+                }
+            },
+            'responses': {
+                '201': {'body': {'$ref': '#/components/schemas/Project'}}
+            }
+        }
+    })
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects
 
-    serializer_class = ag_serializers.ProjectSerializer
-    permission_classes = (ag_permissions.is_admin(),)
+    permission_classes = [ag_permissions.is_admin()]
 
-    # @swagger_auto_schema(
-    #     operation_description="""Makes a copy of the specified project and
-    #         all of its instructor file, expected student file, test case,
-    #         and handgrading data.
-    #         Note that groups, submissions, and results (test case, handgrading,
-    #         etc.) are NOT copied.
-    #     """,
-    #     request_body_parameters=[
-    #         Parameter('new_project_name', in_='query', type='string', required=False),
-    #     ]
-    # )
     @convert_django_validation_error
     @transaction.atomic()
-    def copy_project(self, request: Request, *args, **kwargs):
+    def post(self, request: Request, *args, **kwargs):
+        """
+        Makes a copy of the specified project and
+        all of its instructor file, expected student file, test case,
+        and handgrading data.
+        Note that groups, submissions, and results (test case, handgrading,
+        etc.) are NOT copied.
+        """
         project: ag_models.Project = self.get_object()
 
         target_course = get_object_or_404(ag_models.Course.objects, pk=kwargs['target_course_pk'])
@@ -91,23 +141,26 @@ class CopyProjectView(AGModelGenericViewSet):
 
         return response.Response(status=status.HTTP_201_CREATED, data=new_project.to_dict())
 
-    @classmethod
-    def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'post': 'copy_project'}, **initkwargs)
 
-
-class ImportHandgradingRubricView(AGModelGenericViewSet):
-    api_tags = [APITags.projects, APITags.handgrading_rubrics]
+class ImportHandgradingRubricView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.projects, APITags.handgrading_rubrics], {
+        'POST': {
+            'responses': {
+                '201': {
+                    'body': {'$ref': '#/components/schemas/HandgradingRubric'}
+                }
+            }
+        }
+    })
 
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects
 
-    permission_classes = (ag_permissions.is_admin(),)
-    serializer_class = hg_serializers.HandgradingRubricSerializer
+    permission_classes = [ag_permissions.is_admin()]
 
     @handle_object_does_not_exist_404
     @transaction.atomic()
-    def import_handgrading_rubric(self, *args, **kwargs):
+    def post(self, *args, **kwargs):
         project: ag_models.Project = self.get_object()
 
         import_from_project = get_object_or_404(
@@ -125,31 +178,25 @@ class ImportHandgradingRubricView(AGModelGenericViewSet):
         imported = hg_models.HandgradingRubric.objects.get(project=project)
         return response.Response(status=status.HTTP_201_CREATED, data=imported.to_dict())
 
-    @classmethod
-    def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'post': 'import_handgrading_rubric'}, **initkwargs)
 
+class NumQueuedSubmissionsView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.projects, APITags.submissions], {
+        'GET': {
+            'responses': {
+                '200': {
+                    'body': {'type': 'integer'}
+                }
+            }
+        }
+    })
 
-project_detail_permissions = (
-    P(ag_permissions.is_admin())
-    | (P(ag_permissions.IsReadOnly) & P(ag_permissions.can_view_project()))
-)
+    model_manager = ag_models.Project.objects
+    permission_classes = [project_detail_permissions]
 
-
-class ProjectDetailViewSet(mixins.RetrieveModelMixin,
-                           transaction_mixins.TransactionPartialUpdateMixin,
-                           AGModelGenericViewSet):
-    model_manager = ag_models.Project.objects.select_related('course')
-
-    serializer_class = ag_serializers.ProjectSerializer
-    permission_classes = (project_detail_permissions,)
-
-    # @swagger_auto_schema(responses={
-    #     '200': Schema(type='integer',
-    #                   description='The number of submissions for this '
-    #                               'project with grading status "queued"')})
-    @decorators.action(detail=True)
-    def num_queued_submissions(self, *args, **kwargs):
+    def get(self, *args, **kwargs):
+        """
+        The number of submissions for this project with grading status "queued".
+        """
         project = self.get_object()
         num_queued_submissions = ag_models.Submission.objects.filter(
             status=ag_models.Submission.GradingStatus.queued,
@@ -157,112 +204,73 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
 
         return response.Response(data=num_queued_submissions)
 
-    # @swagger_auto_schema(auto_schema=None)
-    @decorators.action(
-        detail=True,
-        methods=['POST'],
-        permission_classes=[
-            permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
-    def all_submission_files(self, *args, **kwargs):
+
+class _DownloadViewBase(AGModelAPIView):
+    """
+    Base class for project scores and submitted files views.
+    """
+    schema = None
+
+    download_type: Optional[ag_models.DownloadType] = None
+    celery_task_func = None
+
+    model_manager = ag_models.Project.objects
+    permission_classes = [ag_permissions.is_admin()]
+
+    def post(self):
         # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
         with transaction.atomic():
             project = self.get_object()  # type: ag_models.Project
             include_staff = self.request.query_params.get('include_staff', None) == 'true'
             task = ag_models.DownloadTask.objects.validate_and_create(
                 project=project, creator=self.request.user,
-                download_type=ag_models.DownloadType.all_submission_files)
+                download_type=self.download_type)
 
         from autograder.celery import app
-        api_tasks.all_submission_files_task.apply_async(
+        self.celery_task_func.apply_async(
             (project.pk, task.pk, include_staff), connection=app.connection())
 
         return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    # @swagger_auto_schema(auto_schema=None)
-    @decorators.action(
-        detail=True,
-        methods=['POST'],
-        permission_classes=[
-            permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
-    def ultimate_submission_files(self, *args, **kwargs):
-        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
-        with transaction.atomic():
-            project = self.get_object()
-            include_staff = self.request.query_params.get('include_staff', None) == 'true'
-            task = ag_models.DownloadTask.objects.validate_and_create(
-                project=project, creator=self.request.user,
-                download_type=ag_models.DownloadType.final_graded_submission_files)
 
-        from autograder.celery import app
-        api_tasks.ultimate_submission_files_task.apply_async(
-            (project.pk, task.pk, include_staff), connection=app.connection())
+class AllSubmittedFilesTaskView(_DownloadViewBase):
+    download_type = ag_models.DownloadType.all_submission_files
+    celery_task_func = api_tasks.all_submission_files_task
 
-        return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    # @swagger_auto_schema(auto_schema=None)
-    @decorators.action(
-        detail=True,
-        methods=['POST'],
-        permission_classes=[
-            permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
-    def all_submission_scores(self, *args, **kwargs):
-        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
-        with transaction.atomic():
-            project = self.get_object()  # type: ag_models.Project
-            include_staff = self.request.query_params.get('include_staff', None) == 'true'
-            task = ag_models.DownloadTask.objects.validate_and_create(
-                project=project, creator=self.request.user,
-                download_type=ag_models.DownloadType.all_scores)
+class UltimateSubmissionSubmittedFilesTaskView(_DownloadViewBase):
+    download_type = ag_models.DownloadType.final_graded_submission_files
+    celery_task_func = api_tasks.ultimate_submission_files_task
 
-        from autograder.celery import app
-        api_tasks.all_submission_scores_task.apply_async(
-            (project.pk, task.pk, include_staff), connection=app.connection())
 
-        return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
+class AllScoresTaskView(_DownloadViewBase):
+    download_type = ag_models.DownloadType.all_scores
+    celery_task_func = api_tasks.all_submission_scores_task
 
-    # @swagger_auto_schema(auto_schema=None)
-    @decorators.action(
-        detail=True,
-        methods=['POST'],
-        permission_classes=[
-            permissions.IsAuthenticated, ag_permissions.is_admin(lambda project: project.course)])
-    def ultimate_submission_scores(self, *args, **kwargs):
-        # IMPORTANT: Do NOT add the task to the queue before completing this transaction!
-        with transaction.atomic():
-            project = self.get_object()  # type: ag_models.Project
-            include_staff = self.request.query_params.get('include_staff', None) == 'true'
-            task = ag_models.DownloadTask.objects.validate_and_create(
-                project=project, creator=self.request.user,
-                download_type=ag_models.DownloadType.final_graded_submission_scores)
 
-        from autograder.celery import app
-        api_tasks.ultimate_submission_scores_task.apply_async(
-            (project.pk, task.pk, include_staff), connection=app.connection())
+class UltimateSubmissionScoresTaskView(_DownloadViewBase):
+    download_type = ag_models.DownloadType.final_graded_submission_scores
+    celery_task_func = api_tasks.ultimate_submission_scores_task
 
-        return response.Response(status=status.HTTP_202_ACCEPTED, data=task.to_dict())
 
-    # @swagger_auto_schema(auto_schema=None)
-    @decorators.action(
-        detail=True,
-        permission_classes=[
-            permissions.IsAuthenticated,
-            ag_permissions.is_admin(lambda project: project.course)
-        ]
-    )
-    def download_tasks(self, *args, **kwargs):
-        project = self.get_object()
-        queryset = project.download_tasks.all()
-        serializer = ag_serializers.DownloadTaskSerializer(queryset, many=True)
-        return response.Response(data=serializer.data)
+class ListDownloadTasksView(NestedModelView):
+    schema = None
 
-    @decorators.action(
-        detail=True,
-        methods=['DELETE'],
-        permission_classes=[
-            permissions.IsAuthenticated,
-            ag_permissions.is_admin(lambda project: project.course)]
-    )
-    def results_cache(self, *args, **kwargs):
+    model_manager = ag_models.Project.objects
+    nested_field_name = 'download_tasks'
+    permission_classes = [ag_permissions.is_admin()]
+
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+
+class ClearResultsCacheView(AGModelAPIView):
+    schema = None
+
+    model_manager = ag_models.Project.objects
+    permission_classes = [ag_permissions.is_admin()]
+
+    def delete(self, *args, **kwargs):
         with transaction.atomic():
             project = self.get_object()
 
@@ -270,16 +278,23 @@ class ProjectDetailViewSet(mixins.RetrieveModelMixin,
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet):
-    permission_classes = (ag_permissions.is_admin(lambda task: task.project.course),)
-    serializer_class = ag_serializers.DownloadTaskSerializer
+class DownloadTaskDetailView(AGModelDetailView):
+    schema = None
 
     model_manager = ag_models.DownloadTask.objects
+    permission_classes = [ag_permissions.is_admin(lambda task: task.project.course)]
 
-    # swagger_schema = None
+    def get(self, *args, **kwargs):
+        return self.do_get()
 
-    @decorators.action(detail=True)
-    def result(self, *args, **kwargs):
+
+class DownloadTaskResultView(AGModelAPIView):
+    schema = None
+
+    model_manager = ag_models.DownloadTask.objects
+    permission_classes = [ag_permissions.is_admin(lambda task: task.project.course)]
+
+    def get(self, *args, **kwargs):
         task = self.get_object()
         if task.progress != 100:
             return response.Response(data={'in_progress': task.progress},
@@ -301,45 +316,70 @@ class DownloadTaskDetailViewSet(mixins.RetrieveModelMixin, AGModelGenericViewSet
             return 'application/zip'
 
 
-class EditBonusSubmissionsView(AGModelGenericViewSet):
-    api_tags = [APITags.projects, APITags.groups]
+class EditBonusSubmissionsView(AGModelAPIView):
+    schema = CustomViewSchema([APITags.projects, APITags.groups], {
+        'PATCH': {
+            'parameters': [
+                {
+                    'name': 'group_pk',
+                    'in': 'query',
+                    'description': '''
+                        Instead of modifying the bonus submission totals for
+                        every group, only modify the group with this ID.
+                    '''.strip(),
+                    'schema': {'type': 'integer', 'format': 'id'}
+                }
+            ],
+            'request_payload': {
+                'body': {
+                    'oneOf': [
+                        {
+                            'type': 'object',
+                            'properties': {
+                                'add': {
+                                    'type': 'integer',
+                                    'description': '''
+                                        How many bonus submissions to add to each group's total.
+                                    '''.strip(),
+                                },
+                            }
+                        },
+                        {
+                            'type': 'object',
+                            'properties': {
+                                'subtract': {
+                                    'type': 'integer',
+                                    'description': '''
+                                        How many bonus submissions to subtract from
+                                        each group's total.
+                                    '''.strip(),
+                                }
+                            }
+                        }
+                    ],
+                },
+                'examples': {
+                    'addExample': {
+                        'summary': 'Give every group 2 extra bonus submissions.',
+                        'value': {'add': 2}
+                    },
+                    'subtractExample': {
+                        'summary': 'Take away 1 bonus submission from every group.',
+                        'value': {'subtract': 1}
+                    },
+                },
+            },
+            'responses': {'204': None}
+        }
+    })
 
-    serializer_class = ag_serializers.ProjectSerializer
-    permission_classes = (ag_permissions.is_admin(),)
+    permission_classes = [ag_permissions.is_admin()]
 
     model_manager = ag_models.Project.objects.select_related('course')
     pk_key = 'project_pk'
 
-    # @swagger_auto_schema(
-    #     responses={'204': ''},
-    #     request_body_parameters=[
-    #         Parameter(
-    #             'add',
-    #             'body',
-    #             type='integer',
-    #             description="""How many bonus submissions to add to each group's total.
-    #                            Mutually exclusive with "subtract"."""
-    #         ),
-    #         Parameter(
-    #             'subtract',
-    #             'body',
-    #             type='integer',
-    #             description="""How many bonus submissions to subtract from each group's total.
-    #                    Mutually exclusive with "add"."""
-    #         )
-    #     ],
-    #     manual_parameters=[
-    #         Parameter(
-    #             'group_pk',
-    #             'query',
-    #             type='integer',
-    #             description="""Instead of modifying the bonus submission totals for every group,
-    #                            only modify the group with the specified primary key."""
-    #         )
-    #     ]
-    # )
     @transaction.atomic()
-    def partial_update(self, *args, **kwargs):
+    def patch(self, *args, **kwargs):
         project: ag_models.Project = self.get_object()
 
         if len(self.request.data) > 1 or len(self.request.data) == 0:
@@ -365,7 +405,3 @@ class EditBonusSubmissionsView(AGModelGenericViewSet):
             )
 
         return response.Response(status=status.HTTP_204_NO_CONTENT)
-
-    @classmethod
-    def as_view(cls, actions=None, **initkwargs):
-        return super().as_view(actions={'patch': 'partial_update'}, **initkwargs)
