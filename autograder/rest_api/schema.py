@@ -62,6 +62,7 @@ class AGSchemaGenerator(SchemaGenerator):
 
     def get_schema(self, request=None, public=False):
         stderr('Remember to fix examples for models')
+        stderr('Look into more tailored readonly handling (see ag test suite instr files)')
         schema = super().get_schema(request=request, public=public)
         schema['components'] = self._get_model_schemas()
         schema['tags'] = [{'name': item.value} for item in APITags]
@@ -716,12 +717,16 @@ class CustomViewSchema(AGViewSchemaGenerator):
 
         if 'request_payload' in method_data:
             request_data = method_data['request_payload']
+            body = {
+                'schema': request_data['body'],
+            }
+            if 'examples' in request_data:
+                body['examples'] = request_data['examples']
             result['requestBody'] = {
                 'required': True,
                 'content': {
                     request_data.get('content_type', 'application/json'): {
                         'schema': request_data['body'],
-                        'examples': request_data.get('examples', {})
                     },
                 }
             }
@@ -746,3 +751,35 @@ class CustomViewSchema(AGViewSchemaGenerator):
             result['responses'] = responses
 
         return result
+
+
+class OrderViewSchema(CustomViewSchema):
+    def __init__(self, tags: List[APITags]):
+        super().__init__(tags, {
+            'GET': {
+                'responses': {
+                    '200': {
+                        'body': {
+                            'type': 'array',
+                            'items': {'type': 'integer', 'format': 'id'}
+                        }
+                    }
+                }
+            },
+            'PUT': {
+                'request_payload': {
+                    'body': {
+                        'type': 'array',
+                        'items': {'type': 'integer', 'format': 'id'}
+                    }
+                },
+                'responses': {
+                    '200': {
+                        'body': {
+                            'type': 'array',
+                            'items': {'type': 'integer', 'format': 'id'}
+                        }
+                    }
+                }
+            }
+        })

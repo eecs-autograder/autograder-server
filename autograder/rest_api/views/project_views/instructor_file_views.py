@@ -91,9 +91,6 @@ class RenameInstructorFileView(AGModelAPIView):
         'PUT': {
             'request_payload': {
                 'body': {'type': 'string'},
-                'examples': {
-                    'example': {'value': 'new_filename'}
-                }
             },
             'responses': {
                 '200': {
@@ -125,9 +122,6 @@ class InstructorFileContentView(AGModelAPIView):
                 '200': {
                     'content_type': 'application/octet-stream',
                     'body': {'type': 'string', 'format': 'binary'},
-                    'examples': {
-                        'example': {'value': 'File contents'}
-                    }
                 }
             }
         },
