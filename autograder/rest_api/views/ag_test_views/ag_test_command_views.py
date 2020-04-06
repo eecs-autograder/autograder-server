@@ -1,22 +1,22 @@
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-# from drf_yasg.openapi import Parameter
-# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 from autograder.core.caching import clear_submission_results_cache
-from autograder.rest_api.views.ag_model_views import (
-    AGModelGenericViewSet, ListCreateNestedModelViewSet, TransactionRetrievePatchDestroyMixin,
-    AGModelAPIView)
-from autograder.rest_api.views.schema_generation import APITags
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator,
+                                        OrderViewSchema)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView,
+                                                      AGModelDetailView,
+                                                      APITags, NestedModelView)
 
 
-class AGTestCommandListCreateView(ListCreateNestedModelViewSet):
-    serializer_class = ag_serializers.AGTestCommandSerializer
+class AGTestCommandListCreateView(NestedModelView):
+    schema = AGListCreateViewSchemaGenerator([APITags.ag_test_commands], ag_models.AGTestCommand)
+
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
             lambda ag_test_case: ag_test_case.ag_test_suite.project.course)
@@ -24,11 +24,19 @@ class AGTestCommandListCreateView(ListCreateNestedModelViewSet):
 
     pk_key = 'ag_test_case_pk'
     model_manager = ag_models.AGTestCase.objects.select_related('ag_test_suite__project__course')
-    to_one_field_name = 'ag_test_case'
-    reverse_to_one_field_name = 'ag_test_commands'
+    nested_field_name = 'ag_test_commands'
+    parent_obj_field_name = 'ag_test_case'
+
+    def get(self, *args, **kwargs):
+        return self.do_list()
+
+    def post(self, *args, **kwargs):
+        return self.do_create()
 
 
 class AGTestCommandOrderView(AGModelAPIView):
+    schema = OrderViewSchema([APITags.ag_test_commands])
+
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
             lambda ag_test_case: ag_test_case.ag_test_suite.project.course)
@@ -38,19 +46,10 @@ class AGTestCommandOrderView(AGModelAPIView):
     model_manager = ag_models.AGTestCase.objects.select_related('ag_test_suite__project__course')
     api_tags = [APITags.ag_test_commands]
 
-    # @swagger_auto_schema(
-    #     responses={'200': 'Returns a list of AGTestCommand IDs, in their assigned order.'})
     def get(self, request, *args, **kwargs):
         ag_test_case = self.get_object()
         return response.Response(list(ag_test_case.get_agtestcommand_order()))
 
-    # @swagger_auto_schema(
-    #     request_body_parameters=[
-    #         Parameter(name='', in_='body',
-    #                   type='List[string]',
-    #                   description='A list of AGTestCommand IDs, in the new order to set.')],
-    #     responses={'200': 'Returns a list of AGTestCommand IDs, in their new order.'}
-    # )
     def put(self, request, *args, **kwargs):
         with transaction.atomic():
             ag_test_case = self.get_object()
@@ -59,8 +58,9 @@ class AGTestCommandOrderView(AGModelAPIView):
             return response.Response(list(ag_test_case.get_agtestcommand_order()))
 
 
-class AGTestCommandDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGenericViewSet):
-    serializer_class = ag_serializers.AGTestCommandSerializer
+class AGTestCommandDetailView(AGModelDetailView):
+    schema = AGDetailViewSchemaGenerator([APITags.ag_test_commands])
+
     permission_classes = [
         ag_permissions.is_admin_or_read_only_staff(
             lambda ag_test_command: ag_test_command.ag_test_case.ag_test_suite.project.course
@@ -69,3 +69,12 @@ class AGTestCommandDetailViewSet(TransactionRetrievePatchDestroyMixin, AGModelGe
     model_manager = ag_models.AGTestCommand.objects.select_related(
         'ag_test_case__ag_test_suite__project__course',
     )
+
+    def get(self, *args, **kwargs):
+        return self.do_get()
+
+    def patch(self, *args, **kwargs):
+        return self.do_patch()
+
+    def delete(self, *args, **kwargs):
+        return self.do_delete()

@@ -5,7 +5,6 @@ from rest_framework import (decorators, exceptions, mixins, permissions,
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 from autograder.core.tasks import build_sandbox_docker_image
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
