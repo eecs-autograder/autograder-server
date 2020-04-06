@@ -136,11 +136,11 @@ API_OBJ_TYPE_NAMES = {
 
     ag_models.StudentTestSuite: ag_models.StudentTestSuite.__name__,
     ag_models.NewStudentTestSuiteFeedbackConfig: 'StudentTestSuiteFeedbackConfig',
+    ag_models.BugsExposedFeedbackLevel: ag_models.BugsExposedFeedbackLevel.__name__,
     # Hack: SubmissionResultFeedback.student_test_suite_results returns
     # List[StudentTestSuiteResult], but it gets serialized to StudentTestSuiteResultFeedback
     ag_models.StudentTestSuiteResult: 'StudentTestSuiteResultFeedback',
     ag_models.StudentTestSuiteResult.FeedbackCalculator: 'StudentTestSuiteResultFeedback',
-    ag_models.BugsExposedFeedbackLevel: ag_models.BugsExposedFeedbackLevel.__name__,
 
     ag_models.RerunSubmissionsTask: ag_models.RerunSubmissionsTask.__name__,
 
@@ -196,6 +196,12 @@ class APIClassSchemaGenerator:
             }
         }
 
+    # Generate a version of the schema for this class that includes
+    # only the fields that are allowed in create (POST) and update (PATCH)
+    # requests.
+    def generate_request_body_schema(self) -> Optional[dict]:
+        return None
+
     def _field_names(self) -> Sequence[str]:
         return []
 
@@ -216,6 +222,21 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
         result = super().generate()
         result['required'] = self._get_required_fields()
         return result
+
+    def generate_request_body_schema(self):
+        return {
+            'type': 'object',
+            'properties': {
+                name: _get_field_schema(
+                    _extract_field(name, self._class),
+                    self._class,
+                    name,
+                    include_readonly=True
+                )
+                for name in self._field_names()
+            },
+            'required': self._get_required_fields()
+        }
 
     def _get_required_fields(self):
         return [
@@ -307,7 +328,12 @@ def _extract_field(field_name: str, api_class: APIClassType) -> FieldType:
 
 
 @singledispatch
-def _get_field_schema(field: FieldType, api_class: APIClassType, name: str) -> dict:
+def _get_field_schema(
+    field: FieldType,
+    api_class: APIClassType,
+    name: str,
+    include_readonly: bool = False
+) -> dict:
     return {'type': 'unknown'}
 
 
@@ -316,18 +342,21 @@ def _get_field_schema(field: FieldType, api_class: APIClassType, name: str) -> d
 def _django_field(
     field: Union[Field, ForeignObjectRel],
     api_class: Union[Type[AutograderModel], Type[User]],
-    name: str
+    name: str,
+    include_readonly: bool = False
 ) -> dict:
     read_only = False
     if issubclass(api_class, AutograderModel) and name not in api_class.get_editable_fields():
         read_only = True
 
     result: dict = {
-        'readOnly': read_only,
         # str() is used to force processing of django lazy eval
         'description': str(field.help_text).strip() if hasattr(field, 'help_text') else '',
         'nullable': field.null,
     }
+
+    if include_readonly:
+        result['readOnly'] = read_only
 
     if type(field) in _FIELD_TYPES:
         result.update(_FIELD_TYPES[type(field)])
@@ -336,6 +365,7 @@ def _django_field(
     if isinstance(field, pg_fields.ArrayField):
         result.update({
             'type': 'array',
+            # We want include_readonly to be False for recursive calls.
             'items': _get_field_schema(field.base_field, api_class, name),
         })
         return result
@@ -366,7 +396,7 @@ def _django_field(
             else:
                 result.update({
                     'type': 'array',
-                    'items': _PK_SCHEMA_READ_ONLY,
+                    'items': _PK_SCHEMA,
                 })
                 return result
 
@@ -376,7 +406,7 @@ def _django_field(
             })
             return result
         else:
-            result.update(_PK_SCHEMA_READ_ONLY)
+            result.update(_PK_SCHEMA)
             return result
 
     return {'type': 'unknown'}
@@ -405,28 +435,40 @@ _FIELD_TYPES: Dict[Type[Field], dict] = {
 
 
 @_get_field_schema.register
-def _property(prop: property, api_class: APIClassType, name: str) -> dict:
+def _property(
+    prop: property,
+    api_class: APIClassType,
+    name: str,
+    include_readonly: bool = False
+) -> dict:
     if name == 'pk':
-        return _PK_SCHEMA_READ_ONLY
+        return _PK_SCHEMA_READ_ONLY if include_readonly else _PK_SCHEMA
 
-    result = {
-        'readOnly': True,
+    result: dict = {
         'description': _get_prop_description(prop),
     }
+    if include_readonly:
+        result['readOnly'] = True
     result.update(_get_py_type_schema(get_type_hints(prop.fget).get('return', Any)))
     result.update(_PROP_FIELD_OVERRIDES.get(api_class, {}).get(name, {}))
     return result
 
 
 @_get_field_schema.register
-def _cached_property(prop: cached_property, api_class: APIClassType, name: str) -> dict:
+def _cached_property(
+    prop: cached_property,
+    api_class: APIClassType,
+    name: str,
+    include_readonly: bool = False
+) -> dict:
     if name == 'pk':
-        return _PK_SCHEMA_READ_ONLY
+        return _PK_SCHEMA_READ_ONLY if include_readonly else _PK_SCHEMA
 
-    result = {
-        'readOnly': True,
+    result: dict = {
         'description': _get_prop_description(prop),
     }
+    if include_readonly:
+        result['readOnly'] = True
     result.update(_get_py_type_schema(get_type_hints(prop.func).get('return', Any)))
     result.update(_PROP_FIELD_OVERRIDES.get(api_class, {}).get(name, {}))
     return result
@@ -459,13 +501,13 @@ def _as_schema_ref(type: APIClassType) -> dict:
     return {'$ref': f'#/components/schemas/{API_OBJ_TYPE_NAMES[type]}'}
 
 
-_PK_SCHEMA = {
+_PK_SCHEMA: dict = {
     'type': 'integer',
     'format': 'id',
 }
 
 
-_PK_SCHEMA_READ_ONLY = {
+_PK_SCHEMA_READ_ONLY: dict = {
     'type': 'integer',
     'format': 'id',
     'readOnly': True,
@@ -623,11 +665,15 @@ class AGViewSchemaGenerator(AutoSchema):
         return self.view.model_manager.model
 
     def make_api_class_request_body(self) -> dict:
+        body_schema = AGModelSchemaGenerator.factory(
+            self.get_api_class()).generate_request_body_schema()
+        schema = (body_schema if body_schema is not None
+                  else _as_schema_ref(self.get_api_class()))
         return {
             'required': True,
             'content': {
                 'application/json': {
-                    'schema': _as_schema_ref(self.get_api_class())
+                    'schema': schema
                 }
             }
         }
