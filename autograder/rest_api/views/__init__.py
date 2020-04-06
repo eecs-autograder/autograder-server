@@ -4,7 +4,7 @@ from .ag_test_views.ag_test_case_views import (AGTestCaseDetailViewSet,
 from .ag_test_views.ag_test_command_views import (AGTestCommandDetailViewSet,
                                                   AGTestCommandListCreateView,
                                                   AGTestCommandOrderView)
-from .ag_test_views.ag_test_suite_views import (AGTestSuiteDetailViewSet,
+from .ag_test_views.ag_test_suite_views import (AGTestSuiteDetailView,
                                                 AGTestSuiteListCreateView,
                                                 AGTestSuiteOrderView)
 from .course_views.course_admins import CourseAdminViewSet
