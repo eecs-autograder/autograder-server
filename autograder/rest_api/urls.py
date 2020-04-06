@@ -18,11 +18,6 @@ submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            basename='submission')
 
-student_test_suite_detail_router = routers.SimpleRouter()
-student_test_suite_detail_router.register(r'student_test_suites',
-                                          views.StudentTestSuiteDetailViewSet,
-                                          basename='student-test-suite')
-
 rerun_submissions_task_detail_router = routers.SimpleRouter()
 rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
                                               views.RerunSubmissionsTaskDetailVewSet,
@@ -217,11 +212,12 @@ urlpatterns = [
     path('ag_test_commands/<int:pk>/', views.AGTestCommandDetailView.as_view(),
          name='ag-test-command-detail'),
 
-    url(r'^projects/(?P<project_pk>[0-9]+)/student_test_suites/$',
+    path('projects/<int:project_pk>/student_test_suites/',
         views.StudentTestSuiteListCreateView.as_view(), name='student_test_suites'),
-    url(r'^projects/(?P<project_pk>[0-9]+)/student_test_suites/order/$',
+    path('projects/<int:project_pk>/student_test_suites/order/',
         views.StudentTestSuiteOrderView.as_view(), name='student_test_suite_order'),
-    url(r'', include(student_test_suite_detail_router.urls)),
+    path('student_test_suites/<int:pk>/', views.StudentTestSuiteDetailView.as_view(),
+         name='student-test-suite-detail'),
 
     url(r'^projects/(?P<project_pk>[0-9]+)/rerun_submissions_tasks/$',
         views.RerunSubmissionsTaskListCreateView.as_view(), name='rerun_submissions_tasks'),

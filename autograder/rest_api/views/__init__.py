@@ -39,7 +39,7 @@ from .sandbox_docker_image_views import (
     ListBuildTasksForCourseView, ListCreateSandboxDockerImageForCourseView,
     ListGlobalBuildTasksView, RebuildSandboxDockerImageView,
     SandboxDockerImageDetailView)
-from .student_test_suite_views import (StudentTestSuiteDetailViewSet,
+from .student_test_suite_views import (StudentTestSuiteDetailView,
                                        StudentTestSuiteListCreateView,
                                        StudentTestSuiteOrderView)
 from .submission_views.all_ultimate_submission_results_view import \
