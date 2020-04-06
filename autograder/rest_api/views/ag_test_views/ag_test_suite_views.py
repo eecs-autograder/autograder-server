@@ -8,11 +8,11 @@ import autograder.rest_api.serializers as ag_serializers
 from autograder.core.caching import clear_submission_results_cache
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator,
-                                        CustomViewSchema, OrderViewSchema)
+                                        APITags, CustomViewSchema,
+                                        OrderViewSchema)
 from autograder.rest_api.views.ag_model_views import (AGModelAPIView,
                                                       AGModelDetailView,
                                                       NestedModelView)
-from autograder.rest_api.views.schema_generation import APITags
 
 
 class AGTestSuiteListCreateView(NestedModelView):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 import sys
 from abc import abstractmethod
 from decimal import Decimal
@@ -30,7 +31,6 @@ from autograder.core.submission_feedback import (AGTestCaseResultFeedback,
                                                  AGTestCommandResultFeedback,
                                                  AGTestSuiteResultFeedback,
                                                  SubmissionResultFeedback)
-from autograder.rest_api.views.schema_generation import APITags
 
 
 def stderr(*args, **kwargs):
@@ -61,8 +61,7 @@ class AGSchemaGenerator(SchemaGenerator):
         )
 
     def get_schema(self, request=None, public=False):
-        stderr('Remember to fix examples for models')
-        stderr('Look into more tailored readonly handling (see ag test suite instr files)')
+        stderr('Remember to fix examples for models (including readonly stuff)')
         schema = super().get_schema(request=request, public=public)
         schema['components'] = self._get_model_schemas()
         schema['tags'] = [{'name': item.value} for item in APITags]
@@ -519,6 +518,43 @@ _PY_ATTR_TYPES = {
 }
 
 # =============================================================================
+
+
+# Defines the order of API tags and provides a single point of
+# maintenance for their string values.
+class APITags(enum.Enum):
+    users = 'users'
+    courses = 'courses'
+    rosters = 'rosters'
+    permissions = 'permissions'
+
+    projects = 'projects'
+    instructor_files = 'instructor_files'
+    expected_student_files = 'expected_student_files'
+
+    sandbox_docker_images = 'sandbox_docker_images'
+
+    ag_test_suites = 'ag_test_suites'
+    ag_test_cases = 'ag_test_cases'
+    ag_test_commands = 'ag_test_commands'
+
+    student_test_suites = 'student_test_suites'
+
+    group_invitations = 'group_invitations'
+    groups = 'groups'
+
+    submissions = 'submissions'
+    rerun_submissions_tasks = 'rerun_submissions_tasks'
+
+    handgrading_rubrics = 'handgrading_rubrics'
+    handgrading_results = 'handgrading_results'
+
+    criteria = 'criteria'
+    annotations = 'annotations'
+
+    criterion_results = 'criterion_results'
+    applied_annotations = 'applied_annotations'
+    comments = 'comments'
 
 
 class AGViewSchemaGenerator(AutoSchema):
