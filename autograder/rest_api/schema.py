@@ -199,7 +199,7 @@ class APIClassSchemaGenerator:
     # Generate a version of the schema for this class that includes
     # only the fields that are allowed in create (POST) and update (PATCH)
     # requests.
-    def generate_request_body_schema(self) -> Optional[dict]:
+    def generate_request_body_schema(self, *, include_required: bool) -> Optional[dict]:
         return None
 
     def _field_names(self) -> Sequence[str]:
@@ -218,13 +218,8 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
     def __init__(self, class_: Type[AutograderModel]):
         self._class = class_
 
-    def generate(self) -> dict:
-        result = super().generate()
-        result['required'] = self._get_required_fields()
-        return result
-
-    def generate_request_body_schema(self):
-        return {
+    def generate_request_body_schema(self, *, include_required: bool):
+        result = {
             'type': 'object',
             'properties': {
                 name: _get_field_schema(
@@ -234,9 +229,11 @@ class AGModelSchemaGenerator(HasToDictMixinSchemaGenerator):
                     include_readonly=True
                 )
                 for name in self._field_names()
-            },
-            'required': self._get_required_fields()
+            }
         }
+        if include_required:
+            result['required'] = self._get_required_fields()
+        return result
 
     def _get_required_fields(self):
         return [
@@ -626,7 +623,7 @@ class AGViewSchemaGenerator(AutoSchema):
         )
         base_result['responses']['201'] = response_schema
 
-        base_result['requestBody'] = self.make_api_class_request_body()
+        base_result['requestBody'] = self.make_api_class_request_body(include_required=True)
 
         return base_result
 
@@ -642,7 +639,7 @@ class AGViewSchemaGenerator(AutoSchema):
             _as_schema_ref(self.get_api_class())
         )
 
-        base_result['requestBody'] = self.make_api_class_request_body()
+        base_result['requestBody'] = self.make_api_class_request_body(include_required=False)
 
         return base_result
 
@@ -664,9 +661,9 @@ class AGViewSchemaGenerator(AutoSchema):
 
         return self.view.model_manager.model
 
-    def make_api_class_request_body(self) -> dict:
+    def make_api_class_request_body(self, *, include_required: bool) -> dict:
         body_schema = AGModelSchemaGenerator.factory(
-            self.get_api_class()).generate_request_body_schema()
+            self.get_api_class()).generate_request_body_schema(include_required=include_required)
         schema = (body_schema if body_schema is not None
                   else _as_schema_ref(self.get_api_class()))
         return {

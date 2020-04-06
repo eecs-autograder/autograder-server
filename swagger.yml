@@ -427,8 +427,6 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-              required:
-              - name
       tags: *id008
   /api/courses/{id}/my_roles/:
     get:
@@ -1262,9 +1260,6 @@ paths:
                   description: Whether this project has a handgrading rubric.
                   readOnly: true
                   type: boolean
-              required:
-              - name
-              - course
       tags: *id014
   /api/projects/{id}/num_queued_submissions/:
     get:
@@ -1403,9 +1398,6 @@ paths:
                   description: ''
                   readOnly: true
                   type: integer
-              required:
-              - project
-              - name
       tags: *id016
     delete:
       operationId: DestroyInstructorFileDetail
@@ -1629,9 +1621,6 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-              required:
-              - project
-              - pattern
       tags: *id020
     delete:
       operationId: DestroyExpectedStudentFileDetail
@@ -2052,8 +2041,6 @@ paths:
                   readOnly: true
                   type: integer
                   format: id
-              required:
-              - display_name
       tags: *id025
   /api/projects/{project_pk}/ag_test_suites/:
     get:
@@ -2422,9 +2409,6 @@ paths:
                   readOnly: false
                   oneOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
-              required:
-              - name
-              - project
       tags: *id028
     delete:
       operationId: DestroyAGTestSuiteDetail
@@ -2691,9 +2675,6 @@ paths:
                   readOnly: false
                   oneOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
-              required:
-              - name
-              - ag_test_suite
       tags: *id031
     delete:
       operationId: DestroyAGTestCaseDetail
@@ -3353,10 +3334,6 @@ paths:
                   nullable: false
                   readOnly: false
                   type: integer
-              required:
-              - name
-              - ag_test_case
-              - cmd
       tags: *id034
     delete:
       operationId: DestroyAGTestCommandDetail
@@ -3374,7 +3351,7 @@ paths:
       tags: *id034
   /api/projects/{project_pk}/student_test_suites/:
     get:
-      operationId: listStudentTestSuites
+      operationId: listStudentTestSuiteListCreates
       description: ''
       parameters:
       - name: project_pk
@@ -3389,10 +3366,13 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  $ref: '#/components/schemas/StudentTestSuite'
           description: ''
+      tags: &id035
+      - student_test_suites
     post:
-      operationId: createStudentTestSuite
+      operationId: CreateStudentTestSuiteList
       description: ''
       parameters:
       - name: project_pk
@@ -3402,11 +3382,199 @@ paths:
         schema:
           type: string
       responses:
-        '200':
+        '201':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/StudentTestSuite'
           description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pk: *id007
+                name:
+                  description: "The name used to identify this StudentTestSuite.\n\
+                    \                     Must be non-empty and non-null."
+                  nullable: false
+                  readOnly: false
+                  type: string
+                project:
+                  description: The Project that this student test suite belongs to.
+                  nullable: false
+                  readOnly: true
+                  type: integer
+                  format: id
+                instructor_files_needed:
+                  description: "The project files that will be copied into the sandbox\
+                    \ before the suite\n                     is graded."
+                  nullable: false
+                  readOnly: false
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/InstructorFile'
+                read_only_instructor_files:
+                  description: "When True, project files needed for this suite will\
+                    \ be read-only when this\n                     suite is graded."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                student_files_needed:
+                  description: "Student-submitted files matching these patterns will\
+                    \ be copied into the\n                     sandbox before the\
+                    \ suite is graded."
+                  nullable: false
+                  readOnly: false
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ExpectedStudentFile'
+                buggy_impl_names:
+                  description: The names of buggy implementations that student tests
+                    should be run against.
+                  nullable: false
+                  readOnly: false
+                  type: array
+                  items: &id037
+                    type: string
+                use_setup_command:
+                  description: ''
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                setup_command:
+                  description: "A command to be run after student and project files\
+                    \ have\n                     been added to the sandbox but before\
+                    \ any other commands are run.\n                     To indicate\
+                    \ that no setup command should be run,\n                     set\
+                    \ use_setup_command to False."
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/Command'
+                get_student_test_names_command:
+                  description: "This required command should print out a whitespace-separated\n\
+                    \                     list of detected student names. The output\
+                    \ of this command will\n                     be parsed using Python's\
+                    \ str.split()."
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/Command'
+                max_num_student_tests:
+                  description: "The maximum number of test cases students are allowed\
+                    \ to submit.\n                     If more than this many tests\
+                    \ are discovered by the\n                     get_student_test_names_command,\
+                    \ test names will be discarded\n                     from the\
+                    \ end of that list."
+                  nullable: false
+                  readOnly: false
+                  type: integer
+                student_test_validity_check_command:
+                  description: "This command will be run once for each detected student\
+                    \ test case.\n                     An exit status of zero indicates\
+                    \ that a student test case is valid,\n                     whereas\
+                    \ a nonzero exit status indicates that a student test case\n \
+                    \                    is invalid.\n                     This command\
+                    \ must contain the placeholder ${student_test_name} at least once.\
+                    \ That\n                     placeholder will be replaced with\
+                    \ the name of the student test case\n                     that\
+                    \ is to be checked for validity.\n                     NOTE: This\
+                    \ AGCommand's 'cmd' field must not be blank."
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/Command'
+                grade_buggy_impl_command:
+                  description: "This command will be run once for every (buggy implementation,\
+                    \ valid test) pair.\n            A nonzero exit status indicates\
+                    \ that the valid student tests exposed the\n            buggy\
+                    \ impl, whereas an exit status of zero indicates that the student\n\
+                    \            tests did not expose the buggy impl.\n          \
+                    \  This command must contain the placeholders ${student_test_name}\
+                    \ and ${buggy_impl_name}. The placeholder\n            ${student_test_name}\
+                    \ will be replaced with the name of a valid student test case.\n\
+                    \            The placeholder ${buggy_impl_name} will be replaced\
+                    \ with the name of\n            the buggy impl that the student\
+                    \ test is being run against.\n            NOTE: This AGCommand's\
+                    \ 'cmd' field must not be blank."
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/Command'
+                points_per_exposed_bug:
+                  description: "The number of points to be awarded per buggy implementation\
+                    \ exposed by\n                     the student test cases. This\
+                    \ field is limited to 4 digits total and a maximum\n         \
+                    \            of 2 decimal places."
+                  nullable: false
+                  readOnly: false
+                  type: string
+                  format: float
+                max_points:
+                  description: An optional ceiling on the number of points to be awarded.
+                  nullable: true
+                  readOnly: false
+                  type: integer
+                deferred:
+                  description: "If true, this student test suite can be graded asynchronously.\n\
+                    \                     Deferred suites that have yet to be graded\
+                    \ do not prevent members\n                     of a group from\
+                    \ submitting again."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                sandbox_docker_image:
+                  description: The sandbox docker image to use for running this suite.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/SandboxDockerImage'
+                allow_network_access:
+                  description: "Specifies whether the sandbox should allow commands\
+                    \ run inside of it to\n                     make network calls\
+                    \ outside of the sandbox."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                normal_fdbk_config:
+                  description: Feedback settings for a normal Submission.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                ultimate_submission_fdbk_config:
+                  description: Feedback settings for an ultimate Submission.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                past_limit_submission_fdbk_config:
+                  description: Feedback settings for a Submission that is past the
+                    daily limit.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                staff_viewer_fdbk_config:
+                  description: Feedback settings for a staff member viewing a Submission
+                    from another group.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                last_modified:
+                  description: ''
+                  nullable: false
+                  readOnly: true
+                  type: string
+                  format: date-time
+              required:
+              - name
+              - project
+      tags: *id035
   /api/projects/{project_pk}/student_test_suites/order/:
     get:
       operationId: listStudentTestSuiteOrders
@@ -3424,8 +3592,11 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
-          description: ''
+                items:
+                  type: integer
+                  format: id
+      tags: &id036
+      - student_test_suites
     put:
       operationId: UpdateStudentTestSuiteOrder
       description: ''
@@ -3440,11 +3611,24 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+                format: id
+      tags: *id036
   /api/student_test_suites/{id}/:
     get:
-      operationId: retrieveStudentTestSuite
+      operationId: RetrieveStudentTestSuiteDetail
       description: ''
       parameters:
       - name: id
@@ -3457,10 +3641,13 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/StudentTestSuite'
           description: ''
+      tags: &id038
+      - student_test_suites
     patch:
-      operationId: partial_updateStudentTestSuite
+      operationId: PartialUpdateStudentTestSuiteDetail
       description: ''
       parameters:
       - name: id
@@ -3473,10 +3660,194 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/StudentTestSuite'
           description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pk: *id007
+                name:
+                  description: "The name used to identify this StudentTestSuite.\n\
+                    \                     Must be non-empty and non-null."
+                  nullable: false
+                  readOnly: false
+                  type: string
+                project:
+                  description: The Project that this student test suite belongs to.
+                  nullable: false
+                  readOnly: true
+                  type: integer
+                  format: id
+                instructor_files_needed:
+                  description: "The project files that will be copied into the sandbox\
+                    \ before the suite\n                     is graded."
+                  nullable: false
+                  readOnly: false
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/InstructorFile'
+                read_only_instructor_files:
+                  description: "When True, project files needed for this suite will\
+                    \ be read-only when this\n                     suite is graded."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                student_files_needed:
+                  description: "Student-submitted files matching these patterns will\
+                    \ be copied into the\n                     sandbox before the\
+                    \ suite is graded."
+                  nullable: false
+                  readOnly: false
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ExpectedStudentFile'
+                buggy_impl_names:
+                  description: The names of buggy implementations that student tests
+                    should be run against.
+                  nullable: false
+                  readOnly: false
+                  type: array
+                  items: *id037
+                use_setup_command:
+                  description: ''
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                setup_command:
+                  description: "A command to be run after student and project files\
+                    \ have\n                     been added to the sandbox but before\
+                    \ any other commands are run.\n                     To indicate\
+                    \ that no setup command should be run,\n                     set\
+                    \ use_setup_command to False."
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/Command'
+                get_student_test_names_command:
+                  description: "This required command should print out a whitespace-separated\n\
+                    \                     list of detected student names. The output\
+                    \ of this command will\n                     be parsed using Python's\
+                    \ str.split()."
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/Command'
+                max_num_student_tests:
+                  description: "The maximum number of test cases students are allowed\
+                    \ to submit.\n                     If more than this many tests\
+                    \ are discovered by the\n                     get_student_test_names_command,\
+                    \ test names will be discarded\n                     from the\
+                    \ end of that list."
+                  nullable: false
+                  readOnly: false
+                  type: integer
+                student_test_validity_check_command:
+                  description: "This command will be run once for each detected student\
+                    \ test case.\n                     An exit status of zero indicates\
+                    \ that a student test case is valid,\n                     whereas\
+                    \ a nonzero exit status indicates that a student test case\n \
+                    \                    is invalid.\n                     This command\
+                    \ must contain the placeholder ${student_test_name} at least once.\
+                    \ That\n                     placeholder will be replaced with\
+                    \ the name of the student test case\n                     that\
+                    \ is to be checked for validity.\n                     NOTE: This\
+                    \ AGCommand's 'cmd' field must not be blank."
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/Command'
+                grade_buggy_impl_command:
+                  description: "This command will be run once for every (buggy implementation,\
+                    \ valid test) pair.\n            A nonzero exit status indicates\
+                    \ that the valid student tests exposed the\n            buggy\
+                    \ impl, whereas an exit status of zero indicates that the student\n\
+                    \            tests did not expose the buggy impl.\n          \
+                    \  This command must contain the placeholders ${student_test_name}\
+                    \ and ${buggy_impl_name}. The placeholder\n            ${student_test_name}\
+                    \ will be replaced with the name of a valid student test case.\n\
+                    \            The placeholder ${buggy_impl_name} will be replaced\
+                    \ with the name of\n            the buggy impl that the student\
+                    \ test is being run against.\n            NOTE: This AGCommand's\
+                    \ 'cmd' field must not be blank."
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/Command'
+                points_per_exposed_bug:
+                  description: "The number of points to be awarded per buggy implementation\
+                    \ exposed by\n                     the student test cases. This\
+                    \ field is limited to 4 digits total and a maximum\n         \
+                    \            of 2 decimal places."
+                  nullable: false
+                  readOnly: false
+                  type: string
+                  format: float
+                max_points:
+                  description: An optional ceiling on the number of points to be awarded.
+                  nullable: true
+                  readOnly: false
+                  type: integer
+                deferred:
+                  description: "If true, this student test suite can be graded asynchronously.\n\
+                    \                     Deferred suites that have yet to be graded\
+                    \ do not prevent members\n                     of a group from\
+                    \ submitting again."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                sandbox_docker_image:
+                  description: The sandbox docker image to use for running this suite.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/SandboxDockerImage'
+                allow_network_access:
+                  description: "Specifies whether the sandbox should allow commands\
+                    \ run inside of it to\n                     make network calls\
+                    \ outside of the sandbox."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                normal_fdbk_config:
+                  description: Feedback settings for a normal Submission.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                ultimate_submission_fdbk_config:
+                  description: Feedback settings for an ultimate Submission.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                past_limit_submission_fdbk_config:
+                  description: Feedback settings for a Submission that is past the
+                    daily limit.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                staff_viewer_fdbk_config:
+                  description: Feedback settings for a staff member viewing a Submission
+                    from another group.
+                  nullable: false
+                  readOnly: false
+                  oneOf:
+                  - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
+                last_modified:
+                  description: ''
+                  nullable: false
+                  readOnly: true
+                  type: string
+                  format: date-time
+      tags: *id038
     delete:
-      operationId: destroyStudentTestSuite
+      operationId: DestroyStudentTestSuiteDetail
       description: ''
       parameters:
       - name: id
@@ -3488,6 +3859,7 @@ paths:
       responses:
         '204':
           description: ''
+      tags: *id038
   /api/projects/{project_pk}/rerun_submissions_tasks/:
     get:
       operationId: listRerunSubmissionTasks
@@ -5065,7 +5437,7 @@ components:
     User:
       type: object
       properties:
-        pk: &id035
+        pk: &id039
           type: integer
           format: id
         username:
@@ -5090,7 +5462,7 @@ components:
     Course:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         name:
           description: The name of this course. Must be unique, non-empty and non-null.
           nullable: false
@@ -5126,8 +5498,6 @@ components:
           nullable: false
           type: string
           format: date-time
-      required:
-      - name
     Semester:
       type: string
       enum:
@@ -5138,7 +5508,7 @@ components:
     Project:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         name:
           description: "The name used to identify this project.\n            Must\
             \ be non-empty and non-null.\n            Must be unique among Projects\
@@ -5283,9 +5653,6 @@ components:
         has_handgrading_rubric:
           description: Whether this project has a handgrading rubric.
           type: boolean
-      required:
-      - name
-      - course
     UltimateSubmissionPolicy:
       type: string
       enum:
@@ -5295,7 +5662,7 @@ components:
     ExpectedStudentFile:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         project:
           description: ''
           nullable: false
@@ -5324,13 +5691,10 @@ components:
           nullable: false
           type: string
           format: date-time
-      required:
-      - project
-      - pattern
     InstructorFile:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         project:
           description: ''
           nullable: false
@@ -5348,13 +5712,10 @@ components:
         size:
           description: ''
           type: integer
-      required:
-      - project
-      - name
     DownloadTask:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         project:
           description: ''
           nullable: false
@@ -5382,9 +5743,6 @@ components:
           nullable: false
           type: string
           format: date-time
-      required:
-      - project
-      - download_type
     DownloadType:
       type: string
       enum:
@@ -5395,7 +5753,7 @@ components:
     Group:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         project:
           description: ''
           nullable: false
@@ -5412,7 +5770,7 @@ components:
         member_names:
           description: A list of usernames of the group members, sorted alphabetically.
           type: array
-          items: &id036
+          items: &id040
             type: string
           readOnly: false
         bonus_submissions_remaining:
@@ -5448,13 +5806,10 @@ components:
           nullable: false
           type: string
           format: date-time
-      required:
-      - project
-      - member_names
     GroupInvitation:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         invitation_creator:
           description: "The User who created this invitation.\n            This field\
             \ is REQUIRED."
@@ -5469,19 +5824,16 @@ components:
         invited_usernames:
           description: The usernames of the Users that will receive this invitation.
           type: array
-          items: *id036
+          items: *id040
         invitees_who_accepted:
           description: "A list of usernames indicating which invitees have accepted\n\
             \        this invitation.\n        This field is READ ONLY."
           type: array
-          items: *id036
-      required:
-      - invitation_creator
-      - project
+          items: *id040
     Submission:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         group:
           description: "The SubmissionGroup that this submission belongs to. Note\n\
             \            that this field indirectly links this Submission object to\
@@ -5503,8 +5855,7 @@ components:
             \     excluding those that were discarded."
           nullable: false
           type: array
-          items: &id037
-            type: string
+          items: *id037
         discarded_files:
           description: The names of files that were discarded when this Submission
             was created.
@@ -5565,8 +5916,6 @@ components:
           nullable: false
           type: string
           format: date-time
-      required:
-      - group
     Command:
       type: object
       properties:
@@ -5604,7 +5953,7 @@ components:
     SandboxDockerImage:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         display_name:
           description: "A human-readable name for this sandbox image.\n          \
             \           Must be unique among images belonging to a course.\n     \
@@ -5616,12 +5965,10 @@ components:
           nullable: true
           type: integer
           format: id
-      required:
-      - display_name
     BuildSandboxDockerImageTask:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         status:
           description: The status of the build.
           nullable: false
@@ -5661,7 +6008,6 @@ components:
             here.
           nullable: false
           type: string
-      required: []
     BuildImageStatus:
       type: string
       enum:
@@ -5674,7 +6020,7 @@ components:
     AGTestSuite:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         name:
           description: "The name used to identify this suite.\n                  \
             \   Must be non-empty and non-null.\n                     Must be unique\
@@ -5767,9 +6113,6 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
-      required:
-      - name
-      - project
     AGTestSuiteFeedbackConfig:
       type: object
       properties:
@@ -5795,7 +6138,7 @@ components:
     AGTestCase:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         name:
           description: "The name used to identify this autograder test.\n        \
             \             Must be non-empty and non-null.\n                     Must\
@@ -5840,9 +6183,6 @@ components:
           nullable: false
           oneOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
-      required:
-      - name
-      - ag_test_suite
     AGTestCaseFeedbackConfig:
       type: object
       properties:
@@ -5855,7 +6195,7 @@ components:
     AGTestCommand:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         name:
           description: "The name used to identify this command.\n                \
             \         Must be non-empty and non-null.\n                         Must\
@@ -6060,10 +6400,6 @@ components:
             \                program's process limit."
           nullable: false
           type: integer
-      required:
-      - name
-      - ag_test_case
-      - cmd
     AGTestCommandFeedbackConfig:
       type: object
       properties:
@@ -6123,20 +6459,20 @@ components:
     SubmissionResultFeedback:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         total_points:
           description: ''
           anyOf:
-          - &id038
+          - &id041
             type: integer
-          - &id039
+          - &id042
             type: string
             format: float
         total_points_possible:
           description: ''
           anyOf:
-          - *id038
-          - *id039
+          - *id041
+          - *id042
         ag_test_suite_results:
           description: ''
           type: array
@@ -6150,7 +6486,7 @@ components:
     AGTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         ag_test_suite_name:
           description: ''
           type: string
@@ -6186,7 +6522,7 @@ components:
     AGTestCaseResultFeedback:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         ag_test_case_name:
           description: ''
           type: string
@@ -6210,7 +6546,7 @@ components:
     AGTestCommandResultFeedback:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         ag_test_command_pk:
           description: ''
           type: integer
@@ -6279,7 +6615,7 @@ components:
     StudentTestSuite:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         name:
           description: "The name used to identify this StudentTestSuite.\n       \
             \              Must be non-empty and non-null."
@@ -6423,9 +6759,6 @@ components:
           nullable: false
           type: string
           format: date-time
-      required:
-      - name
-      - project
     StudentTestSuiteFeedbackConfig:
       type: object
       properties:
@@ -6480,7 +6813,7 @@ components:
     StudentTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         student_test_suite_name:
           description: ''
           type: string
@@ -6516,21 +6849,21 @@ components:
         student_tests:
           description: ''
           type: array
-          items: *id036
+          items: *id040
         discarded_tests:
           description: ''
           type: array
-          items: *id036
+          items: *id040
         invalid_tests:
           description: ''
           nullable: true
           type: array
-          items: *id036
+          items: *id040
         timed_out_tests:
           description: ''
           nullable: true
           type: array
-          items: *id036
+          items: *id040
         num_bugs_exposed:
           description: ''
           nullable: true
@@ -6539,7 +6872,7 @@ components:
           description: ''
           nullable: true
           type: array
-          items: *id036
+          items: *id040
         total_points:
           description: ''
           type: string
@@ -6551,7 +6884,7 @@ components:
     RerunSubmissionsTask:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         progress:
           description: ''
           type: integer
@@ -6632,13 +6965,10 @@ components:
             description: ''
             nullable: false
             type: integer
-      required:
-      - creator
-      - project
     HandgradingRubric:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         project:
           description: The Project this HandgradingRubric belongs to.
           nullable: false
@@ -6689,8 +7019,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Annotation'
-      required:
-      - project
     PointsStyle:
       type: string
       enum:
@@ -6699,7 +7027,7 @@ components:
     Criterion:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         handgrading_rubric:
           description: The rubric this Criterion belongs to.
           nullable: false
@@ -6725,12 +7053,10 @@ components:
             \ score\n                     when selected."
           nullable: false
           type: number
-      required:
-      - handgrading_rubric
     Annotation:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         handgrading_rubric:
           description: The HandgradingRubric this Annotation belongs to.
           nullable: false
@@ -6762,12 +7088,10 @@ components:
           nullable: false
           type: string
           format: date-time
-      required:
-      - handgrading_rubric
     HandgradingResult:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         last_modified:
           description: ''
           nullable: false
@@ -6821,7 +7145,7 @@ components:
           description: "Returns a list of strings containing the filenames of the\
             \ Submission this result\n        belongs to."
           type: array
-          items: *id036
+          items: *id040
         total_points:
           description: "The total number of points awarded. Note that it is possible\n\
             \        for this value to be greater than total_points."
@@ -6830,14 +7154,10 @@ components:
           description: "The denominator of the handgrading score based on the\n  \
             \      handgrading rubric's points style and max points."
           type: number
-      required:
-      - submission
-      - handgrading_rubric
-      - group
     CriterionResult:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         last_modified:
           description: ''
           nullable: false
@@ -6859,14 +7179,10 @@ components:
           nullable: false
           type: integer
           format: id
-      required:
-      - selected
-      - criterion
-      - handgrading_result
     AppliedAnnotation:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         last_modified:
           description: ''
           nullable: false
@@ -6887,14 +7203,10 @@ components:
           nullable: false
           type: integer
           format: id
-      required:
-      - location
-      - annotation
-      - handgrading_result
     Comment:
       type: object
       properties:
-        pk: *id035
+        pk: *id039
         last_modified:
           description: ''
           nullable: false
@@ -6915,9 +7227,6 @@ components:
           nullable: false
           type: integer
           format: id
-      required:
-      - text
-      - handgrading_result
     Location:
       type: object
       properties:
@@ -6947,7 +7256,7 @@ components:
       required:
       - pk
       properties:
-        pk: *id035
+        pk: *id039
         username:
           type: string
           format: email

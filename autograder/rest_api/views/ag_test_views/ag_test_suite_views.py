@@ -65,8 +65,6 @@ class AGTestSuiteOrderView(AGModelAPIView):
     pk_key = 'project_pk'
     model_manager = ag_models.Project.objects.select_related('course')
 
-    api_tags = [APITags.ag_test_suites]
-
     def get(self, *args, **kwargs):
         project = self.get_object()
         return response.Response(list(project.get_agtestsuite_order()))
