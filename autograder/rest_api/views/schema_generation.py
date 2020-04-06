@@ -92,41 +92,7 @@ API_MODELS = OrderedDict([
 #         return schema
 
 
-# Defines the order of API tags and provides a single point of
-# maintenance for their string values.
-class APITags(enum.Enum):
-    users = 'users'
-    courses = 'courses'
-    rosters = 'rosters'
-    permissions = 'permissions'
-
-    projects = 'projects'
-    instructor_files = 'instructor_files'
-    expected_student_files = 'expected_student_files'
-
-    sandbox_docker_images = 'sandbox_docker_images'
-
-    ag_test_suites = 'ag_test_suites'
-    ag_test_cases = 'ag_test_cases'
-    ag_test_commands = 'ag_test_commands'
-
-    student_test_suites = 'student_test_suites'
-
-    group_invitations = 'group_invitations'
-    groups = 'groups'
-
-    submissions = 'submissions'
-    rerun_submissions_tasks = 'rerun_submissions_tasks'
-
-    handgrading_rubrics = 'handgrading_rubrics'
-    handgrading_results = 'handgrading_results'
-
-    criteria = 'criteria'
-    annotations = 'annotations'
-
-    criterion_results = 'criterion_results'
-    applied_annotations = 'applied_annotations'
-    comments = 'comments'
+from autograder.rest_api.schema import APITags
 
 
 # class AGModelViewAutoSchema(SwaggerAutoSchema):

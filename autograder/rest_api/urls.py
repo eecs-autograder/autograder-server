@@ -18,10 +18,6 @@ submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            basename='submission')
 
-ag_test_case_detail_router = routers.SimpleRouter()
-ag_test_case_detail_router.register(r'ag_test_cases', views.AGTestCaseDetailViewSet,
-                                    basename='ag-test-case')
-
 ag_test_command_detail_router = routers.SimpleRouter()
 ag_test_command_detail_router.register(r'ag_test_commands', views.AGTestCommandDetailViewSet,
                                        basename='ag-test-command')
@@ -185,13 +181,6 @@ urlpatterns = [
          name='submissions'),
     url(r'', include(submission_router.urls)),
 
-    url(r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/$',
-        views.AGTestSuiteListCreateView.as_view(), name='ag_test_suites'),
-    url(r'^projects/(?P<project_pk>[0-9]+)/ag_test_suites/order/$',
-        views.AGTestSuiteOrderView.as_view(), name='ag_test_suite_order'),
-    path('ag_test_suites/<int:pk>/', views.AGTestSuiteDetailView.as_view(),
-         name='ag-test-suite-detail'),
-
     path('sandbox_docker_images/', views.ListCreateGlobalSandboxDockerImageView.as_view(),
          name='global-sandbox-images'),
     path('courses/<int:pk>/sandbox_docker_images/',
@@ -211,11 +200,19 @@ urlpatterns = [
     path('sandbox_docker_images/<int:pk>/rebuild/', views.RebuildSandboxDockerImageView.as_view(),
          name='rebuild-sandbox-docker-image'),
 
-    url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/$',
+    path('projects/<int:project_pk>/ag_test_suites/',
+        views.AGTestSuiteListCreateView.as_view(), name='ag_test_suites'),
+    path('projects/<int:project_pk>/ag_test_suites/order/',
+        views.AGTestSuiteOrderView.as_view(), name='ag_test_suite_order'),
+    path('ag_test_suites/<int:pk>/', views.AGTestSuiteDetailView.as_view(),
+         name='ag-test-suite-detail'),
+
+    path('ag_test_suites/<int:ag_test_suite_pk>/ag_test_cases/',
         views.AGTestCaseListCreateView.as_view(), name='ag_test_cases'),
-    url(r'^ag_test_suites/(?P<ag_test_suite_pk>[0-9]+)/ag_test_cases/order/$',
+    path('ag_test_suites/<int:ag_test_suite_pk>/ag_test_cases/order/',
         views.AGTestCaseOrderView.as_view(), name='ag_test_case_order'),
-    url(r'', include(ag_test_case_detail_router.urls)),
+    path('ag_test_cases/<int:pk>/', views.AGTestCaseDetailView.as_view(),
+         name='ag-test-case-detail'),
 
     url(r'^ag_test_cases/(?P<ag_test_case_pk>[0-9]+)/ag_test_commands/$',
         views.AGTestCommandListCreateView.as_view(), name='ag_test_commands'),

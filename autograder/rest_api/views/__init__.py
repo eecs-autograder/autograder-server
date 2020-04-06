@@ -1,4 +1,4 @@
-from .ag_test_views.ag_test_case_views import (AGTestCaseDetailViewSet,
+from .ag_test_views.ag_test_case_views import (AGTestCaseDetailView,
                                                AGTestCaseListCreateView,
                                                AGTestCaseOrderView)
 from .ag_test_views.ag_test_command_views import (AGTestCommandDetailViewSet,
