@@ -4,7 +4,6 @@ from rest_framework import response
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 from autograder.core.caching import clear_submission_results_cache
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator,

@@ -1,7 +1,7 @@
 from .ag_test_views.ag_test_case_views import (AGTestCaseDetailView,
                                                AGTestCaseListCreateView,
                                                AGTestCaseOrderView)
-from .ag_test_views.ag_test_command_views import (AGTestCommandDetailViewSet,
+from .ag_test_views.ag_test_command_views import (AGTestCommandDetailView,
                                                   AGTestCommandListCreateView,
                                                   AGTestCommandOrderView)
 from .ag_test_views.ag_test_suite_views import (AGTestSuiteDetailView,

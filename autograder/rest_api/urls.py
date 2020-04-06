@@ -18,10 +18,6 @@ submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            basename='submission')
 
-ag_test_command_detail_router = routers.SimpleRouter()
-ag_test_command_detail_router.register(r'ag_test_commands', views.AGTestCommandDetailViewSet,
-                                       basename='ag-test-command')
-
 student_test_suite_detail_router = routers.SimpleRouter()
 student_test_suite_detail_router.register(r'student_test_suites',
                                           views.StudentTestSuiteDetailViewSet,
@@ -214,11 +210,12 @@ urlpatterns = [
     path('ag_test_cases/<int:pk>/', views.AGTestCaseDetailView.as_view(),
          name='ag-test-case-detail'),
 
-    url(r'^ag_test_cases/(?P<ag_test_case_pk>[0-9]+)/ag_test_commands/$',
+    path('ag_test_cases/<int:ag_test_case_pk>/ag_test_commands/',
         views.AGTestCommandListCreateView.as_view(), name='ag_test_commands'),
-    url(r'^ag_test_cases/(?P<ag_test_case_pk>[0-9]+)/ag_test_commands/order/$',
+    path('ag_test_cases/<int:ag_test_case_pk>/ag_test_commands/order/',
         views.AGTestCommandOrderView.as_view(), name='ag_test_command_order'),
-    url(r'', include(ag_test_command_detail_router.urls)),
+    path('ag_test_commands/<int:pk>/', views.AGTestCommandDetailView.as_view(),
+         name='ag-test-command-detail'),
 
     url(r'^projects/(?P<project_pk>[0-9]+)/student_test_suites/$',
         views.StudentTestSuiteListCreateView.as_view(), name='student_test_suites'),
