@@ -47,7 +47,7 @@ class CourseAdminViewSet(NestedModelView):
                         'remove_admins': {
                             'type': 'array',
                             'items': {
-                                '$ref': '#/components/schemas/UserID'
+                                '$ref': '#/components/schemas/User'
                             },
                             'description': (
                                 'Users whose admin privileges should be revoked for the course.'

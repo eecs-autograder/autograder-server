@@ -48,7 +48,7 @@ class CourseHandgradersViewSet(NestedModelView):
                         'remove_handgraders': {
                             'type': 'array',
                             'items': {
-                                '$ref': '#/components/schemas/UserID'
+                                '$ref': '#/components/schemas/User'
                             },
                             'description': (
                                 'Users to revoke handgrading privileges from.'

@@ -6,11 +6,6 @@ from rest_framework.schemas import get_schema_view
 
 from autograder.rest_api import views
 
-group_invitation_router = routers.SimpleRouter()
-group_invitation_router.register(r'group_invitations',
-                                 views.GroupInvitationDetailViewSet,
-                                 basename='group-invitation')
-
 group_router = routers.SimpleRouter()
 group_router.register(r'groups', views.GroupDetailViewSet, basename='group')
 
@@ -158,9 +153,12 @@ urlpatterns = [
 
 
     path('projects/<int:pk>/group_invitations/',
-         views.ListCreateGroupInvitationViewSet.as_view(),
+         views.ListCreateGroupInvitationView.as_view(),
          name='group-invitations'),
-    url(r'', include(group_invitation_router.urls)),
+    path('group_invitations/<int:pk>/', views.GroupInvitationDetailView.as_view(),
+         name='group-invitation-detail'),
+    path('group_invitations/<int:pk>/accept/', views.AcceptGroupInvitationView.as_view(),
+         name='accept-group-invitation'),
 
     url(r'', include(group_router.urls)),
 

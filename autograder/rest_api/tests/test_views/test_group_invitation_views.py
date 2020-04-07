@@ -490,7 +490,7 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         ag_models.Group.objects.all().delete()
 
     def accept_invitation_url(self, invitation):
-        return reverse('group-invitation-accept', kwargs={'pk': invitation.pk})
+        return reverse('accept-group-invitation', kwargs={'pk': invitation.pk})
 
     def do_accept_permission_denied_test(self, invitation, user):
         current_invite_count = (
@@ -619,7 +619,6 @@ class RejectGroupInvitationTestCase(test_data.Client,
         original_group_count = ag_models.Group.objects.count()
 
         users = [invitation.invitation_creator] + list(invitation.invited_users.all())
-        expected_num_notifications = len(users)
         self.client.force_authenticate(user)
         response = self.client.delete(self.invitation_url(invitation))
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
@@ -628,12 +627,3 @@ class RejectGroupInvitationTestCase(test_data.Client,
             ag_models.GroupInvitation.objects.count())
         self.assertEqual(
             original_group_count, ag_models.Group.objects.count())
-
-        # Make sure the correct notifications were sent
-        self.assertEqual(expected_num_notifications,
-                         ag_models.Notification.objects.count())
-
-        for user in users:
-            self.assertEqual(1, user.notifications.count())
-
-        ag_models.Notification.objects.all().delete()

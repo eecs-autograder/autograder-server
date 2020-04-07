@@ -46,7 +46,7 @@ class CourseStaffViewSet(NestedModelView):
                         'remove_staff': {
                             'type': 'array',
                             'items': {
-                                '$ref': '#/components/schemas/UserID'
+                                '$ref': '#/components/schemas/User'
                             },
                             'description': (
                                 'Users whose staff privileges should be revoked for the course.'

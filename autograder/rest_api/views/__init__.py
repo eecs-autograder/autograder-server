@@ -15,8 +15,9 @@ from .course_views.course_views import (CopyCourseView,
                                         CourseByNameSemesterYearView,
                                         CourseDetailView, CourseUserRolesView,
                                         ListCreateCourseView)
-from .group_invitation_views import (GroupInvitationDetailViewSet,
-                                     ListCreateGroupInvitationViewSet)
+from .group_invitation_views import (GroupInvitationDetailView,
+AcceptGroupInvitationView,
+                                     ListCreateGroupInvitationView)
 from .group_views import CreateSoloGroupView, GroupDetailViewSet, GroupsViewSet
 from .oauth2callback import oauth2_callback
 from .project_views.expected_student_file_views import (
