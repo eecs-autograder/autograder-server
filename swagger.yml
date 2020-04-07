@@ -301,7 +301,7 @@ paths:
                   description: ''
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Semester'
                 year:
                   description: ''
@@ -393,7 +393,7 @@ paths:
                   description: ''
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Semester'
                 year:
                   description: ''
@@ -553,7 +553,7 @@ paths:
                 remove_admins:
                   type: array
                   items:
-                    $ref: '#/components/schemas/UserID'
+                    $ref: '#/components/schemas/User'
                   description: Users whose admin privileges should be revoked for
                     the course.
       tags: *id009
@@ -630,7 +630,7 @@ paths:
                 remove_staff:
                   type: array
                   items:
-                    $ref: '#/components/schemas/UserID'
+                    $ref: '#/components/schemas/User'
                   description: Users whose staff privileges should be revoked for
                     the course.
       tags: *id010
@@ -738,7 +738,7 @@ paths:
                 remove_students:
                   type: array
                   items:
-                    $ref: '#/components/schemas/UserID'
+                    $ref: '#/components/schemas/User'
                   description: Users whose student privileges should be revoked for
                     the course.
       tags: *id011
@@ -815,7 +815,7 @@ paths:
                 remove_handgraders:
                   type: array
                   items:
-                    $ref: '#/components/schemas/UserID'
+                    $ref: '#/components/schemas/User'
                   description: Users to revoke handgrading privileges from.
       tags: *id012
   /api/courses/{id}/projects/:
@@ -1011,7 +1011,7 @@ paths:
                     \            how the ultimate submission should be determined."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/UltimateSubmissionPolicy'
                 hide_ultimate_submission_fdbk:
                   description: "A hard override that indicates that ultimate\n   \
@@ -1233,7 +1233,7 @@ paths:
                     \            how the ultimate submission should be determined."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/UltimateSubmissionPolicy'
                 hide_ultimate_submission_fdbk:
                   description: "A hard override that indicates that ultimate\n   \
@@ -1638,7 +1638,7 @@ paths:
       tags: *id020
   /api/projects/{id}/group_invitations/:
     get:
-      operationId: listSubmissionGroupInvitations
+      operationId: listListCreateGroupInvitations
       description: ''
       parameters:
       - name: id
@@ -1653,10 +1653,13 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  $ref: '#/components/schemas/GroupInvitation'
           description: ''
+      tags: &id021
+      - group_invitations
     post:
-      operationId: createSubmissionGroupInvitation
+      operationId: CreateListCreateGroupInvitation
       description: ''
       parameters:
       - name: id
@@ -1666,14 +1669,24 @@ paths:
         schema:
           type: string
       responses:
-        '200':
+        '201':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema:
+                $ref: '#/components/schemas/GroupInvitation'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: username
+      tags: *id021
   /api/group_invitations/{id}/:
     get:
-      operationId: retrieveSubmissionGroupInvitation
+      operationId: RetrieveGroupInvitationDetail
       description: ''
       parameters:
       - name: id
@@ -1686,10 +1699,13 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/GroupInvitation'
           description: ''
+      tags: &id022
+      - group_invitations
     delete:
-      operationId: destroySubmissionGroupInvitation
+      operationId: DestroyGroupInvitationDetail
       description: Revoke or reject this invitation.
       parameters:
       - name: id
@@ -1701,6 +1717,7 @@ paths:
       responses:
         '204':
           description: ''
+      tags: *id022
   /api/groups/{id}/:
     get:
       operationId: retrieveSubmissionGroup
@@ -1856,7 +1873,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SandboxDockerImage'
-      tags: &id021
+      tags: &id023
       - sandbox_docker_images
     post:
       operationId: CreateListCreateGlobalSandboxDockerImage
@@ -1866,13 +1883,13 @@ paths:
         '202':
           content:
             application/json:
-              schema: &id022
+              schema: &id024
                 $ref: '#/components/schemas/BuildSandboxDockerImageTask'
       requestBody:
         required: true
         content:
           multipart/form-data:
-            schema: &id023
+            schema: &id025
               type: object
               properties:
                 files:
@@ -1881,7 +1898,7 @@ paths:
                     type: string
                     format: binary
                   description: The form-encoded files. One file must be named "Dockerfile"
-      tags: *id021
+      tags: *id023
   /api/courses/{id}/sandbox_docker_images/:
     get:
       operationId: listListCreateSandboxDockerImageForCourses
@@ -1902,7 +1919,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/SandboxDockerImage'
           description: ''
-      tags: &id024
+      tags: &id026
       - sandbox_docker_images
     post:
       operationId: CreateListCreateSandboxDockerImageForCourse
@@ -1918,13 +1935,13 @@ paths:
         '202':
           content:
             application/json:
-              schema: *id022
+              schema: *id024
       requestBody:
         required: true
         content:
           multipart/form-data:
-            schema: *id023
-      tags: *id024
+            schema: *id025
+      tags: *id026
   /api/image_build_tasks/:
     get:
       operationId: listListGlobalBuildTasks
@@ -2001,7 +2018,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SandboxDockerImage'
           description: ''
-      tags: &id025
+      tags: &id027
       - sandbox_docker_images
     patch:
       operationId: PartialUpdateSandboxDockerImageDetail
@@ -2041,7 +2058,7 @@ paths:
                   readOnly: true
                   type: integer
                   format: id
-      tags: *id025
+      tags: *id027
   /api/projects/{project_pk}/ag_test_suites/:
     get:
       operationId: listAGTestSuiteListCreates
@@ -2062,7 +2079,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AGTestSuite'
           description: ''
-      tags: &id026
+      tags: &id028
       - ag_test_suites
     post:
       operationId: CreateAGTestSuiteList
@@ -2158,7 +2175,7 @@ paths:
                   description: The sandbox docker image to use for running this suite.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/SandboxDockerImage'
                 allow_network_access:
                   description: "Specifies whether the sandbox should allow commands\
@@ -2179,30 +2196,30 @@ paths:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
               required:
               - name
               - project
-      tags: *id026
+      tags: *id028
   /api/projects/{project_pk}/ag_test_suites/order/:
     get:
       operationId: listAGTestSuiteOrders
@@ -2223,7 +2240,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id027
+      tags: &id029
       - ag_test_suites
     put:
       operationId: UpdateAGTestSuiteOrder
@@ -2253,7 +2270,7 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id027
+      tags: *id029
   /api/ag_test_suites/{id}/:
     get:
       operationId: RetrieveAGTestSuiteDetail
@@ -2272,7 +2289,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AGTestSuite'
           description: ''
-      tags: &id028
+      tags: &id030
       - ag_test_suites
     patch:
       operationId: PartialUpdateAGTestSuiteDetail
@@ -2368,7 +2385,7 @@ paths:
                   description: The sandbox docker image to use for running this suite.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/SandboxDockerImage'
                 allow_network_access:
                   description: "Specifies whether the sandbox should allow commands\
@@ -2389,27 +2406,27 @@ paths:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
-      tags: *id028
+      tags: *id030
     delete:
       operationId: DestroyAGTestSuiteDetail
       description: ''
@@ -2423,7 +2440,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id028
+      tags: *id030
   /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/:
     get:
       operationId: listAGTestCaseListCreates
@@ -2444,7 +2461,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AGTestCase'
           description: ''
-      tags: &id029
+      tags: &id031
       - ag_test_cases
     post:
       operationId: CreateAGTestCaseList
@@ -2503,30 +2520,30 @@ paths:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
               required:
               - name
               - ag_test_suite
-      tags: *id029
+      tags: *id031
   /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/order/:
     get:
       operationId: listAGTestCaseOrders
@@ -2547,7 +2564,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id030
+      tags: &id032
       - ag_test_cases
     put:
       operationId: UpdateAGTestCaseOrder
@@ -2577,7 +2594,7 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id030
+      tags: *id032
   /api/ag_test_cases/{id}/:
     get:
       operationId: RetrieveAGTestCaseDetail
@@ -2596,7 +2613,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AGTestCase'
           description: ''
-      tags: &id031
+      tags: &id033
       - ag_test_cases
     patch:
       operationId: PartialUpdateAGTestCaseDetail
@@ -2655,27 +2672,27 @@ paths:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: ''
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
-      tags: *id031
+      tags: *id033
     delete:
       operationId: DestroyAGTestCaseDetail
       description: ''
@@ -2689,7 +2706,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id031
+      tags: *id033
   /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/:
     get:
       operationId: listAGTestCommandListCreates
@@ -2710,7 +2727,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AGTestCommand'
           description: ''
-      tags: &id032
+      tags: &id034
       - ag_test_commands
     post:
       operationId: CreateAGTestCommandList
@@ -2773,7 +2790,7 @@ paths:
                     from.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StdinSource'
                 stdin_text:
                   description: "A string whose contents should be redirected to the\
@@ -2790,20 +2807,20 @@ paths:
                     \                    and is ignored otherwise."
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/InstructorFile'
                 expected_return_code:
                   description: Specifies the command's expected return code.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/ExpectedReturnCode'
                 expected_stdout_source:
                   description: Specifies what kind of source this command's stdout
                     should be compared to.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/ExpectedOutputSource'
                 expected_stdout_text:
                   description: "A string whose contents should be compared against\
@@ -2821,14 +2838,14 @@ paths:
                     \ and is ignored otherwise."
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/InstructorFile'
                 expected_stderr_source:
                   description: Specifies what kind of source this command's stderr
                     should be compared to.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/ExpectedOutputSource'
                 expected_stderr_text:
                   description: "A string whose contents should be compared against\
@@ -2846,7 +2863,7 @@ paths:
                     \ and is ignored otherwise."
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/InstructorFile'
                 ignore_case:
                   description: Ignore case when checking output. Equivalent to diff
@@ -2922,7 +2939,7 @@ paths:
                   description: Feedback settings for a normal Submission.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 first_failed_test_normal_fdbk_config:
                   description: "When non-null, specifies feedback to be given when\n\
@@ -2930,27 +2947,27 @@ paths:
                     \ failed\n                     within a suite."
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: Feedback settings for an ultimate Submission.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: Feedback settings for a Submission that is past the
                     daily limit.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: Feedback settings for a staff member viewing a Submission
                     from another group.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 time_limit:
                   description: "The time limit in seconds to be placed on the command.\n\
@@ -2989,7 +3006,7 @@ paths:
               - name
               - ag_test_case
               - cmd
-      tags: *id032
+      tags: *id034
   /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/order/:
     get:
       operationId: listAGTestCommandOrders
@@ -3010,7 +3027,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id033
+      tags: &id035
       - ag_test_commands
     put:
       operationId: UpdateAGTestCommandOrder
@@ -3040,7 +3057,7 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id033
+      tags: *id035
   /api/ag_test_commands/{id}/:
     get:
       operationId: RetrieveAGTestCommandDetail
@@ -3059,7 +3076,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AGTestCommand'
           description: ''
-      tags: &id034
+      tags: &id036
       - ag_test_commands
     patch:
       operationId: PartialUpdateAGTestCommandDetail
@@ -3122,7 +3139,7 @@ paths:
                     from.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StdinSource'
                 stdin_text:
                   description: "A string whose contents should be redirected to the\
@@ -3139,20 +3156,20 @@ paths:
                     \                    and is ignored otherwise."
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/InstructorFile'
                 expected_return_code:
                   description: Specifies the command's expected return code.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/ExpectedReturnCode'
                 expected_stdout_source:
                   description: Specifies what kind of source this command's stdout
                     should be compared to.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/ExpectedOutputSource'
                 expected_stdout_text:
                   description: "A string whose contents should be compared against\
@@ -3170,14 +3187,14 @@ paths:
                     \ and is ignored otherwise."
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/InstructorFile'
                 expected_stderr_source:
                   description: Specifies what kind of source this command's stderr
                     should be compared to.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/ExpectedOutputSource'
                 expected_stderr_text:
                   description: "A string whose contents should be compared against\
@@ -3195,7 +3212,7 @@ paths:
                     \ and is ignored otherwise."
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/InstructorFile'
                 ignore_case:
                   description: Ignore case when checking output. Equivalent to diff
@@ -3271,7 +3288,7 @@ paths:
                   description: Feedback settings for a normal Submission.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 first_failed_test_normal_fdbk_config:
                   description: "When non-null, specifies feedback to be given when\n\
@@ -3279,27 +3296,27 @@ paths:
                     \ failed\n                     within a suite."
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: Feedback settings for an ultimate Submission.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: Feedback settings for a Submission that is past the
                     daily limit.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: Feedback settings for a staff member viewing a Submission
                     from another group.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
                 time_limit:
                   description: "The time limit in seconds to be placed on the command.\n\
@@ -3334,7 +3351,7 @@ paths:
                   nullable: false
                   readOnly: false
                   type: integer
-      tags: *id034
+      tags: *id036
     delete:
       operationId: DestroyAGTestCommandDetail
       description: ''
@@ -3348,7 +3365,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id034
+      tags: *id036
   /api/projects/{project_pk}/student_test_suites/:
     get:
       operationId: listStudentTestSuiteListCreates
@@ -3369,7 +3386,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/StudentTestSuite'
           description: ''
-      tags: &id035
+      tags: &id037
       - student_test_suites
     post:
       operationId: CreateStudentTestSuiteList
@@ -3437,7 +3454,7 @@ paths:
                   nullable: false
                   readOnly: false
                   type: array
-                  items: &id037
+                  items: &id039
                     type: string
                 use_setup_command:
                   description: ''
@@ -3452,7 +3469,7 @@ paths:
                     \ use_setup_command to False."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Command'
                 get_student_test_names_command:
                   description: "This required command should print out a whitespace-separated\n\
@@ -3461,7 +3478,7 @@ paths:
                     \ str.split()."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Command'
                 max_num_student_tests:
                   description: "The maximum number of test cases students are allowed\
@@ -3485,7 +3502,7 @@ paths:
                     \ AGCommand's 'cmd' field must not be blank."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Command'
                 grade_buggy_impl_command:
                   description: "This command will be run once for every (buggy implementation,\
@@ -3502,7 +3519,7 @@ paths:
                     \ 'cmd' field must not be blank."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Command'
                 points_per_exposed_bug:
                   description: "The number of points to be awarded per buggy implementation\
@@ -3530,7 +3547,7 @@ paths:
                   description: The sandbox docker image to use for running this suite.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/SandboxDockerImage'
                 allow_network_access:
                   description: "Specifies whether the sandbox should allow commands\
@@ -3543,27 +3560,27 @@ paths:
                   description: Feedback settings for a normal Submission.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: Feedback settings for an ultimate Submission.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: Feedback settings for a Submission that is past the
                     daily limit.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: Feedback settings for a staff member viewing a Submission
                     from another group.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
                 last_modified:
                   description: ''
@@ -3574,7 +3591,7 @@ paths:
               required:
               - name
               - project
-      tags: *id035
+      tags: *id037
   /api/projects/{project_pk}/student_test_suites/order/:
     get:
       operationId: listStudentTestSuiteOrders
@@ -3595,7 +3612,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id036
+      tags: &id038
       - student_test_suites
     put:
       operationId: UpdateStudentTestSuiteOrder
@@ -3625,7 +3642,7 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id036
+      tags: *id038
   /api/student_test_suites/{id}/:
     get:
       operationId: RetrieveStudentTestSuiteDetail
@@ -3644,7 +3661,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StudentTestSuite'
           description: ''
-      tags: &id038
+      tags: &id040
       - student_test_suites
     patch:
       operationId: PartialUpdateStudentTestSuiteDetail
@@ -3712,7 +3729,7 @@ paths:
                   nullable: false
                   readOnly: false
                   type: array
-                  items: *id037
+                  items: *id039
                 use_setup_command:
                   description: ''
                   nullable: false
@@ -3726,7 +3743,7 @@ paths:
                     \ use_setup_command to False."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Command'
                 get_student_test_names_command:
                   description: "This required command should print out a whitespace-separated\n\
@@ -3735,7 +3752,7 @@ paths:
                     \ str.split()."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Command'
                 max_num_student_tests:
                   description: "The maximum number of test cases students are allowed\
@@ -3759,7 +3776,7 @@ paths:
                     \ AGCommand's 'cmd' field must not be blank."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Command'
                 grade_buggy_impl_command:
                   description: "This command will be run once for every (buggy implementation,\
@@ -3776,7 +3793,7 @@ paths:
                     \ 'cmd' field must not be blank."
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Command'
                 points_per_exposed_bug:
                   description: "The number of points to be awarded per buggy implementation\
@@ -3804,7 +3821,7 @@ paths:
                   description: The sandbox docker image to use for running this suite.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/SandboxDockerImage'
                 allow_network_access:
                   description: "Specifies whether the sandbox should allow commands\
@@ -3817,27 +3834,27 @@ paths:
                   description: Feedback settings for a normal Submission.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
                 ultimate_submission_fdbk_config:
                   description: Feedback settings for an ultimate Submission.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
                 past_limit_submission_fdbk_config:
                   description: Feedback settings for a Submission that is past the
                     daily limit.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
                 staff_viewer_fdbk_config:
                   description: Feedback settings for a staff member viewing a Submission
                     from another group.
                   nullable: false
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
                 last_modified:
                   description: ''
@@ -3845,7 +3862,7 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-      tags: *id038
+      tags: *id040
     delete:
       operationId: DestroyStudentTestSuiteDetail
       description: ''
@@ -3859,7 +3876,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id038
+      tags: *id040
   /api/projects/{project_pk}/rerun_submissions_tasks/:
     get:
       operationId: listRerunSubmissionTasks
@@ -5131,7 +5148,7 @@ paths:
                   description: ''
                   nullable: true
                   readOnly: false
-                  oneOf:
+                  allOf:
                   - $ref: '#/components/schemas/Semester'
                 year:
                   description: ''
@@ -5243,7 +5260,7 @@ paths:
       - handgrading_rubrics
   /api/group_invitations/{id}/accept/:
     post:
-      operationId: acceptSubmissionGroupInvitation
+      operationId: CreateAcceptGroupInvitation
       description: 'Accept this group invitation. If all invitees have accepted,
 
         create a group, delete the invitation, and return the group.'
@@ -5258,8 +5275,17 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema:
+                $ref: '#/components/schemas/GroupInvitation'
+          description: You have accepted the invitation.
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+          description: All invited users have accepted the invitation.
+      tags:
+      - group_invitations
   /api/groups/{id}/merge_with/:
     post:
       operationId: merge_withSubmissionGroup
@@ -5389,12 +5415,12 @@ paths:
         '202':
           content:
             application/json:
-              schema: *id022
+              schema: *id024
       requestBody:
         required: true
         content:
           multipart/form-data:
-            schema: *id023
+            schema: *id025
       tags:
       - sandbox_docker_images
   /api/projects/{project_pk}/groups/bonus_submissions/:
@@ -5437,7 +5463,7 @@ components:
     User:
       type: object
       properties:
-        pk: &id039
+        pk: &id041
           type: integer
           format: id
         username:
@@ -5462,7 +5488,7 @@ components:
     Course:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         name:
           description: The name of this course. Must be unique, non-empty and non-null.
           nullable: false
@@ -5470,7 +5496,7 @@ components:
         semester:
           description: ''
           nullable: true
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/Semester'
         year:
           description: ''
@@ -5508,7 +5534,7 @@ components:
     Project:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         name:
           description: "The name used to identify this project.\n            Must\
             \ be non-empty and non-null.\n            Must be unique among Projects\
@@ -5630,7 +5656,7 @@ components:
             \       that will be used for final grading. This field specifies\n  \
             \          how the ultimate submission should be determined."
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/UltimateSubmissionPolicy'
         hide_ultimate_submission_fdbk:
           description: "A hard override that indicates that ultimate\n           \
@@ -5662,7 +5688,7 @@ components:
     ExpectedStudentFile:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         project:
           description: ''
           nullable: false
@@ -5694,7 +5720,7 @@ components:
     InstructorFile:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         project:
           description: ''
           nullable: false
@@ -5715,7 +5741,7 @@ components:
     DownloadTask:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         project:
           description: ''
           nullable: false
@@ -5724,7 +5750,7 @@ components:
         download_type:
           description: ''
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/DownloadType'
         result_filename:
           description: ''
@@ -5753,7 +5779,7 @@ components:
     Group:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         project:
           description: ''
           nullable: false
@@ -5770,7 +5796,7 @@ components:
         member_names:
           description: A list of usernames of the group members, sorted alphabetically.
           type: array
-          items: &id040
+          items: &id042
             type: string
           readOnly: false
         bonus_submissions_remaining:
@@ -5809,7 +5835,7 @@ components:
     GroupInvitation:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         invitation_creator:
           description: "The User who created this invitation.\n            This field\
             \ is REQUIRED."
@@ -5824,16 +5850,16 @@ components:
         invited_usernames:
           description: The usernames of the Users that will receive this invitation.
           type: array
-          items: *id040
+          items: *id042
         invitees_who_accepted:
           description: "A list of usernames indicating which invitees have accepted\n\
             \        this invitation.\n        This field is READ ONLY."
           type: array
-          items: *id040
+          items: *id042
     Submission:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         group:
           description: "The SubmissionGroup that this submission belongs to. Note\n\
             \            that this field indirectly links this Submission object to\
@@ -5855,13 +5881,13 @@ components:
             \     excluding those that were discarded."
           nullable: false
           type: array
-          items: *id037
+          items: *id039
         discarded_files:
           description: The names of files that were discarded when this Submission
             was created.
           nullable: false
           type: array
-          items: *id037
+          items: *id039
         missing_files:
           description: "Stores missing filenames and the additional number\n     \
             \       of files needed to satisfy a file pattern requirement.\n     \
@@ -5953,7 +5979,7 @@ components:
     SandboxDockerImage:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         display_name:
           description: "A human-readable name for this sandbox image.\n          \
             \           Must be unique among images belonging to a course.\n     \
@@ -5968,11 +5994,11 @@ components:
     BuildSandboxDockerImageTask:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         status:
           description: The status of the build.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/BuildImageStatus'
         return_code:
           description: The exit status of the build command.
@@ -5986,7 +6012,7 @@ components:
           description: The names of the files uploaded by the user.
           nullable: false
           type: array
-          items: *id037
+          items: *id039
         course:
           description: "The course this task is associated with.\n            Only\
             \ superusers can create or update images with no associated course."
@@ -6020,7 +6046,7 @@ components:
     AGTestSuite:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         name:
           description: "The name used to identify this suite.\n                  \
             \   Must be non-empty and non-null.\n                     Must be unique\
@@ -6080,7 +6106,7 @@ components:
         sandbox_docker_image:
           description: The sandbox docker image to use for running this suite.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/SandboxDockerImage'
         allow_network_access:
           description: "Specifies whether the sandbox should allow commands run inside\
@@ -6096,22 +6122,22 @@ components:
         normal_fdbk_config:
           description: ''
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
         ultimate_submission_fdbk_config:
           description: ''
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
         past_limit_submission_fdbk_config:
           description: ''
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
         staff_viewer_fdbk_config:
           description: ''
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
     AGTestSuiteFeedbackConfig:
       type: object
@@ -6138,7 +6164,7 @@ components:
     AGTestCase:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         name:
           description: "The name used to identify this autograder test.\n        \
             \             Must be non-empty and non-null.\n                     Must\
@@ -6166,22 +6192,22 @@ components:
         normal_fdbk_config:
           description: ''
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
         ultimate_submission_fdbk_config:
           description: ''
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
         past_limit_submission_fdbk_config:
           description: ''
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
         staff_viewer_fdbk_config:
           description: ''
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
     AGTestCaseFeedbackConfig:
       type: object
@@ -6195,7 +6221,7 @@ components:
     AGTestCommand:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         name:
           description: "The name used to identify this command.\n                \
             \         Must be non-empty and non-null.\n                         Must\
@@ -6225,7 +6251,7 @@ components:
         stdin_source:
           description: Specifies what kind of source stdin will be redirected from.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/StdinSource'
         stdin_text:
           description: "A string whose contents should be redirected to the stdin\
@@ -6239,18 +6265,18 @@ components:
             \ stdin_source is StdinSource.instructor_file\n                     and\
             \ is ignored otherwise."
           nullable: true
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/InstructorFile'
         expected_return_code:
           description: Specifies the command's expected return code.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/ExpectedReturnCode'
         expected_stdout_source:
           description: Specifies what kind of source this command's stdout should
             be compared to.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/ExpectedOutputSource'
         expected_stdout_text:
           description: "A string whose contents should be compared against this command's\
@@ -6264,13 +6290,13 @@ components:
             \ may not be null) when expected_stdout_source\n                     is\
             \ ExpectedOutputSource.instructor_file and is ignored otherwise."
           nullable: true
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/InstructorFile'
         expected_stderr_source:
           description: Specifies what kind of source this command's stderr should
             be compared to.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/ExpectedOutputSource'
         expected_stderr_text:
           description: "A string whose contents should be compared against this command's\
@@ -6284,7 +6310,7 @@ components:
             \ may not be null) when expected_stderr_source\n                     is\
             \ ExpectedOutputSource.instructor_file and is ignored otherwise."
           nullable: true
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/InstructorFile'
         ignore_case:
           description: Ignore case when checking output. Equivalent to diff -i
@@ -6347,30 +6373,30 @@ components:
         normal_fdbk_config:
           description: Feedback settings for a normal Submission.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         first_failed_test_normal_fdbk_config:
           description: "When non-null, specifies feedback to be given when\n     \
             \                this command is in the first test case that failed\n\
             \                     within a suite."
           nullable: true
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         ultimate_submission_fdbk_config:
           description: Feedback settings for an ultimate Submission.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         past_limit_submission_fdbk_config:
           description: Feedback settings for a Submission that is past the daily limit.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         staff_viewer_fdbk_config:
           description: Feedback settings for a staff member viewing a Submission from
             another group.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/AGTestCommandFeedbackConfig'
         time_limit:
           description: "The time limit in seconds to be placed on the command.\n \
@@ -6459,20 +6485,20 @@ components:
     SubmissionResultFeedback:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         total_points:
           description: ''
           anyOf:
-          - &id041
+          - &id043
             type: integer
-          - &id042
+          - &id044
             type: string
             format: float
         total_points_possible:
           description: ''
           anyOf:
-          - *id041
-          - *id042
+          - *id043
+          - *id044
         ag_test_suite_results:
           description: ''
           type: array
@@ -6486,7 +6512,7 @@ components:
     AGTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         ag_test_suite_name:
           description: ''
           type: string
@@ -6522,7 +6548,7 @@ components:
     AGTestCaseResultFeedback:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         ag_test_case_name:
           description: ''
           type: string
@@ -6546,7 +6572,7 @@ components:
     AGTestCommandResultFeedback:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         ag_test_command_pk:
           description: ''
           type: integer
@@ -6615,7 +6641,7 @@ components:
     StudentTestSuite:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         name:
           description: "The name used to identify this StudentTestSuite.\n       \
             \              Must be non-empty and non-null."
@@ -6650,7 +6676,7 @@ components:
             be run against.
           nullable: false
           type: array
-          items: *id037
+          items: *id039
         use_setup_command:
           description: ''
           nullable: false
@@ -6661,14 +6687,14 @@ components:
             \ are run.\n                     To indicate that no setup command should\
             \ be run,\n                     set use_setup_command to False."
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/Command'
         get_student_test_names_command:
           description: "This required command should print out a whitespace-separated\n\
             \                     list of detected student names. The output of this\
             \ command will\n                     be parsed using Python's str.split()."
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/Command'
         max_num_student_tests:
           description: "The maximum number of test cases students are allowed to submit.\n\
@@ -6688,7 +6714,7 @@ components:
             \           that is to be checked for validity.\n                    \
             \ NOTE: This AGCommand's 'cmd' field must not be blank."
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/Command'
         grade_buggy_impl_command:
           description: "This command will be run once for every (buggy implementation,\
@@ -6703,7 +6729,7 @@ components:
             \ student test is being run against.\n            NOTE: This AGCommand's\
             \ 'cmd' field must not be blank."
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/Command'
         points_per_exposed_bug:
           description: "The number of points to be awarded per buggy implementation\
@@ -6726,7 +6752,7 @@ components:
         sandbox_docker_image:
           description: The sandbox docker image to use for running this suite.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/SandboxDockerImage'
         allow_network_access:
           description: "Specifies whether the sandbox should allow commands run inside\
@@ -6736,23 +6762,23 @@ components:
         normal_fdbk_config:
           description: Feedback settings for a normal Submission.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         ultimate_submission_fdbk_config:
           description: Feedback settings for an ultimate Submission.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         past_limit_submission_fdbk_config:
           description: Feedback settings for a Submission that is past the daily limit.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         staff_viewer_fdbk_config:
           description: Feedback settings for a staff member viewing a Submission from
             another group.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/StudentTestSuiteFeedbackConfig'
         last_modified:
           description: ''
@@ -6813,7 +6839,7 @@ components:
     StudentTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         student_test_suite_name:
           description: ''
           type: string
@@ -6849,21 +6875,21 @@ components:
         student_tests:
           description: ''
           type: array
-          items: *id040
+          items: *id042
         discarded_tests:
           description: ''
           type: array
-          items: *id040
+          items: *id042
         invalid_tests:
           description: ''
           nullable: true
           type: array
-          items: *id040
+          items: *id042
         timed_out_tests:
           description: ''
           nullable: true
           type: array
-          items: *id040
+          items: *id042
         num_bugs_exposed:
           description: ''
           nullable: true
@@ -6872,7 +6898,7 @@ components:
           description: ''
           nullable: true
           type: array
-          items: *id040
+          items: *id042
         total_points:
           description: ''
           type: string
@@ -6884,7 +6910,7 @@ components:
     RerunSubmissionsTask:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         progress:
           description: ''
           type: integer
@@ -6968,7 +6994,7 @@ components:
     HandgradingRubric:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         project:
           description: The Project this HandgradingRubric belongs to.
           nullable: false
@@ -6983,7 +7009,7 @@ components:
           description: "Determines how total_points and total_possible_points are\
             \ calculated\n                     for HandgradingResults."
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/PointsStyle'
         max_points:
           description: "The denominator of a handgrading score.\n                \
@@ -7027,7 +7053,7 @@ components:
     Criterion:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         handgrading_rubric:
           description: The rubric this Criterion belongs to.
           nullable: false
@@ -7056,7 +7082,7 @@ components:
     Annotation:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         handgrading_rubric:
           description: The HandgradingRubric this Annotation belongs to.
           nullable: false
@@ -7091,7 +7117,7 @@ components:
     HandgradingResult:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         last_modified:
           description: ''
           nullable: false
@@ -7106,7 +7132,7 @@ components:
           description: The HandgradingRubric that this HandgradingResult is based
             on.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/HandgradingRubric'
         group:
           description: The SubmissionGroup that this HandgradingResult is for.
@@ -7145,7 +7171,7 @@ components:
           description: "Returns a list of strings containing the filenames of the\
             \ Submission this result\n        belongs to."
           type: array
-          items: *id040
+          items: *id042
         total_points:
           description: "The total number of points awarded. Note that it is possible\n\
             \        for this value to be greater than total_points."
@@ -7157,7 +7183,7 @@ components:
     CriterionResult:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         last_modified:
           description: ''
           nullable: false
@@ -7172,7 +7198,7 @@ components:
         criterion:
           description: The Criterion that the CriterionResult is tied to.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/Criterion'
         handgrading_result:
           description: The HandgradingResult this CriterionResult belongs to.
@@ -7182,7 +7208,7 @@ components:
     AppliedAnnotation:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         last_modified:
           description: ''
           nullable: false
@@ -7191,12 +7217,12 @@ components:
         location:
           description: The source code location where the Annotation was applied.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/Location'
         annotation:
           description: The Annotation that was applied to the source code.
           nullable: false
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/Annotation'
         handgrading_result:
           description: The HandgradingResult the applied annotation belongs to.
@@ -7206,7 +7232,7 @@ components:
     Comment:
       type: object
       properties:
-        pk: *id039
+        pk: *id041
         last_modified:
           description: ''
           nullable: false
@@ -7216,7 +7242,7 @@ components:
           description: "When not None, specifies the source code location this comment\n\
             \                     applies to."
           nullable: true
-          oneOf:
+          allOf:
           - $ref: '#/components/schemas/Location'
         text:
           description: Text to be shown to students.
@@ -7251,15 +7277,6 @@ components:
           type: boolean
         is_handgrader:
           type: boolean
-    UserID:
-      type: object
-      required:
-      - pk
-      properties:
-        pk: *id039
-        username:
-          type: string
-          format: email
 tags:
 - name: users
 - name: courses

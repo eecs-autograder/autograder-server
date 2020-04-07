@@ -85,15 +85,6 @@ class AGSchemaGenerator(SchemaGenerator):
             }
         }
 
-        result['schemas']['UserID'] = {
-            'type': 'object',
-            'required': ['pk'],
-            'properties': {
-                'pk': _PK_SCHEMA,
-                'username': {'type': 'string', 'format': 'email'}
-            }
-        }
-
         return result
 
 
@@ -369,13 +360,13 @@ def _django_field(
 
     if isinstance(field, ag_fields.ValidatedJSONField):
         result.update({
-            'oneOf': [_as_schema_ref(field.serializable_class)]
+            'allOf': [_as_schema_ref(field.serializable_class)]
         })
         return result
 
     if isinstance(field, ag_fields.EnumField):
         result.update({
-            'oneOf': [_as_schema_ref(field.enum_type)]
+            'allOf': [_as_schema_ref(field.enum_type)]
         })
         return result
 
@@ -399,7 +390,7 @@ def _django_field(
 
         if field.name in model_class.get_serialize_related_fields():
             result.update({
-                'oneOf': [_as_schema_ref(field.related_model)]
+                'allOf': [_as_schema_ref(field.related_model)]
             })
             return result
         else:
@@ -542,7 +533,7 @@ def _get_py_type_schema(type_: type) -> dict:
         return _PY_ATTR_TYPES[type_]
 
     if issubclass(type_, Enum):
-        return {'oneOf': [_as_schema_ref(type_)]}
+        return {'allOf': [_as_schema_ref(type_)]}
 
     return {'type': 'unknown'}
 
@@ -735,6 +726,7 @@ class CustomViewDict(TypedDict, total=False):
 class CustomViewMethodData(TypedDict, total=False):
     parameters: List[RequestParam]
     # Key = param name, Value = schema dict
+    # Use for fixing the types of DRF-generated URL params.
     param_schema_overrides: Dict[str, dict]
     request_payload: RequestBodyData
     # Key = response status
@@ -769,6 +761,7 @@ class ResponseSchemaData(TypedDict, total=False):
     body: dict
 
     examples: dict
+    description: str
 
 
 HTTPMethodName = Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
@@ -825,6 +818,8 @@ class CustomViewSchema(AGViewSchemaGenerator):
                         response_data.get('content_type', 'application/json'): body
                     }
                 }
+                if 'description' in response_data:
+                    responses[status]['description'] = response_data['description']
 
         if responses:
             result['responses'] = responses
