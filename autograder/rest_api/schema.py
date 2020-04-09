@@ -61,7 +61,7 @@ class AGSchemaGenerator(SchemaGenerator):
         )
 
     def get_schema(self, request=None, public=False):
-        stderr('Remember to fix examples for models (including readonly stuff)')
+        stderr('Try to generate better operationIds')
         schema = super().get_schema(request=request, public=public)
         schema['components'] = self._get_model_schemas()
         schema['tags'] = [{'name': item.value} for item in APITags]
@@ -797,9 +797,7 @@ class CustomViewSchema(AGViewSchemaGenerator):
             result['requestBody'] = {
                 'required': True,
                 'content': {
-                    request_data.get('content_type', 'application/json'): {
-                        'schema': request_data['body'],
-                    },
+                    request_data.get('content_type', 'application/json'): body
                 }
             }
 

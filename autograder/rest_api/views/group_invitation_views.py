@@ -9,11 +9,14 @@ from rest_framework.decorators import action
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
-import autograder.rest_api.serializers as ag_serializers
 import autograder.utils.testing as test_ut
 from autograder import utils
-from autograder.rest_api.views.ag_model_views import AGModelAPIView, AGModelDetailView, AGModelGenericViewSet, ListCreateNestedModelViewSet, NestedModelView, convert_django_validation_error, require_body_params
-from autograder.rest_api.schema import AGDetailViewSchemaGenerator, AGListViewSchemaMixin, APITags, CustomViewSchema
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
+                                        AGListViewSchemaMixin, APITags,
+                                        CustomViewSchema)
+from autograder.rest_api.views.ag_model_views import (
+    AGModelAPIView, AGModelDetailView, NestedModelView,
+    convert_django_validation_error, require_body_params)
 
 
 class CanSendInvitation(permissions.BasePermission):
@@ -49,10 +52,15 @@ class ListCreateGroupInvitationView(NestedModelView):
             'POST': {
                 'request_payload': {
                     'body': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'string',
-                            'format': 'username'
+                        'type': 'object',
+                        'properties': {
+                            'invited_usernames': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'string',
+                                    'format': 'username'
+                                }
+                            }
                         }
                     }
                 },
@@ -78,6 +86,7 @@ class ListCreateGroupInvitationView(NestedModelView):
     @transaction.atomic()
     @convert_django_validation_error
     def post(self, *args, **kwargs):
+        project = self.get_object()
         for key in self.request.data:
             if key != 'invited_usernames':
                 raise exceptions.ValidationError({'invalid_fields': [key]})
@@ -91,7 +100,7 @@ class ListCreateGroupInvitationView(NestedModelView):
         invitation = ag_models.GroupInvitation.objects.validate_and_create(
             self.request.user,
             invited_users,
-            project=self.get_object(),
+            project=project,
         )
         return response.Response(self.serialize_object(invitation), status.HTTP_201_CREATED)
 

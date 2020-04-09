@@ -6,9 +6,6 @@ from rest_framework.schemas import get_schema_view
 
 from autograder.rest_api import views
 
-group_router = routers.SimpleRouter()
-group_router.register(r'groups', views.GroupDetailViewSet, basename='group')
-
 submission_router = routers.SimpleRouter()
 submission_router.register(r'submissions', views.SubmissionDetailViewSet,
                            basename='submission')
@@ -160,7 +157,18 @@ urlpatterns = [
     path('group_invitations/<int:pk>/accept/', views.AcceptGroupInvitationView.as_view(),
          name='accept-group-invitation'),
 
-    url(r'', include(group_router.urls)),
+    url(r'^projects/(?P<project_pk>[0-9]+)/groups/$',
+        views.ListCreateGroupsView.as_view(), name='groups'),
+    url(r'^projects/(?P<project_pk>[0-9]+)/groups/solo_group/$',
+        views.CreateSoloGroupView.as_view(),
+        name='solo_group'),
+    path('groups/<int:pk>/', views.GroupDetailView.as_view(),
+         name='group-detail'),
+    path('groups/<int:pk>/ultimate_submission/', views.GroupUltimateSubmissionView.as_view(),
+         name='group-ultimate-submission'),
+    path('groups/<int:pk>/merge_with/<int:other_group_pk>/',
+         views.MergeGroupsView.as_view(),
+         name='merge-groups'),
 
     path('projects/<int:project_pk>/groups/bonus_submissions/',
          views.EditBonusSubmissionsView.as_view(),
@@ -221,12 +229,6 @@ urlpatterns = [
         views.RerunSubmissionsTaskListCreateView.as_view(), name='rerun_submissions_tasks'),
 
     url(r'', include(rerun_submissions_task_detail_router.urls)),
-
-    url(r'^projects/(?P<project_pk>[0-9]+)/groups/$',
-        views.GroupsViewSet.as_view(), name='groups'),
-    url(r'^projects/(?P<project_pk>[0-9]+)/groups/solo_group/$',
-        views.CreateSoloGroupView.as_view({'post': 'create'}),
-        name='solo_group'),
 
     path('groups/<int:pk>/submissions_with_results/',
          views.ListSubmissionsWithResults.as_view(),

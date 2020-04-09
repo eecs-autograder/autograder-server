@@ -281,14 +281,14 @@ def make_group(num_members: int=1,
     if members is None:
         members = make_users(num_members)
 
-    if members_role == UserRole.guest:
-        project.validate_and_update(guests_can_submit=True)
-    elif members_role == UserRole.student:
-        project.course.students.add(*members)
-    elif members_role == UserRole.staff:
-        project.course.staff.add(*members)
-    elif members_role == UserRole.admin:
-        project.course.admins.add(*members)
+        if members_role == UserRole.guest:
+            project.validate_and_update(guests_can_submit=True)
+        elif members_role == UserRole.student:
+            project.course.students.add(*members)
+        elif members_role == UserRole.staff:
+            project.course.staff.add(*members)
+        elif members_role == UserRole.admin:
+            project.course.admins.add(*members)
 
     return ag_models.Group.objects.validate_and_create(
         members=members,

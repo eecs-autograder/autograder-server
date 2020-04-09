@@ -13,8 +13,7 @@ class _InvitationsSetUp(test_data.Client, test_data.Project, test_data.Group):
     pass
 
 
-# TODO: When removing common_generic_data module, consider adding more tests for
-# guests and allowed domain.
+# TODO: remove common_generic_data module
 
 
 class ListGroupInvitationsTestCase(_InvitationsSetUp,
@@ -421,9 +420,6 @@ class AcceptGroupInvitationTestCase(test_data.Client,
         response = self.client.post(self.accept_invitation_url(invite))
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(0, len(response.data['invitees_who_accepted']))
-
-    # def test_all_accept_other_pending_invitations_deleted(self):
-    #     self.fail()
 
     def test_registration_disabled_permission_denied_for_enrolled(self):
         self.visible_public_project.validate_and_update(

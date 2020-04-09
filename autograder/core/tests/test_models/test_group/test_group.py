@@ -56,7 +56,8 @@ class GroupTestCase(_SetUp):
         group = ag_models.Group.objects.validate_and_create(
             members=self.student_users,
             project=self.project,
-            extended_due_date=extended_due_date)
+            extended_due_date=extended_due_date,
+        )
 
         group.refresh_from_db()
 

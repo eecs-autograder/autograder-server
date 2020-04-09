@@ -146,6 +146,9 @@ class Group(ag_model_base.AutograderModel):
         if not os.path.isdir(group_dir):
             os.makedirs(group_dir)
 
+    # IMPORTANT: If you add additional non-field arguments
+    # (like check_group_size_limits), update group patching
+    # in autograder/rest_api/views/group_views.py - GroupDetailView.patch
     def validate_and_update(self, check_group_size_limits=True, ignore_guest_restrictions=False,
                             **kwargs):
         """
