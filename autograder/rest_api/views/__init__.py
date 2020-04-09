@@ -15,10 +15,12 @@ from .course_views.course_views import (CopyCourseView,
                                         CourseByNameSemesterYearView,
                                         CourseDetailView, CourseUserRolesView,
                                         ListCreateCourseView)
-from .group_invitation_views import (GroupInvitationDetailView,
-AcceptGroupInvitationView,
+from .group_invitation_views import (AcceptGroupInvitationView,
+                                     GroupInvitationDetailView,
                                      ListCreateGroupInvitationView)
-from .group_views import CreateSoloGroupView, GroupDetailViewSet, GroupsViewSet
+from .group_views import (CreateSoloGroupView, GroupDetailView,
+                          GroupUltimateSubmissionView, ListCreateGroupsView,
+                          MergeGroupsView)
 from .oauth2callback import oauth2_callback
 from .project_views.expected_student_file_views import (
     ExpectedStudentFileDetailView, ListCreateExpectedStudentFileView)
@@ -36,10 +38,10 @@ from .project_views.project_views import (
 from .rerun_submissions_task_views import (RerunSubmissionsTaskDetailVewSet,
                                            RerunSubmissionsTaskListCreateView)
 from .sandbox_docker_image_views import (
-    BuildTaskDetailView, CancelBuildTaskView, ListCreateGlobalSandboxDockerImageView,
-    ListBuildTasksForCourseView, ListCreateSandboxDockerImageForCourseView,
-    ListGlobalBuildTasksView, RebuildSandboxDockerImageView,
-    SandboxDockerImageDetailView)
+    BuildTaskDetailView, CancelBuildTaskView, ListBuildTasksForCourseView,
+    ListCreateGlobalSandboxDockerImageView,
+    ListCreateSandboxDockerImageForCourseView, ListGlobalBuildTasksView,
+    RebuildSandboxDockerImageView, SandboxDockerImageDetailView)
 from .student_test_suite_views import (StudentTestSuiteDetailView,
                                        StudentTestSuiteListCreateView,
                                        StudentTestSuiteOrderView)
