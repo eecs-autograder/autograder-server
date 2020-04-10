@@ -315,8 +315,9 @@ class RetrieveGroupTestCase(AGViewTestBase):
         staff = obj_build.make_staff_user(self.course)
 
         for user in admin, staff:
-            group = obj_build.make_group(project=self.project)
-            self.do_get_object_test(self.client, user, self.group_url(group), group.to_dict())
+            student_group = obj_build.make_group(project=self.project)
+            self.do_get_object_test(
+                self.client, user, self.group_url(student_group), student_group.to_dict())
 
             guest_group = obj_build.make_group(
                 project=self.project, members_role=obj_build.UserRole.guest)
