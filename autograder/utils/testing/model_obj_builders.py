@@ -256,10 +256,13 @@ def make_instructor_file(project: ag_models.Project) -> ag_models.InstructorFile
         project=project)
 
 
-def make_expected_student_file(project: ag_models.Project) -> ag_models.ExpectedStudentFile:
-    return ag_models.ExpectedStudentFile.objects.validate_and_create(
-        project=project,
-        pattern='pattern' + get_unique_id())
+def make_expected_student_file(
+    project: ag_models.Project,
+    **kwargs
+) -> ag_models.ExpectedStudentFile:
+    if 'pattern' not in kwargs:
+        kwargs['pattern'] = 'pattern' + get_unique_id()
+    return ag_models.ExpectedStudentFile.objects.validate_and_create(project=project, **kwargs)
 
 
 class UserRole(core_ut.OrderedEnum):

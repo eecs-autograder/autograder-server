@@ -4,7 +4,6 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing as test_ut
 import autograder.utils.testing.model_obj_builders as obj_build
 
