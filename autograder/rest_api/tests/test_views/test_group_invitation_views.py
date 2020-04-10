@@ -2,20 +2,10 @@ from django.urls import reverse
 from rest_framework import status
 
 import autograder.core.models as ag_models
-import autograder.rest_api.serializers as ag_serializers
-import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
-import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.utils.testing import UnitTestBase
 from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 from rest_framework.test import APIClient
-
-
-class _InvitationsSetUp(test_data.Client, test_data.Project, test_data.Group):
-    pass
-
-
-# TODO: remove common_generic_data module
 
 
 class ListGroupInvitationsTestCase(AGViewTestBase):
@@ -54,16 +44,6 @@ class ListGroupInvitationsTestCase(AGViewTestBase):
     def test_guest_list_invitations_permission_denied(self):
         self.project.validate_and_update(visible_to_students=True, guests_can_submit=True)
         self.do_permission_denied_get_test(self.client, obj_build.make_user(), self.url)
-
-    # def build_invitations(self, project):
-    #     project.validate_and_update(max_group_size=3)
-    #     first = ag_models.GroupInvitation.objects.validate_and_create(
-    #         self.admin, [self.staff], project=project)
-    #     second = ag_models.GroupInvitation.objects.validate_and_create(
-    #         self.clone_user(self.staff), [self.clone_user(self.admin)],
-    #         project=project)
-    #     return ag_serializers.SubmissionGroupInvitationSerializer(
-    #         [first, second], many=True).data
 
 
 class CreateInvitationTestCase(AGViewTestBase):

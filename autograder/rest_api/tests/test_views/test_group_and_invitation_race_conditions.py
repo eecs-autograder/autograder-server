@@ -8,107 +8,103 @@ import autograder.rest_api.tests.test_views.common_generic_data as test_data
 import autograder.utils.testing as test_ut
 import autograder.utils.testing.model_obj_builders as obj_build
 
-from autograder.rest_api.views.group_views import GroupDetailViewSet, GroupsViewSet
-
 
 @tag('slow')
-class RaceConditionTestCase(test_data.Client,
-                            test_data.Project,
-                            test_data.Group,
-                            test_ut.TransactionUnitTestBase):
-    def test_create_group_and_invitation_with_invitor_in_both(self):
-        self.visible_public_project.validate_and_update(max_group_size=4)
-        project_id = self.visible_public_project.pk
-        invitor = obj_build.create_dummy_user()
-        path = 'autograder.rest_api.views.group_views.GroupsViewSet.serializer_class'
+class RaceConditionTestCase(test_ut.TransactionUnitTestBase):
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.project = obj_build.make_project(
+            max_group_size=4, visible_to_students=True, guests_can_submit=True)
+        self.admin = obj_build.make_admin_user(self.project.course)
 
-        @test_ut.sleeper_subtest(path, wraps=GroupsViewSet.serializer_class)
+    def test_create_group_and_invitation_with_invitor_in_both(self):
+        invitor = obj_build.make_user()
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
+
+        @test_ut.sleeper_subtest(path)
         def create_group(project_id):
             project = ag_models.Project.objects.get(pk=project_id)
             client = APIClient()
             client.force_authenticate(self.admin)
             response = client.post(
-                self.get_groups_url(project),
+                reverse('groups', kwargs={'project_pk': project.pk}),
                 {'member_names': [invitor.username, 'this_one']})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
             self.assertEqual(1, ag_models.Group.objects.count())
 
-        subtest = create_group(project_id)
+        subtest = create_group(self.project.id)
         self.client.force_authenticate(invitor)
         response = self.client.post(
-            self.get_invitations_url(self.visible_public_project),
+            reverse('group-invitations', kwargs={'pk': self.project.pk}),
             {'invited_usernames': ['other_one']})
         subtest.join()
         self.assertEqual(1, ag_models.Group.objects.count())
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
     def test_create_group_and_invitation_with_member_in_both(self):
-        self.visible_public_project.validate_and_update(max_group_size=4)
-        project_id = self.visible_public_project.pk
         invitor = obj_build.create_dummy_user()
         overlap_username = 'steve'
-        path = 'autograder.rest_api.views.group_views.GroupsViewSet.serializer_class'
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
-        @test_ut.sleeper_subtest(path, wraps=GroupsViewSet.serializer_class)
+        @test_ut.sleeper_subtest(path)
         def do_request_and_wait(project_id):
             project = ag_models.Project.objects.get(pk=project_id)
             client = APIClient()
             client.force_authenticate(self.admin)
             response = client.post(
-                self.get_groups_url(project),
+                reverse('groups', kwargs={'project_pk': project.pk}),
                 {'member_names': [overlap_username, 'this_one']})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
             self.assertEqual(1, ag_models.Group.objects.count())
 
-        subtest = do_request_and_wait(project_id)
+        subtest = do_request_and_wait(self.project.pk)
         self.client.force_authenticate(invitor)
         response = self.client.post(
-            self.get_invitations_url(self.visible_public_project),
+            reverse('group-invitations', kwargs={'pk': self.project.pk}),
             {'invited_usernames': [overlap_username]})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_create_groups_with_member_overlap(self):
-        self.visible_public_project.validate_and_update(max_group_size=4)
-        project_id = self.visible_public_project.pk
         overlap_username = 'stave'
-        path = 'autograder.rest_api.views.group_views.GroupsViewSet.serializer_class'
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
-        @test_ut.sleeper_subtest(path, wraps=GroupsViewSet.serializer_class)
+        @test_ut.sleeper_subtest(path)
         def do_request_and_wait(project_id):
             project = ag_models.Project.objects.get(pk=project_id)
             client = APIClient()
             client.force_authenticate(self.admin)
             response = client.post(
-                self.get_groups_url(project),
+                reverse('groups', kwargs={'project_pk': project.pk}),
                 {'member_names': [overlap_username, 'this_one']})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
             self.assertEqual(1, ag_models.Group.objects.count())
 
-        subtest = do_request_and_wait(project_id)
+        subtest = do_request_and_wait(self.project.pk)
         self.client.force_authenticate(self.admin)
         response = self.client.post(
-            self.get_groups_url(self.visible_public_project),
+            reverse('groups', kwargs={'project_pk': self.project.pk}),
             {'member_names': [overlap_username, 'other_one']})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_update_groups_with_member_overlap(self):
-        self.visible_public_project.validate_and_update(max_group_size=4)
-        first_group = self.admin_group(self.visible_public_project)
-        second_group = self.staff_group(self.visible_public_project)
-        overlap_member = self.clone_user(self.staff)
-        path = ('autograder.rest_api.views.group_views'
-                '.GroupDetailViewSet.serializer_class')
+        first_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.admin)
+        second_group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.staff)
+        overlap_member = obj_build.make_staff_user(self.project.course)
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
-        @test_ut.sleeper_subtest(path, wraps=GroupDetailViewSet.serializer_class)
+        @test_ut.sleeper_subtest(path)
         def update_first_group():
             client = APIClient()
             client.force_authenticate(self.admin)
             member_names = [overlap_member.username] + first_group.member_names
-            response = client.patch(self.group_url(first_group),
+            response = client.patch(reverse('group-detail', kwargs={'pk': first_group.pk}),
                                     {'member_names': member_names})
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             first_group.refresh_from_db()
@@ -117,7 +113,7 @@ class RaceConditionTestCase(test_data.Client,
         subtest = update_first_group()
         self.client.force_authenticate(self.admin)
         member_names = ([overlap_member.username] + second_group.member_names)
-        response = self.client.patch(self.group_url(second_group),
+        response = self.client.patch(reverse('group-detail', kwargs={'pk': second_group.pk}),
                                      {'member_names': member_names})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -125,26 +121,29 @@ class RaceConditionTestCase(test_data.Client,
         self.assertNotIn(overlap_member.username, second_group.member_names)
 
     def test_create_and_update_groups_with_member_overlap(self):
-        self.project.validate_and_update(max_group_size=4)
-        group = self.admin_group(self.project)
-        overlap_member = self.clone_user(self.staff)
+        group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.admin)
+        overlap_member = obj_build.make_staff_user(self.project.course)
         new_member_names = group.member_names + [overlap_member.username]
-        path = 'autograder.rest_api.views.group_views.GroupsViewSet.serializer_class'
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
         self.assertEqual(1, ag_models.Group.objects.count())
 
-        @test_ut.sleeper_subtest(path, wraps=GroupsViewSet.serializer_class)
+        @test_ut.sleeper_subtest(path)
         def create_group():
             client = APIClient()
             client.force_authenticate(self.admin)
-            member_names = [overlap_member.username, self.staff.username]
-            response = client.post(self.get_groups_url(self.project),
+            member_names = [
+                overlap_member.username,
+                obj_build.make_staff_user(self.project.course).username
+            ]
+            response = client.post(reverse('groups', kwargs={'project_pk': self.project.pk}),
                                    {'member_names': member_names})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code, msg=response.data)
             self.assertEqual(2, ag_models.Group.objects.count())
 
         subtest = create_group()
         self.client.force_authenticate(self.admin)
-        response = self.client.patch(self.group_url(group),
+        response = self.client.patch(reverse('group-detail', kwargs={'pk': group.pk}),
                                      {'member_names': new_member_names})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -152,18 +151,17 @@ class RaceConditionTestCase(test_data.Client,
         self.assertNotIn(overlap_member.username, group.member_names)
 
     def test_update_group_and_create_invitation_with_invitor_in_both(self):
-        self.project.validate_and_update(max_group_size=4)
-        group = self.admin_group(self.project)
-        invitor = self.clone_user(self.admin)
-        path = ('autograder.rest_api.views.group_views'
-                '.GroupDetailViewSet.serializer_class')
+        group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.admin)
+        invitor = obj_build.make_admin_user(self.project.course)
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
-        @test_ut.sleeper_subtest(path, wraps=GroupDetailViewSet.serializer_class)
+        @test_ut.sleeper_subtest(path)
         def update_group():
             client = APIClient()
             client.force_authenticate(self.admin)
             response = client.patch(
-                self.group_url(group),
+                reverse('group-detail', kwargs={'pk': group.pk}),
                 {'member_names': [invitor.username] + group.member_names})
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertIn(invitor.username, response.data['member_names'])
@@ -171,44 +169,42 @@ class RaceConditionTestCase(test_data.Client,
         subtest = update_group()
         self.client.force_authenticate(invitor)
         response = self.client.post(
-            self.get_invitations_url(self.project),
-            {'invited_usernames': [self.clone_user(self.admin).username]})
+            reverse('group-invitations', kwargs={'pk': self.project.pk}),
+            {'invited_usernames': [obj_build.make_admin_user(self.project.course).username]})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(0, ag_models.GroupInvitation.objects.count())
 
     def test_update_group_and_create_invitation_with_member_in_both(self):
-        self.project.validate_and_update(max_group_size=4)
-        group = self.admin_group(self.project)
-        new_member = self.clone_user(self.admin)
-        path = ('autograder.rest_api.views.group_views'
-                '.GroupDetailViewSet.serializer_class')
+        group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.admin)
+        new_member = obj_build.make_admin_user(self.project.course)
+        path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
-        @test_ut.sleeper_subtest(path, wraps=GroupDetailViewSet.serializer_class)
+        @test_ut.sleeper_subtest(path)
         def update_group():
             client = APIClient()
             client.force_authenticate(self.admin)
             response = client.patch(
-                self.group_url(group),
+                reverse('group-detail', kwargs={'pk': group.pk}),
                 {'member_names': [new_member.username] + group.member_names})
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertIn(new_member.username, response.data['member_names'])
 
         subtest = update_group()
-        invitor = self.clone_user(self.admin)
+        invitor = obj_build.make_admin_user(self.project.course)
         self.client.force_authenticate(invitor)
         response = self.client.post(
-            self.get_invitations_url(self.project),
+            reverse('group-invitations', kwargs={'pk': self.project.pk}),
             {'invited_usernames': [new_member.username]})
         subtest.join()
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEqual(0, ag_models.GroupInvitation.objects.count())
 
     def test_two_different_final_invitation_acceptances_invitor_overlap(self):
-        self.project.validate_and_update(max_group_size=2)
-        first_invitee = self.clone_user(self.admin)
-        invitor_and_second_invitee = self.clone_user(self.admin)
-        second_invitor = self.clone_user(self.admin)
+        first_invitee = obj_build.make_admin_user(self.project.course)
+        invitor_and_second_invitee = obj_build.make_admin_user(self.project.course)
+        second_invitor = obj_build.make_admin_user(self.project.course)
 
         first_invitation = (
             ag_models.GroupInvitation.objects.validate_and_create(
@@ -235,10 +231,9 @@ class RaceConditionTestCase(test_data.Client,
         self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_two_different_final_invitation_acceptances_member_overlap(self):
-        self.project.validate_and_update(max_group_size=2)
-        first_invitor = self.clone_user(self.admin)
-        second_invitor = self.clone_user(self.admin)
-        invitee = self.clone_user(self.admin)
+        first_invitor = obj_build.make_admin_user(self.project.course)
+        second_invitor = obj_build.make_admin_user(self.project.course)
+        invitee = obj_build.make_admin_user(self.project.course)
 
         first_invitation = (
             ag_models.GroupInvitation.objects.validate_and_create(
@@ -265,9 +260,8 @@ class RaceConditionTestCase(test_data.Client,
         self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_create_group_and_final_invitation_accept_invitor_overlap(self):
-        self.project.validate_and_update(max_group_size=2)
-        invitor = self.clone_user(self.admin)
-        other_member = self.clone_user(self.admin)
+        invitor = obj_build.make_admin_user(self.project.course)
+        other_member = obj_build.make_admin_user(self.project.course)
 
         invitation = (
             ag_models.GroupInvitation.objects.validate_and_create(
@@ -280,7 +274,7 @@ class RaceConditionTestCase(test_data.Client,
             client = APIClient()
             client.force_authenticate(self.admin)
             response = client.post(
-                self.get_groups_url(self.project),
+                reverse('groups', kwargs={'project_pk': self.project.pk}),
                 {'member_names': [invitor.username]})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
             self.assertEqual(1, ag_models.Group.objects.count())
@@ -293,9 +287,8 @@ class RaceConditionTestCase(test_data.Client,
         self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_create_group_and_final_invitation_accept_member_overlap(self):
-        self.project.validate_and_update(max_group_size=2)
-        invitor = self.clone_user(self.admin)
-        other_member = self.clone_user(self.admin)
+        invitor = obj_build.make_admin_user(self.project.course)
+        other_member = obj_build.make_admin_user(self.project.course)
 
         invitation = (
             ag_models.GroupInvitation.objects.validate_and_create(
@@ -308,7 +301,7 @@ class RaceConditionTestCase(test_data.Client,
             client = APIClient()
             client.force_authenticate(self.admin)
             response = client.post(
-                self.get_groups_url(self.project),
+                reverse('groups', kwargs={'project_pk': self.project.pk}),
                 {'member_names': [other_member.username]})
             self.assertEqual(status.HTTP_201_CREATED, response.status_code)
             self.assertEqual(1, ag_models.Group.objects.count())
@@ -321,14 +314,14 @@ class RaceConditionTestCase(test_data.Client,
         self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_update_group_and_final_invitation_accept_invitor_overlap(self):
-        self.project.validate_and_update(max_group_size=4)
-        invitor = self.clone_user(self.admin)
-        other_member = self.clone_user(self.admin)
+        invitor = obj_build.make_admin_user(self.project.course)
+        other_member = obj_build.make_admin_user(self.project.course)
 
         invitation = (
             ag_models.GroupInvitation.objects.validate_and_create(
                 invitor, [other_member], project=self.project))
-        group = self.admin_group(self.project)
+        group = obj_build.make_group(
+            project=self.project, members_role=obj_build.UserRole.admin)
 
         path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
@@ -337,7 +330,7 @@ class RaceConditionTestCase(test_data.Client,
             client = APIClient()
             client.force_authenticate(self.admin)
             response = client.patch(
-                self.group_url(group),
+                reverse('group-detail', kwargs={'pk': group.pk}),
                 {'member_names': [invitor.username] + group.member_names})
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertIn(invitor.username, response.data['member_names'])
@@ -350,14 +343,13 @@ class RaceConditionTestCase(test_data.Client,
         self.assertEqual(1, ag_models.Group.objects.count())
 
     def test_update_group_and_final_invitation_accept_member_overlap(self):
-        self.project.validate_and_update(max_group_size=4)
-        invitor = self.clone_user(self.admin)
-        other_member = self.clone_user(self.admin)
+        invitor = obj_build.make_admin_user(self.project.course)
+        other_member = obj_build.make_admin_user(self.project.course)
 
         invitation = (
             ag_models.GroupInvitation.objects.validate_and_create(
                 invitor, [other_member], project=self.project))
-        group = self.admin_group(self.project)
+        group = obj_build.make_group(project=self.project, members_role=obj_build.UserRole.admin)
 
         path = 'autograder.rest_api.views.group_views.test_ut.mocking_hook'
 
@@ -366,7 +358,7 @@ class RaceConditionTestCase(test_data.Client,
             client = APIClient()
             client.force_authenticate(self.admin)
             response = client.patch(
-                self.group_url(group),
+                reverse('group-detail', kwargs={'pk': group.pk}),
                 {'member_names': [other_member.username] + group.member_names})
             self.assertEqual(status.HTTP_200_OK, response.status_code)
             self.assertIn(other_member.username, response.data['member_names'])
@@ -379,4 +371,4 @@ class RaceConditionTestCase(test_data.Client,
         self.assertEqual(1, ag_models.Group.objects.count())
 
     def accept_invitation_url(self, invitation: ag_models.GroupInvitation):
-        return reverse('group-invitation-accept', kwargs={'pk': invitation.pk})
+        return reverse('accept-group-invitation', kwargs={'pk': invitation.pk})
