@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.db import transaction
 from django.db.models import Case, F, When
 from django.shortcuts import get_object_or_404
@@ -13,19 +15,17 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core.caching import clear_submission_results_cache
 from autograder.core.models.copy_project_and_course import copy_project
-from autograder.handgrading.import_handgrading_rubric import \
-    import_handgrading_rubric
+from autograder.handgrading.import_handgrading_rubric import import_handgrading_rubric
 from autograder.rest_api import tasks as api_tasks
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.schema import (AGCreateViewSchemaMixin,
-                                        AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator,
-                                        APITags, CustomViewSchema)
+from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, APITags, CustomViewSchema,
+                                        as_schema_ref)
 from autograder.rest_api.size_file_response import SizeFileResponse
-from autograder.rest_api.views.ag_model_views import (
-    AGModelAPIView, AGModelDetailView, AGModelGenericViewSet, NestedModelView,
-    convert_django_validation_error, handle_object_does_not_exist_404)
-from typing import Optional
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      AGModelGenericViewSet, NestedModelView,
+                                                      convert_django_validation_error,
+                                                      handle_object_does_not_exist_404)
 
 can_list_projects = (
     P(ag_permissions.IsReadOnly)
@@ -109,7 +109,7 @@ class CopyProjectView(AGModelAPIView):
                 }
             },
             'responses': {
-                '201': {'body': {'$ref': '#/components/schemas/Project'}}
+                '201': {'body': as_schema_ref(ag_models.Project)}
             }
         }
     })
@@ -147,7 +147,7 @@ class ImportHandgradingRubricView(AGModelAPIView):
         'POST': {
             'responses': {
                 '201': {
-                    'body': {'$ref': '#/components/schemas/HandgradingRubric'}
+                    'body': as_schema_ref(hg_models.HandgradingRubric)
                 }
             }
         }

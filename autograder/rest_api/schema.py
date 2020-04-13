@@ -62,7 +62,7 @@ class AGSchemaGenerator(SchemaGenerator):
 
     def get_schema(self, request=None, public=False):
         stderr('Try to generate better operationIds')
-        stderr('Make _as_schema_ref() public')
+        stderr('Fix anyOf and oneOf examples')
         schema = super().get_schema(request=request, public=public)
         schema['components'] = self._get_model_schemas()
         schema['components']['parameters'] = self._get_parameter_schemas()
@@ -89,11 +89,11 @@ class AGSchemaGenerator(SchemaGenerator):
 
         result['schemas']['SubmissionWithResults'] = {
             'allOf': [
-                {'$ref': '#/components/schemas/Submission'},
+                as_schema_ref(ag_models.Submission),
                 {
                     'type': 'object',
                     'properties': {
-                        'results': _as_schema_ref(SubmissionResultFeedback)
+                        'results': as_schema_ref(SubmissionResultFeedback)
                     }
                 }
             ]
@@ -105,7 +105,7 @@ class AGSchemaGenerator(SchemaGenerator):
         fdbk_category = {
             'name': 'feedback_category',
             'in': 'query',
-            'schema': _as_schema_ref(ag_models.FeedbackCategory),
+            'schema': as_schema_ref(ag_models.FeedbackCategory),
             'description': f'''
 The category of feedback being requested. Must be one of the following
 values:
@@ -407,13 +407,13 @@ def _django_field(
 
     if isinstance(field, ag_fields.ValidatedJSONField):
         result.update({
-            'allOf': [_as_schema_ref(field.serializable_class)]
+            'allOf': [as_schema_ref(field.serializable_class)]
         })
         return result
 
     if isinstance(field, ag_fields.EnumField):
         result.update({
-            'allOf': [_as_schema_ref(field.enum_type)]
+            'allOf': [as_schema_ref(field.enum_type)]
         })
         return result
 
@@ -425,7 +425,7 @@ def _django_field(
             if field.name in model_class.get_serialize_related_fields():
                 result.update({
                     'type': 'array',
-                    'items': _as_schema_ref(field.related_model),
+                    'items': as_schema_ref(field.related_model),
                 })
                 return result
             else:
@@ -437,7 +437,7 @@ def _django_field(
 
         if field.name in model_class.get_serialize_related_fields():
             result.update({
-                'allOf': [_as_schema_ref(field.related_model)]
+                'allOf': [as_schema_ref(field.related_model)]
             })
             return result
         else:
@@ -532,8 +532,8 @@ _PROP_FIELD_IS_REQUIRED_OVERRIDES: Dict[APIClassType, Dict[str, bool]] = {
 }
 
 
-def _as_schema_ref(type: APIClassType) -> RefDict:
-    return {'$ref': f'#/components/schemas/{API_OBJ_TYPE_NAMES[type]}'}
+def as_schema_ref(type_: APIClassType) -> RefDict:
+    return {'$ref': f'#/components/schemas/{API_OBJ_TYPE_NAMES[type_]}'}
 
 
 _PK_SCHEMA: dict = {
@@ -572,7 +572,7 @@ def _get_py_type_schema(type_: type) -> dict:
         }
 
     if type_ in API_OBJ_TYPE_NAMES:
-        return _as_schema_ref(type_)
+        return as_schema_ref(type_)
 
     # assert not isinstance(type_, ForwardRef), f'ForwardRef detected: {ForwardRef}'
 
@@ -580,7 +580,7 @@ def _get_py_type_schema(type_: type) -> dict:
         return _PY_ATTR_TYPES[type_]
 
     if issubclass(type_, Enum):
-        return {'allOf': [_as_schema_ref(type_)]}
+        return {'allOf': [as_schema_ref(type_)]}
 
     return {'type': 'unknown'}
 
@@ -651,14 +651,14 @@ class AGViewSchemaGenerator(AutoSchema):
 
     def generate_list_op_schema(self, base_result) -> dict:
         base_result['responses']['200']['content']['application/json']['schema']['items'] = (
-            _as_schema_ref(self.get_api_class())
+            as_schema_ref(self.get_api_class())
         )
         return base_result
 
     def generate_create_op_schema(self, base_result) -> dict:
         response_schema = base_result['responses'].pop('200')
         response_schema['content']['application/json']['schema'] = (
-            _as_schema_ref(self.get_api_class())
+            as_schema_ref(self.get_api_class())
         )
         base_result['responses']['201'] = response_schema
 
@@ -668,14 +668,14 @@ class AGViewSchemaGenerator(AutoSchema):
 
     def generate_retrieve_op_schema(self, base_result):
         base_result['responses']['200']['content']['application/json']['schema'] = (
-            _as_schema_ref(self.get_api_class())
+            as_schema_ref(self.get_api_class())
         )
 
         return base_result
 
     def generate_patch_op_schema(self, base_result):
         base_result['responses']['200']['content']['application/json']['schema'] = (
-            _as_schema_ref(self.get_api_class())
+            as_schema_ref(self.get_api_class())
         )
 
         base_result['requestBody'] = self.make_api_class_request_body(include_required=False)
@@ -704,7 +704,7 @@ class AGViewSchemaGenerator(AutoSchema):
         body_schema = AGModelSchemaGenerator.factory(
             self.get_api_class()).generate_request_body_schema(include_required=include_required)
         schema = (body_schema if body_schema is not None
-                  else _as_schema_ref(self.get_api_class()))
+                  else as_schema_ref(self.get_api_class()))
         return {
             'required': True,
             'content': {

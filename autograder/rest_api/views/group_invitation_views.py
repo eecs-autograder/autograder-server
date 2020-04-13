@@ -11,12 +11,12 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.utils.testing as test_ut
 from autograder import utils
-from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListViewSchemaMixin, APITags,
-                                        CustomViewSchema)
-from autograder.rest_api.views.ag_model_views import (
-    AGModelAPIView, AGModelDetailView, NestedModelView,
-    convert_django_validation_error, require_body_params)
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator, AGListViewSchemaMixin,
+                                        APITags, CustomViewSchema, as_schema_ref)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      NestedModelView,
+                                                      convert_django_validation_error,
+                                                      require_body_params)
 
 
 class CanSendInvitation(permissions.BasePermission):
@@ -66,7 +66,7 @@ class ListCreateGroupInvitationView(NestedModelView):
                 },
                 'responses': {
                     '201': {
-                        'body': {'$ref': '#/components/schemas/GroupInvitation'}
+                        'body': as_schema_ref(ag_models.GroupInvitation)
                     }
                 }
             }
@@ -147,11 +147,11 @@ class AcceptGroupInvitationView(AGModelAPIView):
             'responses': {
                 '200': {
                     'description': 'You have accepted the invitation.',
-                    'body': {'$ref': '#/components/schemas/GroupInvitation'}
+                    'body': as_schema_ref(ag_models.GroupInvitation)
                 },
                 '201': {
                     'description': 'All invited users have accepted the invitation.',
-                    'body': {'$ref': '#/components/schemas/Group'}
+                    'body': as_schema_ref(ag_models.Group)
                 }
             }
         }

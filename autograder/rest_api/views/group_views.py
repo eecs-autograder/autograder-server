@@ -16,16 +16,15 @@ import autograder.core.utils as core_ut
 import autograder.rest_api.serializers as ag_serializers
 import autograder.utils.testing as test_ut
 from autograder import utils
-from autograder.core.models.get_ultimate_submissions import \
-    get_ultimate_submission
+from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
 from autograder.rest_api import permissions as ag_permissions
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.schema import (AGListViewSchemaMixin,
-                                        AGRetrieveViewSchemaMixin, APITags,
-                                        CustomViewSchema)
-from autograder.rest_api.views.ag_model_views import (
-    AGModelAPIView, AGModelDetailView, NestedModelView,
-    convert_django_validation_error, require_body_params, require_query_params)
+from autograder.rest_api.schema import (AGListViewSchemaMixin, AGRetrieveViewSchemaMixin, APITags,
+                                        CustomViewSchema, as_schema_ref)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      NestedModelView,
+                                                      convert_django_validation_error,
+                                                      require_body_params, require_query_params)
 
 _MEMBER_NAMES_REQUEST_BODY = {
     'type': 'object',
@@ -53,7 +52,7 @@ class ListCreateGroupsView(NestedModelView):
             },
             'responses': {
                 '201': {
-                    'body': {'$ref': '#/components/schemas/Group'}
+                    'body': as_schema_ref(ag_models.Group)
                 }
             }
         }
@@ -126,7 +125,7 @@ class CreateSoloGroupView(AGModelAPIView):
         'POST': {
             'responses': {
                 '201': {
-                    'body': {'$ref': '#/components/schemas/Group'}
+                    'body': as_schema_ref(ag_models.Group)
                 }
             }
         }
@@ -189,7 +188,7 @@ class GroupDetailView(AGModelDetailView):
             },
             'responses': {
                 '200': {
-                    'body': {'$ref': '#/components/schemas/Group'}
+                    'body': as_schema_ref(ag_models.Group)
                 }
             }
         }
@@ -251,7 +250,7 @@ class GroupUltimateSubmissionView(AGModelAPIView):
         'GET': {
             'responses': {
                 '200': {
-                    'body': {'$ref': '#/components/schemas/Submission'}
+                    'body': as_schema_ref(ag_models.Submission)
                 }
             }
         }
@@ -288,7 +287,7 @@ class MergeGroupsView(AGModelAPIView):
         'POST': {
             'responses': {
                 '201': {
-                    'body': {'$ref': '#/components/schemas/Group'}
+                    'body': as_schema_ref(ag_models.Group)
                 }
             }
         }

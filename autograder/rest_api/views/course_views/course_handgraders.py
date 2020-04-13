@@ -1,18 +1,15 @@
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils.decorators import method_decorator
-# from drf_yasg.openapi import Parameter
-# from drf_yasg.utils import swagger_auto_schema
 from rest_framework import response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.course import clear_cached_user_roles
-from autograder.rest_api.schema import (AGRetrieveViewSchemaMixin, APITags,
-                                        CustomViewSchema)
-from autograder.rest_api.views.ag_model_views import (NestedModelView,
-                                                      require_body_params)
+from autograder.rest_api.schema import (AGRetrieveViewSchemaMixin, APITags, CustomViewSchema,
+                                        as_schema_ref)
+from autograder.rest_api.views.ag_model_views import NestedModelView, require_body_params
 
 
 class _Schema(AGRetrieveViewSchemaMixin, CustomViewSchema):
@@ -48,7 +45,7 @@ class CourseHandgradersViewSet(NestedModelView):
                         'remove_handgraders': {
                             'type': 'array',
                             'items': {
-                                '$ref': '#/components/schemas/User'
+                                '$ref': as_schema_ref(User)
                             },
                             'description': (
                                 'Users to revoke handgrading privileges from.'

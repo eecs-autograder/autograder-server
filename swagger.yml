@@ -480,7 +480,7 @@ paths:
         required: true
         description: ''
         schema:
-          $ref: '#/components/schemas/Semester'
+          $ref: '#/components/schemas/Submission'
       - name: year
         in: path
         required: true
@@ -569,7 +569,8 @@ paths:
                 remove_admins:
                   type: array
                   items:
-                    $ref: '#/components/schemas/User'
+                    $ref:
+                      $ref: '#/components/schemas/User'
                   description: Users whose admin privileges should be revoked for
                     the course.
       tags: *id010
@@ -646,7 +647,8 @@ paths:
                 remove_staff:
                   type: array
                   items:
-                    $ref: '#/components/schemas/User'
+                    $ref:
+                      $ref: '#/components/schemas/User'
                   description: Users whose staff privileges should be revoked for
                     the course.
       tags: *id011
@@ -754,7 +756,8 @@ paths:
                 remove_students:
                   type: array
                   items:
-                    $ref: '#/components/schemas/User'
+                    $ref:
+                      $ref: '#/components/schemas/User'
                   description: Users whose student privileges should be revoked for
                     the course.
       tags: *id012
@@ -831,7 +834,8 @@ paths:
                 remove_handgraders:
                   type: array
                   items:
-                    $ref: '#/components/schemas/User'
+                    $ref:
+                      $ref: '#/components/schemas/User'
                   description: Users to revoke handgrading privileges from.
       tags: *id013
   /api/courses/{id}/projects/:
@@ -4210,7 +4214,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubmissionResultFeedback'
+                $ref:
+                  $ref: '#/components/schemas/SubmissionResultFeedback'
       tags:
       - submissions
   /api/projects/{project_pk}/all_ultimate_submission_results/:

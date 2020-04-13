@@ -12,15 +12,15 @@ import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.copy_project_and_course import copy_course
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.schema import (AGCreateViewSchemaMixin,
-                                        AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator,
-                                        AGRetrieveViewSchemaMixin, APITags,
-                                        CustomViewSchema)
-from autograder.rest_api.views.ag_model_views import (
-    AGModelAPIView, AGModelDetailView, AGModelGenericViewSet,
-    AlwaysIsAuthenticatedMixin, CreateNestedModelMixin, NestedModelView,
-    convert_django_validation_error, require_body_params)
+from autograder.rest_api.schema import (AGCreateViewSchemaMixin, AGDetailViewSchemaGenerator,
+                                        AGListCreateViewSchemaGenerator, AGRetrieveViewSchemaMixin,
+                                        APITags, CustomViewSchema, as_schema_ref)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      AGModelGenericViewSet,
+                                                      AlwaysIsAuthenticatedMixin,
+                                                      CreateNestedModelMixin, NestedModelView,
+                                                      convert_django_validation_error,
+                                                      require_body_params)
 
 
 class CoursePermissions(permissions.BasePermission):
@@ -116,7 +116,7 @@ class CopyCourseView(AGModelAPIView):
                             'type': 'string'
                         },
                         'new_semester': {
-                            '$ref': '#/components/schemas/Semester'
+                            '$ref': as_schema_ref(ag_models.Semester)
                         },
                         'new_year': {
                             'type': 'integer'
@@ -171,7 +171,7 @@ class CourseByNameSemesterYearView(AlwaysIsAuthenticatedMixin, APIView):
         tags=[APITags.courses], api_class=ag_models.Course, data={
             'GET': {
                 'param_schema_overrides': {
-                    'semester': {'$ref': '#/components/schemas/Semester'},
+                    'semester': as_schema_ref(ag_models.Submission),
                     'year': {'type': 'integer'}
                 }
             }
