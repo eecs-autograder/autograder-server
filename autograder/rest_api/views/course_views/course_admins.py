@@ -8,10 +8,9 @@ import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core.models.course import clear_cached_user_roles
-from autograder.rest_api.schema import (AGRetrieveViewSchemaMixin, APITags,
-                                        CustomViewSchema)
-from autograder.rest_api.views.ag_model_views import (NestedModelView,
-                                                      require_body_params)
+from autograder.rest_api.schema import (AGRetrieveViewSchemaMixin, APITags, CustomViewSchema,
+                                        as_schema_ref)
+from autograder.rest_api.views.ag_model_views import NestedModelView, require_body_params
 
 
 class _Schema(AGRetrieveViewSchemaMixin, CustomViewSchema):
@@ -47,7 +46,7 @@ class CourseAdminViewSet(NestedModelView):
                         'remove_admins': {
                             'type': 'array',
                             'items': {
-                                '$ref': '#/components/schemas/User'
+                                '$ref': as_schema_ref(User)
                             },
                             'description': (
                                 'Users whose admin privileges should be revoked for the course.'

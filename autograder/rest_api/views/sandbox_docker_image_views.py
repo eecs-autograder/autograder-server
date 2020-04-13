@@ -1,18 +1,15 @@
 from django.db import transaction
 from drf_composable_permissions.p import P
-from rest_framework import (decorators, exceptions, mixins, permissions,
-                            response, status)
+from rest_framework import decorators, exceptions, mixins, permissions, response, status
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder.core.tasks import build_sandbox_docker_image
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListCreateViewSchemaGenerator,
-                                        AGListViewSchemaMixin,
-                                        CustomViewMethodData, CustomViewSchema)
-from autograder.rest_api.views.ag_model_views import \
-    convert_django_validation_error
+                                        AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
+                                        CustomViewMethodData, CustomViewSchema, as_schema_ref)
+from autograder.rest_api.views.ag_model_views import convert_django_validation_error
 from autograder.rest_api.views.schema_generation import APITags
 
 from . import ag_model_views as ag_views
@@ -42,7 +39,7 @@ _BUILD_IMAGE_SCHEMA: CustomViewMethodData = {
     },
     'responses': {
         '202': {
-            'body': {'$ref': '#/components/schemas/BuildSandboxDockerImageTask'}
+            'body': as_schema_ref(ag_models.BuildSandboxDockerImageTask)
         }
     }
 }
@@ -58,7 +55,7 @@ class ListCreateGlobalSandboxDockerImageView(ag_views.AGModelAPIView):
                     '200': {
                         'body': {
                             'type': 'array',
-                            'items': {'$ref': '#/components/schemas/SandboxDockerImage'}
+                            'items': as_schema_ref(ag_models.SandboxDockerImage)
                         }
                     }
                 }
@@ -183,7 +180,7 @@ class CancelBuildTaskView(ag_views.AGModelAPIView):
         'POST': {
             'responses': {
                 '200': {
-                    'body': {'$ref': '#/components/schemas/BuildSandboxDockerImageTask'}
+                    'body': as_schema_ref(ag_models.BuildSandboxDockerImageTask)
                 }
             }
         }

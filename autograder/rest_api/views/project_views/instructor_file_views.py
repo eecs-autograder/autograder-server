@@ -1,21 +1,20 @@
 from django.core import exceptions
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from rest_framework import (decorators, mixins, permissions, response, status,
-                            viewsets)
+from rest_framework import decorators, mixins, permissions, response, status, viewsets
 
 import autograder.core.models as ag_models
 import autograder.rest_api.permissions as ag_permissions
 import autograder.rest_api.serializers as ag_serializers
 from autograder.core import constants
 from autograder.rest_api import transaction_mixins
-from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
-                                        AGListViewSchemaMixin,
-                                        CustomViewSchema)
+from autograder.rest_api.schema import (AGDetailViewSchemaGenerator, AGListViewSchemaMixin,
+                                        CustomViewSchema, as_schema_ref)
 from autograder.rest_api.size_file_response import SizeFileResponse
-from autograder.rest_api.views.ag_model_views import (
-    AGModelAPIView, AGModelDetailView, NestedModelView,
-    convert_django_validation_error, require_body_params)
+from autograder.rest_api.views.ag_model_views import (AGModelAPIView, AGModelDetailView,
+                                                      NestedModelView,
+                                                      convert_django_validation_error,
+                                                      require_body_params)
 from autograder.rest_api.views.schema_generation import APITags
 
 
@@ -44,7 +43,7 @@ class ListCreateInstructorFileView(NestedModelView):
             },
             'responses': {
                 '201': {
-                    'body': {'$ref': '#/components/schemas/InstructorFile'}
+                    'body': as_schema_ref(ag_models.InstructorFile)
                 }
             }
         }
@@ -94,7 +93,7 @@ class RenameInstructorFileView(AGModelAPIView):
             },
             'responses': {
                 '200': {
-                    'body': {'$ref': '#/components/schemas/InstructorFile'}
+                    'body': as_schema_ref(ag_models.InstructorFile)
                 }
             }
         }
@@ -132,7 +131,7 @@ class InstructorFileContentView(AGModelAPIView):
             },
             'responses': {
                 '201': {
-                    'body': {'$ref': '#/components/schemas/InstructorFile'}
+                    'body': as_schema_ref(ag_models.InstructorFile)
                 }
             }
         }

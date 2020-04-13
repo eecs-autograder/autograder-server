@@ -17,7 +17,7 @@ from autograder.core.submission_feedback import (AGTestCommandResultFeedback, AG
                                                  AGTestSuiteResultFeedback,
                                                  StudentTestSuitePreLoader,
                                                  SubmissionResultFeedback)
-from autograder.rest_api.schema import APITags, CustomViewSchema
+from autograder.rest_api.schema import APITags, CustomViewSchema, as_schema_ref
 from autograder.rest_api.serialize_ultimate_submission_results import \
     get_submission_data_with_results
 from autograder.rest_api.views.ag_model_views import AGModelAPIView, require_query_params
@@ -65,7 +65,7 @@ class SubmissionResultsView(SubmissionResultsViewBase):
             'responses': {
                 '200': {
                     'body': {
-                        '$ref': '#/components/schemas/SubmissionResultFeedback'
+                        '$ref': as_schema_ref(SubmissionResultFeedback)
                     }
                 }
             }

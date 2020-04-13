@@ -20,7 +20,7 @@ from autograder.core.submission_feedback import (AGTestPreLoader, StudentTestSui
 from autograder.rest_api import transaction_mixins
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, AGListViewSchemaMixin,
-                                        APITags, CustomViewDict, CustomViewSchema)
+                                        APITags, CustomViewDict, CustomViewSchema, as_schema_ref)
 from autograder.rest_api.serialize_ultimate_submission_results import \
     get_submission_data_with_results
 from autograder.rest_api.size_file_response import SizeFileResponse
@@ -70,7 +70,7 @@ class ListCreateSubmissionViewSet(NestedModelView):
             },
             'responses': {
                 '201': {
-                    'body': {'$ref': '#/components/schemas/Submission'}
+                    'body': as_schema_ref(ag_models.Submission)
                 }
             }
         }
@@ -379,7 +379,7 @@ class RemoveSubmissionFromQueueView(AGModelAPIView):
         'POST': {
             'responses': {
                 '200': {
-                    'body': {'$ref': '#/components/schemas/Submission'}
+                    'body': as_schema_ref(ag_models.Submission)
                 }
             }
         }
