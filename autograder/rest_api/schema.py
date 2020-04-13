@@ -87,6 +87,18 @@ class AGSchemaGenerator(SchemaGenerator):
             }
         }
 
+        result['schemas']['SubmissionWithResults'] = {
+            'allOf': [
+                {'$ref': '#/components/schemas/Submission'},
+                {
+                    'type': 'object',
+                    'properties': {
+                        'results': _as_schema_ref(SubmissionResultFeedback)
+                    }
+                }
+            ]
+        }
+
         return result
 
     def _get_parameter_schemas(self) -> dict:

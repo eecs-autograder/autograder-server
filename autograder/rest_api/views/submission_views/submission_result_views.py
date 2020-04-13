@@ -65,17 +65,7 @@ class SubmissionResultsView(SubmissionResultsViewBase):
             'responses': {
                 '200': {
                     'body': {
-                        'allOf': [
-                            {'$ref': '#/components/schemas/Submission'},
-                            {
-                                'type': 'object',
-                                'properties': {
-                                    'results': {
-                                        '$ref': '#/components/schemas/SubmissionResultFeedback'
-                                    }
-                                }
-                            }
-                        ]
+                        '$ref': '#/components/schemas/SubmissionResultFeedback'
                     }
                 }
             }
