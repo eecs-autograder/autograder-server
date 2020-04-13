@@ -400,6 +400,9 @@ class CreateSubmissionTestCase(test_data.Client,
         self.assertIn('count_towards_daily_limit', response.data['invalid_fields'])
         self.assertIn('count_towards_total_limit', response.data['invalid_fields'])
 
+    def test_no_files_submitted(self) -> None:
+        self.fail()
+
     def do_normal_submit_test(self, group, user) -> ag_models.Submission:
         self.add_expected_patterns(group.project)
         response = self.do_create_object_test(
@@ -1124,7 +1127,7 @@ class CreateSubmissionTotalLimitTestCase(UnitTestBase):
         url = reverse('submissions', kwargs={'pk': group.pk})
         self.client.force_authenticate(group.members.first())
 
-        response = self.client.post(url, {'submitted_files': []})
+        response = self.client.post(url, {'submitted_files': []}, format='multipart')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code, msg=response.data)
         self.assertTrue(response.data['count_towards_total_limit'])
 
@@ -1523,7 +1526,7 @@ class RemoveFromQueueTestCase(test_data.Client,
         self.assertTrue(bonus_submission.is_bonus_submission)
 
         response = self.client.post(submission_remove_from_queue_url(bonus_submission))
-        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code, msg=response.data)
+        self.assertEqual(status.HTTP_200_OK, response.status_code, msg=response.data)
 
         group.refresh_from_db()
         self.assertEqual(1, group.bonus_submissions_remaining)
@@ -1531,6 +1534,7 @@ class RemoveFromQueueTestCase(test_data.Client,
 
         bonus_submission.refresh_from_db()
         self.assertFalse(bonus_submission.is_bonus_submission)
+        self.assertFalse(response.data['is_bonus_submission'])
 
     def test_remove_non_bonus_submission_from_queue_no_refund(self):
         project = obj_build.make_project(submission_limit_per_day=1,
@@ -1551,7 +1555,7 @@ class RemoveFromQueueTestCase(test_data.Client,
         self.assertFalse(submission.is_bonus_submission)
 
         response = self.client.post(submission_remove_from_queue_url(submission))
-        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code, msg=response.data)
+        self.assertEqual(status.HTTP_200_OK, response.status_code, msg=response.data)
 
         group.refresh_from_db()
         self.assertEqual(1, group.bonus_submissions_remaining)
@@ -1613,7 +1617,9 @@ class RemoveFromQueueTestCase(test_data.Client,
             self.client.force_authenticate(user)
             response = self.client.post(
                 submission_remove_from_queue_url(submission))
-            self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+            self.assertEqual(status.HTTP_200_OK, response.status_code)
+            self.assertEqual(ag_models.Submission.GradingStatus.removed_from_queue,
+                             response.data['status'])
 
             submission.refresh_from_db()
 
@@ -1643,7 +1649,7 @@ class RemoveFromQueueTestCase(test_data.Client,
 
 
 def submission_remove_from_queue_url(submission):
-    return reverse('submission-remove-from-queue',
+    return reverse('remove-submission-from-queue',
                    kwargs={'pk': submission.pk})
 
 

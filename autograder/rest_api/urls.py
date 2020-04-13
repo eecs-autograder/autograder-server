@@ -6,9 +6,9 @@ from rest_framework.schemas import get_schema_view
 
 from autograder.rest_api import views
 
-submission_router = routers.SimpleRouter()
-submission_router.register(r'submissions', views.SubmissionDetailViewSet,
-                           basename='submission')
+# submission_router = routers.SimpleRouter()
+# submission_router.register(r'submissions', views.SubmissionDetailViewSet,
+#                            basename='submission')
 
 rerun_submissions_task_detail_router = routers.SimpleRouter()
 rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
@@ -176,7 +176,12 @@ urlpatterns = [
 
     path('groups/<int:pk>/submissions/', views.ListCreateSubmissionViewSet.as_view(),
          name='submissions'),
-    url(r'', include(submission_router.urls)),
+    path('submissions/<int:pk>/', views.SubmissionDetailView.as_view(),
+         name='submission-detail'),
+    path('submissions/<int:pk>/file/', views.GetSubmittedFileView.as_view(),
+         name='submission-file'),
+    path('submissions/<int:pk>/remove_from_queue/', views.RemoveSubmissionFromQueueView.as_view(),
+         name='remove-submission-from-queue'),
 
     path('sandbox_docker_images/', views.ListCreateGlobalSandboxDockerImageView.as_view(),
          name='global-sandbox-images'),

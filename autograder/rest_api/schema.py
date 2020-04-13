@@ -62,8 +62,10 @@ class AGSchemaGenerator(SchemaGenerator):
 
     def get_schema(self, request=None, public=False):
         stderr('Try to generate better operationIds')
+        stderr('Make _as_schema_ref() public')
         schema = super().get_schema(request=request, public=public)
         schema['components'] = self._get_model_schemas()
+        schema['components']['parameters'] = self._get_parameter_schemas()
         schema['tags'] = [{'name': item.value} for item in APITags]
         return schema
 
@@ -86,6 +88,39 @@ class AGSchemaGenerator(SchemaGenerator):
         }
 
         return result
+
+    def _get_parameter_schemas(self) -> dict:
+        fdbk_category = {
+            'name': 'feedback_category',
+            'in': 'query',
+            'schema': _as_schema_ref(ag_models.FeedbackCategory),
+            'description': f'''
+The category of feedback being requested. Must be one of the following
+values:
+
+- {ag_models.FeedbackCategory.normal.value}: Can be requested by
+    students before or after the project deadline on their
+    submissions that did not exceed the daily limit.
+- {ag_models.FeedbackCategory.past_limit_submission.value}: Can be
+    requested by students on their submissions that exceeded the
+    daily limit.
+- {ag_models.FeedbackCategory.ultimate_submission.value}: Can be
+    requested by students on their own ultimate (a.k.a. final
+    graded) submission once the project deadline has passed and
+    hide_ultimate_submission_fdbk has been set to False on the
+    project. Can similarly be requested by staff when looking
+    up another user's ultimate submission results after the
+    deadline.
+- {ag_models.FeedbackCategory.staff_viewer.value}: Can be requested
+    by staff when looking up another user's submission results.
+- {ag_models.FeedbackCategory.max.value}: Can be requested by staff
+    on their own submissions.'''.strip()
+        }
+
+        required_fdbk_category: dict = dict(fdbk_category)
+        required_fdbk_category['required'] = True
+
+        return {'feedbackCategory': fdbk_category, 'requiredFeedbackCategory': fdbk_category}
 
 
 API_OBJ_TYPE_NAMES = {
@@ -485,7 +520,7 @@ _PROP_FIELD_IS_REQUIRED_OVERRIDES: Dict[APIClassType, Dict[str, bool]] = {
 }
 
 
-def _as_schema_ref(type: APIClassType) -> dict:
+def _as_schema_ref(type: APIClassType) -> RefDict:
     return {'$ref': f'#/components/schemas/{API_OBJ_TYPE_NAMES[type]}'}
 
 
@@ -724,13 +759,16 @@ class CustomViewDict(TypedDict, total=False):
 
 
 class CustomViewMethodData(TypedDict, total=False):
-    parameters: List[RequestParam]
+    parameters: List[Union[RequestParam, RefDict]]
     # Key = param name, Value = schema dict
     # Use for fixing the types of DRF-generated URL params.
     param_schema_overrides: Dict[str, dict]
     request_payload: RequestBodyData
     # Key = response status
     responses: Dict[str, Optional[ResponseSchemaData]]
+
+
+RefDict = TypedDict('RefDict', {'$ref': str})
 
 
 # https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md#parameter-object
@@ -752,6 +790,7 @@ class RequestBodyData(TypedDict, total=False):
     body: dict
 
     examples: dict
+    description: str
 
 
 class ResponseSchemaData(TypedDict, total=False):
@@ -800,6 +839,8 @@ class CustomViewSchema(AGViewSchemaGenerator):
                     request_data.get('content_type', 'application/json'): body
                 }
             }
+            if 'description' in request_data:
+                result['description'] = request_data['description']
 
         responses: Dict[str, dict] = {}
         for status, response_data in method_data.get('responses', {}).items():
