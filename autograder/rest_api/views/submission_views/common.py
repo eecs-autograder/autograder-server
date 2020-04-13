@@ -8,7 +8,7 @@ FDBK_CATEGORY_PARAM = 'feedback_category'
 
 def validate_fdbk_category(fdbk_category: str) -> ag_models.FeedbackCategory:
     try:
-            return ag_models.FeedbackCategory(fdbk_category)
+        return ag_models.FeedbackCategory(fdbk_category)
     except ValueError:
         raise ValidationError({
             FDBK_CATEGORY_PARAM: 'Invalid value: {}'.format(fdbk_category)

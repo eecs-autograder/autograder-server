@@ -1867,7 +1867,7 @@ paths:
       - submissions
   /api/groups/{id}/submissions/:
     get:
-      operationId: listSubmissions
+      operationId: listListCreateSubmissionViewSets
       description: ''
       parameters:
       - name: id
@@ -1882,11 +1882,14 @@ paths:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  $ref: '#/components/schemas/Submission'
           description: ''
+      tags: &id026
+      - submissions
     post:
-      operationId: createSubmission
-      description: ''
+      operationId: CreateListCreateSubmissionViewSet
+      description: The files being submitted, as multipart/form-data.
       parameters:
       - name: id
         in: path
@@ -1895,14 +1898,26 @@ paths:
         schema:
           type: string
       responses:
-        '200':
+        '201':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema:
+                $ref: '#/components/schemas/Submission'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                submitted_files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      tags: *id026
   /api/submissions/{id}/:
     get:
-      operationId: retrieveSubmission
+      operationId: RetrieveSubmissionDetail
       description: ''
       parameters:
       - name: id
@@ -1915,10 +1930,13 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Submission'
           description: ''
+      tags: &id028
+      - submissions
     patch:
-      operationId: partial_updateSubmission
+      operationId: PartialUpdateSubmissionDetail
       description: ''
       parameters:
       - name: id
@@ -1931,25 +1949,136 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Submission'
           description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pk: *id007
+                group:
+                  description: "The SubmissionGroup that this submission belongs to.\
+                    \ Note\n            that this field indirectly links this Submission\
+                    \ object to a\n            Project.\n            This field is\
+                    \ REQUIRED."
+                  nullable: false
+                  readOnly: true
+                  type: integer
+                  format: id
+                timestamp:
+                  description: ''
+                  nullable: false
+                  readOnly: true
+                  type: string
+                  format: date-time
+                submitter:
+                  description: The name of the user who made this submission
+                  nullable: false
+                  readOnly: true
+                  type: string
+                submitted_filenames:
+                  description: "The names of files that were submitted,\n        \
+                    \             excluding those that were discarded."
+                  nullable: false
+                  readOnly: true
+                  type: array
+                  items: &id027
+                    type: string
+                discarded_files:
+                  description: The names of files that were discarded when this Submission
+                    was created.
+                  nullable: false
+                  readOnly: true
+                  type: array
+                  items: *id027
+                missing_files:
+                  description: "Stores missing filenames and the additional number\n\
+                    \            of files needed to satisfy a file pattern requirement.\n\
+                    \            Stored as key-value pairs of the form:\n        \
+                    \    {pattern: num_additional_needed}"
+                  nullable: false
+                  readOnly: true
+                  type: object
+                status:
+                  description: "The grading status of this submission see\n      \
+                    \      Submission.GradingStatus for details on allowed values."
+                  nullable: false
+                  readOnly: true
+                  type: string
+                count_towards_daily_limit:
+                  description: "Indicates whether this submission should count\n \
+                    \           towards the daily submission limit."
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                is_past_daily_limit:
+                  description: Whether this submission is past the daily submission
+                    limit.
+                  nullable: false
+                  readOnly: true
+                  type: boolean
+                is_bonus_submission:
+                  description: "When True, indicates that the group that made this\n\
+                    \            submission should be able to request normal feedback\
+                    \ for\n            this submission's results.\n            Note:\
+                    \ If this field is True, is_past_daily_limit should be\n     \
+                    \       False."
+                  nullable: false
+                  readOnly: true
+                  type: boolean
+                count_towards_total_limit:
+                  description: Whether this submission should count towards the total
+                    submission limit.
+                  nullable: false
+                  readOnly: false
+                  type: boolean
+                does_not_count_for:
+                  description: "A list of users for whom this submission will NOT\n\
+                    \            count as their final graded submission. Users are\
+                    \ added to\n            this list if they are out of late days\
+                    \ and another group\n            member (who still has late days\
+                    \ remaining) uses their own\n            late day to submit."
+                  nullable: false
+                  readOnly: true
+                  type: array
+                  items:
+                    description: ''
+                    nullable: false
+                    type: string
+                position_in_queue:
+                  description: "Returns this submission's position in the queue of\
+                    \ submissions\n        to be graded for the associated project."
+                  readOnly: true
+                  type: integer
+                last_modified:
+                  description: ''
+                  nullable: false
+                  readOnly: true
+                  type: string
+                  format: date-time
+      tags: *id028
   /api/submissions/{id}/file/:
     get:
-      operationId: fileSubmission
+      operationId: listGetSubmittedFiles
       description: ''
       parameters:
-      - name: id
-        in: path
+      - name: filename
+        in: query
+        description: The name of the file to return.
         required: true
-        description: ''
-        schema:
-          type: string
       responses:
         '200':
           content:
-            application/json:
-              schema: {}
-          description: ''
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      tags:
+      - submissions
   /api/sandbox_docker_images/:
     get:
       operationId: listListCreateGlobalSandboxDockerImages
@@ -1963,7 +2092,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SandboxDockerImage'
-      tags: &id026
+      tags: &id029
       - sandbox_docker_images
     post:
       operationId: CreateListCreateGlobalSandboxDockerImage
@@ -1973,13 +2102,13 @@ paths:
         '202':
           content:
             application/json:
-              schema: &id027
+              schema: &id030
                 $ref: '#/components/schemas/BuildSandboxDockerImageTask'
       requestBody:
         required: true
         content:
           multipart/form-data:
-            schema: &id028
+            schema: &id031
               type: object
               properties:
                 files:
@@ -1988,7 +2117,7 @@ paths:
                     type: string
                     format: binary
                   description: The form-encoded files. One file must be named "Dockerfile"
-      tags: *id026
+      tags: *id029
   /api/courses/{id}/sandbox_docker_images/:
     get:
       operationId: listListCreateSandboxDockerImageForCourses
@@ -2009,7 +2138,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/SandboxDockerImage'
           description: ''
-      tags: &id029
+      tags: &id032
       - sandbox_docker_images
     post:
       operationId: CreateListCreateSandboxDockerImageForCourse
@@ -2025,13 +2154,13 @@ paths:
         '202':
           content:
             application/json:
-              schema: *id027
+              schema: *id030
       requestBody:
         required: true
         content:
           multipart/form-data:
-            schema: *id028
-      tags: *id029
+            schema: *id031
+      tags: *id032
   /api/image_build_tasks/:
     get:
       operationId: listListGlobalBuildTasks
@@ -2108,7 +2237,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SandboxDockerImage'
           description: ''
-      tags: &id030
+      tags: &id033
       - sandbox_docker_images
     patch:
       operationId: PartialUpdateSandboxDockerImageDetail
@@ -2148,7 +2277,7 @@ paths:
                   readOnly: true
                   type: integer
                   format: id
-      tags: *id030
+      tags: *id033
   /api/projects/{project_pk}/ag_test_suites/:
     get:
       operationId: listAGTestSuiteListCreates
@@ -2169,7 +2298,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AGTestSuite'
           description: ''
-      tags: &id031
+      tags: &id034
       - ag_test_suites
     post:
       operationId: CreateAGTestSuiteList
@@ -2309,7 +2438,7 @@ paths:
               required:
               - name
               - project
-      tags: *id031
+      tags: *id034
   /api/projects/{project_pk}/ag_test_suites/order/:
     get:
       operationId: listAGTestSuiteOrders
@@ -2330,7 +2459,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id032
+      tags: &id035
       - ag_test_suites
     put:
       operationId: UpdateAGTestSuiteOrder
@@ -2360,7 +2489,7 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id032
+      tags: *id035
   /api/ag_test_suites/{id}/:
     get:
       operationId: RetrieveAGTestSuiteDetail
@@ -2379,7 +2508,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AGTestSuite'
           description: ''
-      tags: &id033
+      tags: &id036
       - ag_test_suites
     patch:
       operationId: PartialUpdateAGTestSuiteDetail
@@ -2516,7 +2645,7 @@ paths:
                   readOnly: false
                   allOf:
                   - $ref: '#/components/schemas/AGTestSuiteFeedbackConfig'
-      tags: *id033
+      tags: *id036
     delete:
       operationId: DestroyAGTestSuiteDetail
       description: ''
@@ -2530,7 +2659,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id033
+      tags: *id036
   /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/:
     get:
       operationId: listAGTestCaseListCreates
@@ -2551,7 +2680,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AGTestCase'
           description: ''
-      tags: &id034
+      tags: &id037
       - ag_test_cases
     post:
       operationId: CreateAGTestCaseList
@@ -2633,7 +2762,7 @@ paths:
               required:
               - name
               - ag_test_suite
-      tags: *id034
+      tags: *id037
   /api/ag_test_suites/{ag_test_suite_pk}/ag_test_cases/order/:
     get:
       operationId: listAGTestCaseOrders
@@ -2654,7 +2783,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id035
+      tags: &id038
       - ag_test_cases
     put:
       operationId: UpdateAGTestCaseOrder
@@ -2684,7 +2813,7 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id035
+      tags: *id038
   /api/ag_test_cases/{id}/:
     get:
       operationId: RetrieveAGTestCaseDetail
@@ -2703,7 +2832,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AGTestCase'
           description: ''
-      tags: &id036
+      tags: &id039
       - ag_test_cases
     patch:
       operationId: PartialUpdateAGTestCaseDetail
@@ -2782,7 +2911,7 @@ paths:
                   readOnly: false
                   allOf:
                   - $ref: '#/components/schemas/AGTestCaseFeedbackConfig'
-      tags: *id036
+      tags: *id039
     delete:
       operationId: DestroyAGTestCaseDetail
       description: ''
@@ -2796,7 +2925,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id036
+      tags: *id039
   /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/:
     get:
       operationId: listAGTestCommandListCreates
@@ -2817,7 +2946,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/AGTestCommand'
           description: ''
-      tags: &id037
+      tags: &id040
       - ag_test_commands
     post:
       operationId: CreateAGTestCommandList
@@ -3096,7 +3225,7 @@ paths:
               - name
               - ag_test_case
               - cmd
-      tags: *id037
+      tags: *id040
   /api/ag_test_cases/{ag_test_case_pk}/ag_test_commands/order/:
     get:
       operationId: listAGTestCommandOrders
@@ -3117,7 +3246,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id038
+      tags: &id041
       - ag_test_commands
     put:
       operationId: UpdateAGTestCommandOrder
@@ -3147,7 +3276,7 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id038
+      tags: *id041
   /api/ag_test_commands/{id}/:
     get:
       operationId: RetrieveAGTestCommandDetail
@@ -3166,7 +3295,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AGTestCommand'
           description: ''
-      tags: &id039
+      tags: &id042
       - ag_test_commands
     patch:
       operationId: PartialUpdateAGTestCommandDetail
@@ -3441,7 +3570,7 @@ paths:
                   nullable: false
                   readOnly: false
                   type: integer
-      tags: *id039
+      tags: *id042
     delete:
       operationId: DestroyAGTestCommandDetail
       description: ''
@@ -3455,7 +3584,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id039
+      tags: *id042
   /api/projects/{project_pk}/student_test_suites/:
     get:
       operationId: listStudentTestSuiteListCreates
@@ -3476,7 +3605,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/StudentTestSuite'
           description: ''
-      tags: &id040
+      tags: &id043
       - student_test_suites
     post:
       operationId: CreateStudentTestSuiteList
@@ -3544,8 +3673,7 @@ paths:
                   nullable: false
                   readOnly: false
                   type: array
-                  items: &id042
-                    type: string
+                  items: *id027
                 use_setup_command:
                   description: ''
                   nullable: false
@@ -3681,7 +3809,7 @@ paths:
               required:
               - name
               - project
-      tags: *id040
+      tags: *id043
   /api/projects/{project_pk}/student_test_suites/order/:
     get:
       operationId: listStudentTestSuiteOrders
@@ -3702,7 +3830,7 @@ paths:
                 items:
                   type: integer
                   format: id
-      tags: &id041
+      tags: &id044
       - student_test_suites
     put:
       operationId: UpdateStudentTestSuiteOrder
@@ -3732,7 +3860,7 @@ paths:
               items:
                 type: integer
                 format: id
-      tags: *id041
+      tags: *id044
   /api/student_test_suites/{id}/:
     get:
       operationId: RetrieveStudentTestSuiteDetail
@@ -3751,7 +3879,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StudentTestSuite'
           description: ''
-      tags: &id043
+      tags: &id045
       - student_test_suites
     patch:
       operationId: PartialUpdateStudentTestSuiteDetail
@@ -3819,7 +3947,7 @@ paths:
                   nullable: false
                   readOnly: false
                   type: array
-                  items: *id042
+                  items: *id027
                 use_setup_command:
                   description: ''
                   nullable: false
@@ -3952,7 +4080,7 @@ paths:
                   readOnly: true
                   type: string
                   format: date-time
-      tags: *id043
+      tags: *id045
     delete:
       operationId: DestroyStudentTestSuiteDetail
       description: ''
@@ -3966,7 +4094,7 @@ paths:
       responses:
         '204':
           description: ''
-      tags: *id043
+      tags: *id045
   /api/projects/{project_pk}/rerun_submissions_tasks/:
     get:
       operationId: listRerunSubmissionTasks
@@ -4024,20 +4152,20 @@ paths:
       operationId: listListSubmissionsWithResults
       description: ''
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
+      - $ref: '#/components/parameters/feedbackCategory'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items: {}
-          description: ''
+                allOf:
+                - $ref: '#/components/schemas/Submission'
+                - type: object
+                  properties:
+                    results:
+                      $ref: '#/components/schemas/SubmissionResultFeedback'
+      tags:
+      - submissions
   /api/submissions/{id}/results/:
     get:
       operationId: listSubmissionResults
@@ -5389,7 +5517,7 @@ paths:
       - groups
   /api/submissions/{id}/remove_from_queue/:
     post:
-      operationId: remove_from_queueSubmission
+      operationId: CreateRemoveSubmissionFromQueue
       description: Remove this submission from the grading queue.
       parameters:
       - name: id
@@ -5402,8 +5530,10 @@ paths:
         '200':
           content:
             application/json:
-              schema: {}
-          description: ''
+              schema:
+                $ref: '#/components/schemas/Submission'
+      tags:
+      - submissions
   /api/image_build_tasks/{id}/cancel/:
     post:
       operationId: CreateCancelBuildTask
@@ -5480,12 +5610,12 @@ paths:
         '202':
           content:
             application/json:
-              schema: *id027
+              schema: *id030
       requestBody:
         required: true
         content:
           multipart/form-data:
-            schema: *id028
+            schema: *id031
       tags:
       - sandbox_docker_images
   /api/projects/{project_pk}/groups/bonus_submissions/:
@@ -5537,7 +5667,7 @@ components:
     User:
       type: object
       properties:
-        pk: &id044
+        pk: &id046
           type: integer
           format: id
         username:
@@ -5562,7 +5692,7 @@ components:
     Course:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         name:
           description: The name of this course. Must be unique, non-empty and non-null.
           nullable: false
@@ -5608,7 +5738,7 @@ components:
     Project:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         name:
           description: "The name used to identify this project.\n            Must\
             \ be non-empty and non-null.\n            Must be unique among Projects\
@@ -5762,7 +5892,7 @@ components:
     ExpectedStudentFile:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         project:
           description: ''
           nullable: false
@@ -5794,7 +5924,7 @@ components:
     InstructorFile:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         project:
           description: ''
           nullable: false
@@ -5815,7 +5945,7 @@ components:
     DownloadTask:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         project:
           description: ''
           nullable: false
@@ -5853,7 +5983,7 @@ components:
     Group:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         project:
           description: ''
           nullable: false
@@ -5870,7 +6000,7 @@ components:
         member_names:
           description: A list of usernames of the group members, sorted alphabetically.
           type: array
-          items: &id045
+          items: &id047
             type: string
           readOnly: false
         bonus_submissions_remaining:
@@ -5909,7 +6039,7 @@ components:
     GroupInvitation:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         invitation_creator:
           description: "The User who created this invitation.\n            This field\
             \ is REQUIRED."
@@ -5924,16 +6054,16 @@ components:
         invited_usernames:
           description: The usernames of the Users that will receive this invitation.
           type: array
-          items: *id045
+          items: *id047
         invitees_who_accepted:
           description: "A list of usernames indicating which invitees have accepted\n\
             \        this invitation.\n        This field is READ ONLY."
           type: array
-          items: *id045
+          items: *id047
     Submission:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         group:
           description: "The SubmissionGroup that this submission belongs to. Note\n\
             \            that this field indirectly links this Submission object to\
@@ -5955,13 +6085,13 @@ components:
             \     excluding those that were discarded."
           nullable: false
           type: array
-          items: *id042
+          items: *id027
         discarded_files:
           description: The names of files that were discarded when this Submission
             was created.
           nullable: false
           type: array
-          items: *id042
+          items: *id027
         missing_files:
           description: "Stores missing filenames and the additional number\n     \
             \       of files needed to satisfy a file pattern requirement.\n     \
@@ -6053,7 +6183,7 @@ components:
     SandboxDockerImage:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         display_name:
           description: "A human-readable name for this sandbox image.\n          \
             \           Must be unique among images belonging to a course.\n     \
@@ -6068,7 +6198,7 @@ components:
     BuildSandboxDockerImageTask:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         status:
           description: The status of the build.
           nullable: false
@@ -6086,7 +6216,7 @@ components:
           description: The names of the files uploaded by the user.
           nullable: false
           type: array
-          items: *id042
+          items: *id027
         course:
           description: "The course this task is associated with.\n            Only\
             \ superusers can create or update images with no associated course."
@@ -6120,7 +6250,7 @@ components:
     AGTestSuite:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         name:
           description: "The name used to identify this suite.\n                  \
             \   Must be non-empty and non-null.\n                     Must be unique\
@@ -6238,7 +6368,7 @@ components:
     AGTestCase:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         name:
           description: "The name used to identify this autograder test.\n        \
             \             Must be non-empty and non-null.\n                     Must\
@@ -6295,7 +6425,7 @@ components:
     AGTestCommand:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         name:
           description: "The name used to identify this command.\n                \
             \         Must be non-empty and non-null.\n                         Must\
@@ -6559,20 +6689,20 @@ components:
     SubmissionResultFeedback:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         total_points:
           description: ''
           anyOf:
-          - &id046
+          - &id048
             type: integer
-          - &id047
+          - &id049
             type: string
             format: float
         total_points_possible:
           description: ''
           anyOf:
-          - *id046
-          - *id047
+          - *id048
+          - *id049
         ag_test_suite_results:
           description: ''
           type: array
@@ -6586,7 +6716,7 @@ components:
     AGTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         ag_test_suite_name:
           description: ''
           type: string
@@ -6622,7 +6752,7 @@ components:
     AGTestCaseResultFeedback:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         ag_test_case_name:
           description: ''
           type: string
@@ -6646,7 +6776,7 @@ components:
     AGTestCommandResultFeedback:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         ag_test_command_pk:
           description: ''
           type: integer
@@ -6715,7 +6845,7 @@ components:
     StudentTestSuite:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         name:
           description: "The name used to identify this StudentTestSuite.\n       \
             \              Must be non-empty and non-null."
@@ -6750,7 +6880,7 @@ components:
             be run against.
           nullable: false
           type: array
-          items: *id042
+          items: *id027
         use_setup_command:
           description: ''
           nullable: false
@@ -6913,7 +7043,7 @@ components:
     StudentTestSuiteResultFeedback:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         student_test_suite_name:
           description: ''
           type: string
@@ -6949,21 +7079,21 @@ components:
         student_tests:
           description: ''
           type: array
-          items: *id045
+          items: *id047
         discarded_tests:
           description: ''
           type: array
-          items: *id045
+          items: *id047
         invalid_tests:
           description: ''
           nullable: true
           type: array
-          items: *id045
+          items: *id047
         timed_out_tests:
           description: ''
           nullable: true
           type: array
-          items: *id045
+          items: *id047
         num_bugs_exposed:
           description: ''
           nullable: true
@@ -6972,7 +7102,7 @@ components:
           description: ''
           nullable: true
           type: array
-          items: *id045
+          items: *id047
         total_points:
           description: ''
           type: string
@@ -6984,7 +7114,7 @@ components:
     RerunSubmissionsTask:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         progress:
           description: ''
           type: integer
@@ -7068,7 +7198,7 @@ components:
     HandgradingRubric:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         project:
           description: The Project this HandgradingRubric belongs to.
           nullable: false
@@ -7127,7 +7257,7 @@ components:
     Criterion:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         handgrading_rubric:
           description: The rubric this Criterion belongs to.
           nullable: false
@@ -7156,7 +7286,7 @@ components:
     Annotation:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         handgrading_rubric:
           description: The HandgradingRubric this Annotation belongs to.
           nullable: false
@@ -7191,7 +7321,7 @@ components:
     HandgradingResult:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         last_modified:
           description: ''
           nullable: false
@@ -7245,7 +7375,7 @@ components:
           description: "Returns a list of strings containing the filenames of the\
             \ Submission this result\n        belongs to."
           type: array
-          items: *id045
+          items: *id047
         total_points:
           description: "The total number of points awarded. Note that it is possible\n\
             \        for this value to be greater than total_points."
@@ -7257,7 +7387,7 @@ components:
     CriterionResult:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         last_modified:
           description: ''
           nullable: false
@@ -7282,7 +7412,7 @@ components:
     AppliedAnnotation:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         last_modified:
           description: ''
           nullable: false
@@ -7306,7 +7436,7 @@ components:
     Comment:
       type: object
       properties:
-        pk: *id044
+        pk: *id046
         last_modified:
           description: ''
           nullable: false
@@ -7351,6 +7481,25 @@ components:
           type: boolean
         is_handgrader:
           type: boolean
+  parameters:
+    feedbackCategory: &id050
+      name: feedback_category
+      in: query
+      schema:
+        $ref: '#/components/schemas/FeedbackCategory'
+      description: "The category of feedback being requested. Must be one of the following\n\
+        values:\n\n- normal: Can be requested by\n    students before or after the\
+        \ project deadline on their\n    submissions that did not exceed the daily\
+        \ limit.\n- past_limit_submission: Can be\n    requested by students on their\
+        \ submissions that exceeded the\n    daily limit.\n- ultimate_submission:\
+        \ Can be\n    requested by students on their own ultimate (a.k.a. final\n\
+        \    graded) submission once the project deadline has passed and\n    hide_ultimate_submission_fdbk\
+        \ has been set to False on the\n    project. Can similarly be requested by\
+        \ staff when looking\n    up another user's ultimate submission results after\
+        \ the\n    deadline.\n- staff_viewer: Can be requested\n    by staff when\
+        \ looking up another user's submission results.\n- max: Can be requested by\
+        \ staff\n    on their own submissions."
+    requiredFeedbackCategory: *id050
 tags:
 - name: users
 - name: courses
