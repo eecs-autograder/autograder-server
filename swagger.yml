@@ -2092,6 +2092,8 @@ paths:
         in: query
         description: The name of the file to return.
         required: true
+        schema:
+          type: string
       responses:
         '200':
           content:
@@ -4188,12 +4190,7 @@ paths:
               schema:
                 type: array
                 items:
-                  allOf:
-                  - $ref: '#/components/schemas/Submission'
-                  - type: object
-                    properties:
-                      results:
-                        $ref: '#/components/schemas/SubmissionResultFeedback'
+                  $ref: '#/components/schemas/SubmissionWithResults'
       tags:
       - submissions
   /api/submissions/{id}/results/:
@@ -4213,12 +4210,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                - $ref: '#/components/schemas/Submission'
-                - type: object
-                  properties:
-                    results:
-                      $ref: '#/components/schemas/SubmissionResultFeedback'
+                $ref: '#/components/schemas/SubmissionResultFeedback'
       tags:
       - submissions
   /api/projects/{project_pk}/all_ultimate_submission_results/:
@@ -4232,14 +4224,60 @@ paths:
         description: ''
         schema:
           type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: groups_per_page
+        in: query
+        description: The page size. Maximum value is 200
+        schema:
+          type: integer
+          default: 100
+          maximum: 200
+      - name: full_results
+        in: query
+        description: "When \"false\", the submission result data\n               \
+          \         will not contain the \"ag_test_suite_results\"\n             \
+          \           or \"student_test_suite_results\" fields.\n                \
+          \        Defaults to \"false\"."
+        schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+          default: 'false'
+      - name: include_staff
+        in: query
+        description: When "false", excludes staff and admin users from the results.
+          Defaults to "true".
+        schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+          default: 'true'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items: {}
-          description: ''
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  next:
+                    type: string
+                    format: url
+                  previous:
+                    type: string
+                    format: url
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubmissionWithResults'
+      tags:
+      - submissions
   /api/submissions/{id}/ag_test_suite_results/{result_pk}/stdout/:
     get:
       operationId: listAGTestSuiteResultsStdouts
@@ -7611,6 +7649,13 @@ components:
           type: boolean
         is_handgrader:
           type: boolean
+    SubmissionWithResults:
+      allOf:
+      - $ref: '#/components/schemas/Submission'
+      - type: object
+        properties:
+          results:
+            $ref: '#/components/schemas/SubmissionResultFeedback'
   parameters:
     feedbackCategory: &id051
       name: feedback_category

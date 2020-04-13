@@ -248,19 +248,7 @@ class ListSubmissionsWithResults(AGModelAPIView):
                 '200': {
                     'body': {
                         'type': 'array',
-                        'items': {
-                            'allOf': [
-                                {'$ref': '#/components/schemas/Submission'},
-                                {
-                                    'type': 'object',
-                                    'properties': {
-                                        'results': {
-                                            '$ref': '#/components/schemas/SubmissionResultFeedback'
-                                        }
-                                    }
-                                }
-                            ]
-                        }
+                        'items': {'$ref': '#/components/schemas/SubmissionWithResults'}
                     }
                 }
             }
@@ -345,7 +333,8 @@ class GetSubmittedFileView(AGModelAPIView):
                     'name': 'filename',
                     'in': 'query',
                     'description': 'The name of the file to return.',
-                    'required': True
+                    'required': True,
+                    'schema': {'type': 'string'}
                 }
             ],
             'responses': {

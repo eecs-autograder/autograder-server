@@ -4,81 +4,23 @@ from collections import OrderedDict
 
 from django.utils import timezone
 from drf_composable_permissions.p import P
-# from drf_yasg import openapi
-# from drf_yasg.openapi import Parameter, Schema
-# from drf_yasg.utils import swagger_auto_schema
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import BasePermission
 
+import autograder.core.models as ag_models
+import autograder.rest_api.permissions as ag_permissions
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submissions
 from autograder.core.submission_feedback import AGTestPreLoader
-from autograder.rest_api.serialize_ultimate_submission_results import (
-    serialize_ultimate_submission_results)
+from autograder.rest_api.schema import APITags, CustomViewSchema
+from autograder.rest_api.serialize_ultimate_submission_results import \
+    serialize_ultimate_submission_results
 from autograder.rest_api.views.ag_model_views import AGModelAPIView
-import autograder.rest_api.permissions as ag_permissions
-import autograder.core.models as ag_models
-from autograder.rest_api.views.schema_generation import APITags#, AGModelSchemaBuilder
 
 
 class _UltimateSubmissionsAvailable(BasePermission):
     def has_object_permission(self, request, view, project: ag_models.Project):
         closing_time_past = project.closing_time is None or project.closing_time < timezone.now()
         return not project.hide_ultimate_submission_fdbk and closing_time_past
-
-
-# def _build_ultimate_submission_result_schema():
-#     ultimate_submission_schema = Schema(
-#         type='object',
-#         properties=copy.deepcopy(
-#             AGModelSchemaBuilder.get().get_schema(ag_models.Submission).properties)
-#     )
-#     assert (ultimate_submission_schema.properties is not
-#             AGModelSchemaBuilder.get().get_schema(ag_models.Submission).properties)
-
-#     ultimate_submission_schema.properties['results'] = Schema(
-#         type='object',
-#         properties=OrderedDict([
-#             ('total_points', Schema(type='string(float)')),
-#             ('total_points_possible', Schema(type='string(float)')),
-
-#             (
-#                 'ag_test_suite_results',
-#                 Schema(type='AGTestSuiteResultFeedback',
-#                        description='Only included if full_results is true.')
-#             ),
-#             (
-#                 'student_test_suite_results',
-#                 Schema(type='StudentTestSuiteResultFeedback',
-#                        description='Only included if full_results is true.')
-#             )
-#         ])
-#     )
-
-#     ultimate_submission_schema.properties.move_to_end('results', last=False)
-
-#     return Schema(
-#         type='object',
-#         properties=OrderedDict([
-#             ('username', Schema(type='string')),
-#             ('group', AGModelSchemaBuilder.get().get_schema(ag_models.Group)),
-#             ('ultimate_submission', ultimate_submission_schema)
-#         ])
-#     )
-
-
-# _all_ultimate_submission_results_schema = Schema(
-#     type='object',
-#     properties=OrderedDict([
-#         ('count', openapi.Schema(type=openapi.TYPE_INTEGER)),
-#         ('next', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
-#         ('previous', openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI)),
-#         ('results', Schema(
-#             type='array',
-#             items=_build_ultimate_submission_result_schema()
-
-#         )),
-#     ])
-# )
 
 
 class UltimateSubmissionPaginator(PageNumberPagination):
@@ -88,34 +30,79 @@ class UltimateSubmissionPaginator(PageNumberPagination):
 
 
 class AllUltimateSubmissionResults(AGModelAPIView):
-    permission_classes = (
+    schema = CustomViewSchema([APITags.submissions], {
+        'GET': {
+            'parameters': [
+                {
+                    'name': 'page',
+                    'in': 'query',
+                    'schema': {
+                        'type': 'integer',
+                    }
+                },
+                {
+                    'name': 'groups_per_page',
+                    'in': 'query',
+                    'description': 'The page size. Maximum value is {}'.format(
+                        UltimateSubmissionPaginator.max_page_size),
+                    'schema': {
+                        'type': 'integer',
+                        'default': UltimateSubmissionPaginator.page_size,
+                        'maximum': UltimateSubmissionPaginator.max_page_size,
+                    }
+                },
+                {
+                    'name': 'full_results',
+                    'in': 'query',
+                    'description': '''When "false", the submission result data
+                        will not contain the "ag_test_suite_results"
+                        or "student_test_suite_results" fields.
+                        Defaults to "false".
+                    '''.strip(),
+                    'schema': {
+                        'type': 'string',
+                        'enum': ['true', 'false'],
+                        'default': 'false',
+                    }
+                },
+                {
+                    'name': 'include_staff',
+                    'in': 'query',
+                    'description': ('When "false", excludes staff and admin users '
+                                    'from the results. Defaults to "true".'),
+                    'schema': {
+                        'type': 'string',
+                        'enum': ['true', 'false'],
+                        'default': 'true',
+                    }
+                }
+            ],
+            'responses': {
+                '200': {
+                    'body': {
+                        'type': 'object',
+                        'properties': {
+                            'count': {'type': 'integer'},
+                            'next': {'type': 'string', 'format': 'url'},
+                            'previous': {'type': 'string', 'format': 'url'},
+                            'results': {
+                                'type': 'array',
+                                'items': {'$ref': '#/components/schemas/SubmissionWithResults'}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
+
+    permission_classes = [
         P(ag_permissions.is_admin())
-        | (P(ag_permissions.is_staff()) & P(_UltimateSubmissionsAvailable)),)
+        | (P(ag_permissions.is_staff()) & P(_UltimateSubmissionsAvailable))
+    ]
     model_manager = ag_models.Project
     pk_key = 'project_pk'
 
-    api_tags = (APITags.submissions,)
-
-    # @swagger_auto_schema(
-    #     manual_parameters=[
-    #         Parameter(name='page', type='integer', in_='query'),
-    #         Parameter(name='groups_per_page', type='integer', in_='query',
-    #                   default=UltimateSubmissionPaginator.page_size,
-    #                   description='Max groups per page: {}'.format(
-    #                       UltimateSubmissionPaginator.max_page_size)),
-    #         Parameter(
-    #             name='full_results', type='string', enum=['true', 'false'], in_='query',
-    #             description='When true, includes all SubmissionResultFeedback fields. '
-    #                         'Defaults to false.'
-    #         ),
-    #         Parameter(
-    #             name='include_staff', type='string', enum=['true', 'false'], in_='query',
-    #             description='When false, excludes staff and admin users '
-    #                         'from the results. Defaults to true.'
-    #         )
-    #     ],
-    #     responses={'200': _all_ultimate_submission_results_schema}
-    # )
     def get(self, *args, **kwargs):
         project: ag_models.Project = self.get_object()
 
