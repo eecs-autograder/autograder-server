@@ -241,23 +241,26 @@ class ListCreateSubmissionViewSet(NestedModelView):
 
 
 class ListSubmissionsWithResults(AGModelAPIView):
-    schema = CustomViewSchema([APITags.submissions], data={
+    schema = CustomViewSchema([APITags.submissions], {
         'GET': {
             'parameters': [{'$ref': '#/components/parameters/feedbackCategory'}],
             'responses': {
                 '200': {
                     'body': {
-                        'allOf': [
-                            {'$ref': '#/components/schemas/Submission'},
-                            {
-                                'type': 'object',
-                                'properties': {
-                                    'results': {
-                                        '$ref': '#/components/schemas/SubmissionResultFeedback'
+                        'type': 'array',
+                        'items': {
+                            'allOf': [
+                                {'$ref': '#/components/schemas/Submission'},
+                                {
+                                    'type': 'object',
+                                    'properties': {
+                                        'results': {
+                                            '$ref': '#/components/schemas/SubmissionResultFeedback'
+                                        }
                                     }
                                 }
-                            }
-                        ]
+                            ]
+                        }
                     }
                 }
             }

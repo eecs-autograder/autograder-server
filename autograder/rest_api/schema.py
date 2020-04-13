@@ -609,6 +609,7 @@ class APITags(enum.Enum):
     groups = 'groups'
 
     submissions = 'submissions'
+    submission_output = 'submission_output'
     rerun_submissions_tasks = 'rerun_submissions_tasks'
 
     handgrading_rubrics = 'handgrading_rubrics'
@@ -819,8 +820,9 @@ class CustomViewSchema(AGViewSchemaGenerator):
         if method_data is None:
             return result
 
+        result.setdefault('parameters', [])
         if 'parameters' in method_data:
-            result['parameters'] = method_data['parameters']
+            result['parameters'] += method_data['parameters']
 
         for param_name, schema in method_data.get('param_schema_overrides', {}).items():
             param = utils.find_if(result['parameters'], lambda item: item['name'] == param_name)
