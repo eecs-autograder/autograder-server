@@ -4,11 +4,6 @@ from rest_framework import routers
 
 from . import views
 
-handgrading_rubric_detail_router = routers.SimpleRouter()
-handgrading_rubric_detail_router.register(r'handgrading_rubrics',
-                                          views.HandgradingRubricDetailViewSet,
-                                          basename='handgrading-rubric')
-
 annotation_detail_router = routers.SimpleRouter()
 annotation_detail_router.register(r'annotations',
                                   views.AnnotationDetailViewSet,
@@ -37,9 +32,12 @@ comment_detail_router.register(r'comments',
 
 
 urlpatterns = [
-    url(r'^projects/(?P<project_pk>[0-9]+)/handgrading_rubric/$',
-        views.HandgradingRubricRetrieveCreateViewSet.as_view(), name='handgrading_rubric'),
-    url(r'', include(handgrading_rubric_detail_router.urls)),
+    path('projects/<int:project_pk>/handgrading_rubric/',
+         views.GetCreateHandgradingRubricView.as_view(),
+         name='handgrading_rubric'),
+    path('handgrading_rubrics/<int:pk>/',
+         views.HandgradingRubricDetailView.as_view(),
+         name='handgrading-rubric-detail'),
 
     url(r'^handgrading_rubrics/(?P<handgrading_rubric_pk>[0-9]+)/annotations/$',
         views.AnnotationListCreateView.as_view(), name='annotations'),
