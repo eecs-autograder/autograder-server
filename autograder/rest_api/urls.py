@@ -1,20 +1,10 @@
 from django.conf import settings
 from django.conf.urls import include, url
 from django.urls import path
-from rest_framework import permissions, routers
+from rest_framework import permissions
 from rest_framework.schemas import get_schema_view
 
 from autograder.rest_api import views
-
-# submission_router = routers.SimpleRouter()
-# submission_router.register(r'submissions', views.SubmissionDetailViewSet,
-#                            basename='submission')
-
-rerun_submissions_task_detail_router = routers.SimpleRouter()
-rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
-                                              views.RerunSubmissionsTaskDetailVewSet,
-                                              basename='rerun-submissions-task')
-
 
 # schema_view = get_schema_view(
 #     openapi.Info(
@@ -62,9 +52,8 @@ rerun_submissions_task_detail_router.register(r'rerun_submissions_tasks',
 
 
 urlpatterns = [
-    # url(r'^docs/?$', schema_view.with_ui('swagger'), name='schema-swagger-ui'),
-
-    url(r'^oauth2callback/$', views.oauth2_callback, name='oauth2callback'),    path('users/current/', views.CurrentUserView.as_view(), name='current-user'),
+    path('oauth2callback/', views.oauth2_callback, name='oauth2callback'),
+    path('users/current/', views.CurrentUserView.as_view(), name='current-user'),
     path('users/current/can_create_courses/', views.CurrentUserCanCreateCoursesView.as_view(),
          name='user-can-create-courses'),
     path('users/<int:pk>/', views.UserDetailView.as_view(), name='user-detail'),
@@ -157,9 +146,9 @@ urlpatterns = [
     path('group_invitations/<int:pk>/accept/', views.AcceptGroupInvitationView.as_view(),
          name='accept-group-invitation'),
 
-    url(r'^projects/(?P<project_pk>[0-9]+)/groups/$',
+    path('projects/<int:project_pk>/groups/',
         views.ListCreateGroupsView.as_view(), name='groups'),
-    url(r'^projects/(?P<project_pk>[0-9]+)/groups/solo_group/$',
+    path('projects/<int:project_pk>/groups/solo_group/',
         views.CreateSoloGroupView.as_view(),
         name='solo_group'),
     path('groups/<int:pk>/', views.GroupDetailView.as_view(),
@@ -230,10 +219,15 @@ urlpatterns = [
     path('student_test_suites/<int:pk>/', views.StudentTestSuiteDetailView.as_view(),
          name='student-test-suite-detail'),
 
-    url(r'^projects/(?P<project_pk>[0-9]+)/rerun_submissions_tasks/$',
-        views.RerunSubmissionsTaskListCreateView.as_view(), name='rerun_submissions_tasks'),
-
-    url(r'', include(rerun_submissions_task_detail_router.urls)),
+    path('projects/<int:project_pk>/rerun_submissions_tasks/',
+         views.RerunSubmissionsTaskListCreateView.as_view(),
+         name='rerun_submissions_tasks'),
+    path('rerun_submissions_tasks/<int:pk>/',
+         views.RerunSubmissionsTaskDetailView.as_view(),
+         name='rerun-submissions-task-detail'),
+    path('rerun_submissions_tasks/<int:pk>/cancel/',
+         views.CancelRerunSubmissionsTaskView.as_view(),
+         name='cancel-rerun-submissions-task'),
 
     path('groups/<int:pk>/submissions_with_results/',
          views.ListSubmissionsWithResults.as_view(),
