@@ -19,11 +19,8 @@ class RaceConditionTestCase(TransactionUnitTestBase):
         group = obj_build.make_group(members_role=obj_build.UserRole.admin)
         submission = obj_build.make_submission(group=group)
 
-        path = ('autograder.core.models'
-                '.Submission.GradingStatus.removed_from_queue')
-
         @sleeper_subtest(
-            path,
+            'autograder.core.models.Submission.GradingStatus.removed_from_queue',
             new_callable=mock.PropertyMock,
             return_value=(ag_models.Submission.GradingStatus.removed_from_queue))
         def do_request_and_wait():
@@ -44,5 +41,4 @@ class RaceConditionTestCase(TransactionUnitTestBase):
             submission.status)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading,
-                         submission.status)
+        self.assertEqual(ag_models.Submission.GradingStatus.finished_grading, submission.status)

@@ -8,7 +8,6 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 import autograder.core.models as ag_models
-import autograder.rest_api.tests.test_views.ag_view_test_base as test_impls
 import autograder.utils.testing.model_obj_builders as obj_build
 from autograder.core.caching import get_cached_submission_feedback, submission_fdbk_cache_key
 from autograder.core.submission_feedback import SubmissionResultFeedback, AGTestPreLoader
@@ -17,10 +16,11 @@ from autograder.core.tests.test_submission_feedback.fdbk_getter_shortcuts import
 from autograder.grading_tasks import tasks
 from autograder.rest_api.views.rerun_submissions_task_views import (
     rerun_ag_test_suite, rerun_student_test_suite)
-from autograder.utils.testing import TransactionUnitTestBase, UnitTestBase
+from autograder.utils.testing import TransactionUnitTestBase
+from autograder.rest_api.tests.test_views.ag_view_test_base import AGViewTestBase
 
 
-class ListRerunSubmissionsTasksTestCase(UnitTestBase):
+class ListRerunSubmissionsTasksTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
 
@@ -57,7 +57,7 @@ class ListRerunSubmissionsTasksTestCase(UnitTestBase):
 
 @tag('slow', 'sandbox')
 @mock.patch('autograder.utils.retry.sleep')
-class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
+class CreateAndGetRerunSubmissionsTasksTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
 
@@ -343,8 +343,7 @@ class CreateAndGetRerunSubmissionsTasksTestCase(UnitTestBase):
         self.assertEqual(1, other_fdbk.total_points_possible)
 
 
-class CreateRerunSubmissionsTasksPermissionDeniedTestCase(test_impls.CreateObjectTest,
-                                                          UnitTestBase):
+class CreateRerunSubmissionsTasksPermissionDeniedTestCase(AGViewTestBase):
     def test_non_admin_create_permission_denied(self):
         project = obj_build.make_project()
         [staff] = obj_build.make_staff_users(project.course, 1)
@@ -356,7 +355,7 @@ class CreateRerunSubmissionsTasksPermissionDeniedTestCase(test_impls.CreateObjec
             {})
 
 
-class RerunSubmissionsTaskDetailViewSetTestCase(test_impls.GetObjectTest, UnitTestBase):
+class RerunSubmissionsTaskDetailViewSetTestCase(AGViewTestBase):
     def setUp(self):
         super().setUp()
 
@@ -391,7 +390,7 @@ class RerunSubmissionsTaskDetailViewSetTestCase(test_impls.GetObjectTest, UnitTe
 
     def test_admin_cancel_task(self) -> None:
         self.client.force_authenticate(self.admin)
-        url = reverse('rerun-submissions-task-cancel', kwargs={'pk': self.rerun_task.pk})
+        url = reverse('cancel-rerun-submissions-task', kwargs={'pk': self.rerun_task.pk})
         response = self.client.post(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
@@ -403,7 +402,7 @@ class RerunSubmissionsTaskDetailViewSetTestCase(test_impls.GetObjectTest, UnitTe
         staff = obj_build.make_staff_user(self.project.course)
         self.client.force_authenticate(staff)
 
-        url = reverse('rerun-submissions-task-cancel', kwargs={'pk': self.rerun_task.pk})
+        url = reverse('cancel-rerun-submissions-task', kwargs={'pk': self.rerun_task.pk})
         response = self.client.post(url)
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
         self.rerun_task.refresh_from_db()

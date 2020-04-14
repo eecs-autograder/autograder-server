@@ -31,7 +31,8 @@ from .project_views.project_views import (AllScoresTaskView, AllSubmittedFilesTa
                                           NumQueuedSubmissionsView, ProjectDetailView,
                                           UltimateSubmissionScoresTaskView,
                                           UltimateSubmissionSubmittedFilesTaskView)
-from .rerun_submissions_task_views import (RerunSubmissionsTaskDetailVewSet,
+from .rerun_submissions_task_views import (CancelRerunSubmissionsTaskView,
+                                           RerunSubmissionsTaskDetailView,
                                            RerunSubmissionsTaskListCreateView)
 from .sandbox_docker_image_views import (BuildTaskDetailView, CancelBuildTaskView,
                                          ListBuildTasksForCourseView,
