@@ -1,5 +1,4 @@
-from .annotation_views import (AnnotationDetailViewSet, AnnotationListCreateView,
-                               AnnotationOrderView)
+from .annotation_views import AnnotationDetailView, AnnotationOrderView, ListCreateAnnotationView
 from .applied_annotation_views import (AppliedAnnotationDetailViewSet,
                                        AppliedAnnotationListCreateView)
 from .comment_views import CommentDetailViewSet, CommentListCreateView

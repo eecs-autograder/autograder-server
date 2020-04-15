@@ -4,16 +4,6 @@ from rest_framework import routers
 
 from . import views
 
-annotation_detail_router = routers.SimpleRouter()
-annotation_detail_router.register(r'annotations',
-                                  views.AnnotationDetailViewSet,
-                                  basename='annotation')
-
-# criterion_detail_router = routers.SimpleRouter()
-# criterion_detail_router.register(r'criteria',
-#                                  views.CriterionDetailViewSet,
-#                                  basename='criterion')
-
 applied_annotation_detail_router = routers.SimpleRouter()
 applied_annotation_detail_router.register(r'applied_annotations',
                                           views.AppliedAnnotationDetailViewSet,
@@ -39,11 +29,11 @@ urlpatterns = [
          views.HandgradingRubricDetailView.as_view(),
          name='handgrading-rubric-detail'),
 
-    url(r'^handgrading_rubrics/(?P<handgrading_rubric_pk>[0-9]+)/annotations/$',
-        views.AnnotationListCreateView.as_view(), name='annotations'),
+    path('handgrading_rubrics/<int:handgrading_rubric_pk>/annotations/',
+         views.ListCreateAnnotationView.as_view(), name='annotations'),
+    path('annotations/<int:pk>/', views.AnnotationDetailView.as_view(), name='annotation-detail'),
     path('handgrading_rubrics/<int:handgrading_rubric_pk>/annotations/order/',
          views.AnnotationOrderView.as_view(), name='annotation_order'),
-    url(r'', include(annotation_detail_router.urls)),
 
     path('handgrading_rubrics/<int:handgrading_rubric_pk>/criteria/',
          views.ListCreateCriterionView.as_view(), name='criteria'),
