@@ -615,7 +615,7 @@ class APITags(enum.Enum):
     users = 'users'
     courses = 'courses'
     rosters = 'rosters'
-    permissions = 'permissions'
+    # permissions = 'permissions'
 
     projects = 'projects'
     instructor_files = 'instructor_files'
@@ -896,29 +896,6 @@ def as_paginated_content_obj(type_: Union[APIClassType, RefDict, dict]) -> Conte
     }
 
 
-# class RequestBodyData(TypedDict, total=False):
-#     # Defaults to 'application/json'
-#     content_type: str
-#     # Stored under the 'schema' key
-#     body: dict
-
-#     examples: dict
-#     description: str
-
-
-# class ResponseSchemaData(TypedDict, total=False):
-#     # Defaults to 'application/json'
-#     content_type: str
-#     # Stored under the 'schema' key
-#     body: dict
-
-#     examples: dict
-#     description: str
-
-
-# class MediaType
-
-
 HTTPMethodName = Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 
@@ -947,37 +924,10 @@ class CustomViewSchema(AGViewSchemaGenerator):
             result.setdefault('requestBody', {})
             result['requestBody'].update({'required': True})
             result['requestBody'].update(method_data['request'])
-            # request_data = method_data['request']
-            # body = {
-            #     'schema': request_data['body'],
-            # }
-            # if 'examples' in request_data:
-            #     body['examples'] = request_data['examples']
-            # result['requestBody'] = {
-            #     'required': True,
-            #     'content': {
-            #         request_data.get('content_type', 'application/json'): body
-            #     }
-            # }
-            # if 'description' in request_data:
-            #     result['description'] = request_data['description']
 
         responses: Dict[str, ResponseBody] = {}
         for status, response_data in method_data.get('responses', {}).items():
             responses[status] = {} if response_data is None else response_data
-            # elif 'body' in response_data:
-            #     body = {
-            #         'schema': response_data['body']
-            #     }
-            #     if 'examples' in response_data:
-            #         body['examples'] = response_data['examples']
-            #     responses[status] = {
-            #         'content': {
-            #             response_data.get('content_type', 'application/json'): body
-            #         }
-            #     }
-            #     if 'description' in response_data:
-            #         responses[status]['description'] = response_data['description']
 
         if responses:
             result['responses'] = responses
