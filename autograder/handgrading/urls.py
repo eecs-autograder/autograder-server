@@ -4,17 +4,6 @@ from rest_framework import routers
 
 from . import views
 
-applied_annotation_detail_router = routers.SimpleRouter()
-applied_annotation_detail_router.register(r'applied_annotations',
-                                          views.AppliedAnnotationDetailViewSet,
-                                          basename='applied-annotation')
-
-
-criterion_result_detail_router = routers.SimpleRouter()
-criterion_result_detail_router.register(r'criterion_results',
-                                        views.CriterionResultDetailViewSet,
-                                        basename='criterion-result')
-
 comment_detail_router = routers.SimpleRouter()
 comment_detail_router.register(r'comments',
                                views.CommentDetailViewSet,
@@ -51,17 +40,19 @@ urlpatterns = [
          views.HandgradingResultHasCorrectSubmissionView.as_view(),
          name='handgrading-result-has-correct-submission'),
 
-    url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/applied_annotations/$',
-        views.AppliedAnnotationListCreateView.as_view(), name='applied_annotations'),
-    url(r'', include(applied_annotation_detail_router.urls)),
+    path('handgrading_results/<int:handgrading_result_pk>/applied_annotations/',
+         views.ListCreateAppliedAnnotationView.as_view(), name='applied_annotations'),
+    path('applied_annotations/<int:pk>/', views.AppliedAnnotationDetailView.as_view(),
+         name='applied-annotation-detail'),
 
     url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/comments/$',
         views.CommentListCreateView.as_view(), name='comments'),
     url(r'', include(comment_detail_router.urls)),
 
-    url(r'^handgrading_results/(?P<handgrading_result_pk>[0-9]+)/criterion_results/$',
-        views.CriterionResultListCreateView.as_view(), name='criterion_results'),
-    url(r'', include(criterion_result_detail_router.urls)),
+    path('handgrading_results/<int:handgrading_result_pk>/criterion_results/',
+         views.ListCreateCriterionResultView.as_view(), name='criterion_results'),
+    path('criterion_results/<int:pk>/', views.CriterionResultDetailView.as_view(),
+         name='criterion-result-detail'),
 
     path('projects/<int:pk>/handgrading_results/', views.ListHandgradingResultsView.as_view(),
          name='handgrading_results')

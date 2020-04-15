@@ -12,8 +12,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import BasePermission
 
 import autograder.core.models as ag_models
-import autograder.handgrading.models as handgrading_models
-import autograder.handgrading.serializers as handgrading_serializers
+import autograder.handgrading.models as hg_models
 import autograder.rest_api.permissions as ag_permissions
 from autograder import utils
 from autograder.core.models.get_ultimate_submissions import get_ultimate_submission
@@ -50,9 +49,7 @@ class _HandgradingResultViewSchema(
     AGRetrieveViewSchemaMixin, AGPatchViewSchemaMixin, CustomViewSchema
 ):
     def __init__(self, data: CustomViewDict):
-        super().__init__(
-            [APITags.handgrading_results], data, handgrading_models.HandgradingResult
-        )
+        super().__init__([APITags.handgrading_results], data, hg_models.HandgradingResult)
 
 
 class HandgradingResultView(NestedModelView):
@@ -60,7 +57,7 @@ class HandgradingResultView(NestedModelView):
         'GET': {
             'responses': {
                 '200': {
-                    'content': as_content_obj(handgrading_models.HandgradingResult),
+                    'content': as_content_obj(hg_models.HandgradingResult),
                 }
             }
         },
@@ -70,11 +67,11 @@ class HandgradingResultView(NestedModelView):
                 '200': {
                     'description': 'A HandgradingResult already exists for the group. '
                                    'That HandgradingResult is returned.',
-                    'content': as_content_obj(handgrading_models.HandgradingResult)
+                    'content': as_content_obj(hg_models.HandgradingResult)
                 },
                 '201': {
                     'description': 'A new HandgradingResult was created for the group.',
-                    'content': as_content_obj(handgrading_models.HandgradingResult)
+                    'content': as_content_obj(hg_models.HandgradingResult)
                 }
             }
         }
@@ -113,14 +110,14 @@ class HandgradingResultView(NestedModelView):
             raise exceptions.ValidationError(
                 {'num_submissions': 'Group {} has no submissions'.format(group.pk)})
 
-        handgrading_result, created = handgrading_models.HandgradingResult.objects.get_or_create(
+        handgrading_result, created = hg_models.HandgradingResult.objects.get_or_create(
             defaults={'submission': ultimate_submission},
             handgrading_rubric=handgrading_rubric,
             group=group
         )
 
         for criterion in handgrading_rubric.criteria.all():
-            handgrading_models.CriterionResult.objects.get_or_create(
+            hg_models.CriterionResult.objects.get_or_create(
                 defaults={'selected': False},
                 criterion=criterion,
                 handgrading_result=handgrading_result,
@@ -303,7 +300,7 @@ class ListHandgradingResultsView(AGModelAPIView):
     def get(self, *args, **kwargs):
         project = self.get_object()  # type: ag_models.Project
 
-        hg_result_queryset = handgrading_models.HandgradingResult.objects.select_related(
+        hg_result_queryset = hg_models.HandgradingResult.objects.select_related(
             'handgrading_rubric__project',
             'group',
             'submission'
