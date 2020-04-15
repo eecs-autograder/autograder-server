@@ -9,10 +9,10 @@ annotation_detail_router.register(r'annotations',
                                   views.AnnotationDetailViewSet,
                                   basename='annotation')
 
-criterion_detail_router = routers.SimpleRouter()
-criterion_detail_router.register(r'criteria',
-                                 views.CriterionDetailViewSet,
-                                 basename='criterion')
+# criterion_detail_router = routers.SimpleRouter()
+# criterion_detail_router.register(r'criteria',
+#                                  views.CriterionDetailViewSet,
+#                                  basename='criterion')
 
 applied_annotation_detail_router = routers.SimpleRouter()
 applied_annotation_detail_router.register(r'applied_annotations',
@@ -45,11 +45,11 @@ urlpatterns = [
          views.AnnotationOrderView.as_view(), name='annotation_order'),
     url(r'', include(annotation_detail_router.urls)),
 
-    url(r'^handgrading_rubrics/(?P<handgrading_rubric_pk>[0-9]+)/criteria/$',
-        views.CriterionListCreateView.as_view(), name='criteria'),
+    path('handgrading_rubrics/<int:handgrading_rubric_pk>/criteria/',
+         views.ListCreateCriterionView.as_view(), name='criteria'),
+    path('criteria/<int:pk>/', views.CriterionDetailView.as_view(), name='criterion-detail'),
     path('handgrading_rubrics/<int:handgrading_rubric_pk>/criteria/order/',
          views.CriterionOrderView.as_view(), name='criterion_order'),
-    url(r'', include(criterion_detail_router.urls)),
 
     path('groups/<int:group_pk>/handgrading_result/',
          views.HandgradingResultView.as_view(),
