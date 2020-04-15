@@ -2,7 +2,6 @@ from django.db import transaction
 from rest_framework import response, status
 
 import autograder.handgrading.models as hg_models
-import autograder.handgrading.serializers as handgrading_serializers
 import autograder.rest_api.permissions as ag_permissions
 from autograder.rest_api.schema import (AGDetailViewSchemaGenerator,
                                         AGListCreateViewSchemaGenerator, APITags, OrderViewSchema)
